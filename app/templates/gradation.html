@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}PG Gradation{% endblock %}
+{% block content %}
+<style>
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  .hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18)}
+  .hero h1{margin:0;font-weight:950}
+  .hero .sub{margin-top:.35rem;color:#d1fae5;font-weight:800}
+  .card{margin-top:14px;background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+  .f{display:flex;flex-direction:column;gap:6px}
+  .f label{font-size:.78rem;color:#059669;font-weight:900}
+  input,select{background:#f0fdf4;border:1px solid rgba(5,150,105,.22);border-radius:12px;padding:10px 12px;outline:none}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(5,150,105,.28);background:#059669;color:#fff;font-weight:950;cursor:pointer;text-decoration:none}
+  .btn2{background:#ecfdf5;color:#065f46}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+  .k{background:#ecfdf5;border:1px solid rgba(5,150,105,.18);border-radius:16px;padding:12px}
+  .k .t{font-size:.78rem;color:#047857;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+  .k .v{margin-top:4px;font-weight:950;font-size:1.1rem;color:#064e3b}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:10px;border-radius:14px;overflow:hidden}
+  th,td{padding:10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-size:.92rem}
+  th{background:#f0fdf4;color:#065f46;font-weight:950}
+  .grade{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:999px;background:#059669;color:#fff;font-weight:950;font-size:1.3rem}
+  @media(max-width:980px){.kpis{grid-template-columns:1fr 1fr}}
+</style>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>PG Gradation — {{ pg.pg_name or pg.name }}</h1>
+    <div class="sub">Quarterly scoring across governance, finance, business & meetings</div>
+    <div class="kpis">
+      <div class="k"><div class="t">Year</div><div class="v">{{ year }}</div></div>
+      <div class="k"><div class="t">Quarter</div><div class="v">Q{{ quarter }}</div></div>
+      <div class="k"><div class="t">Score</div><div class="v">{{ (snap.score if snap else computed.score) }}</div></div>
+      <div class="k"><div class="t">Grade</div><div class="v">{{ (snap.grade if snap else computed.grade) }}</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="GET" class="grid">
+      <div class="f" style="grid-column:span 3"><label>Year</label><input name="year" type="number" value="{{ year }}"></div>
+      <div class="f" style="grid-column:span 3"><label>Quarter</label>
+        <select name="quarter">
+          <option value="1" {% if quarter==1 %}selected{% endif %}>Q1</option>
+          <option value="2" {% if quarter==2 %}selected{% endif %}>Q2</option>
+          <option value="3" {% if quarter==3 %}selected{% endif %}>Q3</option>
+          <option value="4" {% if quarter==4 %}selected{% endif %}>Q4</option>
+        </select>
+      </div>
+      <div style="grid-column:span 6;display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+        <button class="btn btn2" type="submit">View</button></div>
+    </form>
+
+    <form method="POST" style="margin-top:10px">
+      <input type="hidden" name="year" value="{{ year }}">
+      <input type="hidden" name="quarter" value="{{ quarter }}">
+      <button class="btn" type="submit">Compute & Save Snapshot</button>
+      <a class="btn btn2" href="{{ url_for('pg.pg_home') }}">Back</a>
+    </form>
+
+    <div style="margin-top:14px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <div class="grade">{{ (snap.grade if snap else computed.grade) }}</div>
+      <div>
+        <div style="font-weight:950;color:#065f46">Breakdown</div>
+        <div style="color:#64748b;font-weight:700">Rules are configurable later; this is the complete gradation engine scaffold.</div>
+      </div>
+    </div>
+
+    <table>
+      <thead><tr><th>Component</th><th>Score</th><th>Metric</th></tr></thead>
+      <tbody>
+        {% set src = snap if snap else computed %}
+        <tr><td>Meetings</td><td>{{ src.breakdown.meetings }}</td><td>{{ src.metrics.meetings }} meetings</td></tr>
+        <tr><td>Financial</td><td>{{ src.breakdown.financial }}</td><td>Overdue ₹{{ "{:,.2f}".format(src.metrics.overdue or 0) }}</td></tr>
+        <tr><td>Business</td><td>{{ src.breakdown.business }}</td><td>Turnover ₹{{ "{:,.2f}".format(src.metrics.turnover or 0) }}</td></tr>
+        <tr><td>Governance</td><td>{{ src.breakdown.governance }}</td><td>Resolutions/attendance hooks ready</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

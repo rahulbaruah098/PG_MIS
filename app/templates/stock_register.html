@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Stock / Inventory Register{% endblock %}
+{% block content %}
+<style>
+  .wrap{max-width:1200px;margin:0 auto;padding:18px}
+  .hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18)}
+  .hero h1{margin:0;font-weight:950}
+  .hero .sub{margin-top:.35rem;color:#d1fae5;font-weight:800}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .card{background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+  .f{display:flex;flex-direction:column;gap:6px}
+  .f label{font-size:.78rem;color:#059669;font-weight:900}
+  input,select,textarea{background:#f0fdf4;border:1px solid rgba(5,150,105,.22);border-radius:12px;padding:10px 12px;outline:none}
+  textarea{min-height:44px;resize:vertical}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(5,150,105,.28);background:#059669;color:#fff;font-weight:950;cursor:pointer;text-decoration:none}
+  .btn2{background:#ecfdf5;color:#065f46}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:10px;border-radius:14px;overflow:hidden}
+  th,td{padding:10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-size:.92rem}
+  th{background:#f0fdf4;color:#065f46;font-weight:950}
+  @media(max-width:980px){.grid2{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Stock / Inventory — {{ pg.pg_name or pg.name }}</h1>
+    <div class="sub">Opening/Closing stock (monthly) • Commodity-wise • Stock movement ledger</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div style="font-weight:950;color:#065f46">Monthly Stock (Commodity-wise)</div>
+      <form method="POST" class="grid" style="margin-top:10px">
+        <div class="f" style="grid-column:span 3"><label>Year</label><input name="year" type="number" value=""></div>
+        <div class="f" style="grid-column:span 3"><label>Month</label><input name="month" type="number" min="1" max="12"></div>
+        <div class="f" style="grid-column:span 6"><label>Commodity</label><input name="commodity" required placeholder="Egg / Broiler / Feed / ..."></div>
+
+        <div class="f" style="grid-column:span 3"><label>Opening Qty</label><input name="opening_qty" type="number" step="0.01"></div>
+        <div class="f" style="grid-column:span 3"><label>Opening Value</label><input name="opening_value" type="number" step="0.01"></div>
+        <div class="f" style="grid-column:span 3"><label>Closing Qty</label><input name="closing_qty" type="number" step="0.01"></div>
+        <div class="f" style="grid-column:span 3"><label>Closing Value</label><input name="closing_value" type="number" step="0.01"></div>
+
+        <div class="f" style="grid-column:span 4"><label>Valuation</label>
+          <select name="valuation_method"><option value="avg">Average</option><option value="fifo">FIFO</option><option value="lifo">LIFO</option></select>
+        </div>
+        <div style="grid-column:span 12"><button class="btn" type="submit">Save Monthly Stock</button></div>
+      </form>
+
+      <table>
+        <thead><tr><th>Year</th><th>Month</th><th>Commodity</th><th>Opening Qty</th><th>Closing Qty</th><th>Closing Value</th></tr></thead>
+        <tbody>
+        {% for r in records %}
+          <tr>
+            <td>{{ r.year }}</td><td>{{ r.month }}</td><td>{{ r.commodity }}</td>
+            <td>{{ r.opening_qty }}</td><td>{{ r.closing_qty }}</td><td>₹{{ "{:,.2f}".format(r.closing_value or 0) }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" style="color:#64748b">No stock records yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:950;color:#065f46">Stock Movement Ledger</div>
+      <form method="POST" action="{{ url_for('business.stock_movement', pg_id=pg._id) }}" class="grid" style="margin-top:10px">
+        <div class="f" style="grid-column:span 4"><label>Commodity</label><input name="commodity" required></div>
+        <div class="f" style="grid-column:span 4"><label>Type</label>
+          <select name="movement_type"><option value="purchase">Purchase</option><option value="sale">Sale</option><option value="adjustment">Adjustment</option></select>
+        </div>
+        <div class="f" style="grid-column:span 2"><label>Qty</label><input name="qty" type="number" step="0.01" required></div>
+        <div class="f" style="grid-column:span 2"><label>Rate</label><input name="rate" type="number" step="0.01" required></div>
+        <div class="f" style="grid-column:span 12"><label>Remarks</label><textarea name="remarks"></textarea></div>
+        <div style="grid-column:span 12"><button class="btn" type="submit">Add Movement</button></div>
+      </form>
+
+      <table>
+        <thead><tr><th>Date</th><th>Commodity</th><th>Type</th><th>Qty</th><th>Amount</th><th>Remarks</th></tr></thead>
+        <tbody>
+        {% for m in movements %}
+          <tr>
+            <td>{{ m.ts.strftime('%Y-%m-%d') if m.ts else '' }}</td>
+            <td>{{ m.commodity }}</td><td>{{ m.movement_type }}</td>
+            <td>{{ m.qty }}</td><td>₹{{ "{:,.2f}".format(m.amount or 0) }}</td><td>{{ m.remarks }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" style="color:#64748b">No movements yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

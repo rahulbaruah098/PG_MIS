@@ -1,0 +1,749 @@
+{% extends "base.html" %}
+
+{% block title %}Input Purchase/Sale/Stock Register{% endblock %}
+
+{% block head_extra %}
+{{ super() }}
+<style>
+  /* ============================================================
+     INPUT PURCHASE/SALE/STOCK REGISTER (SCOPED)
+     ✅ Same PG-MIS mint/green look
+     ✅ Table matches the sheet columns 1–17
+     ✅ Includes calculations + add/remove rows + localStorage + CSV
+     ============================================================ */
+
+  .input-register-page{ color:#0f172a; }
+  .input-register-page *{ box-sizing:border-box; }
+
+  .input-register-page .wrap{
+    width:100%;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Header card */
+  .input-register-page .hero{
+    border-radius: 18px;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(16,185,129,.16), transparent 55%),
+      radial-gradient(circle at 86% 22%, rgba(34,197,94,.12), transparent 55%),
+      linear-gradient(180deg, rgba(255,255,255,.90), rgba(255,255,255,.78));
+    border: 1px solid rgba(15, 23, 42, .10);
+    box-shadow: 0 18px 45px rgba(2, 6, 23, .08);
+    padding: 18px 18px;
+    overflow:hidden;
+    position: relative;
+  }
+
+  .input-register-page .hero:before{
+    content:"";
+    position:absolute; inset:-2px;
+    background:
+      radial-gradient(circle at 25% 20%, rgba(16,185,129,.18), transparent 55%),
+      radial-gradient(circle at 80% 30%, rgba(34,197,94,.14), transparent 60%),
+      radial-gradient(circle at 35% 110%, rgba(16,185,129,.12), transparent 55%);
+    pointer-events:none;
+    filter: blur(0px);
+    opacity:.9;
+  }
+
+  .input-register-page .hero > *{ position: relative; z-index: 1; }
+
+  .input-register-page .kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(16,185,129,.22);
+    background: rgba(16,185,129,.10);
+    color:#065f46;
+    font-weight: 800;
+    letter-spacing: .2px;
+    font-size: 12px;
+  }
+
+  .input-register-page .title{
+    margin-top: 10px;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: .2px;
+    line-height: 1.25;
+  }
+
+  .input-register-page .subtitle{
+    margin-top: 4px;
+    color:#334155;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* Top controls */
+  .input-register-page .top-grid{
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 980px){
+    .input-register-page .top-grid{ grid-template-columns: 1fr; }
+  }
+
+  .input-register-page .field{
+    background: rgba(255,255,255,.78);
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 16px;
+    padding: 12px 12px;
+    box-shadow: 0 10px 24px rgba(2,6,23,.06);
+  }
+
+  .input-register-page label{
+    display:block;
+    font-size: 12px;
+    font-weight: 900;
+    color:#0f172a;
+    margin-bottom: 6px;
+  }
+
+  .input-register-page .hint{
+    font-size: 11px;
+    color:#64748b;
+    font-weight: 700;
+    margin-top: 6px;
+  }
+
+  .input-register-page input[type="text"],
+  .input-register-page input[type="date"],
+  .input-register-page input[type="number"]{
+    width:100%;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,.14);
+    padding: 10px 12px;
+    outline: none;
+    background: rgba(255,255,255,.92);
+    color:#0f172a;
+    font-weight: 700;
+    transition: box-shadow .15s ease, border-color .15s ease;
+  }
+
+  .input-register-page input:focus{
+    border-color: rgba(16,185,129,.55);
+    box-shadow: 0 0 0 4px rgba(16,185,129,.15);
+  }
+
+  /* Action bar */
+  .input-register-page .actions{
+    margin-top: 12px;
+    display:flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items:center;
+  }
+
+  .input-register-page .btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.86);
+    padding: 10px 12px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 12px;
+    color:#0f172a;
+    cursor:pointer;
+    transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    user-select:none;
+  }
+
+  .input-register-page .btn:hover{
+    transform: translateY(-1px);
+    border-color: rgba(16,185,129,.40);
+    box-shadow: 0 14px 30px rgba(2,6,23,.08);
+  }
+
+  .input-register-page .btn.primary{
+    background: linear-gradient(180deg, rgba(16,185,129,.95), rgba(5,150,105,.92));
+    border-color: rgba(16,185,129,.55);
+    color: #052e1b;
+  }
+
+  .input-register-page .btn.danger{
+    background: rgba(239,68,68,.10);
+    border-color: rgba(239,68,68,.25);
+    color:#7f1d1d;
+  }
+
+  .input-register-page .btn.ghost{
+    background: transparent;
+  }
+
+  .input-register-page .status{
+    margin-left:auto;
+    font-size: 12px;
+    font-weight: 900;
+    color:#065f46;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px dashed rgba(16,185,129,.35);
+    background: rgba(16,185,129,.08);
+  }
+
+  @media (max-width: 720px){
+    .input-register-page .status{ width:100%; margin-left:0; }
+  }
+
+  /* Table container */
+  .input-register-page .table-shell{
+    margin-top: 14px;
+    border-radius: 18px;
+    border: 1px solid rgba(15,23,42,.12);
+    background: rgba(255,255,255,.78);
+    box-shadow: 0 18px 45px rgba(2,6,23,.08);
+    overflow:hidden;
+  }
+
+  .input-register-page .table-top{
+    padding: 12px 12px;
+    border-bottom: 1px solid rgba(15,23,42,.10);
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+  }
+
+  .input-register-page .table-note{
+    font-size: 12px;
+    font-weight: 800;
+    color:#334155;
+  }
+
+  .input-register-page .table-wrap{
+    width:100%;
+    overflow:auto;
+  }
+
+  table.input-register{
+    width: 1600px; /* wide like real register */
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  table.input-register th,
+  table.input-register td{
+    border-right: 1px solid rgba(15,23,42,.10);
+    border-bottom: 1px solid rgba(15,23,42,.10);
+    padding: 8px 8px;
+    vertical-align: middle;
+    background: rgba(255,255,255,.70);
+  }
+
+  table.input-register th{
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: rgba(248,250,252,.92);
+    backdrop-filter: blur(10px);
+    font-size: 11px;
+    font-weight: 900;
+    color:#0f172a;
+    text-align:center;
+    line-height: 1.2;
+  }
+
+  table.input-register thead tr.group th{
+    font-size: 11px;
+    font-weight: 900;
+    color:#064e3b;
+    background: rgba(16,185,129,.10);
+  }
+
+  table.input-register td{
+    font-size: 12px;
+    font-weight: 700;
+    color:#0f172a;
+    text-align:center;
+  }
+
+  table.input-register td.left{ text-align:left; min-width: 210px; }
+  table.input-register td.chk{ min-width: 42px; }
+  table.input-register td.num{ min-width: 100px; }
+  table.input-register td.small{ min-width: 92px; }
+  table.input-register td.med{ min-width: 120px; }
+  table.input-register td.wide{ min-width: 190px; }
+
+  table.input-register input{
+    width:100%;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.12);
+    padding: 8px 10px;
+    font-weight: 700;
+    background: rgba(255,255,255,.92);
+  }
+
+  table.input-register input[readonly]{
+    background: rgba(2,6,23,.04);
+    border-color: rgba(15,23,42,.10);
+    color:#0f172a;
+  }
+
+  /* footer totals row */
+  .input-register-page tfoot td{
+    background: rgba(16,185,129,.08);
+    font-weight: 900;
+    color:#064e3b;
+  }
+
+  .input-register-page .muted{
+    color:#64748b;
+    font-weight: 800;
+    font-size: 11px;
+  }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="input-register-page">
+  <div class="wrap">
+
+    <div class="hero">
+      <div class="kicker">📘 Input Purchase/Sale/Stock Register</div>
+      <div class="title">সামগ্রী ক্রয়/বিক্রয়/স্টক খাতা (Input Purchase/Sale/Stock Register)</div>
+      <div class="subtitle">শিট অনুযায়ী কলাম ১–১৭ পুরোপুরি রাখা হয়েছে + অটো ক্যালকুলেশন লজিক যুক্ত করা হয়েছে</div>
+
+      <div class="top-grid">
+        <div class="field">
+          <label>সামগ্রী নাম (Name of input) — (Common/Default for the register)</label>
+          <input id="regInputName" type="text" placeholder="যেমন: বীজ / সার / কীটনাশক / ফিড ..." />
+          <div class="hint">✅ আপনি চাইলে প্রতিটি রো-তে আলাদা নামও লিখতে পারবেন (কলাম 1-এ)।</div>
+        </div>
+
+        <div class="field">
+          <label>Date</label>
+          <input id="regDate" type="date" />
+          <div class="hint">রেজিস্টারের তারিখ (উপরে প্রিন্টেড Date ফিল্ড)</div>
+        </div>
+
+        <div class="field">
+          <label>Unit of Stocking (স্টক মাপের একক)</label>
+          <input id="regUnit" type="text" placeholder="যেমন: Kg / Litre / Packet / Bag ..." />
+          <div class="hint">উদাহরণ: Kg / Litre / Bag / Packet</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" type="button" id="addRowBtn">+ Add Row</button>
+        <button class="btn danger" type="button" id="deleteRowsBtn">Delete Selected</button>
+        <button class="btn" type="button" id="saveDraftBtn">Save Draft</button>
+        <button class="btn" type="button" id="loadDraftBtn">Load Draft</button>
+        <button class="btn ghost" type="button" id="clearDraftBtn">Clear Draft</button>
+        <button class="btn" type="button" id="exportCsvBtn">Export CSV</button>
+        <div class="status" id="statusPill">Ready</div>
+      </div>
+    </div>
+
+    <div class="table-shell">
+      <div class="table-top">
+        <div class="table-note">
+          <span class="muted">Auto logic:</span>
+          (6)=(4×5), (13)=(11×12), (15)=(4−11), (17)=(15×16)
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="input-register" id="regTable">
+          <thead>
+            <!-- Group headings like the register -->
+            <tr class="group">
+              <th rowspan="2">✔</th>
+              <th rowspan="2">১<br/>সামগ্রী নাম<br/>(Name of input)</th>
+              <th colspan="6">সামগ্রী ক্রয় (Purchase of input)</th>
+              <th colspan="5">সদস্যদের কাছে সামগ্রী বিক্রয় (Sale of input to members)</th>
+              <th colspan="3">স্টক (Stock)</th>
+            </tr>
+
+            <!-- Column headings with numbers 1–17 -->
+            <tr>
+              <th>২<br/>তারিখ<br/>(Date)</th>
+              <th>৩<br/>বিল নং<br/>(Bill No)</th>
+              <th>৪<br/>পরিমাণ<br/>(Qty)</th>
+              <th>৫<br/>দর (টাকা)<br/>(Rate)</th>
+              <th>৬<br/>মোট টাকা<br/>(Total Amount)</th>
+              <th>৭<br/>ক্যাশবুক ফোলিও নং<br/>(Cash Book Folio No)</th>
+
+              <th>৮<br/>তারিখ<br/>(Date)</th>
+              <th>৯<br/>বিল নং<br/>(Bill No)</th>
+              <th>১০<br/>সদস্য কৃষক/সদস্যের নাম<br/>(Member farmer)</th>
+              <th>১১<br/>পরিমাণ<br/>(Qty)</th>
+              <th>১২<br/>দর (টাকা)<br/>(Rate)</th>
+              <th>১৩<br/>মোট টাকা<br/>(Amount)</th>
+              <th>১৪<br/>ক্যাশবুক ফোলিও নং<br/>(Cash Book Folio No)</th>
+
+              <th>১৫<br/>ক্লোজিং স্টক পরিমাণ<br/>(Closing Stock Qty)<br/><span class="muted">(১৫ = ৪ − ১১)</span></th>
+              <th>১৬<br/>দর (টাকা)<br/>(Rate)</th>
+              <th>১৭<br/>মোট টাকা<br/>(Amount)</th>
+            </tr>
+          </thead>
+
+          <tbody id="regTbody">
+            <!-- rows injected by JS -->
+          </tbody>
+
+          <tfoot>
+            <tr>
+              <td colspan="5" class="left" style="text-align:left; font-weight:900;">TOTALS</td>
+              <td class="num"><input id="totPurchaseAmount" readonly type="number" value="0" /></td>
+              <td></td>
+              <td colspan="5"></td>
+              <td class="num"><input id="totSaleAmount" readonly type="number" value="0" /></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td class="num"><input id="totStockAmount" readonly type="number" value="0" /></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div style="height:18px;"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   REGISTER LOGIC (NO BACKEND REQUIRED)
+   - Add/Delete rows
+   - Auto calculations for columns 6, 13, 15, 17
+   - Totals in footer
+   - Save/Load/Clear Draft via localStorage
+   - Export CSV
+   ============================================================ */
+
+(function(){
+  const LS_KEY = "pgmis_input_register_draft_v1";
+
+  const els = {
+    inputName: document.getElementById("regInputName"),
+    date: document.getElementById("regDate"),
+    unit: document.getElementById("regUnit"),
+    tbody: document.getElementById("regTbody"),
+    status: document.getElementById("statusPill"),
+    totPurchase: document.getElementById("totPurchaseAmount"),
+    totSale: document.getElementById("totSaleAmount"),
+    totStock: document.getElementById("totStockAmount"),
+    addRowBtn: document.getElementById("addRowBtn"),
+    deleteRowsBtn: document.getElementById("deleteRowsBtn"),
+    saveDraftBtn: document.getElementById("saveDraftBtn"),
+    loadDraftBtn: document.getElementById("loadDraftBtn"),
+    clearDraftBtn: document.getElementById("clearDraftBtn"),
+    exportCsvBtn: document.getElementById("exportCsvBtn"),
+  };
+
+  function setStatus(msg, ok=true){
+    els.status.textContent = msg;
+    els.status.style.color = ok ? "#065f46" : "#7f1d1d";
+    els.status.style.borderColor = ok ? "rgba(16,185,129,.35)" : "rgba(239,68,68,.35)";
+    els.status.style.background = ok ? "rgba(16,185,129,.08)" : "rgba(239,68,68,.08)";
+  }
+
+  function n(v){
+    const x = parseFloat(v);
+    return Number.isFinite(x) ? x : 0;
+  }
+
+  function money2(v){
+    // keep simple numeric (no rounding forced), but you can round if needed:
+    return Math.round((v + Number.EPSILON) * 100) / 100;
+  }
+
+  function makeCellInput(cls, placeholder, type="text", readonly=false){
+    const td = document.createElement("td");
+    td.className = cls || "";
+    const inp = document.createElement("input");
+    inp.type = type;
+    inp.placeholder = placeholder || "";
+    if(readonly) inp.readOnly = true;
+    td.appendChild(inp);
+    return { td, inp };
+  }
+
+  function addRow(data){
+    const tr = document.createElement("tr");
+
+    // ✔ checkbox
+    const tdChk = document.createElement("td");
+    tdChk.className = "chk";
+    const chk = document.createElement("input");
+    chk.type = "checkbox";
+    tdChk.appendChild(chk);
+    tr.appendChild(tdChk);
+
+    // (1) Name of input
+    const c1 = makeCellInput("left wide", "Input name (সামগ্রী নাম)", "text", false);
+    tr.appendChild(c1.td);
+
+    // Purchase (2..7)
+    const p2 = makeCellInput("small", "Date", "date", false);
+    const p3 = makeCellInput("small", "Bill No", "text", false);
+    const p4 = makeCellInput("small", "Qty", "number", false);
+    const p5 = makeCellInput("small", "Rate", "number", false);
+    const p6 = makeCellInput("num", "Total", "number", true);   // auto
+    const p7 = makeCellInput("small", "Folio No", "text", false);
+
+    [p2,p3,p4,p5,p6,p7].forEach(x=>tr.appendChild(x.td));
+
+    // Sale (8..14)
+    const s8  = makeCellInput("small", "Date", "date", false);
+    const s9  = makeCellInput("small", "Bill No", "text", false);
+    const s10 = makeCellInput("wide left", "Member farmer name", "text", false);
+    const s11 = makeCellInput("small", "Qty", "number", false);
+    const s12 = makeCellInput("small", "Rate", "number", false);
+    const s13 = makeCellInput("num", "Amount", "number", true); // auto
+    const s14 = makeCellInput("small", "Folio No", "text", false);
+
+    [s8,s9,s10,s11,s12,s13,s14].forEach(x=>tr.appendChild(x.td));
+
+    // Stock (15..17)
+    const st15 = makeCellInput("small", "Closing Qty", "number", true); // auto
+    const st16 = makeCellInput("small", "Rate", "number", false);
+    const st17 = makeCellInput("num", "Amount", "number", true); // auto
+
+    [st15,st16,st17].forEach(x=>tr.appendChild(x.td));
+
+    // attach calculation hooks
+    function recalcRow(){
+      // Purchase total (6) = (4)*(5)
+      const purchaseTotal = money2(n(p4.inp.value) * n(p5.inp.value));
+      p6.inp.value = purchaseTotal ? purchaseTotal : 0;
+
+      // Sale amount (13) = (11)*(12)
+      const saleAmount = money2(n(s11.inp.value) * n(s12.inp.value));
+      s13.inp.value = saleAmount ? saleAmount : 0;
+
+      // Closing qty (15) = (4)-(11)
+      const closingQty = money2(n(p4.inp.value) - n(s11.inp.value));
+      st15.inp.value = closingQty ? closingQty : 0;
+
+      // Stock amount (17) = (15)*(16)
+      const stockAmt = money2(n(st15.inp.value) * n(st16.inp.value));
+      st17.inp.value = stockAmt ? stockAmt : 0;
+
+      recalcTotals();
+      setStatus("Auto-calculated ✓");
+    }
+
+    // Recalc triggers
+    [p4.inp, p5.inp, s11.inp, s12.inp, st16.inp].forEach(inp=>{
+      inp.addEventListener("input", recalcRow);
+    });
+
+    // fill defaults from top name if row empty & user starts
+    c1.inp.addEventListener("focus", ()=>{
+      if(!c1.inp.value && els.inputName.value) c1.inp.value = els.inputName.value;
+    });
+
+    // restore data if provided
+    if(data){
+      c1.inp.value = data.c1 || "";
+      p2.inp.value = data.p2 || "";
+      p3.inp.value = data.p3 || "";
+      p4.inp.value = data.p4 ?? "";
+      p5.inp.value = data.p5 ?? "";
+      p6.inp.value = data.p6 ?? 0;
+      p7.inp.value = data.p7 || "";
+
+      s8.inp.value  = data.s8 || "";
+      s9.inp.value  = data.s9 || "";
+      s10.inp.value = data.s10 || "";
+      s11.inp.value = data.s11 ?? "";
+      s12.inp.value = data.s12 ?? "";
+      s13.inp.value = data.s13 ?? 0;
+      s14.inp.value = data.s14 || "";
+
+      st15.inp.value = data.st15 ?? 0;
+      st16.inp.value = data.st16 ?? "";
+      st17.inp.value = data.st17 ?? 0;
+    }
+
+    // ensure consistent calculations after load
+    setTimeout(recalcRow, 0);
+
+    // keep a reference on row for exporting/saving
+    tr._cells = { chk, c1, p2,p3,p4,p5,p6,p7, s8,s9,s10,s11,s12,s13,s14, st15,st16,st17 };
+    els.tbody.appendChild(tr);
+  }
+
+  function recalcTotals(){
+    let totP = 0, totS = 0, totSt = 0;
+
+    [...els.tbody.querySelectorAll("tr")].forEach(tr=>{
+      const c = tr._cells;
+      if(!c) return;
+      totP += n(c.p6.inp.value);
+      totS += n(c.s13.inp.value);
+      totSt += n(c.st17.inp.value);
+    });
+
+    els.totPurchase.value = money2(totP);
+    els.totSale.value = money2(totS);
+    els.totStock.value = money2(totSt);
+  }
+
+  function getDraftData(){
+    const rows = [...els.tbody.querySelectorAll("tr")].map(tr=>{
+      const c = tr._cells;
+      return {
+        c1: c.c1.inp.value,
+
+        p2: c.p2.inp.value,
+        p3: c.p3.inp.value,
+        p4: c.p4.inp.value === "" ? "" : n(c.p4.inp.value),
+        p5: c.p5.inp.value === "" ? "" : n(c.p5.inp.value),
+        p6: n(c.p6.inp.value),
+        p7: c.p7.inp.value,
+
+        s8: c.s8.inp.value,
+        s9: c.s9.inp.value,
+        s10: c.s10.inp.value,
+        s11: c.s11.inp.value === "" ? "" : n(c.s11.inp.value),
+        s12: c.s12.inp.value === "" ? "" : n(c.s12.inp.value),
+        s13: n(c.s13.inp.value),
+        s14: c.s14.inp.value,
+
+        st15: n(c.st15.inp.value),
+        st16: c.st16.inp.value === "" ? "" : n(c.st16.inp.value),
+        st17: n(c.st17.inp.value),
+      };
+    });
+
+    return {
+      meta: {
+        regInputName: els.inputName.value,
+        regDate: els.date.value,
+        regUnit: els.unit.value
+      },
+      rows
+    };
+  }
+
+  function saveDraft(){
+    const payload = getDraftData();
+    localStorage.setItem(LS_KEY, JSON.stringify(payload));
+    setStatus("Draft saved ✓");
+  }
+
+  function loadDraft(){
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw){
+      setStatus("No draft found", false);
+      return;
+    }
+    const payload = JSON.parse(raw);
+
+    els.inputName.value = payload?.meta?.regInputName || "";
+    els.date.value = payload?.meta?.regDate || "";
+    els.unit.value = payload?.meta?.regUnit || "";
+
+    els.tbody.innerHTML = "";
+    (payload.rows || []).forEach(r => addRow(r));
+
+    setStatus("Draft loaded ✓");
+  }
+
+  function clearDraft(){
+    localStorage.removeItem(LS_KEY);
+    setStatus("Draft cleared");
+  }
+
+  function deleteSelectedRows(){
+    const trs = [...els.tbody.querySelectorAll("tr")];
+    let removed = 0;
+    trs.forEach(tr=>{
+      const c = tr._cells;
+      if(c && c.chk.checked){
+        tr.remove();
+        removed++;
+      }
+    });
+    recalcTotals();
+    setStatus(removed ? `Deleted ${removed} row(s)` : "No rows selected", !!removed);
+  }
+
+  function exportCSV(){
+    const draft = getDraftData();
+
+    const headers = [
+      "1 Name of input",
+      "2 Purchase Date",
+      "3 Purchase Bill No",
+      "4 Purchase Qty",
+      "5 Purchase Rate",
+      "6 Purchase Total Amount",
+      "7 Purchase Cash Book Folio No",
+      "8 Sale Date",
+      "9 Sale Bill No",
+      "10 Member farmer",
+      "11 Sale Qty",
+      "12 Sale Rate",
+      "13 Sale Amount",
+      "14 Sale Cash Book Folio No",
+      "15 Closing Stock Qty (4-11)",
+      "16 Stock Rate",
+      "17 Stock Amount"
+    ];
+
+    const lines = [];
+    lines.push(["Register Input Name", draft.meta.regInputName, "Date", draft.meta.regDate, "Unit", draft.meta.regUnit].join(","));
+    lines.push(headers.join(","));
+
+    draft.rows.forEach(r=>{
+      const row = [
+        safe(r.c1),
+        safe(r.p2), safe(r.p3), r.p4, r.p5, r.p6, safe(r.p7),
+        safe(r.s8), safe(r.s9), safe(r.s10), r.s11, r.s12, r.s13, safe(r.s14),
+        r.st15, r.st16, r.st17
+      ];
+      lines.push(row.join(","));
+    });
+
+    // totals row
+    lines.push(["TOTALS","","","","", els.totPurchase.value, "", "", "", "", "", "", els.totSale.value, "", "", "", els.totStock.value].join(","));
+
+    const csv = lines.join("\n");
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "input_purchase_sale_stock_register.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setStatus("CSV exported ✓");
+  }
+
+  function safe(v){
+    // CSV safe (wrap commas/quotes)
+    const s = (v ?? "").toString();
+    if(s.includes(",") || s.includes('"') || s.includes("\n")){
+      return '"' + s.replaceAll('"','""') + '"';
+    }
+    return s;
+  }
+
+  // Buttons
+  els.addRowBtn.addEventListener("click", ()=> addRow());
+  els.deleteRowsBtn.addEventListener("click", deleteSelectedRows);
+  els.saveDraftBtn.addEventListener("click", saveDraft);
+  els.loadDraftBtn.addEventListener("click", loadDraft);
+  els.clearDraftBtn.addEventListener("click", clearDraft);
+  els.exportCsvBtn.addEventListener("click", exportCSV);
+
+  // initial state
+  // add a few empty rows like a register page feel
+  addRow(); addRow(); addRow();
+  recalcTotals();
+  setStatus("Ready");
+})();
+</script>
+{% endblock %}

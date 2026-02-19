@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Member Loan{% endblock %}
+{% block content %}
+<style>
+  .wrap{max-width:1200px;margin:0 auto;padding:18px}
+  .hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18)}
+  .hero h1{margin:0;font-weight:950}
+  .hero .sub{margin-top:.35rem;color:#d1fae5;font-weight:800}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .card{background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:10px;border-radius:14px;overflow:hidden}
+  th,td{padding:10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-size:.92rem}
+  th{background:#f0fdf4;color:#065f46;font-weight:950}
+  .f{display:flex;flex-direction:column;gap:6px}
+  .f label{font-size:.78rem;color:#059669;font-weight:900}
+  input{background:#f0fdf4;border:1px solid rgba(5,150,105,.22);border-radius:12px;padding:10px 12px;outline:none}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(5,150,105,.28);background:#059669;color:#fff;font-weight:950;cursor:pointer;text-decoration:none}
+  .btn2{background:#ecfdf5;color:#065f46}
+  @media(max-width:980px){.grid2{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Member Loan {{ loan.loan_no }} — {{ pg.pg_name or pg.name }}</h1>
+    <div class="sub">Member: {{ member.name or member.member_name if member else '—' }} • Status: {{ (loan.status or 'active')|upper }} • Outstanding: ₹{{ "{:,.2f}".format(loan.outstanding_amount or 0) }}</div>
+    <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+      <a class="btn btn2" href="{{ url_for('finance.member_loan_accounts', pg_id=pg._id) }}">Back</a>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div style="font-weight:950;color:#065f46">Add Repayment</div>
+      <form method="POST" style="margin-top:10px;display:grid;grid-template-columns:repeat(12,1fr);gap:10px">
+        <div class="f" style="grid-column:span 4"><label>Instalment No</label><input name="instalment_no" type="number" required></div>
+        <div class="f" style="grid-column:span 4"><label>Paid Amount</label><input name="paid_amount" type="number" step="0.01" required></div>
+        <div class="f" style="grid-column:span 4"><label>Paid Date</label><input name="paid_at" type="date"></div>
+        <div style="grid-column:span 12"><button class="btn" type="submit">Save Repayment</button></div>
+      </form>
+
+      <table>
+        <thead><tr><th>Date</th><th>Instalment</th><th>Amount</th></tr></thead>
+        <tbody>
+        {% for r in repayments %}
+          <tr><td>{{ r.paid_at.strftime('%Y-%m-%d') if r.paid_at else '' }}</td><td>{{ r.instalment_no }}</td><td>₹{{ "{:,.2f}".format(r.paid_amount or 0) }}</td></tr>
+        {% else %}
+          <tr><td colspan="3" style="color:#64748b">No repayments yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:950;color:#065f46">Schedule</div>
+      <table>
+        <thead><tr><th>#</th><th>Due</th><th>EMI</th><th>Paid?</th><th>Paid Amt</th></tr></thead>
+        <tbody>
+        {% for s in loan.schedule %}
+          <tr>
+            <td>{{ s.instalment_no }}</td>
+            <td>{{ s.due_date.strftime('%Y-%m-%d') if s.due_date else '' }}</td>
+            <td>₹{{ "{:,.2f}".format(s.emi or 0) }}</td>
+            <td>{{ 'YES' if s.is_paid else 'NO' }}</td>
+            <td>₹{{ "{:,.2f}".format(s.paid_amount or 0) }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" style="color:#64748b">No schedule.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

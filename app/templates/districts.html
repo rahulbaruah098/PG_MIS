@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>Districts</h4>
+<form method="POST" class="mb-3">
+  <div class="row g-2">
+    <div class="col-md-4">
+      <label class="form-label">State</label>
+      <select class="form-select" name="state_id" required>
+        {% for s in states %}
+        <option value="{{ s._id }}">{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">District Name</label>
+      <input type="text" class="form-control" name="name" required>
+    </div>
+  </div>
+  <button class="btn btn-primary mt-2" type="submit">Add District</button>
+</form>
+
+<table class="table table-sm table-bordered">
+  <thead>
+    <tr>
+      <th>District</th>
+      <th>State</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for d in districts %}
+    <tr>
+      <td>{{ d.name }}</td>
+      <td>
+        {% for s in states if s._id == d.state_id %}
+          {{ s.name }}
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

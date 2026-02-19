@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>States</h4>
+<form method="POST" class="mb-3">
+  <div class="row g-2">
+    <div class="col-md-2">
+      <label class="form-label">Code</label>
+      <input type="text" class="form-control" name="code" required>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Name</label>
+      <input type="text" class="form-control" name="name" required>
+    </div>
+  </div>
+  <button class="btn btn-primary mt-2" type="submit">Add State</button>
+</form>
+
+<table class="table table-sm table-bordered">
+  <thead>
+    <tr>
+      <th>Code</th>
+      <th>Name</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in states %}
+    <tr>
+      <td>{{ s.code }}</td>
+      <td>{{ s.name }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

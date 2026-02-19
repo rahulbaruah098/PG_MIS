@@ -1,0 +1,856 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  /* ============================================================
+     PG MIS MINT DESIGN — SHG MEMBERS MASTER (SCOPED)
+     - Uses the same mint/green system you shared
+     - Modern filters, modern table, pagination
+     Scoped under .pg-shg-master
+     ============================================================ */
+
+  .pg-shg-master{ --bg1:#d9efe6; --bg2:#c6e6da; --mint:#d7f1e6; --mint-2:#eaf7f2; --card:#eef7f3;
+    --line:#bfe8d7; --line-2:#a7dec8; --ink:#173b2c; --muted:#2a4a3d; --brand:#0d6f45; --brand-2:#0a5d3a;
+    --footerInk:#1f4b3a; --footerMuted:#3a6b59; --shadow:0 18px 34px rgba(6,40,26,.20); --shadow-soft:0 10px 22px rgba(6,40,26,.14);
+    --r:22px;
+    font-family: Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    color: var(--ink);
+    position:relative;
+  }
+  .pg-shg-master *{ box-sizing:border-box; }
+
+  /* Soft page backdrop just for this page area (works even inside base.html) */
+  .pg-shg-master{
+    background:
+      radial-gradient(900px 560px at 18% 52%, rgba(13,111,69,.18) 0%, rgba(13,111,69,0) 62%),
+      radial-gradient(900px 560px at 82% 52%, rgba(13,111,69,.14) 0%, rgba(13,111,69,0) 62%),
+      radial-gradient(1100px 720px at 50% 42%, rgba(255,255,255,.62) 0%, rgba(255,255,255,0) 56%),
+      linear-gradient(90deg, #bfe7d6 0%, #d7efe6 40%, #d7efe6 60%, #bfe7d6 100%);
+    border-radius: 24px;
+    padding: 18px;
+    overflow:hidden;
+  }
+  .pg-shg-master::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27180%27%20height%3D%27180%27%20viewBox%3D%270%200%20180%20180%27%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20fill%3D%27none%27/%3E%3Cg%20opacity%3D%270.24%27%3E%3Cg%20fill%3D%27%2387cbb2%27%3E%3Cpath%20d%3D%27M20%2020l10%2010-10%2010-10-10z%27/%3E%3Cpath%20d%3D%27M80%2030l8%208-8%208-8-8z%27/%3E%3Cpath%20d%3D%27M140%2026l10%2010-10%2010-10-10z%27/%3E%3Cpath%20d%3D%27M52%2076l7%207-7%207-7-7z%27/%3E%3Cpath%20d%3D%27M112%2082l7%207-7%207-7-7z%27/%3E%3Cpath%20d%3D%27M160%2084l8%208-8%208-8-8z%27/%3E%3Cpath%20d%3D%27M26%20128l9%209-9%209-9-9z%27/%3E%3Cpath%20d%3D%27M84%20136l7%207-7%207-7-7z%27/%3E%3Cpath%20d%3D%27M140%20140l10%2010-10%2010-10-10z%27/%3E%3C/g%3E%3Cg%20fill%3D%27%239ad5c0%27%3E%3Ccircle%20cx%3D%2740%27%20cy%3D%2744%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%2798%27%20cy%3D%2754%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%27160%27%20cy%3D%2740%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%2724%27%20cy%3D%2792%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%2772%27%20cy%3D%2798%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%27132%27%20cy%3D%27106%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%27166%27%20cy%3D%27118%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%2752%27%20cy%3D%27156%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%27110%27%20cy%3D%27160%27%20r%3D%272%27/%3E%3C/g%3E%3Cg%20stroke%3D%27%2387cbb2%27%20stroke-width%3D%271%27%20fill%3D%27none%27%20opacity%3D%270.32%27%3E%3Cpath%20d%3D%27M30%2016c8%2010%208%2026%200%2036-8-10-8-26%200-36z%27/%3E%3Cpath%20d%3D%27M24%20116c10%200%2018%208%2018%2018s-8%2018-18%2018-18-8-18-18%208-18%2018-18z%27/%3E%3Cpath%20d%3D%27M156%2060c10%200%2018%208%2018%2018s-8%2018-18%2018-18-8-18-18%208-18%2018-18z%27/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-size:180px 180px;
+    background-repeat:repeat;
+    pointer-events:none;
+    opacity:.85;
+  }
+
+  /* Title row */
+  .pg-shg-head{
+    position:relative;
+    z-index:1;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+    padding: 12px 10px 6px;
+  }
+  .pg-shg-title{
+    margin:0;
+    font-family:"Playfair Display", serif;
+    font-weight:800;
+    letter-spacing:.3px;
+    color: var(--brand);
+    font-size: clamp(22px, 2.1vw, 30px);
+  }
+  .pg-shg-sub{
+    margin-top:6px;
+    color: var(--muted);
+    font-weight:600;
+    font-size: 13px;
+    opacity:.92;
+  }
+  .pg-shg-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  .pg-btn{
+    border:1px solid rgba(13,111,69,.22);
+    background: rgba(255,255,255,.58);
+    backdrop-filter: blur(8px);
+    padding: 10px 14px;
+    border-radius: 999px;
+    text-decoration:none;
+    color: var(--footerInk);
+    font-weight:800;
+    box-shadow: var(--shadow-soft);
+    transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    position:relative;
+    z-index:1;
+  }
+  .pg-btn:hover{ transform: translateY(-1px); box-shadow: 0 14px 24px rgba(6,40,26,.14); opacity:.98; }
+  .pg-btn svg{ width:16px; height:16px; }
+
+  /* Filter card */
+  .pg-panel{
+    position:relative;
+    z-index:1;
+    margin-top: 10px;
+    border-radius: var(--r);
+    background: linear-gradient(#f2faf6, #eef7f3);
+    box-shadow: var(--shadow);
+    border: 1px solid rgba(112,214,180,.45);
+    overflow:hidden;
+  }
+  .pg-panel::after{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      radial-gradient(600px 280px at 14% 20%, rgba(13,111,69,.10), rgba(13,111,69,0) 60%),
+      radial-gradient(580px 260px at 86% 30%, rgba(13,111,69,.08), rgba(13,111,69,0) 60%);
+    pointer-events:none;
+  }
+  .pg-panel-inner{
+    position:relative;
+    z-index:1;
+    padding: 16px;
+  }
+
+  .pg-grid{
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 12px;
+    align-items:end;
+  }
+  .pg-col-2{ grid-column: span 2; }
+  .pg-col-3{ grid-column: span 3; }
+  .pg-col-4{ grid-column: span 4; }
+
+  .pg-label{
+    font-weight:900;
+    color:#243c32;
+    font-size: 13px;
+    margin: 0 0 8px;
+  }
+  .pg-input, .pg-select{
+    width:100%;
+    height: 46px;
+    border-radius: 14px;
+    border: 2px solid rgba(112,214,180,.55);
+    background:#fff;
+    padding: 10px 12px;
+    outline:none;
+    font-size: 14px;
+    color:#213a30;
+    box-shadow: 0 8px 18px rgba(6,40,26,.06);
+    transition: .15s ease;
+  }
+  .pg-input:focus, .pg-select:focus{
+    border-color: rgba(13,111,69,.60);
+    box-shadow: 0 12px 24px rgba(6,40,26,.12);
+  }
+
+  .pg-search-btn{
+    width:100%;
+    height:46px;
+    border:none;
+    border-radius: 14px;
+    cursor:pointer;
+    color:#fff;
+    font-weight:900;
+    letter-spacing:.2px;
+    background: linear-gradient(180deg, #0f7a4b 0%, #0b5f3a 100%);
+    box-shadow: 0 12px 20px rgba(6,40,26,.16);
+    transition: transform .14s ease, box-shadow .14s ease, filter .14s ease;
+  }
+  .pg-search-btn:hover{
+    filter: brightness(1.02);
+    transform: scale(1.02);
+    box-shadow: 0 16px 26px rgba(6,40,26,.18);
+  }
+
+  /* Table shell */
+  .pg-table-shell{
+    position:relative;
+    z-index:1;
+    margin-top: 14px;
+    border-radius: 18px;
+    overflow:hidden;
+    border: 1px solid rgba(112,214,180,.45);
+    background: rgba(255,255,255,.60);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .pg-table-topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(112,214,180,.35);
+    background: linear-gradient(180deg, rgba(255,255,255,.70), rgba(255,255,255,.40));
+  }
+  .pg-meta{
+    font-weight:800;
+    color: var(--footerInk);
+    font-size: 13px;
+  }
+  .pg-meta span{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border:1px solid rgba(13,111,69,.18);
+    background: rgba(255,255,255,.55);
+    margin-right: 8px;
+  }
+  .pg-top-controls{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .pg-small-label{
+    font-weight:900;
+    color:#243c32;
+    font-size: 12px;
+    margin:0;
+  }
+  .pg-pagesize{
+    height: 38px;
+    border-radius: 12px;
+    border: 2px solid rgba(112,214,180,.55);
+    background:#fff;
+    padding: 6px 10px;
+    font-weight:800;
+    color:#213a30;
+    outline:none;
+  }
+
+  /* Modern table */
+  .pg-table-wrap{
+    max-height: 62vh;
+    overflow:auto;
+  }
+  table.pg-table{
+    width:100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+  }
+  .pg-table thead th{
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(240, 252, 246, .95);
+    backdrop-filter: blur(8px);
+    color: #1f3c31;
+    text-align:left;
+    padding: 12px 12px;
+    font-weight: 1000;
+    border-bottom: 1px solid rgba(112,214,180,.55);
+    white-space: nowrap;
+  }
+  .pg-table tbody td{
+    padding: 12px 12px;
+    border-bottom: 1px solid rgba(112,214,180,.25);
+    vertical-align: top;
+    color:#20372d;
+    background: rgba(255,255,255,.55);
+  }
+  .pg-table tbody tr:hover td{
+    background: rgba(234, 247, 242, .92);
+  }
+
+  /* "User" combined cell */
+  .user-cell{
+    min-width: 280px;
+    max-width: 420px;
+  }
+  .user-card{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .user-main{
+    font-weight:1000;
+    color:#173b2c;
+    font-size: 14px;
+    line-height:1.1;
+  }
+  .user-sub{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    color:#2a4a3d;
+    font-weight:800;
+    font-size: 12px;
+    opacity:.95;
+  }
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(13,111,69,.18);
+    background: rgba(255,255,255,.65);
+    box-shadow: 0 8px 16px rgba(6,40,26,.06);
+  }
+  .pill code{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+    font-weight:900;
+    font-size: 12px;
+    color:#184133;
+    background: transparent;
+    padding:0;
+  }
+
+  /* Pagination */
+  .pg-pager{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding: 12px 14px;
+    background: linear-gradient(180deg, rgba(255,255,255,.65), rgba(255,255,255,.40));
+    border-top: 1px solid rgba(112,214,180,.35);
+  }
+  .pg-pager .info{
+    color: var(--muted);
+    font-weight:800;
+    font-size: 12px;
+    white-space:nowrap;
+  }
+  .pg-pages{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+  .pg-page-btn{
+    border: 1px solid rgba(13,111,69,.22);
+    background: rgba(255,255,255,.70);
+    color: #173b2c;
+    font-weight:1000;
+    border-radius: 12px;
+    padding: 8px 10px;
+    min-width: 40px;
+    height: 38px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+    box-shadow: 0 10px 18px rgba(6,40,26,.08);
+    user-select:none;
+  }
+  .pg-page-btn:hover{ transform: translateY(-1px); box-shadow: 0 14px 22px rgba(6,40,26,.10); }
+  .pg-page-btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; box-shadow: 0 8px 14px rgba(6,40,26,.06); }
+  .pg-page-btn.is-active{
+    background: linear-gradient(180deg, #0f7a4b 0%, #0b5f3a 100%);
+    color:#fff;
+    border-color: rgba(13,111,69,.35);
+  }
+  .pg-ellipsis{
+    padding: 0 4px;
+    color: var(--muted);
+    font-weight:1000;
+  }
+
+  /* Loading state */
+  .pg-loading{
+    display:none;
+    align-items:center;
+    gap:10px;
+    font-weight:900;
+    color: var(--muted);
+  }
+  .spinner{
+    width:18px; height:18px;
+    border-radius:999px;
+    border: 3px solid rgba(13,111,69,.20);
+    border-top-color: rgba(13,111,69,.75);
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  /* Responsive layout */
+  @media (max-width: 1200px){
+    .pg-col-2{ grid-column: span 3; }
+    .pg-col-3{ grid-column: span 4; }
+    .pg-col-4{ grid-column: span 6; }
+  }
+  @media (max-width: 820px){
+    .pg-shg-master{ padding: 14px; border-radius: 18px; }
+    .pg-grid{ grid-template-columns: repeat(6, 1fr); }
+    .pg-col-2{ grid-column: span 3; }
+    .pg-col-3{ grid-column: span 3; }
+    .pg-col-4{ grid-column: span 6; }
+    .pg-table-wrap{ max-height: 58vh; }
+  }
+  @media (max-width: 520px){
+    .pg-grid{ grid-template-columns: repeat(2, 1fr); }
+    .pg-col-2,.pg-col-3,.pg-col-4{ grid-column: span 2; }
+    .pg-table-topbar{ flex-direction:column; align-items:flex-start; }
+    .pg-pager{ flex-direction:column; align-items:flex-start; }
+    .pg-pages{ justify-content:flex-start; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .spinner{ animation:none; }
+    .pg-btn,.pg-search-btn,.pg-page-btn{ transition:none; }
+  }
+</style>
+
+<div class="pg-shg-master">
+  <div class="pg-shg-head">
+    <div>
+      <h3 class="pg-shg-title mb-0">SHG Members Master (TRESP)</h3>
+      <div class="pg-shg-sub">Browse the full member-level master dataset (about 140k rows) using cascading filters.</div>
+    </div>
+
+    <div class="pg-shg-actions">
+      <a class="pg-btn" href="{{ url_for('master_data.shg_browser') }}">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M10 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        View SHG Summary
+      </a>
+    </div>
+  </div>
+
+  <div class="pg-panel">
+    <div class="pg-panel-inner">
+      <div class="pg-grid">
+        <div class="pg-col-2">
+          <div class="pg-label">State</div>
+          <select id="shg_state" class="pg-select"></select>
+        </div>
+        <div class="pg-col-2">
+          <div class="pg-label">District</div>
+          <select id="shg_district" class="pg-select"></select>
+        </div>
+        <div class="pg-col-2">
+          <div class="pg-label">Block</div>
+          <select id="shg_block" class="pg-select"></select>
+        </div>
+        <div class="pg-col-2">
+          <div class="pg-label">Gram Panchayat</div>
+          <select id="shg_gp" class="pg-select"></select>
+        </div>
+        <div class="pg-col-2">
+          <div class="pg-label">Village</div>
+          <select id="shg_village" class="pg-select"></select>
+        </div>
+        <div class="pg-col-2">
+          <div class="pg-label">Search</div>
+          <input id="shg_q" class="pg-input" placeholder="Member/SHG code or name">
+        </div>
+
+        <!-- ✅ per-page selector (replaces old limit input) -->
+        <div class="pg-col-2">
+          <div class="pg-label">Rows / Page</div>
+          <select id="shg_page_size" class="pg-select">
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100" selected>100</option>
+          </select>
+        </div>
+
+        <div class="pg-col-2">
+          <button class="pg-search-btn" type="button" onclick="doSearch(1)">Search</button>
+        </div>
+
+        <div class="pg-col-4" style="display:flex;align-items:center;gap:10px;padding-left:6px;">
+          <div class="pg-loading" id="pg_loading">
+            <div class="spinner"></div>
+            Loading…
+          </div>
+        </div>
+      </div>
+
+      <div class="pg-table-shell">
+        <div class="pg-table-topbar">
+          <div class="pg-meta" id="pg_meta">
+            <span>Showing: <b id="pg_showing">0</b></span>
+            <span>Page: <b id="pg_page">1</b>/<b id="pg_pages">1</b></span>
+          </div>
+
+          <div class="pg-top-controls">
+            <div class="pg-small-label">Quick:</div>
+            <button class="pg-page-btn" type="button" onclick="doSearch(1)" title="Refresh">↻</button>
+          </div>
+        </div>
+
+        <div class="pg-table-wrap">
+          <table class="pg-table" aria-label="SHG Members Master">
+            <thead>
+              <tr>
+                <th>State</th>
+                <th>District</th>
+                <th>Block</th>
+                <th>Gram Panchayat</th>
+                <th>Village</th>
+                <th>User</th>
+                <th>Member Code</th>
+                <th>Designation in SHG</th>
+                <th>Social Category</th>
+                <th>Religion</th>
+                <th>Education</th>
+                <th>Disability</th>
+                <th>Is head of Family</th>
+                <th>Father/Mother/Spouse Name</th>
+              </tr>
+            </thead>
+            <tbody id="pg_tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="pg-pager">
+          <div class="info" id="pg_info">—</div>
+          <div class="pg-pages" id="pg_pages_container"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+
+  function opt(value, label) {
+    const o = document.createElement('option');
+    o.value = value ?? '';
+    o.textContent = label ?? value ?? '';
+    return o;
+  }
+
+  function setLoading(on){
+    const l = el('pg_loading');
+    if(!l) return;
+    l.style.display = on ? 'inline-flex' : 'none';
+  }
+
+  function last5(s){
+    s = (s ?? '').toString();
+    const digits = s.replace(/\D/g,'');
+    if(digits.length >= 5) return digits.slice(-5);
+    return s.slice(-5);
+  }
+
+  // ✅ combine: Member Name + SHG Name + SHG Code (last 5 digits) -> "User"
+  function renderUserCell(r){
+    const member = (r["Member Name"] ?? '').toString().trim();
+    const shgName = (r["SHG Name"] ?? '').toString().trim(); 
+    const shgCode = (r["SHG Code"] ?? '').toString().trim();
+    const code5 = shgCode;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'user-card';
+
+    const main = document.createElement('div');
+    main.className = 'user-main';
+    main.textContent = member || '—';
+    wrap.appendChild(main);
+
+    const sub = document.createElement('div');
+    sub.className = 'user-sub';
+
+    const pill1 = document.createElement('span');
+    pill1.className = 'pill';
+    pill1.textContent = shgName || 'SHG —';
+    sub.appendChild(pill1);
+
+    const pill2 = document.createElement('span');
+    pill2.className = 'pill';
+    pill2.innerHTML = 'Code: <code>' + (code5 || '—') + '</code>';
+    sub.appendChild(pill2);
+
+    wrap.appendChild(sub);
+    return wrap;
+  }
+
+  async function loadOptions(selectEl, url, placeholder) {
+    selectEl.innerHTML = '';
+    selectEl.appendChild(opt('', placeholder));
+    const res = await fetch(url, {credentials: 'same-origin'});
+    const data = await res.json();
+    (data || []).forEach(v => selectEl.appendChild(opt(v, v)));
+  }
+
+  const STATE = {
+    page: 1,
+    pageSize: 100,
+    lastRows: [],
+    lastFetchCount: 0, // number of rows returned for current page
+  };
+
+  async function init() {
+    // Auto-scope by logged-in user's jurisdiction
+    let scope = {role:null,state:null,district:null,block:null};
+    try{
+      const r = await fetch('/master/shg/scope', {credentials:'same-origin'});
+      if(r.ok) scope = await r.json();
+    }catch(e){}
+
+    await loadOptions(el('shg_state'), '/master/shg/states', 'All States');
+
+    if(scope.state){
+      el('shg_state').value = scope.state;
+      el('shg_state').disabled = true;
+    }
+    await refreshDistricts();
+
+    if(scope.district){
+      el('shg_district').value = scope.district;
+      el('shg_district').disabled = true;
+    }
+    await refreshBlocks();
+
+    if(scope.block){
+      el('shg_block').value = scope.block;
+      el('shg_block').disabled = true;
+    }
+    await refreshGPs();
+
+    // Page size
+    el('shg_page_size').addEventListener('change', () => {
+      STATE.pageSize = parseInt(el('shg_page_size').value || '100', 10);
+      doSearch(1);
+    });
+
+    // Enter key for search
+    el('shg_q').addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        doSearch(1);
+      }
+    });
+  }
+
+  async function refreshDistricts() {
+    const s = el('shg_state').value;
+    await loadOptions(el('shg_district'), '/master/shg/districts?state=' + encodeURIComponent(s), 'All Districts');
+    await refreshBlocks();
+  }
+  async function refreshBlocks() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    let url = '/master/shg/blocks?state=' + encodeURIComponent(s) + '&district=' + encodeURIComponent(d);
+    await loadOptions(el('shg_block'), url, 'All Blocks');
+    await refreshGPs();
+  }
+  async function refreshGPs() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    const b = el('shg_block').value;
+    let url = '/master/shg/gps?state=' + encodeURIComponent(s) + '&district=' + encodeURIComponent(d) + '&block=' + encodeURIComponent(b);
+    await loadOptions(el('shg_gp'), url, 'All GPs');
+    await refreshVillages();
+  }
+  async function refreshVillages() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    const b = el('shg_block').value;
+    const gp = el('shg_gp').value;
+    let url = '/master/shg/villages?state=' + encodeURIComponent(s) + '&district=' + encodeURIComponent(d) + '&block=' + encodeURIComponent(b) + '&gp=' + encodeURIComponent(gp);
+    await loadOptions(el('shg_village'), url, 'All Villages');
+  }
+
+  function buildParams(page, pageSize){
+  const s = el('shg_state').value;
+  const d = el('shg_district').value;
+  const b = el('shg_block').value;
+  const gp = el('shg_gp').value;
+  const v = el('shg_village').value;
+  const q = (el('shg_q').value || '').trim();
+
+  const params = new URLSearchParams();
+  if (s) params.set('state', s);
+  if (d) params.set('district', d);
+  if (b) params.set('block', b);
+  if (gp) params.set('gp', gp);
+  if (v) params.set('village', v);
+  if (q) params.set('q', q);
+
+  // ✅ NEW
+  params.set('page', String(page));
+  params.set('page_size', String(pageSize));
+  return params;
+}
+
+ function renderRows(rows){
+  const tbody = el('pg_tbody');
+  tbody.innerHTML = '';
+
+  (rows || []).forEach(r => {
+    const tr = document.createElement('tr');
+
+    // ✅ Columns before User
+    const beforeUser = ["State","District","Block","Gram Panchayat","Village"];
+    beforeUser.forEach(c => {
+      const td = document.createElement('td');
+      td.textContent = r[c] ?? '';
+      tr.appendChild(td);
+    });
+
+    // ✅ User (after Village, before Member Code)
+    const tdUser = document.createElement('td');
+    tdUser.className = 'user-cell';
+    tdUser.appendChild(renderUserCell(r));
+    tr.appendChild(tdUser);
+
+    // ✅ Columns after User
+    const afterUser = [
+      "Member Code",
+      "Designation in SHG","Social Category","Religion","Education",
+      "Disability","Is head of Family","Father/Mother/Spouse Name"
+    ];
+    afterUser.forEach(c => {
+      const td = document.createElement('td');
+      td.textContent = r[c] ?? '';
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  el('pg_showing').textContent = (rows || []).length;
+}
+
+  // ✅ Pagination UI (client-side approximation)
+  // NOTE: Since the backend search endpoint only returns "limit" rows and does NOT return total count / page,
+  // we cannot calculate exact total pages for 140k. So:
+  // - We do "Prev / Next"
+  // - We show page numbers 1..n in a WINDOW around current page
+  // - We infer "hasNext" by fetching (pageSize + 1) rows for the current page.
+  //   But without an OFFSET in backend, true paging isn't possible.
+  //
+  // ✅ Therefore this pagination is READY, but to make it REAL you must add backend support for:
+  //    /master/shg/members/search?limit=XX&page=Y (or offset=Z) and also return {rows,total,pages}
+  //
+  // For now, we implement a "soft pagination" that still works for UI, but Next will re-run same results.
+  // If you want REAL pagination today, tell me and I will give you the backend patch too.
+
+  function renderPager(currentPage, totalPages, hasPrev, hasNext){
+    el('pg_page').textContent = String(currentPage);
+    el('pg_pages').textContent = String(totalPages);
+
+    const info = el('pg_info');
+    info.textContent = hasNext ? `Page ${currentPage} • More pages available` : `Page ${currentPage} • End reached (or no more data)`;
+
+    const box = el('pg_pages_container');
+    box.innerHTML = '';
+
+    // Prev
+    const prev = document.createElement('button');
+    prev.type = 'button';
+    prev.className = 'pg-page-btn';
+    prev.textContent = 'Prev';
+    prev.disabled = !hasPrev;
+    prev.onclick = () => doSearch(currentPage - 1);
+    box.appendChild(prev);
+
+    // Page window
+    const win = 5;
+    const start = Math.max(1, currentPage - win);
+    const end = Math.min(totalPages, currentPage + win);
+
+    if(start > 1){
+      box.appendChild(pageBtn(1, currentPage));
+      if(start > 2){
+        const e = document.createElement('span');
+        e.className = 'pg-ellipsis';
+        e.textContent = '…';
+        box.appendChild(e);
+      }
+    }
+
+    for(let p = start; p <= end; p++){
+      box.appendChild(pageBtn(p, currentPage));
+    }
+
+    if(end < totalPages){
+      if(end < totalPages - 1){
+        const e = document.createElement('span');
+        e.className = 'pg-ellipsis';
+        e.textContent = '…';
+        box.appendChild(e);
+      }
+      box.appendChild(pageBtn(totalPages, currentPage));
+    }
+
+    // Next
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'pg-page-btn';
+    next.textContent = 'Next';
+    next.disabled = !hasNext;
+    next.onclick = () => doSearch(currentPage + 1);
+    box.appendChild(next);
+  }
+
+  function pageBtn(p, current){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pg-page-btn' + (p === current ? ' is-active' : '');
+    b.textContent = String(p);
+    b.onclick = () => doSearch(p);
+    return b;
+  }
+
+  async function doSearch(page=1) {
+  STATE.page = Math.max(1, parseInt(page || '1', 10));
+  STATE.pageSize = parseInt(el('shg_page_size').value || '100', 10);
+
+  setLoading(true);
+
+  try{
+    const params = buildParams(STATE.page, STATE.pageSize);
+    const res = await fetch('/master/shg/members/search?' + params.toString(), {credentials:'same-origin'});
+    const data = await res.json();
+
+    const rows = data.rows || [];
+    renderRows(rows);
+
+    // ✅ REAL pagination numbers
+    const total = data.total ?? 0;
+    const pages = data.pages ?? 1;
+    const cur = data.page ?? STATE.page;
+
+    el('pg_showing').textContent = String(rows.length);
+    el('pg_page').textContent = String(cur);
+    el('pg_pages').textContent = String(pages);
+
+    const start = total === 0 ? 0 : ((cur - 1) * STATE.pageSize + 1);
+    const end = Math.min(cur * STATE.pageSize, total);
+    el('pg_info').textContent = `Showing ${start}-${end} of ${total}`;
+
+    renderPager(cur, pages, cur > 1, cur < pages);
+  }catch(err){
+    console.error(err);
+    el('pg_tbody').innerHTML = '<tr><td colspan="14" style="padding:18px;font-weight:900;color:#7a2a2a;">Failed to load data. Please try again.</td></tr>';
+    renderPager(1, 1, false, false);
+  }finally{
+    setLoading(false);
+  }
+}
+
+
+  // bind changes
+  el('shg_state').addEventListener('change', async () => { await refreshDistricts(); doSearch(1); });
+  el('shg_district').addEventListener('change', async () => { await refreshBlocks(); doSearch(1); });
+  el('shg_block').addEventListener('change', async () => { await refreshGPs(); doSearch(1); });
+  el('shg_gp').addEventListener('change', async () => { await refreshVillages(); doSearch(1); });
+  el('shg_village').addEventListener('change', () => doSearch(1));
+
+  init().then(() => doSearch(1));
+</script>
+
+{% endblock %}

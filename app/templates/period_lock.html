@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Period Lock{% endblock %}
+{% block content %}
+<style>
+  .wrap{max-width:900px;margin:0 auto;padding:18px}
+  .hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18)}
+  .hero h1{margin:0;font-weight:950}
+  .hero .sub{margin-top:.35rem;color:#d1fae5;font-weight:800}
+  .card{margin-top:14px;background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+  .f{display:flex;flex-direction:column;gap:6px}
+  .f label{font-size:.78rem;color:#059669;font-weight:900}
+  input,select,textarea{background:#f0fdf4;border:1px solid rgba(5,150,105,.22);border-radius:12px;padding:10px 12px;outline:none}
+  textarea{min-height:56px;resize:vertical}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(5,150,105,.28);background:#059669;color:#fff;font-weight:950;cursor:pointer;text-decoration:none}
+  .btn-danger{background:#dc2626;border-color:rgba(220,38,38,.35)}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid rgba(15,23,42,.12);font-weight:950}
+  .pill.ok{background:#ecfdf5;border-color:rgba(5,150,105,.25);color:#065f46}
+  .pill.lock{background:#fee2e2;border-color:rgba(220,38,38,.25);color:#991b1b}
+</style>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Period Lock / Month Closure</h1>
+    <div class="sub">Scope: {{ scope|upper }} • Ref: {{ ref_id }}</div>
+  </div>
+
+  <div class="card">
+    <form method="GET" class="grid">
+      <div class="f" style="grid-column:span 4"><label>Year</label><input name="year" type="number" value="{{ year }}"></div>
+      <div class="f" style="grid-column:span 4"><label>Month</label><input name="month" type="number" min="1" max="12" value="{{ month }}"></div>
+      <div style="grid-column:span 4;display:flex;align-items:end">
+        <button class="btn" type="submit" style="width:100%;justify-content:center;background:#ecfdf5;color:#065f46">Check</button>
+      </div>
+    </form>
+
+    <div style="margin-top:12px">
+      {% if locked %}
+        <span class="pill lock">🔒 Locked — data entry should be frozen for this period.</span>
+      {% else %}
+        <span class="pill ok">✅ Open — data entry allowed for this period.</span>
+      {% endif %}
+    </div>
+
+    <form method="POST" class="grid" style="margin-top:12px">
+      <input type="hidden" name="year" value="{{ year }}">
+      <input type="hidden" name="month" value="{{ month }}">
+      <div class="f" style="grid-column:span 12"><label>Note (optional)</label><textarea name="note"></textarea></div>
+      <div style="grid-column:span 12;display:flex;gap:10px;flex-wrap:wrap">
+        {% if locked %}
+          <button class="btn btn-danger" type="submit" name="action" value="unlock">Unlock Period</button>
+        {% else %}
+          <button class="btn" type="submit" name="action" value="lock">Lock Period</button>
+        {% endif %}
+        <a class="btn" href="{{ url_for('pg.pg_home') }}" style="background:#ecfdf5;color:#065f46">Back</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

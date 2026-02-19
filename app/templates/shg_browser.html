@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div>
+    <h3 class="mb-0">SHG Master (TRESP)</h3>
+    <div class="text-muted">Browse the migrated SHG master dataset (140k+ member records (derived SHG list)) with cascading filters.</div>
+  </div>
+  <div class="small text-muted">
+    Tip: Select State → District → Block → GP → Village, then click <b>Search</b>.
+  </div>
+</div>
+
+<hr>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-2">
+        <label class="form-label">State</label>
+        <select id="shg_state" class="form-select"></select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">District</label>
+        <select id="shg_district" class="form-select"></select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Block</label>
+        <select id="shg_block" class="form-select"></select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Gram Panchayat</label>
+        <select id="shg_gp" class="form-select"></select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Village</label>
+        <select id="shg_village" class="form-select"></select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Limit</label>
+        <div class="d-flex gap-2">
+          <input id="shg_limit" type="number" min="10" max="500" value="100" class="form-control">
+          <button id="shg_search_btn" class="btn btn-primary">Search</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="fw-semibold">Results</div>
+        <div id="shg_count" class="text-muted small"></div>
+      </div>
+      <div class="table-responsive mt-2" style="max-height: 60vh; overflow:auto;">
+        <table class="table table-sm table-striped align-middle" id="shg_tbl">
+          <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
+            <tr>
+              <th>State</th>
+              <th>District</th>
+              <th>Block</th>
+              <th>Gram Panchayat</th>
+              <th>Village</th>
+              <th>SHG Code</th>
+              <th>SHG Name</th>
+              <th>Active Members</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+
+  function opt(value, label) {
+    const o = document.createElement('option');
+    o.value = value ?? '';
+    o.textContent = label ?? value ?? '';
+    return o;
+  }
+
+  async function loadOptions(selectEl, url, placeholder) {
+    selectEl.innerHTML = '';
+    selectEl.appendChild(opt('', placeholder));
+    const res = await fetch(url, {credentials: 'same-origin'});
+    const data = await res.json();
+    (data || []).forEach(v => selectEl.appendChild(opt(v, v)));
+  }
+
+  async function init() {
+    // Auto-scope by logged-in user's jurisdiction (District Admin auto district, etc.)
+    let scope = {role:null,state:null,district:null,block:null};
+    try{
+      const r = await fetch('/master/shg/scope', {credentials:'same-origin'});
+      if(r.ok) scope = await r.json();
+    }catch(e){}
+
+    await loadOptions(el('shg_state'), '/master/shg/states', 'All States');
+
+    // Apply scope locks
+    if(scope.state){
+      el('shg_state').value = scope.state;
+      el('shg_state').disabled = true;
+    }
+    await refreshDistricts();
+
+    if(scope.district){
+      el('shg_district').value = scope.district;
+      el('shg_district').disabled = true;
+    }
+    await refreshBlocks();
+
+    if(scope.block){
+      el('shg_block').value = scope.block;
+      el('shg_block').disabled = true;
+    }
+    await refreshGPs();
+  }
+
+  async function refreshDistricts() {
+    const s = el('shg_state').value;
+    await loadOptions(el('shg_district'), '/master/shg/districts?state=' + encodeURIComponent(s), 'All Districts');
+    await refreshBlocks();
+  }
+  async function refreshBlocks() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    let url = '/master/shg/blocks?state=' + encodeURIComponent(s) + '&district=' + encodeURIComponent(d);
+    await loadOptions(el('shg_block'), url, 'All Blocks');
+    await refreshGPs();
+  }
+  async function refreshGPs() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    const b = el('shg_block').value;
+    let url = '/master/shg/gps?state=' + encodeURIComponent(s) + '&district=' + encodeURIComponent(d) + '&block=' + encodeURIComponent(b);
+    await loadOptions(el('shg_gp'), url, 'All GPs');
+    await refreshVillages();
+  }
+  async function refreshVillages() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    const b = el('shg_block').value;
+    const gp = el('shg_gp').value;
+    let url = '/master/shg/villages?state=' + encodeURIComponent(s) + '&district=' + encodeURIComponent(d) + '&block=' + encodeURIComponent(b) + '&gp=' + encodeURIComponent(gp);
+    await loadOptions(el('shg_village'), url, 'All Villages');
+  }
+
+  async function doSearch() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    const b = el('shg_block').value;
+    const gp = el('shg_gp').value;
+    const v = el('shg_village').value;
+    const limit = Math.max(10, Math.min(500, parseInt(el('shg_limit').value || '100', 10)));
+
+    const params = new URLSearchParams();
+    if (s) params.set('state', s);
+    if (d) params.set('district', d);
+    if (b) params.set('block', b);
+    if (gp) params.set('gp', gp);
+    if (v) params.set('village', v);
+    params.set('limit', String(limit));
+
+    const res = await fetch('/master/shg/search?' + params.toString(), {credentials: 'same-origin'});
+    const rows = await res.json();
+
+    const tbody = document.querySelector('#shg_tbl tbody');
+    tbody.innerHTML = '';
+
+    (rows || []).forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r['State'] || ''}</td>
+        <td>${r['District'] || ''}</td>
+        <td>${r['Block'] || ''}</td>
+        <td>${r['Gram Panchayat'] || ''}</td>
+        <td>${r['Village'] || ''}</td>
+        <td><span class="badge text-bg-dark">${r['SHG Code'] || ''}</span></td>
+        <td>${r['SHG Name'] || ''}</td>
+        <td>${r['Active Members'] ?? ''}</td>
+        <td>${r['Status'] || ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    el('shg_count').textContent = `Showing ${rows.length} record(s)`;
+  }
+
+  el('shg_state').addEventListener('change', refreshDistricts);
+  el('shg_district').addEventListener('change', refreshBlocks);
+  el('shg_block').addEventListener('change', refreshGPs);
+  el('shg_gp').addEventListener('change', refreshVillages);
+  el('shg_search_btn').addEventListener('click', doSearch);
+
+  init().then(doSearch);
+</script>
+{% endblock %}

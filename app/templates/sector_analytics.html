@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Sector Analytics{% endblock %}
+{% block content %}
+<style>
+  .wrap{max-width:1000px;margin:0 auto;padding:18px}
+  .hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18)}
+  .hero h1{margin:0;font-weight:950}
+  .hero .sub{margin-top:.35rem;color:#d1fae5;font-weight:800}
+  .card{margin-top:14px;background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
+  .f{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+  label{font-size:.78rem;color:#059669;font-weight:900}
+  input{background:#f0fdf4;border:1px solid rgba(5,150,105,.22);border-radius:12px;padding:10px 12px;outline:none}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(5,150,105,.28);background:#ecfdf5;color:#065f46;font-weight:950;cursor:pointer;text-decoration:none}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:10px;border-radius:14px;overflow:hidden}
+  th,td{padding:10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-size:.92rem}
+  th{background:#f0fdf4;color:#065f46;font-weight:950}
+</style>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Sector-wise Analytics</h1>
+    <div class="sub">Turnover roll-up by sector • Year {{ year }}</div>
+  </div>
+
+  <div class="card">
+    <form method="GET" class="f">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label>Year</label>
+        <input name="year" type="number" value="{{ year }}">
+      </div>
+      <button class="btn" type="submit">Apply</button>
+      <a class="btn" href="{{ url_for('pg.pg_home') }}">Back</a>
+    </form>
+
+    <table>
+      <thead><tr><th>Sector</th><th>PG Count</th><th>Total Turnover</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+          <tr><td>{{ r.sector }}</td><td>{{ r.pg_count }}</td><td>₹{{ "{:,.2f}".format(r.turnover or 0) }}</td></tr>
+        {% else %}
+          <tr><td colspan="3" style="color:#64748b">No data.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,865 @@
+{% extends "base.html" %}
+{% block title %}PGMIS Dashboard - Producer Group Management Information System{% endblock %}
+
+{% block head_extra %}
+  <!-- Tailwind + Chart.js (same as your setup) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- ✅ ALL CSS MERGED HERE (UPDATED: COLORS ONLY to match your other pages) -->
+  <style>
+    /* ============================================================
+      ✅ COLOR-ONLY UPDATE (MATCHES YOUR SITE THEME)
+      - NO layout changes
+      - NO JS changes
+      - NO route/data changes
+      - ONLY adjusted palette + borders + surfaces to match your mint/green pages
+      ============================================================ */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      color: #0b2a23;               /* ✅ deeper green-ink */
+      background: #f1fbf5;          /* ✅ mint page bg */
+    }
+
+    html { scroll-behavior: smooth; }
+
+    /* ✅ Cursor rules (as requested) */
+    body, body * { cursor: pointer; }
+    #quickStats, #dashboardOverview, #cashFlowChart, #membershipChart, #loanDistributionChart, #produceStockChart, #recentTransactions,
+    #quickStats *, #dashboardOverview *, #cashFlowChart *, #membershipChart *, #loanDistributionChart *, #produceStockChart *, #recentTransactions * {
+      cursor: grab;
+    }
+    button, a, [role="button"] { cursor: pointer !important; }
+    canvas { cursor: grab !important; }
+
+    .backdrop-blur-sm { backdrop-filter: blur(4px); }
+
+    .transition-all { transition: all 0.3s ease; }
+    .transition-shadow { transition: box-shadow 0.3s ease; }
+    .transition-colors { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
+
+    .hover\:scale-105:hover { transform: scale(1.05); }
+    .hover\:-translate-y-1:hover { transform: translateY(-0.25rem); }
+    .hover\:-translate-y-0\.5:hover { transform: translateY(-0.125rem); }
+
+    .group:hover .group-hover\:shadow-xl {
+      box-shadow: 0 20px 25px -5px rgba(6, 95, 70, 0.16), 0 10px 10px -5px rgba(6, 95, 70, 0.08);
+    }
+    .group:hover .group-hover\:bg-white\/80 { background-color: rgba(255,255,255,0.86); }
+    .group:hover .group-hover\:text-gray-900 { color: rgb(17, 24, 39); }
+
+    /* Refined shadows (slightly greener like your pages) */
+    .shadow-md { box-shadow: 0 6px 14px rgba(6, 95, 70, 0.10); }
+    .shadow-lg { box-shadow: 0 14px 28px rgba(6, 95, 70, 0.12); }
+    .shadow-xl { box-shadow: 0 18px 38px rgba(6, 95, 70, 0.14); }
+    .shadow-2xl { box-shadow: 0 26px 60px rgba(6, 95, 70, 0.18); }
+
+    .hover\:shadow-md:hover { box-shadow: 0 6px 16px rgba(6, 95, 70, 0.14); }
+    .hover\:shadow-lg:hover { box-shadow: 0 14px 30px rgba(6, 95, 70, 0.16); }
+    .hover\:shadow-xl:hover { box-shadow: 0 18px 44px rgba(6, 95, 70, 0.18); }
+    .hover\:shadow-2xl:hover { box-shadow: 0 28px 70px rgba(6, 95, 70, 0.22); }
+
+    :root{
+      --ink:#0b2a23;
+      --muted:#2f5b4f;
+      --muted2:#4c7468;
+
+      /* ✅ Your site-like mint/green brand */
+      --brand:#0f766e;     /* teal */
+      --brand2:#15803d;    /* green */
+      --accent:#0f766e;
+      --accent2:#15803d;
+
+      --paper:#f1fbf5;
+      --paper2:#e9f8f0;
+      --card:#ffffff;
+      --line:#d8efe3;
+      --line2:#bfe6d2;
+      --ring: rgba(15, 118, 110, 0.22);
+    }
+
+    /* Welcome strip under navbar */
+    .welcome-strip{
+      max-width: 7xl;
+      position: relative;
+      margin: 18px auto 0 auto;
+      padding: 0 24px;
+    }
+    .welcome-card{
+      position: relative;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(15,118,110,0.22);
+      box-shadow: 0 18px 46px rgba(6, 95, 70, 0.14);
+      overflow: hidden;
+    }
+    .welcome-card::before{ content:none; display:none; }
+    .welcome-inner{
+      position:relative;
+      z-index:1;
+      padding: 18px 18px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 14px;
+    }
+    .welcome-title{ letter-spacing:-0.02em; }
+
+    .welcome-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(233,248,240,0.95);
+      border: 1px solid rgba(15,118,110,0.20);
+      color: #0b2a23;
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .welcome-dot{
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(21,128,61,0.95);
+      box-shadow: 0 0 0 4px rgba(21,128,61,0.12);
+    }
+
+    /* Main panel */
+    main.max-w-7xl{
+      position: relative;
+      border-radius: 22px;
+      padding-top: 22px;
+      padding-bottom: 24px;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(15,118,110,0.18);
+      box-shadow: 0 22px 60px rgba(6, 95, 70, 0.14);
+      overflow: clip;
+      backdrop-filter: blur(6px);
+    }
+
+    /* subtle texture (kept) */
+    main.max-w-7xl::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      pointer-events:none;
+      background-image: radial-gradient(rgba(6,95,70,0.08) 0.6px, transparent 0.6px);
+      background-size: 18px 18px;
+      opacity: 0.07;
+      mix-blend-mode: multiply;
+    }
+
+    #quickStats, #dashboardOverview, #recentTransactions,
+    #cashFlowChart, #membershipChart, #loanDistributionChart, #produceStockChart {
+      position: relative; z-index: 1;
+    }
+
+    .chart-container { position: relative; width: 100%; height: 300px; }
+    canvas { max-width: 100%; height: auto; }
+
+    table { border-collapse: collapse; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #e9f8f0; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(21,128,61,0.55); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(15,118,110,0.75); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.55s cubic-bezier(.2,.8,.2,1); }
+
+    /* ✅ Card skin closer to your other pages */
+    .card-border-soft{
+      border: 1.5px solid rgba(191,230,210,0.95) !important;
+      box-shadow: 0 14px 30px rgba(6,95,70,0.12) !important;
+      background: rgba(255,255,255,0.94) !important;
+    }
+
+    .stat-icon-soft{
+      background: rgba(233,248,240,0.95) !important;
+      border: 1px solid rgba(15,118,110,0.18) !important;
+    }
+
+    .human-title{ letter-spacing: -0.01em; }
+    .human-subtitle{ color: #2f5b4f !important; }
+
+    /* ✅ Small text tones like your pages */
+    .text-slate-900{ color:#0b2a23 !important; }
+    .text-slate-800{ color:#123a31 !important; }
+    .text-slate-700{ color:#2f5b4f !important; }
+    .text-slate-600{ color:#4c7468 !important; }
+    .text-slate-500{ color:#5b8376 !important; }
+
+    /* ✅ Table header background -> mint */
+    .bg-slate-50\/90{ background-color: rgba(233,248,240,0.92) !important; }
+
+    /* ✅ Borders a bit greener */
+    .border-slate-200{ border-color: rgba(191,230,210,0.95) !important; }
+    .border-slate-100{ border-color: rgba(216,239,227,0.95) !important; }
+
+    /* ✅ Button color stays brand teal */
+    /* (already inline style background:#0f766e) */
+
+    /* ============================================================
+      ✅ MOBILE / APP VIEW CHANGE ONLY
+      Inside each section: horizontal swipe (left-right) in grid cards
+      - Desktop/web stays EXACTLY same
+      ============================================================ */
+    @media (max-width: 768px) {
+      .overflow-x-auto { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .chart-container { height: 260px; }
+      main.max-w-7xl{ padding-left: 16px !important; padding-right: 16px !important; }
+      .welcome-strip{ padding: 0 16px; }
+      .welcome-inner{ padding: 14px 14px; }
+
+      /* Generic swipe row for sections */
+      .mob-swipe{
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 14px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        padding-bottom: 8px !important;
+        scroll-snap-type: x mandatory !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+      .mob-swipe > *{
+        flex: 0 0 86% !important;
+        scroll-snap-align: start !important;
+      }
+
+      /* Quick Stats (id-based) -> swipe cards */
+      #quickStats{
+        display:flex !important;
+        flex-direction:row !important;
+        gap: 14px !important;
+        overflow-x:auto !important;
+        overflow-y:hidden !important;
+        padding-bottom: 8px !important;
+        scroll-snap-type: x mandatory !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+      #quickStats > *{
+        flex: 0 0 86% !important;
+        scroll-snap-align: start !important;
+      }
+
+      /* Modules grid inside overview -> swipe cards */
+      .modules-grid{
+        display:flex !important;
+        flex-direction:row !important;
+        gap: 14px !important;
+        overflow-x:auto !important;
+        overflow-y:hidden !important;
+        padding-bottom: 8px !important;
+        scroll-snap-type: x mandatory !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+      .modules-grid > *{
+        flex: 0 0 86% !important;
+        scroll-snap-align: start !important;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .chart-container { height: 240px; }
+      .welcome-pill{ display:none; }
+
+      .mob-swipe > *{ flex-basis: 90% !important; }
+      #quickStats > *{ flex-basis: 90% !important; }
+      .modules-grid > *{ flex-basis: 90% !important; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <!-- ✅ Welcome Heading under navbar -->
+  <section class="welcome-strip">
+    <div class="welcome-card">
+      <div class="welcome-inner">
+        <div>
+          <p class="text-xs font-semibold text-slate-700/90 tracking-wider uppercase">Tripura PG Systems</p>
+          <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 welcome-title mt-1">
+            WELCOME PG {{ (current_user.pg_name if current_user is defined and current_user.pg_name else (current_user.name if current_user is defined and current_user.name else (current_user.username if current_user is defined and current_user.username else "USER"))) }}
+          </h1>
+          <p class="text-sm md:text-[15px] text-slate-700 mt-2">
+            Here’s a quick snapshot of your registers, books and key trends.
+          </p>
+        </div>
+
+        <div class="welcome-pill">
+          <span class="welcome-dot"></span>
+          <span>Dashboard • Live View</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+    <!-- Quick Stats -->
+    <div id="quickStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+
+    <!-- Dashboard Overview -->
+    <div id="dashboardOverview"></div>
+
+    <!-- ✅ Charts Section (ALL 4 in SAME GRID) -->
+    <!-- Desktop: same 2-column layout, but single unified grid (not 2 blocks)
+         Mobile: one swipe rail containing all 4 cards -->
+    <div class="mob-swipe grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div id="cashFlowChart"></div>
+      <div id="membershipChart"></div>
+      <div id="loanDistributionChart"></div>
+      <div id="produceStockChart"></div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div id="recentTransactions"></div>
+  </main>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    // Lucide Icons as SVG strings
+    const icons = {
+      Users: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
+      IndianRupee: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"></path><path d="M6 8h12"></path><path d="m6 13 8.5 8"></path><path d="M6 13h3"></path><path d="M9 13c6.667 0 6.667-10 0-10"></path></svg>',
+      Wallet: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>',
+      PackageCheck: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 2 2 4-4"></path><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="M7.5 4.27l9 5.15"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" x2="12" y1="22" y2="12"></line></svg>',
+      BookOpen: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>',
+     // ✅ REPLACE ONLY THIS ICON
+Receipt: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path>' +
+  '<path d="M7 6h10"></path>' +
+  '<path d="M7 10h10"></path>' +
+  '<path d="M7 14l7 7"></path>' +
+  '<path d="M7 14h3"></path>' +
+  '<path d="M10 14c6.2 0 6.2-8 0-8"></path>' +
+'</svg>',
+
+      CreditCard: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"></rect><line x1="2" x2="22" y1="10" y2="10"></line></svg>',
+      ShoppingCart: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>',
+      Building2: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>',
+      BookMarked: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path><polyline points="10 2 10 10 13 7 16 10 16 2"></polyline></svg>',
+      TrendingUp: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>',
+      FileText: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" x2="8" y1="13" y2="13"></line><line x1="16" x2="8" y1="17" y2="17"></line><line x1="10" x2="8" y1="9" y2="9"></line></svg>',
+      UserPlus: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" x2="19" y1="8" y2="14"></line><line x1="22" x2="16" y1="11" y2="11"></line></svg>',
+      ShoppingBasket: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 11 4-7"></path><path d="m19 11-4-7"></path><path d="M2 11h20"></path><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8c.9 0 1.8-.7 2-1.6l1.7-7.4"></path><path d="m9 11 1 9"></path><path d="M4.5 15.5h15"></path><path d="m15 11-1 9"></path></svg>',
+      History: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>',
+      ArrowUpCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m16 12-4-4-4 4"></path><path d="M12 16V8"></path></svg>',
+      ArrowDownCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="m8 12 4 4 4-4"></path></svg>',
+      IndianRupeeSmall: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"></path><path d="M6 8h12"></path><path d="m6 13 8.5 8"></path><path d="M6 13h3"></path><path d="M9 13c6.667 0 6.667-10 0-10"></path></svg>'
+    };
+
+    // ✅ Quick Stats Data (dynamic from backend; no hardcoded demo values)
+    const statsData = [
+      { title: 'Total Members', value: '{{ (metrics.members_count if metrics is defined else 0) }}', change: 'From Membership Register', icon: 'Users', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
+      { title: 'Active Loans', value: '{{ (metrics.loans_count if metrics is defined else 0) }}', change: 'From Loan Ledger', icon: 'Wallet', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-teal-700' },
+      { title: 'Loan Outstanding', value: '{{ (metrics.outstanding_loans_amount if metrics is defined else "₹0") }}', change: 'Sum of outstanding loans', icon: 'IndianRupee', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-green-700' },
+      { title: 'Categories', value: '{{ (metrics.categories_count if metrics is defined else 0) }}', change: 'From PG master data', icon: 'PackageCheck', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-lime-700' },
+    ];
+
+    // Dashboard Modules (wired to real routes; no demo counts)
+    const modulesData = [
+      { title: 'Membership Register', description: 'Manage PG members', icon: 'Users', count: '{{ (metrics.members_count if metrics is defined else 0) }}', href: '/pg/members/{{ session.get("pg_id") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+      { title: 'Cash Book', description: 'Receipts / Payments / Balance', icon: 'BookOpen', count: '—', href: '{{ url_for("finance.cashbook") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+      { title: 'Loan Ledger', description: 'PG loan tracking', icon: 'CreditCard', count: '{{ (metrics.loans_count if metrics is defined else 0) }}', href: '/finance/pg-loans/{{ session.get("pg_id") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+      { title: 'Receipt Voucher', description: 'Create & view vouchers', icon: 'Receipt', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+      { title: 'Input Register', description: 'Purchase / Sale / Stock', icon: 'ShoppingCart', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+      { title: 'Asset Register', description: 'Track PG assets', icon: 'Building2', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+      { title: 'Ledger Book', description: 'All transactions summary', icon: 'BookMarked', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+      { title: 'Output Register', description: 'Produce sale / stock', icon: 'TrendingUp', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+    ];
+
+    // Transactions Data: intentionally empty (avoid hardcoded demo values)
+    const transactionsData = [];
+
+    // Chart Data (kept empty arrays; no hardcoded demo points)
+    const cashFlowData = { labels: [], datasets: [
+      { label: 'Income', data: [], borderColor: '#0f766e', backgroundColor: '#0f766e', borderWidth: 3, tension: 0.4, pointRadius: 6, pointHoverRadius: 8, pointBackgroundColor: '#0f766e', pointBorderColor: '#fff', pointBorderWidth: 2 },
+      { label: 'Expense', data: [], borderColor: '#b45309', backgroundColor: '#b45309', borderWidth: 3, tension: 0.4, pointRadius: 6, pointHoverRadius: 8, pointBackgroundColor: '#b45309', pointBorderColor: '#fff', pointBorderWidth: 2 },
+      { label: 'Net Balance', data: [], borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', borderWidth: 3, tension: 0.4, pointRadius: 6, pointHoverRadius: 8, pointBackgroundColor: '#0ea5e9', pointBorderColor: '#fff', pointBorderWidth: 2 },
+    ]};
+
+    const membershipData = { labels: [], datasets: [
+      { label: 'Total Members', data: [], borderColor: '#0f766e', backgroundColor: 'rgba(15, 118, 110, 0.12)', borderWidth: 3, fill: true, tension: 0.4 },
+    ]};
+
+    const loanDistributionData = { labels: [], datasets: [
+      { label: 'Disbursed', data: [], backgroundColor: 'rgba(15, 118, 110, 0.75)', borderRadius: 8 },
+      { label: 'Recovered', data: [], backgroundColor: 'rgba(21, 128, 61, 0.55)', borderRadius: 8 },
+      { label: 'Outstanding', data: [], backgroundColor: 'rgba(245, 158, 11, 0.65)', borderRadius: 8 },
+    ]};
+
+    const produceStockData = { labels: [], datasets: [
+      { data: [], backgroundColor: ['#0f766e'], borderWidth: 2, borderColor: '#fff' },
+    ]};
+
+    function renderQuickStats() {
+      const container = document.getElementById('quickStats');
+      container.innerHTML = statsData.map((stat, index) => `
+        <div class="${stat.bg} rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 p-5 border ${stat.border} hover:scale-105 hover:-translate-y-1 cursor-pointer group fade-in card-border-soft" style="animation-delay: ${index * 0.1}s">
+          <div class="flex items-center justify-between mb-4">
+            <div class="p-3 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow ${stat.iconBg}">
+              ${icons[stat.icon]}
+            </div>
+          </div>
+          <h3 class="text-slate-600 text-xs font-semibold mb-2 uppercase tracking-wider">${stat.title}</h3>
+          <p class="text-3xl font-extrabold text-slate-900 mb-2 human-title">${stat.value}</p>
+          <p class="${stat.textColor} text-sm font-medium human-subtitle">${stat.change}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderDashboardOverview() {
+      const container = document.getElementById('dashboardOverview');
+      container.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 fade-in card-border-soft">
+          <div class="flex items-start justify-between gap-4 mb-6">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-xl shadow-md stat-icon-soft">
+                ${icons.FileText}
+              </div>
+              <div>
+                <h2 class="text-2xl font-bold text-slate-900 human-title">PGMIS Modules Overview</h2>
+                <p class="text-sm text-slate-600 mt-1">Quick access to registers, books and vouchers</p>
+              </div>
+            </div>
+            <div class="hidden md:flex items-center gap-2">
+              <span class="text-xs px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-white/70">Updated: Today</span>
+              <span class="text-xs px-3 py-1.5 rounded-full border border-emerald-200 text-emerald-700 bg-emerald-50">Active</span>
+            </div>
+          </div>
+
+          <div class="modules-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            ${modulesData.map((module, index) => `
+              <div class="${module.bgColor} ${module.hoverBg} rounded-xl p-5 transition-all duration-300 cursor-pointer border ${module.borderColor} hover:shadow-lg hover:scale-105 hover:-translate-y-1 group card-border-soft" style="animation-delay: ${index * 0.05}s" onclick="if('${module.href}' && '${module.href}' !== '#'){ window.location.href = '${module.href}'; }">
+                <div class="flex items-start justify-between mb-3">
+                  <div class="bg-white/70 p-2 rounded-lg group-hover:bg-white/80 transition-colors border border-slate-100">
+                    <div class="${module.iconColor}">${icons[module.icon]}</div>
+                  </div>
+                  <span class="text-2xl font-bold text-slate-800 group-hover:text-slate-900 transition-colors">${module.count}</span>
+                </div>
+                <h3 class="font-bold text-slate-900 mb-1 text-sm">${module.title}</h3>
+                <p class="text-xs text-slate-600">${module.description}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCashFlowChart() {
+      const container = document.getElementById('cashFlowChart');
+      container.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="p-2.5 rounded-xl shadow-md stat-icon-soft">
+              ${icons.IndianRupee.replace('width="28" height="28"', 'width="24" height="24"')}
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 human-title">Cash Flow Trend (Cash Book)</h2>
+              <p class="text-sm text-slate-600 mt-1">Income, expense and net movement overview</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="cashFlowCanvas"></canvas>
+          </div>
+        </div>
+      `;
+
+      const ctx = document.getElementById('cashFlowCanvas').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: cashFlowData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, labels: { font: { size: 13, weight: 500 } } },
+            tooltip: {
+              backgroundColor: '#ffffff',
+              titleColor: '#000',
+              bodyColor: '#000',
+              borderColor: 'rgba(15,118,110,0.55)',
+              borderWidth: 2,
+              padding: 12,
+              cornerRadius: 12,
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { font: { size: 13, weight: 500 }, color: '#2f5b4f' },
+              grid: { color: 'rgba(191,230,210,0.95)', drawBorder: false },
+            },
+            x: {
+              ticks: { font: { size: 13, weight: 500 }, color: '#2f5b4f' },
+              grid: { color: 'rgba(216,239,227,0.80)', drawBorder: false },
+            },
+          },
+        },
+      });
+    }
+
+    function renderMembershipChart() {
+      const container = document.getElementById('membershipChart');
+      container.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="p-2.5 rounded-xl shadow-md stat-icon-soft">
+              ${icons.UserPlus}
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 human-title">Membership Growth</h2>
+              <p class="text-sm text-slate-600 mt-1">Monthly member count progression</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="membershipCanvas"></canvas>
+          </div>
+
+          <div class="mt-5 grid grid-cols-2 gap-4">
+            <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <p class="text-sm text-slate-600 font-medium mb-1">Current Members</p>
+              <p class="text-3xl font-bold text-slate-900">{{ metrics.members_count if metrics is defined else 0 }}</p>
+            </div>
+            <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <p class="text-sm text-slate-600 font-medium mb-1">New This Month</p>
+              <p class="text-3xl font-bold text-emerald-700">{{ metrics.new_members_month if metrics is defined and metrics.new_members_month is defined else 0 }}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const ctx = document.getElementById('membershipCanvas').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: membershipData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#ffffff',
+              titleColor: '#000',
+              bodyColor: '#000',
+              borderColor: 'rgba(15,118,110,0.55)',
+              borderWidth: 2,
+              padding: 12,
+              cornerRadius: 12,
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              ticks: { font: { size: 13, weight: 500 }, color: '#2f5b4f' },
+              grid: { color: 'rgba(191,230,210,0.95)', drawBorder: false },
+            },
+            x: {
+              ticks: { font: { size: 13, weight: 500 }, color: '#2f5b4f' },
+              grid: { color: 'rgba(216,239,227,0.80)', drawBorder: false },
+            },
+          },
+        },
+      });
+    }
+
+    function renderLoanDistributionChart() {
+      const container = document.getElementById('loanDistributionChart');
+      container.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="p-2.5 rounded-xl shadow-md stat-icon-soft">
+              ${icons.Wallet.replace('width="28" height="28"', 'width="24" height="24"')}
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 human-title">Loan Ledger Distribution</h2>
+              <p class="text-sm text-slate-600 mt-1">Disbursed vs recovered vs outstanding</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="loanDistributionCanvas"></canvas>
+          </div>
+          <div class="mt-5 bg-white/85 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+            <p class="text-sm text-slate-600 font-medium mb-1">Total Outstanding Loans</p>
+            <p class="text-3xl font-bold text-slate-900">{{ metrics.outstanding_loans_amount if metrics is defined else "₹0" }}</p>
+            <p class="text-sm text-slate-500 mt-1">across {{ metrics.loans_count if metrics is defined else 0 }} active loans</p>
+          </div>
+        </div>
+      `;
+
+      const ctx = document.getElementById('loanDistributionCanvas').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: loanDistributionData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, labels: { font: { size: 13, weight: 500 } } },
+            tooltip: {
+              backgroundColor: '#ffffff',
+              titleColor: '#000',
+              bodyColor: '#000',
+              borderColor: 'rgba(15,118,110,0.55)',
+              borderWidth: 2,
+              padding: 12,
+              cornerRadius: 12,
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { font: { size: 13, weight: 500 }, color: '#2f5b4f' },
+              grid: { color: 'rgba(191,230,210,0.95)', drawBorder: false },
+            },
+            x: {
+              ticks: { font: { size: 12, weight: 500 }, color: '#2f5b4f' },
+              grid: { display: false },
+            },
+          },
+        },
+      });
+    }
+
+    function renderProduceStockChart() {
+      const container = document.getElementById('produceStockChart');
+
+      container.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="p-2.5 rounded-xl shadow-md stat-icon-soft">
+              ${icons.ShoppingBasket}
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 human-title">Output Produce Stock</h2>
+              <p class="text-sm text-slate-600 mt-1">Category-wise stock snapshot</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="produceStockCanvas"></canvas>
+          </div>
+          <div class="mt-5 grid grid-cols-2 gap-4">
+            <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <p class="text-sm text-slate-600 font-medium mb-1">Total Stock</p>
+              <p class="text-3xl font-bold text-slate-900">{{ metrics.total_stock_kg if metrics is defined and metrics.total_stock_kg is defined else 0 }} kg</p>
+            </div>
+            <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <p class="text-sm text-slate-600 font-medium mb-1">Categories</p>
+              <p class="text-3xl font-bold text-emerald-700">{{ metrics.categories_count if metrics is defined else 0 }}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const ctx = document.getElementById('produceStockCanvas').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: produceStockData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+              labels: { font: { size: 12 }, padding: 15 },
+            },
+            tooltip: {
+              backgroundColor: '#ffffff',
+              titleColor: '#000',
+              bodyColor: '#000',
+              borderColor: 'rgba(15,118,110,0.55)',
+              borderWidth: 2,
+              padding: 12,
+              cornerRadius: 12,
+            },
+          },
+        },
+      });
+    }
+
+    // ✅ Updated: More mobile friendly Recent Transactions (table on desktop, cards on mobile)
+    function renderRecentTransactions() {
+      const container = document.getElementById('recentTransactions');
+
+      const hasTx = Array.isArray(transactionsData) && transactionsData.length > 0;
+
+      const tableRows = hasTx ? transactionsData.map(transaction => {
+        const date = new Date(transaction.date);
+        const formattedDate = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const arrowIcon = transaction.amount > 0 ? icons.ArrowUpCircle : icons.ArrowDownCircle;
+        const amountClass = transaction.amount > 0 ? 'text-emerald-700' : 'text-amber-700';
+        const iconClass = transaction.amount > 0 ? 'text-emerald-600' : 'text-amber-600';
+
+        return `
+          <tr class="border-b border-slate-200 hover:bg-slate-50/70 transition-all cursor-pointer">
+            <td class="py-4 px-4 text-sm font-bold text-slate-900">${transaction.id}</td>
+            <td class="py-4 px-4">
+              <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/80 text-slate-800 border border-slate-200">
+                ${transaction.type}
+              </span>
+            </td>
+            <td class="py-4 px-4 text-sm text-slate-700 font-medium">${transaction.description}</td>
+            <td class="py-4 px-4 text-sm text-slate-600 font-medium">${formattedDate}</td>
+            <td class="py-4 px-4 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <span class="${iconClass}">${arrowIcon}</span>
+                <span class="font-bold text-base ${amountClass}">₹${Math.abs(transaction.amount).toLocaleString('en-IN')}</span>
+              </div>
+            </td>
+            <td class="py-4 px-4 text-center">
+              <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/80 text-emerald-800 border border-emerald-200">
+                ${transaction.status}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('') : `
+        <tr>
+          <td colspan="6" class="py-10 px-6 text-center text-slate-600">
+            No transactions found.
+          </td>
+        </tr>
+      `;
+
+      const mobileCards = hasTx ? transactionsData.map(transaction => {
+        const date = new Date(transaction.date);
+        const formattedDate = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const isIncome = transaction.amount > 0;
+        const amountClass = isIncome ? 'text-emerald-700' : 'text-amber-700';
+        const chipBorder = isIncome ? 'border-emerald-200' : 'border-amber-200';
+        const chipBg = isIncome ? 'bg-emerald-50' : 'bg-amber-50';
+
+        return `
+          <div class="bg-white/85 rounded-2xl border border-slate-200 p-4 hover:shadow-md transition-all card-border-soft">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xs font-bold text-slate-700 bg-white/80 border border-slate-200 px-2.5 py-1 rounded-lg">#${transaction.id}</span>
+                  <span class="text-xs font-semibold text-slate-700 bg-white/80 border border-slate-200 px-2.5 py-1 rounded-lg">${transaction.type}</span>
+                </div>
+                <p class="text-sm font-semibold text-slate-900 leading-snug break-words">${transaction.description}</p>
+                <p class="text-xs text-slate-600 mt-1">${formattedDate}</p>
+              </div>
+
+              <div class="text-right shrink-0">
+                <p class="text-lg font-extrabold ${amountClass}">₹${Math.abs(transaction.amount).toLocaleString('en-IN')}</p>
+                <span class="inline-flex items-center justify-center mt-2 px-2.5 py-1 rounded-lg text-xs font-semibold ${chipBg} ${chipBorder} border">
+                  ${transaction.status}
+                </span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('') : `
+        <div class="bg-white/85 rounded-2xl border border-slate-200 p-5 text-center text-slate-600 card-border-soft">
+          No transactions found.
+        </div>
+      `;
+
+      container.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
+          <!-- Header: stacks nicely on mobile -->
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div class="flex items-center gap-3">
+              <div class="p-2.5 rounded-xl shadow-md stat-icon-soft">
+                ${icons.History}
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-slate-900 human-title">Recent Transactions (Ledger Book)</h2>
+                <p class="text-sm text-slate-600 mt-1">Latest entries from registers and vouchers</p>
+              </div>
+            </div>
+
+            <button class="w-full md:w-auto px-5 py-2.5 rounded-xl transition-all text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+              style="background:#0f766e; color:#fff;">
+              View All
+            </button>
+          </div>
+
+          <!-- Desktop table -->
+          <div class="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white/80">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-slate-50/90 border-b border-slate-200">
+                  <th class="text-left py-4 px-4 font-bold text-slate-700 text-sm">ID</th>
+                  <th class="text-left py-4 px-4 font-bold text-slate-700 text-sm">Type</th>
+                  <th class="text-left py-4 px-4 font-bold text-slate-700 text-sm">Description</th>
+                  <th class="text-left py-4 px-4 font-bold text-slate-700 text-sm">Date</th>
+                  <th class="text-right py-4 px-4 font-bold text-slate-700 text-sm">Amount</th>
+                  <th class="text-center py-4 px-4 font-bold text-slate-700 text-sm">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile cards -->
+          <div class="md:hidden space-y-3">
+            ${mobileCards}
+          </div>
+
+          <!-- Summary Footer (mobile swipe cards already) -->
+          <div class="mob-swipe mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white/85 rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="bg-emerald-50 p-1.5 rounded-lg border border-emerald-200">
+                  ${icons.IndianRupeeSmall}
+                </div>
+                <p class="text-sm text-slate-600 font-semibold">Total Income (Last 7 days)</p>
+              </div>
+              <p class="text-2xl font-extrabold text-emerald-700">{{ metrics.income_7d if metrics is defined else "₹0" }}</p>
+            </div>
+
+            <div class="bg-white/85 rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="bg-amber-50 p-1.5 rounded-lg border border-amber-200">
+                  ${icons.IndianRupeeSmall}
+                </div>
+                <p class="text-sm text-slate-600 font-semibold">Total Expenses (Last 7 days)</p>
+              </div>
+              <p class="text-2xl font-extrabold text-amber-700">{{ metrics.expense_7d if metrics is defined else "₹0" }}</p>
+            </div>
+
+            <div class="bg-white/85 rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="bg-sky-50 p-1.5 rounded-lg border border-sky-200">
+                  ${icons.IndianRupeeSmall}
+                </div>
+                <p class="text-sm text-slate-600 font-semibold">Net Balance</p>
+              </div>
+              <p class="text-2xl font-extrabold text-sky-700">₹0</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function initDashboard() {
+      renderQuickStats();
+      renderDashboardOverview();
+      renderCashFlowChart();
+      renderMembershipChart();
+      renderLoanDistributionChart();
+      renderProduceStockChart();
+      renderRecentTransactions();
+    }
+
+    document.addEventListener('DOMContentLoaded', initDashboard);
+  </script>
+{% endblock %}

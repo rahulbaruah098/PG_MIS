@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>State Dashboard</h3>
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6>Total PGs</h6>
+        <h3>{{ pg_count }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6>Total Members</h6>
+        <h3>{{ member_count }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6>Total Turnover (from MPR)</h6>
+        <h3>{{ total_turnover }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6>SHG Master (LokOS)</h6>
+        <h3>{{ shg_total }}</h3>
+        <div class="text-muted small">Active: {{ shg_active }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <h6 class="mb-2">Top districts by SHG count</h6>
+          <a href="{{ url_for('master_data.shg_browser') }}" class="btn btn-sm btn-outline-secondary">Browse SHG Master</a>
+        </div>
+        <canvas id="districtShgChart" height="110"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="mb-2">Quick links</h6>
+        <div class="d-grid gap-2">
+          <a class="btn btn-primary" href="{{ url_for('reports.hierarchy_dashboard') }}">Hierarchy Dashboard</a>
+          <a class="btn btn-outline-primary" href="{{ url_for('pg.pg_home') }}">PG Management</a>
+          <a class="btn btn-outline-secondary" href="{{ url_for('master_data.shg_browser') }}">SHG Master Browser</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const labels = {{ (shg_top_districts | map(attribute='_id') | list) | tojson }};
+    const counts = {{ (shg_top_districts | map(attribute='count') | list) | tojson }};
+    const ctx = document.getElementById('districtShgChart');
+    if (ctx && window.Chart) {
+      new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ label: 'SHG Count', data: counts }] },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { autoSkip: false, maxRotation: 75, minRotation: 30 } } } }
+      });
+    }
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,782 @@
+{% extends "base.html" %}
+{% block title %}Output / Produce Register (Purchase/Sale/Stock){% endblock %}
+
+{% block head_extra %}
+{{ super() }}
+<style>
+  /* ============================================================
+     OUTPUT / PRODUCE REGISTER — PGMIS Mint/Green Theme
+     - Scoped styles only (won't affect other pages)
+     - Same “soft card + mint background + green ink”
+     ============================================================ */
+
+  .pg-produce-page{ color:#0b2a23; }
+  .pg-produce-page *{ box-sizing:border-box; }
+
+  :root{
+    --ink:#0b2a23;
+    --muted:#2f5b4f;
+    --muted2:#4c7468;
+    --brand:#0f766e;
+    --brand2:#15803d;
+    --paper:#f1fbf5;
+    --card:#ffffff;
+    --line:#d8efe3;
+    --line2:#bfe6d2;
+    --ring: rgba(15, 118, 110, 0.22);
+    --shadow: 0 18px 44px rgba(6, 95, 70, 0.14);
+  }
+
+  .pg-produce-page .wrap{
+    max-width: 1200px;
+    margin: 18px auto 50px;
+    padding: 0 18px;
+  }
+
+  .pg-produce-page .hero{
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(15,118,110,0.18);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    padding: 16px 16px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .pg-produce-page .hero:before{
+    content:"";
+    position:absolute;
+    inset:-2px;
+    pointer-events:none;
+    background-image: radial-gradient(rgba(6,95,70,0.08) 0.6px, transparent 0.6px);
+    background-size: 18px 18px;
+    opacity: 0.08;
+    mix-blend-mode: multiply;
+  }
+
+  .pg-produce-page .hero .top{
+    position:relative;
+    z-index:1;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .pg-produce-page .kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(233,248,240,0.95);
+    border: 1px solid rgba(15,118,110,0.20);
+    color: var(--ink);
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .pg-produce-page .dot{
+    width:10px; height:10px; border-radius:999px;
+    background: rgba(21,128,61,0.95);
+    box-shadow: 0 0 0 4px rgba(21,128,61,0.12);
+  }
+
+  .pg-produce-page h1{
+    position:relative;
+    z-index:1;
+    margin: 10px 0 4px;
+    font-size: 22px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-weight: 900;
+    color: var(--ink);
+  }
+
+  .pg-produce-page .sub{
+    position:relative;
+    z-index:1;
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .pg-produce-page .bar{
+    position:relative;
+    z-index:1;
+    margin-top: 14px;
+    display:grid;
+    grid-template-columns: 1.2fr .8fr 1fr;
+    gap: 12px;
+  }
+
+  .pg-produce-page .field{
+    background: rgba(255,255,255,0.94);
+    border: 1px solid rgba(191,230,210,0.95);
+    border-radius: 16px;
+    padding: 10px 12px;
+    box-shadow: 0 12px 26px rgba(6,95,70,0.10);
+  }
+
+  .pg-produce-page .field label{
+    display:block;
+    font-size: 12px;
+    color: var(--muted2);
+    font-weight: 800;
+    letter-spacing: .04em;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  .pg-produce-page .field input, .pg-produce-page .field select{
+    width:100%;
+    border-radius: 12px;
+    border: 1px solid rgba(15,118,110,0.18);
+    background: rgba(241,251,245,0.75);
+    padding: 10px 10px;
+    font-weight: 800;
+    color: var(--ink);
+    outline: none;
+  }
+
+  .pg-produce-page .field input:focus, .pg-produce-page .field select:focus{
+    border-color: rgba(15,118,110,0.45);
+    box-shadow: 0 0 0 4px var(--ring);
+    background: #fff;
+  }
+
+  .pg-produce-page .actions{
+    position:relative;
+    z-index:1;
+    display:flex;
+    gap: 10px;
+    align-items:center;
+    justify-content:flex-end;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .pg-produce-page .btn{
+    border: 0;
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-weight: 900;
+    cursor:pointer;
+    transition: .18s ease;
+    letter-spacing: .01em;
+    display:inline-flex;
+    gap: 8px;
+    align-items:center;
+    box-shadow: 0 12px 26px rgba(6,95,70,0.12);
+  }
+  .pg-produce-page .btn-primary{
+    background: var(--brand);
+    color: #fff;
+  }
+  .pg-produce-page .btn-primary:hover{ transform: translateY(-1px); filter: brightness(1.03); }
+  .pg-produce-page .btn-soft{
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(191,230,210,0.95);
+    color: var(--ink);
+  }
+  .pg-produce-page .btn-soft:hover{ transform: translateY(-1px); background:#fff; }
+  .pg-produce-page .btn-danger{
+    background: rgba(220,38,38,0.10);
+    border: 1px solid rgba(220,38,38,0.25);
+    color: #991b1b;
+  }
+  .pg-produce-page .btn-danger:hover{ transform: translateY(-1px); background: rgba(220,38,38,0.14); }
+
+  .pg-produce-page .table-card{
+    margin-top: 16px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(15,118,110,0.18);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .pg-produce-page .table-head{
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(216,239,227,0.95);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: rgba(233,248,240,0.92);
+  }
+  .pg-produce-page .table-head .title{
+    font-weight: 900;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .pg-produce-page .hint{
+    font-size: 12px;
+    color: var(--muted2);
+    font-weight: 700;
+  }
+
+  .pg-produce-page .table-wrap{
+    overflow:auto;
+    -webkit-overflow-scrolling: touch;
+    background: rgba(255,255,255,0.7);
+  }
+
+  .pg-produce-page table{
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1400px; /* to keep all columns like paper register */
+  }
+
+  .pg-produce-page th, .pg-produce-page td{
+    border: 1px solid rgba(191,230,210,0.95);
+    padding: 8px 8px;
+    vertical-align: middle;
+    background: rgba(255,255,255,0.92);
+  }
+
+  .pg-produce-page thead th{
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(233,248,240,0.98);
+    color: var(--ink);
+    font-weight: 900;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .pg-produce-page thead .group{
+    text-align:center;
+    font-size: 12px;
+    background: rgba(217,246,229,0.95);
+  }
+
+  .pg-produce-page .mini{
+    display:block;
+    font-size: 11px;
+    color: var(--muted2);
+    font-weight: 800;
+    letter-spacing: .03em;
+    margin-top: 2px;
+    text-transform:none;
+  }
+
+  .pg-produce-page td input{
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid rgba(15,118,110,0.18);
+    background: rgba(241,251,245,0.75);
+    padding: 8px 8px;
+    font-weight: 800;
+    color: var(--ink);
+    outline: none;
+  }
+  .pg-produce-page td input:focus{
+    border-color: rgba(15,118,110,0.45);
+    box-shadow: 0 0 0 3px var(--ring);
+    background:#fff;
+  }
+
+  .pg-produce-page .num{ text-align:right; }
+  .pg-produce-page .center{ text-align:center; }
+
+  .pg-produce-page .row-actions{
+    display:flex;
+    gap: 8px;
+    justify-content:center;
+  }
+  .pg-produce-page .icon-btn{
+    border-radius: 10px;
+    border: 1px solid rgba(191,230,210,0.95);
+    background: rgba(255,255,255,0.92);
+    padding: 7px 10px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: .18s ease;
+  }
+  .pg-produce-page .icon-btn:hover{ transform: translateY(-1px); background:#fff; }
+
+  .pg-produce-page .tfoot{
+    background: rgba(233,248,240,0.92);
+    font-weight: 900;
+  }
+
+  .pg-produce-page .toast{
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 9999;
+    background: rgba(255,255,255,0.95);
+    border: 1px solid rgba(191,230,210,0.95);
+    box-shadow: 0 18px 44px rgba(6,95,70,0.16);
+    border-radius: 16px;
+    padding: 10px 12px;
+    color: var(--ink);
+    font-weight: 800;
+    display:none;
+    max-width: 360px;
+  }
+
+  @media (max-width: 900px){
+    .pg-produce-page .bar{ grid-template-columns: 1fr; }
+    .pg-produce-page .actions{ justify-content: flex-start; }
+  }
+
+  @media print{
+    .pg-produce-page .actions, .pg-produce-page .table-head .hint, .pg-produce-page .row-actions{ display:none !important; }
+    .pg-produce-page .hero{ box-shadow:none; }
+    .pg-produce-page .table-card{ box-shadow:none; }
+    .pg-produce-page td input{ border:none; background:transparent; padding:0; }
+    .pg-produce-page .wrap{ max-width: 100%; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pg-produce-page">
+  <div class="wrap">
+
+    <!-- Header Card -->
+    <section class="hero">
+      <div class="top">
+        <div>
+          <div class="kicker"><span class="dot"></span> OUTPUT / PRODUCE REGISTER</div>
+          <h1>Output or Produce (Purchase/Sale/Stock) Register</h1>
+          <p class="sub">Use this register to record produce purchase from members, sales to buyers and live stock balance.</p>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="addRowBtn">➕ Add Row</button>
+          <button type="button" class="btn btn-soft" id="exportBtn">⬇️ Export CSV</button>
+          <button type="button" class="btn btn-soft" id="printBtn">🖨️ Print</button>
+          <button type="button" class="btn btn-danger" id="clearBtn">🧹 Clear</button>
+        </div>
+      </div>
+
+      <div class="bar">
+        <div class="field">
+          <label>Name of the Produce</label>
+          <input id="produceName" type="text" placeholder="e.g., Paddy / Vegetable / Fish etc." />
+        </div>
+
+        <div class="field">
+          <label>Unit of Stocking</label>
+          <input id="unitStock" type="text" placeholder="e.g., Kg / Quintal / Nos / Litre" />
+        </div>
+
+        <div class="field">
+          <label>Auto-save</label>
+          <input type="text" value="Enabled (saved in this browser)" readonly />
+        </div>
+      </div>
+    </section>
+
+    <!-- Table Card -->
+    <section class="table-card">
+      <div class="table-head">
+        <div class="title">Register Entries</div>
+        <div class="hint">Amounts & stock are auto-calculated. Stock Qty = Purchase Qty − Sale Qty.</div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="produceTable" aria-label="Output or Produce Register">
+          <thead>
+            <tr>
+              <th class="group" colspan="7">Purchases of Produce (From Member)</th>
+              <th class="group" colspan="7">Sale of Produce (To Buyers)</th>
+              <th class="group" colspan="3">Stock</th>
+              <th class="group" rowspan="2">Action</th>
+            </tr>
+
+            <tr>
+              <!-- Purchases -->
+              <th class="center">Sl<br><span class="mini">(1)</span></th>
+              <th class="center">Date<br><span class="mini">(2)</span></th>
+              <th>Name of Farmer<br><span class="mini">(3)</span></th>
+              <th class="num">Qty<br><span class="mini">(4)</span></th>
+              <th class="num">Rate<br><span class="mini">(5)</span></th>
+              <th class="num">Amount<br><span class="mini">(6)</span></th>
+              <th class="center">Cash Book Folio No<br><span class="mini">(7)</span></th>
+
+              <!-- Sales -->
+              <th class="center">Date<br><span class="mini">(8)</span></th>
+              <th class="center">Bill No<br><span class="mini">(9)</span></th>
+              <th>Buyer Name<br><span class="mini">(10)</span></th>
+              <th class="num">Qty<br><span class="mini">(11)</span></th>
+              <th class="num">Rate<br><span class="mini">(12)</span></th>
+              <th class="num">Amount<br><span class="mini">(13)</span></th>
+              <th class="center">Cash Book Folio No<br><span class="mini">(14)</span></th>
+
+              <!-- Stock -->
+              <th class="num">Balance Stock Qty<br><span class="mini">(15) = (4) − (11)</span></th>
+              <th class="num">Rate<br><span class="mini">(16)</span></th>
+              <th class="num">Amount<br><span class="mini">(17)</span></th>
+            </tr>
+          </thead>
+
+          <tbody id="produceTbody">
+            <!-- JS will inject rows -->
+          </tbody>
+
+          <tfoot>
+            <tr class="tfoot">
+              <td colspan="3">TOTAL</td>
+              <td class="num" id="tPurchaseQty">0</td>
+              <td></td>
+              <td class="num" id="tPurchaseAmt">0</td>
+              <td></td>
+
+              <td colspan="3"></td>
+              <td class="num" id="tSaleQty">0</td>
+              <td></td>
+              <td class="num" id="tSaleAmt">0</td>
+              <td></td>
+
+              <td class="num" id="tStockQty">0</td>
+              <td></td>
+              <td class="num" id="tStockAmt">0</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  /* ============================================================
+     Output / Produce Register Logic (Frontend)
+     - Auto calculations
+     - Add/Delete rows
+     - LocalStorage persistence
+     - CSV export + Print
+     ============================================================ */
+
+  const STORAGE_KEY = "pgmis_output_register_v1";
+
+  const els = {
+    produceName: document.getElementById("produceName"),
+    unitStock: document.getElementById("unitStock"),
+    tbody: document.getElementById("produceTbody"),
+    addRowBtn: document.getElementById("addRowBtn"),
+    exportBtn: document.getElementById("exportBtn"),
+    printBtn: document.getElementById("printBtn"),
+    clearBtn: document.getElementById("clearBtn"),
+    toast: document.getElementById("toast"),
+
+    tPurchaseQty: document.getElementById("tPurchaseQty"),
+    tPurchaseAmt: document.getElementById("tPurchaseAmt"),
+    tSaleQty: document.getElementById("tSaleQty"),
+    tSaleAmt: document.getElementById("tSaleAmt"),
+    tStockQty: document.getElementById("tStockQty"),
+    tStockAmt: document.getElementById("tStockAmt"),
+  };
+
+  function toast(msg){
+    els.toast.textContent = msg;
+    els.toast.style.display = "block";
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => els.toast.style.display = "none", 1800);
+  }
+
+  function n(x){
+    const v = parseFloat(String(x ?? "").replace(/,/g,"").trim());
+    return Number.isFinite(v) ? v : 0;
+  }
+
+  function fmt(x){
+    const v = n(x);
+    return v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+  }
+
+  function rowTemplate(row, index){
+    const i = index + 1;
+
+    return `
+      <tr data-row-id="${row.id}">
+        <!-- Purchases -->
+        <td class="center"><input type="text" value="${i}" readonly></td>
+        <td><input type="date" data-k="p_date" value="${row.p_date || ""}"></td>
+        <td><input type="text" data-k="farmer" value="${row.farmer || ""}" placeholder="Farmer name"></td>
+        <td><input class="num" type="number" step="0.01" data-k="p_qty" value="${row.p_qty ?? ""}" placeholder="0"></td>
+        <td><input class="num" type="number" step="0.01" data-k="p_rate" value="${row.p_rate ?? ""}" placeholder="0"></td>
+        <td><input class="num" type="text" data-k="p_amt" value="${fmt(row.p_amt)}" readonly></td>
+        <td><input type="text" data-k="p_folio" value="${row.p_folio || ""}" placeholder="Folio"></td>
+
+        <!-- Sales -->
+        <td><input type="date" data-k="s_date" value="${row.s_date || ""}"></td>
+        <td><input type="text" data-k="bill_no" value="${row.bill_no || ""}" placeholder="Bill no"></td>
+        <td><input type="text" data-k="buyer" value="${row.buyer || ""}" placeholder="Buyer name"></td>
+        <td><input class="num" type="number" step="0.01" data-k="s_qty" value="${row.s_qty ?? ""}" placeholder="0"></td>
+        <td><input class="num" type="number" step="0.01" data-k="s_rate" value="${row.s_rate ?? ""}" placeholder="0"></td>
+        <td><input class="num" type="text" data-k="s_amt" value="${fmt(row.s_amt)}" readonly></td>
+        <td><input type="text" data-k="s_folio" value="${row.s_folio || ""}" placeholder="Folio"></td>
+
+        <!-- Stock -->
+        <td><input class="num" type="text" data-k="stk_qty" value="${fmt(row.stk_qty)}" readonly></td>
+        <td><input class="num" type="number" step="0.01" data-k="stk_rate" value="${row.stk_rate ?? ""}" placeholder="0"></td>
+        <td><input class="num" type="text" data-k="stk_amt" value="${fmt(row.stk_amt)}" readonly></td>
+
+        <td class="center">
+          <div class="row-actions">
+            <button type="button" class="icon-btn" data-action="dup">⎘</button>
+            <button type="button" class="icon-btn" data-action="del">🗑</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  function newRow(){
+    return {
+      id: String(Date.now()) + Math.random().toString(16).slice(2),
+      p_date: "",
+      farmer: "",
+      p_qty: "",
+      p_rate: "",
+      p_amt: 0,
+      p_folio: "",
+
+      s_date: "",
+      bill_no: "",
+      buyer: "",
+      s_qty: "",
+      s_rate: "",
+      s_amt: 0,
+      s_folio: "",
+
+      stk_qty: 0,
+      stk_rate: "",
+      stk_amt: 0
+    };
+  }
+
+  function computeRow(r){
+    const pQty = n(r.p_qty);
+    const pRate = n(r.p_rate);
+    const sQty = n(r.s_qty);
+    const sRate = n(r.s_rate);
+
+    r.p_amt = pQty * pRate;
+    r.s_amt = sQty * sRate;
+
+    r.stk_qty = pQty - sQty;
+
+    // Default stock rate = purchase rate if empty/0
+    const userStkRate = n(r.stk_rate);
+    const effectiveRate = userStkRate > 0 ? userStkRate : pRate;
+    r.stk_rate = (userStkRate > 0 ? r.stk_rate : (pRate ? pRate : r.stk_rate));
+    r.stk_amt = r.stk_qty * effectiveRate;
+
+    return r;
+  }
+
+  function computeTotals(rows){
+    let tpq=0, tpa=0, tsq=0, tsa=0, tstkq=0, tstka=0;
+
+    rows.forEach(r=>{
+      tpq += n(r.p_qty);
+      tpa += n(r.p_amt);
+      tsq += n(r.s_qty);
+      tsa += n(r.s_amt);
+      tstkq += n(r.stk_qty);
+      tstka += n(r.stk_amt);
+    });
+
+    els.tPurchaseQty.textContent = fmt(tpq);
+    els.tPurchaseAmt.textContent = fmt(tpa);
+    els.tSaleQty.textContent = fmt(tsq);
+    els.tSaleAmt.textContent = fmt(tsa);
+    els.tStockQty.textContent = fmt(tstkq);
+    els.tStockAmt.textContent = fmt(tstka);
+  }
+
+  function render(){
+    els.tbody.innerHTML = state.rows.map((r, idx)=> rowTemplate(r, idx)).join("");
+    computeTotals(state.rows);
+  }
+
+  function save(){
+    const payload = {
+      produceName: els.produceName.value || "",
+      unitStock: els.unitStock.value || "",
+      rows: state.rows
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return null;
+      return JSON.parse(raw);
+    }catch(e){
+      return null;
+    }
+  }
+
+  function exportCSV(){
+    const headers = [
+      "Sl",
+      "Purchase Date","Farmer Name","Purchase Qty","Purchase Rate","Purchase Amount","Purchase Cashbook Folio",
+      "Sale Date","Bill No","Buyer Name","Sale Qty","Sale Rate","Sale Amount","Sale Cashbook Folio",
+      "Balance Stock Qty","Stock Rate","Stock Amount",
+      "Produce Name","Unit"
+    ];
+
+    const lines = [headers.join(",")];
+
+    state.rows.forEach((r, idx)=>{
+      const row = computeRow({...r});
+      const arr = [
+        (idx+1),
+        row.p_date || "",
+        `"${(row.farmer||"").replace(/"/g,'""')}"`,
+        n(row.p_qty),
+        n(row.p_rate),
+        n(row.p_amt),
+        `"${(row.p_folio||"").replace(/"/g,'""')}"`,
+        row.s_date || "",
+        `"${(row.bill_no||"").replace(/"/g,'""')}"`,
+        `"${(row.buyer||"").replace(/"/g,'""')}"`,
+        n(row.s_qty),
+        n(row.s_rate),
+        n(row.s_amt),
+        `"${(row.s_folio||"").replace(/"/g,'""')}"`,
+        n(row.stk_qty),
+        n(row.stk_rate),
+        n(row.stk_amt),
+        `"${(els.produceName.value||"").replace(/"/g,'""')}"`,
+        `"${(els.unitStock.value||"").replace(/"/g,'""')}"`
+      ];
+      lines.push(arr.join(","));
+    });
+
+    const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `output_produce_register_${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function syncFromDOM(tr){
+    const id = tr.getAttribute("data-row-id");
+    const r = state.rows.find(x => x.id === id);
+    if(!r) return;
+
+    tr.querySelectorAll("input[data-k]").forEach(inp=>{
+      const k = inp.getAttribute("data-k");
+      r[k] = inp.value;
+    });
+
+    computeRow(r);
+    save();
+  }
+
+  // -------- State ----------
+  let state = {
+    rows: [ newRow() ]
+  };
+
+  // -------- Init ----------
+  (function init(){
+    const saved = load();
+    if(saved && Array.isArray(saved.rows)){
+      state.rows = saved.rows.map(r => computeRow(r));
+      els.produceName.value = saved.produceName || "";
+      els.unitStock.value = saved.unitStock || "";
+    }else{
+      state.rows = [ computeRow(newRow()) ];
+    }
+    render();
+  })();
+
+  // -------- Events ----------
+  els.addRowBtn.addEventListener("click", ()=>{
+    state.rows.push(computeRow(newRow()));
+    render();
+    save();
+    toast("Row added");
+  });
+
+  els.exportBtn.addEventListener("click", ()=>{
+    exportCSV();
+    toast("CSV exported");
+  });
+
+  els.printBtn.addEventListener("click", ()=>{
+    window.print();
+  });
+
+  els.clearBtn.addEventListener("click", ()=>{
+    if(!confirm("Clear all entries? This will remove saved data from this browser.")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    state.rows = [ computeRow(newRow()) ];
+    els.produceName.value = "";
+    els.unitStock.value = "";
+    render();
+    toast("Cleared");
+  });
+
+  els.produceName.addEventListener("input", save);
+  els.unitStock.addEventListener("input", save);
+
+  els.tbody.addEventListener("input", (e)=>{
+    const tr = e.target.closest("tr");
+    if(!tr) return;
+    syncFromDOM(tr);
+    // re-render to update readonly computed fields + totals
+    render();
+  });
+
+  els.tbody.addEventListener("click", (e)=>{
+    const btn = e.target.closest("[data-action]");
+    if(!btn) return;
+
+    const tr = e.target.closest("tr");
+    if(!tr) return;
+
+    const action = btn.getAttribute("data-action");
+    const id = tr.getAttribute("data-row-id");
+    const idx = state.rows.findIndex(x => x.id === id);
+    if(idx === -1) return;
+
+    if(action === "del"){
+      if(state.rows.length === 1){
+        toast("At least 1 row required");
+        return;
+      }
+      state.rows.splice(idx, 1);
+      render();
+      save();
+      toast("Row deleted");
+    }
+
+    if(action === "dup"){
+      const copy = JSON.parse(JSON.stringify(state.rows[idx]));
+      copy.id = String(Date.now()) + Math.random().toString(16).slice(2);
+      state.rows.splice(idx+1, 0, computeRow(copy));
+      render();
+      save();
+      toast("Row duplicated");
+    }
+  });
+</script>
+{% endblock %}

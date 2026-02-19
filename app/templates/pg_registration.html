@@ -1,0 +1,904 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<style>
+
+.pgr-wrap{
+  width:100%;
+  max-width:1100px;
+  margin:0 auto;
+}
+
+/* ---------- HERO ---------- */
+.pgr-hero{
+  background:linear-gradient(to right,#059669,#10b981);
+  border-radius:1.25rem;
+  padding:1.2rem;
+  color:#fff;
+  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+  position:relative;
+  overflow:hidden;
+}
+.pgr-hero:before{
+  content:"";
+  position:absolute;
+  inset:-40% -20%;
+  background:radial-gradient(closest-side,rgba(255,255,255,.12),transparent 60%);
+  pointer-events:none;
+}
+.pgr-hero-top{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:.9rem;
+  flex-wrap:wrap;
+}
+.pgr-title{
+  display:flex;
+  gap:.75rem;
+  align-items:center;
+  min-width:0;
+  flex:1;
+}
+.pgr-icon{
+  width:42px;height:42px;
+  border-radius:9999px;
+  background:rgba(255,255,255,.20);
+  border:1px solid rgba(255,255,255,.25);
+  display:flex;align-items:center;justify-content:center;
+  flex:0 0 auto;
+}
+.pgr-icon svg{width:20px;height:20px;color:#fff;}
+.pgr-hgroup{min-width:0;}
+.pgr-h1{
+  margin:0;
+  font-size:clamp(1.25rem,2vw,1.65rem);
+  font-weight:950;
+  line-height:1.1;
+  word-break:normal;
+  overflow-wrap:break-word;
+}
+.pgr-sub{
+  margin-top:.25rem;
+  color:#d1fae5;
+  font-size:.92rem;
+  font-weight:800;
+}
+
+/* status badge */
+.pgr-status{
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  padding:.55rem .9rem;
+  border-radius:9999px;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.18);
+  font-weight:900;
+  font-size:.86rem;
+  user-select:none;
+  white-space:nowrap;
+}
+.pgr-dot{
+  width:8px;height:8px;border-radius:9999px;
+  background:#d1fae5;
+  box-shadow:0 0 0 3px rgba(209,250,229,.18);
+}
+
+/* ---------- FORM CARD ---------- */
+.pgr-card{
+  margin-top:1rem;
+  background:#fff;
+  border-radius:1.25rem;
+  padding:1.25rem;
+  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+  border:1px solid rgba(4,120,87,.10);
+}
+
+/* section header */
+.pgr-section{
+  display:flex;
+  align-items:center;
+  gap:.55rem;
+  color:#047857;
+  margin:0 0 .75rem;
+}
+.pgr-section svg{width:18px;height:18px;color:#059669;}
+.pgr-section-title{
+  margin:0;
+  font-size:1rem;
+  font-weight:950;
+  color:#065f46;
+}
+
+/* ---------- GRID ---------- */
+.pgr-grid{
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:.85rem;
+}
+.pgr-field{
+  display:flex;
+  flex-direction:column;
+  gap:.35rem;
+  min-width:0;
+}
+.pgr-label{
+  font-size:.78rem;
+  color:#059669;
+  font-weight:950;
+  letter-spacing:.2px;
+}
+.pgr-input,
+.pgr-select{
+  width:100%;
+  background:#f0fdf4;
+  color:#1f2937;
+  border-radius:.65rem;
+  padding:.62rem .75rem;
+  border:2px solid transparent;
+  outline:none;
+  font-size:1rem;
+  font-weight:850;
+  min-width:0;
+  transition: box-shadow .2s ease, border-color .2s ease, background .2s ease;
+}
+.pgr-input[readonly]{
+  background:#f8fafc;
+  color:#0f172a;
+  border-color:rgba(15,23,42,.06);
+}
+.pgr-input:focus,
+.pgr-select:focus{
+  border-color:#34d399;
+  box-shadow:0 0 0 3px rgba(52,211,153,.12);
+  background:#ecfdf5;
+}
+
+.pgr-hr{
+  height:1px;
+  background:#d1fae5;
+  border:none;
+  margin:1.2rem 0 1rem;
+}
+
+/* spans */
+.col-12{grid-column:span 12;}
+.col-9{grid-column:span 9;}
+.col-8{grid-column:span 8;}
+.col-6{grid-column:span 6;}
+.col-4{grid-column:span 4;}
+.col-3{grid-column:span 3;}
+
+/* help text */
+.pgr-help{
+  font-size:.82rem;
+  color:#6b7280;
+  font-weight:700;
+  margin-top:.35rem;
+}
+
+/* ---------- MEMBERS PREVIEW CARD ---------- */
+.pgr-preview{
+  border-radius:1.25rem;
+  border:1px solid rgba(4,120,87,.10);
+  overflow:hidden;
+  background:#fff;
+  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+}
+.pgr-preview-head{
+  padding:.8rem 1rem;
+  background:linear-gradient(to right, rgba(5,150,105,.10), rgba(16,185,129,.10));
+  border-bottom:1px solid rgba(15,23,42,.08);
+  font-weight:950;
+  color:#064e3b;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.75rem;
+  flex-wrap:wrap;
+}
+.pgr-count{
+  display:inline-flex;
+  align-items:center;
+  gap:.45rem;
+  padding:.35rem .65rem;
+  border-radius:9999px;
+  background:rgba(16,185,129,.12);
+  border:1px solid rgba(16,185,129,.25);
+  color:#065f46;
+  font-weight:950;
+  font-size:.82rem;
+}
+.pgr-preview-body{ padding:.9rem 1rem; }
+.pgr-empty{
+  color:#6b7280;
+  font-weight:700;
+  font-size:.9rem;
+}
+
+/* preview row */
+.pgr-chip{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.75rem;
+  padding:.7rem .75rem;
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:.9rem;
+  background:#fff;
+  margin-bottom:.6rem;
+}
+.pgr-chip-text{
+  font-weight:800;
+  color:#0f172a;
+  font-size:.92rem;
+  line-height:1.25;
+}
+.pgr-chip-btn{
+  border:none;
+  cursor:pointer;
+  user-select:none;
+  padding:.5rem .75rem;
+  border-radius:9999px;
+  font-weight:950;
+  font-size:.82rem;
+  color:#991b1b;
+  background:rgba(239,68,68,.10);
+  border:1px solid rgba(239,68,68,.25);
+  transition: transform .15s ease, box-shadow .2s ease;
+  white-space:nowrap;
+}
+.pgr-chip-btn:hover{
+  transform: translateY(-1px);
+  box-shadow:0 14px 22px -18px rgba(0,0,0,.35);
+}
+
+/* ---------- BUTTONS ---------- */
+.pgr-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:.65rem;
+  flex-wrap:wrap;
+  margin-top:1rem;
+}
+.pgr-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.55rem;
+  padding:.7rem 1.15rem;
+  border-radius:9999px;
+  font-weight:950;
+  cursor:pointer;
+  user-select:none;
+  border:1px solid transparent;
+  transition: transform .15s ease, box-shadow .2s ease;
+  min-height:44px;
+}
+.pgr-btn-primary{
+  background:linear-gradient(to right,#059669,#10b981);
+  color:#fff;
+  box-shadow:0 14px 22px -18px rgba(0,0,0,.35);
+}
+.pgr-btn-primary:hover{
+  transform:translateY(-1px);
+  box-shadow:0 18px 28px -18px rgba(0,0,0,.45);
+}
+
+/* ---------- Select2 THEME (scoped via container class) ---------- */
+.pgr-card .select2-container{ width:100% !important; }
+
+.pgr-card .select2-container--default .select2-selection--multiple{
+  min-height:46px;
+  border-radius:.65rem;
+  border:2px solid transparent;
+  background:#f0fdf4;
+  padding:.35rem .5rem;
+}
+.pgr-card .select2-container--default.select2-container--focus .select2-selection--multiple{
+  border-color:#34d399;
+  box-shadow:0 0 0 3px rgba(52,211,153,.12);
+  background:#ecfdf5;
+}
+.pgr-card .select2-container--default .select2-selection--multiple .select2-selection__rendered{
+  padding-left:.1rem;
+}
+.pgr-card .select2-container--default .select2-selection__choice{
+  background:rgba(16,185,129,.12);
+  border:1px solid rgba(16,185,129,.30);
+  color:#065f46;
+  border-radius:9999px;
+  padding:.25rem .55rem;
+  font-weight:900;
+  margin-top:.35rem;
+}
+.pgr-card .select2-container--default .select2-selection__choice__remove{
+  color:#065f46;
+  margin-right:.35rem;
+}
+.pgr-card .select2-dropdown{
+  border-radius:.9rem;
+  border:1px solid rgba(15,23,42,.10);
+  overflow:hidden;
+  box-shadow:0 22px 44px -30px rgba(0,0,0,.35);
+}
+.pgr-card .select2-container--default .select2-search--inline .select2-search__field{
+  font-weight:800;
+}
+.pgr-card .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable{
+  background:rgba(16,185,129,.12);
+  color:#064e3b;
+  font-weight:900;
+}
+/* ============================================================
+   FIX: Selected Members Preview — make it look clean + modern
+   Works for BOTH:
+   1) your old preview markup: .border.rounded ... .remove-member (btn btn-danger)
+   2) the new preview markup: .pgr-chip / .pgr-chip-btn
+============================================================ */
+
+/* Card body spacing */
+#memberPreview{
+  display: grid;
+  gap: 10px;
+}
+
+/* --------- OLD injected preview blocks (from your original JS) --------- */
+#memberPreview > .border.rounded{
+  border: 1px solid rgba(15,23,42,0.10) !important;
+  border-radius: 14px !important;
+  padding: 10px 12px !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 18px -16px rgba(0,0,0,0.35);
+}
+
+/* Make it align nicely */
+#memberPreview > .border.rounded.d-flex{
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+/* Text inside old preview */
+#memberPreview > .border.rounded > div:first-child{
+  font-weight: 850;
+  color: #0f172a;
+  line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Old remove button – convert to nice pill */
+#memberPreview .remove-member.btn,
+#memberPreview .remove-member{
+  appearance: none;
+  border: 1px solid rgba(239,68,68,0.25) !important;
+  background: rgba(239,68,68,0.10) !important;
+  color: #991b1b !important;
+  font-weight: 950 !important;
+  border-radius: 9999px !important;
+  padding: 8px 12px !important;
+  font-size: 12.5px !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+  white-space: nowrap;
+}
+#memberPreview .remove-member:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 22px -18px rgba(0,0,0,0.35);
+}
+
+/* --------- NEW preview blocks (if your page uses pgr-chip) --------- */
+#memberPreview .pgr-chip{
+  border: 1px solid rgba(15,23,42,0.10);
+  border-radius: 14px;
+  background: #fff;
+  padding: 10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  box-shadow: 0 10px 18px -16px rgba(0,0,0,0.35);
+}
+#memberPreview .pgr-chip-text{
+  font-weight: 850;
+  color:#0f172a;
+  line-height: 1.25;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#memberPreview .pgr-chip-btn{
+  border: 1px solid rgba(239,68,68,0.25);
+  background: rgba(239,68,68,0.10);
+  color:#991b1b;
+  border-radius:9999px;
+  padding:8px 12px;
+  font-weight:950;
+  font-size:12.5px;
+  white-space:nowrap;
+}
+#memberPreview .pgr-chip-btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 22px -18px rgba(0,0,0,0.35);
+}
+
+/* Empty state */
+#memberPreview .text-muted.small,
+#memberPreview .pgr-empty{
+  padding: 8px 2px;
+  color: rgba(15,23,42,0.55) !important;
+  font-weight: 800;
+}
+
+/* Selected Member Row */
+.pgr-member-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .75rem 1rem;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    margin-bottom: .6rem;
+    transition: all .2s ease;
+}
+
+.pgr-member-row:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,.05);
+}
+
+/* Member Name */
+.pgr-member-name {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* Right Side Buttons */
+.pgr-member-actions {
+    display: flex;
+    gap: .4rem;
+}
+
+/* Icon Button */
+.pgr-icon-btn {
+    border: none;
+    background: #f3f4f6;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all .2s ease;
+}
+
+/* Edit */
+.pgr-icon-btn.edit-member:hover {
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+/* Remove */
+.pgr-icon-btn.remove-member:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+
+/* ---------- RESPONSIVE ---------- */
+@media(max-width:768px){
+  .col-4,.col-3,.col-6,.col-8,.col-9{grid-column:span 12;}
+  .pgr-card{padding:1rem;}
+}
+@media(max-width:420px){
+  .pgr-status{font-size:.82rem;padding:.5rem .75rem;}
+}
+</style>
+
+<div class="pgr-wrap">
+
+  <!-- HERO -->
+  <div class="pgr-hero">
+    <div class="pgr-hero-top">
+      <div class="pgr-title">
+        <div class="pgr-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 20V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12" stroke="currentColor" stroke-width="2"/>
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
+            <path d="M7 20v-8h10v8" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="pgr-hgroup">
+          <div class="pgr-h1">PG Registration – {{ pg.name }}</div>
+          <div class="pgr-sub">Location, bank, aggregation & member selection</div>
+        </div>
+      </div>
+
+      <div class="pgr-status">
+        <span class="pgr-dot"></span>
+        Status: {{ pg.status or 'draft' }}
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM CARD -->
+  <div class="pgr-card">
+    <form method="POST">
+      <div class="pgr-section">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <h3 class="pgr-section-title">Registration Details</h3>
+      </div>
+
+      <div class="pgr-grid">
+        <!-- LOCATION -->
+        <div class="pgr-field col-4">
+          <label class="pgr-label">State</label>
+          <input type="text" class="pgr-input" value="{{ pg.State }}" readonly>
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label">District</label>
+          <input type="text" class="pgr-input" value="{{ pg.District }}" readonly>
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label">Block</label>
+          <input type="text" class="pgr-input" value="{{ pg.Block }}" readonly>
+        </div>
+
+        <div class="pgr-field col-6">
+          <label class="pgr-label">Gram Panchayat</label>
+          <input type="text" class="pgr-input" value="{{ pg['Gram Panchayat'] }}" readonly>
+        </div>
+
+        <div class="pgr-field col-6">
+          <label class="pgr-label">Village</label>
+          <input type="text" class="pgr-input" value="{{ pg.Village }}" readonly>
+        </div>
+
+        <div class="col-12"><hr class="pgr-hr"></div>
+
+        <!-- BASIC INFO -->
+        <div class="pgr-field col-4">
+          <label class="pgr-label">PG Type</label>
+          <input type="text" class="pgr-input" name="pg_type" value="{{ pg.pg_type or '' }}">
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label">Sector</label>
+          <input type="text" class="pgr-input" name="sector" value="{{ pg.sector or '' }}">
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label">Formation Date</label>
+          <input type="date" class="pgr-input" name="formation_date" value="{{ pg.formation_date or '' }}">
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label">Contact Number</label>
+          <input type="text" class="pgr-input" name="contact_number"
+                 value="{{ pg.office_bearers.contact_number if pg.office_bearers else '' }}">
+        </div>
+
+        <div class="col-12"><hr class="pgr-hr"></div>
+
+        <!-- BANK -->
+        <div class="pgr-field col-3">
+          <label class="pgr-label">Bank Name</label>
+          <input type="text" class="pgr-input" name="bank_name"
+                 value="{{ pg.bank_details.bank_name if pg.bank_details else '' }}">
+        </div>
+
+        <div class="pgr-field col-3">
+          <label class="pgr-label">Branch</label>
+          <input type="text" class="pgr-input" name="branch"
+                 value="{{ pg.bank_details.branch if pg.bank_details else '' }}">
+        </div>
+
+        <div class="pgr-field col-3">
+          <label class="pgr-label">Account Number</label>
+          <input type="text" class="pgr-input" name="account_number"
+                 value="{{ pg.bank_details.account_number if pg.bank_details else '' }}">
+        </div>
+
+        <div class="pgr-field col-3">
+          <label class="pgr-label">IFSC</label>
+          <input type="text" class="pgr-input" name="ifsc"
+                 value="{{ pg.bank_details.ifsc if pg.bank_details else '' }}">
+        </div>
+
+        <div class="col-12"><hr class="pgr-hr"></div>
+
+        <!-- AGGREGATION -->
+        <div class="pgr-field col-6">
+          <label class="pgr-label">Aggregation Centre Name</label>
+          <input type="text" class="pgr-input" name="agg_centre_name"
+                 value="{{ pg.aggregation_centre.name if pg.aggregation_centre else '' }}">
+        </div>
+
+        <div class="pgr-field col-6">
+          <label class="pgr-label">Aggregation Centre Address</label>
+          <input type="text" class="pgr-input" name="agg_centre_address"
+                 value="{{ pg.aggregation_centre.address if pg.aggregation_centre else '' }}">
+        </div>
+
+        <div class="col-12"><hr class="pgr-hr"></div>
+
+        <!-- MEMBERS -->
+        <div class="pgr-field col-12">
+          <label class="pgr-label" style="font-size:.9rem;">Add PG Members</label>
+          <select id="memberSelect" class="pgr-select" multiple>
+            {% for m in shg_members %}
+              <option value="{{ m._id }}">
+                {{ m["Member Name"] }} | {{ m["SHG Name"] }} | {{ m["SHG Code"] }}
+              </option>
+            {% endfor %}
+          </select>
+          <div class="pgr-help">Maximum 40 members allowed.</div>
+        </div>
+
+        <!-- Preview -->
+        <div class="col-12" style="margin-top:.5rem;">
+          <div class="pgr-preview">
+            <div class="pgr-preview-head">
+              <span>Selected Members</span>
+              <span class="pgr-count">Count: <span id="memberCount">0</span></span>
+            </div>
+            <div class="pgr-preview-body" id="memberPreview">
+              <div class="pgr-empty">No members selected</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12"><hr class="pgr-hr"></div>
+
+        <!-- Office Bearers -->
+        <div class="pgr-field col-4">
+          <label class="pgr-label">President</label>
+          <select name="president_id" id="presidentSelect" class="pgr-select"></select>
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label">Secretary</label>
+          <select name="secretary_id" id="secretarySelect" class="pgr-select"></select>
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label">Cashier</label>
+          <select name="cashier_id" id="cashierSelect" class="pgr-select"></select>
+        </div>
+
+        <div class="pgr-field col-3">
+          <label class="pgr-label">Total Members</label>
+          <input type="number" id="totalMembers" name="total_members" class="pgr-input"
+                 value="{{ pg.total_members or 0 }}" readonly>
+        </div>
+
+      </div>
+
+      <div id="hiddenMemberInputs"></div>
+
+      <div class="pgr-actions">
+        <button class="pgr-btn pgr-btn-primary" type="submit">Save</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script id="existing-members-data" type="application/json">
+{{ safe_members | tojson | safe }}
+</script>
+<script>
+    const PG_MEMBERSHIP_URL_TEMPLATE = "{{ url_for('pg.pg_members', pg_id='__PGID__') }}";
+</script>
+
+
+<script>
+$(document).ready(function() {
+
+    // ===============================
+    // Load existing members safely
+    // ===============================
+    let existingMembers = JSON.parse(
+        document.getElementById("existing-members-data").textContent || "[]"
+    );
+
+    // ===============================
+    // Initialize Select2
+    // ===============================
+    $('#memberSelect').select2({
+        width: '100%',
+        placeholder: "Search and select SHG members"
+    });
+
+    // ===============================
+    // Refresh UI
+    // ===============================
+     function refreshUI(){
+
+    let selected = $('#memberSelect').select2('data') || [];
+
+    // 🔹 Max 40 validation
+    if (selected.length > 40) {
+        alert("Maximum 40 members allowed.");
+        selected.pop();
+        $('#memberSelect')
+            .val(selected.map(x => x.id))
+            .trigger('change');
+        return;
+    }
+
+    let preview = $('#memberPreview');
+    let hiddenContainer = $('#hiddenMemberInputs');
+
+    preview.empty();
+    hiddenContainer.empty();
+
+    if (selected.length === 0) {
+        preview.html('<div class="text-muted small">No members selected</div>');
+    }
+
+    selected.forEach(member => {
+
+        // 🔹 Extract ONLY member name (before first "|")
+        let memberName = member.text.split('|')[0].trim();
+
+        preview.append(`
+            <div class="pgr-member-row">
+
+                <div class="pgr-member-name">
+                    ${memberName}
+                </div>
+
+                <div class="pgr-member-actions">
+
+                    <!-- Edit -->
+                    <button type="button"
+                            class="pgr-icon-btn edit-member"
+                            data-id="${member.id}"
+                            title="Edit Member">
+                        ✏
+                    </button>
+
+                    <!-- Remove -->
+                    <button type="button"
+                            class="pgr-icon-btn remove-member"
+                            data-id="${member.id}"
+                            title="Remove Member">
+                        ✕
+                    </button>
+
+                </div>
+            </div>
+        `);
+
+
+        hiddenContainer.append(
+            `<input type="hidden" name="member_ids[]" value="${member.id}">`
+        );
+    });
+
+    $('#memberCount').text(selected.length);
+    $('#totalMembers').val(selected.length);
+
+    updateOfficeBearers(selected);
+  }
+
+
+    // ===============================
+    // Update Office Bearers
+    // ===============================
+    function updateOfficeBearers(selected) {
+
+        let p = $('#presidentSelect');
+        let s = $('#secretarySelect');
+        let c = $('#cashierSelect');
+
+        let selectedIds = selected.map(m => String(m.id));
+
+        // Store current selection before rebuilding
+        let currentPresident = p.val();
+        let currentSecretary = s.val();
+        let currentCashier = c.val();
+
+        p.empty();
+        s.empty();
+        c.empty();
+
+        selected.forEach(member => {
+            let option = `<option value="${member.id}">${member.text}</option>`;
+            p.append(option);
+            s.append(option);
+            c.append(option);
+        });
+
+        // Restore previous values if still valid
+        if (selectedIds.includes(currentPresident)) p.val(currentPresident);
+        if (selectedIds.includes(currentSecretary)) s.val(currentSecretary);
+        if (selectedIds.includes(currentCashier)) c.val(currentCashier);
+
+        // First load (edit mode only)
+        if (existingMembers.length > 0) {
+            existingMembers.forEach(m => {
+
+                let id = String(m.member_id);
+
+                if (!selectedIds.includes(id)) return;
+
+                if (m.role === "president") p.val(id);
+                if (m.role === "secretary") s.val(id);
+                if (m.role === "cashier") c.val(id);
+            });
+
+            // Prevent re-running edit preload
+            existingMembers = [];
+        }
+    }
+
+    // ===============================
+    // Remove Member
+    // ===============================
+    $(document).on('click', '.remove-member', function() {
+
+        let id = String($(this).data('id'));
+
+        let current = $('#memberSelect').val() || [];
+
+        current = current.filter(v => v !== id);
+
+        $('#memberSelect').val(current).trigger('change');
+    });
+
+
+    // ===============================
+    // Edit Member
+    // ===============================
+    $(document).on('click', '.edit-member', function() {
+
+    let memberId = $(this).data('id');
+
+    let url = PG_MEMBERSHIP_URL_TEMPLATE.replace('__PGID__', PG_ID);
+
+    window.location.href = `${url}?member_id=${memberId}`;
+    });
+
+
+    // ===============================
+    // Select Change
+    // ===============================
+    $('#memberSelect').on('change', refreshUI);
+
+    // ===============================
+    // Preload Existing Members
+    // ===============================
+    if (existingMembers.length > 0) {
+
+        let ids = existingMembers.map(m => String(m.member_id));
+
+        $('#memberSelect')
+            .val(ids)
+            .trigger('change');
+
+    } else {
+        refreshUI();
+    }
+
+});
+</script>
+
+
+
+
+{% endblock %}

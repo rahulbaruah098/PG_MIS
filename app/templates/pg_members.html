@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* ============================================================
+   PG MEMBER DETAILS — PGMIS STYLE (SCOPED)
+   Scope: .pmd-wrap
+============================================================ */
+.pmd-wrap{ width:100%; max-width:1400px; margin:0 auto; }
+.pmd-hero{
+  background:linear-gradient(to right,#059669,#10b981);
+  border-radius:1.25rem;
+  padding:1.2rem;
+  color:#fff;
+  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+  position:relative; overflow:hidden;
+}
+.pmd-hero:before{
+  content:""; position:absolute; inset:-40% -20%;
+  background:radial-gradient(closest-side,rgba(255,255,255,.12),transparent 60%);
+}
+.pmd-hero-top{
+  position:relative; z-index:1;
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:.9rem; flex-wrap:wrap;
+}
+.pmd-title{ display:flex; gap:.75rem; align-items:center; min-width:0; }
+.pmd-icon{
+  width:42px;height:42px;border-radius:9999px;
+  background:rgba(255,255,255,.20);
+  border:1px solid rgba(255,255,255,.25);
+  display:flex;align-items:center;justify-content:center;
+}
+.pmd-icon svg{ width:20px;height:20px;color:#fff; }
+.pmd-h1{ margin:0; font-size:clamp(1.25rem,2vw,1.65rem); font-weight:950; line-height:1.1; }
+.pmd-sub{ margin-top:.25rem; color:#d1fae5; font-size:.92rem; font-weight:800; }
+
+.pmd-pill{
+  display:inline-flex; align-items:center; gap:.5rem;
+  padding:.55rem .9rem; border-radius:9999px;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.18);
+  color:#fff; font-weight:900; text-decoration:none;
+  transition:transform .15s ease, background .2s ease;
+  white-space:nowrap;
+}
+.pmd-pill:hover{ transform:translateY(-1px); background:rgba(255,255,255,.28); }
+
+.pmd-card{
+  margin-top:1rem;
+  background:#fff;
+  border-radius:1.25rem;
+  padding:1.1rem;
+  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+  border:1px solid rgba(4,120,87,.10);
+}
+
+.pmd-note{
+  margin-top:.6rem;
+  color:#6b7280;
+  font-weight:700;
+  font-size:.9rem;
+}
+
+/* ============================================================
+   HORIZONTAL SCROLL TABLE WRAPPER (IMPROVED)
+============================================================ */
+.pmd-table-wrap{
+  margin-top:.85rem;
+  border:1px solid rgba(4,120,87,.10);
+  border-radius:1.25rem;
+  background:#fff;
+  position:relative;
+  overflow:hidden;
+}
+
+/* Scroll container */
+.pmd-table-scroll{
+  overflow-x:auto;
+  overflow-y:hidden;
+  width:100%;
+  scroll-behavior:smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Subtle edge fade (right) */
+.pmd-table-wrap::after{
+  content:"";
+  position:absolute;
+  right:0;
+  top:0;
+  bottom:0;
+  width:26px;
+  pointer-events:none;
+  background:linear-gradient(to left, #fff, rgba(255,255,255,0));
+}
+
+/* Subtle edge fade (left) */
+.pmd-table-wrap::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:26px;
+  pointer-events:none;
+  background:linear-gradient(to right, #fff, rgba(255,255,255,0));
+}
+
+/* Scrollbar (nice) */
+.pmd-table-scroll::-webkit-scrollbar{ height:10px; }
+.pmd-table-scroll::-webkit-scrollbar-track{ background:#f1f5f9; border-radius:9999px; }
+.pmd-table-scroll::-webkit-scrollbar-thumb{ background:rgba(5,150,105,.35); border-radius:9999px; }
+.pmd-table-scroll::-webkit-scrollbar-thumb:hover{ background:rgba(5,150,105,.5); }
+
+/* ============================================================
+   TABLE
+============================================================ */
+.pmd-table{
+  width:100%;
+  min-width:1250px; /* ensures horizontal scroll when needed */
+  border-collapse:collapse;
+}
+
+.pmd-table th{
+  background:#f0fdf4;
+  color:#047857;
+  font-weight:950;
+  font-size:.78rem;
+  padding:.7rem;
+  text-align:left;
+  border-bottom:1px solid #e5e7eb;
+  white-space:nowrap;
+
+  /* sticky header */
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+
+.pmd-table td{
+  padding:.65rem .7rem;
+  border-top:1px solid #e5e7eb;
+  vertical-align:middle;
+  background:#fff;
+}
+
+.pmd-fixed{ white-space:nowrap; }
+.pmd-strong{ font-weight:900; color:#0f172a; }
+.pmd-muted{ color:#6b7280; font-weight:700; font-size:.85rem; }
+
+.pmd-input{
+  width:100%;
+  background:#f0fdf4;
+  border-radius:.65rem;
+  padding:.55rem .65rem;
+  border:2px solid transparent;
+  outline:none;
+  font-weight:850;
+  font-size:.92rem;
+}
+.pmd-input:focus{
+  border-color:#34d399;
+  box-shadow:0 0 0 3px rgba(52,211,153,.12);
+  background:#ecfdf5;
+}
+
+.pmd-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:.5rem;
+}
+.pmd-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  gap:.5rem;
+  padding:.55rem .95rem;
+  border-radius:9999px;
+  border:1px solid transparent;
+  font-weight:950;
+  cursor:pointer;
+  user-select:none;
+  transition: transform .15s ease, box-shadow .2s ease;
+  white-space:nowrap;
+}
+.pmd-btn-save{
+  background:linear-gradient(to right,#059669,#10b981);
+  color:#fff;
+  box-shadow:0 14px 22px -18px rgba(0,0,0,.35);
+}
+.pmd-btn-save:hover{
+  transform:translateY(-1px);
+  box-shadow:0 18px 28px -18px rgba(0,0,0,.45);
+}
+
+.pmd-row-saved{
+  background:rgba(16,185,129,.06);
+}
+.pmd-row-saved td{ background:rgba(16,185,129,.06); }
+
+@media(max-width:768px){
+  .pmd-card{ padding:1rem; }
+}
+</style>
+
+<div class="pmd-wrap">
+
+  <!-- HERO -->
+  <div class="pmd-hero">
+    <div class="pmd-hero-top">
+      <div class="pmd-title">
+        <div class="pmd-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+        <div>
+          <div class="pmd-h1">II. PG Member Details</div>
+          <div class="pmd-sub">PG: <b>{{ pg.name }}</b> • Members loaded from PG Registration (master data)</div>
+        </div>
+      </div>
+
+      <a class="pmd-pill" href="{{ url_for('pg.pg_registration', pg_id=pg._id) }}">Back to PG Registration</a>
+    </div>
+  </div>
+
+  {% if not rows %}
+    <div class="pmd-card">
+      <div class="alert alert-warning mb-0">
+        No members found for this PG. First select members inside <b>PG Registration</b>, then come back here.
+      </div>
+    </div>
+  {% else %}
+    <div class="pmd-card">
+      <div class="pmd-note">
+        ✅ Name/SHG/Category/Spouse are coming from master + PG Registration selection.
+        Fill bank/account/fee and save member-wise (no overwriting).
+      </div>
+
+      <div class="pmd-table-wrap">
+        <div class="pmd-table-scroll">
+          <table class="pmd-table">
+            <thead>
+              <tr>
+                <th style="width:80px;">Sl. No</th>
+                <th style="min-width:230px;">Member</th>
+                <th style="min-width:180px;">Father/Mother/Spouse Name</th>
+                <th style="width:140px;">Category</th>
+                <th style="min-width:200px;">SHG</th>
+                <th style="width:170px;">Contact</th>
+                <th style="min-width:220px;">AADHAR/Voter/Govt ID</th>
+                <th style="min-width:170px;">Bank</th>
+                <th style="min-width:140px;">Branch</th>
+                <th style="min-width:170px;">Account</th>
+                <th style="width:150px;">Fee</th>
+                <th style="width:140px; text-align:right;">Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for r in rows %}
+              <tr class="{% if r._just_saved %}pmd-row-saved{% endif %}">
+                <td class="pmd-fixed" style="text-align:center; font-weight:900;">{{ '2.' ~ loop.index }}</td>
+
+                <td>
+                  <div class="pmd-strong">{{ r.name or '-' }}</div>
+                  <!-- <div class="pmd-muted">Member ID: {{ r.member_id }}</div> -->
+                </td>
+
+                <td><div class="pmd">{{ r.spouse_name or '-' }}</div></td>
+                <td><div class="pmd-strong">{{ r.category or '-' }}</div></td>
+                <td><div class="pmd-strong">{{ r.shg_name or '-' }}</div></td>
+
+                <!-- ✅ per-row form -->
+                <td style="vertical-align:top;">
+                  <form method="POST" class="m-0 p-0">
+                    <input type="hidden" name="member_id" value="{{ r.member_id }}">
+                    <input class="pmd-input" style="width: 160px;" name="contact" value="{{ r.contact or '' }}" placeholder="Contact">
+                </td>
+
+                <td style="vertical-align:top;">
+                    <input class="pmd-input" name="photo_id_number" value="{{ r.photo_id_number or '' }}" placeholder="ID No">
+                </td>
+
+                <td style="vertical-align:top;">
+                    <input class="pmd-input" name="bank_name" value="{{ r.bank_name or '' }}" placeholder="Bank">
+                </td>
+
+                <td style="vertical-align:top;">
+                    <input class="pmd-input" name="branch" value="{{ r.branch or '' }}" placeholder="Branch">
+                </td>
+
+                <td style="vertical-align:top;">
+                    <input class="pmd-input" name="account_number" style="width: 250px;" value="{{ r.account_number or '' }}" placeholder="Account">
+                </td>
+
+                <td style="vertical-align:top;">
+                    <input class="pmd-input" name="membership_fee_paid" style="width: 120px;" value="{{ r.membership_fee_paid or '' }}" placeholder="0" inputmode="decimal">
+                </td>
+
+                <td style="vertical-align:top; text-align:right;">
+                    <div class="pmd-actions">
+                      <button class="pmd-btn pmd-btn-save" type="submit">Save</button>
+                    </div>
+                  </form>
+                </td>
+
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}

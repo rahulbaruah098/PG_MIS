@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Grants & Infrastructure Funds{% endblock %}
+{% block content %}
+<style>
+  .wrap{max-width:1200px;margin:0 auto;padding:18px}
+  .hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18)}
+  .hero h1{margin:0;font-weight:950}
+  .card{margin-top:14px;background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+  .f{display:flex;flex-direction:column;gap:6px}
+  .f label{font-size:.78rem;color:#059669;font-weight:900}
+  input,select,textarea{background:#f0fdf4;border:1px solid rgba(5,150,105,.22);border-radius:12px;padding:10px 12px;outline:none}
+  textarea{min-height:44px;resize:vertical}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(5,150,105,.28);background:#059669;color:#fff;font-weight:950;cursor:pointer;text-decoration:none}
+  .btn2{background:#ecfdf5;color:#065f46}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px;border-radius:14px;overflow:hidden}
+  th,td{padding:10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-size:.92rem}
+  th{background:#f0fdf4;color:#065f46;font-weight:950}
+  @media(max-width:980px){.grid{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Grants / Infrastructure Funds — {{ pg.pg_name or pg.name }}</h1>
+    <div style="margin-top:.35rem;color:#d1fae5;font-weight:800">Track fund source, release date, utilization, UC status, balance.</div>
+  </div>
+
+  <div class="card">
+    <form method="POST" class="grid">
+      <div class="f" style="grid-column:span 3"><label>Category</label>
+        <select name="category">
+          <option>Infrastructure</option><option>Working Capital</option><option>Equipment</option><option>Training</option><option>Other</option>
+        </select>
+      </div>
+      <div class="f" style="grid-column:span 3"><label>Source</label><input name="source" placeholder="Scheme / Agency"></div>
+      <div class="f" style="grid-column:span 3"><label>Release Date</label><input name="release_date" type="date"></div>
+      <div class="f" style="grid-column:span 3"><label>Amount Received</label><input name="amount_received" type="number" step="0.01"></div>
+
+      <div class="f" style="grid-column:span 3"><label>UC Status</label>
+        <select name="uc_status"><option value="pending">Pending</option><option value="submitted">Submitted</option><option value="approved">Approved</option></select>
+      </div>
+      <div class="f" style="grid-column:span 3"><label>UC Submitted Date</label><input name="uc_submitted_date" type="date"></div>
+      <div class="f" style="grid-column:span 6"><label>Notes</label><textarea name="notes"></textarea></div>
+
+      <div style="grid-column:span 12;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" type="submit">Add Grant</button>
+        <a class="btn btn2" href="{{ url_for('pg.pg_home') }}">Back</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:950;color:#065f46">Existing Grants</div>
+    <table>
+      <thead><tr><th>Category</th><th>Source</th><th>Release</th><th>Received</th><th>Utilized</th><th>Balance</th><th>UC</th><th></th></tr></thead>
+      <tbody>
+      {% for g in grants %}
+        <tr>
+          <td>{{ g.category }}</td>
+          <td>{{ g.source }}</td>
+          <td>{{ g.release_date or '' }}</td>
+          <td>₹{{ "{:,.2f}".format(g.amount_received or 0) }}</td>
+          <td>₹{{ "{:,.2f}".format(g.utilized_amount or 0) }}</td>
+          <td>₹{{ "{:,.2f}".format(g.balance_amount or 0) }}</td>
+          <td>{{ (g.uc_status or 'pending')|upper }}</td>
+          <td><a class="btn btn2" href="{{ url_for('finance.grant_view', grant_id=g._id) }}">Open</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" style="color:#64748b">No grants yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

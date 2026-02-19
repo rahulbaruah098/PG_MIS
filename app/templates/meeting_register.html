@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Meeting Register{% endblock %}
+{% block content %}
+<style>
+  .wrap{max-width:1200px;margin:0 auto;padding:18px}
+  .hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18)}
+  .hero h1{margin:0;font-weight:950}
+  .hero .sub{margin-top:.35rem;color:#d1fae5;font-weight:800}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .card{background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+  .f{display:flex;flex-direction:column;gap:6px}
+  .f label{font-size:.78rem;color:#059669;font-weight:900}
+  input,select,textarea{background:#f0fdf4;border:1px solid rgba(5,150,105,.22);border-radius:12px;padding:10px 12px;outline:none}
+  textarea{min-height:66px;resize:vertical}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(5,150,105,.28);background:#059669;color:#fff;font-weight:950;cursor:pointer;text-decoration:none}
+  .btn2{background:#ecfdf5;color:#065f46}
+  .att-list{max-height:220px;overflow:auto;border:1px solid rgba(5,150,105,.18);border-radius:12px;padding:10px;background:#fbfffd}
+  .att-item{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px dashed rgba(15,23,42,.08)}
+  .att-item:last-child{border-bottom:none}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:10px;border-radius:14px;overflow:hidden}
+  th,td{padding:10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-size:.92rem}
+  th{background:#f0fdf4;color:#065f46;font-weight:950}
+  @media(max-width:980px){.grid2{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Meeting & Governance — {{ pg.pg_name or pg.name }}</h1>
+    <div class="sub">Meeting register • attendance • resolutions</div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div style="font-weight:950;color:#065f46">Add Meeting</div>
+      <form method="POST" class="grid" style="margin-top:10px">
+        <div class="f" style="grid-column:span 4"><label>Date</label><input name="meeting_date" type="date" required></div>
+        <div class="f" style="grid-column:span 4"><label>Type</label>
+          <select name="meeting_type"><option>General</option><option>Executive</option><option>Finance</option><option>Business</option><option>Audit</option></select>
+        </div>
+        <div class="f" style="grid-column:span 12"><label>Agenda</label><textarea name="agenda"></textarea></div>
+        <div class="f" style="grid-column:span 12"><label>Attendance</label>
+          <div class="att-list">
+            {% for m in members %}
+              <label class="att-item">
+                <input type="checkbox" name="attendance" value="{{ m._id }}">
+                <span>{{ m.name or m.member_name or 'Member' }}</span>
+              </label>
+            {% else %}
+              <div style="color:#64748b">No members found.</div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="f" style="grid-column:span 12"><label>Resolutions / Decisions</label><textarea name="resolution"></textarea></div>
+        <div style="grid-column:span 12;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn" type="submit">Save Meeting</button>
+          <a class="btn btn2" href="{{ url_for('pg.pg_home') }}">Back</a>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:950;color:#065f46">Meeting History</div>
+      <table>
+        <thead><tr><th>Date</th><th>Type</th><th>Attendance</th><th>Agenda</th><th>Resolutions</th></tr></thead>
+        <tbody>
+        {% for m in meetings %}
+          <tr>
+            <td>{{ m.meeting_date }}</td>
+            <td>{{ m.meeting_type }}</td>
+            <td>{{ m.attendance_count or (m.attendance|length) }}</td>
+            <td>{{ m.agenda }}</td>
+            <td>{{ m.resolution }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" style="color:#64748b">No meetings saved yet.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}PG MIS{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap + Chart.js (keep) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Your existing global css (keep) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+  <!-- ✅ Mint/Green Layout Theme (SCOPED) -->
+  <style>
+    :root{
+      --bg1:#d9efe6; --bg2:#c6e6da; --mint:#d7f1e6; --mint-2:#eaf7f2; --card:#eef7f3;
+      --line:#bfe8d7; --line-2:#a7dec8; --ink:#173b2c; --muted:#2a4a3d; --brand:#0d6f45; --brand-2:#0a5d3a;
+      --footerInk:#1f4b3a; --footerMuted:#3a6b59;
+      --shadow:0 18px 34px rgba(6,40,26,.20);
+      --shadow-soft:0 10px 22px rgba(6,40,26,.14);
+      --r:22px;
+      --sbW: 278px;
+      --sbWc: 86px;
+    }
+
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(900px 560px at 18% 52%, rgba(13,111,69,.22) 0%, rgba(13,111,69,0) 62%),
+        radial-gradient(900px 560px at 82% 52%, rgba(13,111,69,.18) 0%, rgba(13,111,69,0) 62%),
+        radial-gradient(1100px 720px at 50% 42%, rgba(255,255,255,.68) 0%, rgba(255,255,255,0) 56%),
+        linear-gradient(90deg, #bfe7d6 0%, #d7efe6 40%, #d7efe6 60%, #bfe7d6 100%);
+      overflow-x:hidden;
+    }
+    body::before{
+      content:"";
+      position:fixed; inset:-2px;
+      background-image:
+        url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27180%27%20height%3D%27180%27%20viewBox%3D%270%200%20180%20180%27%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20fill%3D%27none%27/%3E%3Cg%20opacity%3D%270.22%27%3E%3Cg%20fill%3D%27%2387cbb2%27%3E%3Cpath%20d%3D%27M20%2020l10%2010-10%2010-10-10z%27/%3E%3Cpath%20d%3D%27M80%2030l8%208-8%208-8-8z%27/%3E%3Cpath%20d%3D%27M140%2026l10%2010-10%2010-10-10z%27/%3E%3Cpath%20d%3D%27M52%2076l7%207-7%207-7-7z%27/%3E%3Cpath%20d%3D%27M112%2082l7%207-7%207-7-7z%27/%3E%3Cpath%20d%3D%27M160%2084l8%208-8%208-8-8z%27/%3E%3C/g%3E%3Cg%20fill%3D%27%239ad5c0%27%3E%3Ccircle%20cx%3D%2740%27%20cy%3D%2744%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%2798%27%20cy%3D%2754%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%27160%27%20cy%3D%2740%27%20r%3D%272%27/%3E%3C/g%3E%3Cg%20stroke%3D%27%2387cbb2%27%20stroke-width%3D%271%27%20fill%3D%27none%27%20opacity%3D%270.30%27%3E%3Cpath%20d%3D%27M30%2016c8%2010%208%2026%200%2036-8-10-8-26%200-36z%27/%3E%3Cpath%20d%3D%27M156%2060c10%200%2018%208%2018%2018s-8%2018-18%2018-18-8-18-18%208-18%2018-18z%27/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      background-size:180px 180px;
+      background-repeat:repeat;
+      pointer-events:none;
+      z-index:0;
+      opacity:.9;
+      filter:saturate(1.05);
+    }
+
+    /* Layout wrapper */
+    .pgshell{
+      position:relative;
+      z-index:1;
+      display:flex;
+      min-height:100vh;
+    }
+
+    /* Sidebar (mint glass, not dark) */
+    .pgside{
+      width: var(--sbW);
+      flex: 0 0 var(--sbW);
+      padding: 16px 14px;
+      position: sticky;
+      top:0;
+      height: 100vh;
+      overflow:auto;
+
+      border-right: 1px solid rgba(112,214,180,.40);
+      background: rgba(255,255,255,.62);
+      backdrop-filter: blur(14px);
+      box-shadow: 12px 0 28px rgba(6,40,26,.08);
+    }
+
+    .pgbrand{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      padding: 10px 10px 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(112,214,180,.35);
+      background: linear-gradient(#f2faf6, #eef7f3);
+      box-shadow: var(--shadow-soft);
+      margin-bottom: 12px;
+    }
+    .pgbrand h5{
+      margin:0;
+      font-family:"Playfair Display", serif;
+      font-weight:800;
+      letter-spacing:.2px;
+      color: var(--brand);
+      font-size: 18px;
+      line-height:1.1;
+    }
+    .pgbrand .meta{
+      margin-top:6px;
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--muted);
+      opacity:.95;
+    }
+    .pgrolepill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(13,111,69,.18);
+      background: rgba(255,255,255,.70);
+      box-shadow: 0 10px 18px rgba(6,40,26,.08);
+      font-weight: 1000;
+      color: var(--footerInk);
+      font-size: 11.5px;
+      white-space:nowrap;
+    }
+    .pgrolepill .dot{
+      width:9px; height:9px; border-radius:999px;
+      background: linear-gradient(180deg, #16a34a, #0b5f3a);
+      box-shadow: 0 0 0 4px rgba(13,111,69,.12);
+    }
+
+    /* Sidebar section label */
+    .pgsec{
+      margin: 14px 8px 8px;
+      font-size: 11px;
+      font-weight: 1000;
+      color: rgba(42,74,61,.78);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+    }
+
+    /* Links */
+    .pgnav{
+      list-style:none;
+      padding:0;
+      margin:0;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    .pgnav a{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      text-decoration:none;
+
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(112,214,180,.28);
+      background: rgba(255,255,255,.55);
+      color: #18372a;
+      font-weight: 900;
+      font-size: 13px;
+      box-shadow: 0 10px 18px rgba(6,40,26,.06);
+      transition: transform .14s ease, box-shadow .14s ease, filter .14s ease;
+    }
+    .pgnav a:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 14px 24px rgba(6,40,26,.10);
+      filter: brightness(1.01);
+    }
+    .pgnav a .chev{
+      width: 26px;
+      height: 26px;
+      display:grid;
+      place-items:center;
+      border-radius: 10px;
+      border: 1px solid rgba(13,111,69,.18);
+      background: rgba(255,255,255,.65);
+      font-weight: 1000;
+      color: rgba(10,93,58,.9);
+      box-shadow: 0 10px 18px rgba(6,40,26,.06);
+      flex: 0 0 auto;
+    }
+
+    /* Main column */
+    .pgmain{
+      flex: 1 1 auto;
+      min-width: 0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* Topbar */
+    .pgtop{
+      position: sticky;
+      top:0;
+      z-index:5;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(112,214,180,.40);
+      background: rgba(255,255,255,.60);
+      backdrop-filter: blur(14px);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .pgtop .who{
+      font-weight: 1000;
+      color: #173b2c;
+      font-size: 13px;
+    }
+    .pgtop .who span{
+      color: var(--muted);
+      font-weight: 900;
+    }
+    .pglogout{
+      border: 1px solid rgba(220,38,38,.22);
+      background: rgba(255,255,255,.70);
+      color: #7a1313;
+      font-weight: 1000;
+      border-radius: 999px;
+      padding: 8px 12px;
+      text-decoration:none;
+      box-shadow: 0 10px 18px rgba(6,40,26,.08);
+      transition: transform .14s ease, box-shadow .14s ease;
+      white-space:nowrap;
+    }
+    .pglogout:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 14px 24px rgba(6,40,26,.10);
+    }
+
+    /* Content area */
+    .pgcontent{
+      padding: 14px;
+    }
+    .pgcontent .container-fluid{
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    /* Flash messages */
+    .alert{
+      border-radius: 16px;
+      border: 1px solid rgba(112,214,180,.45);
+      background: rgba(255,255,255,.85);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow-soft);
+      color: #173b2c;
+      font-weight: 800;
+    }
+    .alert .btn-close{ filter: saturate(.8); }
+
+    /* Mobile: sidebar becomes drawer */
+    .pgburger{
+      display:none;
+      border: 1px solid rgba(13,111,69,.18);
+      background: rgba(255,255,255,.70);
+      border-radius: 12px;
+      width: 42px;
+      height: 42px;
+      box-shadow: 0 10px 18px rgba(6,40,26,.08);
+      font-weight: 1000;
+      color: #0a5d3a;
+    }
+    .pgoverlay{
+      position:fixed;
+      inset:0;
+      background: rgba(10, 40, 26, .32);
+      backdrop-filter: blur(2px);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease;
+      z-index:10;
+    }
+    .pgoverlay.show{ opacity:1; pointer-events:auto; }
+
+    @media (max-width: 980px){
+      .pgburger{ display:inline-grid; place-items:center; }
+      .pgside{
+        position:fixed;
+        top:0;
+        left:0;
+        height:100vh;
+        z-index:11;
+        transform: translateX(-104%);
+        transition: transform .22s ease;
+        width: min(86vw, var(--sbW));
+        box-shadow: 24px 0 40px rgba(6,40,26,.14);
+      }
+      .pgside.open{ transform: translateX(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .pgside, .pgoverlay, .pgnav a, .pglogout{ transition:none !important; }
+    }
+  </style>
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+
+  <div class="pgoverlay" id="pgOverlay" aria-hidden="true"></div>
+
+  <div class="pgshell">
+    <!-- Sidebar -->
+    <nav class="pgside" id="pgSide" aria-label="Sidebar">
+      <div class="pgbrand">
+        <div>
+          <h5 class="mb-0">PG MIS</h5>
+          <div class="meta">Role: {{ role_label(session.get('role')) if session.get('role') else 'GUEST' }}</div>
+        </div>
+      </div>
+
+        {% if session.get('role') in ['BLOCK_ADMIN','CLF_ADMIN'] %}
+
+        <!-- ================= BLOCK ADMIN MENU ================= -->
+
+        <ul class="pgnav">
+          <li>
+            <a href="{{ url_for('reports.hierarchy_dashboard') }}">
+              <span>Dashboard</span>
+              <span class="chev">›</span>
+            </a>
+          </li>
+        </ul>
+
+        <div class="pgsec">Master Data</div>
+        <ul class="pgnav">
+          <li>
+            <a href="{{ url_for('master_data.shg_members_browser') }}">
+              <span>Master Data (TRESP)</span>
+              <span class="chev">›</span>
+            </a>
+          </li>
+        </ul>
+
+        <div class="pgsec">Funds</div>
+        <ul class="pgnav">
+          <li><a href="#"><span>Funds</span><span class="chev">›</span></a></li>
+          <li><a href="#"><span>Grants / Funds</span><span class="chev">›</span></a></li>
+        </ul>
+
+        <div class="pgsec">Loans</div>
+        <ul class="pgnav">
+          <li><a href="#"><span>Loans</span><span class="chev">›</span></a></li>
+          <li><a href="#"><span>Loan Dashboard</span><span class="chev">›</span></a></li>
+          <li><a href="#"><span>PG Loan Account</span><span class="chev">›</span></a></li>
+          <li><a href="#"><span>Member Loans</span><span class="chev">›</span></a></li>
+        </ul>
+
+        <div class="pgsec">Reports & Monitoring</div>
+        <ul class="pgnav">
+          <li><a href="#"><span>MPR</span><span class="chev">›</span></a></li>
+          <li><a href="#"><span>Monthly Progress</span><span class="chev">›</span></a></li>
+          <li><a href="#"><span>Sector Analytics</span><span class="chev">›</span></a></li>
+        </ul>
+
+        <div class="pgsec">Other</div>
+        <ul class="pgnav">
+          <li><a href="#"><span>Upload Documents</span><span class="chev">›</span></a></li>
+          <li><a href="#"><span>PG Gradation</span><span class="chev">›</span></a></li>
+        </ul>
+
+        {% else %}
+
+  <!-- ================= ORIGINAL MENU (UNCHANGED) ================= -->
+
+  <ul class="pgnav">
+    <li>
+      <a href="{{ url_for('reports.hierarchy_dashboard') }}">
+        <span>Dashboard</span>
+        <span class="chev">›</span>
+      </a>
+    </li>
+  </ul>
+
+  <div class="pgsec">Master Data</div>
+  <ul class="pgnav">
+    <li>
+      <a href="{{ url_for('master_data.shg_members_browser') }}">
+        <span>Master Data (TRESP)</span>
+        <span class="chev">›</span>
+      </a>
+    </li>
+
+    {% if session.get('role') == 'SUPER_ADMIN' %}
+    <li>
+      <a href="{{ url_for('master_data.shg_upload_replace') }}">
+        <span>Replace Master (Upload)</span>
+        <span class="chev">›</span>
+      </a>
+    </li>
+    {% endif %}
+
+    {% if session.get('role') in ['SUPER_ADMIN', 'ADMIN', 'DISTRICT_ADMIN', 'BLOCK_ADMIN', 'CLF_ADMIN', 'CLF_MANAGER'] %}
+
+      {% if session.get('role') == 'SUPER_ADMIN' %}
+      <li>
+        <a href="{{ url_for('master_data.manage_states') }}">
+          <span>States</span>
+          <span class="chev">›</span>
+        </a>
+      </li>
+      {% endif %}
+
+      {% if session.get('role') in ['SUPER_ADMIN','ADMIN'] %}
+      <li>
+        <a href="{{ url_for('master_data.manage_districts') }}">
+          <span>Districts</span>
+          <span class="chev">›</span>
+        </a>
+      </li>
+      {% endif %}
+
+      {% if session.get('role') == 'DISTRICT_ADMIN' %}
+      <li>
+        <a href="{{ url_for('master_data.manage_blocks') }}">
+          <span>Blocks</span>
+          <span class="chev">›</span>
+        </a>
+      </li>
+      {% endif %}
+
+      {% if session.get('role') in ['DISTRICT_ADMIN','ADMIN','SUPER_ADMIN'] %}
+      <li>
+        <a href="{{ url_for('master_data.manage_pgs') }}">
+          <span>PGs</span>
+          <span class="chev">›</span>
+        </a>
+      </li>
+      {% endif %}
+    {% endif %}
+  </ul>
+
+  {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN','BLOCK_ADMIN','CLF_MANAGER'] %}
+  <div class="pgsec">User Management</div>
+  <ul class="pgnav">
+    {% if session.get('role') == 'SUPER_ADMIN' %}
+    <li>
+      <a href="{{ url_for('auth.create_state_admin') }}">
+        <span>Create State Admin</span>
+        <span class="chev">›</span>
+      </a>
+    </li>
+    <li>
+      <a href="{{ url_for('auth.super_admin_password_reset') }}">
+        <span>Reset User Passwords</span>
+        <span class="chev">›</span>
+      </a>
+    </li>
+    {% endif %}
+
+    {% if session.get('role') == 'ADMIN' %}
+    <li>
+      <a href="{{ url_for('auth.create_district_admin') }}">
+        <span>Create District Admin</span>
+        <span class="chev">›</span>
+      </a>
+    </li>
+    <li>
+      <a href="{{ url_for('pg.state_authorization') }}">
+        <span>State Authorization</span>
+        <span class="chev">›</span>
+      </a>
+    </li>
+    {% endif %}
+
+    {% if session.get('role') == 'DISTRICT_ADMIN' %}
+    <li>
+      <a href="{{ url_for('auth.create_clf_admin') }}">
+        <span>Create Block Admin</span>
+        <span class="chev">›</span>
+      </a>
+    </li>
+    <li>
+      <a href="{{ url_for('auth.create_pg_member') }}">
+        <span>Create PG Login</span>
+        <span class="chev">›</span>
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+  {% endif %}
+
+  <div class="pgsec">PG Operations</div>
+  <ul class="pgnav">
+    <li>
+      <a href="{{ url_for('pg.pg_home') }}">
+        <span>PG Management</span>
+        <span class="chev">›</span>
+      </a>
+    </li>
+  </ul>
+
+  {% endif %}
+
+</nav>
+
+
+    <!-- Main content -->
+    <div class="pgmain">
+      <div class="pgtop">
+        <div class="d-flex align-items-center gap-2">
+          <button class="pgburger" id="pgBurger" type="button" aria-label="Open menu">☰</button>
+          <div class="who">
+            Logged in as: <span>{{ role_label(session.get('role')) }}</span> |
+            User ID: <span>{{ session.get('user_id') }}</span>
+          </div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="pglogout">Logout</a>
+      </div>
+
+      <main class="pgcontent">
+        <div class="container-fluid py-1">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, msg in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                  {{ msg }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+  <script>
+    (function(){
+      const side = document.getElementById('pgSide');
+      const ov = document.getElementById('pgOverlay');
+      const burger = document.getElementById('pgBurger');
+
+      function openSide(){
+        side.classList.add('open');
+        ov.classList.add('show');
+        ov.setAttribute('aria-hidden','false');
+      }
+      function closeSide(){
+        side.classList.remove('open');
+        ov.classList.remove('show');
+        ov.setAttribute('aria-hidden','true');
+      }
+
+      if(burger){
+        burger.addEventListener('click', function(){
+          if(side.classList.contains('open')) closeSide();
+          else openSide();
+        });
+      }
+      if(ov){
+        ov.addEventListener('click', closeSide);
+      }
+      window.addEventListener('keydown', function(e){
+        if(e.key === 'Escape') closeSide();
+      });
+    })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

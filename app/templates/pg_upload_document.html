@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* ============================================================
+   DOCUMENT UPLOAD PAGE — PGMIS STYLE
+   Scoped to .docs-wrap
+============================================================ */
+
+.docs-wrap{
+  width:100%;
+  max-width:980px;
+  margin:0 auto;
+}
+
+/* ---------- HERO ---------- */
+.docs-hero{
+  background:linear-gradient(to right,#059669,#10b981);
+  border-radius:1.25rem;
+  padding:1.2rem;
+  color:#fff;
+  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+  position:relative;
+  overflow:hidden;
+}
+.docs-hero:before{
+  content:"";
+  position:absolute;
+  inset:-40% -20%;
+  background:radial-gradient(closest-side,rgba(255,255,255,.12),transparent 60%);
+}
+.docs-title{
+  display:flex;
+  gap:.7rem;
+  align-items:center;
+}
+.docs-icon{
+  width:42px;height:42px;
+  border-radius:9999px;
+  background:rgba(255,255,255,.2);
+  border:1px solid rgba(255,255,255,.25);
+  display:flex;align-items:center;justify-content:center;
+}
+.docs-icon svg{width:20px;height:20px;color:#fff;}
+.docs-h1{
+  margin:0;
+  font-size:clamp(1.25rem,2vw,1.6rem);
+  font-weight:950;
+}
+.docs-sub{
+  color:#d1fae5;
+  font-size:.92rem;
+  font-weight:800;
+}
+
+/* ---------- CARD ---------- */
+.docs-card{
+  margin-top:1rem;
+  background:#fff;
+  border-radius:1.25rem;
+  padding:1.25rem;
+  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+  border:1px solid rgba(4,120,87,.1);
+}
+
+/* ---------- FORM GRID ---------- */
+.docs-grid{
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:.85rem;
+  align-items:center;
+}
+.docs-label{
+  grid-column:span 3;
+  font-size:.85rem;
+  font-weight:900;
+  color:#059669;
+}
+.docs-input{
+  grid-column:span 9;
+  background:#f0fdf4;
+  border-radius:.65rem;
+  padding:.62rem .75rem;
+  border:2px solid transparent;
+  font-size:1rem;
+  font-weight:850;
+}
+.docs-input:focus{
+  border-color:#34d399;
+  box-shadow:0 0 0 3px rgba(52,211,153,.12);
+}
+
+/* ---------- BUTTONS ---------- */
+.docs-actions{
+  margin-top:.9rem;
+  display:flex;
+  gap:.6rem;
+  flex-wrap:wrap;
+}
+.docs-btn{
+  padding:.6rem 1.1rem;
+  border-radius:9999px;
+  border:none;
+  font-weight:900;
+  cursor:pointer;
+  text-decoration:none;
+  transition:.2s;
+}
+.docs-btn-primary{
+  background:linear-gradient(to right,#059669,#10b981);
+  color:#fff;
+}
+.docs-btn-light{
+  background:#fff;
+  border:1px solid rgba(15,23,42,.12);
+  color:#0f172a;
+}
+.docs-btn:hover{transform:translateY(-1px);}
+
+/* ---------- TABLE ---------- */
+.docs-table-wrap{
+  margin-top:1rem;
+  background:#fff;
+  border-radius:1.25rem;
+  border:1px solid rgba(4,120,87,.1);
+  overflow:hidden;
+  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+}
+.docs-table{
+  width:100%;
+  border-collapse:collapse;
+}
+.docs-table th{
+  background:#f0fdf4;
+  padding:.75rem;
+  text-align:left;
+  font-size:.8rem;
+  font-weight:900;
+  color:#047857;
+}
+.docs-table td{
+  padding:.75rem;
+  font-size:.9rem;
+  border-top:1px solid #e5e7eb;
+  font-weight:700;
+}
+.docs-empty{
+  color:#6b7280;
+}
+
+/* ---------- NOTE ---------- */
+.docs-note{
+  margin-top:.6rem;
+  font-size:.85rem;
+  color:#6b7280;
+  font-weight:600;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media(max-width:768px){
+  .docs-label{grid-column:span 12;}
+  .docs-input{grid-column:span 12;}
+}
+</style>
+
+<div class="docs-wrap">
+
+  <!-- HERO -->
+  <div class="docs-hero">
+    <div class="docs-title">
+      <div class="docs-icon">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M6 2h9l5 5v13a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z" stroke="currentColor" stroke-width="2"/>
+          <path d="M14 2v6h6" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="docs-h1">Upload Documents</div>
+        <div class="docs-sub">Producer Group: {{ pg.name or pg.pg_name }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="docs-card">
+    <form method="post" enctype="multipart/form-data">
+      <div class="docs-grid">
+        <div class="docs-label">Document type</div>
+        <input class="docs-input" name="doc_type"
+               placeholder="registration_form / minutes / photo / etc">
+
+        <div class="docs-label">Choose file</div>
+        <input class="docs-input" type="file" name="document" required>
+      </div>
+
+      <div class="docs-actions">
+        <button class="docs-btn docs-btn-primary" type="submit">Upload</button>
+        <a class="docs-btn docs-btn-light" href="{{ url_for('pg.pg_view', pg_id=pg._id) }}">Back to PG</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- TABLE -->
+  <h3 style="margin:14px 4px 8px; font-weight:900; color:#047857;">Uploaded files</h3>
+
+  <div class="docs-table-wrap">
+    <table class="docs-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Filename</th>
+          <th>Uploaded</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in docs %}
+        <tr>
+          <td>{{ d.doc_type }}</td>
+          <td>{{ d.filename }}</td>
+          <td>{{ d.uploaded_at }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3" class="docs-empty">No documents yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="docs-note">
+    Files are stored in the server upload folder and metadata is saved in MongoDB.
+  </div>
+
+</div>
+
+{% endblock %}

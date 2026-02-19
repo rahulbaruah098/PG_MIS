@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <h4 class="mb-0">CLFs</h4>
+  <span class="badge bg-secondary">District scope</span>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="post" class="row g-2">
+      <div class="col-md-8">
+        <input class="form-control" name="name" placeholder="CLF name" required>
+      </div>
+      <div class="col-md-4">
+        <button class="btn btn-primary w-100" type="submit">Add CLF</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th style="width: 60px;">#</th>
+          <th>CLF Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in blocks %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ b.name }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="2" class="text-muted p-3">No blocks yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

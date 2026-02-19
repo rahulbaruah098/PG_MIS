@@ -1,0 +1,126 @@
+from functools import wraps
+from flask import session, redirect, url_for, flash, abort, request, jsonify, current_app, g
+import jwt
+
+
+def _authenticate_request():
+    """
+    Hybrid authentication:
+    1️⃣ Session (Web)
+    2️⃣ JWT Token (Mobile)
+    """
+
+    # -----------------------------
+    # 1️⃣ Web session authentication
+    # -----------------------------
+    if session.get("user_id"):
+        g.user_id = session.get("user_id")
+        g.role = session.get("role")
+        return True
+
+    # -----------------------------
+    # 2️⃣ JWT token authentication
+    # -----------------------------
+    auth_header = request.headers.get("Authorization")
+
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(
+                token,
+                current_app.config["JWT_SECRET_KEY"],
+                algorithms=["HS256"],
+            )
+
+            g.user_id = payload.get("user_id")
+            g.role = payload.get("role")
+            return True
+
+        except jwt.ExpiredSignatureError:
+            return False
+        except jwt.InvalidTokenError:
+            return False
+
+    return False
+
+
+# ==========================================================
+# LOGIN REQUIRED (Hybrid)
+# ==========================================================
+
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+
+        if _authenticate_request():
+            return view(*args, **kwargs)
+
+        # If mobile (JSON request), return JSON error
+        if request.is_json or request.headers.get("Authorization"):
+            return jsonify({"error": "Authentication required"}), 401
+
+        # Otherwise normal web redirect
+        flash("Please log in to access this page.", "warning")
+        return redirect(url_for("auth.login", next=request.path))
+
+    return wrapped
+
+
+# ==========================================================
+# ROLES REQUIRED (Hybrid)
+# ==========================================================
+
+def roles_required(*allowed_roles):
+    def decorator(view):
+        @wraps(view)
+        def wrapped(*args, **kwargs):
+
+            if not _authenticate_request():
+                if request.is_json or request.headers.get("Authorization"):
+                    return jsonify({"error": "Authentication required"}), 401
+                flash("Please log in.", "warning")
+                return redirect(url_for("auth.login"))
+
+            role = getattr(g, "role", None)
+
+            if role not in allowed_roles:
+                if request.is_json or request.headers.get("Authorization"):
+                    return jsonify({"error": "Forbidden"}), 403
+                abort(403)
+
+            return view(*args, **kwargs)
+
+        return wrapped
+    return decorator
+
+
+# ==========================================================
+# PERMISSIONS REQUIRED (Hybrid)
+# ==========================================================
+
+def permissions_required(*required_perms):
+    from .permissions import has_permission
+
+    def decorator(view):
+        @wraps(view)
+        def wrapped(*args, **kwargs):
+
+            if not _authenticate_request():
+                if request.is_json or request.headers.get("Authorization"):
+                    return jsonify({"error": "Authentication required"}), 401
+                flash("Please log in.", "warning")
+                return redirect(url_for("auth.login"))
+
+            role = getattr(g, "role", None)
+
+            for p in required_perms:
+                if not has_permission(role, p):
+                    if request.is_json or request.headers.get("Authorization"):
+                        return jsonify({"error": "Forbidden"}), 403
+                    abort(403)
+
+            return view(*args, **kwargs)
+
+        return wrapped
+    return decorator
