@@ -104,7 +104,11 @@ def init_indexes(db):
     db.pg_documents.create_index([("pg_id", ASCENDING), ("doc_type", ASCENDING), ("uploaded_at", ASCENDING)])
 
     # Duplicate prevention (best-effort)
-    db.pgs.create_index([("pg_name", ASCENDING), ("block_id", ASCENDING)], unique=True)
+    # Enforce unique PG name within a block (ignore missing/empty names)
+    db.pgs.create_index(
+    [("name", ASCENDING), ("block_id", ASCENDING)],
+    unique=True
+)   
 
     # SHG Master (TRESP import)
     # Master fields are stored using human-readable column names.
