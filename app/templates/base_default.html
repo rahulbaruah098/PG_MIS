@@ -302,195 +302,155 @@
       <div class="pgbrand">
         <div>
           <h5 class="mb-0">PG MIS</h5>
-          <div class="meta">Role: {{ role_label(session.get('role')) if session.get('role') else 'GUEST' }}</div>
+          <div class="meta">Role: {{ session.get('role') or 'GUEST' }}</div>
         </div>
+       
       </div>
 
-        {% if session.get('role') in ['BLOCK_ADMIN','CLF_ADMIN'] %}
+      <ul class="pgnav">
+        <li>
+          <a href="{{ url_for('reports.hierarchy_dashboard') }}">
+            <span>Dashboard</span>
+            <span class="chev">›</span>
+          </a>
+        </li>
+      </ul>
 
-        <!-- ================= BLOCK ADMIN MENU ================= -->
+      <div class="pgsec">Master Data</div>
+      <ul class="pgnav">
+        <li>
+          <a href="{{ url_for('master_data.shg_members_browser') }}">
+            <span>Master Data (TRESP)</span>
+            <span class="chev">›</span>
+          </a>
+        </li>
 
-        <ul class="pgnav">
+        {% if session.get('role') == 'SUPER_ADMIN' %}
+        <li>
+          <a href="{{ url_for('master_data.shg_upload_replace') }}">
+            <span>Replace Master (Upload)</span>
+            <span class="chev">›</span>
+          </a>
+        </li>
+        {% endif %}
+
+        {% if session.get('role') in ['SUPER_ADMIN', 'ADMIN', 'DISTRICT_ADMIN', 'BLOCK_ADMIN', 'CLF_MANAGER'] %}
+
+          {% if session.get('role') == 'SUPER_ADMIN' %}
           <li>
+            <a href="{{ url_for('master_data.manage_states') }}">
+              <span>States</span>
+              <span class="chev">›</span>
+            </a>
+          </li>
+          {% endif %}
+
+          {% if session.get('role') in ['SUPER_ADMIN','ADMIN'] %}
+          <li>
+            <a href="{{ url_for('master_data.manage_districts') }}">
+              <span>Districts</span>
+              <span class="chev">›</span>
+            </a>
+          </li>
+          {% endif %}
+
+          {% if session.get('role') == 'DISTRICT_ADMIN' %}
+          <li>
+            <a href="{{ url_for('master_data.manage_blocks') }}">
+              <span>Blocks</span>
+              <span class="chev">›</span>
+            </a>
+          </li>
+          {% endif %}
+
+          {% if session.get('role') in ['DISTRICT_ADMIN','ADMIN','SUPER_ADMIN'] %}
+          <li>
+            <a href="{{ url_for('master_data.manage_pgs') }}">
+              <span>PGs</span>
+              <span class="chev">›</span>
+            </a>
+          </li>
+          {% endif %}
+        {% endif %}
+      </ul>
+
+      {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN'] %}
+      <div class="pgsec">User Management</div>
+      <ul class="pgnav">
+        {% if session.get('role') == 'SUPER_ADMIN' %}
+        <li>
+          <a href="{{ url_for('auth.create_state_admin') }}">
+            <span>Create State Admin</span>
+            <span class="chev">›</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('auth.super_admin_password_reset') }}">
+            <span>Reset User Passwords</span>
+            <span class="chev">›</span>
+          </a>
+        </li>
+        {% endif %}
+
+        {% if session.get('role') == 'ADMIN' %}
+        <li>
+          <a href="{{ url_for('auth.create_district_admin') }}">
+            <span>Create District Admin</span>
+            <span class="chev">›</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('pg.state_authorization') }}">
+            <span>State Authorization</span>
+            <span class="chev">›</span>
+          </a>
+        </li>
+        {% endif %}
+
+        {% if session.get('role') == 'DISTRICT_ADMIN' %}
+        <li>
+          <a href="{{ url_for('auth.create_block_admin') }}">
+            <span>Create Block Admin</span>
+            <span class="chev">›</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('auth.create_pg_member') }}">
+            <span>Create PG Login</span>
+            <span class="chev">›</span>
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+      {% endif %}
+
+      <div class="pgsec">PG Operations</div>
+      <ul class="pgnav">
+        <li>
+          <a href="{{ url_for('pg.pg_home') }}">
+            <span>PG Management</span>
+            <span class="chev">›</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="pgsec">Reports</div>
+      <ul class="pgnav">
+        <li>
+          {% if session.get('role') in ['SUPER_ADMIN','ADMIN'] %}
+            <a href="{{ url_for('reports.state_dashboard') }}">
+              <span>State Dashboard</span>
+              <span class="chev">›</span>
+            </a>
+          {% else %}
             <a href="{{ url_for('reports.hierarchy_dashboard') }}">
               <span>Dashboard</span>
               <span class="chev">›</span>
             </a>
-          </li>
-        </ul>
-
-        <div class="pgsec">Master Data</div>
-        <ul class="pgnav">
-          <li>
-            <a href="{{ url_for('master_data.shg_members_browser') }}">
-              <span>Master Data (TRESP)</span>
-              <span class="chev">›</span>
-            </a>
-          </li>
-        </ul>
-
-        <div class="pgsec">Funds</div>
-        <ul class="pgnav">
-          <li><a href="#"><span>Funds</span><span class="chev">›</span></a></li>
-          <li><a href="#"><span>Grants / Funds</span><span class="chev">›</span></a></li>
-        </ul>
-
-        <div class="pgsec">Loans</div>
-        <ul class="pgnav">
-          <li><a href="#"><span>Loans</span><span class="chev">›</span></a></li>
-          <li><a href="#"><span>Loan Dashboard</span><span class="chev">›</span></a></li>
-          <li><a href="#"><span>PG Loan Account</span><span class="chev">›</span></a></li>
-          <li><a href="#"><span>Member Loans</span><span class="chev">›</span></a></li>
-        </ul>
-
-        <div class="pgsec">Reports & Monitoring</div>
-        <ul class="pgnav">
-          <li><a href="#"><span>MPR</span><span class="chev">›</span></a></li>
-          <li><a href="#"><span>Monthly Progress</span><span class="chev">›</span></a></li>
-          <li><a href="#"><span>Sector Analytics</span><span class="chev">›</span></a></li>
-        </ul>
-
-        <div class="pgsec">Other</div>
-        <ul class="pgnav">
-          <li><a href="#"><span>Upload Documents</span><span class="chev">›</span></a></li>
-          <li><a href="#"><span>PG Gradation</span><span class="chev">›</span></a></li>
-        </ul>
-
-        {% else %}
-
-  <!-- ================= ORIGINAL MENU (UNCHANGED) ================= -->
-
-  <ul class="pgnav">
-    <li>
-      <a href="{{ url_for('reports.hierarchy_dashboard') }}">
-        <span>Dashboard</span>
-        <span class="chev">›</span>
-      </a>
-    </li>
-  </ul>
-
-  <div class="pgsec">Master Data</div>
-  <ul class="pgnav">
-    <li>
-      <a href="{{ url_for('master_data.shg_members_browser') }}">
-        <span>Master Data (TRESP)</span>
-        <span class="chev">›</span>
-      </a>
-    </li>
-
-    {% if session.get('role') == 'SUPER_ADMIN' %}
-    <li>
-      <a href="{{ url_for('master_data.shg_upload_replace') }}">
-        <span>Replace Master (Upload)</span>
-        <span class="chev">›</span>
-      </a>
-    </li>
-    {% endif %}
-
-    {% if session.get('role') in ['SUPER_ADMIN', 'ADMIN', 'DISTRICT_ADMIN', 'BLOCK_ADMIN', 'CLF_ADMIN', 'CLF_MANAGER'] %}
-
-      {% if session.get('role') == 'SUPER_ADMIN' %}
-      <li>
-        <a href="{{ url_for('master_data.manage_states') }}">
-          <span>States</span>
-          <span class="chev">›</span>
-        </a>
-      </li>
-      {% endif %}
-
-      {% if session.get('role') in ['SUPER_ADMIN','ADMIN'] %}
-      <li>
-        <a href="{{ url_for('master_data.manage_districts') }}">
-          <span>Districts</span>
-          <span class="chev">›</span>
-        </a>
-      </li>
-      {% endif %}
-
-      {% if session.get('role') == 'DISTRICT_ADMIN' %}
-      <li>
-        <a href="{{ url_for('master_data.manage_blocks') }}">
-          <span>Blocks</span>
-          <span class="chev">›</span>
-        </a>
-      </li>
-      {% endif %}
-
-      {% if session.get('role') in ['DISTRICT_ADMIN','ADMIN','SUPER_ADMIN'] %}
-      <li>
-        <a href="{{ url_for('master_data.manage_pgs') }}">
-          <span>PGs</span>
-          <span class="chev">›</span>
-        </a>
-      </li>
-      {% endif %}
-    {% endif %}
-  </ul>
-
-  {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN','BLOCK_ADMIN','CLF_MANAGER'] %}
-  <div class="pgsec">User Management</div>
-  <ul class="pgnav">
-    {% if session.get('role') == 'SUPER_ADMIN' %}
-    <li>
-      <a href="{{ url_for('auth.create_state_admin') }}">
-        <span>Create State Admin</span>
-        <span class="chev">›</span>
-      </a>
-    </li>
-    <li>
-      <a href="{{ url_for('auth.super_admin_password_reset') }}">
-        <span>Reset User Passwords</span>
-        <span class="chev">›</span>
-      </a>
-    </li>
-    {% endif %}
-
-    {% if session.get('role') == 'ADMIN' %}
-    <li>
-      <a href="{{ url_for('auth.create_district_admin') }}">
-        <span>Create District Admin</span>
-        <span class="chev">›</span>
-      </a>
-    </li>
-    <li>
-      <a href="{{ url_for('pg.state_authorization') }}">
-        <span>State Authorization</span>
-        <span class="chev">›</span>
-      </a>
-    </li>
-    {% endif %}
-
-    {% if session.get('role') == 'DISTRICT_ADMIN' %}
-    <li>
-      <a href="{{ url_for('auth.create_clf_admin') }}">
-        <span>Create Block Admin</span>
-        <span class="chev">›</span>
-      </a>
-    </li>
-    <li>
-      <a href="{{ url_for('auth.create_pg_member') }}">
-        <span>Create PG Login</span>
-        <span class="chev">›</span>
-      </a>
-    </li>
-    {% endif %}
-  </ul>
-  {% endif %}
-
-  <div class="pgsec">PG Operations</div>
-  <ul class="pgnav">
-    <li>
-      <a href="{{ url_for('pg.pg_home') }}">
-        <span>PG Management</span>
-        <span class="chev">›</span>
-      </a>
-    </li>
-  </ul>
-
-  {% endif %}
-
-</nav>
-
+          {% endif %}
+        </li>
+      </ul>
+    </nav>
 
     <!-- Main content -->
     <div class="pgmain">
@@ -498,7 +458,7 @@
         <div class="d-flex align-items-center gap-2">
           <button class="pgburger" id="pgBurger" type="button" aria-label="Open menu">☰</button>
           <div class="who">
-            Logged in as: <span>{{ role_label(session.get('role')) }}</span> |
+            Logged in as: <span>{{ session.get('role') }}</span> |
             User ID: <span>{{ session.get('user_id') }}</span>
           </div>
         </div>

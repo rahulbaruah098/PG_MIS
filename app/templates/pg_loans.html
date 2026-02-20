@@ -3,258 +3,356 @@
 
 <style>
 /* ============================================================
-   PG LOAN PAGE — SCOPED STYLING (MATCHES DASHBOARD THEME)
+   PG LOAN PAGE (SCOPED) — SAME DESIGN LANGUAGE AS LEDGER BOOK
+   ✅ Only UI/CSS changed (no field names / no data bindings changed)
+   ✅ Keeps your existing form + contents exactly
 ============================================================ */
 
-.loan-wrap{
-  width:100%;
+.pl-wrap{
+  width: 100%;
+  padding: clamp(12px, 2.2vw, 22px);
+  --ink:#0f172a;
+  --muted:#64748b;
+  --line: rgba(15,23,42,.18);
+  --line2: rgba(15,23,42,.12);
+  --paper:#ffffff;
+  --soft:#f7faf9;
+  --accent:#0b4d3a;
+  color: var(--ink);
+}
+.pl-wrap *{ box-sizing:border-box; }
+
+.pl-sheet{
   max-width:1100px;
   margin:0 auto;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
 }
 
-/* ---------- HERO ---------- */
-.loan-hero{
-  background: linear-gradient(to right,#059669,#10b981);
-  border-radius:1.25rem;
-  padding:1.25rem;
-  color:#fff;
-  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
-  position:relative;
-  overflow:hidden;
+/* header (ledger-like) */
+.pl-head{
+  padding: 14px 16px 12px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border-bottom: 1.5px solid var(--line2);
+  position: relative;
 }
-.loan-hero:before{
-  content:"";
-  position:absolute;
-  inset:-40% -20%;
-  background:radial-gradient(closest-side,rgba(255,255,255,.12),transparent 60%);
+.pl-title{
+  margin: 0;
+  font-weight: 950;
+  font-size: 18px;
+  text-align: center;
+  letter-spacing: .2px;
 }
-.loan-title{
+.pl-sub{
+  margin-top: 6px;
   display:flex;
-  gap:.75rem;
+  justify-content:center;
   align-items:center;
+  gap: 10px;
+  color: rgba(15,23,42,.72);
+  font-weight: 900;
+  font-size: 12px;
 }
-.loan-icon{
-  width:42px;height:42px;
-  border-radius:9999px;
-  background:rgba(255,255,255,.2);
-  border:1px solid rgba(255,255,255,.25);
-  display:flex;align-items:center;justify-content:center;
+.pl-badge{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid rgba(15,23,42,.14);
+  border-radius: 999px;
+  background: rgba(255,255,255,.75);
 }
-.loan-icon svg{width:20px;height:20px;color:#fff;}
-.loan-h1{
-  margin:0;
-  font-size:clamp(1.2rem,2.2vw,1.7rem);
-  font-weight:950;
-}
-.loan-sub{
-  margin-top:.25rem;
-  color:#d1fae5;
-  font-weight:800;
-  font-size:.92rem;
-}
+.pl-badge svg{ width:14px; height:14px; color: rgba(11,77,58,.95); }
 
-/* ---------- CARD ---------- */
-.loan-card{
-  margin-top:1rem;
-  background:#fff;
-  border-radius:1.25rem;
-  padding:1.25rem;
-  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
-  border:1px solid rgba(4,120,87,.1);
+/* top fields (ledger-like) */
+.pl-topfields{
+  padding: 10px 16px 14px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px 14px;
+  border-bottom: 1.5px solid var(--line2);
+  background: rgba(255,255,255,.92);
 }
-
-.loan-section{
+.pl-field{
   display:flex;
   align-items:center;
-  gap:.5rem;
-  margin-bottom:.9rem;
-  color:#047857;
-  font-weight:950;
+  gap: 10px;
+  min-width: 0;
 }
-.loan-section svg{width:18px;height:18px;color:#059669;}
+.pl-label{
+  font-weight: 900;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.pl-input{
+  flex: 1;
+  border: 1px solid rgba(15,23,42,.16);
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: rgba(247,250,249,.75);
+  font-weight: 800;
+  font-size: 12px;
+  outline: none;
+}
+.pl-input:focus{
+  border-color: rgba(11,77,58,.40);
+  box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+  background: #fff;
+}
+.pl-input[readonly]{
+  background: transparent;
+  border-color: rgba(15,23,42,.12);
+}
 
-/* ---------- GRID ---------- */
-.loan-grid{
+/* section label row like ledger controls */
+.pl-controls{
+  padding: 10px 16px;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1.5px solid var(--line2);
+  background: rgba(255,255,255,.92);
+  flex-wrap: wrap;
+}
+.pl-section{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  color: rgba(11,77,58,.95);
+  font-weight: 950;
+  font-size: 12px;
+}
+.pl-section svg{ width:16px; height:16px; }
+
+/* form grid */
+.pl-form{
+  padding: 14px 16px 16px;
+  background: #fff;
+}
+.pl-grid{
   display:grid;
-  grid-template-columns:repeat(12,1fr);
-  gap:.85rem;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 10px 14px;
 }
-.loan-field{
+.pl-col-3{ grid-column: span 3; }
+.pl-col-4{ grid-column: span 4; }
+.pl-col-6{ grid-column: span 6; }
+.pl-col-9{ grid-column: span 9; }
+.pl-col-12{ grid-column: span 12; }
+
+.pl-fwrap{
   display:flex;
-  flex-direction:column;
-  gap:.35rem;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
-.loan-label{
-  font-size:.78rem;
-  color:#059669;
-  font-weight:900;
+.pl-flabel{
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(15,23,42,.72);
 }
 
-/* ---------- INPUTS ---------- */
-.loan-input,
-.loan-select,
-.loan-textarea{
+/* inputs styled like ledger */
+.pl-control,
+.pl-select,
+.pl-textarea{
   width:100%;
-  background:#f0fdf4;
-  border-radius:.65rem;
-  padding:.62rem .75rem;
-  border:2px solid transparent;
-  outline:none;
-  font-size:1rem;
-  font-weight:850;
+  border: 1px solid rgba(15,23,42,.16);
+  border-radius: 12px;
+  padding: 10px 10px;
+  background: rgba(247,250,249,.75);
+  font-weight: 800;
+  font-size: 12px;
+  outline: none;
 }
-.loan-textarea{min-height:90px;resize:vertical;}
-.loan-input:focus,
-.loan-select:focus,
-.loan-textarea:focus{
-  border-color:#34d399;
-  box-shadow:0 0 0 3px rgba(52,211,153,.12);
-  background:#ecfdf5;
+.pl-textarea{ min-height: 96px; resize: vertical; }
+.pl-control:focus,
+.pl-select:focus,
+.pl-textarea:focus{
+  border-color: rgba(11,77,58,.40);
+  box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+  background: #fff;
 }
+.pl-control.num{ text-align:right; font-variant-numeric: tabular-nums; }
+.pl-select{ cursor:pointer; }
 
-/* ---------- GRID SPANS ---------- */
-.col-3{grid-column:span 3;}
-.col-4{grid-column:span 4;}
-.col-6{grid-column:span 6;}
-.col-9{grid-column:span 9;}
-.col-12{grid-column:span 12;}
-
-/* ---------- BUTTON ---------- */
-.loan-footer{
+/* footer actions (ledger button style) */
+.pl-footer{
+  padding: 12px 16px 16px;
   display:flex;
   justify-content:flex-end;
-  margin-top:1rem;
+  gap: 10px;
+  border-top: 1.5px solid var(--line2);
+  background: rgba(255,255,255,.94);
 }
-.loan-btn{
-  background:linear-gradient(to right,#059669,#10b981);
-  color:#fff;
-  padding:.7rem 1.2rem;
-  border:none;
-  border-radius:9999px;
-  font-weight:900;
-  cursor:pointer;
-  transition:.2s;
+.pl-btn{
+  border: 1px solid rgba(16,185,129,.35);
+  background: rgba(16,185,129,.12);
+  color:#0b4d3a;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 950;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  user-select: none;
+  white-space: nowrap;
 }
-.loan-btn:hover{transform:translateY(-1px);}
+.pl-btn:hover{
+  transform: translateY(-1px);
+  background: rgba(16,185,129,.16);
+  box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+}
+.pl-btn svg{ width:14px; height:14px; }
 
-/* ---------- RESPONSIVE ---------- */
-@media(max-width:768px){
-  .col-3,.col-4,.col-6,.col-9{grid-column:span 12;}
-  .loan-card{padding:1rem;}
+/* responsive like ledger */
+@media (max-width: 720px){
+  .pl-topfields{ grid-template-columns: 1fr; }
+  .pl-col-3,.pl-col-4,.pl-col-6,.pl-col-9{ grid-column: span 12; }
 }
 </style>
 
-<div class="loan-wrap">
+<div class="pl-wrap">
+  <div class="pl-sheet">
 
-  <!-- HERO -->
-  <div class="loan-hero">
-    <div class="loan-title">
-      <div class="loan-icon">
+    <!-- HEADER -->
+    <div class="pl-head">
+      <h2 class="pl-title">PG Loan Details</h2>
+      <div class="pl-sub">
+        <span class="pl-badge">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M3 7h18M5 7v10a2 2 0 002 2h10a2 2 0 002-2V7" stroke="currentColor" stroke-width="2"/>
+            <path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          <span>Producer Group: {{ pg.name }}</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- TOP FIELD (keeps existing data, just styled) -->
+    <div class="pl-topfields">
+      <div class="pl-field">
+        <div class="pl-label">Producer Group</div>
+        <input class="pl-input" type="text" value="{{ pg.name }}" readonly>
+      </div>
+    </div>
+
+    <!-- SECTION BAR -->
+    <div class="pl-controls">
+      <div class="pl-section">
         <svg viewBox="0 0 24 24" fill="none">
-          <path d="M3 7h18M5 7v10a2 2 0 002 2h10a2 2 0 002-2V7" stroke="currentColor" stroke-width="2"/>
-          <path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="2"/>
+          <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2"/>
         </svg>
+        Loan Information
       </div>
-      <div>
-        <div class="loan-h1">PG Loan Details</div>
-        <div class="loan-sub">Producer Group: {{ pg.name }}</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- FORM CARD -->
-  <div class="loan-card">
-    <div class="loan-section">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2"/>
-      </svg>
-      Loan Information
+      <!-- intentionally empty right side to match ledger clean bar -->
+      <div style="font-weight:950; font-size:12px; color:rgba(15,23,42,.55);"></div>
     </div>
 
+    <!-- FORM (NO DATA CHANGES) -->
     <form method="POST">
-      <div class="loan-grid">
+      <div class="pl-form">
+        <div class="pl-grid">
 
-        <div class="loan-field col-3">
-          <label class="loan-label">Business Plan Submitted?</label>
-          <select class="loan-select" name="business_plan_submitted">
-            <option value="no" {% if loan and not loan.business_plan_submitted %}selected{% endif %}>No</option>
-            <option value="yes" {% if loan and loan.business_plan_submitted %}selected{% endif %}>Yes</option>
-          </select>
+          <div class="pl-fwrap pl-col-3">
+            <label class="pl-flabel">Business Plan Submitted?</label>
+            <select class="pl-select" name="business_plan_submitted">
+              <option value="no" {% if loan and not loan.business_plan_submitted %}selected{% endif %}>No</option>
+              <option value="yes" {% if loan and loan.business_plan_submitted %}selected{% endif %}>Yes</option>
+            </select>
+          </div>
+
+          <div class="pl-fwrap pl-col-3">
+            <label class="pl-flabel">Business Plan Date</label>
+            <input type="date" class="pl-control" name="business_plan_date"
+                   value="{{ loan.business_plan_date if loan else '' }}">
+          </div>
+
+          <div class="pl-fwrap pl-col-3">
+            <label class="pl-flabel">Estimated Amount</label>
+            <input type="number" step="0.01" class="pl-control num" name="estimated_amount"
+                   value="{{ loan.estimated_amount if loan else '' }}">
+          </div>
+
+          <div class="pl-fwrap pl-col-3">
+            <label class="pl-flabel">Sanction Amount</label>
+            <input type="number" step="0.01" class="pl-control num" name="sanction_amount"
+                   value="{{ loan.sanction_amount if loan else '' }}">
+          </div>
+
+          <div class="pl-fwrap pl-col-3">
+            <label class="pl-flabel">Status</label>
+            <input type="text" class="pl-control" name="status"
+                   value="{{ loan.status if loan else '' }}">
+          </div>
+
+          <div class="pl-fwrap pl-col-3">
+            <label class="pl-flabel">Rate of Interest (%)</label>
+            <input type="number" step="0.01" class="pl-control num" name="roi"
+                   value="{{ loan.roi if loan else '' }}">
+          </div>
+
+          <div class="pl-fwrap pl-col-3">
+            <label class="pl-flabel">Tenure (months)</label>
+            <input type="number" class="pl-control num" name="tenure_months"
+                   value="{{ loan.tenure_months if loan else '' }}">
+          </div>
+
+          <div class="pl-fwrap pl-col-3">
+            <label class="pl-flabel">Moratorium Period</label>
+            <input type="number" class="pl-control num" name="moratorium_period"
+                   value="{{ loan.moratorium_period if loan else '' }}">
+          </div>
+
+          <div class="pl-fwrap pl-col-3">
+            <label class="pl-flabel">Principal Repaid</label>
+            <input type="number" step="0.01" class="pl-control num" name="principal_repaid"
+                   value="{{ loan.principal_repaid if loan else '' }}">
+          </div>
+
+          <div class="pl-fwrap pl-col-3">
+            <label class="pl-flabel">Interest Paid</label>
+            <input type="number" step="0.01" class="pl-control num" name="interest_paid"
+                   value="{{ loan.interest_paid if loan else '' }}">
+          </div>
+
+          <div class="pl-fwrap pl-col-3">
+            <label class="pl-flabel">Total Utilized Loan</label>
+            <input type="number" step="0.01" class="pl-control num" name="total_utilized_loan_amount"
+                   value="{{ loan.total_utilized_loan_amount if loan else '' }}">
+          </div>
+
+          <div class="pl-fwrap pl-col-9">
+            <label class="pl-flabel">Reason if Discontinued</label>
+            <textarea class="pl-textarea" name="reason_discontinued">{{ loan.reason_discontinued if loan else '' }}</textarea>
+          </div>
+
         </div>
+      </div>
 
-        <div class="loan-field col-3">
-          <label class="loan-label">Business Plan Date</label>
-          <input type="date" class="loan-input" name="business_plan_date"
-                 value="{{ loan.business_plan_date if loan else '' }}">
-        </div>
-
-        <div class="loan-field col-3">
-          <label class="loan-label">Estimated Amount</label>
-          <input type="number" step="0.01" class="loan-input" name="estimated_amount"
-                 value="{{ loan.estimated_amount if loan else '' }}">
-        </div>
-
-        <div class="loan-field col-3">
-          <label class="loan-label">Sanction Amount</label>
-          <input type="number" step="0.01" class="loan-input" name="sanction_amount"
-                 value="{{ loan.sanction_amount if loan else '' }}">
-        </div>
-
-        <div class="loan-field col-3">
-          <label class="loan-label">Status</label>
-          <input type="text" class="loan-input" name="status"
-                 value="{{ loan.status if loan else '' }}">
-        </div>
-
-        <div class="loan-field col-3">
-          <label class="loan-label">Rate of Interest (%)</label>
-          <input type="number" step="0.01" class="loan-input" name="roi"
-                 value="{{ loan.roi if loan else '' }}">
-        </div>
-
-        <div class="loan-field col-3">
-          <label class="loan-label">Tenure (months)</label>
-          <input type="number" class="loan-input" name="tenure_months"
-                 value="{{ loan.tenure_months if loan else '' }}">
-        </div>
-
-        <div class="loan-field col-3">
-          <label class="loan-label">Moratorium Period</label>
-          <input type="number" class="loan-input" name="moratorium_period"
-                 value="{{ loan.moratorium_period if loan else '' }}">
-        </div>
-
-        <div class="loan-field col-3">
-          <label class="loan-label">Principal Repaid</label>
-          <input type="number" step="0.01" class="loan-input" name="principal_repaid"
-                 value="{{ loan.principal_repaid if loan else '' }}">
-        </div>
-
-        <div class="loan-field col-3">
-          <label class="loan-label">Interest Paid</label>
-          <input type="number" step="0.01" class="loan-input" name="interest_paid"
-                 value="{{ loan.interest_paid if loan else '' }}">
-        </div>
-
-        <div class="loan-field col-3">
-          <label class="loan-label">Total Utilized Loan</label>
-          <input type="number" step="0.01" class="loan-input" name="total_utilized_loan_amount"
-                 value="{{ loan.total_utilized_loan_amount if loan else '' }}">
-        </div>
-
-        <div class="loan-field col-9">
-          <label class="loan-label">Reason if Discontinued</label>
-          <textarea class="loan-textarea" name="reason_discontinued">{{ loan.reason_discontinued if loan else '' }}</textarea>
-        </div>
-
-        <div class="col-12 loan-footer">
-          <button class="loan-btn" type="submit">Save</button>
-        </div>
-
+      <div class="pl-footer">
+        <button class="pl-btn" type="submit">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" stroke-width="2"/>
+            <polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="2"/>
+            <polyline points="7 3 7 8 15 8" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          Save
+        </button>
       </div>
     </form>
-  </div>
 
+  </div>
 </div>
 
 {% endblock %}

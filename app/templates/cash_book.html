@@ -9,8 +9,7 @@
      CASHBOOK (SCOPED) — UPDATED UI SKIN to match your other pages
      ✅ ONLY CSS/UI changed (no data/logic changes)
      ✅ Mobile: actions (Edit/Cancel) move ABOVE table (not in top hero)
-     ✅ Mobile: table becomes horizontal swipe grid (left/right)
-     ✅ Removes “messy” mobile look (tighter spacing, cleaner surfaces)
+     ✅ Mobile: card blocks become HORIZONTAL grid (side-by-side)
      ============================================================ */
 
   .cb-wrap{ color:#0f172a; }
@@ -330,6 +329,10 @@
     background: rgba(254,242,242,.85) !important;
   }
 
+
+
+
+
   /* ============================================================
      PERIOD GATE (same logic, new card-like styling)
      ============================================================ */
@@ -607,12 +610,12 @@
   }
 
   /* ============================================================
-     TABLE: grid rows + horizontal swipe on mobile
+     DESKTOP TABLE
      ============================================================ */
   .cb-table-wrap{
     flex:1;
     min-height:0;
-    overflow: auto;                 /* ✅ both axis */
+    overflow: auto;
     -webkit-overflow-scrolling: touch;
     border: 1px solid rgba(15,23,42,0.10);
     border-radius: var(--radius-sm);
@@ -762,8 +765,220 @@
 
   .cb-hidden{ display:none !important; }
 
+
+  /* ✅ Put this AFTER the .cb-total-row { display:grid; ... } rule */
+.cb-total-row.cb-balance-row{ display:none !important; }
+.cb-wrap[data-theme="payments"] .cb-total-row.cb-balance-row{ display:grid !important; }
+
+
   /* ============================================================
-     MODALS — unchanged visuals kept (minor surface polish only)
+     ✅ MOBILE HORIZONTAL GRID (replaces vertical stacked blocks)
+     ============================================================ */
+  .cb-mobile{ display:none; }
+  .cb-mtotals{ display:none; }
+
+  .cb-mcard{
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(15,23,42,0.10);
+    border-radius: 18px;
+    box-shadow: 0 14px 24px -22px rgba(15,23,42,.22);
+    padding: 12px;
+    min-width: 320px;
+    scroll-snap-align: start;
+    position: relative;
+    overflow: hidden;
+  }
+  .cb-mcard::before{
+    content:"";
+    position:absolute;
+    inset:-40px -40px auto auto;
+    width: 160px;
+    height: 160px;
+    background: radial-gradient(circle at 30% 30%, rgba(16,185,129,.14), transparent 60%);
+    pointer-events:none;
+    opacity:.9;
+  }
+  .cb-wrap[data-theme="payments"] .cb-mcard::before{
+    background: radial-gradient(circle at 30% 30%, rgba(11,77,58,.14), transparent 60%);
+  }
+
+  .cb-mtop{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 1;
+  }
+  .cb-sl-badge{
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    display:grid;
+    place-items:center;
+    background: rgba(248,250,252,0.92);
+    border: 1px solid rgba(15,23,42,0.10);
+    font-weight: 950;
+    color: var(--ink);
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.18);
+    flex: 0 0 auto;
+  }
+  .cb-mhead-right{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    flex: 1;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+  .cb-mtotal-pill{
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(16,185,129,.10);
+    border: 1px solid rgba(16,185,129,.20);
+    color: var(--c-900);
+    font-weight: 950;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .cb-wrap[data-theme="payments"] .cb-mtotal-pill{
+    background: rgba(11,77,58,.10);
+    border-color: rgba(11,77,58,.18);
+  }
+  .cb-mdel{
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    color:#dc2626;
+    border: 1px solid rgba(239,68,68,.28);
+    background: rgba(239,68,68,.08);
+    box-shadow: 0 10px 18px -18px rgba(239,68,68,.18);
+    flex: 0 0 auto;
+  }
+
+  .cb-mgrid{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    position: relative;
+    z-index: 1;
+  }
+  .cb-mfield label{
+    display:block;
+    font-size: 12px;
+    font-weight: 950;
+    color: rgba(15,23,42,.72);
+    margin: 0 0 6px;
+  }
+  .cb-mfield .cb-input{ font-size: 13px; padding: 10px 12px; border-radius: 16px; }
+  .cb-mfield .cb-date-btn{ width: 42px; height: 42px; border-radius: 16px; }
+
+  .cb-mtotals{
+    margin-top: 12px;
+    border-radius: 18px;
+    border: 1px solid rgba(15,23,42,0.10);
+    background: rgba(248,250,252,0.92);
+    box-shadow: 0 14px 24px -22px rgba(15,23,42,.20);
+    padding: 10px 12px;
+    display:flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .cb-mtrow{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 900;
+    color: rgba(15,23,42,.78);
+  }
+  .cb-mtrow strong{
+    color: var(--c-900);
+    font-variant-numeric: tabular-nums;
+  }
+  .cb-mtrow.cb-grand{
+    padding-top: 8px;
+    border-top: 1px dashed rgba(15,23,42,0.14);
+  }
+
+  .cb-mobile-actions-slot{
+    display:none;
+    width: 100%;
+    gap: 10px;
+    align-items:center;
+    justify-content:flex-end;
+    flex-wrap: wrap;
+    margin: 2px 0 0;
+  }
+
+  @media (max-width: 920px){
+    .cb-search{ min-width: 200px; }
+    .cb-card{ min-height: 540px; }
+    .cb-table{ min-width: 940px; }
+  }
+
+  @media (max-width: 720px){
+    .cb-top-row{
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .cb-actions{ display:none; }
+
+    .cb-toolbar{
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .cb-tl, .cb-tr{
+      width: 100%;
+      justify-content: space-between;
+    }
+    .cb-search{ width: 100%; min-width: 0; }
+
+    .cb-mobile-actions-slot{ display:flex; }
+    .cb-table-wrap{ display:none; }
+
+    .cb-mobile{
+      display:grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(320px, 88%);
+      gap: 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 2px 2px 10px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .cb-mtotals{ display:flex; }
+  }
+
+  @media (max-width: 420px){
+    .cb-section{ padding: 12px; }
+    .cb-badge{ width: 42px; height: 42px; border-radius: 14px; }
+    .cb-s-card{ width: 100%; justify-content: space-between; }
+
+    .cb-footer{ flex-direction: column; align-items: stretch; }
+    .cb-pager{ justify-content: space-between; }
+
+    .cb-mobile{ grid-auto-columns: minmax(300px, 92%); }
+  }
+
+  @media (max-width: 420px){
+    .cb-mactions{ justify-content: stretch; }
+    .cb-mactions .cb-ghost,
+    .cb-mactions .cb-solid{ min-width: 100%; }
+  }
+
+  /* ============================================================
+     MODALS
      ============================================================ */
   .cb-modal-overlay{
     position: fixed;
@@ -843,107 +1058,10 @@
     background: rgba(239,68,68,.10);
     color:#991b1b;
   }
-
-  /* ============================================================
-     MOBILE: Fix “messy” layout + move actions above table + swipe table
-     ============================================================ */
-
-  /* We will NOT use the old mobile card renderer visually */
-  .cb-mobile{ display:none !important; }
-  #cbMobileTotals{ display:none !important; }
-
-  /* mobile actions slot (Edit/Cancel buttons moved here by JS) */
-  .cb-mobile-actions-slot{
-    display:none;
-    width: 100%;
-    gap: 10px;
-    align-items:center;
-    justify-content:flex-end;
-    flex-wrap: wrap;
-    margin: 2px 0 0;
-  }
-
-  @media (max-width: 920px){
-    .cb-search{ min-width: 200px; }
-    .cb-card{ min-height: 540px; }
-    .cb-table{ min-width: 940px; }
-  }
-
-  @media (max-width: 720px){
-    /* hero becomes compact */
-    .cb-top-row{
-      flex-direction: column;
-      align-items: stretch;
-      gap: 10px;
-    }
-
-    /* ✅ hide top hero actions on mobile (they will be moved into toolbar slot) */
-    .cb-actions{ display:none; }
-
-    /* toolbar stacks cleanly */
-    .cb-toolbar{
-      flex-direction: column;
-      align-items: stretch;
-      gap: 10px;
-    }
-    .cb-tl, .cb-tr{
-      width: 100%;
-      justify-content: space-between;
-    }
-    .cb-search{ width: 100%; min-width: 0; }
-
-    /* ✅ show mobile action slot ABOVE table (inside toolbar) */
-    .cb-mobile-actions-slot{ display:flex; }
-
-    /* ✅ horizontal swipe grid table */
-    .cb-table-wrap{
-      overflow-x: auto;         /* swipe left/right */
-      overflow-y: auto;
-      border-radius: var(--radius-sm);
-    }
-
-    /* make columns tighter for phone */
-    .cb-th, .cb-row{
-      grid-template-columns: 40px 56px 160px 220px 72px 120px 120px 120px 52px;
-    }
-    .cb-total-row{
-      grid-template-columns: 40px 56px 160px 220px 72px 120px 120px 120px 52px;
-    }
-
-    /* keep table usable: slightly smaller padding */
-    .cb-h, .cb-c, .cb-tcell{ padding: 9px 9px; }
-
-    /* buttons layout */
-    .cb-solid, .cb-ghost{ min-height: 40px; }
-  }
-
-  @media (max-width: 420px){
-    .cb-section{ padding: 12px; }
-    .cb-badge{ width: 42px; height: 42px; border-radius: 14px; }
-    .cb-s-card{ width: 100%; justify-content: space-between; }
-
-    /* even tighter table columns */
-    .cb-th, .cb-row{
-      grid-template-columns: 38px 52px 150px 200px 68px 112px 112px 112px 48px;
-    }
-    .cb-total-row{
-      grid-template-columns: 38px 52px 150px 200px 68px 112px 112px 112px 48px;
-    }
-
-    .cb-footer{ flex-direction: column; align-items: stretch; }
-    .cb-pager{ justify-content: space-between; }
-  }
-
-  @media (max-width: 420px){
-    .cb-mactions{ justify-content: stretch; }
-    .cb-mactions .cb-ghost,
-    .cb-mactions .cb-solid{ min-width: 100%; }
-  }
 </style>
 
 <div class="cb-wrap" id="cbWrap" data-theme="receipts">
 
-  <!-- ✅ PERIOD-FIRST SCREEN -->
   <div class="cb-section" id="cbGate">
     <div class="cb-gate">
       <div class="cb-gate-top">
@@ -972,10 +1090,8 @@
     </div>
   </div>
 
-  <!-- ✅ MAIN APP -->
   <div id="cbApp" class="cb-hidden">
 
-    <!-- TOP -->
     <div class="cb-top">
       <div class="cb-top-row">
         <div class="cb-title-wrap">
@@ -1057,7 +1173,6 @@
       </div>
     </div>
 
-    <!-- CONTENT -->
     <div class="cb-section">
 
       <div class="cb-card">
@@ -1086,7 +1201,6 @@
           </div>
 
           <div class="cb-tr" id="cbToolbarRight">
-            <!-- ✅ MOBILE: Edit/Cancel buttons will be moved here (JS) -->
             <div id="cbMobileActionsSlot" class="cb-mobile-actions-slot"></div>
 
             <select id="cbPageSize" class="cb-select">
@@ -1115,6 +1229,7 @@
         </div>
 
         <div class="cb-body">
+
           <div class="cb-table-wrap">
             <div class="cb-table">
               <div class="cb-th">
@@ -1146,6 +1261,21 @@
                   <div class="cb-tcell"></div>
                 </div>
 
+<div class="cb-total-row cb-balance-row" id="cbBalanceRow">
+  <div class="cb-tcell"></div>
+  <div class="cb-tcell"></div>
+  <div class="cb-tcell"></div>
+  <div class="cb-tcell"></div>
+
+  <div class="cb-tcell cb-tlabel" id="cbBalanceLabelRow">Balance</div>
+  <div class="cb-tcell"></div>
+  <div class="cb-tcell"></div>
+
+  <div class="cb-tcell cb-tvalue" id="cbBalanceRowValue">₹0</div>
+  <div class="cb-tcell"></div>
+</div>
+
+
                 <div class="cb-total-row cb-grand">
                   <div class="cb-tcell"></div>
                   <div class="cb-tcell"></div>
@@ -1171,9 +1301,8 @@
             </div>
           </div>
 
-          <!-- (kept for logic, but visually hidden by CSS) -->
           <div id="cbMobile" class="cb-mobile"></div>
-          <div id="cbMobileTotals" class="cb-mtotals" style="display:none;"></div>
+          <div id="cbMobileTotals" class="cb-mtotals"></div>
         </div>
       </div>
 
@@ -1182,7 +1311,6 @@
 
 </div>
 
-<!-- SAVE MODAL -->
 <div id="cbSaveOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
   <div class="cb-modal">
     <div class="cb-mhead">
@@ -1197,7 +1325,6 @@
   </div>
 </div>
 
-<!-- DELETE MODAL -->
 <div id="cbDeleteOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
   <div class="cb-modal">
     <div class="cb-mhead">
@@ -1212,7 +1339,6 @@
   </div>
 </div>
 
-<!-- PERIOD CONFIRM MODAL -->
 <div id="cbPeriodConfirmOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
   <div class="cb-modal">
     <div class="cb-mhead">
@@ -1227,7 +1353,6 @@
   </div>
 </div>
 
-<!-- ✅ RESET PERIOD CONFIRM MODAL -->
 <div id="cbGateResetOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
   <div class="cb-modal">
     <div class="cb-mhead">
@@ -1242,7 +1367,6 @@
   </div>
 </div>
 
-<!-- ✅ EDIT-LOCK MODAL -->
 <div id="cbLockOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
   <div class="cb-modal">
     <div class="cb-mhead">
@@ -1262,9 +1386,12 @@
 
   /* ============================================================
      CASHBOOK JS (ISOLATED)
-     ✅ ONLY UI adjustment added: move top actions into toolbar on mobile
-     (all data/logic/handlers remain the same)
-     ============================================================ */
+     ✅ LOGIC FIXED to match physical cashbook (your image)
+     ✅ Receipts and Payments are inter-connected:
+        Balance = ReceiptsTotal - PaymentsTotal
+        Payments-side Grand Total = PaymentsTotal + Balance (== ReceiptsTotal)
+     ✅ DATE logic fixed: DD-MM-YYYY only (no time)
+  ============================================================ */
 
   const cashbookTranslations = {
     en: {
@@ -1286,7 +1413,7 @@
       addButton: "Add",
       cancelButton: "Cancel",
       searchPh: "Search date, particulars, LF, amount...",
-      datePh: "DD-MM-YYYY",
+      datePh: "DD-MM-YYYY", /* ✅ FIXED */
       confirmTitle: "Confirm Save",
       confirmMsg: "Do you want to save these changes?",
       confirmYes: "Confirm",
@@ -1335,7 +1462,7 @@
       addButton: "যোগ করুন",
       cancelButton: "বাতিল",
       searchPh: "তারিখ, বিবরণ, এলএফ, পরিমাণ খুঁজুন...",
-      datePh: "দিন-মাস-বছর",
+      datePh: "দিন-মাস-বছর", /* ✅ FIXED */
       confirmTitle: "সংরক্ষণ নিশ্চিত করুন",
       confirmMsg: "আপনি কি পরিবর্তনগুলো সংরক্ষণ করতে চান?",
       confirmYes: "নিশ্চিত",
@@ -1389,6 +1516,11 @@
 
   const cb$ = (id)=>document.getElementById(id);
   const cbWrap = cb$("cbWrap");
+
+const cbBalanceRow = cb$("cbBalanceRow");
+const cbBalanceLabelRow = cb$("cbBalanceLabelRow");
+const cbBalanceRowValue = cb$("cbBalanceRowValue");
+
 
   const cbGate = cb$("cbGate");
   const cbApp = cb$("cbApp");
@@ -1478,11 +1610,8 @@
   const cbLockMsg = cb$("cbLockMsg");
   const cbLockOk = cb$("cbLockOk");
 
-  /* ✅ NEW (UI only): move Edit/Cancel to toolbar on mobile */
   const cbTopActions = cb$("cbTopActions");
   const cbMobileActionsSlot = cb$("cbMobileActionsSlot");
-  const cbEditSaveBtnHome = cbEditSaveBtn.parentElement;
-  const cbCancelBtnHome = cbCancelBtn.parentElement;
 
   function cbRehomeActions(){
     try{
@@ -1571,6 +1700,7 @@
     cbActivePill.textContent = cbActiveTab === "receipts"
       ? cashbookTranslations[cashbookLang].receipts
       : cashbookTranslations[cashbookLang].payments;
+
     setTheme();
     renderAll();
   }
@@ -1749,14 +1879,11 @@
   }
 
   /* ============================================================
-     ✅ DATE-TIME helpers (unchanged)
-     ============================================================ */
-  function cbPad2(n){ return String(n).padStart(2,"0"); }
-
+     ✅ DATE helpers (FIXED): DD-MM-YYYY only
+  ============================================================ */
   function cbIsLeapYear(y){
     return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
   }
-
   function cbDaysInMonth(m, y){
     const mm = Number(m);
     const yy = Number(y);
@@ -1764,70 +1891,60 @@
     return days[mm-1] || 31;
   }
 
-  function cbFormatDateTimeFromDigits(raw){
-    const digits = String(raw || "").replace(/\D/g, "");
+  function cbFormatDateFromDigits(raw){
+    const digits = String(raw || "").replace(/\D/g, "").slice(0,8);
     const d = digits.slice(0,2);
     const m = digits.slice(2,4);
     const y = digits.slice(4,8);
-    const t = digits.slice(8,12);
     let out = "";
     if (d) out += d;
     if (m) out += (out.length>=2 ? "-" : "") + m;
     if (y) out += (out.length>=5 ? "-" : (out.length>=4 ? "-" : "")) + y;
-    if (t){
-      const hh = t.slice(0,2);
-      const mm = t.slice(2,4);
-      out += " " + hh + (mm ? ":" + mm : "");
-    }
     return out;
   }
 
-  function cbNormalizeManualDateTime(value){
-    return cbFormatDateTimeFromDigits(value);
+  function cbNormalizeManualDate(value){
+    return cbFormatDateFromDigits(value);
   }
 
-  function cbIsValidDateTime(value){
+  function cbIsValidDate(value){
     const s = String(value || "").trim();
-    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})$/);
+    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (!m) return false;
 
     const dd = Number(m[1]);
     const mm = Number(m[2]);
     const yyyy = Number(m[3]);
-    const HH = Number(m[4]);
-    const MIN = Number(m[5]);
 
     if (yyyy < 1900 || yyyy > 2100) return false;
     if (mm < 1 || mm > 12) return false;
     const maxD = cbDaysInMonth(mm, yyyy);
     if (dd < 1 || dd > maxD) return false;
-    if (HH < 0 || HH > 23) return false;
-    if (MIN < 0 || MIN > 59) return false;
 
     return true;
   }
 
-  function cbToDatetimeLocal(str){
+  function cbToDateLocal(str){
     const s = String(str || "").trim();
-    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})$/);
+    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (!m) return "";
-    const dd = m[1], mm = m[2], yyyy = m[3], HH = m[4], MIN = m[5];
-    return `${yyyy}-${mm}-${dd}T${HH}:${MIN}`;
+    const dd = m[1], mm = m[2], yyyy = m[3];
+    return `${yyyy}-${mm}-${dd}`;
   }
 
-  function cbFromDatetimeLocal(v){
+  function cbFromDateLocal(v){
     const s = String(v || "").trim();
-    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (!m) return "";
-    const yyyy = m[1], mm = m[2], dd = m[3], HH = m[4], MIN = m[5];
-    return `${dd}-${mm}-${yyyy} ${HH}:${MIN}`;
+    const yyyy = m[1], mm = m[2], dd = m[3];
+    return `${dd}-${mm}-${yyyy}`;
   }
 
   function cbAttachDateBehavior(textInput, hiddenPicker, onValue){
     textInput.addEventListener("input", ()=>{
       if (!cbIsEditing) return;
       const before = textInput.value;
-      const after = cbNormalizeManualDateTime(before);
+      const after = cbNormalizeManualDate(before);
       if (after !== before){
         const pos = textInput.selectionStart || after.length;
         textInput.value = after;
@@ -1845,18 +1962,18 @@
         onValue("");
         return;
       }
-      const ok = cbIsValidDateTime(v);
+      const ok = cbIsValidDate(v);
       textInput.classList.toggle("cb-invalid", !ok);
       onValue(textInput.value);
       if (ok && hiddenPicker){
-        hiddenPicker.value = cbToDatetimeLocal(v);
+        hiddenPicker.value = cbToDateLocal(v);
       }
     });
 
     if (hiddenPicker){
       hiddenPicker.addEventListener("change", ()=>{
         if (!cbIsEditing) return;
-        const formatted = cbFromDatetimeLocal(hiddenPicker.value);
+        const formatted = cbFromDateLocal(hiddenPicker.value);
         if (formatted){
           textInput.value = formatted;
           textInput.classList.remove("cb-invalid");
@@ -1882,14 +1999,13 @@
 
   /* ============================================================
      ✅ EDIT LOCK (unchanged)
-     ============================================================ */
+  ============================================================ */
   let cbLockActive = false;
   let cbLockPushed = false;
   let cbLockOpen = false;
 
   function cbSetLock(on){
     cbLockActive = !!on;
-
     if (cbLockActive && !cbLockPushed){
       try{
         history.pushState({ cb_lock: true }, document.title, location.href);
@@ -1968,7 +2084,7 @@
 
   /* ============================================================
      ✅ LANGUAGE SYNC (unchanged)
-     ============================================================ */
+  ============================================================ */
   function cbNormalizeLang(v){
     if (!v) return null;
     const s = String(v).toLowerCase();
@@ -2035,15 +2151,76 @@
   }catch(_){}
 
   /* ============================================================
-     rest of your logic unchanged
-     ============================================================ */
-  function renderTotals(){
-    const r = sumTotals(cbReceipts);
-    const p = sumTotals(cbPayments);
-    cbReceiptsTotal.textContent = formatINR(r);
-    cbPaymentsTotal.textContent = formatINR(p);
-    cbBalanceTotal.textContent = formatINR(r - p);
+     ✅ CASHBOOK ACCOUNTING TOTALS (FIXED)
+  ============================================================ */
+  function getAccountingTotals(){
+    const receiptsTotal = sumTotals(cbReceipts);
+    const paymentsTotal = sumTotals(cbPayments);
+    const balance = receiptsTotal - paymentsTotal;
+    const grandReceipts = receiptsTotal;
+    const grandPaymentsSide = paymentsTotal + balance; // equals receiptsTotal
+    return { receiptsTotal, paymentsTotal, balance, grandReceipts, grandPaymentsSide };
   }
+
+  function renderTotals(){
+    const { receiptsTotal, paymentsTotal, balance } = getAccountingTotals();
+    cbReceiptsTotal.textContent = formatINR(receiptsTotal);
+    cbPaymentsTotal.textContent = formatINR(paymentsTotal);
+    cbBalanceTotal.textContent = formatINR(balance);
+  }
+
+  function renderPresentGrand(){
+  const t = cashbookTranslations[cashbookLang];
+  const { receiptsTotal, paymentsTotal, balance } = getAccountingTotals();
+
+  // label
+  cbBalanceLabelRow.textContent = t.balance;
+
+  if (cbActiveTab === "receipts"){
+    cbPresentLabel.textContent = t.presentTotal;
+    cbGrandLabel.textContent = t.grandTotal;
+
+    cbPresentTotal.textContent = formatINR(receiptsTotal);
+    cbGrandTotal.textContent = formatINR(receiptsTotal);
+
+    // hide balance row automatically by CSS (theme receipts)
+    cbBalanceRowValue.textContent = formatINR(balance);
+  } else {
+    cbPresentLabel.textContent = t.presentTotal;
+    cbGrandLabel.textContent = t.grandTotal;
+
+    cbPresentTotal.textContent = formatINR(paymentsTotal);
+
+    // ✅ this is the missing row you want
+    cbBalanceRowValue.textContent = formatINR(balance);
+
+    // Grand total on payments side must match receipts total
+    cbGrandTotal.textContent = formatINR(paymentsTotal + balance);
+  }
+}
+
+  function renderMobileTotalsOnly(){
+    const t = cashbookTranslations[cashbookLang];
+    const { receiptsTotal, paymentsTotal, balance } = getAccountingTotals();
+
+    if (cbActiveTab === "receipts"){
+      cbMobileTotals.innerHTML = `
+        <div class="cb-mtrow"><span>${t.presentTotal}</span><strong>${formatINR(receiptsTotal)}</strong></div>
+        <div class="cb-mtrow cb-grand"><span>${t.grandTotal}</span><strong>${formatINR(receiptsTotal)}</strong></div>
+      `;
+    } else {
+      cbMobileTotals.innerHTML = `
+        <div class="cb-mtrow"><span>${t.presentTotal}</span><strong>${formatINR(paymentsTotal)}</strong></div>
+        <div class="cb-mtrow cb-grand"><span>${t.grandTotal}</span><strong>${formatINR(paymentsTotal + balance)}</strong></div>
+      `;
+    }
+  }
+
+  /* ============================================================
+     rest of your logic unchanged
+  ============================================================ */
+
+  function setThemeSafe(){ cbWrap.setAttribute("data-theme", cbActiveTab); }
 
   function renderTable(){
     const active = getActiveArr();
@@ -2105,10 +2282,10 @@
       inDate.placeholder = cashbookTranslations[cashbookLang].datePh;
 
       const dtPick = document.createElement("input");
-      dtPick.type = "datetime-local";
+      dtPick.type = "date";
       dtPick.className = "cb-date-hidden";
       dtPick.tabIndex = -1;
-      dtPick.value = tx.date ? cbToDatetimeLocal(tx.date) : "";
+      dtPick.value = tx.date ? cbToDateLocal(tx.date) : "";
 
       const btn = document.createElement("button");
       btn.type = "button";
@@ -2228,22 +2405,7 @@
     };
   }
 
-  function renderPresentGrand(){
-    const active = getActiveArr();
-    const filtered = getFiltered(active);
-    const { pageItems } = paginate(filtered);
-
-    const present = sumTotals(pageItems);
-    const grand = sumTotals(filtered);
-
-    cbPresentTotal.textContent = formatINR(present);
-    cbGrandTotal.textContent = formatINR(grand);
-
-    cbMobileTotals.style.display = "none";
-  }
-
   function renderMobile(){
-    /* kept as-is (visually hidden by CSS) */
     const active = getActiveArr();
     const filtered = getFiltered(active);
     const { pageItems, startIndex } = paginate(filtered);
@@ -2259,23 +2421,163 @@
       const top = document.createElement("div");
       top.className = "cb-mtop";
 
-      const title = document.createElement("div");
-      title.className = "cb-mtitle";
-      title.innerHTML = `<span class="cb-sl-badge">${slNo}</span> <span>${tx.particulars || "-"}</span>`;
+      const sl = document.createElement("div");
+      sl.className = "cb-sl-badge";
+      sl.textContent = String(slNo);
+      top.appendChild(sl);
 
-      top.appendChild(title);
+      const right = document.createElement("div");
+      right.className = "cb-mhead-right";
+
+      const totalPill = document.createElement("div");
+      totalPill.className = "cb-mtotal-pill";
+      totalPill.textContent = formatINR(txTotal(tx));
+      right.appendChild(totalPill);
+
+      if (cbIsEditing){
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "cb-mdel";
+        del.innerHTML = "🗑";
+        del.addEventListener("click", ()=>{
+          cbPendingDeleteIds = [tx.id];
+          openDeleteConfirm();
+        });
+        right.appendChild(del);
+      }
+
+      top.appendChild(right);
       card.appendChild(top);
 
+      const grid = document.createElement("div");
+      grid.className = "cb-mgrid";
+
+      const fDate = document.createElement("div");
+      fDate.className = "cb-mfield";
+      const lDate = document.createElement("label");
+      lDate.textContent = cashbookTranslations[cashbookLang].date;
+      fDate.appendChild(lDate);
+
+      const dateWrap = document.createElement("div");
+      dateWrap.className = "cb-date-wrap";
+
+      const inDate = document.createElement("input");
+      inDate.className = "cb-input";
+      inDate.value = tx.date || "";
+      inDate.readOnly = !cbIsEditing;
+      inDate.placeholder = cashbookTranslations[cashbookLang].datePh;
+
+      const dtPick = document.createElement("input");
+      dtPick.type = "date";
+      dtPick.className = "cb-date-hidden";
+      dtPick.tabIndex = -1;
+      dtPick.value = tx.date ? cbToDateLocal(tx.date) : "";
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cb-date-btn";
+      btn.title = (cashbookLang === "bn") ? "ক্যালেন্ডার" : "Calendar";
+      btn.innerHTML = `
+        <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      `;
+      btn.disabled = !cbIsEditing;
+      btn.addEventListener("click", ()=>{
+        if (!cbIsEditing) return;
+        cbOpenPicker(dtPick);
+      });
+
+      cbAttachDateBehavior(inDate, dtPick, (v)=>{ tx.date = v; });
+
+      dateWrap.appendChild(inDate);
+      dateWrap.appendChild(btn);
+      dateWrap.appendChild(dtPick);
+      fDate.appendChild(dateWrap);
+
+      const fLF = document.createElement("div");
+      fLF.className = "cb-mfield";
+      const lLF = document.createElement("label");
+      lLF.textContent = cashbookTranslations[cashbookLang].lf;
+      fLF.appendChild(lLF);
+
+      const inLf = document.createElement("input");
+      inLf.className = "cb-input";
+      inLf.value = tx.lf || "";
+      inLf.readOnly = !cbIsEditing;
+      inLf.placeholder = cashbookTranslations[cashbookLang].lf;
+      inLf.addEventListener("input", ()=>{ tx.lf = inLf.value; });
+      fLF.appendChild(inLf);
+
+      const fA = document.createElement("div");
+      fA.className = "cb-mfield";
+      const lA = document.createElement("label");
+      lA.textContent = cashbookTranslations[cashbookLang].amount;
+      fA.appendChild(lA);
+
+      const inA = document.createElement("input");
+      inA.className = "cb-input cb-amt";
+      inA.value = Number(tx.amount || 0);
+      inA.readOnly = !cbIsEditing;
+      inA.inputMode = "decimal";
+      inA.addEventListener("input", ()=>{
+        tx.amount = Number(inA.value || 0);
+        renderTotals();
+        renderPresentGrand();
+        totalPill.textContent = formatINR(txTotal(tx));
+        renderMobileTotalsOnly();
+      });
+      fA.appendChild(inA);
+
+      const fB = document.createElement("div");
+      fB.className = "cb-mfield";
+      const lB = document.createElement("label");
+      lB.textContent = cashbookTranslations[cashbookLang].bankAmount;
+      fB.appendChild(lB);
+
+      const inB = document.createElement("input");
+      inB.className = "cb-input cb-amt";
+      inB.value = Number(tx.bankAmount || 0);
+      inB.readOnly = !cbIsEditing;
+      inB.inputMode = "decimal";
+      inB.addEventListener("input", ()=>{
+        tx.bankAmount = Number(inB.value || 0);
+        renderTotals();
+        renderPresentGrand();
+        totalPill.textContent = formatINR(txTotal(tx));
+        renderMobileTotalsOnly();
+      });
+      fB.appendChild(inB);
+
+      const fP = document.createElement("div");
+      fP.className = "cb-mfield";
+      const lP = document.createElement("label");
+      lP.textContent = cashbookTranslations[cashbookLang].particulars;
+      fP.appendChild(lP);
+
+      const inPar = document.createElement("input");
+      inPar.className = "cb-input";
+      inPar.value = tx.particulars || "";
+      inPar.readOnly = !cbIsEditing;
+      inPar.placeholder = cashbookTranslations[cashbookLang].particulars;
+      inPar.addEventListener("input", ()=>{ tx.particulars = inPar.value; });
+      fP.appendChild(inPar);
+
+      grid.appendChild(fDate);
+      grid.appendChild(fLF);
+      grid.appendChild(fA);
+      grid.appendChild(fB);
+      grid.appendChild(fP);
+
+      card.appendChild(grid);
       cbMobile.appendChild(card);
     });
 
-    const present = sumTotals(pageItems);
-    const grand = sumTotals(filtered);
-    cbMobileTotals.style.display = "flex";
-    cbMobileTotals.innerHTML = `
-      <div class="cb-mtrow"><span>${cashbookTranslations[cashbookLang].presentTotal}</span><strong>${formatINR(present)}</strong></div>
-      <div class="cb-mtrow cb-grand"><span>${cashbookTranslations[cashbookLang].grandTotal}</span><strong>${formatINR(grand)}</strong></div>
-    `;
+    renderMobileTotalsOnly();
   }
 
   function renderAll(){
@@ -2303,11 +2605,10 @@
     cbPeriodYear = cbPendingPeriod.year;
 
     applyPeriodToHeader();
-
     showApp();
 
     ensureRows();
-    setTheme();
+    setThemeSafe();
     setEditingUI();
     renderAll();
   }
@@ -2473,7 +2774,7 @@
   function init(){
     showGate();
     fillGateSelects();
-    setTheme();
+    setThemeSafe();
     setEditingUI();
     applyLanguage();
 
@@ -2481,7 +2782,6 @@
 
     cbSetLock(false);
 
-    /* ✅ run the mobile action relocation (UI only) */
     cbRehomeActions();
   }
 

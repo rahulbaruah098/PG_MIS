@@ -4,135 +4,258 @@
 
 {% block head_extra %}
 {{ super() }}
+
+<!-- Ionicons -->
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
 <style>
   /* ============================================================
-     INPUT PURCHASE/SALE/STOCK REGISTER (SCOPED)
-     ✅ Same PG-MIS mint/green look
-     ✅ Table matches the sheet columns 1–17
-     ✅ Includes calculations + add/remove rows + localStorage + CSV
+     INPUT (PURCHASE/SALE/STOCK) REGISTER — IMAGE-ACCURATE CONTENT
+     ✅ Table columns match the printed register image (1–17):
+        Purchase: 1 Date, 2 Bill No, 3 Supplier, 4 Qty, 5 Rate, 6 Total, 7 Cashbook Folio
+        Sale: 8 Date, 9 Bill No of PG, 10 Member farmer, 11 Qty, 12 Rate, 13 Amount, 14 Cashbook Folio
+        Stock: 15 Closing Stock Qty (15=4-11), 16 Rate, 17 Amount
+     ✅ NO extra “Date” field above the table (removed)
+     ✅ 4 sections: All / Purchase / Sale / Stock
+     ✅ IMPORTANT FIX:
+        - When viewing Purchase/Sale/Stock tabs, the unwanted group headers
+          “Sale of input to members” and “Stock” are REMOVED from that view
+          (no extra blank columns / no unnecessary group headers)
+     ✅ Stock tab shows "Closing Stock Qty" (NOT date) as the first stock field
+     ✅ Translate button REMOVED from this page (uses GLOBAL navbar translation)
+     ✅ Output-register features: Edit↔Save toggle, Cancel, confirmations,
+        select-all, delete selected, delete all, print, export CSV, funky top-right toast (not green),
+        mobile/tablet/app swipe cards view
+
+     ✅ FIXED NOW (per your requests):
+        - GLOBAL navbar language change now reliably updates this page (poll + event hooks + storage)
+        - Remove Save Draft + Load Draft buttons
+        - Default: keep at least 1 blank row always (never zero rows)
+        - Mobile title cropping fixed
+        - Back button: only arrow (no text) + shown ONLY on mobile/tablet/app (hidden on desktop/web)
+        - Remember active tab on refresh (stay on Sale/Stock/etc)
+        - Mobile buttons spacing improved (less messy)
+
+     ✅ NEW (your request):
+        - Page lock while Edit Mode is active:
+          • Block refresh/reload (browser refresh too) + closing tab
+          • Block internal/external navigation (links, back/forward, history navigation)
+          • Warn user; allow navigation again only after Save or Cancel
+
      ============================================================ */
 
-  .input-register-page{ color:#0f172a; }
+  .input-register-page{
+    width: 100%;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+
+    --paper:#ffffff;
+    --soft:#f7faf9;
+
+    --accent:#0b4d3a;
+    --accent2:#059669;
+
+    --danger:#dc2626;
+
+    --shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+    --shadow2: 0 16px 22px -18px rgba(15,23,42,.25);
+
+    --r18: 18px;
+    --r16: 16px;
+    --r14: 14px;
+    --r12: 12px;
+
+    --activeRed:#b91c1c;
+
+    color: var(--ink);
+  }
   .input-register-page *{ box-sizing:border-box; }
 
   .input-register-page .wrap{
     width:100%;
-    max-width: 1200px;
+    max-width: 100%;
     margin: 0 auto;
   }
 
-  /* Header card */
-  .input-register-page .hero{
-    border-radius: 18px;
-    background:
-      radial-gradient(circle at 18% 18%, rgba(16,185,129,.16), transparent 55%),
-      radial-gradient(circle at 86% 22%, rgba(34,197,94,.12), transparent 55%),
-      linear-gradient(180deg, rgba(255,255,255,.90), rgba(255,255,255,.78));
-    border: 1px solid rgba(15, 23, 42, .10);
-    box-shadow: 0 18px 45px rgba(2, 6, 23, .08);
-    padding: 18px 18px;
-    overflow:hidden;
-    position: relative;
+  .input-register-page .sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--r16);
+    overflow: hidden;
+    box-shadow: var(--shadow);
   }
 
-  .input-register-page .hero:before{
-    content:"";
-    position:absolute; inset:-2px;
+  /* Header */
+  .input-register-page .head{
+    padding: 14px 16px 12px;
     background:
-      radial-gradient(circle at 25% 20%, rgba(16,185,129,.18), transparent 55%),
-      radial-gradient(circle at 80% 30%, rgba(34,197,94,.14), transparent 60%),
-      radial-gradient(circle at 35% 110%, rgba(16,185,129,.12), transparent 55%);
-    pointer-events:none;
-    filter: blur(0px);
-    opacity:.9;
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
   }
 
-  .input-register-page .hero > *{ position: relative; z-index: 1; }
+  /* Back button: hidden on desktop/web; visible only on mobile/tablet */
+  .input-register-page .backBtn{ display:none; }
+  @media (max-width: 980px){
+    .input-register-page .backBtn{ display:inline-flex; }
+  }
 
-  .input-register-page .kicker{
+  .input-register-page .titleWrap{
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align:center;
+    padding: 0 8px;
+  }
+
+  /* Title cropping fix on mobile: allow wrap + 2 lines */
+  .input-register-page .title{
+    margin:0;
+    font-weight: 950;
+    font-size: 18px;
+    letter-spacing: .2px;
+    max-width: 100%;
+    color: var(--ink);
+    line-height: 1.15;
+  }
+  @media (min-width: 561px){
+    .input-register-page .title{
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+  }
+  @media (max-width: 560px){
+    .input-register-page .head{ align-items:flex-start; }
+    .input-register-page .title{
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+  }
+  @media (max-width: 420px){
+    .input-register-page .title{ font-size: 15px; }
+  }
+
+  /* Buttons */
+  .input-register-page .btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 12px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
     display:inline-flex;
     align-items:center;
-    gap:10px;
-    padding: 8px 12px;
-    border-radius: 999px;
-    border: 1px solid rgba(16,185,129,.22);
-    background: rgba(16,185,129,.10);
-    color:#065f46;
-    font-weight: 800;
-    letter-spacing: .2px;
-    font-size: 12px;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .input-register-page .btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: var(--shadow2);
+  }
+  .input-register-page .btn:active{ transform: translateY(0); }
+  .input-register-page .btn ion-icon{ font-size: 18px; }
+  .input-register-page .btn.primary{
+    border-color: rgba(11,77,58,.28);
+    background: rgba(16,185,129,.12);
+    color: var(--accent);
+  }
+  .input-register-page .btn.danger{
+    border-color: rgba(220,38,38,.25);
+    background: rgba(220,38,38,.08);
+    color: #7f1d1d;
+  }
+  .input-register-page .btn.ghost{ background: transparent; }
+  .input-register-page .btn.muted{
+    border-color: rgba(15,23,42,.14);
+    background: rgba(241,245,249,.75);
+    color: rgba(15,23,42,.78);
   }
 
-  .input-register-page .title{
-    margin-top: 10px;
-    font-size: 20px;
-    font-weight: 900;
-    letter-spacing: .2px;
-    line-height: 1.25;
+  /* Card */
+  .input-register-page .card{
+    padding: 16px;
+    background: rgba(255,255,255,.92);
   }
 
-  .input-register-page .subtitle{
-    margin-top: 4px;
-    color:#334155;
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  /* Top controls */
+  /* Meta fields (NO separate date field) */
   .input-register-page .top-grid{
-    margin-top: 14px;
+    margin-top: 10px;
     display:grid;
-    grid-template-columns: 1.4fr 1fr 1fr;
+    grid-template-columns: 1.6fr 1fr;
     gap: 12px;
   }
-
   @media (max-width: 980px){
     .input-register-page .top-grid{ grid-template-columns: 1fr; }
   }
-
   .input-register-page .field{
-    background: rgba(255,255,255,.78);
-    border: 1px solid rgba(15,23,42,.12);
-    border-radius: 16px;
+    background: rgba(247,250,249,.75);
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
     padding: 12px 12px;
-    box-shadow: 0 10px 24px rgba(2,6,23,.06);
   }
-
   .input-register-page label{
-    display:block;
-    font-size: 12px;
-    font-weight: 900;
-    color:#0f172a;
-    margin-bottom: 6px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size: 13px;
+    font-weight: 950;
+    color: rgba(15,23,42,.78);
+    margin-bottom: 8px;
   }
-
+  .input-register-page label ion-icon{
+    font-size: 16px;
+    color: rgba(11,77,58,.95);
+  }
   .input-register-page .hint{
     font-size: 11px;
-    color:#64748b;
-    font-weight: 700;
-    margin-top: 6px;
+    color: var(--muted);
+    font-weight: 800;
+    margin-top: 8px;
   }
-
   .input-register-page input[type="text"],
   .input-register-page input[type="date"],
   .input-register-page input[type="number"]{
     width:100%;
-    border-radius: 14px;
-    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.16);
     padding: 10px 12px;
     outline: none;
-    background: rgba(255,255,255,.92);
-    color:#0f172a;
-    font-weight: 700;
-    transition: box-shadow .15s ease, border-color .15s ease;
+    background: rgba(247,250,249,.75);
+    color: var(--ink);
+    font-weight: 800;
+    transition: box-shadow .12s ease, border-color .12s ease, background .12s ease;
   }
-
   .input-register-page input:focus{
-    border-color: rgba(16,185,129,.55);
-    box-shadow: 0 0 0 4px rgba(16,185,129,.15);
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  .input-register-page input[readonly]{
+    background: rgba(15,23,42,.04);
+    border-color: rgba(15,23,42,.12);
+    color: var(--ink);
   }
 
-  /* Action bar */
+  /* Actions */
   .input-register-page .actions{
     margin-top: 12px;
     display:flex;
@@ -140,164 +263,415 @@
     gap: 10px;
     align-items:center;
   }
-
-  .input-register-page .btn{
-    border: 1px solid rgba(15,23,42,.14);
-    background: rgba(255,255,255,.86);
-    padding: 10px 12px;
-    border-radius: 999px;
-    font-weight: 900;
-    font-size: 12px;
-    color:#0f172a;
-    cursor:pointer;
-    transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
-    user-select:none;
+  .input-register-page .actions .leftActions,
+  .input-register-page .actions .rightActions{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items:center;
   }
+  .input-register-page .actions .rightActions{ margin-left:auto; }
 
-  .input-register-page .btn:hover{
-    transform: translateY(-1px);
-    border-color: rgba(16,185,129,.40);
-    box-shadow: 0 14px 30px rgba(2,6,23,.08);
+  /* Mobile buttons: less messy */
+  @media (max-width: 760px){
+    .input-register-page .actions{
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .input-register-page .actions .leftActions,
+    .input-register-page .actions .rightActions{
+      margin-left:0;
+      width:100%;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .input-register-page .actions .btn{
+      width:100%;
+      justify-content:center;
+      padding: 12px 10px;
+      font-size: 12px;
+    }
+    .input-register-page .actions .btn ion-icon{ font-size: 18px; }
   }
-
-  .input-register-page .btn.primary{
-    background: linear-gradient(180deg, rgba(16,185,129,.95), rgba(5,150,105,.92));
-    border-color: rgba(16,185,129,.55);
-    color: #052e1b;
-  }
-
-  .input-register-page .btn.danger{
-    background: rgba(239,68,68,.10);
-    border-color: rgba(239,68,68,.25);
-    color:#7f1d1d;
-  }
-
-  .input-register-page .btn.ghost{
-    background: transparent;
+  @media (max-width: 420px){
+    .input-register-page .actions .leftActions,
+    .input-register-page .actions .rightActions{
+      grid-template-columns: 1fr; /* stack on very small screens */
+    }
   }
 
   .input-register-page .status{
-    margin-left:auto;
     font-size: 12px;
-    font-weight: 900;
-    color:#065f46;
+    font-weight: 950;
+    color: var(--accent);
     padding: 8px 12px;
     border-radius: 999px;
-    border: 1px dashed rgba(16,185,129,.35);
-    background: rgba(16,185,129,.08);
+    border: 1px dashed rgba(15,23,42,.20);
+    background: rgba(240,253,244,.8);
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
   }
-
   @media (max-width: 720px){
-    .input-register-page .status{ width:100%; margin-left:0; }
+    .input-register-page .status{
+      width:100%;
+      justify-content:center;
+      grid-column: 1 / -1;
+    }
   }
 
-  /* Table container */
+  /* Tabs */
+  .input-register-page .tabs{
+    padding: 12px 16px;
+    display:flex;
+    gap: 10px;
+    background: rgba(255,255,255,.94);
+    border-top: 1.5px solid var(--line2);
+    border-bottom: 1.5px solid var(--line2);
+  }
+  .input-register-page .tab{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.88);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12.5px;
+    cursor: pointer;
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    user-select:none;
+    white-space: nowrap;
+  }
+  .input-register-page .tab:hover{ transform: translateY(-1px); background:#fff; box-shadow: var(--shadow2); }
+  .input-register-page .tab[aria-selected="true"]{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color: var(--activeRed);
+  }
+  .input-register-page .tab ion-icon{ font-size: 18px; }
+  @media (max-width: 760px){
+    .input-register-page .tabs{
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+    .input-register-page .tabs::-webkit-scrollbar{ height: 8px; }
+    .input-register-page .tabs::-webkit-scrollbar-thumb{
+      background: rgba(15,23,42,.18);
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.9);
+    }
+    .input-register-page .tab{ flex: 0 0 auto; }
+  }
+
+  /* Table shell */
   .input-register-page .table-shell{
-    margin-top: 14px;
-    border-radius: 18px;
-    border: 1px solid rgba(15,23,42,.12);
-    background: rgba(255,255,255,.78);
-    box-shadow: 0 18px 45px rgba(2,6,23,.08);
-    overflow:hidden;
+    background: rgba(255,255,255,.94);
   }
-
   .input-register-page .table-top{
-    padding: 12px 12px;
-    border-bottom: 1px solid rgba(15,23,42,.10);
+    padding: 12px 16px;
+    border-bottom: 1.5px solid var(--line2);
     display:flex;
     flex-wrap:wrap;
     align-items:center;
+    justify-content: space-between;
     gap:10px;
   }
-
   .input-register-page .table-note{
     font-size: 12px;
-    font-weight: 800;
-    color:#334155;
+    font-weight: 900;
+    color: rgba(15,23,42,.78);
+  }
+  .input-register-page .muted{
+    color: var(--muted);
+    font-weight: 900;
+    font-size: 11px;
   }
 
   .input-register-page .table-wrap{
     width:100%;
     overflow:auto;
+    padding: 0 12px 14px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .input-register-page .table-wrap::-webkit-scrollbar{ height: 10px; width: 10px; }
+  .input-register-page .table-wrap::-webkit-scrollbar-thumb{
+    background: rgba(15,23,42,.18);
+    border-radius: 999px;
+    border: 2px solid rgba(255,255,255,.9);
   }
 
   table.input-register{
-    width: 1600px; /* wide like real register */
+    width: 1750px; /* wide like printed sheet */
     border-collapse: separate;
     border-spacing: 0;
+    background: transparent;
   }
 
   table.input-register th,
   table.input-register td{
-    border-right: 1px solid rgba(15,23,42,.10);
-    border-bottom: 1px solid rgba(15,23,42,.10);
+    border-right: 1px solid var(--line2);
+    border-bottom: 1px solid var(--line2);
     padding: 8px 8px;
     vertical-align: middle;
-    background: rgba(255,255,255,.70);
+    background: rgba(255,255,255,.96);
   }
 
   table.input-register th{
     position: sticky;
     top: 0;
     z-index: 5;
-    background: rgba(248,250,252,.92);
+    background: var(--soft);
     backdrop-filter: blur(10px);
     font-size: 11px;
-    font-weight: 900;
-    color:#0f172a;
+    font-weight: 950;
+    color: rgba(15,23,42,.78);
     text-align:center;
     line-height: 1.2;
+    border-top: 1px solid var(--line);
   }
 
   table.input-register thead tr.group th{
-    font-size: 11px;
-    font-weight: 900;
-    color:#064e3b;
-    background: rgba(16,185,129,.10);
+    color: var(--accent);
+    background: rgba(240,253,244,.9);
+    border-bottom: 1.5px solid var(--line2);
   }
 
   table.input-register td{
     font-size: 12px;
-    font-weight: 700;
-    color:#0f172a;
+    font-weight: 850;
+    color: var(--ink);
     text-align:center;
   }
 
-  table.input-register td.left{ text-align:left; min-width: 210px; }
-  table.input-register td.chk{ min-width: 42px; }
-  table.input-register td.num{ min-width: 100px; }
-  table.input-register td.small{ min-width: 92px; }
-  table.input-register td.med{ min-width: 120px; }
-  table.input-register td.wide{ min-width: 190px; }
+  table.input-register td.chk{ min-width: 46px; }
+  table.input-register td.small{ min-width: 110px; }
+  table.input-register td.med{ min-width: 170px; text-align:left; }
+  table.input-register td.num{ min-width: 120px; }
+  table.input-register td.name{ min-width: 220px; text-align:left; }
 
   table.input-register input{
     width:100%;
     border-radius: 12px;
-    border: 1px solid rgba(15,23,42,.12);
+    border: 1px solid rgba(15,23,42,.16);
     padding: 8px 10px;
-    font-weight: 700;
-    background: rgba(255,255,255,.92);
-  }
-
-  table.input-register input[readonly]{
-    background: rgba(2,6,23,.04);
-    border-color: rgba(15,23,42,.10);
-    color:#0f172a;
-  }
-
-  /* footer totals row */
-  .input-register-page tfoot td{
-    background: rgba(16,185,129,.08);
-    font-weight: 900;
-    color:#064e3b;
-  }
-
-  .input-register-page .muted{
-    color:#64748b;
     font-weight: 800;
-    font-size: 11px;
+    background: rgba(247,250,249,.75);
+    outline: none;
+    transition: box-shadow .12s ease, border-color .12s ease, background .12s ease;
+  }
+  table.input-register input:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  table.input-register input[readonly]{
+    background: rgba(15,23,42,.04);
+    border-color: rgba(15,23,42,.12);
+    color: var(--ink);
   }
 
+  .input-register-page tfoot td{
+    background: rgba(240,253,244,.9);
+    font-weight: 950;
+    color: var(--accent);
+  }
+
+  /* Mobile swipe cards */
+  .input-register-page .mobileList{
+    display:none;
+    padding: 12px 12px 16px;
+    background:#fff;
+    border-top: 1.5px solid var(--line2);
+  }
+  .input-register-page .cardRow{
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 16px;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(11,77,58,.06), transparent 55%),
+      #fff;
+    box-shadow: 0 14px 26px -24px rgba(15,23,42,.45);
+    padding: 12px;
+  }
+  .input-register-page .cardTop{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .input-register-page .pill{
+    font-weight: 950;
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(241,245,249,.85);
+    border: 1px solid rgba(15,23,42,.10);
+    color: rgba(15,23,42,.80);
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .input-register-page .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .input-register-page .item label{
+    display:block;
+    font-weight: 950;
+    font-size: 12px;
+    color: rgba(15,23,42,.65);
+    margin-bottom: 6px;
+  }
+  .input-register-page .item input{ min-height: 44px; }
+
+  @media (max-width: 860px){
+    .input-register-page .table-wrap{ display:none; }
+    .input-register-page .mobileList{
+      display:flex;
+      gap: 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 18px;
+    }
+    .input-register-page .mobileList::-webkit-scrollbar{ height: 10px; }
+    .input-register-page .mobileList::-webkit-scrollbar-thumb{
+      background: rgba(15,23,42,.18);
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.9);
+    }
+    .input-register-page .cardRow{
+      flex: 0 0 min(560px, 86%);
+      scroll-snap-align: start;
+    }
+  }
+  @media (max-width: 520px){
+    .input-register-page .grid{ grid-template-columns: 1fr; }
+  }
+
+  /* Footer */
+  .input-register-page .foot{
+    padding: 12px 16px;
+    text-align:center;
+    border-top: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.94);
+    color: rgba(15,23,42,.70);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  /* Funky toast (NOT green) */
+  .input-register-page .toast{
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 9999;
+    display:none;
+    max-width: min(360px, calc(100vw - 28px));
+    background: rgba(15,23,42,.92);
+    color: rgba(255,255,255,.92);
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 22px 48px -26px rgba(0,0,0,.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-weight: 900;
+    font-size: 12.5px;
+    letter-spacing: .2px;
+    transform: translateY(-6px);
+    animation: inToast .18s ease-out forwards;
+  }
+  .input-register-page .toast::before{
+    content:"";
+    position:absolute;
+    inset:-2px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255,255,255,.28), rgba(255,255,255,0) 55%);
+    pointer-events:none;
+    opacity:.55;
+  }
+  .input-register-page .toast::after{
+    content:"";
+    position:absolute;
+    top: 10px;
+    left: 10px;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 0 0 6px rgba(255,255,255,.10);
+    opacity:.85;
+    pointer-events:none;
+  }
+  @keyframes inToast{
+    from{ opacity:0; transform: translateY(-10px) scale(.98); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
+
+  /* Confirm modal */
+  .input-register-page .confirm{
+    position: fixed;
+    inset: 0;
+    z-index: 11000;
+    display: none;
+    background: rgba(2,6,23,.58);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 16px;
+    align-items: center;
+    justify-content: center;
+  }
+  .input-register-page .confirmCard{
+    width: min(520px, 100%);
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid rgba(15,23,42,.12);
+    box-shadow: 0 24px 70px -40px rgba(0,0,0,.6);
+    overflow: hidden;
+  }
+  .input-register-page .confirmHead{
+    padding: 12px 14px;
+    background: linear-gradient(135deg, rgba(240,253,244,.95), rgba(255,255,255,.98));
+    border-bottom: 1px solid rgba(15,23,42,.10);
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    font-weight: 950;
+  }
+  .input-register-page .confirmHead ion-icon{ font-size: 18px; color: rgba(11,77,58,.95); }
+  .input-register-page .confirmBody{
+    padding: 14px;
+    color: rgba(15,23,42,.80);
+    font-weight: 850;
+    line-height: 1.35;
+    font-size: 13px;
+  }
+  .input-register-page .confirmBtns{
+    padding: 12px 14px 14px;
+    display:flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  @media print{
+    .input-register-page .actions,
+    .input-register-page .tabs,
+    .input-register-page .confirm,
+    .input-register-page .toast{ display:none !important; }
+    .input-register-page .sheet{ box-shadow:none; }
+    .input-register-page .table-wrap{ overflow: visible; display:block !important; }
+    table.input-register th{ position: static !important; }
+    .input-register-page .mobileList{ display:none !important; }
+  }
 </style>
 {% endblock %}
 
@@ -305,157 +679,951 @@
 <div class="input-register-page">
   <div class="wrap">
 
-    <div class="hero">
-      <div class="kicker">📘 Input Purchase/Sale/Stock Register</div>
-      <div class="title">সামগ্রী ক্রয়/বিক্রয়/স্টক খাতা (Input Purchase/Sale/Stock Register)</div>
-      <div class="subtitle">শিট অনুযায়ী কলাম ১–১৭ পুরোপুরি রাখা হয়েছে + অটো ক্যালকুলেশন লজিক যুক্ত করা হয়েছে</div>
+    <div class="sheet">
 
-      <div class="top-grid">
-        <div class="field">
-          <label>সামগ্রী নাম (Name of input) — (Common/Default for the register)</label>
-          <input id="regInputName" type="text" placeholder="যেমন: বীজ / সার / কীটনাশক / ফিড ..." />
-          <div class="hint">✅ আপনি চাইলে প্রতিটি রো-তে আলাদা নামও লিখতে পারবেন (কলাম 1-এ)।</div>
+      <!-- Header -->
+      <div class="head">
+        <!-- Back button: only arrow, mobile/tablet only -->
+        <button class="btn primary backBtn" type="button" onclick="(window.history.length>1)?window.history.back():window.location.href='{{ url_for('pg.pg_home') }}'">
+          <ion-icon name="arrow-back"></ion-icon>
+        </button>
+
+        <div class="titleWrap">
+          <h1 class="title" id="t_title">Input (Purchase/Sale/Stock) Register</h1>
         </div>
 
-        <div class="field">
-          <label>Date</label>
-          <input id="regDate" type="date" />
-          <div class="hint">রেজিস্টারের তারিখ (উপরে প্রিন্টেড Date ফিল্ড)</div>
-        </div>
-
-        <div class="field">
-          <label>Unit of Stocking (স্টক মাপের একক)</label>
-          <input id="regUnit" type="text" placeholder="যেমন: Kg / Litre / Packet / Bag ..." />
-          <div class="hint">উদাহরণ: Kg / Litre / Bag / Packet</div>
-        </div>
+        <div style="width:92px;"></div>
       </div>
 
-      <div class="actions">
-        <button class="btn primary" type="button" id="addRowBtn">+ Add Row</button>
-        <button class="btn danger" type="button" id="deleteRowsBtn">Delete Selected</button>
-        <button class="btn" type="button" id="saveDraftBtn">Save Draft</button>
-        <button class="btn" type="button" id="loadDraftBtn">Load Draft</button>
-        <button class="btn ghost" type="button" id="clearDraftBtn">Clear Draft</button>
-        <button class="btn" type="button" id="exportCsvBtn">Export CSV</button>
-        <div class="status" id="statusPill">Ready</div>
-      </div>
+      <!-- Meta -->
+    <div class="card">
+
+  <!-- Actions FIRST -->
+  <div class="actions">
+    <div class="leftActions">
+      <button class="btn primary" type="button" id="editSaveBtn">
+        <ion-icon id="editSaveIcon" name="create"></ion-icon>
+        <span id="editSaveText">Edit</span>
+      </button>
+
+      <button class="btn muted" type="button" id="cancelBtn" style="display:none;">
+        <ion-icon name="close-circle"></ion-icon>
+        <span id="t_cancel">Cancel</span>
+      </button>
+
+      <button class="btn primary" type="button" id="addRowBtn" style="display:none;">
+        <ion-icon name="add-circle"></ion-icon>
+        <span id="t_add_row">Add Row</span>
+      </button>
+
+      <button class="btn danger" type="button" id="deleteRowsBtn" style="display:none;">
+        <ion-icon name="trash"></ion-icon>
+        <span id="t_delete_selected">Delete Selected</span>
+      </button>
+
+      <button class="btn danger" type="button" id="deleteAllBtn" style="display:none;">
+        <ion-icon name="trash-bin"></ion-icon>
+        <span id="t_delete_all">Delete All</span>
+      </button>
     </div>
 
-    <div class="table-shell">
-      <div class="table-top">
-        <div class="table-note">
-          <span class="muted">Auto logic:</span>
-          (6)=(4×5), (13)=(11×12), (15)=(4−11), (17)=(15×16)
-        </div>
-      </div>
+    <div class="rightActions">
+      <button class="btn" type="button" id="exportCsvBtn">
+        <ion-icon name="download"></ion-icon>
+        <span id="t_export_csv">Export CSV</span>
+      </button>
 
-      <div class="table-wrap">
-        <table class="input-register" id="regTable">
-          <thead>
-            <!-- Group headings like the register -->
-            <tr class="group">
-              <th rowspan="2">✔</th>
-              <th rowspan="2">১<br/>সামগ্রী নাম<br/>(Name of input)</th>
-              <th colspan="6">সামগ্রী ক্রয় (Purchase of input)</th>
-              <th colspan="5">সদস্যদের কাছে সামগ্রী বিক্রয় (Sale of input to members)</th>
-              <th colspan="3">স্টক (Stock)</th>
-            </tr>
-
-            <!-- Column headings with numbers 1–17 -->
-            <tr>
-              <th>২<br/>তারিখ<br/>(Date)</th>
-              <th>৩<br/>বিল নং<br/>(Bill No)</th>
-              <th>৪<br/>পরিমাণ<br/>(Qty)</th>
-              <th>৫<br/>দর (টাকা)<br/>(Rate)</th>
-              <th>৬<br/>মোট টাকা<br/>(Total Amount)</th>
-              <th>৭<br/>ক্যাশবুক ফোলিও নং<br/>(Cash Book Folio No)</th>
-
-              <th>৮<br/>তারিখ<br/>(Date)</th>
-              <th>৯<br/>বিল নং<br/>(Bill No)</th>
-              <th>১০<br/>সদস্য কৃষক/সদস্যের নাম<br/>(Member farmer)</th>
-              <th>১১<br/>পরিমাণ<br/>(Qty)</th>
-              <th>১২<br/>দর (টাকা)<br/>(Rate)</th>
-              <th>১৩<br/>মোট টাকা<br/>(Amount)</th>
-              <th>১৪<br/>ক্যাশবুক ফোলিও নং<br/>(Cash Book Folio No)</th>
-
-              <th>১৫<br/>ক্লোজিং স্টক পরিমাণ<br/>(Closing Stock Qty)<br/><span class="muted">(১৫ = ৪ − ১১)</span></th>
-              <th>১৬<br/>দর (টাকা)<br/>(Rate)</th>
-              <th>১৭<br/>মোট টাকা<br/>(Amount)</th>
-            </tr>
-          </thead>
-
-          <tbody id="regTbody">
-            <!-- rows injected by JS -->
-          </tbody>
-
-          <tfoot>
-            <tr>
-              <td colspan="5" class="left" style="text-align:left; font-weight:900;">TOTALS</td>
-              <td class="num"><input id="totPurchaseAmount" readonly type="number" value="0" /></td>
-              <td></td>
-              <td colspan="5"></td>
-              <td class="num"><input id="totSaleAmount" readonly type="number" value="0" /></td>
-              <td></td>
-              <td></td>
-              <td></td>
-              <td class="num"><input id="totStockAmount" readonly type="number" value="0" /></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
+      <button class="btn" type="button" id="printBtn">
+        <ion-icon name="print"></ion-icon>
+        <span id="t_print">Print</span>
+      </button>
     </div>
-
-    <div style="height:18px;"></div>
   </div>
+
+  <!-- Inputs BELOW buttons (still editable via Edit/Save) -->
+  <div class="top-grid" style="margin-top: 12px;">
+    <div class="field">
+      <label id="t_name_label"><ion-icon name="pricetag"></ion-icon>Name of Input</label>
+      <input id="regInputName" type="text" placeholder="e.g.: Seed / Fertilizer / Pesticide / Feed ..." />
+    </div>
+
+    <div class="field">
+      <label id="t_unit_label"><ion-icon name="cube"></ion-icon>Unit of Stocking</label>
+      <input id="regUnit" type="text" placeholder="e.g.: Kg / Litre / Packet / Bag ..." />
+    </div>
+  </div>
+
+</div>
+
+
+      <!-- Tabs -->
+      <div class="tabs" role="tablist" aria-label="Register Sections">
+        <button class="tab" id="tabAll" role="tab" aria-selected="true" data-tab="all">
+          <ion-icon name="albums"></ion-icon> <span id="t_tab_all">All</span>
+        </button>
+        <button class="tab" id="tabPurchase" role="tab" aria-selected="false" data-tab="purchase">
+          <ion-icon name="cart"></ion-icon> <span id="t_tab_purchase">Purchase</span>
+        </button>
+        <button class="tab" id="tabSale" role="tab" aria-selected="false" data-tab="sale">
+          <ion-icon name="receipt"></ion-icon> <span id="t_tab_sale">Sale</span>
+        </button>
+        <button class="tab" id="tabStock" role="tab" aria-selected="false" data-tab="stock">
+          <ion-icon name="layers"></ion-icon> <span id="t_tab_stock">Stock</span>
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="table-shell">
+        <div class="table-top">
+          <div class="muted" id="sectionHint">Showing: All columns</div>
+        </div>
+
+        <!-- Desktop table -->
+        <div class="table-wrap" id="desktopTableWrap">
+          <table class="input-register" id="regTable">
+            <thead>
+              <tr class="group" id="groupRow">
+                <th rowspan="2">
+                  ✔<br/>
+                  <input id="selectAllChk" type="checkbox" style="margin-top:6px; transform:scale(1.05); accent-color:#0b4d3a;" />
+                </th>
+                <th colspan="7" id="t_group_purchase">Purchase of Input</th>
+                <th colspan="7" id="t_group_sale">Sale of input to members</th>
+                <th colspan="3" id="t_group_stock">Stock</th>
+              </tr>
+
+              <tr id="leafRow">
+                <!-- Purchase (1..7) -->
+                <th class="small" data-leaf="p1" id="t_h_p1">Date</th>
+                <th class="small" data-leaf="p2" id="t_h_p2">Bill No</th>
+                <th class="name"  data-leaf="p3" id="t_h_p3">Name of Supplier</th>
+                <th class="small" data-leaf="p4" id="t_h_p4">Qty</th>
+                <th class="small" data-leaf="p5" id="t_h_p5">Rate</th>
+                <th class="num"   data-leaf="p6" id="t_h_p6">Total Amount</th>
+                <th class="small" data-leaf="p7" id="t_h_p7">Cash Book Folio No</th>
+
+                <!-- Sale (8..14) -->
+                <th class="small" data-leaf="s8" id="t_h_s8">Date</th>
+                <th class="small" data-leaf="s9" id="t_h_s9">Bill No of PG</th>
+                <th class="name"  data-leaf="s10" id="t_h_s10">Name of member farmer</th>
+                <th class="small" data-leaf="s11" id="t_h_s11">Qty</th>
+                <th class="small" data-leaf="s12" id="t_h_s12">Rate</th>
+                <th class="num"   data-leaf="s13" id="t_h_s13">Amount</th>
+                <th class="small" data-leaf="s14" id="t_h_s14">Cash Book Folio No</th>
+
+                <!-- Stock (15..17) -->
+                <th class="small" data-leaf="st15" id="t_h_st15">Closing Stock Qty</th>
+                <th class="small" data-leaf="st16" id="t_h_st16">Rate</th>
+                <th class="num"   data-leaf="st17" id="t_h_st17">Amount</th>
+              </tr>
+            </thead>
+
+            <tbody id="regTbody">
+              <!-- rows injected by JS -->
+            </tbody>
+
+            <tfoot id="regTfoot">
+              <tr>
+                <td colspan="6" class="left" style="text-align:left; font-weight:950;" id="t_totals">TOTALS</td>
+                <td class="num"><input id="totPurchaseAmount" readonly type="number" value="0" /></td>
+                <td></td>
+                <td colspan="6"></td>
+                <td class="num"><input id="totSaleAmount" readonly type="number" value="0" /></td>
+                <td></td>
+                <td></td>
+                <td class="num"><input id="totStockAmount" readonly type="number" value="0" /></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Mobile swipe cards -->
+        <div class="mobileList" id="mobileList"></div>
+      </div>
+
+      <div class="foot" id="t_footer">PGMIS • Input (Purchase/Sale/Stock) Register</div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Confirm -->
+  <div class="confirm" id="confirmWrap">
+    <div class="confirmCard">
+      <div class="confirmHead">
+        <ion-icon name="help-circle"></ion-icon>
+        <span id="confirmTitle">Confirm</span>
+      </div>
+      <div class="confirmBody" id="confirmMsg">Are you sure?</div>
+      <div class="confirmBtns">
+        <button type="button" class="btn muted" id="confirmNo">
+         
+          <span id="t_no">No</span>
+        </button>
+        <button type="button" class="btn primary" id="confirmYes">
+         
+          <span id="t_yes">Yes</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
-/* ============================================================
-   REGISTER LOGIC (NO BACKEND REQUIRED)
-   - Add/Delete rows
-   - Auto calculations for columns 6, 13, 15, 17
-   - Totals in footer
-   - Save/Load/Clear Draft via localStorage
-   - Export CSV
-   ============================================================ */
-
 (function(){
-  const LS_KEY = "pgmis_input_register_draft_v1";
+  const TAB_KEY = "pgmis_input_register_active_tab_v1";
 
   const els = {
     inputName: document.getElementById("regInputName"),
-    date: document.getElementById("regDate"),
     unit: document.getElementById("regUnit"),
     tbody: document.getElementById("regTbody"),
     status: document.getElementById("statusPill"),
     totPurchase: document.getElementById("totPurchaseAmount"),
     totSale: document.getElementById("totSaleAmount"),
     totStock: document.getElementById("totStockAmount"),
+
+    editSaveBtn: document.getElementById("editSaveBtn"),
+    editSaveText: document.getElementById("editSaveText"),
+    editSaveIcon: document.getElementById("editSaveIcon"),
+    cancelBtn: document.getElementById("cancelBtn"),
+
     addRowBtn: document.getElementById("addRowBtn"),
     deleteRowsBtn: document.getElementById("deleteRowsBtn"),
-    saveDraftBtn: document.getElementById("saveDraftBtn"),
-    loadDraftBtn: document.getElementById("loadDraftBtn"),
-    clearDraftBtn: document.getElementById("clearDraftBtn"),
+    deleteAllBtn: document.getElementById("deleteAllBtn"),
+
     exportCsvBtn: document.getElementById("exportCsvBtn"),
+    printBtn: document.getElementById("printBtn"),
+
+    selectAll: document.getElementById("selectAllChk"),
+    toast: document.getElementById("toast"),
+
+    confirmWrap: document.getElementById("confirmWrap"),
+    confirmTitle: document.getElementById("confirmTitle"),
+    confirmMsg: document.getElementById("confirmMsg"),
+    confirmYes: document.getElementById("confirmYes"),
+    confirmNo: document.getElementById("confirmNo"),
+
+    tabAll: document.getElementById("tabAll"),
+    tabPurchase: document.getElementById("tabPurchase"),
+    tabSale: document.getElementById("tabSale"),
+    tabStock: document.getElementById("tabStock"),
+    sectionHint: document.getElementById("sectionHint"),
+
+    mobileList: document.getElementById("mobileList"),
+
+    groupRow: document.getElementById("groupRow"),
+    tfoot: document.getElementById("regTfoot"),
   };
 
+  /* ---------------- Language (controlled by GLOBAL navbar translation) ---------------- */
+  let lang = "en";
+
+  const T = {
+    en: {
+      title:"Input (Purchase/Sale/Stock) Register",
+      nameLabel:"Name of Input",
+      namePh:"e.g.: Seed / Fertilizer / Pesticide / Feed ...",
+      unitLabel:"Unit of Stocking",
+      unitPh:"e.g.: Kg / Litre / Packet / Bag ...",
+
+      edit:"Edit",
+      save:"Save",
+      cancel:"Cancel",
+      addRow:"Add Row",
+      delSelected:"Delete Selected",
+      delAll:"Delete All",
+      exportCSV:"Export CSV",
+      print:"Print",
+      statusReady:"Ready",
+
+      tabAll:"All",
+      tabPurchase:"Purchase",
+      tabSale:"Sale",
+      tabStock:"Stock",
+
+      grpPurchase:"Purchase of Input",
+      grpSale:"Sale of input to members",
+      grpStock:"Stock",
+
+      h_p1:"Date",
+      h_p2:"Bill No",
+      h_p3:"Name of Supplier",
+      h_p4:"Qty",
+      h_p5:"Rate",
+      h_p6:"Total Amount",
+      h_p7:"Cash Book Folio No",
+
+      h_s8:"Date",
+      h_s9:"Bill No of PG",
+      h_s10:"Name of member farmer",
+      h_s11:"Qty",
+      h_s12:"Rate",
+      h_s13:"Amount",
+      h_s14:"Cash Book Folio No",
+
+      h_st15:"Closing Stock Qty",
+      h_st16:"Rate",
+      h_st17:"Amount",
+
+      totals:"TOTALS",
+      footer:"PGMIS • Input (Purchase/Sale/Stock) Register",
+
+      yes:"Yes", no:"No",
+
+      c_saveChangesTitle:"Save changes?",
+      c_saveChangesMsg:"Save changes? (Local draft auto-updated)",
+      c_discardTitle:"Discard changes?",
+      c_discardMsg:"Cancel will discard your edits. Continue?",
+      c_exitTitle:"Exit edit mode?",
+      c_exitMsg:"Exit and discard changes?",
+      c_exportTitle:"Export CSV?",
+      c_exportMsg:"Export all rows to CSV file?",
+      c_delSelTitle:"Delete selected?",
+      c_delSelMsg:(n)=>`Delete ${n} selected row(s)?`,
+      c_delAllTitle:"Delete all?",
+      c_delAllMsg:"Delete ALL rows? This cannot be undone.",
+
+      hintAll:"Showing: All columns",
+      hintPurchase:"Showing: Purchase + checkbox",
+      hintSale:"Showing: Sale + checkbox",
+      hintStock:"Showing: Stock (Closing Stock Qty/Rate/Amount) + checkbox",
+
+      ph_date:"Date",
+      ph_bill:"Bill No",
+      ph_supplier:"Supplier name",
+      ph_qty:"Qty",
+      ph_rate:"Rate",
+      ph_total:"Total",
+      ph_folio:"Folio No",
+      ph_bill_pg:"Bill No of PG",
+      ph_member:"Member farmer name",
+      ph_closing:"Closing Stock Qty",
+      ph_amount:"Amount",
+
+      toastEditOn:"Edit mode ON",
+      toastSaved:"Saved",
+      toastCanceled:"Canceled",
+      toastRowAdded:"Row added",
+      toastExported:"CSV exported",
+      toastNoRows:"No rows to delete",
+      toastNoSelected:"No rows selected",
+      toastDeletedSelected:"Deleted selected",
+      toastDeletedAll:"All rows deleted",
+      toastAll:"All",
+      toastPurchase:"Purchase",
+      toastSale:"Sale",
+      toastStock:"Stock",
+
+      // ✅ NEW: page lock message
+      lockToast:"Edit mode active — navigation/refresh is locked. Save or Cancel to unlock.",
+      lockConfirmTitle:"Edit mode is ON",
+      lockConfirmMsg:"Please Save or Cancel your edits before leaving this page.",
+    },
+    bn: {
+      title:"সামগ্রী (ক্রয়/বিক্রয়/স্টক) খাতা",
+      nameLabel:"সামগ্রীর নাম",
+      namePh:"যেমন: বীজ / সার / কীটনাশক / ফিড ...",
+      unitLabel:"স্টকের পরিমাপ",
+      unitPh:"যেমন: কেজি / লিটার / প্যাকেট / বস্তা ...",
+
+      edit:"এডিট",
+      save:"সেভ",
+      cancel:"বাতিল",
+      addRow:"রো যোগ করুন",
+      delSelected:"নির্বাচিত ডিলিট",
+      delAll:"সব ডিলিট",
+      exportCSV:"CSV এক্সপোর্ট",
+      print:"প্রিন্ট",
+      statusReady:"প্রস্তুত",
+
+      tabAll:"সব",
+      tabPurchase:"ক্রয়",
+      tabSale:"বিক্রয়",
+      tabStock:"স্টক",
+
+      grpPurchase:"সামগ্রী (ক্রয়)",
+      grpSale:"সদস্যদের কাছে সামগ্রী বিক্রয়",
+      grpStock:"স্টক",
+
+      h_p1:"তারিখ",
+      h_p2:"বিল নং",
+      h_p3:"সরবরাহকারীর নাম",
+      h_p4:"পরিমাণ",
+      h_p5:"দর (টাকা)",
+      h_p6:"সর্বমোট টাকা",
+      h_p7:"ক্যাশ বুক ফোলিও নং",
+
+      h_s8:"তারিখ",
+      h_s9:"বিল নং (PG)",
+      h_s10:"সদস্য কৃষক/সদস্যের নাম",
+      h_s11:"পরিমাণ",
+      h_s12:"দর (টাকা)",
+      h_s13:"সর্বমোট টাকা",
+      h_s14:"ক্যাশ বুক ফোলিও নং",
+
+      h_st15:"অবশিষ্ট স্টক পরিমাণ",
+      h_st16:"দর (টাকা)",
+      h_st17:"সর্বমোট টাকা",
+
+      totals:"মোট",
+      footer:"PGMIS • সামগ্রী (ক্রয়/বিক্রয়/স্টক) খাতা",
+
+      yes:"হ্যাঁ", no:"না",
+
+      c_saveChangesTitle:"পরিবর্তন সেভ করবেন?",
+      c_saveChangesMsg:"পরিবর্তন সেভ হবে (লোকাল ডাটা অটো আপডেট)।",
+      c_discardTitle:"পরিবর্তন বাতিল করবেন?",
+      c_discardMsg:"বাতিল করলে আপনার পরিবর্তনগুলো হারিয়ে যাবে। চালিয়ে যাবেন?",
+      c_exitTitle:"এডিট মোড থেকে বের হবেন?",
+      c_exitMsg:"বের হলে পরিবর্তনগুলো বাতিল হবে।",
+      c_exportTitle:"CSV এক্সপোর্ট?",
+      c_exportMsg:"সব রো CSV ফাইলে এক্সপোর্ট হবে।",
+      c_delSelTitle:"নির্বাচিত ডিলিট?",
+      c_delSelMsg:(n)=>`${n} টি রো ডিলিট হবে। চালিয়ে যাবেন?`,
+      c_delAllTitle:"সব ডিলিট?",
+      c_delAllMsg:"সব রো ডিলিট হবে। এটি আর ফিরবে না।",
+
+      hintAll:"দেখানো হচ্ছে: সব কলাম",
+      hintPurchase:"দেখানো হচ্ছে: ক্রয় + সিলেক্ট",
+      hintSale:"দেখানো হচ্ছে: বিক্রয় + সিলেক্ট",
+      hintStock:"দেখানো হচ্ছে: স্টক (অবশিষ্ট/দর/টাকা) + সিলেক্ট",
+
+      ph_date:"তারিখ",
+      ph_bill:"বিল নং",
+      ph_supplier:"সরবরাহকারীর নাম",
+      ph_qty:"পরিমাণ",
+      ph_rate:"দর",
+      ph_total:"মোট",
+      ph_folio:"ফোলিও নং",
+      ph_bill_pg:"বিল নং (PG)",
+      ph_member:"সদস্যের নাম",
+      ph_closing:"অবশিষ্ট স্টক পরিমাণ",
+      ph_amount:"টাকা",
+
+      toastEditOn:"এডিট মোড চালু",
+      toastSaved:"সেভ হয়েছে",
+      toastCanceled:"বাতিল",
+      toastRowAdded:"রো যোগ হয়েছে",
+      toastExported:"CSV এক্সপোর্ট",
+      toastNoRows:"ডিলিট করার মতো রো নেই",
+      toastNoSelected:"কোন রো সিলেক্ট হয়নি",
+      toastDeletedSelected:"নির্বাচিত ডিলিট",
+      toastDeletedAll:"সব ডিলিট",
+      toastAll:"সব",
+      toastPurchase:"ক্রয়",
+      toastSale:"বিক্রয়",
+      toastStock:"স্টক",
+
+      // ✅ NEW: page lock message
+      lockToast:"এডিট মোড চালু — ন্যাভিগেশন/রিফ্রেশ লক। সেভ বা বাতিল করলে আনলক হবে।",
+      lockConfirmTitle:"এডিট মোড চালু আছে",
+      lockConfirmMsg:"এই পেজ ছাড়ার আগে সেভ বা বাতিল করুন।",
+    }
+  };
+
+  function setLang(next){
+    lang = (next === "bn") ? "bn" : "en";
+    const t = T[lang];
+
+    // title + meta labels
+    document.getElementById("t_title").textContent = t.title;
+
+    document.getElementById("t_name_label").childNodes[1].nodeValue = " " + t.nameLabel;
+    els.inputName.placeholder = t.namePh;
+
+    document.getElementById("t_unit_label").childNodes[1].nodeValue = " " + t.unitLabel;
+    els.unit.placeholder = t.unitPh;
+
+    // actions
+    document.getElementById("t_cancel").textContent = t.cancel;
+    document.getElementById("t_add_row").textContent = t.addRow;
+    document.getElementById("t_delete_selected").textContent = t.delSelected;
+    document.getElementById("t_delete_all").textContent = t.delAll;
+    document.getElementById("t_export_csv").textContent = t.exportCSV;
+    document.getElementById("t_print").textContent = t.print;
+
+    // tabs
+    document.getElementById("t_tab_all").textContent = t.tabAll;
+    document.getElementById("t_tab_purchase").textContent = t.tabPurchase;
+    document.getElementById("t_tab_sale").textContent = t.tabSale;
+    document.getElementById("t_tab_stock").textContent = t.tabStock;
+
+    // group headers
+    document.getElementById("t_group_purchase").textContent = t.grpPurchase;
+    document.getElementById("t_group_sale").textContent = t.grpSale;
+    document.getElementById("t_group_stock").textContent = t.grpStock;
+
+    // leaf headers
+    document.getElementById("t_h_p1").textContent = t.h_p1;
+    document.getElementById("t_h_p2").textContent = t.h_p2;
+    document.getElementById("t_h_p3").textContent = t.h_p3;
+    document.getElementById("t_h_p4").textContent = t.h_p4;
+    document.getElementById("t_h_p5").textContent = t.h_p5;
+    document.getElementById("t_h_p6").textContent = t.h_p6;
+    document.getElementById("t_h_p7").textContent = t.h_p7;
+
+    document.getElementById("t_h_s8").textContent = t.h_s8;
+    document.getElementById("t_h_s9").textContent = t.h_s9;
+    document.getElementById("t_h_s10").textContent = t.h_s10;
+    document.getElementById("t_h_s11").textContent = t.h_s11;
+    document.getElementById("t_h_s12").textContent = t.h_s12;
+    document.getElementById("t_h_s13").textContent = t.h_s13;
+    document.getElementById("t_h_s14").textContent = t.h_s14;
+
+    document.getElementById("t_h_st15").textContent = t.h_st15;
+    document.getElementById("t_h_st16").textContent = t.h_st16;
+    document.getElementById("t_h_st17").textContent = t.h_st17;
+
+    document.getElementById("t_totals").textContent = t.totals;
+    document.getElementById("t_footer").textContent = t.footer;
+
+    document.getElementById("t_yes").textContent = t.yes;
+    document.getElementById("t_no").textContent = t.no;
+
+    els.editSaveText.textContent = editMode ? t.save : t.edit;
+
+    updateSectionHint();
+    // Update placeholders inside existing table inputs when language changes
+    refreshRowPlaceholders();
+    renderMobile();
+  }
+
+  /* ✅ Global translation hook (navbar) — robust */
+  function detectGlobalLang(){
+    const g = (localStorage.getItem("pgmis_lang") || localStorage.getItem("pg_lang") || localStorage.getItem("lang") || "en").toLowerCase();
+    return (g === "bn" || g === "bangla") ? "bn" : "en";
+  }
+
+  // 1) storage event (works across tabs)
+  window.addEventListener("storage", (e)=>{
+    if(e.key === "pgmis_lang" || e.key === "pg_lang" || e.key === "lang"){
+      setLang(detectGlobalLang());
+    }
+  });
+
+  // 2) custom event (if your navbar dispatches it)
+  window.addEventListener("pgmis:lang", (e)=>{
+    const next = (e && e.detail && e.detail.lang) ? e.detail.lang : (e && e.detail ? e.detail : null);
+    if(next) setLang(next);
+  });
+
+  // 3) polling fallback (when navbar changes localStorage in same tab, storage event won't fire)
+  let _lastLang = null;
+  function startLangPoll(){
+    _lastLang = detectGlobalLang();
+    setInterval(()=>{
+      const now = detectGlobalLang();
+      if(now !== _lastLang){
+        _lastLang = now;
+        setLang(now);
+      }
+    }, 500);
+  }
+
+  window.PGMIS_InputRegister_setLang = setLang;
+
+  /* ---------------- Toast ---------------- */
+  function toast(msg){
+    els.toast.textContent = msg;
+    els.toast.style.display = "block";
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=> els.toast.style.display = "none", 1800);
+  }
+
+  /* ---------------- Confirm ---------------- */
+  function confirmBox(title, msg){
+    return new Promise((resolve)=>{
+      els.confirmTitle.textContent = title || "Confirm";
+      els.confirmMsg.textContent = msg || "Are you sure?";
+      els.confirmWrap.style.display = "flex";
+
+      const cleanup = ()=>{
+        els.confirmWrap.style.display = "none";
+        els.confirmYes.onclick = null;
+        els.confirmNo.onclick = null;
+        document.removeEventListener("keydown", onKey);
+      };
+
+      const onKey = (e)=>{
+        if(e.key === "Escape"){ cleanup(); resolve(false); }
+      };
+      document.addEventListener("keydown", onKey);
+
+      els.confirmYes.onclick = ()=>{ cleanup(); resolve(true); };
+      els.confirmNo.onclick  = ()=>{ cleanup(); resolve(false); };
+    });
+  }
+
+    // ✅ Alert modal (OK only) — for edit-lock warning
+  function alertBox(title, msg){
+    return new Promise((resolve)=>{
+      els.confirmTitle.textContent = title || "Info";
+      els.confirmMsg.textContent = msg || "";
+
+      // show modal
+      els.confirmWrap.style.display = "flex";
+
+      // ✅ make it OK-only
+      els.confirmNo.style.display = "none";
+      document.getElementById("t_yes").textContent = (lang === "bn") ? "ঠিক আছে" : "OK";
+
+      const cleanup = ()=>{
+        els.confirmWrap.style.display = "none";
+        els.confirmYes.onclick = null;
+        els.confirmNo.onclick = null;
+        document.removeEventListener("keydown", onKey);
+
+        // ✅ restore defaults for normal confirm dialogs
+        els.confirmNo.style.display = "";
+        document.getElementById("t_yes").textContent = T[lang].yes;
+      };
+
+      const onKey = (e)=>{
+        if(e.key === "Escape"){ cleanup(); resolve(true); }
+      };
+      document.addEventListener("keydown", onKey);
+
+      els.confirmYes.onclick = ()=>{ cleanup(); resolve(true); };
+
+      // safety
+      els.confirmNo.onclick = ()=>{ cleanup(); resolve(true); };
+    });
+  }
+
+
+  /* ---------------- Status ---------------- */
   function setStatus(msg, ok=true){
-    els.status.textContent = msg;
-    els.status.style.color = ok ? "#065f46" : "#7f1d1d";
-    els.status.style.borderColor = ok ? "rgba(16,185,129,.35)" : "rgba(239,68,68,.35)";
-    els.status.style.background = ok ? "rgba(16,185,129,.08)" : "rgba(239,68,68,.08)";
+    // statusPill is not present in your HTML; keep safe (no crash)
+    if(!els.status) return;
+    const icon = ok ? "flash" : "alert-circle";
+    els.status.innerHTML = `<ion-icon name="${icon}"></ion-icon><span>${msg}</span>`;
+    els.status.style.color = ok ? "#0b4d3a" : "#7f1d1d";
+    els.status.style.borderColor = ok ? "rgba(15,23,42,.20)" : "rgba(220,38,38,.25)";
+    els.status.style.background = ok ? "rgba(240,253,244,.8)" : "rgba(220,38,38,.08)";
   }
 
   function n(v){
     const x = parseFloat(v);
     return Number.isFinite(x) ? x : 0;
   }
-
   function money2(v){
-    // keep simple numeric (no rounding forced), but you can round if needed:
     return Math.round((v + Number.EPSILON) * 100) / 100;
   }
 
+  /* ===================== ✅ NEW: Page Lock While Edit Mode ===================== */
+  let _lock = {
+    on: false,
+    isHandlingPop: false,
+    beforeUnloadHandler: null,
+    clickHandler: null,
+    keydownHandler: null,
+    popstateHandler: null,
+    pageshowHandler: null
+  };
+
+  function lockMsg(){
+    const t = T[lang];
+    return (t && t.lockConfirmMsg) ? t.lockConfirmMsg : "Please Save or Cancel your edits before leaving this page.";
+  }
+  function lockTitle(){
+    const t = T[lang];
+    return (t && t.lockConfirmTitle) ? t.lockConfirmTitle : "Edit mode is ON";
+  }
+
+   async function showLockedNotice(){
+    toast(T[lang].lockToast || "Edit mode active — navigation/refresh is locked. Save or Cancel to unlock.");
+    await alertBox(lockTitle(), lockMsg()); // ✅ OK only
+  }
+
+
+  function enablePageLock(){
+    if(_lock.on) return;
+    _lock.on = true;
+
+    // 1) Block refresh/reload/close tab
+    _lock.beforeUnloadHandler = (e)=>{
+      // This blocks browser refresh/reload/close. Browser shows its own default message.
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+    window.addEventListener("beforeunload", _lock.beforeUnloadHandler, {capture:true});
+
+    // 2) Block link clicks / any click navigation (anchors, elements with onclick that navigates)
+    _lock.clickHandler = (e)=>{
+      if(!editMode) return;
+
+      // Allow interactions inside this page UI
+      const allow = e.target.closest(
+        '#editSaveBtn,#cancelBtn,#addRowBtn,#deleteRowsBtn,#deleteAllBtn,#exportCsvBtn,#printBtn,'+
+        '#tabAll,#tabPurchase,#tabSale,#tabStock,'+
+        '#confirmWrap,.confirmCard,.confirmBtns,'+
+        '.input-register-page'
+      );
+
+      // If it is an anchor or has href, block when edit mode.
+      const a = e.target.closest("a[href]");
+      if(a){
+        e.preventDefault();
+        e.stopPropagation();
+        showLockedNotice();
+        return;
+      }
+
+      // Some UIs use role=link or data-href
+      const maybeNav = e.target.closest('[role="link"],[data-href],[onclick]');
+      if(maybeNav && !allow){
+        // only block if it looks like it will navigate
+        const href = maybeNav.getAttribute("data-href");
+        const hasHrefLike = !!href;
+        const onclick = maybeNav.getAttribute("onclick") || "";
+        const likelyNav = hasHrefLike || /location\.href|window\.location|history\.(back|forward|go|pushState|replaceState)/i.test(onclick);
+        if(likelyNav){
+          e.preventDefault();
+          e.stopPropagation();
+          showLockedNotice();
+          return;
+        }
+      }
+    };
+    document.addEventListener("click", _lock.clickHandler, true);
+
+    // 3) Block keyboard refresh/back shortcuts: F5, Ctrl+R, Cmd+R, Alt+Left/Right, Backspace nav
+    _lock.keydownHandler = (e)=>{
+      if(!editMode) return;
+
+      const k = (e.key || "").toLowerCase();
+      const isMac = /mac/i.test(navigator.platform);
+
+      const isRefresh =
+        k === "f5" ||
+        ((e.ctrlKey || (isMac && e.metaKey)) && k === "r");
+
+      const isBackForward =
+        (e.altKey && (k === "arrowleft" || k === "arrowright")) ||
+        (k === "backspace" && !isTypingInField(e.target));
+
+      if(isRefresh || isBackForward){
+        e.preventDefault();
+        e.stopPropagation();
+        showLockedNotice();
+      }
+    };
+    document.addEventListener("keydown", _lock.keydownHandler, true);
+
+    // 4) Block browser back/forward (popstate)
+    // Push a state marker so back triggers popstate we can intercept.
+    try{ history.pushState({ __pgmis_lock: true, t: Date.now() }, "", location.href); }catch(e){}
+    _lock.popstateHandler = (e)=>{
+      if(!editMode) return;
+      if(_lock.isHandlingPop) return;
+      _lock.isHandlingPop = true;
+
+      // Immediately restore current state so user stays
+      try{ history.pushState({ __pgmis_lock: true, t: Date.now() }, "", location.href); }catch(err){}
+
+      // Inform user
+      showLockedNotice().finally(()=>{ _lock.isHandlingPop = false; });
+    };
+    window.addEventListener("popstate", _lock.popstateHandler, true);
+
+    // 5) If browser does bfcache restore, re-enable lock when edit mode still on
+    _lock.pageshowHandler = (e)=>{
+      if(editMode) enablePageLock();
+    };
+    window.addEventListener("pageshow", _lock.pageshowHandler, true);
+  }
+
+  function disablePageLock(){
+    if(!_lock.on) return;
+    _lock.on = false;
+
+    if(_lock.beforeUnloadHandler){
+      window.removeEventListener("beforeunload", _lock.beforeUnloadHandler, {capture:true});
+      _lock.beforeUnloadHandler = null;
+    }
+    if(_lock.clickHandler){
+      document.removeEventListener("click", _lock.clickHandler, true);
+      _lock.clickHandler = null;
+    }
+    if(_lock.keydownHandler){
+      document.removeEventListener("keydown", _lock.keydownHandler, true);
+      _lock.keydownHandler = null;
+    }
+    if(_lock.popstateHandler){
+      window.removeEventListener("popstate", _lock.popstateHandler, true);
+      _lock.popstateHandler = null;
+    }
+    if(_lock.pageshowHandler){
+      window.removeEventListener("pageshow", _lock.pageshowHandler, true);
+      _lock.pageshowHandler = null;
+    }
+  }
+
+  function isTypingInField(el){
+    if(!el) return false;
+    const tag = (el.tagName || "").toLowerCase();
+    if(tag === "input" || tag === "textarea" || tag === "select") return true;
+    if(el.isContentEditable) return true;
+    return false;
+  }
+  /* =================== END Page Lock While Edit Mode =================== */
+
+  /* ---------------- Edit Mode ---------------- */
+  let editMode = false;
+  let beforeEditSnapshot = null;
+
+  function applyEditModeUI(){
+    els.inputName.readOnly = !editMode;
+    els.unit.readOnly = !editMode;
+
+    els.editSaveText.textContent = editMode ? T[lang].save : T[lang].edit;
+    els.editSaveIcon.setAttribute("name", editMode ? "save" : "create");
+
+    els.cancelBtn.style.display = editMode ? "inline-flex" : "none";
+    els.addRowBtn.style.display = editMode ? "inline-flex" : "none";
+    els.deleteRowsBtn.style.display = editMode ? "inline-flex" : "none";
+    els.deleteAllBtn.style.display = editMode ? "inline-flex" : "none";
+
+    els.selectAll.disabled = !editMode;
+
+    [...els.tbody.querySelectorAll("tr")].forEach(tr=>{
+      if(!tr._cells) return;
+      const c = tr._cells;
+
+      c.chk.disabled = !editMode;
+
+      [
+        c.p1.inp, c.p2.inp, c.p3.inp, c.p4.inp, c.p5.inp, c.p7.inp,
+        c.s8.inp, c.s9.inp, c.s10.inp, c.s11.inp, c.s12.inp, c.s14.inp,
+        c.st16.inp
+      ].forEach(inp=> inp.readOnly = !editMode);
+    });
+
+    syncMobileReadonly();
+  }
+
+  function syncMobileReadonly(){
+    els.mobileList.querySelectorAll(".cardRow").forEach(card=>{
+      card.querySelectorAll('input[data-k]').forEach(inp=>{
+        const k = inp.getAttribute("data-k");
+        const alwaysRO = (k === "p6" || k === "s13" || k === "st15" || k === "st17");
+        inp.readOnly = alwaysRO ? true : !editMode;
+      });
+      const chk = card.querySelector('input[data-chk="1"]');
+      if(chk) chk.disabled = !editMode;
+    });
+  }
+
+  /* ---------------- Tabs (4 sections) ---------------- */
+  let activeTab = "all"; // all | purchase | sale | stock
+
+  function persistTab(){
+    try{ localStorage.setItem(TAB_KEY, activeTab); }catch(e){}
+  }
+  function loadPersistedTab(){
+    try{
+      const t = (localStorage.getItem(TAB_KEY) || "all").toLowerCase();
+      return (t === "purchase" || t === "sale" || t === "stock" || t === "all") ? t : "all";
+    }catch(e){
+      return "all";
+    }
+  }
+
+  function updateSectionHint(){
+    const t = T[lang];
+    if(activeTab === "all") els.sectionHint.textContent = t.hintAll;
+    else if(activeTab === "purchase") els.sectionHint.textContent = t.hintPurchase;
+    else if(activeTab === "sale") els.sectionHint.textContent = t.hintSale;
+    else els.sectionHint.textContent = t.hintStock;
+  }
+
+  function setGroupHeadersForTab(){
+    // group row cells: [0]=checkbox, [1]=purchase, [2]=sale, [3]=stock
+    if(!els.groupRow) return;
+    const cells = [...els.groupRow.cells];
+    const thPurchase = cells[1];
+    const thSale = cells[2];
+    const thStock = cells[3];
+
+    // default all
+    thPurchase.style.display = "";
+    thSale.style.display = "";
+    thStock.style.display = "";
+    thPurchase.colSpan = 7;
+    thSale.colSpan = 7;
+    thStock.colSpan = 3;
+
+    if(activeTab === "purchase"){
+      thPurchase.style.display = "";
+      thSale.style.display = "none";
+      thStock.style.display = "none";
+      thPurchase.colSpan = 7;
+    }else if(activeTab === "sale"){
+      thPurchase.style.display = "none";
+      thSale.style.display = "";
+      thStock.style.display = "none";
+      thSale.colSpan = 7;
+    }else if(activeTab === "stock"){
+      thPurchase.style.display = "none";
+      thSale.style.display = "none";
+      thStock.style.display = "";
+      thStock.colSpan = 3;
+    }
+
+    // Totals row looks weird in filtered views -> hide it (only show in All)
+    if(els.tfoot){
+      els.tfoot.style.display = (activeTab === "all") ? "" : "none";
+    }
+  }
+
+  function setTabsUI(){
+    const map = { all: els.tabAll, purchase: els.tabPurchase, sale: els.tabSale, stock: els.tabStock };
+    Object.keys(map).forEach(k=>{
+      map[k].setAttribute("aria-selected", k === activeTab ? "true" : "false");
+    });
+    updateSectionHint();
+    setGroupHeadersForTab();
+
+    // logical columns set:
+    // 0 = checkbox
+    // 1..7 = purchase
+    // 8..14 = sale
+    // 15..17 = stock
+    const show = {
+      all:      new Set([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]),
+      purchase: new Set([0,1,2,3,4,5,6,7]),
+      sale:     new Set([0,8,9,10,11,12,13,14]),
+      stock:    new Set([0,15,16,17]),
+    }[activeTab];
+
+    const table = document.getElementById("regTable");
+    if(!table) return;
+
+    // leaf header row: does NOT include checkbox cell (it is row-spanned from group row)
+    const headRows = table.tHead ? [...table.tHead.rows] : [];
+    headRows.forEach(r=>{
+      if(r.classList.contains("group")) return;
+      [...r.cells].forEach((cell, j)=>{
+        const logicalCol = j + 1; // p1 is logical 1
+        cell.style.display = show.has(logicalCol) ? "" : "none";
+      });
+    });
+
+    // body rows: include checkbox at index 0
+    [...table.tBodies[0].rows].forEach(tr=>{
+      [...tr.cells].forEach((td, j)=>{
+        const logicalCol = j; // checkbox is 0
+        td.style.display = show.has(logicalCol) ? "" : "none";
+      });
+    });
+
+    renderMobile();
+  }
+
+  /* ---------------- Row Builder ---------------- */
   function makeCellInput(cls, placeholder, type="text", readonly=false){
     const td = document.createElement("td");
     td.className = cls || "";
@@ -468,83 +1636,67 @@
   }
 
   function addRow(data){
+    const t = T[lang];
     const tr = document.createElement("tr");
 
-    // ✔ checkbox
+    // checkbox
     const tdChk = document.createElement("td");
     tdChk.className = "chk";
     const chk = document.createElement("input");
     chk.type = "checkbox";
+    chk.disabled = !editMode;
     tdChk.appendChild(chk);
     tr.appendChild(tdChk);
 
-    // (1) Name of input
-    const c1 = makeCellInput("left wide", "Input name (সামগ্রী নাম)", "text", false);
-    tr.appendChild(c1.td);
+    // Purchase 1..7
+    const p1 = makeCellInput("small", t.ph_date, "date", false);
+    const p2 = makeCellInput("small", t.ph_bill, "text", false);
+    const p3 = makeCellInput("name",  t.ph_supplier, "text", false);
+    const p4 = makeCellInput("small", t.ph_qty, "number", false);
+    const p5 = makeCellInput("small", t.ph_rate, "number", false);
+    const p6 = makeCellInput("num",   t.ph_total, "number", true);
+    const p7 = makeCellInput("small", t.ph_folio, "text", false);
+    [p1,p2,p3,p4,p5,p6,p7].forEach(x=>tr.appendChild(x.td));
 
-    // Purchase (2..7)
-    const p2 = makeCellInput("small", "Date", "date", false);
-    const p3 = makeCellInput("small", "Bill No", "text", false);
-    const p4 = makeCellInput("small", "Qty", "number", false);
-    const p5 = makeCellInput("small", "Rate", "number", false);
-    const p6 = makeCellInput("num", "Total", "number", true);   // auto
-    const p7 = makeCellInput("small", "Folio No", "text", false);
-
-    [p2,p3,p4,p5,p6,p7].forEach(x=>tr.appendChild(x.td));
-
-    // Sale (8..14)
-    const s8  = makeCellInput("small", "Date", "date", false);
-    const s9  = makeCellInput("small", "Bill No", "text", false);
-    const s10 = makeCellInput("wide left", "Member farmer name", "text", false);
-    const s11 = makeCellInput("small", "Qty", "number", false);
-    const s12 = makeCellInput("small", "Rate", "number", false);
-    const s13 = makeCellInput("num", "Amount", "number", true); // auto
-    const s14 = makeCellInput("small", "Folio No", "text", false);
-
+    // Sale 8..14
+    const s8  = makeCellInput("small", t.ph_date, "date", false);
+    const s9  = makeCellInput("small", t.ph_bill_pg, "text", false);
+    const s10 = makeCellInput("name",  t.ph_member, "text", false);
+    const s11 = makeCellInput("small", t.ph_qty, "number", false);
+    const s12 = makeCellInput("small", t.ph_rate, "number", false);
+    const s13 = makeCellInput("num",   t.ph_amount, "number", true);
+    const s14 = makeCellInput("small", t.ph_folio, "text", false);
     [s8,s9,s10,s11,s12,s13,s14].forEach(x=>tr.appendChild(x.td));
 
-    // Stock (15..17)
-    const st15 = makeCellInput("small", "Closing Qty", "number", true); // auto
-    const st16 = makeCellInput("small", "Rate", "number", false);
-    const st17 = makeCellInput("num", "Amount", "number", true); // auto
-
+    // Stock 15..17
+    const st15 = makeCellInput("small", t.ph_closing, "number", true);
+    const st16 = makeCellInput("small", t.ph_rate, "number", false);
+    const st17 = makeCellInput("num",   t.ph_amount, "number", true);
     [st15,st16,st17].forEach(x=>tr.appendChild(x.td));
 
-    // attach calculation hooks
     function recalcRow(){
-      // Purchase total (6) = (4)*(5)
       const purchaseTotal = money2(n(p4.inp.value) * n(p5.inp.value));
       p6.inp.value = purchaseTotal ? purchaseTotal : 0;
 
-      // Sale amount (13) = (11)*(12)
       const saleAmount = money2(n(s11.inp.value) * n(s12.inp.value));
       s13.inp.value = saleAmount ? saleAmount : 0;
 
-      // Closing qty (15) = (4)-(11)
       const closingQty = money2(n(p4.inp.value) - n(s11.inp.value));
-      st15.inp.value = closingQty ? closingQty : 0;
+      st15.inp.value = (Number.isFinite(closingQty) ? closingQty : 0);
 
-      // Stock amount (17) = (15)*(16)
       const stockAmt = money2(n(st15.inp.value) * n(st16.inp.value));
       st17.inp.value = stockAmt ? stockAmt : 0;
 
       recalcTotals();
-      setStatus("Auto-calculated ✓");
+      setStatus(lang === "en" ? "Auto-calculated ✓" : "অটো হিসাব ✓", true);
     }
 
-    // Recalc triggers
     [p4.inp, p5.inp, s11.inp, s12.inp, st16.inp].forEach(inp=>{
       inp.addEventListener("input", recalcRow);
     });
 
-    // fill defaults from top name if row empty & user starts
-    c1.inp.addEventListener("focus", ()=>{
-      if(!c1.inp.value && els.inputName.value) c1.inp.value = els.inputName.value;
-    });
-
-    // restore data if provided
     if(data){
-      c1.inp.value = data.c1 || "";
+      p1.inp.value = data.p1 || "";
       p2.inp.value = data.p2 || "";
       p3.inp.value = data.p3 || "";
       p4.inp.value = data.p4 ?? "";
@@ -565,12 +1717,49 @@
       st17.inp.value = data.st17 ?? 0;
     }
 
-    // ensure consistent calculations after load
-    setTimeout(recalcRow, 0);
+    tr._cells = { chk, p1,p2,p3,p4,p5,p6,p7, s8,s9,s10,s11,s12,s13,s14, st15,st16,st17 };
 
-    // keep a reference on row for exporting/saving
-    tr._cells = { chk, c1, p2,p3,p4,p5,p6,p7, s8,s9,s10,s11,s12,s13,s14, st15,st16,st17 };
+    setTimeout(()=>{
+      recalcRow();
+      applyEditModeUI();
+      setTabsUI();
+    }, 0);
+
     els.tbody.appendChild(tr);
+    renderMobile();
+  }
+
+  function refreshRowPlaceholders(){
+    const t = T[lang];
+    [...els.tbody.querySelectorAll("tr")].forEach(tr=>{
+      const c = tr._cells;
+      if(!c) return;
+
+      c.p1.inp.placeholder = t.ph_date;
+      c.p2.inp.placeholder = t.ph_bill;
+      c.p3.inp.placeholder = t.ph_supplier;
+      c.p4.inp.placeholder = t.ph_qty;
+      c.p5.inp.placeholder = t.ph_rate;
+      c.p6.inp.placeholder = t.ph_total;
+      c.p7.inp.placeholder = t.ph_folio;
+
+      c.s8.inp.placeholder  = t.ph_date;
+      c.s9.inp.placeholder  = t.ph_bill_pg;
+      c.s10.inp.placeholder = t.ph_member;
+      c.s11.inp.placeholder = t.ph_qty;
+      c.s12.inp.placeholder = t.ph_rate;
+      c.s13.inp.placeholder = t.ph_amount;
+      c.s14.inp.placeholder = t.ph_folio;
+
+      c.st15.inp.placeholder = t.ph_closing;
+      c.st16.inp.placeholder = t.ph_rate;
+      c.st17.inp.placeholder = t.ph_amount;
+    });
+  }
+
+  function ensureAtLeastOneRow(){
+    const count = [...els.tbody.querySelectorAll("tr")].length;
+    if(count === 0) addRow();
   }
 
   function recalcTotals(){
@@ -593,8 +1782,7 @@
     const rows = [...els.tbody.querySelectorAll("tr")].map(tr=>{
       const c = tr._cells;
       return {
-        c1: c.c1.inp.value,
-
+        p1: c.p1.inp.value,
         p2: c.p2.inp.value,
         p3: c.p3.inp.value,
         p4: c.p4.inp.value === "" ? "" : n(c.p4.inp.value),
@@ -619,94 +1807,105 @@
     return {
       meta: {
         regInputName: els.inputName.value,
-        regDate: els.date.value,
         regUnit: els.unit.value
       },
       rows
     };
   }
 
-  function saveDraft(){
-    const payload = getDraftData();
-    localStorage.setItem(LS_KEY, JSON.stringify(payload));
-    setStatus("Draft saved ✓");
-  }
+  async function deleteSelectedRows(){
+    if(!editMode) return;
+    const t = T[lang];
 
-  function loadDraft(){
-    const raw = localStorage.getItem(LS_KEY);
-    if(!raw){
-      setStatus("No draft found", false);
+    const trs = [...els.tbody.querySelectorAll("tr")];
+    const selected = trs.filter(tr => tr._cells && tr._cells.chk.checked);
+    if(selected.length === 0){
+      setStatus(lang==="en" ? "No rows selected" : "কোন রো সিলেক্ট হয়নি", false);
+      toast(t.toastNoSelected);
       return;
     }
-    const payload = JSON.parse(raw);
 
-    els.inputName.value = payload?.meta?.regInputName || "";
-    els.date.value = payload?.meta?.regDate || "";
-    els.unit.value = payload?.meta?.regUnit || "";
+    const ok = await confirmBox(t.c_delSelTitle, t.c_delSelMsg(selected.length));
+    if(!ok) return;
+
+    selected.forEach(tr => tr.remove());
+    ensureAtLeastOneRow();
+    recalcTotals();
+    renderMobile();
+    setStatus(lang==="en" ? `Deleted ${selected.length} row(s)` : `ডিলিট হয়েছে ${selected.length} টি`, true);
+    toast(t.toastDeletedSelected);
+  }
+
+  async function deleteAllRows(){
+    if(!editMode) return;
+    const t = T[lang];
+
+    const count = [...els.tbody.querySelectorAll("tr")].length;
+    if(count === 0){
+      setStatus(lang==="en" ? "No rows to delete" : "ডিলিট করার মতো রো নেই", false);
+      toast(t.toastNoRows);
+      return;
+    }
+
+    const ok = await confirmBox(t.c_delAllTitle, t.c_delAllMsg);
+    if(!ok) return;
 
     els.tbody.innerHTML = "";
-    (payload.rows || []).forEach(r => addRow(r));
-
-    setStatus("Draft loaded ✓");
-  }
-
-  function clearDraft(){
-    localStorage.removeItem(LS_KEY);
-    setStatus("Draft cleared");
-  }
-
-  function deleteSelectedRows(){
-    const trs = [...els.tbody.querySelectorAll("tr")];
-    let removed = 0;
-    trs.forEach(tr=>{
-      const c = tr._cells;
-      if(c && c.chk.checked){
-        tr.remove();
-        removed++;
-      }
-    });
+    // ✅ keep at least one blank row always
+    addRow();
     recalcTotals();
-    setStatus(removed ? `Deleted ${removed} row(s)` : "No rows selected", !!removed);
+    renderMobile();
+    setStatus(lang==="en" ? "All rows deleted" : "সব রো ডিলিট", true);
+    toast(t.toastDeletedAll);
   }
 
-  function exportCSV(){
+  function safeCSV(v){
+    const s = (v ?? "").toString();
+    if(s.includes(",") || s.includes('"') || s.includes("\n")){
+      return '"' + s.replaceAll('"','""') + '"';
+    }
+    return s;
+  }
+
+  async function exportCSV(){
+    const t = T[lang];
+    const ok = await confirmBox(t.c_exportTitle, t.c_exportMsg);
+    if(!ok) return;
+
     const draft = getDraftData();
 
     const headers = [
-      "1 Name of input",
-      "2 Purchase Date",
-      "3 Purchase Bill No",
-      "4 Purchase Qty",
-      "5 Purchase Rate",
-      "6 Purchase Total Amount",
-      "7 Purchase Cash Book Folio No",
-      "8 Sale Date",
-      "9 Sale Bill No",
-      "10 Member farmer",
-      "11 Sale Qty",
-      "12 Sale Rate",
-      "13 Sale Amount",
-      "14 Sale Cash Book Folio No",
-      "15 Closing Stock Qty (4-11)",
-      "16 Stock Rate",
-      "17 Stock Amount"
+      "Purchase Date",
+      "Purchase Bill No",
+      "Name of Supplier",
+      "Purchase Qty",
+      "Purchase Rate",
+      "Purchase Total Amount",
+      "Purchase Cash Book Folio No",
+      "Sale Date",
+      "Bill No",
+      "Name of member farmer",
+      "Sale Qty",
+      "Sale Rate",
+      "Sale Amount",
+      "Sale Cash Book Folio No",
+      "Closing Stock Qty",
+      "Stock Rate",
+      "Stock Amount"
     ];
 
     const lines = [];
-    lines.push(["Register Input Name", draft.meta.regInputName, "Date", draft.meta.regDate, "Unit", draft.meta.regUnit].join(","));
+    lines.push(["Name of Input", safeCSV(draft.meta.regInputName), "Unit of Stocking", safeCSV(draft.meta.regUnit)].join(","));
     lines.push(headers.join(","));
 
     draft.rows.forEach(r=>{
-      const row = [
-        safe(r.c1),
-        safe(r.p2), safe(r.p3), r.p4, r.p5, r.p6, safe(r.p7),
-        safe(r.s8), safe(r.s9), safe(r.s10), r.s11, r.s12, r.s13, safe(r.s14),
+      lines.push([
+        safeCSV(r.p1), safeCSV(r.p2), safeCSV(r.p3), r.p4, r.p5, r.p6, safeCSV(r.p7),
+        safeCSV(r.s8), safeCSV(r.s9), safeCSV(r.s10), r.s11, r.s12, r.s13, safeCSV(r.s14),
         r.st15, r.st16, r.st17
-      ];
-      lines.push(row.join(","));
+      ].join(","));
     });
 
-    // totals row
     lines.push(["TOTALS","","","","", els.totPurchase.value, "", "", "", "", "", "", els.totSale.value, "", "", "", els.totStock.value].join(","));
 
     const csv = lines.join("\n");
@@ -719,31 +1918,335 @@
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setStatus("CSV exported ✓");
+
+    setStatus(lang==="en" ? "CSV exported ✓" : "CSV এক্সপোর্ট ✓", true);
+    toast(t.toastExported);
   }
 
-  function safe(v){
-    // CSV safe (wrap commas/quotes)
-    const s = (v ?? "").toString();
-    if(s.includes(",") || s.includes('"') || s.includes("\n")){
-      return '"' + s.replaceAll('"','""') + '"';
+  /* ---------------- Mobile Cards ---------------- */
+  function cardField(label, k, type, value, placeholder, readonly){
+    const ro = readonly ? "readonly" : "";
+    const ph = placeholder ? `placeholder="${placeholder}"` : "";
+    const v = (value ?? "");
+    return `
+      <div class="item">
+        <label>${label}</label>
+        <input data-k="${k}" type="${type}" value="${String(v).replaceAll('"','&quot;')}" ${ph} ${ro}/>
+      </div>
+    `;
+  }
+
+  function renderMobile(){
+    const t = T[lang];
+    const trs = [...els.tbody.querySelectorAll("tr")];
+
+    els.mobileList.innerHTML = trs.map((tr, idx)=>{
+      const c = tr._cells;
+      if(!c) return "";
+
+      const chk = c.chk.checked ? "checked" : "";
+      const dis = editMode ? "" : "disabled";
+
+      const top = `
+        <div class="cardTop">
+          <span class="pill"><ion-icon name="albums" style="font-size:16px;"></ion-icon> ${lang==="en" ? ("Row " + (idx+1)) : ("রো " + (idx+1))}</span>
+          <span class="pill">
+            <input type="checkbox" data-chk="1" ${chk} ${dis} style="width:18px;height:18px;accent-color:#0b4d3a;">
+            ${lang==="en" ? "Select" : "সিলেক্ট"}
+          </span>
+        </div>
+      `;
+
+      let content = "";
+
+      if(activeTab === "all" || activeTab === "purchase"){
+        content += `
+          <div class="pill" style="margin:6px 0 10px; justify-content:center;">
+            <ion-icon name="cart" style="font-size:16px;"></ion-icon> ${t.tabPurchase} 
+          </div>
+          <div class="grid">
+            ${cardField(t.h_p1, "p1", "date", c.p1.inp.value, "", !editMode)}
+            ${cardField(t.h_p2, "p2", "text", c.p2.inp.value, t.ph_bill, !editMode)}
+            ${cardField(t.h_p3, "p3", "text", c.p3.inp.value, t.ph_supplier, !editMode)}
+            ${cardField(t.h_p4, "p4", "number", c.p4.inp.value, "0", !editMode)}
+            ${cardField(t.h_p5, "p5", "number", c.p5.inp.value, "0", !editMode)}
+            ${cardField(t.h_p6, "p6", "number", c.p6.inp.value, "", true)}
+            ${cardField(t.h_p7, "p7", "text", c.p7.inp.value, t.ph_folio, !editMode)}
+          </div>
+        `;
+      }
+
+      if(activeTab === "all" || activeTab === "sale"){
+        content += `
+          <div class="pill" style="margin:10px 0 10px; justify-content:center;">
+            <ion-icon name="receipt" style="font-size:16px;"></ion-icon> ${t.tabSale}
+          </div>
+          <div class="grid">
+            ${cardField(t.h_s8, "s8", "date", c.s8.inp.value, "", !editMode)}
+            ${cardField(t.h_s9, "s9", "text", c.s9.inp.value, t.ph_bill_pg, !editMode)}
+            ${cardField(t.h_s10, "s10", "text", c.s10.inp.value, t.ph_member, !editMode)}
+            ${cardField(t.h_s11, "s11", "number", c.s11.inp.value, "0", !editMode)}
+            ${cardField(t.h_s12, "s12", "number", c.s12.inp.value, "0", !editMode)}
+            ${cardField(t.h_s13, "s13", "number", c.s13.inp.value, "", true)}
+            ${cardField(t.h_s14, "s14", "text", c.s14.inp.value, t.ph_folio, !editMode)}
+          </div>
+        `;
+      }
+
+      if(activeTab === "all" || activeTab === "stock"){
+        content += `
+          <div class="pill" style="margin:10px 0 10px; justify-content:center;">
+            <ion-icon name="layers" style="font-size:16px;"></ion-icon> ${t.tabStock} 
+          </div>
+          <div class="grid">
+            ${cardField(t.h_st15, "st15", "number", c.st15.inp.value, "", true)}
+            ${cardField(t.h_st16, "st16", "number", c.st16.inp.value, "0", !editMode)}
+            ${cardField(t.h_st17, "st17", "number", c.st17.inp.value, "", true)}
+          </div>
+        `;
+      }
+
+      return `<div class="cardRow" data-row-idx="${idx}">${top}${content}</div>`;
+    }).join("");
+
+    syncMobileReadonly();
+  }
+
+  function syncMobileToRow(card){
+    const idx = parseInt(card.getAttribute("data-row-idx"), 10);
+    const tr = [...els.tbody.querySelectorAll("tr")][idx];
+    if(!tr || !tr._cells) return;
+    const c = tr._cells;
+
+    const kv = {};
+    card.querySelectorAll("input[data-k]").forEach(inp=>{
+      kv[inp.getAttribute("data-k")] = inp.value;
+    });
+
+    if(kv.p1 !== undefined) c.p1.inp.value = kv.p1;
+    if(kv.p2 !== undefined) c.p2.inp.value = kv.p2;
+    if(kv.p3 !== undefined) c.p3.inp.value = kv.p3;
+    if(kv.p4 !== undefined) c.p4.inp.value = kv.p4;
+    if(kv.p5 !== undefined) c.p5.inp.value = kv.p5;
+    if(kv.p7 !== undefined) c.p7.inp.value = kv.p7;
+
+    if(kv.s8 !== undefined) c.s8.inp.value = kv.s8;
+    if(kv.s9 !== undefined) c.s9.inp.value = kv.s9;
+    if(kv.s10 !== undefined) c.s10.inp.value = kv.s10;
+    if(kv.s11 !== undefined) c.s11.inp.value = kv.s11;
+    if(kv.s12 !== undefined) c.s12.inp.value = kv.s12;
+    if(kv.s14 !== undefined) c.s14.inp.value = kv.s14;
+
+    if(kv.st16 !== undefined) c.st16.inp.value = kv.st16;
+
+    const chk = card.querySelector('input[data-chk="1"]');
+    if(chk) c.chk.checked = !!chk.checked;
+
+    c.p6.inp.value  = money2(n(c.p4.inp.value) * n(c.p5.inp.value)) || 0;
+    c.s13.inp.value = money2(n(c.s11.inp.value) * n(c.s12.inp.value)) || 0;
+    c.st15.inp.value= money2(n(c.p4.inp.value) - n(c.s11.inp.value)) || 0;
+    c.st17.inp.value= money2(n(c.st15.inp.value) * n(c.st16.inp.value)) || 0;
+
+    recalcTotals();
+    setStatus(lang==="en" ? "Auto-calculated ✓" : "অটো হিসাব ✓", true);
+
+    const u = (k, v)=>{ const el = card.querySelector(`input[data-k="${k}"]`); if(el) el.value = v; };
+    u("p6", c.p6.inp.value);
+    u("s13", c.s13.inp.value);
+    u("st15", c.st15.inp.value);
+    u("st17", c.st17.inp.value);
+  }
+
+  /* ---------------- Snapshot / Restore ---------------- */
+  function snapshotState(){
+    return {
+      meta: {
+        regInputName: els.inputName.value,
+        regUnit: els.unit.value
+      },
+      rows: getDraftData().rows
+    };
+  }
+
+  function restoreSnapshot(snap){
+    els.inputName.value = snap?.meta?.regInputName || "";
+    els.unit.value = snap?.meta?.regUnit || "";
+
+    els.tbody.innerHTML = "";
+    (snap.rows || []).forEach(r=> addRow(r));
+    ensureAtLeastOneRow();
+    recalcTotals();
+    renderMobile();
+  }
+
+  /* ---------------- Events ---------------- */
+  els.editSaveBtn.addEventListener("click", async ()=>{
+    const t = T[lang];
+
+    if(!editMode){
+      beforeEditSnapshot = snapshotState();
+      editMode = true;
+      applyEditModeUI();
+
+      // ✅ enable page lock now
+      enablePageLock();
+
+      toast(t.toastEditOn);
+      setStatus(lang==="en" ? "Edit mode" : "এডিট মোড", true);
+      return;
     }
-    return s;
+
+    const ok = await confirmBox(t.c_saveChangesTitle, t.c_saveChangesMsg);
+    if(!ok) return;
+
+    // Removed draft save/load buttons, so just exit edit mode.
+    editMode = false;
+    applyEditModeUI();
+
+    // ✅ unlock page now
+    disablePageLock();
+
+    toast(t.toastSaved);
+    setStatus(lang==="en" ? "Saved ✓" : "সেভ ✓", true);
+  });
+
+  els.cancelBtn.addEventListener("click", async ()=>{
+    if(!editMode) return;
+    const t = T[lang];
+
+    const ok = await confirmBox(t.c_discardTitle, t.c_discardMsg);
+    if(!ok) return;
+
+    restoreSnapshot(beforeEditSnapshot || snapshotState());
+    editMode = false;
+    applyEditModeUI();
+
+    // ✅ unlock page now
+    disablePageLock();
+
+    toast(t.toastCanceled);
+    setStatus(lang==="en" ? "Canceled" : "বাতিল", true);
+  });
+
+  document.addEventListener("keydown", async (e)=>{
+    if(e.key !== "Escape") return;
+    if(!editMode) return;
+    const t = T[lang];
+
+    const ok = await confirmBox(t.c_exitTitle, t.c_exitMsg);
+    if(!ok) return;
+
+    restoreSnapshot(beforeEditSnapshot || snapshotState());
+    editMode = false;
+    applyEditModeUI();
+
+    // ✅ unlock page now
+    disablePageLock();
+
+    toast(t.toastCanceled);
+    setStatus(lang==="en" ? "Canceled" : "বাতিল", true);
+  });
+
+  els.selectAll.addEventListener("change", ()=>{
+    if(!editMode){
+      els.selectAll.checked = false;
+      return;
+    }
+    const on = !!els.selectAll.checked;
+    [...els.tbody.querySelectorAll("tr")].forEach(tr=>{
+      if(tr._cells) tr._cells.chk.checked = on;
+    });
+    renderMobile();
+  });
+
+  els.addRowBtn.addEventListener("click", ()=>{
+    if(!editMode) return;
+    addRow();
+    toast(T[lang].toastRowAdded);
+    setStatus(lang==="en" ? "Row added" : "রো যোগ", true);
+  });
+
+  els.deleteRowsBtn.addEventListener("click", deleteSelectedRows);
+  els.deleteAllBtn.addEventListener("click", deleteAllRows);
+
+  els.exportCsvBtn.addEventListener("click", exportCSV);
+  els.printBtn.addEventListener("click", ()=> window.print());
+
+  // Tabs
+  function setTab(tab){
+    activeTab = tab;
+    persistTab();
+    setTabsUI();
+    const t = T[lang];
+    toast(tab==="all" ? t.toastAll : tab==="purchase" ? t.toastPurchase : tab==="sale" ? t.toastSale : t.toastStock);
+  }
+  els.tabAll.addEventListener("click", ()=> setTab("all"));
+  els.tabPurchase.addEventListener("click", ()=> setTab("purchase"));
+  els.tabSale.addEventListener("click", ()=> setTab("sale"));
+  els.tabStock.addEventListener("click", ()=> setTab("stock"));
+
+  // Table input: recompute (edit mode only)
+  els.tbody.addEventListener("input", (e)=>{
+    if(!editMode) return;
+    const tr = e.target.closest("tr");
+    if(!tr || !tr._cells) return;
+    const c = tr._cells;
+
+    c.p6.inp.value  = money2(n(c.p4.inp.value) * n(c.p5.inp.value)) || 0;
+    c.s13.inp.value = money2(n(c.s11.inp.value) * n(c.s12.inp.value)) || 0;
+    c.st15.inp.value= money2(n(c.p4.inp.value) - n(c.s11.inp.value)) || 0;
+    c.st17.inp.value= money2(n(c.st15.inp.value) * n(c.st16.inp.value)) || 0;
+
+    recalcTotals();
+    setStatus(lang==="en" ? "Auto-calculated ✓" : "অটো হিসাব ✓", true);
+    renderMobile();
+  });
+
+  els.tbody.addEventListener("change", (e)=>{
+    if(!editMode) return;
+    if(e.target && e.target.type === "checkbox") renderMobile();
+  });
+
+  // Mobile sync
+  els.mobileList.addEventListener("input", (e)=>{
+    if(!editMode) return;
+    const card = e.target.closest(".cardRow");
+    if(!card) return;
+    syncMobileToRow(card);
+  });
+  els.mobileList.addEventListener("change", (e)=>{
+    if(!editMode) return;
+    const card = e.target.closest(".cardRow");
+    if(!card) return;
+    if(e.target && e.target.matches('input[data-chk="1"]')) syncMobileToRow(card);
+  });
+
+  /* ---------------- Init ---------------- */
+  function init(){
+    // ✅ default to GLOBAL language (navbar), fallback English
+    setLang(detectGlobalLang());
+    startLangPoll();
+
+    // ✅ start rows: keep 1 blank row by default (not 3)
+    els.tbody.innerHTML = "";
+    addRow();
+    recalcTotals();
+
+    editMode = false;
+    applyEditModeUI();
+
+    // ✅ restore last active tab on refresh
+    activeTab = loadPersistedTab();
+    setTabsUI();
+    renderMobile();
+
+    setStatus(T[lang].statusReady, true);
+
+    // ✅ if somehow page restored with editMode true, ensure lock
+    if(editMode) enablePageLock(); else disablePageLock();
   }
 
-  // Buttons
-  els.addRowBtn.addEventListener("click", ()=> addRow());
-  els.deleteRowsBtn.addEventListener("click", deleteSelectedRows);
-  els.saveDraftBtn.addEventListener("click", saveDraft);
-  els.loadDraftBtn.addEventListener("click", loadDraft);
-  els.clearDraftBtn.addEventListener("click", clearDraft);
-  els.exportCsvBtn.addEventListener("click", exportCSV);
-
-  // initial state
-  // add a few empty rows like a register page feel
-  addRow(); addRow(); addRow();
-  recalcTotals();
-  setStatus("Ready");
+  init();
 })();
 </script>
 {% endblock %}

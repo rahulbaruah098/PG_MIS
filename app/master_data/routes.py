@@ -1,4 +1,3 @@
-from services.audit_engine import AuditLogger
 from flask import render_template, request, redirect, url_for, flash, current_app, session, jsonify
 from bson import ObjectId
 from datetime import datetime
@@ -465,7 +464,7 @@ def manage_blocks():
 
 
 @master_data_bp.route("/clfs", methods=["GET", "POST"])
-@roles_required("BLOCK_ADMIN", "CLF_MANAGER")
+@roles_required("BLOCK_ADMIN")
 def manage_clfs():
     """Block-level master data: CLFs."""
     db = current_app.mongo_db
@@ -632,7 +631,3 @@ def manage_pgs():
     )
 
 
-
-
-# === CORE ENGINE INTEGRATION ACTIVE ===
-# AuditLogger.log(action, user_id, entity, entity_id) available

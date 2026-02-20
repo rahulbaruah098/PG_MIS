@@ -1,7 +1,4 @@
-from services.audit_engine import AuditLogger
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
-from app.services.guards import require_unlocked_period
-from flask import render_template, request, redirect, url_for, flash, current_app, session,jsonify, abort,g
+from flask import render_template, request, redirect, url_for, flash, current_app, session,jsonify, abort
 from bson import ObjectId
 from datetime import datetime
 from . import pg_bp
@@ -55,37 +52,20 @@ def _pg_metrics(db, pg_id):
 
     members_count = db.pg_members.count_documents({"pg_id": oid})
 
-    # Loans (legacy + new lifecycle)
-    legacy_loans = list(db.pg_loans.find({"pg_id": oid}))
-    new_pg_loans = list(db.pg_loan_accounts.find({"pg_id": oid}))
-    new_mb_loans = list(db.pg_member_loan_accounts.find({"pg_id": oid}))
-
-    loans_count = len(legacy_loans) + len(new_pg_loans) + len(new_mb_loans)
+    # Loans
+    loans = list(db.pg_loans.find({"pg_id": oid}))
+    loans_count = len(loans)
     outstanding = 0.0
-    # legacy
-    for ln in legacy_loans:
+    for ln in loans:
         for k in ("outstanding_amount", "outstanding", "balance", "amount"):
             if k in ln and ln.get(k) not in (None, ""):
                 try:
                     outstanding += float(ln.get(k) or 0)
                 except Exception:
                     pass
-    # new lifecycle
-    for ln in (new_pg_loans + new_mb_loans):
-        try:
-            outstanding += float(ln.get("outstanding_amount") or 0)
-        except Exception:
-            pass
+                break
 
-    # Alerts (computed)
-    try:
-        from app.services.alerts import compute_pg_alerts
-        alerts_count = len(compute_pg_alerts(db, str(oid)))
-    except Exception:
-        alerts_count = 0
-
-
-# Categories: try from PG profile if available, else 0
+    # Categories: try from PG profile if available, else 0
     pg_doc = db.pgs.find_one({"_id": oid}, {"categories": 1, "commodities": 1, "primary_activities": 1})
     categories_count = 0
     if pg_doc:
@@ -142,7 +122,7 @@ def pg_home():
 
 @pg_bp.route("/profile")
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN", "SUPER_ADMIN")
 def pg_profile():
     db = current_app.mongo_db
 
@@ -163,7 +143,7 @@ def pg_profile():
 
 @pg_bp.route("/view/<pg_id>")
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def pg_view(pg_id):
     """Open a PG dashboard by id.
 
@@ -202,11 +182,9 @@ def pg_view(pg_id):
     metrics = _pg_metrics(db, pg_id)
     return render_template("dashboard_pg.html", pg=pg_doc, metrics=metrics)
 
-
 @pg_bp.route("/registration/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
-@require_unlocked_period(scope='pg')
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def pg_registration(pg_id):
 
     db = current_app.mongo_db
@@ -443,8 +421,7 @@ def pg_registration(pg_id):
 
 @pg_bp.route("/submit/<pg_id>", methods=["POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN")
-@require_unlocked_period(scope='pg')
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER")
 def pg_submit_for_authorization(pg_id):
     """After data entry, submit PG for state authorization."""
     db = current_app.mongo_db
@@ -466,7 +443,6 @@ def pg_submit_for_authorization(pg_id):
 @pg_bp.route("/authorization", methods=["GET", "POST"])
 @login_required
 @roles_required("ADMIN", "SUPER_ADMIN")
-@require_unlocked_period(scope='pg')
 def pg_authorization():
     """State Authorization step.
 
@@ -505,8 +481,7 @@ def pg_authorization():
 
 @pg_bp.route("/members/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
-@require_unlocked_period(scope='pg')
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def pg_members(pg_id):
     db = current_app.mongo_db
 
@@ -754,8 +729,7 @@ def pg_members(pg_id):
 
 @pg_bp.route("/submit/<pg_id>", methods=["POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN")
-@require_unlocked_period(scope='pg')
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER")
 def submit_for_authorization(pg_id):
     """Submit a PG for state authorization.
 
@@ -785,7 +759,6 @@ def submit_for_authorization(pg_id):
 @pg_bp.route("/authorization", methods=["GET", "POST"])
 @login_required
 @roles_required("ADMIN")
-@require_unlocked_period(scope='pg')
 def state_authorization():
     """State Admin: approve/reject PG registrations."""
     db = current_app.mongo_db
@@ -832,8 +805,7 @@ def state_authorization():
 
 @pg_bp.route("/upload_document/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN", "CRCTA", "ANS", "CRCITARD")
-@require_unlocked_period(scope='pg')
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN", "CRCTA", "ANS", "CRCITARD")
 def pg_upload_document(pg_id):
     db = current_app.mongo_db
     pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
@@ -910,7 +882,7 @@ def output_register():
 
 @pg_bp.route("/profile/<pg_id>/data", methods=["GET"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def pg_profile_data(pg_id):
     """
     Fetch PG profile data as JSON for frontend profile modal.
@@ -992,114 +964,3 @@ def pg_profile_data(pg_id):
 
     return jsonify(response)
 
-
-
-# ============================================================
-# NEW: MEETING & GOVERNANCE TRACKING
-# - Meeting register, attendance, resolutions
-# ============================================================
-
-@pg_bp.route("/meetings/<pg_id>", methods=["GET","POST"])
-@login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
-@require_unlocked_period(scope='pg')
-def meeting_register(pg_id):
-    db = current_app.mongo_db
-    pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
-    if not pg:
-        flash("PG not found.", "danger")
-        return redirect(url_for("pg.pg_home"))
-
-    members = list(db.pg_members.find({"pg_id": ObjectId(pg_id)}, {"name":1, "member_name":1}).limit(500))
-
-    if request.method == "POST":
-        meeting_date = request.form.get("meeting_date")
-        agenda = request.form.get("agenda") or ""
-        resolution = request.form.get("resolution") or ""
-
-        # attendance ids
-        att = request.form.getlist("attendance")
-        att_ids = []
-        for mid in att:
-            if ObjectId.is_valid(mid):
-                att_ids.append(ObjectId(mid))
-            else:
-                att_ids.append(mid)
-
-        doc = {
-            "pg_id": ObjectId(pg_id),
-            "meeting_date": meeting_date,
-            "meeting_type": request.form.get("meeting_type") or "General",
-            "agenda": agenda,
-            "attendance": att_ids,
-            "attendance_count": len(att_ids),
-            "resolution": resolution,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
-        }
-        db.pg_meetings.insert_one(doc)
-        flash("Meeting saved.", "success")
-        return redirect(url_for("pg.meeting_register", pg_id=pg_id))
-
-    meetings = list(db.pg_meetings.find({"pg_id": ObjectId(pg_id)}).sort([("meeting_date", -1)]).limit(200))
-    return render_template("meeting_register.html", pg=pg, members=members, meetings=meetings)
-
-
-# === CORE ENGINE INTEGRATION ACTIVE ===
-# AuditLogger.log(action, user_id, entity, entity_id) available
-
-# ============================================================
-# CLF/BLOCK: Active PG context helpers
-# - Lets CLF/BLOCK work on one PG at a time using the sidebar links
-# ============================================================
-
-@pg_bp.route('/set_active/<pg_id>')
-@login_required
-@roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
-def set_active_pg(pg_id):
-    """Set the active PG context in session (for CLF/BLOCK sidebar actions)."""
-    db = current_app.mongo_db
-    pg_doc = db.pgs.find_one({"_id": ObjectId(pg_id)})
-    if not pg_doc:
-        flash('PG not found.', 'danger')
-        return redirect(url_for('reports.hierarchy_dashboard'))
-
-    role = session.get('role')
-
-    # PG user can only set own PG
-    if role == 'PG_DATA_ENTRY' and session.get('pg_id') != pg_id:
-        flash('You cannot access this PG.', 'danger')
-        return redirect(url_for('pg.pg_home'))
-
-    # Scope checks for other roles (same as pg_dashboard)
-    if role != 'PG_DATA_ENTRY':
-        if session.get('clf_id') and str(pg_doc.get('clf_id')) != session.get('clf_id'):
-            flash('This PG is not under your CLF.', 'danger')
-            return redirect(url_for('reports.hierarchy_dashboard'))
-        if session.get('block_id') and str(pg_doc.get('block_id')) != session.get('block_id'):
-            flash('This PG is not under your Block.', 'danger')
-            return redirect(url_for('reports.hierarchy_dashboard'))
-        if session.get('district_id') and str(pg_doc.get('district_id')) != session.get('district_id'):
-            flash('This PG is not under your District.', 'danger')
-            return redirect(url_for('reports.hierarchy_dashboard'))
-        if session.get('state_id') and str(pg_doc.get('state_id')) != session.get('state_id'):
-            flash('This PG is not under your State.', 'danger')
-            return redirect(url_for('reports.hierarchy_dashboard'))
-
-    session['active_pg_id'] = pg_id
-    session['active_pg_name'] = pg_doc.get('name') or pg_doc.get('pg_name') or pg_doc.get('PG Name') or pg_id
-
-    nxt = request.args.get('next')
-    if nxt:
-        return redirect(nxt)
-    return redirect(url_for('pg.pg_view', pg_id=pg_id))
-
-
-@pg_bp.route('/clear_active')
-@login_required
-@roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
-def clear_active_pg():
-    session.pop('active_pg_id', None)
-    session.pop('active_pg_name', None)
-    flash('Active PG cleared.', 'info')
-    return redirect(url_for('reports.hierarchy_dashboard'))

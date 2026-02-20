@@ -1,16 +1,13 @@
-from flask import Flask, app
+from flask import Flask
 from pymongo import MongoClient, ASCENDING
 from .config import Config
-from flask_cors import CORS
 
 mongo_client = None
 
 def create_app():
     app = Flask(__name__)
-    CORS(app, supports_credentials=True)
     app.config.from_object(Config)
-    app.config["JWT_SECRET_KEY"] = "change-this-to-strong-secret-key"
-    app.config["JWT_EXPIRATION_SECONDS"] = 86400  # 1 day
+
     global mongo_client
     mongo_client = MongoClient(app.config["MONGO_URI"])
     app.mongo_db = mongo_client.get_default_database()
@@ -36,15 +33,6 @@ def create_app():
     def index():
         from flask import redirect, url_for
         return redirect(url_for("auth.login"))
-
-    # ---- Role label helper for templates ----
-    from .constants import ROLE_LABELS
-
-    @app.context_processor
-    def _inject_role_helpers():
-        def role_label(role):
-            return ROLE_LABELS.get(role, role or "")
-        return {"role_label": role_label, "ROLE_LABELS": ROLE_LABELS}
 
     return app
 
@@ -80,35 +68,10 @@ def init_indexes(db):
     db.change_requests.create_index([("collection", ASCENDING), ("doc_id", ASCENDING)])
     db.notifications.create_index([("to_user_id", ASCENDING), ("is_read", ASCENDING), ("ts", ASCENDING)])
     db.notifications.create_index([("to_role", ASCENDING), ("is_read", ASCENDING), ("ts", ASCENDING)])
-    # Period locks (month freeze)
-    db.period_locks.create_index([("scope", ASCENDING), ("ref_id", ASCENDING), ("year", ASCENDING), ("month", ASCENDING)], unique=True)
-
-    # Loan lifecycle (accounts + repayments)
-    db.pg_loan_accounts.create_index([("pg_id", ASCENDING), ("status", ASCENDING), ("loan_no", ASCENDING)])
-    db.pg_loan_repayments.create_index([("loan_id", ASCENDING), ("paid_at", ASCENDING)])
-    db.pg_member_loan_accounts.create_index([("pg_id", ASCENDING), ("member_id", ASCENDING), ("status", ASCENDING)])
-    db.pg_member_loan_repayments.create_index([("loan_id", ASCENDING), ("paid_at", ASCENDING)])
-
-    # Grants / utilization
-    db.pg_grants.create_index([("pg_id", ASCENDING), ("category", ASCENDING), ("release_date", ASCENDING)])
-    db.pg_grant_utilizations.create_index([("grant_id", ASCENDING), ("utilized_at", ASCENDING)])
-
-    # Inventory
-    db.pg_stock_movements.create_index([("pg_id", ASCENDING), ("commodity", ASCENDING), ("ts", ASCENDING)])
-
-    # Governance + plans + gradation
-    db.pg_meetings.create_index([("pg_id", ASCENDING), ("meeting_date", ASCENDING)])
-    db.pg_business_plans.create_index([("pg_id", ASCENDING), ("year", ASCENDING)], unique=True)
-    db.pg_gradation_snapshots.create_index([("pg_id", ASCENDING), ("year", ASCENDING), ("quarter", ASCENDING)], unique=True)
-
     db.pg_documents.create_index([("pg_id", ASCENDING), ("doc_type", ASCENDING), ("uploaded_at", ASCENDING)])
 
     # Duplicate prevention (best-effort)
-    # Enforce unique PG name within a block (ignore missing/empty names)
-    db.pgs.create_index(
-    [("name", ASCENDING), ("block_id", ASCENDING)],
-    unique=True
-)   
+    db.pgs.create_index([("pg_name", ASCENDING), ("block_id", ASCENDING)], unique=True)
 
     # SHG Master (TRESP import)
     # Master fields are stored using human-readable column names.

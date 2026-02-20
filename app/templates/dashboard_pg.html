@@ -86,30 +86,50 @@
     }
 
     /* Welcome strip under navbar */
-    .welcome-strip{
-      max-width: 7xl;
-      position: relative;
-      margin: 18px auto 0 auto;
-      padding: 0 24px;
-    }
-    .welcome-card{
-      position: relative;
-      border-radius: 20px;
-      background: rgba(255,255,255,0.92);
-      border: 1px solid rgba(15,118,110,0.22);
-      box-shadow: 0 18px 46px rgba(6, 95, 70, 0.14);
-      overflow: hidden;
-    }
-    .welcome-card::before{ content:none; display:none; }
-    .welcome-inner{
-      position:relative;
-      z-index:1;
-      padding: 18px 18px;
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap: 14px;
-    }
+    /* ✅ Welcome strip under navbar (WEB + WEBVIEW safe spacing) */
+.welcome-strip{
+  width: 100%;
+  max-width: 80rem;              /* ✅ fixes invalid max-width: 7xl */
+  margin: 18px auto 0;
+  padding: 0 24px;
+}
+
+/* ✅ Welcome card styled like your other panels (NO green left line) */
+.welcome-card{
+  position: relative;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.92);
+  border: 1.5px solid rgba(191,230,210,0.95);
+  box-shadow: 0 22px 60px rgba(6, 95, 70, 0.14);
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+}
+
+/* subtle texture like main.max-w-7xl */
+.welcome-card::before{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  pointer-events:none;
+  background-image: radial-gradient(rgba(6,95,70,0.08) 0.6px, transparent 0.6px);
+  background-size: 18px 18px;
+  opacity: 0.07;
+  mix-blend-mode: multiply;
+}
+
+.welcome-inner{
+  position: relative;
+  z-index: 1;
+  padding: 18px 18px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 14px;
+}
+
+/* ✅ HARD FIX: gap between welcome + main (works in webview too) */
+.welcome-strip{ margin-bottom: 16px; }
+main.max-w-7xl{ margin-top: 16px; }
     .welcome-title{ letter-spacing:-0.02em; }
 
     .welcome-pill{
@@ -210,74 +230,255 @@
     /* ✅ Button color stays brand teal */
     /* (already inline style background:#0f766e) */
 
+
     /* ============================================================
-      ✅ MOBILE / APP VIEW CHANGE ONLY
-      Inside each section: horizontal swipe (left-right) in grid cards
-      - Desktop/web stays EXACTLY same
+      ✅ MOBILE/TABLET ONLY FIXES (NO WEB CHANGES)
+      1) Add visible GAP between Welcome card and Quick Stats section
+      2) Make Welcome card more eye-catching (mobile/tablet only)
       ============================================================ */
-    @media (max-width: 768px) {
-      .overflow-x-auto { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-      .chart-container { height: 260px; }
-      main.max-w-7xl{ padding-left: 16px !important; padding-right: 16px !important; }
-      .welcome-strip{ padding: 0 16px; }
-      .welcome-inner{ padding: 14px 14px; }
+    @media (max-width: 1024px) {
+      /* Make the first section feel premium */
+      .welcome-card{
+        background:
+          radial-gradient(120% 120% at 10% 0%, rgba(15,118,110,0.16), transparent 55%),
+          radial-gradient(120% 120% at 100% 10%, rgba(21,128,61,0.12), transparent 55%),
+          rgba(255,255,255,0.94) !important;
+        border: 1px solid rgba(15,118,110,0.30) !important;
+        box-shadow:
+          0 26px 70px rgba(6,95,70,0.18),
+          0 2px 0 rgba(15,118,110,0.10) inset !important;
+      }
+      .welcome-card::before{
+        /* soft sheen + texture only for mobile/tablet */
+        content:"";
+        position:absolute;
+        inset:-1px;
+        pointer-events:none;
+        background:
+          radial-gradient(rgba(6,95,70,0.10) 0.6px, transparent 0.6px);
+        background-size: 18px 18px;
+        opacity: 0.10;
+        mix-blend-mode: multiply;
+      }
+    
 
-      /* Generic swipe row for sections */
-      .mob-swipe{
-        display: flex !important;
-        flex-direction: row !important;
-        gap: 14px !important;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        padding-bottom: 8px !important;
-        scroll-snap-type: x mandatory !important;
-        -webkit-overflow-scrolling: touch !important;
-      }
-      .mob-swipe > *{
-        flex: 0 0 86% !important;
-        scroll-snap-align: start !important;
-      }
-
-      /* Quick Stats (id-based) -> swipe cards */
-      #quickStats{
-        display:flex !important;
-        flex-direction:row !important;
-        gap: 14px !important;
-        overflow-x:auto !important;
-        overflow-y:hidden !important;
-        padding-bottom: 8px !important;
-        scroll-snap-type: x mandatory !important;
-        -webkit-overflow-scrolling: touch !important;
-      }
-      #quickStats > *{
-        flex: 0 0 86% !important;
-        scroll-snap-align: start !important;
+      /* Make title stronger & clearer on small screens */
+      .welcome-card h1{
+        letter-spacing: -0.03em !important;
+        text-shadow: 0 1px 0 rgba(255,255,255,0.7);
       }
 
-      /* Modules grid inside overview -> swipe cards */
-      .modules-grid{
-        display:flex !important;
-        flex-direction:row !important;
-        gap: 14px !important;
-        overflow-x:auto !important;
-        overflow-y:hidden !important;
-        padding-bottom: 8px !important;
-        scroll-snap-type: x mandatory !important;
-        -webkit-overflow-scrolling: touch !important;
+      /* ✅ IMPORTANT: add gap below welcome section (what you asked) */
+      .welcome-strip{
+        margin-bottom: 14px !important; /* creates separation from Quick Stats */
       }
-      .modules-grid > *{
-        flex: 0 0 86% !important;
-        scroll-snap-align: start !important;
+
+      /* also add a tiny top breathing room for main container */
+      main.max-w-7xl{
+        margin-top: 10px !important;
       }
     }
 
-    @media (max-width: 420px) {
-      .chart-container { height: 240px; }
-      .welcome-pill{ display:none; }
+    /* ============================================================
+      ✅ MOBILE / APP VIEW — previous mobile redesign kept
+      (we only adjusted gaps + welcome card styling above)
+      ============================================================ */
+    @media (max-width: 768px) {
+      /* page paddings tighter */
+      main.max-w-7xl{ padding-left: 14px !important; padding-right: 14px !important; }
+      .welcome-strip{ padding: 0 14px; }
+      .welcome-inner{ padding: 16px 14px !important; }
 
-      .mob-swipe > *{ flex-basis: 90% !important; }
-      #quickStats > *{ flex-basis: 90% !important; }
-      .modules-grid > *{ flex-basis: 90% !important; }
+      /* headings scale down slightly for app view */
+      .welcome-card h1{ font-size: 20px !important; line-height: 1.15 !important; }
+      .welcome-card p{ font-size: 13px !important; }
+      .welcome-pill{ display:none !important; }
+
+      /* add a bit more gap on phones */
+      .welcome-strip{ margin-bottom: 16px !important; }
+
+      /* ===============================
+         QUICK STATS — compact 2-col grid
+         =============================== */
+      #quickStats{
+        display:grid !important;
+        grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+        gap: 10px !important;
+        overflow: visible !important;
+        padding-bottom: 0 !important;
+        scroll-snap-type: none !important;
+      }
+      #quickStats > *{
+        flex: unset !important;
+        scroll-snap-align: unset !important;
+        transform: none !important;
+        min-width: 0 !important;
+      }
+
+      /* make stat cards tighter + cleaner */
+      #quickStats .card-border-soft{
+        border-radius: 18px !important;
+      }
+      #quickStats .p-5{
+        padding: 12px !important;
+      }
+      #quickStats h3{
+        font-size: 11px !important;
+        letter-spacing: .08em !important;
+        margin-bottom: 6px !important;
+      }
+      #quickStats .text-3xl{
+        font-size: 22px !important;
+        line-height: 1.1 !important;
+        margin-bottom: 6px !important;
+      }
+      #quickStats .human-subtitle{
+        font-size: 12px !important;
+        line-height: 1.2 !important;
+      }
+
+      /* icon box smaller */
+      #quickStats .p-3{
+        padding: 10px !important;
+        border-radius: 14px !important;
+      }
+      #quickStats svg{
+        width: 20px !important;
+        height: 20px !important;
+      }
+
+      /* remove hover transforms for app feel */
+      #quickStats .hover\:scale-105:hover,
+      #quickStats .hover\:-translate-y-1:hover{
+        transform: none !important;
+      }
+
+      /* ===============================
+         MODULES OVERVIEW — app-style grid
+         =============================== */
+      #dashboardOverview .p-6{ padding: 14px !important; }
+      #dashboardOverview h2{ font-size: 18px !important; line-height: 1.2 !important; }
+      #dashboardOverview p.text-sm{ font-size: 13px !important; }
+
+      .modules-grid{
+        display:grid !important;
+        grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+        gap: 10px !important;
+        overflow: visible !important;
+        padding-bottom: 0 !important;
+        scroll-snap-type: none !important;
+      }
+      .modules-grid > *{
+        flex: unset !important;
+        scroll-snap-align: unset !important;
+        min-width: 0 !important;
+      }
+
+      /* module card compact */
+      .modules-grid .p-5{ padding: 12px !important; }
+      .modules-grid h3{ font-size: 13px !important; margin-bottom: 4px !important; }
+      .modules-grid p.text-xs{ font-size: 12px !important; line-height: 1.25 !important; }
+      .modules-grid .text-2xl{
+        font-size: 16px !important;
+        font-weight: 900 !important;
+      }
+      .modules-grid .p-2{ padding: 8px !important; border-radius: 12px !important; }
+      .modules-grid svg{
+        width: 18px !important;
+        height: 18px !important;
+      }
+      .modules-grid .hover\:scale-105:hover,
+      .modules-grid .hover\:-translate-y-1:hover{
+        transform:none !important;
+      }
+
+      /* ===============================
+         CHARTS — stack as clean vertical cards
+         =============================== */
+      .mob-swipe{
+        display:grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+        overflow: visible !important;
+        padding-bottom: 0 !important;
+        scroll-snap-type: none !important;
+        -webkit-overflow-scrolling: auto !important;
+      }
+      .mob-swipe > *{
+        flex: unset !important;
+        scroll-snap-align: unset !important;
+      }
+
+      /* charts padding + title sizing */
+      #cashFlowChart .p-6,
+      #membershipChart .p-6,
+      #loanDistributionChart .p-6,
+      #produceStockChart .p-6{
+        padding: 14px !important;
+      }
+      #cashFlowChart h2,
+      #membershipChart h2,
+      #loanDistributionChart h2,
+      #produceStockChart h2{
+        font-size: 16px !important;
+        line-height: 1.2 !important;
+      }
+      #cashFlowChart p.text-sm,
+      #membershipChart p.text-sm,
+      #loanDistributionChart p.text-sm,
+      #produceStockChart p.text-sm{
+        font-size: 12.5px !important;
+      }
+
+      /* icons in chart headers smaller */
+      #cashFlowChart .p-2\.5,
+      #membershipChart .p-2\.5,
+      #loanDistributionChart .p-2\.5,
+      #produceStockChart .p-2\.5{
+        padding: 8px !important;
+        border-radius: 12px !important;
+      }
+      #cashFlowChart svg,
+      #membershipChart svg,
+      #loanDistributionChart svg,
+      #produceStockChart svg{
+        width: 18px !important;
+        height: 18px !important;
+      }
+
+      /* chart heights optimized for phones */
+      .chart-container{ height: 220px !important; }
+
+      /* ===============================
+         RECENT TRANSACTIONS — tighter header/button + summary stack
+         =============================== */
+      #recentTransactions .p-6{ padding: 14px !important; }
+      #recentTransactions h2{ font-size: 16px !important; line-height: 1.2 !important; }
+      #recentTransactions p.text-sm{ font-size: 12.5px !important; }
+
+      /* View All button: full width but shorter */
+      #recentTransactions button{
+        padding: 10px 14px !important;
+        border-radius: 14px !important;
+      }
+
+      /* summary footer cards: 1-col (no swipe) */
+      #recentTransactions .mob-swipe{
+        display:grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+      #recentTransactions .mob-swipe .p-5{ padding: 12px !important; }
+      #recentTransactions .mob-swipe .text-2xl{ font-size: 20px !important; }
+    }
+
+    /* Extra small devices */
+    @media (max-width: 420px) {
+      .welcome-card h1{ font-size: 19px !important; }
+      #quickStats{ gap: 9px !important; }
+      .modules-grid{ gap: 9px !important; }
+      .chart-container{ height: 210px !important; }
+      #dashboardOverview h2{ font-size: 17px !important; }
     }
   </style>
 {% endblock %}
@@ -285,7 +486,7 @@
 {% block content %}
   <!-- ✅ Welcome Heading under navbar -->
   <section class="welcome-strip">
-    <div class="welcome-card">
+   <div class="welcome-card card-border-soft">
       <div class="welcome-inner">
         <div>
           <p class="text-xs font-semibold text-slate-700/90 tracking-wider uppercase">Tripura PG Systems</p>

@@ -3,179 +3,264 @@
 
 <style>
 /* ============================================================
-   MONTHLY PROGRESS PAGE — PGMIS STYLE
-   Scoped to .mpr-wrap
+   MONTHLY PROGRESS PAGE (SCOPED) — SAME DESIGN LANGUAGE AS LEDGER BOOK
+   ✅ Only UI/CSS changed (no loop/fields/data bindings changed)
+   ✅ Desktop: clean table inside sheet
+   ✅ Mobile: swipeable card grid (ledger-like feel) + scroll-snap
+   Scoped to .mpr-wrap only
 ============================================================ */
 
 .mpr-wrap{
-  width:100%;
+  width: 100%;
+  padding: clamp(12px, 2.2vw, 22px);
+  --ink:#0f172a;
+  --muted:#64748b;
+  --line: rgba(15,23,42,.18);
+  --line2: rgba(15,23,42,.12);
+  --paper:#ffffff;
+  --soft:#f7faf9;
+  --accent:#0b4d3a;
+  color: var(--ink);
+}
+.mpr-wrap *{ box-sizing:border-box; }
+
+.mpr-sheet{
   max-width:1100px;
   margin:0 auto;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
 }
 
-/* ---------- HERO ---------- */
-.mpr-hero{
-  background:linear-gradient(to right,#059669,#10b981);
-  border-radius:1.25rem;
-  padding:1.2rem;
-  color:#fff;
-  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
-  position:relative;
-  overflow:hidden;
-}
-.mpr-hero:before{
-  content:"";
-  position:absolute;
-  inset:-40% -20%;
-  background:radial-gradient(closest-side,rgba(255,255,255,.12),transparent 60%);
+/* ---------- HEADER (ledger-like) ---------- */
+.mpr-head{
+  padding: 14px 16px 12px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border-bottom: 1.5px solid var(--line2);
 }
 .mpr-title{
-  display:flex;
-  align-items:center;
-  gap:.7rem;
-}
-.mpr-icon{
-  width:42px;height:42px;
-  border-radius:9999px;
-  background:rgba(255,255,255,.2);
-  border:1px solid rgba(255,255,255,.25);
-  display:flex;align-items:center;justify-content:center;
-}
-.mpr-icon svg{width:20px;height:20px;color:#fff;}
-.mpr-h1{
-  margin:0;
-  font-size:clamp(1.25rem,2vw,1.6rem);
-  font-weight:950;
+  margin: 0;
+  font-weight: 950;
+  font-size: 18px;
+  text-align: center;
+  letter-spacing: .2px;
 }
 .mpr-sub{
-  font-size:.9rem;
-  color:#d1fae5;
-  font-weight:800;
+  margin-top: 6px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap: 10px;
+  color: rgba(15,23,42,.72);
+  font-weight: 900;
+  font-size: 12px;
 }
-
-/* ---------- TABLE CARD ---------- */
-.mpr-card{
-  margin-top:1rem;
-  background:#fff;
-  border-radius:1.25rem;
-  border:1px solid rgba(4,120,87,.1);
-  overflow:hidden;
-  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+.mpr-badge{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid rgba(15,23,42,.14);
+  border-radius: 999px;
+  background: rgba(255,255,255,.75);
 }
+.mpr-badge svg{ width:14px; height:14px; color: rgba(11,77,58,.95); }
 
-/* ---------- TABLE ---------- */
+/* ---------- SECTION BAR (like ledger controls bar) ---------- */
+.mpr-controls{
+  padding: 10px 16px;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1.5px solid var(--line2);
+  background: rgba(255,255,255,.92);
+  flex-wrap: wrap;
+}
+.mpr-section{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  color: rgba(11,77,58,.95);
+  font-weight: 950;
+  font-size: 12px;
+}
+.mpr-section svg{ width:16px; height:16px; }
+
+/* ---------- TABLE WRAP ---------- */
+.mpr-table-wrap{
+  width: 100%;
+  overflow: auto;
+  background: #fff;
+  border-top: 1.5px solid var(--line2);
+  border-bottom: 1.5px solid var(--line2);
+}
 .mpr-table{
   width:100%;
-  border-collapse:collapse;
+  border-collapse: collapse;
+  min-width: 860px;
 }
-.mpr-table th{
-  background:#f0fdf4;
-  color:#047857;
-  font-weight:900;
-  font-size:.8rem;
-  padding:.75rem;
-  text-align:left;
+.mpr-table thead th{
+  background: var(--soft);
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line2);
+  padding: 10px 10px;
+  font-size: 12px;
+  font-weight: 950;
+  color: var(--ink);
+  text-align: left;
+  white-space: nowrap;
 }
-.mpr-table td{
-  padding:.75rem;
-  border-top:1px solid #e5e7eb;
-  font-weight:700;
-  font-size:.9rem;
+.mpr-table thead th:last-child{ border-right:none; }
+.mpr-table tbody td{
+  padding: 10px 10px;
+  border-top: 1px solid rgba(15,23,42,.07);
+  border-right: 1px solid rgba(15,23,42,.07);
+  font-weight: 800;
+  font-size: 12px;
+  color: rgba(15,23,42,.88);
+  white-space: nowrap;
+}
+.mpr-table tbody td:last-child{ border-right:none; }
+.mpr-table tbody tr:hover{
+  background: rgba(11,77,58,.04);
 }
 
-/* ---------- MOBILE CARDS ---------- */
+/* ---------- MOBILE CARDS (swipeable like ledger mobile view) ---------- */
 .mpr-mobile{
   display:none;
-  padding:1rem;
+  padding: 12px;
+}
+.mpr-rail{
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 84%;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-left: 12px;
+  padding-bottom: 16px;
+}
+.mpr-rail::-webkit-scrollbar{ height: 8px; }
+.mpr-rail::-webkit-scrollbar-thumb{
+  background: rgba(15,23,42,.18);
+  border-radius: 999px;
 }
 .mpr-item{
-  border:1px solid #e5e7eb;
-  border-radius:12px;
-  padding:.8rem;
-  margin-bottom:.7rem;
-  background:#f9fafb;
+  scroll-snap-align: start;
+  border: 1px solid rgba(15,23,42,.14);
+  border-radius: 14px;
+  background: rgba(255,255,255,.96);
+  overflow: hidden;
+  box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
 }
 .mpr-row{
   display:flex;
-  justify-content:space-between;
-  font-size:.85rem;
-  margin-bottom:.25rem;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(15,23,42,.08);
+  font-size: 12px;
 }
+.mpr-row:last-child{ border-bottom: none; }
 .mpr-label{
-  font-weight:900;
-  color:#059669;
+  font-weight: 950;
+  color: rgba(15,23,42,.70);
 }
 .mpr-value{
-  font-weight:800;
-  color:#111827;
+  font-weight: 900;
+  color: rgba(15,23,42,.90);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- RESPONSIVE ---------- */
-@media(max-width:768px){
-  .mpr-table{display:none;}
-  .mpr-mobile{display:block;}
+@media (max-width: 720px){
+  .mpr-table-wrap{ display:none; }
+  .mpr-mobile{ display:block; }
+  .mpr-table{ min-width: 0; }
+}
+@media (max-width: 420px){
+  .mpr-rail{ grid-auto-columns: 90%; }
 }
 </style>
 
 <div class="mpr-wrap">
+  <div class="mpr-sheet">
 
-  <!-- HERO -->
-  <div class="mpr-hero">
-    <div class="mpr-title">
-      <div class="mpr-icon">
-        <svg viewBox="0 0 24 24" fill="none">
-          <path d="M4 19h16M6 17V9M10 17V5M14 17v-7M18 17v-3" stroke="currentColor" stroke-width="2"/>
+    <!-- HEADER -->
+    <div class="mpr-head">
+      <h2 class="mpr-title">PG Monthly Progress Reports</h2>
+      <div class="mpr-sub">
+        <span class="mpr-badge">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 19h16M6 17V9M10 17V5M14 17v-7M18 17v-3" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          <span>Turnover &amp; Member Participation Snapshot</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- SECTION BAR -->
+    <div class="mpr-controls">
+      <div class="mpr-section">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2"/>
         </svg>
+        Monthly Snapshot
       </div>
-      <div>
-        <div class="mpr-h1">PG Monthly Progress Reports</div>
-        <div class="mpr-sub">Turnover & Member Participation Snapshot</div>
-      </div>
+      <div style="font-weight:950; font-size:12px; color:rgba(15,23,42,.55);"></div>
     </div>
-  </div>
 
-  <!-- TABLE -->
-  <div class="mpr-card">
+    <!-- Desktop Table (NO DATA CHANGES) -->
+    <div class="mpr-table-wrap">
+      <table class="mpr-table">
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>Month</th>
+            <th>Monthly Turnover</th>
+            <th>% Members (Input)</th>
+            <th>% Members (Output)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in snapshots %}
+          <tr>
+            <td>{{ s.year }}</td>
+            <td>{{ s.month }}</td>
+            <td>{{ s.monthly_turnover }}</td>
+            <td>{{ s.pct_members_input }}</td>
+            <td>{{ s.pct_members_output }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
-    <!-- Desktop Table -->
-    <table class="mpr-table">
-      <thead>
-        <tr>
-          <th>Year</th>
-          <th>Month</th>
-          <th>Monthly Turnover</th>
-          <th>% Members (Input)</th>
-          <th>% Members (Output)</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in snapshots %}
-        <tr>
-          <td>{{ s.year }}</td>
-          <td>{{ s.month }}</td>
-          <td>{{ s.monthly_turnover }}</td>
-          <td>{{ s.pct_members_input }}</td>
-          <td>{{ s.pct_members_output }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-    <!-- Mobile Card View -->
+    <!-- Mobile Card View (NO DATA CHANGES) -->
     <div class="mpr-mobile">
-      {% for s in snapshots %}
-      <div class="mpr-item">
-        <div class="mpr-row"><span class="mpr-label">Year</span><span class="mpr-value">{{ s.year }}</span></div>
-        <div class="mpr-row"><span class="mpr-label">Month</span><span class="mpr-value">{{ s.month }}</span></div>
-        <div class="mpr-row"><span class="mpr-label">Turnover</span><span class="mpr-value">{{ s.monthly_turnover }}</span></div>
-        <div class="mpr-row"><span class="mpr-label">Input %</span><span class="mpr-value">{{ s.pct_members_input }}</span></div>
-        <div class="mpr-row"><span class="mpr-label">Output %</span><span class="mpr-value">{{ s.pct_members_output }}</span></div>
+      <div class="mpr-rail">
+        {% for s in snapshots %}
+        <div class="mpr-item">
+          <div class="mpr-row"><span class="mpr-label">Year</span><span class="mpr-value">{{ s.year }}</span></div>
+          <div class="mpr-row"><span class="mpr-label">Month</span><span class="mpr-value">{{ s.month }}</span></div>
+          <div class="mpr-row"><span class="mpr-label">Turnover</span><span class="mpr-value">{{ s.monthly_turnover }}</span></div>
+          <div class="mpr-row"><span class="mpr-label">Input %</span><span class="mpr-value">{{ s.pct_members_input }}</span></div>
+          <div class="mpr-row"><span class="mpr-label">Output %</span><span class="mpr-value">{{ s.pct_members_output }}</span></div>
+        </div>
+        {% endfor %}
       </div>
-      {% endfor %}
     </div>
 
   </div>
-
 </div>
 
 {% endblock %}

@@ -1,594 +1,94 @@
 {% extends "base.html" %}
 {% block content %}
-<style>
-/* ============================================================
-   ROLE DASHBOARD — LEDGER BOOK LOOK (SCOPED)
-   ✅ ONLY UI/Design updated
-   ✅ Fix redundant gaps + better alignment (web + app/mobile)
-   ✅ Searchbar placement matches section logic (inside PG card header)
-   ✅ Keeps existing variables + Chart.js + routes intact
-   Scope: .rd-wrap
-============================================================ */
-
-.rd-wrap{
-  width: 100%;
-  padding: clamp(10px, 2vw, 20px);
-
-  --ink:#0f172a;
-  --muted:#64748b;
-
-  --line: rgba(15,23,42,.18);
-  --line2: rgba(15,23,42,.12);
-
-  --paper:#ffffff;
-  --soft:#f7faf9;
-
-  --accent:#0b4d3a;
-  --ring: rgba(11,77,58,.10);
-
-  color: var(--ink);
-}
-.rd-wrap *{ box-sizing:border-box; }
-
-/* Prevent “corner placement” feel: sheet fills available width nicely */
-.rd-sheet{
-  width: 100%;
-  max-width: 1240px;
-  margin: 0 auto;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
-}
-
-/* Header */
-.rd-head{
-  padding: 16px 18px 14px;
-  background:
-    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
-    linear-gradient(135deg, rgba(240,253,244,.92), rgba(255,255,255,.94));
-  border-bottom: 1.5px solid var(--line2);
-}
-.rd-title{
-  margin: 0;
-  font-weight: 950;
-  font-size: clamp(18px, 1.6vw, 22px);
-  text-align: center;
-  letter-spacing: .2px;
-}
-.rd-sub{
-  margin: 6px 0 0;
-  text-align:center;
-  color: var(--muted);
-  font-weight: 800;
-  font-size: 12px;
-}
-
-/* Sections (tighten spacing to remove redundant gaps) */
-.rd-section{
-  padding: 14px 18px;
-  border-bottom: 1.5px solid var(--line2);
-  background: rgba(255,255,255,.94);
-}
-.rd-section:last-child{ border-bottom: 0; }
-
-.rd-section-title{
-  display:flex;
-  align-items:flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
-}
-.rd-left-title{
-  display:flex;
-  align-items:center;
-  gap: 10px;
-  min-width: 220px;
-}
-.rd-dot{
-  width: 10px; height: 10px;
-  border-radius: 999px;
-  background: rgba(11,77,58,.90);
-  box-shadow: 0 0 0 6px rgba(16,185,129,.12);
-}
-.rd-h6{
-  margin: 0;
-  font-weight: 950;
-  font-size: 13px;
-  letter-spacing: .15px;
-}
-.rd-mini{
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 800;
-}
-.rd-muted{ color: var(--muted) !important; }
-
-/* KPI cards */
-.rd-kpi-card{
-  height: 100%;
-  border: 1px solid rgba(15,23,42,.14) !important;
-  border-radius: 16px !important;
-  background: rgba(247,250,249,.72) !important;
-  box-shadow: none !important;
-}
-.rd-kpi-card .card-body{ padding: 14px 14px !important; }
-.rd-kpi-title{
-  margin: 0;
-  font-weight: 800;
-  font-size: 12px;
-  color: rgba(15,23,42,.78);
-}
-.rd-kpi-value{
-  margin: 8px 0 0;
-  font-weight: 900;
-  font-size: 26px;
-  letter-spacing: .2px;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.05;
-}
-.rd-kpi-foot{
-  margin-top: 7px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 750;
-}
-
-/* Buttons */
-.rd-btn{
-  border: 1px solid rgba(15,23,42,.14) !important;
-  background: rgba(247,250,249,.82) !important;
-  color: var(--ink) !important;
-  border-radius: 999px !important;
-  padding: 9px 12px !important;
-  font-weight: 800 !important;
-  font-size: 12px !important;
-  line-height: 1 !important;
-  cursor: pointer;
-  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
-  white-space: nowrap;
-}
-.rd-btn:hover{
-  transform: translateY(-1px);
-  background: #fff !important;
-  box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
-}
-.rd-btn-primary{
-  border-color: rgba(16,185,129,.35) !important;
-  background: rgba(16,185,129,.12) !important;
-  color:#0b4d3a !important;
-}
-.rd-btn-primary:hover{ background: rgba(16,185,129,.16) !important; }
-.rd-btn-info{
-  border-color: rgba(59,130,246,.22) !important;
-  background: rgba(59,130,246,.08) !important;
-  color: #1d4ed8 !important;
-}
-.rd-btn-warn{
-  border-color: rgba(245,158,11,.28) !important;
-  background: rgba(245,158,11,.10) !important;
-  color: #92400e !important;
-}
-
-/* Cards */
-.rd-chart-card,
-.rd-table-card{
-  height: 100%;
-  border: 1px solid rgba(15,23,42,.14) !important;
-  border-radius: 16px !important;
-  background: rgba(255,255,255,.94) !important;
-  box-shadow: none !important;
-}
-.rd-chart-card .card-body,
-.rd-table-card .card-body{
-  padding: 14px 14px !important;
-  display:flex;
-  flex-direction:column;
-  gap: 10px; /* removes weird blank gaps */
-}
-
-/* Chart sizing */
-.rd-canvas-wrap{
-  border: 1px solid rgba(15,23,42,.12);
-  border-radius: 14px;
-  background: rgba(247,250,249,.55);
-  padding: 10px;
-}
-.rd-canvas-frame{
-  height: 260px;
-  width: 100%;
-  position: relative;
-}
-.rd-canvas-frame canvas{
-  height: 100% !important;
-  width: 100% !important;
-  display:block;
-}
-
-/* ===== PG header tools (appropriate placement) =====
-   Search + count sit directly under section title (right side),
-   and collapse nicely on mobile.
-*/
-.rd-pg-head{
-  display:flex;
-  align-items:flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.rd-tools{
-  display:flex;
-  align-items:center;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  max-width: 100%;
-}
-.rd-search{
-  display:flex;
-  align-items:center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid rgba(15,23,42,.16);
-  border-radius: 999px;
-  background: rgba(247,250,249,.78);
-  width: min(420px, 100%);
-}
-.rd-search input{
-  border:none;
-  outline:none;
-  background: transparent;
-  width: 100%;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ink);
-}
-.rd-search input::placeholder{
-  color: rgba(100,116,139,.95);
-  font-weight: 650;
-}
-.rd-count-pill{
-  padding: 8px 10px;
-  border: 1px solid rgba(15,23,42,.12);
-  border-radius: 999px;
-  background: rgba(247,250,249,.55);
-  font-size: 12px;
-  font-weight: 750;
-  color: rgba(15,23,42,.80);
-  white-space: nowrap;
-}
-
-/* Proper table shell */
-.rd-table-shell{
-  border: 1px solid rgba(15,23,42,.12);
-  border-radius: 14px;
-  overflow: hidden;
-  background: #fff;
-}
-.rd-table-shell .table-responsive{
-  max-height: 44vh;
-  overflow:auto;
-}
-
-/* Table look */
-.rd-table{ margin: 0 !important; width: 100%; }
-.rd-table thead th{
-  background: var(--soft) !important;
-  border-bottom: 1px solid rgba(15,23,42,.12) !important;
-  font-weight: 750 !important;
-  color: rgba(15,23,42,.90) !important;
-  letter-spacing: .1px;
-  white-space: nowrap;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  padding: 10px 12px !important;
-}
-.rd-table tbody td{
-  border-top: 1px solid rgba(15,23,42,.08) !important;
-  vertical-align: middle;
-  padding: 10px 12px !important;
-  font-weight: 600;
-  color: rgba(15,23,42,.86);
-}
-.rd-table tbody tr:hover{ background: rgba(16,185,129,.05) !important; }
-
-/* Column widths */
-.rd-col-name{ width: 46%; }
-.rd-col-sector{ width: 22%; }
-.rd-col-actions{ width: 32%; }
-
-/* Actions: neat, non-messy, auto-wrap */
-.rd-actions{
-  display:flex;
-  gap: 8px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-}
-.rd-actions .rd-btn{
-  padding: 8px 10px !important;
-  font-size: 12px !important;
-  font-weight: 800 !important;
-}
-
-/* Empty state */
-.rd-empty{
-  padding: 12px;
-  text-align: center;
-  color: rgba(15,23,42,.70);
-  font-weight: 750;
-  font-size: 12px;
-  display:none;
-  background: rgba(247,250,249,.55);
-  border-top: 1px solid rgba(15,23,42,.08);
-}
-.rd-empty.show{ display:block; }
-
-/* === Layout responsive (web + app/mobile) === */
-@media (max-width: 992px){
-  /* reduce “corner” look by tightening internal padding */
-  .rd-section{ padding: 12px 14px; }
-}
-@media (max-width: 720px){
-  .rd-wrap{ padding: 10px; }
-  .rd-sheet{ border-radius: 14px; }
-  .rd-head{ padding: 14px 12px 12px; }
-  .rd-section{ padding: 12px 12px; }
-
-  /* make header rows stack cleanly */
-  .rd-section-title{ margin-bottom: 10px; }
-  .rd-left-title{ min-width: 0; }
-
-  /* KPIs */
-  .rd-kpi-value{ font-size: 22px; }
-
-  /* Chart */
-  .rd-canvas-frame{ height: 240px; }
-
-  /* PG tools: search first, count below */
-  .rd-tools{ width: 100%; justify-content: stretch; }
-  .rd-search{ width: 100%; }
-  .rd-count-pill{ width: 100%; text-align: center; }
-
-  /* Table: keep as table but ensure actions don’t overflow */
-  .rd-actions{ justify-content: flex-start; }
-  .rd-actions .rd-btn{ flex: 1 1 110px; text-align:center; justify-content:center; }
-
-  .rd-table-shell .table-responsive{ max-height: 52vh; }
-  .rd-table thead th, .rd-table tbody td{ padding: 10px 10px !important; }
-}
-@media (max-width: 420px){
-  .rd-kpi-value{ font-size: 20px; }
-  .rd-btn{ padding: 9px 10px !important; }
-}
-</style>
-
-<div class="rd-wrap">
-  <div class="rd-sheet">
-
-    <!-- HEADER -->
-    <div class="rd-head">
-      <h3 class="rd-title">{{ role }} Dashboard</h3>
-      <p class="rd-sub">Quick snapshot + actions for your jurisdiction.</p>
-    </div>
-
-    <!-- KPI STRIP -->
-    <div class="rd-section">
-      <div class="rd-section-title">
-        <div class="rd-left-title">
-          <span class="rd-dot"></span>
-          <h6 class="rd-h6">Overview</h6>
-        </div>
-        <div class="rd-mini">Live totals from your current scope</div>
+<h3>{{ role }} Dashboard</h3>
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6>Total PGs under your jurisdiction</h6>
+        <h3>{{ pg_count }}</h3>
       </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6>Total Members</h6>
+        <h3>{{ member_count }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6>SHG Master (within your jurisdiction)</h6>
+        <h3>{{ shg_total }}</h3>
+        <div class="text-muted small">Active: {{ shg_active }}</div>
+      </div>
+    </div>
+  </div>
+</div>
 
-      <div class="row g-3">
-        <div class="col-md-3">
-          <div class="card rd-kpi-card">
-            <div class="card-body">
-              <h6 class="rd-kpi-title">Total PGs under your jurisdiction</h6>
-              <h3 class="rd-kpi-value">{{ pg_count }}</h3>
-            </div>
-          </div>
+<div class="row g-3 mt-1">
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <h6 class="mb-2">SHG distribution (Top 12)</h6>
+          <a href="{{ url_for('master_data.shg_browser') }}" class="btn btn-sm btn-outline-secondary">Browse SHG Master</a>
         </div>
-
-        <div class="col-md-3">
-          <div class="card rd-kpi-card">
-            <div class="card-body">
-              <h6 class="rd-kpi-title">Total Members</h6>
-              <h3 class="rd-kpi-value">{{ member_count }}</h3>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-3">
-          <div class="card rd-kpi-card">
-            <div class="card-body">
-              <h6 class="rd-kpi-title">SHG Master (within your jurisdiction)</h6>
-              <h3 class="rd-kpi-value">{{ shg_total }}</h3>
-              <div class="rd-kpi-foot">Active: {{ shg_active }}</div>
-            </div>
-          </div>
+        <canvas id="shgTopChart" height="110"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="mb-2">PGs (quick actions)</h6>
+        <div class="table-responsive" style="max-height: 38vh; overflow:auto;">
+          <table class="table table-sm table-striped align-middle">
+            <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+              <tr>
+                <th>PG Name</th>
+                <th>Sector</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pg in pgs %}
+                <tr>
+                  <td>{{ pg.name }}</td>
+                  <td>{{ pg.sector or '-' }}</td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-primary" href="{{ url_for('pg.pg_view', pg_id=pg._id) }}">Open</a>
+                    <a class="btn btn-sm btn-outline-info" href="{{ url_for('finance.pg_funds', pg_id=pg._id) }}">Funds</a>
+                    <a class="btn btn-sm btn-outline-warning" href="{{ url_for('finance.pg_loans', pg_id=pg._id) }}">Loans</a>
+                  </td>
+                </tr>
+              {% endfor %}
+              {% if not pgs %}
+                <tr><td colspan="3" class="text-muted">No PGs found under your jurisdiction.</td></tr>
+              {% endif %}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
-
-    <!-- CHART + TABLE -->
-    <div class="rd-section">
-      <div class="row g-3">
-
-        <!-- CHART -->
-        <div class="col-lg-6">
-          <div class="card rd-chart-card">
-            <div class="card-body">
-              <div class="rd-section-title" style="margin:0;">
-                <div class="rd-left-title">
-                  <span class="rd-dot"></span>
-                  <h6 class="rd-h6">SHG distribution (Top 12)</h6>
-                </div>
-                <a href="{{ url_for('master_data.shg_browser') }}" class="btn rd-btn">Browse SHG Master</a>
-              </div>
-
-              <div class="rd-canvas-wrap">
-                <div class="rd-canvas-frame">
-                  <canvas id="shgTopChart"></canvas>
-                </div>
-              </div>
-
-              <div class="rd-mini" style="margin:0;">
-                Tip: Use “Browse SHG Master” to verify mapped SHGs.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- PG QUICK ACTIONS -->
-        <div class="col-lg-6">
-          <div class="card rd-table-card">
-            <div class="card-body">
-
-              <div class="rd-pg-head">
-                <div>
-                  <div class="rd-left-title" style="margin-bottom:4px;">
-                    <span class="rd-dot"></span>
-                    <h6 class="rd-h6">PGs (quick actions)</h6>
-                  </div>
-                  <div class="rd-mini">Open modules directly for a PG</div>
-                </div>
-
-                <!-- ✅ Search belongs here (PG section) -->
-                <div class="rd-tools">
-                  <div class="rd-search" title="Search PGs">
-                    <input id="rdPgSearch" type="text" placeholder="Search by PG name / sector..." autocomplete="off" />
-                  </div>
-                  <div class="rd-count-pill" id="rdPgCountPill">Showing 0 / 0</div>
-                </div>
-              </div>
-
-              <div class="rd-table-shell">
-                <div class="table-responsive">
-                  <table class="table table-sm align-middle rd-table" id="rdPgTable">
-                    <thead class="table-light">
-                      <tr>
-                        <th class="rd-col-name">PG Name</th>
-                        <th class="rd-col-sector">Sector</th>
-                        <th class="rd-col-actions text-end">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody id="rdPgTbody">
-                      {% for pg in pgs %}
-                        <tr class="rd-pg-row" data-pg-search="{{ (pg.name ~ ' ' ~ (pg.sector or ''))|lower }}">
-                          <td class="rd-col-name">{{ pg.name }}</td>
-                          <td class="rd-col-sector">{{ pg.sector or '-' }}</td>
-                          <td class="rd-col-actions text-end">
-                            <div class="rd-actions">
-                              <a class="btn btn-sm rd-btn rd-btn-primary" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('pg.pg_view', pg_id=pg._id)) }}">Open</a>
-                              <a class="btn btn-sm rd-btn rd-btn-info" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('finance.pg_funds', pg_id=pg._id)) }}">Funds</a>
-                              <a class="btn btn-sm rd-btn rd-btn-warn" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('finance.pg_loans', pg_id=pg._id)) }}">Loans</a>
-                            </div>
-                          </td>
-                        </tr>
-                      {% endfor %}
-                      {% if not pgs %}
-                        <tr class="rd-pg-row">
-                          <td colspan="3" class="text-muted">No PGs found under your jurisdiction.</td>
-                        </tr>
-                      {% endif %}
-                    </tbody>
-                  </table>
-
-                  <div class="rd-empty" id="rdPgEmpty">No PGs match your search.</div>
-                </div>
-              </div>
-
-              <div class="rd-mini" style="margin:0;">
-                Tip: “Open” sets active PG and takes you to PG view; “Funds/Loans” jump into Finance modules.
-              </div>
-
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
   </div>
 </div>
 
 <script>
   (function(){
-    // =========================
-    // Chart (existing data)
-    // =========================
     const labels = {{ (shg_top | map(attribute='_id') | list) | tojson }};
     const counts = {{ (shg_top | map(attribute='count') | list) | tojson }};
     const ctx = document.getElementById('shgTopChart');
-
     if (ctx && window.Chart) {
       new Chart(ctx, {
         type: 'bar',
         data: { labels: labels, datasets: [{ label: 'SHG Count', data: counts }] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { autoSkip: false, maxRotation: 75, minRotation: 30 } },
-            y: { beginAtZero: true }
-          }
-        }
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { autoSkip: false, maxRotation: 75, minRotation: 30 } } } }
       });
     }
-
-    // =========================
-    // PG Quick Actions Search (client-side)
-    // =========================
-    const search = document.getElementById('rdPgSearch');
-    const tbody = document.getElementById('rdPgTbody');
-    const rows = tbody ? Array.from(tbody.querySelectorAll('tr.rd-pg-row')) : [];
-    const pill = document.getElementById('rdPgCountPill');
-    const empty = document.getElementById('rdPgEmpty');
-
-    function updateCount(visible, total){
-      if (pill) pill.textContent = `Showing ${visible} / ${total}`;
-    }
-
-    function applyFilter(){
-      if (!rows.length){
-        updateCount(0, 0);
-        if (empty) empty.classList.remove('show');
-        return;
-      }
-
-      const q = (search && search.value ? search.value : '').trim().toLowerCase();
-      let visible = 0;
-
-      rows.forEach(tr => {
-        const key = tr.getAttribute('data-pg-search');
-        if (!key){ tr.style.display = ''; return; }
-
-        const ok = !q || key.includes(q);
-        tr.style.display = ok ? '' : 'none';
-        if (ok) visible += 1;
-      });
-
-      const total = rows.filter(r => r.getAttribute('data-pg-search')).length;
-      updateCount(visible, total);
-
-      if (empty){
-        if (total > 0 && visible === 0) empty.classList.add('show');
-        else empty.classList.remove('show');
-      }
-    }
-
-    // init
-    const totalInit = rows.filter(r => r.getAttribute('data-pg-search')).length;
-    updateCount(totalInit, totalInit);
-    applyFilter();
-
-    if (search){ search.addEventListener('input', applyFilter); }
   })();
 </script>
 {% endblock %}

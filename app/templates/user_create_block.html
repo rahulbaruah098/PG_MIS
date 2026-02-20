@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h4>Create CLF Admin</h4>
+<h4>Create Block Admin</h4>
 
 <div class="card">
   <div class="card-body">
@@ -14,16 +14,16 @@
         <input name="password" type="password" class="form-control" required>
       </div>
       <div class="col-md-4">
-        <label class="form-label">CLF</label>
+        <label class="form-label">Block</label>
         <select name="block_id" class="form-select" required>
           {% for b in blocks %}
             <option value="{{ b._id|string }}">{{ b.name }}</option>
           {% endfor %}
         </select>
-        <div class="form-text">CLFs must exist in Master Data.</div>
+        <div class="form-text">Blocks must exist in Master Data.</div>
       </div>
       <div class="col-12">
-        <button class="btn btn-primary" type="submit">Create CLF Admin</button>
+        <button class="btn btn-primary" type="submit">Create Block Admin</button>
       </div>
     </form>
   </div>

@@ -1,8 +1,7 @@
-from services.audit_engine import AuditLogger
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app,jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from bson import ObjectId
-from datetime import datetime,timedelta
-import jwt
+from datetime import datetime
+
 from ..utils import verify_password, hash_password, json_safe
 from ..rbac import login_required, roles_required
 from ..rbac import permissions_required
@@ -11,72 +10,14 @@ from ..constants import ROLES
 
 auth_bp = Blueprint("auth", __name__, template_folder="../templates")
 
-
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    db = current_app.mongo_db
-
-    # ==========================================================
-    # MOBILE LOGIN (JSON request → Returns JWT)
-    # ==========================================================
-    if request.method == "POST" and request.content_type and "application/json" in request.content_type:
-        data = request.get_json(silent=True) or {}
-
-        username = data.get("username", "").strip()
-        password = data.get("password", "")
-
-        if not username or not password:
-            return jsonify({"error": "Username and password required"}), 400
-
-        user = db.users.find_one({"username": username})
-
-        if not user or not verify_password(password, user["password_hash"]):
-            return jsonify({"error": "Invalid username or password"}), 401
-
-        # Update last login
-        db.users.update_one(
-            {"_id": user["_id"]},
-            {"$set": {"last_login": datetime.utcnow()}}
-        )
-
-        # 🔐 Generate JWT token for mobile
-        payload = {
-            "user_id": str(user["_id"]),
-            "role": user["role"],
-            "exp": datetime.utcnow() + timedelta(hours=24),
-        }
-
-        token = jwt.encode(
-            payload,
-            current_app.config["JWT_SECRET_KEY"],
-            algorithm="HS256",
-        )
-
-        return jsonify({
-            "message": "Login successful",
-            "token": token,
-            "user": {
-                "id": str(user["_id"]),
-                "username": user["username"],
-                "role": user["role"],
-                "state_id": str(user.get("state_id")) if user.get("state_id") else None,
-                "district_id": str(user.get("district_id")) if user.get("district_id") else None,
-                "block_id": str(user.get("block_id")) if user.get("block_id") else None,
-                "clf_id": str(user.get("clf_id")) if user.get("clf_id") else None,
-                "pg_id": str(user.get("pg_id")) if user.get("pg_id") else None,
-                "validator_level": user.get("validator_level"),
-            }
-        }), 200
-
-    # ==========================================================
-    # WEB LOGIN (Form submit → Creates Session)
-    # ==========================================================
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
+        db = current_app.mongo_db
 
         user = db.users.find_one({"username": username})
-
         if not user or not verify_password(password, user["password_hash"]):
             flash("Invalid username or password.", "danger")
             return render_template("login.html")
@@ -84,6 +25,8 @@ def login():
         session.clear()
         session["user_id"] = str(user["_id"])
         session["role"] = user["role"]
+        # IMPORTANT: Flask cookie sessions are JSON-serialized.
+        # Never put raw ObjectId into session or it will crash on save.
         session["state_id"] = json_safe(user.get("state_id"))
         session["district_id"] = json_safe(user.get("district_id"))
         session["block_id"] = json_safe(user.get("block_id"))
@@ -97,7 +40,6 @@ def login():
         )
 
         flash("Logged in successfully.", "success")
-
         role = user["role"]
         if role in ["SUPER_ADMIN", "ADMIN"]:
             return redirect(url_for("reports.state_dashboard"))
@@ -107,12 +49,7 @@ def login():
             return redirect(url_for("pg.pg_home"))
         else:
             return redirect(url_for("reports.hierarchy_dashboard"))
-
-    # ==========================================================
-    # GET REQUEST → Render login page (Web only)
-    # ==========================================================
     return render_template("login.html")
-
 
 @auth_bp.route("/logout")
 @login_required
@@ -120,7 +57,6 @@ def logout():
     session.clear()
     flash("Logged out.", "info")
     return redirect(url_for("auth.login"))
-
 
 def _create_user(data, creator_role):
     db = current_app.mongo_db
@@ -287,8 +223,8 @@ def create_district_admin():
 
 @auth_bp.route("/users/create/block", methods=["GET", "POST"])
 @roles_required("DISTRICT_ADMIN")
-def create_clf_admin():
-    """District Admin creates CLF Admin (formerly Block Admin)."""
+def create_block_admin():
+    """District Admin creates Block Admin."""
     db = current_app.mongo_db
     district_id = session.get("district_id")
     blocks_q = {"district_id": ObjectId(district_id)} if district_id else {}
@@ -307,18 +243,18 @@ def create_clf_admin():
                 "block_id": upstream["block_id"],
             }
             _create_user(data, "DISTRICT_ADMIN")
-            flash("CLF admin created.", "success")
-            return redirect(url_for("auth.create_clf_admin"))
+            flash("Block admin created.", "success")
+            return redirect(url_for("auth.create_block_admin"))
         except Exception as e:
             flash(str(e), "danger")
 
-    return render_template("user_create_block.html", blocks=blocks, title="Create CLF Admin")
+    return render_template("user_create_block.html", blocks=blocks)
 
 
 @auth_bp.route("/users/create/clf", methods=["GET", "POST"])
-@roles_required("BLOCK_ADMIN", "CLF_MANAGER")
+@roles_required("BLOCK_ADMIN")
 def create_clf_manager():
-    """Block Admin creates CLF Official."""
+    """Block Admin creates CLF Manager."""
     db = current_app.mongo_db
     block_id = session.get("block_id")
     clfs_q = {"block_id": ObjectId(block_id)} if block_id else {}
@@ -338,7 +274,7 @@ def create_clf_manager():
                 "clf_id": upstream["clf_id"],
             }
             _create_user(data, "BLOCK_ADMIN")
-            flash("CLF Official created.", "success")
+            flash("CLF manager created.", "success")
             return redirect(url_for("auth.create_clf_manager"))
         except Exception as e:
             flash(str(e), "danger")
@@ -349,7 +285,7 @@ def create_clf_manager():
 @auth_bp.route("/users/create/pg", methods=["GET", "POST"])
 @roles_required("CLF_MANAGER")
 def create_pg_data_entry():
-    """CLF Official creates PG Data Entry user."""
+    """CLF Manager creates PG Data Entry user."""
     db = current_app.mongo_db
     clf_id = session.get("clf_id")
     pgs_q = {"clf_id": ObjectId(clf_id)} if clf_id else {}
@@ -430,7 +366,3 @@ def notifications():
     q = {"$or": [{"to_user_id": str(user_id)}, {"to_role": role}]}
     notes = list(db.notifications.find(q).sort("ts", -1).limit(200))
     return render_template("notifications.html", notes=notes)
-
-
-# === CORE ENGINE INTEGRATION ACTIVE ===
-# AuditLogger.log(action, user_id, entity, entity_id) available

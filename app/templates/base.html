@@ -1,8 +1,7 @@
-{# Auto-switch base layout based on login role #}
+{# Auto-switch base layout based on PG login role #}
 {% set _role = session.get('role') %}
 {% set is_pg = (_role == 'PG_DATA_ENTRY') %}
-{% set is_clf_block = (_role in ['CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN']) %}
-{% extends 'base_pg.html' if is_pg else ('base_clf.html' if is_clf_block else 'base_default.html') %}
+{% extends 'base_pg.html' if is_pg else 'base_default.html' %}
 
 {# Pass-through blocks so pages extending base.html work unchanged #}
 {% block title %}{{ super() }}{% endblock %}

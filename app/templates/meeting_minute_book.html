@@ -1,12 +1,1180 @@
+{# templates/meeting_minute_book.html #}
 {% extends "base.html" %}
-{% block title %}Meeting Minute Book{% endblock %}
+{% block title %}Meeting Minutes Book{% endblock %}
+
+{% block head_extra %}
+  <!-- Ionicons (icons like React Native Ionicons) -->
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+  <style>
+    /* ============================================================
+       MEETING MINUTES BOOK (SCOPED) — under .mmb-wrap only
+       ✅ Single page: Meeting Minutes + Members Present (tabs)
+       ✅ Works inside your base.html layout (extends base)
+       ✅ Uses your global language system (EN/BN) from navbar
+       ✅ Responsive: mobile/tablet friendly (members rows become cards)
+       ✅ UPDATED THEME: matches your Ledger Book (paper/soft/line/accent)
+       ✅ REMOVED: page-local language button (navbar already has it)
+       ============================================================ */
+
+    .mmb-wrap{
+      width: 100%;
+      padding: clamp(12px, 2.2vw, 22px);
+
+      --ink:#0f172a;
+      --muted:#64748b;
+
+      --line: rgba(15,23,42,.18);
+      --line2: rgba(15,23,42,.12);
+
+      --paper:#ffffff;
+      --soft:#f7faf9;
+
+      --accent:#0b4d3a;
+      --accent2:#059669;
+
+      --danger:#dc2626;
+
+      --shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+      --shadow2: 0 16px 22px -18px rgba(15,23,42,.25);
+
+      --r16: 16px;
+      --r14: 14px;
+      --r12: 12px;
+      --r10: 10px;
+      --r8: 8px;
+
+      color: var(--ink);
+    }
+   .mmb-wrap *{ box-sizing:border-box; }
+
+.mmb-shell{
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+/* Paper sheet like ledger */
+.mmb-sheet{
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r16);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+/* Header like lb-head */
+.mmb-head{
+  padding: 14px 16px 12px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border-bottom: 1.5px solid var(--line2);
+  position: relative;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* ✅ allow center to shrink properly */
+.mmb-titleWrap{
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align:center;
+  padding: 0 8px;
+}
+
+.mmb-title{
+  margin:0;
+  font-weight: 950;
+  font-size: 18px;
+  letter-spacing: .2px;
+  white-space: nowrap;
+  overflow:hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ✅ MOBILE FIX — prevent cropping */
+@media (max-width: 560px){
+  .mmb-head{
+    align-items:flex-start;
+  }
+
+  .mmb-title{
+    white-space: normal;        /* allow wrap */
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.15;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;      /* max 2 lines */
+    -webkit-box-orient: vertical;
+  }
+}
+
+/* very small phones */
+@media (max-width: 420px){
+  .mmb-title{
+    font-size: 15px;
+  }
+}
+
+.mmb-btn{
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(247,250,249,.8);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 950;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  user-select: none;
+  white-space: nowrap;
+}
+.mmb-btn:hover{
+  transform: translateY(-1px);
+  background: #fff;
+  box-shadow: var(--shadow2);
+}
+.mmb-btn:active{ transform: translateY(0); }
+
+.mmb-btnBack{
+  border-color: rgba(11,77,58,.28);
+  background: rgba(16,185,129,.10);
+  color: var(--accent);
+}
+.mmb-btn ion-icon{ font-size: 18px; }
+
+/* Tabs row */
+.mmb-tabs{
+  padding: 12px 16px 14px;
+  border-bottom: 1.5px solid var(--line2);
+  background: rgba(255,255,255,.94);
+}
+
+/* segmented control container */
+.mmb-tabWrap{
+  border: 1px solid rgba(15,23,42,.14);
+  border-radius: 999px;
+  padding: 6px;
+  background: rgba(247,250,249,.75);
+  display:flex;
+  gap: 6px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* each tab */
+.mmb-tab{
+  flex: 1 1 0;
+  min-width: 0;
+  border: 0;
+  cursor: pointer;
+  border-radius: 999px;
+  padding: 10px 10px;
+  background: transparent;
+  color: rgba(15,23,42,.75);
+  font-weight: 950;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 10px;
+  transition: background .15s ease, color .15s ease, transform .12s ease;
+  user-select:none;
+  white-space: normal;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.mmb-tab ion-icon{
+  font-size: 18px;
+  flex: 0 0 auto;
+}
+
+.mmb-tab span{
+  display:block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.mmb-tab:hover{ transform: translateY(-1px); }
+
+.mmb-tab.active{
+  background: rgba(16,185,129,.14);
+  color: var(--accent);
+  border: 1px solid rgba(16,185,129,.25);
+}
+
+/* small tablet */
+@media (max-width: 720px){
+  .mmb-tabs{ padding: 10px 12px 12px; }
+  .mmb-tab{ padding: 10px 8px; gap: 8px; }
+  .mmb-tab ion-icon{ font-size: 17px; }
+}
+
+/* mobile stacked tabs */
+@media (max-width: 520px){
+  .mmb-tabWrap{
+    border-radius: 16px;
+    padding: 8px;
+    gap: 8px;
+    flex-direction: column;
+    overflow: visible;
+  }
+}
+
+
+  .mmb-tab{
+    width: 100%;
+    justify-content: flex-start; /* nice mobile feel */
+    text-align: left;
+    border-radius: 14px;
+    padding: 12px 12px;
+    transform: none !important;
+  }
+
+  .mmb-tab span{
+    font-size: 13.5px;
+  }
+}
+
+/* ✅ very small phones */
+@media (max-width: 380px){
+  .mmb-tab{ padding: 11px 11px; gap: 8px; }
+  .mmb-tab ion-icon{ font-size: 16px; }
+  .mmb-tab span{ font-size: 13px; }
+}
+
+
+    /* Card panels like ledger interior sections */
+    .mmb-card{
+      padding: 16px;
+      background: rgba(255,255,255,.92);
+    }
+
+    .mmb-cardTitle{
+      margin: 4px 0 14px;
+      text-align:center;
+      font-size: 18px;
+      font-weight: 950;
+      color: var(--accent);
+      letter-spacing: .2px;
+    }
+
+    .mmb-field{ margin-bottom: 18px; }
+
+    .mmb-labelRow{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-bottom: 8px;
+      color: rgba(15,23,42,.78);
+      font-weight: 950;
+      font-size: 13px;
+    }
+    .mmb-labelRow ion-icon{ font-size: 16px; color: rgba(11,77,58,.95); }
+
+    .mmb-dateBtn{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      border: 1px solid rgba(15,23,42,.16);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(247,250,249,.75);
+      font-weight: 900;
+    }
+    .mmb-dateInput{
+      appearance: none;
+      border:0;
+      outline:0;
+      background: transparent;
+      color: var(--ink);
+      font-weight: 900;
+      font-size: 13px;
+      width: 100%;
+    }
+
+    .mmb-section{ margin: 16px 0 18px; }
+
+    .mmb-sectionTitle{
+      margin: 0 0 10px;
+      font-size: 14px;
+      font-weight: 950;
+      color: rgba(15,23,42,.78);
+    }
+
+    .mmb-rowLine{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      margin-bottom: 12px;
+    }
+
+    .mmb-wrap textarea,
+    .mmb-wrap input[type="text"]{
+      width: 100%;
+      border: 1px solid rgba(15,23,42,.16);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 13px;
+      background: rgba(247,250,249,.75);
+      color: var(--ink);
+      outline: none;
+      transition: box-shadow .12s ease, border-color .12s ease, background .12s ease;
+      font-weight: 800;
+    }
+    .mmb-wrap textarea{ min-height: 86px; resize: vertical; }
+    .mmb-wrap textarea:focus,
+    .mmb-wrap input[type="text"]:focus{
+      border-color: rgba(11,77,58,.40);
+      box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+      background: #fff;
+    }
+
+    .mmb-iconBtn{
+      border:0;
+      background: transparent;
+      cursor:pointer;
+      padding: 10px;
+      border-radius: 12px;
+      flex: 0 0 auto;
+      transition: transform .12s ease, background .12s ease;
+    }
+    .mmb-iconBtn:hover{ transform: translateY(-1px); background: rgba(239,68,68,.06); }
+    .mmb-iconBtnDanger ion-icon{ color: var(--danger); font-size: 18px; }
+
+    .mmb-addBtn{
+      width: 100%;
+      border: 1px dashed rgba(15,23,42,.20);
+      border-radius: 12px;
+      background: rgba(240,253,244,.8);
+      color: var(--accent);
+      font-weight: 950;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding: 10px 12px;
+      cursor:pointer;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+      user-select:none;
+    }
+    .mmb-addBtn:hover{
+      transform: translateY(-1px);
+      background: rgba(240,253,244,.95);
+      box-shadow: var(--shadow2);
+    }
+    .mmb-addBtn ion-icon{ font-size: 20px; }
+
+    .mmb-saveBtn{
+      width: 100%;
+      border: 1px solid rgba(16,185,129,.35);
+      border-radius: 12px;
+      background: rgba(16,185,129,.12);
+      color: var(--accent);
+      font-weight: 950;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding: 12px 14px;
+      cursor:pointer;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+      user-select:none;
+    }
+    .mmb-saveBtn:hover{
+      transform: translateY(-1px);
+      box-shadow: var(--shadow2);
+      background: rgba(16,185,129,.16);
+    }
+    .mmb-saveBtn ion-icon{ font-size: 20px; }
+
+    /* Members table (ledger-like rows) */
+    .mmb-tableHeader{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 12px 12px 0 0;
+      padding: 12px;
+      color: rgba(15,23,42,.78);
+      font-weight: 950;
+      font-size: 12px;
+    }
+    .mmb-thSl{ width:56px; text-align:center; }
+    .mmb-thName{ flex:1; }
+    .mmb-thSig{ width: 180px; }
+
+    .mmb-tableRow{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 12px;
+      background: rgba(255,255,255,.96);
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line2);
+    }
+
+    .mmb-tdSl{ width:56px; text-align:center; font-weight: 950; color: rgba(15,23,42,.80); }
+    .mmb-tdName{ flex:1; }
+    .mmb-tdSig{ width: 180px; }
+
+    .mmb-nameInput{
+      border: 1px solid rgba(15,23,42,.16) !important;
+      background: rgba(247,250,249,.75) !important;
+      padding: 10px 12px !important;
+      border-radius: 12px !important;
+      font-weight: 850 !important;
+    }
+
+    .mmb-captureBtn{
+      width: 100%;
+      border: 1px solid rgba(15,23,42,.16);
+      background: rgba(247,250,249,.75);
+      border-radius: 12px;
+      padding: 10px 10px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      font-weight: 950;
+      color: rgba(15,23,42,.80);
+      font-size: 12px;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+      user-select:none;
+    }
+    .mmb-captureBtn:hover{
+      transform: translateY(-1px);
+      background: #fff;
+      box-shadow: var(--shadow2);
+    }
+    .mmb-captureBtn ion-icon{ font-size: 18px; color: rgba(11,77,58,.95); }
+
+    .mmb-sigPreview{
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(15,23,42,.16);
+      background: #fff;
+    }
+    .mmb-sigPreview img{
+      width: 100%;
+      height: 64px;
+      object-fit: cover;
+      display:block;
+    }
+    .mmb-sigRemove{
+      position:absolute;
+      top: 6px;
+      right: 6px;
+      border:0;
+      background: #fff;
+      border-radius: 999px;
+      cursor:pointer;
+      padding: 0;
+      width: 26px;
+      height: 26px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 6px 14px rgba(0,0,0,.14);
+    }
+    .mmb-sigRemove ion-icon{ color: var(--danger); font-size: 18px; }
+
+    .mmb-rowDelete{
+      border:0;
+      background: transparent;
+      cursor:pointer;
+      padding: 8px;
+      border-radius: 12px;
+      margin-left: 4px;
+      transition: background .12s ease, transform .12s ease;
+    }
+    .mmb-rowDelete:hover{ background: rgba(239,68,68,.06); transform: translateY(-1px); }
+    .mmb-rowDelete ion-icon{ color: var(--danger); font-size: 18px; }
+
+    .mmb-mobileMeta{ display:none; }
+
+    .mmb-foot{
+      padding: 12px 16px;
+      text-align:center;
+      border-top: 1.5px solid var(--line2);
+      background: rgba(255,255,255,.94);
+      color: rgba(15,23,42,.70);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .mmb-fileInput{ display:none; }
+
+    @media (max-width: 720px){
+      .mmb-title{ font-size: 16px; }
+      .mmb-thSig, .mmb-tdSig{ width: 150px; }
+    }
+
+    @media (max-width: 560px){
+      .mmb-tableHeader{ display:none; }
+
+      .mmb-tableRow{
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(15,23,42,.14);
+        margin-top: 10px;
+        box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
+      }
+
+      .mmb-tdSl, .mmb-tdName, .mmb-tdSig{
+        width: 100%;
+        text-align:left;
+      }
+
+      .mmb-mobileMeta{
+        display:flex;
+        align-items:center;
+        justify-content: space-between;
+        gap:10px;
+      }
+
+      .mmb-mobileSl{
+        font-weight: 950;
+        color: rgba(15,23,42,.78);
+      }
+
+      .mmb-rowDelete{ align-self: flex-end; margin-left: 0; }
+      .mmb-sigPreview img{ height: 90px; }
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
-  <div style="max-width: 1100px; margin: 0 auto;">
-    <div style="background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:16px;padding:18px 18px;box-shadow:0 10px 30px rgba(2,6,23,.06);">
-      <h2 style="margin:0;font-size:20px;letter-spacing:.2px;">Meeting Minute Book</h2>
-      <p style="margin:10px 0 0;color:rgba(15,23,42,.75);font-weight:600;">
-        This register page is added to your PG menu. If you want, I can connect it to your database and forms next.
-      </p>
+  <div class="mmb-wrap">
+    <div class="mmb-shell">
+      <div class="mmb-sheet">
+
+        <!-- Header -->
+        <div class="mmb-head">
+          <button class="mmb-btn mmb-btnBack" id="mmbBackBtn" type="button" aria-label="Back">
+            <ion-icon name="arrow-back"></ion-icon>
+            <span id="mmbBackTxt">Back</span>
+          </button>
+
+          <div class="mmb-titleWrap">
+            <h1 class="mmb-title" id="mmbAppTitle">Meeting Minutes Book</h1>
+          </div>
+
+          <!-- right spacer (keeps title perfectly centered like ledger head) -->
+          <div style="width:92px;"></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mmb-tabs">
+          <div class="mmb-tabWrap">
+            <button class="mmb-tab active" id="mmbTabMinutes" type="button">
+              <ion-icon name="document-text"></ion-icon>
+              <span id="mmbTabMinutesTxt">Meeting Minutes</span>
+            </button>
+
+            <button class="mmb-tab" id="mmbTabMembers" type="button">
+              <ion-icon name="people"></ion-icon>
+              <span id="mmbTabMembersTxt">Members Present</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Minutes -->
+        <div id="mmbPanelMinutes" class="mmb-card">
+          <div class="mmb-cardTitle" id="mmbMinutesTitle">Meeting Minutes</div>
+
+          <!-- Date -->
+          <div class="mmb-field">
+            <div class="mmb-labelRow">
+              <ion-icon name="calendar"></ion-icon>
+              <span id="mmbDateLabel">Date of Meeting</span>
+            </div>
+
+            <div class="mmb-dateBtn">
+              <ion-icon name="calendar-outline" style="color:rgba(11,77,58,.95)"></ion-icon>
+              <input id="mmbMeetingDate" class="mmb-dateInput" type="date" />
+            </div>
+          </div>
+
+          <!-- Agenda -->
+          <div class="mmb-section">
+            <div class="mmb-sectionTitle" id="mmbAgendaTitle">Agenda Items</div>
+            <div id="mmbAgendaList"></div>
+
+            <button class="mmb-addBtn" id="mmbAddAgenda" type="button">
+              <ion-icon name="add-circle"></ion-icon>
+              <span id="mmbAddRowTxt1">Add Row</span>
+            </button>
+          </div>
+
+          <!-- Deliberations -->
+          <div class="mmb-section">
+            <div class="mmb-sectionTitle" id="mmbDelibTitle">Details of Deliberations</div>
+            <div id="mmbDelibList"></div>
+
+            <button class="mmb-addBtn" id="mmbAddDelib" type="button">
+              <ion-icon name="add-circle"></ion-icon>
+              <span id="mmbAddRowTxt2">Add Row</span>
+            </button>
+          </div>
+
+          <!-- Decisions -->
+          <div class="mmb-section">
+            <div class="mmb-sectionTitle" id="mmbDecTitle">Decisions Taken</div>
+            <div id="mmbDecList"></div>
+
+            <button class="mmb-addBtn" id="mmbAddDec" type="button">
+              <ion-icon name="add-circle"></ion-icon>
+              <span id="mmbAddRowTxt3">Add Row</span>
+            </button>
+          </div>
+
+          <button class="mmb-saveBtn" id="mmbSaveMinutes" type="button">
+            <ion-icon name="save"></ion-icon>
+            <span id="mmbSaveMinutesTxt">Save Meeting Minutes</span>
+          </button>
+        </div>
+
+        <!-- Members -->
+        <div id="mmbPanelMembers" class="mmb-card" style="display:none;">
+          <div class="mmb-cardTitle" id="mmbMembersTitle">Members Present</div>
+
+          <div class="mmb-tableHeader">
+            <div class="mmb-thSl" id="mmbThSl">Sl No</div>
+            <div class="mmb-thName" id="mmbThName">Name of Member</div>
+            <div class="mmb-thSig" id="mmbThSig">Signature</div>
+          </div>
+
+          <div id="mmbMembersList"></div>
+
+          <button class="mmb-addBtn" id="mmbAddMember" type="button" style="margin-top:16px;">
+            <ion-icon name="person-add"></ion-icon>
+            <span id="mmbAddMemberTxt">Add Member</span>
+          </button>
+
+          <button class="mmb-saveBtn" id="mmbSaveMembers" type="button" style="margin-top:16px;">
+            <ion-icon name="save"></ion-icon>
+            <span id="mmbSaveMembersTxt">Save Members Present</span>
+          </button>
+        </div>
+
+        <div class="mmb-foot" id="mmbFooterTxt">PGMIS • Meeting Minutes Book</div>
+      </div>
     </div>
   </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    /* ============================================================
+       Meeting Minutes Book (Web)
+       ✅ Extends base.html
+       ✅ Language comes ONLY from navbar: window.PGMIS_LANG + onPGMISLanguageChange
+       ✅ Tabs are UI-only (minutes/members have separate save payloads)
+       ============================================================ */
+
+    (function(){
+      "use strict";
+
+      /* =========================
+         Translations (EN + BN)
+         ========================= */
+      const translations = {
+        en: {
+          back: "Back",
+          appTitle: "Meeting Minutes Book",
+          meetingMinutesTab: "Meeting Minutes",
+          membersPresentTab: "Members Present",
+          footerText: "PGMIS • Meeting Minutes Book",
+
+          meetingMinutesTitle: "Meeting Minutes",
+          dateOfMeeting: "Date of Meeting",
+
+          agendaItems: "Agenda Items",
+          detailsOfDeliberations: "Details of Deliberations",
+          decisionsTaken: "Decisions Taken",
+
+          agendaPlaceholder: "Enter agenda item...",
+          deliberationPlaceholder: "Enter deliberation details...",
+          decisionPlaceholder: "Enter decision taken...",
+
+          addRow: "Add Row",
+          saveMeetingMinutes: "Save Meeting Minutes",
+
+          membersPresentTitle: "Members Present",
+          slNo: "Sl No",
+          nameOfMember: "Name of Member",
+          signature: "Signature",
+          enterMemberName: "Enter member name",
+          capturePhoto: "Capture Photo",
+          addMember: "Add Member",
+          saveMembersPresent: "Save Members Present",
+
+          savedMinutes: "Meeting minutes saved successfully!",
+          savedMembers: "Members present data saved successfully!"
+        },
+        bn: {
+          back: "ফিরে যান",
+          appTitle: "মিটিং মিনিটস বুক",
+          meetingMinutesTab: "মিটিং মিনিটস",
+          membersPresentTab: "উপস্থিত সদস্য",
+          footerText: "PGMIS • মিটিং মিনিটস বুক",
+
+          meetingMinutesTitle: "মিটিং মিনিটস",
+          dateOfMeeting: "মিটিং তারিখ",
+
+          agendaItems: "এজেন্ডা",
+          detailsOfDeliberations: "আলোচনার বিবরণ",
+          decisionsTaken: "গৃহীত সিদ্ধান্ত",
+
+          agendaPlaceholder: "এজেন্ডা লিখুন...",
+          deliberationPlaceholder: "আলোচনার বিবরণ লিখুন...",
+          decisionPlaceholder: "সিদ্ধান্ত লিখুন...",
+
+          addRow: "রো যোগ করুন",
+          saveMeetingMinutes: "মিটিং মিনিটস সংরক্ষণ",
+
+          membersPresentTitle: "উপস্থিত সদস্য",
+          slNo: "ক্রমিক",
+          nameOfMember: "সদস্যের নাম",
+          signature: "স্বাক্ষর",
+          enterMemberName: "সদস্যের নাম লিখুন",
+          capturePhoto: "ছবি তুলুন",
+          addMember: "সদস্য যোগ করুন",
+          saveMembersPresent: "সদস্য তালিকা সংরক্ষণ",
+
+          savedMinutes: "মিটিং মিনিটস সফলভাবে সংরক্ষণ হয়েছে!",
+          savedMembers: "উপস্থিত সদস্যের তথ্য সফলভাবে সংরক্ষণ হয়েছে!"
+        }
+      };
+
+      /* =========================
+         State
+         ========================= */
+      let language = (window.PGMIS_LANG === "bn") ? "bn" : "en";
+      let activeTab = "minutes";
+
+      // Minutes
+      let meetingDate = new Date();
+      let agendaItems = [{ id: "1", content: "" }];
+      let deliberations = [{ id: "1", content: "" }];
+      let decisions = [{ id: "1", content: "" }];
+
+      // Members
+      let members = [{ id: "1", name: "", signature: null }];
+
+      /* =========================
+         Helpers
+         ========================= */
+      const $ = (id) => document.getElementById(id);
+
+      function uid(){
+        return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+      }
+
+      function toDateInputValue(d){
+        const pad = (n)=> String(n).padStart(2,"0");
+        const yyyy = d.getFullYear();
+        const mm = pad(d.getMonth()+1);
+        const dd = pad(d.getDate());
+        return `${yyyy}-${mm}-${dd}`;
+      }
+
+      function formatDatePretty(d){
+        const opts = { day: "2-digit", month: "short", year: "numeric" };
+        return d.toLocaleDateString("en-GB", opts);
+      }
+
+      function applyTranslations(){
+        const t = translations[language] || translations.en;
+
+        $("mmbBackTxt").textContent = t.back;
+        $("mmbAppTitle").textContent = t.appTitle;
+        $("mmbTabMinutesTxt").textContent = t.meetingMinutesTab;
+        $("mmbTabMembersTxt").textContent = t.membersPresentTab;
+        $("mmbFooterTxt").textContent = t.footerText;
+
+        $("mmbMinutesTitle").textContent = t.meetingMinutesTitle;
+        $("mmbDateLabel").textContent = t.dateOfMeeting;
+
+        $("mmbAgendaTitle").textContent = t.agendaItems;
+        $("mmbDelibTitle").textContent = t.detailsOfDeliberations;
+        $("mmbDecTitle").textContent = t.decisionsTaken;
+
+        $("mmbAddRowTxt1").textContent = t.addRow;
+        $("mmbAddRowTxt2").textContent = t.addRow;
+        $("mmbAddRowTxt3").textContent = t.addRow;
+
+        $("mmbSaveMinutesTxt").textContent = t.saveMeetingMinutes;
+
+        $("mmbMembersTitle").textContent = t.membersPresentTitle;
+        $("mmbThSl").textContent = t.slNo;
+        $("mmbThName").textContent = t.nameOfMember;
+        $("mmbThSig").textContent = t.signature;
+
+        $("mmbAddMemberTxt").textContent = t.addMember;
+        $("mmbSaveMembersTxt").textContent = t.saveMembersPresent;
+      }
+
+      function setTab(tab){
+        activeTab = tab;
+
+        const minutesBtn = $("mmbTabMinutes");
+        const membersBtn = $("mmbTabMembers");
+        const panelMinutes = $("mmbPanelMinutes");
+        const panelMembers = $("mmbPanelMembers");
+
+        if(tab === "minutes"){
+          minutesBtn.classList.add("active");
+          membersBtn.classList.remove("active");
+          panelMinutes.style.display = "";
+          panelMembers.style.display = "none";
+        } else {
+          membersBtn.classList.add("active");
+          minutesBtn.classList.remove("active");
+          panelMembers.style.display = "";
+          panelMinutes.style.display = "none";
+        }
+      }
+
+      /* =========================
+         Render: Minutes rows
+         ========================= */
+      function renderTextRows(containerEl, rows, type){
+        const t = translations[language] || translations.en;
+        containerEl.innerHTML = "";
+
+        rows.forEach((row) => {
+          const line = document.createElement("div");
+          line.className = "mmb-rowLine";
+
+          const isAgenda = type === "agenda";
+          const placeholder =
+            isAgenda ? t.agendaPlaceholder :
+            (type === "deliberation" ? t.deliberationPlaceholder : t.decisionPlaceholder);
+
+          const field = document.createElement(isAgenda ? "input" : "textarea");
+          if(isAgenda){
+            field.type = "text";
+          } else {
+            field.rows = 3;
+          }
+          field.placeholder = placeholder;
+          field.value = row.content || "";
+
+          field.addEventListener("input", (e) => {
+            const val = e.target.value;
+            if(type === "agenda"){
+              agendaItems = agendaItems.map(x => x.id === row.id ? ({...x, content: val}) : x);
+            } else if(type === "deliberation"){
+              deliberations = deliberations.map(x => x.id === row.id ? ({...x, content: val}) : x);
+            } else {
+              decisions = decisions.map(x => x.id === row.id ? ({...x, content: val}) : x);
+            }
+          });
+
+          line.appendChild(field);
+
+          const listRef = (type === "agenda") ? agendaItems : (type === "deliberation" ? deliberations : decisions);
+          if(listRef.length > 1){
+            const delBtn = document.createElement("button");
+            delBtn.className = "mmb-iconBtn mmb-iconBtnDanger";
+            delBtn.type = "button";
+            delBtn.innerHTML = '<ion-icon name="trash"></ion-icon>';
+            delBtn.addEventListener("click", () => {
+              if(type === "agenda" && agendaItems.length > 1){
+                agendaItems = agendaItems.filter(x => x.id !== row.id);
+                renderAll();
+              } else if(type === "deliberation" && deliberations.length > 1){
+                deliberations = deliberations.filter(x => x.id !== row.id);
+                renderAll();
+              } else if(type === "decision" && decisions.length > 1){
+                decisions = decisions.filter(x => x.id !== row.id);
+                renderAll();
+              }
+            });
+            line.appendChild(delBtn);
+          }
+
+          containerEl.appendChild(line);
+        });
+      }
+
+      /* =========================
+         Render: Members rows
+         ========================= */
+      function renderMembers(){
+        const t = translations[language] || translations.en;
+        const host = $("mmbMembersList");
+        host.innerHTML = "";
+
+        members.forEach((m, idx) => {
+          const row = document.createElement("div");
+          row.className = "mmb-tableRow";
+
+          // Mobile meta
+          const mobileMeta = document.createElement("div");
+          mobileMeta.className = "mmb-mobileMeta";
+
+          const mobileSl = document.createElement("div");
+          mobileSl.className = "mmb-mobileSl";
+          mobileSl.textContent = `${t.slNo}: ${idx + 1}`;
+          mobileMeta.appendChild(mobileSl);
+
+          const delRowBtnMobile = document.createElement("button");
+          delRowBtnMobile.className = "mmb-rowDelete";
+          delRowBtnMobile.type = "button";
+          delRowBtnMobile.innerHTML = '<ion-icon name="trash"></ion-icon>';
+          delRowBtnMobile.title = "Delete";
+          delRowBtnMobile.style.display = (members.length > 1) ? "" : "none";
+          delRowBtnMobile.addEventListener("click", () => {
+            if(members.length > 1){
+              members = members.filter(x => x.id !== m.id);
+              renderAll();
+            }
+          });
+          mobileMeta.appendChild(delRowBtnMobile);
+
+          row.appendChild(mobileMeta);
+
+          // Sl
+          const sl = document.createElement("div");
+          sl.className = "mmb-tdSl";
+          sl.textContent = (idx + 1).toString();
+          row.appendChild(sl);
+
+          // Name
+          const nameCol = document.createElement("div");
+          nameCol.className = "mmb-tdName";
+
+          const nameInput = document.createElement("input");
+          nameInput.type = "text";
+          nameInput.className = "mmb-nameInput";
+          nameInput.placeholder = t.enterMemberName;
+          nameInput.value = m.name || "";
+          nameInput.addEventListener("input", (e) => {
+            const val = e.target.value;
+            members = members.map(x => x.id === m.id ? ({...x, name: val}) : x);
+          });
+
+          nameCol.appendChild(nameInput);
+          row.appendChild(nameCol);
+
+          // Signature/photo
+          const sigCol = document.createElement("div");
+          sigCol.className = "mmb-tdSig";
+
+          if(m.signature){
+            const preview = document.createElement("div");
+            preview.className = "mmb-sigPreview";
+
+            const img = document.createElement("img");
+            img.src = m.signature;
+            img.alt = "signature";
+            preview.appendChild(img);
+
+            const rm = document.createElement("button");
+            rm.className = "mmb-sigRemove";
+            rm.type = "button";
+            rm.innerHTML = '<ion-icon name="close-circle"></ion-icon>';
+            rm.addEventListener("click", () => {
+              members = members.map(x => x.id === m.id ? ({...x, signature: null}) : x);
+              renderAll();
+            });
+            preview.appendChild(rm);
+
+            sigCol.appendChild(preview);
+          } else {
+            const captureBtn = document.createElement("button");
+            captureBtn.className = "mmb-captureBtn";
+            captureBtn.type = "button";
+            captureBtn.innerHTML = `<ion-icon name="camera"></ion-icon><span>${t.capturePhoto}</span>`;
+
+            const file = document.createElement("input");
+            file.className = "mmb-fileInput";
+            file.type = "file";
+            file.accept = "image/*";
+            file.setAttribute("capture", "environment");
+
+            captureBtn.addEventListener("click", () => file.click());
+
+            file.addEventListener("change", () => {
+              const f = file.files && file.files[0];
+              if(!f) return;
+              const reader = new FileReader();
+              reader.onload = () => {
+                members = members.map(x => x.id === m.id ? ({...x, signature: reader.result}) : x);
+                renderAll();
+              };
+              reader.readAsDataURL(f);
+            });
+
+            sigCol.appendChild(captureBtn);
+            sigCol.appendChild(file);
+          }
+
+          row.appendChild(sigCol);
+
+          // Desktop delete button
+          const desktopDel = document.createElement("button");
+          desktopDel.className = "mmb-rowDelete";
+          desktopDel.type = "button";
+          desktopDel.innerHTML = '<ion-icon name="trash"></ion-icon>';
+          desktopDel.title = "Delete";
+          desktopDel.style.display = (members.length > 1) ? "" : "none";
+          desktopDel.addEventListener("click", () => {
+            if(members.length > 1){
+              members = members.filter(x => x.id !== m.id);
+              renderAll();
+            }
+          });
+
+          row.appendChild(desktopDel);
+          host.appendChild(row);
+        });
+      }
+
+      function refreshMobileBits(){
+        const isMobile = window.matchMedia("(max-width: 560px)").matches;
+
+        document.querySelectorAll(".mmb-mobileMeta").forEach(el => {
+          el.style.display = isMobile ? "flex" : "none";
+        });
+
+        const rows = document.querySelectorAll("#mmbMembersList .mmb-tableRow");
+        rows.forEach(r => {
+          const btns = r.querySelectorAll(".mmb-rowDelete");
+          if(btns.length >= 2){
+            btns[0].style.display = (isMobile && members.length > 1) ? "" : "none";
+            btns[1].style.display = (!isMobile && members.length > 1) ? "" : "none";
+          }
+        });
+      }
+
+      function renderAll(){
+        applyTranslations();
+
+        const dateEl = $("mmbMeetingDate");
+        dateEl.value = toDateInputValue(meetingDate);
+
+        renderTextRows($("mmbAgendaList"), agendaItems, "agenda");
+        renderTextRows($("mmbDelibList"), deliberations, "deliberation");
+        renderTextRows($("mmbDecList"), decisions, "decision");
+
+        renderMembers();
+        refreshMobileBits();
+      }
+
+      /* =========================
+         Language sync with base.html
+         ========================= */
+      function setLanguageFromBase(lang){
+        language = (lang === "bn") ? "bn" : "en";
+        renderAll();
+      }
+
+      const prevHook = window.onPGMISLanguageChange;
+      window.onPGMISLanguageChange = function(lang){
+        try { if (typeof prevHook === "function") prevHook(lang); } catch(e){}
+        setLanguageFromBase(lang);
+      };
+
+      /* =========================
+         Events
+         ========================= */
+      function wireEvents(){
+        $("mmbBackBtn").addEventListener("click", () => {
+          if(window.history.length > 1) window.history.back();
+          else window.location.href = "{{ url_for('pg.pg_home') }}";
+        });
+
+        $("mmbTabMinutes").addEventListener("click", () => setTab("minutes"));
+        $("mmbTabMembers").addEventListener("click", () => setTab("members"));
+
+        $("mmbMeetingDate").addEventListener("change", (e) => {
+          const v = e.target.value;
+          if(v){
+            const [y,m,d] = v.split("-").map(Number);
+            meetingDate = new Date(y, (m-1), d);
+          }
+        });
+
+        $("mmbAddAgenda").addEventListener("click", () => {
+          agendaItems = [...agendaItems, { id: uid(), content:"" }];
+          renderAll();
+        });
+        $("mmbAddDelib").addEventListener("click", () => {
+          deliberations = [...deliberations, { id: uid(), content:"" }];
+          renderAll();
+        });
+        $("mmbAddDec").addEventListener("click", () => {
+          decisions = [...decisions, { id: uid(), content:"" }];
+          renderAll();
+        });
+
+        $("mmbSaveMinutes").addEventListener("click", () => {
+          const t = translations[language] || translations.en;
+
+          const data = {
+            date: formatDatePretty(meetingDate),
+            agendaItems: agendaItems.map(x => x.content),
+            deliberations: deliberations.map(x => x.content),
+            decisions: decisions.map(x => x.content),
+          };
+
+          console.log("Meeting Minutes Data:", data);
+          alert(t.savedMinutes);
+        });
+
+        $("mmbAddMember").addEventListener("click", () => {
+          members = [...members, { id: uid(), name:"", signature:null }];
+          renderAll();
+        });
+
+        $("mmbSaveMembers").addEventListener("click", () => {
+          const t = translations[language] || translations.en;
+
+          const data = members.map(m => ({
+            name: m.name,
+            hasSignature: !!m.signature,
+          }));
+
+          console.log("Members Present Data:", data);
+          alert(t.savedMembers);
+        });
+
+        window.addEventListener("resize", () => refreshMobileBits());
+      }
+
+      /* =========================
+         Init
+         ========================= */
+      (function init(){
+        language = (window.PGMIS_LANG === "bn") ? "bn" : "en";
+
+        meetingDate = new Date();
+        $("mmbMeetingDate").value = toDateInputValue(meetingDate);
+
+        wireEvents();
+        setTab("minutes");
+        renderAll();
+      })();
+
+    })();
+  </script>
 {% endblock %}

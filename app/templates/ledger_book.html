@@ -1244,7 +1244,8 @@
   $("lbLockOverlay").addEventListener("click", (e)=>{ if (e.target === $("lbLockOverlay")) closeOverlay($("lbLockOverlay")); });
 
   /* ============================================================
-     ✅ EDIT LOCK
+     ✅ CASHBOOK-STYLE EDIT LOCK (while edit mode active)
+     ✅ FIXED: do NOT block navbar buttons; ONLY block navigation
      ============================================================ */
   let lbLockActive = false;
   let lbLockPushed = false;
@@ -1266,6 +1267,16 @@
     }
   }
 
+  function lbArmLockNow(){
+    lbSetLock(true);
+    if (!lbLockPushed){
+      try{
+        history.pushState({ lb_lock: true }, document.title, location.href);
+        lbLockPushed = true;
+      }catch(_){}
+    }
+  }
+
   function lbTriggerLockModal(){
     if (!lbLockActive) return;
     if (lbLockOpen) return;
@@ -1274,26 +1285,47 @@
     setTimeout(()=>{ lbLockOpen = false; }, 350);
   }
 
-  window.addEventListener("popstate", ()=>{
+  window.addEventListener("popstate", ()=> {
     if (!lbLockActive) return;
     try{ history.pushState({ lb_lock: true }, document.title, location.href); }catch(_){}
     lbTriggerLockModal();
   });
 
+  function lbIsInsideOpenModal(target){
+    return !!(target && target.closest && target.closest(".lb-modal-overlay.lb-show"));
+  }
+
+  function isNavigatingHref(href){
+    if (!href) return false;
+    const h = String(href).trim();
+    if (!h) return false;
+    if (h === "#") return false;
+    if (h.startsWith("#")) return false;
+    if (h.toLowerCase().startsWith("javascript:")) return false;
+    return true;
+  }
+
+  // ✅ ONLY block real link navigation (keeps hamburger/translate/etc working)
   document.addEventListener("click", (e)=>{
     if (!lbLockActive) return;
+    if (lbIsInsideOpenModal(e.target)) return;
 
     const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
     if (!a) return;
 
-    const href = (a.getAttribute("href") || "").trim();
-    if (!href || href === "#" || href.startsWith("#") || href.toLowerCase().startsWith("javascript:")) return;
+    const href = a.getAttribute("href");
+    if (!isNavigatingHref(href)) return;
 
+    // allow new tab / modifiers
+    const target = (a.getAttribute("target") || "").toLowerCase();
+    if (target === "_blank") return;
     if (e.ctrlKey || e.metaKey || e.button === 1) return;
 
     e.preventDefault();
     e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
     lbTriggerLockModal();
+    return false;
   }, true);
 
   window.addEventListener("keydown", (e)=>{
@@ -1388,7 +1420,6 @@
     body.innerHTML = "";
     slice.forEach(r => body.appendChild(r));
 
-    // update SL numbers for the visible slice
     slice.forEach((r, i) => {
       const sl = r.querySelector("[data-lb='slno']");
       if (sl) sl.textContent = String(start + i + 1);
@@ -1419,14 +1450,12 @@
       }
     });
 
-    // selection checkbox
     const cb = row.querySelector("[data-lb='sel']");
     if (cb){
       cb.disabled = !on;
       cb.style.pointerEvents = on ? "" : "none";
     }
 
-    // delete button edit-only
     const delBtn = row.querySelector("[data-lb='delete']");
     if (delBtn) delBtn.disabled = !on;
   }
@@ -1455,7 +1484,6 @@
 
     $("lbAddRowTop").disabled = !on;
 
-    // multi delete buttons
     $("lbDeleteAllTop").disabled = !(on && allRows.length > 0);
     $("lbDeleteSelectedTop").disabled = !(on && selectedRows().length > 0);
 
@@ -1464,10 +1492,11 @@
     if (mobSel) mobSel.disabled = !(on && selectedRows().length > 0);
     if (mobAll) mobAll.disabled = !(on && allRows.length > 0);
 
-    // header select all
     $("lbSelectAll").disabled = !on;
 
+    // ✅ lock toggles exactly with edit mode
     lbSetLock(on);
+
     updateMobileBar();
     updateSelectUI();
   }
@@ -1487,7 +1516,6 @@
     $("lbDeleteSelectedText").textContent = t.deleteSelected;
     $("lbDeleteAllText").textContent = t.deleteAll;
 
-    // mobile bar labels
     $("lbMobileCancel").textContent = t.cancelButton;
     $("lbMobileAddRow").textContent = t.addRow;
     $("lbMobileSave").textContent = t.saveButton;
@@ -1554,7 +1582,8 @@
     rebuildFiltered();
     applyLang();
     recalcLedger();
-    setAllEditable(lbIsEditing);
+
+    setAllEditable(false);
   }
 
   function applyLang(){
@@ -1603,7 +1632,6 @@
       sel.value = (cur === "Cr") ? "Cr" : "Dr";
     });
 
-    // update delete modal text
     $("lbDeleteTitle").textContent = t.deleteTitle;
     $("lbDeleteMsg").textContent = t.deleteMsg;
     $("lbDeleteNo").textContent = t.deleteNo;
@@ -1613,9 +1641,6 @@
     renderPage();
   }
 
-  /* ============================================================
-     ✅ Prevent focus/caret when NOT in edit mode
-     ============================================================ */
   $("lbWrap").addEventListener("focusin", (e)=>{
     if (lbIsEditing) return;
     const el = e.target;
@@ -1626,11 +1651,9 @@
   }, true);
 
   function wireRow(row){
-    // ✅ no rebuildFiltered() on keypress
     const onInput = () => recalcLedger();
 
     row.querySelectorAll("input, select").forEach(el=>{
-      // selection checkbox only updates UI
       if (el.getAttribute("data-lb") === "sel"){
         el.addEventListener("change", () => updateSelectUI());
         return;
@@ -1660,7 +1683,6 @@
       recalcLedger();
     });
 
-    // delete single
     const del = row.querySelector("[data-lb='delete']");
     if (del){
       del.addEventListener("click", ()=>{
@@ -1751,7 +1773,6 @@
     const idx = allRows.indexOf(row);
     if (idx >= 0) allRows.splice(idx, 1);
 
-    // keep pagination stable
     if ((query || "").trim()){
       rebuildFiltered();
     } else {
@@ -1793,7 +1814,6 @@
     rebuildFiltered();
   }
 
-  // confirm actions
   $("lbDeleteYes").addEventListener("click", ()=>{
     closeOverlay($("lbDeleteOverlay"));
     if (pendingDeleteMode === "single"){
@@ -1813,9 +1833,6 @@
     doDeleteAll();
   });
 
-  /* ============================================================
-     SAVE/LOAD + localStorage fallback
-     ============================================================ */
   function getPgId(){
     return window.PG_ID || $("lbPgName").value || "pg_demo";
   }
@@ -1883,8 +1900,11 @@
         const data = await res.json().catch(()=>null);
         if (data){
           hydrateFromData(data);
-          lbSnapshot = takeSnapshot();
-          setEditMode(false);
+
+          if (!lbIsEditing){
+            lbSnapshot = takeSnapshot();
+            setEditMode(false);
+          }
           return;
         }
       }
@@ -1895,8 +1915,11 @@
       if (raw){
         const data = JSON.parse(raw);
         hydrateFromData(data);
-        lbSnapshot = takeSnapshot();
-        setEditMode(false);
+
+        if (!lbIsEditing){
+          lbSnapshot = takeSnapshot();
+          setEditMode(false);
+        }
         return;
       }
     }catch(_){}
@@ -1933,10 +1956,10 @@
     updateSelectUI();
   }
 
-  /* ============================================================
-     EDIT MODE
-     ============================================================ */
   function setEditMode(on){
+    if (on) lbArmLockNow();
+    else lbSetLock(false);
+
     lbIsEditing = !!on;
     setEditingUI();
     setAllEditable(lbIsEditing);
@@ -1944,6 +1967,7 @@
   }
 
   function enterEdit(){
+    lbArmLockNow();
     lbSnapshot = takeSnapshot();
     setEditMode(true);
   }
@@ -1955,8 +1979,26 @@
 
   function doCancel(){
     closeOverlay($("lbCancelOverlay"));
-    restoreSnapshot(lbSnapshot);
-    setEditMode(false);
+
+    const snap = lbSnapshot;
+
+    lbIsEditing = false;
+    lbSetLock(false);
+    $("lbWrap").classList.remove("lb-editing", "lb-mobile-editing");
+
+    try{
+      restoreSnapshot(snap);
+    } finally {
+      lbIsEditing = false;
+      lbSetLock(false);
+
+      setEditingUI();
+      setAllEditable(false);
+
+      clearAllSelections();
+      updateSelectUI();
+      recalcLedger();
+    }
   }
 
   function requestSave(){
@@ -1964,9 +2006,6 @@
     openSaveConfirm();
   }
 
-  /* ============================================================
-     Global language bridge
-     ============================================================ */
   window.ledgerSetLanguage = function(l){
     lang = (l === "bn") ? "bn" : "en";
     applyLang();
@@ -1981,9 +2020,6 @@
     recalcLedger();
   });
 
-  /* ============================================================
-     Controls wiring
-     ============================================================ */
   $("lbAddRowTop").addEventListener("click", addRow);
   $("lbMobileAddRow").addEventListener("click", addRow);
 
@@ -2031,7 +2067,6 @@
     rebuildFiltered();
   });
 
-  // Select all (page-visible) toggle
   $("lbSelectAll").addEventListener("change", (e)=>{
     if (!lbIsEditing) return;
 
@@ -2046,7 +2081,6 @@
     updateSelectUI();
   });
 
-  // Delete selected/all buttons
   function requestDeleteSelected(){
     if (!lbIsEditing) return;
     const n = selectedRows().length;
@@ -2072,9 +2106,6 @@
     updateMobileBar();
   });
 
-  /* ============================================================
-     Boot
-     ============================================================ */
   for (let i=0; i<25; i++) allRows.push(createRow());
   rebuildFiltered();
   applyLang();

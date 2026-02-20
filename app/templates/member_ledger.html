@@ -1,1403 +1,1449 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Member Ledger</title>
-
-  <style>
-    /* ============================================================
-       INTEGRATED CSS (member-ledger.css)
-       ============================================================ */
-
-    /* Reset and Base Styles */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-        Arial, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
-    /* Background Gradient */
-    .bg-gradient {
-      background: linear-gradient(135deg, #f9fafb 0%, rgba(236, 253, 245, 0.3) 100%);
-      min-height: 100vh;
-    }
-
-    .min-h-screen {
-      min-height: 100vh;
-    }
-
-    /* Header */
-    .header {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid #e5e7eb;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-      animation: slideDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    @keyframes slideDown {
-      from {
-        transform: translateY(-100px);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-
-    .header-content {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-    }
-
-    .header-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: #1f2937;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      animation: slideInLeft 0.6s ease-out;
-    }
-
-    @keyframes slideInLeft {
-      from {
-        transform: translateX(-20px);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      animation: slideInRight 0.6s ease-out;
-    }
-
-    @keyframes slideInRight {
-      from {
-        transform: translateX(20px);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    /* Icons */
-    .icon {
-      width: 20px;
-      height: 20px;
-    }
-
-    .sparkles {
-      color: #059669;
-    }
-
-    /* Buttons */
-    .btn-language {
-      padding: 8px;
-      background: transparent;
-      border: none;
-      color: #059669;
-      cursor: pointer;
-      border-radius: 6px;
-      transition: all 0.3s ease;
-    }
-
-    .btn-language:hover {
-      background: #ecfdf5;
-      transform: scale(1.05);
-    }
-
-    .btn-language:active {
-      transform: scale(0.95);
-    }
-
-    .btn-save {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      background: #059669;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .btn-save:hover {
-      background: #047857;
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-    }
-
-    .btn-save:active {
-      transform: scale(0.95);
-    }
-
-    /* Content */
-    .content {
-      padding: 24px 16px 96px;
-      max-width: 1152px;
-      margin: 0 auto;
-      animation: fadeInUp 0.7s ease-out;
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Cards */
-    .card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      border: 1px solid #e5e7eb;
-      overflow: hidden;
-      transition: all 0.3s ease;
-    }
-
-    .card:hover {
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    }
-
-    .producer-card {
-      margin-bottom: 24px;
-    }
-
-    .card-header-producer {
-      padding: 12px 16px;
-      background: linear-gradient(to right, #ecfdf5, #d1fae5);
-    }
-
-    .card-header-producer h2 {
-      font-size: 15px;
-      font-weight: 600;
-      color: #065f46;
-    }
-
-    .card-content-producer {
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    /* Input Groups */
-    .input-group-full {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .label {
-      font-size: 14px;
-      font-weight: 500;
-      color: #374151;
-      margin-bottom: 6px;
-    }
-
-    .input {
-      padding: 10px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-size: 14px;
-      color: #1f2937;
-      transition: all 0.3s ease;
-    }
-
-    .input:hover {
-      border-color: #a7f3d0;
-    }
-
-    .input:focus {
-      outline: none;
-      border-color: #059669;
-      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
-      transform: scale(1.01);
-    }
-
-    /* Select */
-    .select-wrapper {
-      position: relative;
-    }
-
-    .select {
-      width: 100%;
-      padding: 10px 36px 10px 12px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-size: 14px;
-      color: #1f2937;
-      background: white;
-      cursor: pointer;
-      appearance: none;
-      transition: all 0.3s ease;
-    }
-
-    .select:hover {
-      border-color: #a7f3d0;
-    }
-
-    .select:focus {
-      outline: none;
-      border-color: #059669;
-      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
-    }
-
-    .select-icon {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 20px;
-      height: 20px;
-      pointer-events: none;
-      color: #6b7280;
-    }
-
-    /* Tabs */
-    .tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px;
-      background: #d1fae5;
-      border-radius: 8px;
-      padding: 4px;
-      margin-bottom: 24px;
-    }
-
-    .tab {
-      padding: 10px;
-      background: transparent;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #065f46;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .tab.active {
-      background: #059669;
-      color: white;
-      box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
-    }
-
-    /* Tab Content */
-    .tab-pane {
-      display: none;
-    }
-
-    .tab-pane.active {
-      display: block;
-      animation: fadeIn 0.3s ease-out;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-      to {
-        opacity: 1;
-      }
-    }
-
-    .tab-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .tab-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #1f2937;
-    }
-
-    .btn-add {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      background: #059669;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .btn-add:hover {
-      background: #047857;
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-    }
-
-    .btn-add:active {
-      transform: scale(0.95);
-    }
-
-    /* Entries List */
-    .entries-list {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .empty-state {
-      background: white;
-      border: 2px dashed #e5e7eb;
-      border-radius: 12px;
-      padding: 32px;
-      text-align: center;
-      animation: scaleIn 0.3s ease-out;
-    }
-
-    @keyframes scaleIn {
-      from {
-        opacity: 0;
-        transform: scale(0.9);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-
-    .empty-state p {
-      color: #6b7280;
-      font-size: 14px;
-    }
-
-    /* Entry Card */
-    .entry-card {
-      background: white;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease;
-      animation: slideInEntry 0.3s ease-out;
-    }
-
-    @keyframes slideInEntry {
-      from {
-        opacity: 0;
-        transform: translateX(-50px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    .entry-card:hover {
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-      border-color: #a7f3d0;
-    }
-
-    .entry-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px;
-      border-bottom: 1px solid #f3f4f6;
-    }
-
-    .entry-card-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #1f2937;
-    }
-
-    .indicator {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #059669;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%,
-      100% {
-        opacity: 1;
-      }
-      50% {
-        opacity: 0.5;
-      }
-    }
-
-    .btn-delete {
-      padding: 4px;
-      background: transparent;
-      border: none;
-      color: #dc2626;
-      cursor: pointer;
-      border-radius: 4px;
-      transition: all 0.3s ease;
-    }
-
-    .btn-delete:hover {
-      background: #fee2e2;
-      transform: scale(1.1);
-    }
-
-    .btn-delete:active {
-      transform: scale(0.9);
-    }
-
-    /* Entry Card Content */
-    .entry-card-content {
-      padding: 16px;
-    }
-
-    .entry-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .input-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .input-group-full-grid {
-      grid-column: span 2;
-    }
-
-    .label-small {
-      font-size: 12px;
-      font-weight: 600;
-      color: #374151;
-      margin-bottom: 6px;
-    }
-
-    .label-with-check {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .check-mark {
-      color: #059669;
-      font-size: 10px;
-    }
-
-    .input-calculated {
-      background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-      border-color: #a7f3d0;
-      color: #065f46;
-      font-weight: 600;
-    }
-
-    .input-total {
-      background: linear-gradient(135deg, #d1fae5, #6ee7b7);
-      border-color: #6ee7b7;
-      color: #064e3b;
-      font-weight: 700;
-      font-size: 15px;
-    }
-
-    .label-total {
-      font-size: 13px;
-      font-weight: 700;
-      color: #065f46;
-    }
-
-    /* Entry Buttons */
-    .entry-buttons {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 16px;
-    }
-
-    .btn-save-entry {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 10px 20px;
-      background: #059669;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .btn-save-entry:hover {
-      background: #047857;
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-    }
-
-    .btn-save-entry:active {
-      transform: scale(0.95);
-    }
-
-    .btn-edit-entry {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 10px 20px;
-      background: #e5e7eb;
-      color: #4b5563;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .btn-edit-entry:hover {
-      background: #d1d5db;
-      transform: scale(1.05);
-    }
-
-    .btn-edit-entry:active {
-      transform: scale(0.95);
-    }
-
-    /* Toast Notifications */
-    .toast-container {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      pointer-events: none;
-    }
-
-    .toast {
-      background: white;
-      padding: 16px 24px;
-      border-radius: 8px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 300px;
-      pointer-events: auto;
-      animation: toastSlideIn 0.3s ease-out;
-    }
-
-    @keyframes toastSlideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .toast.toast-hide {
-      animation: toastSlideOut 0.3s ease-out forwards;
-    }
-
-    @keyframes toastSlideOut {
-      from {
-        opacity: 1;
-        transform: translateY(0);
-      }
-      to {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-    }
-
-    .toast-success {
-      border-left: 4px solid #059669;
-    }
-
-    .toast-icon {
-      width: 24px;
-      height: 24px;
-      color: #059669;
-    }
-
-    .toast-message {
-      flex: 1;
-      color: #1f2937;
-      font-size: 14px;
-      font-weight: 500;
-    }
-
-    /* Responsive */
-    @media (max-width: 640px) {
-      .content {
-        padding: 16px 12px 96px;
-      }
-
-      .entry-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-
-      .input-group-full-grid {
-        grid-column: span 1;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <!-- ============================================================
-       INTEGRATED HTML (original member-ledger.html)
-       ============================================================ -->
-  <div id="app" class="min-h-screen bg-gradient">
-    <!-- Toast Container -->
-    <div id="toast-container" class="toast-container"></div>
-
-    <!-- Header -->
-    <div class="header">
-      <div class="header-content">
-        <h1 class="header-title">
-          <svg class="icon sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path
-              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-            />
-          </svg>
-          <span id="header-title">Member Ledger</span>
-        </h1>
-        <div class="header-right">
-          <button id="language-btn" class="btn-language" type="button" aria-label="Toggle language">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path
-                d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
-              />
-            </svg>
-          </button>
-          <button id="save-btn" class="btn-save" type="button">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-              <path d="M17 21v-8H7v8M7 3v5h8" />
-            </svg>
-            <span id="save-text">Save</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Content -->
-    <div class="content">
-      <!-- Producer Info Card -->
-      <div class="producer-card card">
-        <div class="card-header-producer">
-          <h2 id="producer-info-title">Producer Information</h2>
-        </div>
-        <div class="card-content-producer">
-          <div class="input-group-full">
-            <label id="producer-name-label" class="label">Name of the Producer</label>
-            <input type="text" id="producer-name" class="input" placeholder="Enter producer name" />
-          </div>
-          <div class="input-group-full">
-            <label id="stocking-unit-label" class="label">Unit of Stocking</label>
-            <div class="select-wrapper">
-              <select id="stocking-unit" class="select">
-                <option value="">Select unit</option>
-                <option value="kg">Kg</option>
-                <option value="liter">Liter</option>
-                <option value="bag">Bag</option>
-                <option value="piece">Piece</option>
-              </select>
-              <svg class="select-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 9l-7 7-7-7" />
+{# templates/member_ledger.html #}
+{% extends "base.html" %}
+
+{% block title %}Member Ledger{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* ============================================================
+     MEMBER LEDGER (UPDATED)
+     ✅ Edit-lock warning modal updated to match your screenshot:
+        - centered white card
+        - blurred/dim background
+        - "Action blocked" header + message + OK button (same placement)
+     ✅ Remove confirmation when entering Edit mode (Edit starts immediately)
+     ✅ No other data shapes/logic changed
+     ============================================================ */
+
+  .member-ledger-page *{ margin:0; padding:0; box-sizing:border-box; }
+
+  /* Theme tokens aligned with your ledger pages */
+  .member-ledger-page{
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,.14);
+    --line2: rgba(15,23,42,.08);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+    --sec1: rgba(16,185,129,.10);
+    --sec1b: rgba(5,150,105,.22);
+    --shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+
+    --danger:#dc2626;
+    --dangerBg: rgba(220,38,38,.08);
+    --dangerBd: rgba(220,38,38,.22);
+
+    color: var(--ink);
+  }
+
+  /* Page background */
+  .member-ledger-page .bg-gradient{
+    min-height: 100%;
+    background:
+      radial-gradient(circle at 12% 10%, rgba(16,185,129,.10), transparent 55%),
+      radial-gradient(circle at 90% 0%, rgba(59,130,246,.08), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.55), rgba(248,250,252,.85));
+    border-radius: 16px;
+    padding: 12px;
+  }
+
+  /* Toast */
+  .member-ledger-page .toast-container{
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display:flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events:none;
+  }
+  .member-ledger-page .toast{
+    pointer-events:auto;
+    min-width: 280px;
+    max-width: min(520px, calc(100vw - 24px));
+    background:#fff;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius: 14px;
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,.35);
+    padding: 12px 14px;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    animation: toastIn .18s ease-out;
+  }
+  @keyframes toastIn{
+    from{ opacity:0; transform: translateY(-6px) scale(.98); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
+  .member-ledger-page .toast.toast-hide{ animation: toastOut .18s ease-out forwards; }
+  @keyframes toastOut{
+    from{ opacity:1; transform: translateY(0); }
+    to{ opacity:0; transform: translateY(-8px); }
+  }
+  .member-ledger-page .toast-success{ border-left: 4px solid rgba(11,77,58,.90); }
+  .member-ledger-page .toast-warn{ border-left: 4px solid rgba(234,179,8,.95); }
+  .member-ledger-page .toast-danger{ border-left: 4px solid rgba(220,38,38,.95); }
+  .member-ledger-page .toast-icon{ width: 22px; height: 22px; }
+  .member-ledger-page .toast-message{
+    flex:1;
+    color: rgba(15,23,42,.85);
+    font-size: 12.5px;
+    font-weight: 900;
+    line-height: 1.25;
+  }
+
+  /* Shell */
+  .member-ledger-page .ml-wrap{
+    width:100%;
+    padding: clamp(12px, 2.2vw, 22px);
+  }
+  .member-ledger-page .ml-sheet{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow: var(--shadow);
+  }
+
+  /* Header */
+  .member-ledger-page .ml-header{
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.92), rgba(255,255,255,.92));
+    border-bottom:1px solid var(--line2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .member-ledger-page .header-content{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:14px 16px 12px;
+  }
+  .member-ledger-page .header-title{
+    font-size:18px;
+    font-weight:950;
+    letter-spacing:.2px;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width: 220px;
+    flex: 1 1 auto;
+  }
+  .member-ledger-page .icon{ width:18px; height:18px; }
+  .member-ledger-page .sparkles{ color:#059669; }
+
+  .member-ledger-page .header-right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  /* Action bar in header */
+  .member-ledger-page .actionbar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  /* Pills / buttons */
+  .member-ledger-page .btn{
+    border-radius:999px;
+    padding:10px 14px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+    border:1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.85);
+    color: var(--ink);
+  }
+  .member-ledger-page .btn:hover{
+    transform: translateY(-1px);
+    background:#fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .member-ledger-page .btn:active{ transform: translateY(0); }
+  .member-ledger-page .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  .member-ledger-page .btn-primary{
+    border:1px solid rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color: var(--accent);
+  }
+  .member-ledger-page .btn-primary:hover{ background: rgba(16,185,129,.16); }
+
+  .member-ledger-page .btn-danger{
+    border:1px solid var(--dangerBd);
+    background: var(--dangerBg);
+    color:#991b1b;
+  }
+  .member-ledger-page .btn-danger:hover{
+    background: rgba(220,38,38,.12);
+    box-shadow: 0 14px 22px -20px rgba(220,38,38,.30);
+  }
+
+  .member-ledger-page .btn-ghost{
+    border:1px solid rgba(15,23,42,.12);
+    background: rgba(255,255,255,.72);
+  }
+
+  /* Edit visibility toggles */
+  .member-ledger-page .show-when-editing{ display:none; }
+  .member-ledger-page.is-editing .show-when-editing{ display:inline-flex; }
+  .member-ledger-page.is-editing .hide-when-editing{ display:none !important; }
+
+  /* Content */
+  .member-ledger-page .content{
+    padding: 14px 16px 18px;
+    max-width:none;
+    margin:0;
+  }
+
+  /* Producer card */
+  .member-ledger-page .card{
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow:hidden;
+    box-shadow: 0 18px 26px -26px rgba(15,23,42,.35);
+  }
+  .member-ledger-page .producer-card{ margin-bottom: 14px; }
+
+  .member-ledger-page .card-header-producer{
+    padding: 12px 16px;
+    background:
+      radial-gradient(circle at 18% 25%, rgba(16,185,129,.12), transparent 60%),
+      linear-gradient(to right, rgba(247,250,249,.92), rgba(255,255,255,.92));
+    border-bottom:1px solid rgba(15,23,42,.08);
+  }
+  .member-ledger-page .card-header-producer h2{
+    font-size: 14px;
+    font-weight: 950;
+    letter-spacing: .2px;
+    color: rgba(15,23,42,.78);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:0;
+  }
+
+  .member-ledger-page .card-content-producer{
+    padding: 12px 16px 14px;
+    display:grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 10px 14px;
+    background:
+      radial-gradient(circle at 10% 10%, var(--sec1), transparent 55%),
+      #fff;
+  }
+
+  .member-ledger-page .input-group-full{ display:flex; flex-direction:column; min-width:0; }
+  .member-ledger-page .label{
+    font-weight:900;
+    font-size:12px;
+    color: var(--ink);
+    margin-bottom:6px;
+    white-space:nowrap;
+  }
+
+  .member-ledger-page .input{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: rgba(247,250,249,.75);
+    font-weight: 800;
+    font-size: 12px;
+    outline: none;
+    color: var(--ink);
+    transition: box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+    min-width:0;
+  }
+  .member-ledger-page .input:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  .member-ledger-page .input[disabled],
+  .member-ledger-page .input[readonly]{
+    opacity:.70;
+    cursor:not-allowed;
+  }
+
+  /* Select */
+  .member-ledger-page .select-wrapper{ position:relative; }
+  .member-ledger-page .select{
+    width:100%;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 12px;
+    padding: 10px 40px 10px 12px;
+    background: rgba(247,250,249,.75);
+    font-weight: 800;
+    font-size: 12px;
+    outline:none;
+    color: var(--ink);
+    appearance:none;
+    cursor:pointer;
+    transition: box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .member-ledger-page .select:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  .member-ledger-page .select[disabled]{
+    opacity:.70;
+    cursor:not-allowed;
+  }
+  .member-ledger-page .select-icon{
+    position:absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    pointer-events:none;
+    color: rgba(15,23,42,.55);
+  }
+
+  /* Tabs */
+  .member-ledger-page .tabs{
+    margin: 12px 0 12px;
+    padding: 10px 16px 12px;
+    border: 1px solid rgba(15,23,42,.10);
+    border-radius: 16px;
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.25);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .member-ledger-page .tabs .seg{
+    display:inline-flex;
+    gap:6px;
+    padding:6px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.12);
+    background: rgba(247,250,249,.72);
+    overflow:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .member-ledger-page .tab{
+    border:none;
+    outline:none;
+    cursor:pointer;
+    font-weight:950;
+    font-size:12px;
+    padding:10px 12px;
+    border-radius:999px;
+    background: transparent;
+    color: rgba(15,23,42,.70);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+    transition: background .2s ease, color .2s ease, transform .15s ease, box-shadow .2s ease, border .2s ease;
+  }
+  .member-ledger-page .tab:hover{ transform: translateY(-1px); }
+  .member-ledger-page .tab .badge{
+    width:10px; height:10px;
+    border-radius:999px;
+    background: rgba(11,77,58,.9);
+    box-shadow: 0 0 0 6px rgba(16,185,129,.12);
+    flex-shrink:0;
+  }
+  .member-ledger-page .tab.active{
+    background:#fff;
+    color:#dc2626;
+    border: 1px solid rgba(220,38,38,.35);
+    box-shadow: 0 16px 22px -20px rgba(15,23,42,.28);
+  }
+
+  .member-ledger-page .tab-content{ margin-top: 10px; }
+  .member-ledger-page .tab-pane{ display:none; }
+  .member-ledger-page .tab-pane.active{ display:block; }
+
+  .member-ledger-page .tab-header{
+    padding: 12px 16px;
+    display:flex;
+    align-items:flex-start;
+    justify-content: space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 16px;
+    background:
+      radial-gradient(circle at 10% 10%, var(--sec1), transparent 55%),
+      #fff;
+    box-shadow: 0 18px 26px -26px rgba(15,23,42,.35);
+    margin-bottom: 12px;
+  }
+  .member-ledger-page .tab-title{
+    margin:0;
+    font-size: 14px;
+    font-weight: 950;
+    letter-spacing: .2px;
+    color: var(--ink);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .member-ledger-page .tab-title::before{
+    content:"";
+    width:12px; height:12px;
+    border-radius:999px;
+    background: rgba(11,77,58,.90);
+    box-shadow: 0 0 0 7px rgba(16,185,129,.14);
+    display:inline-block;
+  }
+
+  /* Table */
+  .member-ledger-page .table-card{
+    background:#fff;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius: 16px;
+    box-shadow: 0 18px 26px -26px rgba(15,23,42,.35);
+    overflow:hidden;
+  }
+
+  .member-ledger-page .table-controls{
+    padding: 12px 14px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    background:
+      radial-gradient(circle at 14% 30%, rgba(16,185,129,.10), transparent 65%),
+      rgba(255,255,255,.92);
+  }
+
+  .member-ledger-page .controls-left,
+  .member-ledger-page .controls-right{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .member-ledger-page .search-wrap{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    border:1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.75);
+    border-radius:999px;
+    padding: 8px 10px;
+    min-width: min(420px, 100%);
+  }
+  .member-ledger-page .search-wrap svg{ width:18px;height:18px;color: rgba(15,23,42,.55); }
+  .member-ledger-page .search-input{
+    border:none;
+    outline:none;
+    background: transparent;
+    font-weight: 850;
+    font-size: 12px;
+    color: var(--ink);
+    width: min(340px, 100%);
+  }
+
+  .member-ledger-page .select-mini{
+    border:1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.75);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-weight: 900;
+    font-size: 12px;
+    outline:none;
+    cursor:pointer;
+    color: rgba(15,23,42,.80);
+  }
+
+  .member-ledger-page .table-wrap{
+    overflow:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .member-ledger-page table{
+    width:100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 980px;
+  }
+
+  .member-ledger-page thead th{
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    text-align:left;
+    font-size: 12px;
+    font-weight: 950;
+    color: rgba(15,23,42,.78);
+    background:
+      linear-gradient(to right, rgba(247,250,249,.92), rgba(255,255,255,.92));
+    border-bottom: 1px solid rgba(15,23,42,.10);
+    padding: 10px 10px;
+    white-space:nowrap;
+  }
+
+  .member-ledger-page tbody td{
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    padding: 10px 10px;
+    vertical-align: top;
+    background:#fff;
+  }
+  .member-ledger-page tbody tr:hover td{
+    background: rgba(240,253,244,.35);
+  }
+
+  .member-ledger-page .cell-center{ text-align:center; }
+  .member-ledger-page .cell-tight{ width: 1%; white-space:nowrap; }
+
+  .member-ledger-page .chk{
+    width: 16px; height: 16px;
+    accent-color: #059669;
+    cursor:pointer;
+  }
+  .member-ledger-page .chk[disabled]{ cursor:not-allowed; opacity:.6; }
+
+  .member-ledger-page .mini-input{
+    width: 100%;
+    min-width: 120px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: rgba(247,250,249,.78);
+    font-weight: 850;
+    font-size: 12px;
+    outline:none;
+    color: var(--ink);
+    transition: box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .member-ledger-page .mini-input:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  .member-ledger-page .mini-input[readonly],
+  .member-ledger-page .mini-input[disabled]{
+    opacity:.70;
+    cursor:not-allowed;
+  }
+
+  .member-ledger-page .mini-input.calc{
+    background: rgba(16,185,129,.08);
+    border-color: rgba(16,185,129,.22);
+    color: var(--accent);
+    font-weight: 950;
+  }
+  .member-ledger-page .mini-input.total{
+    background: rgba(16,185,129,.12);
+    border-color: rgba(16,185,129,.30);
+    color: var(--accent);
+    font-weight: 950;
+  }
+
+  .member-ledger-page .row-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:flex-end;
+  }
+
+  /* Table footer pagination */
+  .member-ledger-page .table-footer{
+    padding: 10px 14px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content: space-between;
+    background: rgba(255,255,255,.92);
+    border-top: 1px solid rgba(15,23,42,.08);
+  }
+  .member-ledger-page .pager{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .member-ledger-page .pager-meta{
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(15,23,42,.72);
+  }
+
+  /* Empty */
+  .member-ledger-page .empty-state{
+    background: #fff;
+    border: 1px dashed rgba(15,23,42,.22);
+    border-radius: 16px;
+    padding: 18px 16px;
+    text-align:center;
+    color: rgba(15,23,42,.70);
+    font-weight: 900;
+    font-size: 12px;
+    box-shadow: 0 18px 26px -26px rgba(15,23,42,.35);
+    margin: 12px 0;
+  }
+  .member-ledger-page .empty-state p{ margin:0; }
+
+  /* Hide delete buttons in table controls unless editing */
+  .member-ledger-page .controls-right{ display:none; }
+  .member-ledger-page.is-editing .controls-right{ display:flex; }
+
+  
+  /* Responsive */
+  @media (max-width: 980px){
+    .member-ledger-page .card-content-producer{ grid-template-columns: 1fr; }
+    .member-ledger-page .header-title{ min-width: 0; }
+    .member-ledger-page table{ min-width: 920px; }
+  }
+
+  /* Mobile: keep header buttons in ONE LINE (scroll if needed) */
+  @media (max-width: 720px){
+    .member-ledger-page .bg-gradient{ padding: 10px; }
+    .member-ledger-page .ml-wrap{ padding: 12px; }
+
+    .member-ledger-page .header-right{
+      width:100%;
+      justify-content:flex-start;
+    }
+    .member-ledger-page .actionbar{
+      width:100%;
+      flex-wrap:nowrap;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+    .member-ledger-page .actionbar::-webkit-scrollbar{ height: 6px; }
+    .member-ledger-page .actionbar::-webkit-scrollbar-thumb{ background: rgba(15,23,42,.18); border-radius: 999px; }
+
+    .member-ledger-page .search-wrap{ min-width: 100%; }
+    .member-ledger-page .controls-left{ width:100%; justify-content: space-between; }
+    .member-ledger-page .table-footer{ gap:12px; }
+    .member-ledger-page .pager{ width:100%; justify-content: space-between; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="member-ledger-page" id="member-ledger-root">
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+ 
+
+  <div id="app" class="bg-gradient">
+    <div class="ml-wrap">
+      <div class="ml-sheet">
+
+        <!-- Header -->
+        <div class="ml-header">
+          <div class="header-content">
+            <h1 class="header-title">
+              <svg class="icon sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
               </svg>
-            </div>
-          </div>
-        </div>
-      </div>
+              <span id="header-title">Member Ledger</span>
+            </h1>
 
-      <!-- Tabs -->
-      <div class="tabs">
-        <button id="tab-purchases" class="tab active" data-tab="purchases" type="button">
-          <span id="tab-purchases-text">Purchases of Input</span>
-        </button>
-        <button id="tab-sales" class="tab" data-tab="sales" type="button">
-          <span id="tab-sales-text">Sale to PG</span>
-        </button>
-      </div>
+            <!-- ✅ All actions moved here (Top right) -->
+            <div class="header-right">
+              <div class="actionbar" aria-label="Actions">
+                <!-- Read-only mode: ONLY Edit -->
+                <button id="edit-btn" class="btn btn-ghost hide-when-editing" type="button">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                  </svg>
+                  <span id="edit-text">Edit</span>
+                </button>
 
-      <!-- Tab Content -->
-      <div class="tab-content">
-        <!-- Purchases Tab -->
-        <div id="purchases-content" class="tab-pane active">
-          <div class="tab-header">
-            <h2 id="purchases-title" class="tab-title">Purchases of Input</h2>
-            <button id="add-purchase-btn" class="btn-add" type="button">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14m-7-7h14" />
-              </svg>
-              <span id="add-purchase-text">Add</span>
-            </button>
-          </div>
-          <div id="purchases-list" class="entries-list">
-            <div class="empty-state">
-              <p id="no-purchases-text">No purchase entries yet. Click "Add" to create one.</p>
+                <!-- Edit mode: Save + Cancel + Add + Delete Selected + Delete All -->
+                <button id="save-btn" class="btn btn-primary show-when-editing" type="button">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                    <path d="M17 21v-8H7v8M7 3v5h8" />
+                  </svg>
+                  <span id="save-text">Save</span>
+                </button>
+
+                <button id="cancel-btn" class="btn btn-danger show-when-editing" type="button">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                  <span id="cancel-text">Cancel</span>
+                </button>
+
+                <button id="add-btn" class="btn btn-primary show-when-editing" type="button" title="Add row to current tab">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14m-7-7h14" />
+                  </svg>
+                  <span id="add-text">Add</span>
+                </button>
+
+                <button id="delete-selected-btn" class="btn btn-danger show-when-editing" type="button" title="Delete selected rows in current tab">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                  </svg>
+                  <span id="delete-selected-text">Delete Selected</span>
+                </button>
+
+                <button id="delete-all-btn" class="btn btn-danger show-when-editing" type="button" title="Delete all rows in current tab">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                    <path d="M9 10h6M9 14h6"/>
+                  </svg>
+                  <span id="delete-all-text">Delete All</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Sales Tab -->
-        <div id="sales-content" class="tab-pane">
-          <div class="tab-header">
-            <h2 id="sales-title" class="tab-title">Sale to PG</h2>
-            <button id="add-sale-btn" class="btn-add" type="button">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14m-7-7h14" />
-              </svg>
-              <span id="add-sale-text">Add</span>
-            </button>
-          </div>
-          <div id="sales-list" class="entries-list">
-            <div class="empty-state">
-              <p id="no-sales-text">No sale entries yet. Click "Add" to create one.</p>
+        <!-- Content -->
+        <div class="content">
+          <!-- Producer Info Card -->
+          <div class="producer-card card">
+            <div class="card-header-producer">
+              <h2 id="producer-info-title">Producer Information</h2>
+            </div>
+
+            <div class="card-content-producer">
+              <div class="input-group-full">
+                <label id="producer-name-label" class="label">Name of the Producer</label>
+                <input type="text" id="producer-name" class="input" placeholder="Enter producer name" />
+              </div>
+
+              <div class="input-group-full">
+                <label id="stocking-unit-label" class="label">Unit of Stocking</label>
+                <div class="select-wrapper">
+                  <select id="stocking-unit" class="select">
+                    <option value="">Select unit</option>
+                    <option value="kg">Kg</option>
+                    <option value="liter">Liter</option>
+                    <option value="bag">Bag</option>
+                    <option value="piece">Piece</option>
+                  </select>
+                  <svg class="select-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ============================================================
-       INTEGRATED JS (member-ledger.js + second .js logic)
-       ============================================================ -->
-  <script>
-    // ============================================================
-    // Application State
-    // ============================================================
-    let state = {
-      language: "en",
-      producerName: "",
-      stockingUnit: "",
-      purchases: [],
-      sales: [],
-      activeTab: "purchases",
-    };
+          <!-- Tabs -->
+          <div class="tabs">
+            <div class="seg" role="tablist" aria-label="Member ledger sections">
+              <button id="tab-purchases" class="tab active" data-tab="purchases" type="button" role="tab" aria-selected="true">
+                <span class="badge" aria-hidden="true"></span>
+                <span id="tab-purchases-text">Purchases of Input</span>
+              </button>
 
-    // ============================================================
-    // Translations
-    // ============================================================
-    const translations = {
-      en: {
-        title: "Member Ledger",
-        save: "Save",
-        saveEntry: "Save Entry",
-        edit: "Edit",
-        producerInfo: "Producer Information",
-        producerName: "Name of the Producer",
-        stockingUnit: "Unit of Stocking",
-        selectUnit: "Select unit",
-        purchases: "Purchases of Input",
-        sales: "Sale to PG",
-        add: "Add",
-        noPurchases: 'No purchase entries yet. Click "Add" to create one.',
-        noSales: 'No sale entries yet. Click "Add" to create one.',
-        purchaseEntry: "Purchase Entry",
-        saleEntry: "Sale Entry",
-        date: "Date",
-        unit: "Unit",
-        commodity: "Commodity/Item",
-        qty: "Qty",
-        rate: "Rate",
-        amount: "Amount",
-        advance: "Advance",
-        amountDue: "Amount Due",
-        amountPaid: "Amount Paid",
-        remarks: "Remarks",
-        total: "Total",
-        enterProducerName: "Enter producer name",
-        enterCommodity: "Enter commodity",
-        enterRemarks: "Enter remarks",
-        savedSuccess: "Member ledger saved successfully!",
-        entrySavedSuccess: "Entry saved as sheet successfully!",
-        deleteSuccess: "Entry deleted",
-        languageChanged: "Language changed to English",
-        kg: "Kg",
-        liter: "Liter",
-        bag: "Bag",
-        piece: "Piece",
-      },
-      bn: {
-        title: "সদস্য খাতা",
-        save: "সংরক্ষণ",
-        saveEntry: "এন্ট্রি সংরক্ষণ",
-        edit: "সম্পাদনা",
-        producerInfo: "উৎপাদকের তথ্য",
-        producerName: "উৎপাদকের নাম",
-        stockingUnit: "ভাণ্ডারের পরিমাণ",
-        selectUnit: "একক নির্বাচন করুন",
-        purchases: "সামগ্রী ক্রয়",
-        sales: "পিজিতে বিক্রয়",
-        add: "যোগ করুন",
-        noPurchases: 'এখনও কোনো ক্রয় এন্ট্রি নেই। তৈরি করতে "যোগ করুন" এ ক্লিক করুন।',
-        noSales: 'এখনও কোনো বিক্রয় এন্ট্রি নেই। তৈরি করতে "যোগ করুন" এ ক্লিক করুন।',
-        purchaseEntry: "ক্রয় এন্ট্রি",
-        saleEntry: "বিক্রয় এন্ট্রি",
-        date: "তারিখ",
-        unit: "একক",
-        commodity: "পণ্য",
-        qty: "পরিমাণ",
-        rate: "দর",
-        amount: "পরিমাণ",
-        advance: "অগ্রিম",
-        amountDue: "বকেয়া পরিমাণ",
-        amountPaid: "পরিশোধিত পরিমাণ",
-        remarks: "মন্তব্য",
-        total: "মোট",
-        enterProducerName: "উৎপাদকের নাম লিখুন",
-        enterCommodity: "পণ্য লিখুন",
-        enterRemarks: "মন্তব্য লিখুন",
-        savedSuccess: "সদস্য খাতা সফলভাবে সংরক্ষিত হয়েছে!",
-        entrySavedSuccess: "এন্ট্রি সফলভাবে শিট হিসাবে সংরক্ষিত হয়েছে!",
-        deleteSuccess: "এন্ট্রি মুছে ফেলা হয়েছে",
-        languageChanged: "ভাষা বাংলায় পরিবর্তিত হয়েছে",
-        kg: "কেজি",
-        liter: "লিটার",
-        bag: "বস্তা",
-        piece: "পিস",
-      },
-    };
+              <button id="tab-sales" class="tab" data-tab="sales" type="button" role="tab" aria-selected="false">
+                <span class="badge" aria-hidden="true"></span>
+                <span id="tab-sales-text">Sale to PG</span>
+              </button>
+            </div>
+          </div>
 
-    // ============================================================
-    // Get translation
-    // ============================================================
-    function t(key) {
-      return (translations[state.language] && translations[state.language][key]) || key;
+          <!-- Tab Content -->
+          <div class="tab-content">
+            <!-- Purchases Tab -->
+            <div id="purchases-content" class="tab-pane active">
+              <div class="tab-header">
+                <h2 id="purchases-title" class="tab-title">Purchases of Input</h2>
+              </div>
+
+              <div class="table-card">
+                <div class="table-controls">
+                  <div class="controls-left">
+                    <div class="search-wrap">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <path d="M21 21l-4.3-4.3"></path>
+                      </svg>
+                      <input id="purchases-search" class="search-input" type="text" placeholder="Search..." />
+                    </div>
+
+                    <select id="purchases-per-page" class="select-mini" aria-label="Rows per page">
+                      <option value="10">10</option>
+                      <option value="25" selected>25</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
+                  </div>
+
+                  <!-- (kept) right-side controls, but visible only in edit mode via CSS -->
+                  <div class="controls-right">
+                    <button id="purchases-delete-selected" class="btn btn-danger" type="button">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                        <path d="M10 11v6M14 11v6"/>
+                      </svg>
+                      <span>Delete Selected</span>
+                    </button>
+
+                    <button id="purchases-delete-all" class="btn btn-danger" type="button">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                        <path d="M9 10h6M9 14h6"/>
+                      </svg>
+                      <span>Delete All</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="table-wrap">
+                  <table aria-label="Purchases table">
+                    <thead>
+                      <tr>
+                        <th class="cell-tight cell-center">
+                          <input id="purchases-select-all" class="chk" type="checkbox" title="Select all on this page"/>
+                        </th>
+                        <th class="cell-tight">SL No</th>
+                        <th>Date</th>
+                        <th>Unit</th>
+                        <th>Commodity/Item</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Advance</th>
+                        <th>Amount Due</th>
+                        <th>Amount Paid</th>
+                        <th>Remarks</th>
+                        <th class="cell-tight" style="text-align:right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="purchases-tbody"></tbody>
+                  </table>
+                </div>
+
+                <div class="table-footer">
+                  <div class="pager-meta" id="purchases-meta">0–0 of 0</div>
+                  <div class="pager">
+                    <button id="purchases-prev" class="btn" type="button">Prev</button>
+                    <span class="pager-meta" id="purchases-page">Page 1</span>
+                    <button id="purchases-next" class="btn" type="button">Next</button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="purchases-empty" class="empty-state" style="display:none;">
+                <p id="no-purchases-text">No purchase entries yet. Click "Add" to create one.</p>
+              </div>
+            </div>
+
+            <!-- Sales Tab -->
+            <div id="sales-content" class="tab-pane">
+              <div class="tab-header">
+                <h2 id="sales-title" class="tab-title">Sale to PG</h2>
+              </div>
+
+              <div class="table-card">
+                <div class="table-controls">
+                  <div class="controls-left">
+                    <div class="search-wrap">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <path d="M21 21l-4.3-4.3"></path>
+                      </svg>
+                      <input id="sales-search" class="search-input" type="text" placeholder="Search..." />
+                    </div>
+
+                    <select id="sales-per-page" class="select-mini" aria-label="Rows per page">
+                      <option value="10">10</option>
+                      <option value="25" selected>25</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
+                  </div>
+
+                  <!-- (kept) right-side controls, but visible only in edit mode via CSS -->
+                  <div class="controls-right">
+                    <button id="sales-delete-selected" class="btn btn-danger" type="button">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                        <path d="M10 11v6M14 11v6"/>
+                      </svg>
+                      <span>Delete Selected</span>
+                    </button>
+
+                    <button id="sales-delete-all" class="btn btn-danger" type="button">
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                        <path d="M9 10h6M9 14h6"/>
+                      </svg>
+                      <span>Delete All</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="table-wrap">
+                  <table aria-label="Sales table">
+                    <thead>
+                      <tr>
+                        <th class="cell-tight cell-center">
+                          <input id="sales-select-all" class="chk" type="checkbox" title="Select all on this page"/>
+                        </th>
+                        <th class="cell-tight">SL No</th>
+                        <th>Date</th>
+                        <th>Unit</th>
+                        <th>Commodity/Item</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Advance</th>
+                        <th>Final Amount</th>
+                        <th>Total</th>
+                        <th class="cell-tight" style="text-align:right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="sales-tbody"></tbody>
+                  </table>
+                </div>
+
+                <div class="table-footer">
+                  <div class="pager-meta" id="sales-meta">0–0 of 0</div>
+                  <div class="pager">
+                    <button id="sales-prev" class="btn" type="button">Prev</button>
+                    <span class="pager-meta" id="sales-page">Page 1</span>
+                    <button id="sales-next" class="btn" type="button">Next</button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="sales-empty" class="empty-state" style="display:none;">
+                <p id="no-sales-text">No sale entries yet. Click "Add" to create one.</p>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /content -->
+      </div><!-- /ml-sheet -->
+    </div><!-- /ml-wrap -->
+  </div><!-- /app -->
+
+  <!-- Preserved source block (unchanged) -->
+  <script type="text/plain" id="react-member-ledger-source">
+/* (Your full React code remains here exactly as provided in the prompt.) */
+  </script>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ============================================================
+  // Application State
+  // ============================================================
+  let state = {
+    language: "en",
+    producerName: "",
+    stockingUnit: "",
+    purchases: [],
+    sales: [],
+    activeTab: "purchases",
+
+    // ✅ Edit mode only (no lock system)
+    editMode: false,
+    snapshot: null,
+
+    // ✅ Table UI state (per tab)
+    ui: {
+      purchases: { search:"", page:1, perPage:25, selected: new Set() },
+      sales:     { search:"", page:1, perPage:25, selected: new Set() },
     }
+  };
 
-    // ============================================================
-    // Toast Notification
-    // ============================================================
-    function showToast(message) {
-      const container = document.getElementById("toast-container");
-      const toast = document.createElement("div");
-      toast.className = "toast toast-success";
-      toast.innerHTML = `
-        <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <div class="toast-message">${message}</div>
-      `;
+  // ============================================================
+  // Translations
+  // ============================================================
+  const translations = {
+    en: {
+      title: "Member Ledger",
+      save: "Save",
+      edit: "Edit",
+      cancel: "Cancel",
+      producerInfo: "Producer Information",
+      producerName: "Name of the Producer",
+      stockingUnit: "Unit of Stocking",
+      selectUnit: "Select unit",
+      purchases: "Purchases of Input",
+      sales: "Sale to PG",
+      add: "Add",
+      noPurchases: 'No purchase entries yet. Click "Add" to create one.',
+      noSales: 'No sale entries yet. Click "Add" to create one.',
+      enterProducerName: "Enter producer name",
+      enterCommodity: "Enter commodity",
+      enterRemarks: "Enter remarks",
+      savedSuccess: "Member ledger saved successfully!",
+      deleteSuccess: "Entry deleted",
 
-      container.appendChild(toast);
+      confirmSavePage: "Do you want to SAVE the Member Ledger?",
+      confirmCancel: "Discard changes and exit edit mode?",
+      confirmDelete: "Delete this entry?",
+      confirmDeleteSelected: "Delete selected entries?",
+      confirmDeleteAll: "Delete ALL entries in this section?",
 
+      actionBlockedTitle: "Action blocked",
+      actionBlockedMsg: "You are in Edit mode. Please Save or Cancel before leaving this page."
+    },
+    bn: {
+      title: "সদস্য খাতা",
+      save: "সংরক্ষণ",
+      edit: "সম্পাদনা",
+      cancel: "বাতিল",
+      producerInfo: "উৎপাদকের তথ্য",
+      producerName: "উৎপাদকের নাম",
+      stockingUnit: "ভাণ্ডারের পরিমাণ",
+      selectUnit: "একক নির্বাচন করুন",
+      purchases: "সামগ্রী ক্রয়",
+      sales: "পিজিতে বিক্রয়",
+      add: "যোগ করুন",
+      noPurchases: 'এখনও কোনো ক্রয় এন্ট্রি নেই। তৈরি করতে "যোগ করুন" এ ক্লিক করুন।',
+      noSales: 'এখনও কোনো বিক্রয় এন্ট্রি নেই। তৈরি করতে "যোগ করুন" এ ক্লিক করুন।',
+      enterProducerName: "উৎপাদকের নাম লিখুন",
+      enterCommodity: "পণ্য লিখুন",
+      enterRemarks: "মন্তব্য লিখুন",
+      savedSuccess: "সদস্য খাতা সফলভাবে সংরক্ষিত হয়েছে!",
+      deleteSuccess: "এন্ট্রি মুছে ফেলা হয়েছে",
+
+      confirmSavePage: "আপনি কি সদস্য খাতা সংরক্ষণ করতে চান?",
+      confirmCancel: "পরিবর্তন বাতিল করে এডিট মোড থেকে বের হবেন?",
+      confirmDelete: "এই এন্ট্রি মুছে ফেলবেন?",
+      confirmDeleteSelected: "নির্বাচিত এন্ট্রি মুছে ফেলবেন?",
+      confirmDeleteAll: "এই সেকশনের সব এন্ট্রি মুছে ফেলবেন?",
+
+      actionBlockedTitle: "Action blocked",
+      actionBlockedMsg: "আপনি এডিট মোডে আছেন। এই পেজ ছাড়ার আগে Save অথবা Cancel করুন।"
+    },
+  };
+
+  function t(key) {
+    return (translations[state.language] && translations[state.language][key]) || key;
+  }
+
+  // ============================================================
+  // Toast
+  // ============================================================
+  function showToast(message, type="success") {
+    const container = document.getElementById("toast-container");
+    if (!container) return;
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    const iconPath =
+      type === "danger"
+        ? `<path d="M12 9v4m0 4h.01M10.29 3.86l-7.4 13.1A2 2 0 004.61 20h14.78a2 2 0 001.72-3.04l-7.4-13.1a2 2 0 00-3.42 0z"/>`
+        : type === "warn"
+          ? `<path d="M12 9v4m0 4h.01"/><path d="M10.29 3.86l-7.4 13.1A2 2 0 004.61 20h14.78a2 2 0 001.72-3.04l-7.4-13.1a2 2 0 00-3.42 0z"/>`
+          : `<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>`;
+
+    toast.innerHTML = `
+      <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        ${iconPath}
+      </svg>
+      <div class="toast-message">${message}</div>
+    `;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add("toast-hide");
       setTimeout(() => {
-        toast.classList.add("toast-hide");
-        setTimeout(() => {
-          if (toast.parentNode === container) container.removeChild(toast);
-        }, 300);
-      }, 3000);
+        if (toast.parentNode === container) container.removeChild(toast);
+      }, 180);
+    }, 2500);
+  }
+
+  // ============================================================
+  // Confirm helper (base modal if available)
+  // ============================================================
+  function askConfirm(message, onYes, opts={}) {
+    const danger = !!opts.danger;
+    if (window.PGMISConfirm && typeof window.PGMISConfirm.open === "function") {
+      window.PGMISConfirm.open({
+        message,
+        danger,
+        onConfirm: onYes
+      });
+    } else {
+      if (confirm(message)) onYes();
+    }
+  }
+
+  // ============================================================
+  // ✅ Action-blocked modal helpers (matches screenshot)
+  // ============================================================
+  function openActionBlockedModal(customMsg){
+    const overlay = document.getElementById("ab-overlay");
+    const title = document.getElementById("ab-title");
+    const msg = document.getElementById("ab-msg");
+    if (!overlay || !title || !msg) return;
+
+    title.textContent = t("actionBlockedTitle");
+    msg.textContent = customMsg || t("actionBlockedMsg");
+
+    overlay.classList.add("ab-open");
+    overlay.setAttribute("aria-hidden", "false");
+
+    // Prevent background scroll when modal open
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeActionBlockedModal(){
+    const overlay = document.getElementById("ab-overlay");
+    if (!overlay) return;
+
+    overlay.classList.remove("ab-open");
+    overlay.setAttribute("aria-hidden", "true");
+
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+  }
+
+  // ============================================================
+  // ✅ Edit mode guards (block navigation/refresh/back while editing)
+  // ============================================================
+  let guardAttached = false;
+
+  function beforeUnloadHandler(e){
+    // Block refresh/reload/close while editing (browser native prompt cannot be styled)
+    if (!state.editMode) return;
+    e.preventDefault();
+    e.returnValue = ""; // required for Chrome
+    return "";
+  }
+
+  function clickGuardHandler(e){
+    if (!state.editMode) return;
+
+    const a = e.target.closest && e.target.closest("a[href]");
+    if (!a) return;
+
+    // Allow in-page anchors (#) that don't navigate away
+    const href = (a.getAttribute("href") || "").trim();
+    if (!href || href === "#" || href.startsWith("#")) return;
+
+    // Block all other navigation with the new modal
+    e.preventDefault();
+    e.stopPropagation();
+    openActionBlockedModal();
+  }
+  function openActionBlockedModal(customMsg){
+  const msg = customMsg || t("actionBlockedMsg");
+
+  if (window.PGMISConfirm && typeof window.PGMISConfirm.open === "function") {
+    window.PGMISConfirm.open({
+      message: msg,
+      danger: false,
+      onConfirm: () => {},
+      onCancel: () => {},  // cancel also just closes
+      confirmText: "OK",
+      cancelText: "Cancel "
+    });
+    return;
+  }
+
+  alert(msg);
+}
+
+
+  function popStateHandler(){
+    if (!state.editMode) return;
+    // Force stay on page while editing
+    history.pushState({pgmis_edit_guard: true}, "", location.href);
+    openActionBlockedModal();
+  }
+
+  function attachGuards(){
+    if (guardAttached) return;
+    guardAttached = true;
+
+    // Push a state so back button triggers popstate
+    history.pushState({pgmis_edit_guard: true}, "", location.href);
+
+    window.addEventListener("beforeunload", beforeUnloadHandler);
+    document.addEventListener("click", clickGuardHandler, true);
+    window.addEventListener("popstate", popStateHandler);
+  }
+
+  function detachGuards(){
+    if (!guardAttached) return;
+    guardAttached = false;
+
+    window.removeEventListener("beforeunload", beforeUnloadHandler);
+    document.removeEventListener("click", clickGuardHandler, true);
+    window.removeEventListener("popstate", popStateHandler);
+  }
+
+  function setEditingUI(on){
+    const root = document.getElementById("member-ledger-root");
+    if (root) root.classList.toggle("is-editing", !!on);
+  }
+
+  // ✅ NO confirmation on entering edit mode
+  function enterEditMode(){
+    if (state.editMode) return;
+
+    state.snapshot = JSON.parse(JSON.stringify({
+      producerName: state.producerName,
+      stockingUnit: state.stockingUnit,
+      purchases: state.purchases,
+      sales: state.sales
+    }));
+
+    state.editMode = true;
+    setEditingUI(true);
+    attachGuards();
+    updateEditableStates();
+    renderPurchasesTable();
+    renderSalesTable();
+    showToast("Edit mode enabled", "success");
+  }
+
+  function exitEditMode(commit){
+    // commit=true => keep current; commit=false => restore snapshot
+    if (!state.editMode) return;
+
+    if (!commit && state.snapshot){
+      state.producerName = state.snapshot.producerName || "";
+      state.stockingUnit = state.snapshot.stockingUnit || "";
+      state.purchases = state.snapshot.purchases || [];
+      state.sales = state.snapshot.sales || [];
     }
 
-    // ============================================================
-    // Toggle Language
-    // ============================================================
-    function toggleLanguage() {
-      state.language = state.language === "en" ? "bn" : "en";
-      showToast(t("languageChanged"));
-      updateUI();
+    state.snapshot = null;
+    state.editMode = false;
+
+    // clear selections
+    state.ui.purchases.selected.clear();
+    state.ui.sales.selected.clear();
+
+    detachGuards();
+    setEditingUI(false);
+
+    // reflect inputs
+    const pn = document.getElementById("producer-name");
+    if (pn) pn.value = state.producerName;
+    const su = document.getElementById("stocking-unit");
+    if (su) su.value = state.stockingUnit;
+
+    updateEditableStates();
+    renderPurchasesTable();
+    renderSalesTable();
+  }
+
+  function updateEditableStates(){
+    const canEdit = !!state.editMode;
+
+    const producerName = document.getElementById("producer-name");
+    const stockingUnit = document.getElementById("stocking-unit");
+
+    if (producerName){
+      producerName.disabled = !canEdit;
+      producerName.readOnly = !canEdit;
+    }
+    if (stockingUnit){
+      stockingUnit.disabled = !canEdit;
     }
 
-    // ============================================================
-    // Add Purchase Entry
-    // ============================================================
-    function addPurchase() {
-      const newPurchase = {
-        id: Date.now().toString(),
-        date: "",
-        commodity: "",
-        unit: "",
-        qty: "",
-        rate: "",
-        amount: "",
-        advance: "",
-        amountDue: "",
-        amountPaid: "",
-        remarks: "",
-        saved: false,
-      };
-      state.purchases.push(newPurchase);
-      renderPurchases();
+    // Gate select-all checkboxes (table header)
+    const psa = document.getElementById("purchases-select-all");
+    const ssa = document.getElementById("sales-select-all");
+    if (psa) psa.disabled = !canEdit;
+    if (ssa) ssa.disabled = !canEdit;
+  }
+
+  // ============================================================
+  // Data ops (unchanged core data shapes)
+  // ============================================================
+  function addPurchase() {
+    if (!state.editMode) return;
+
+    const newPurchase = {
+      id: Date.now().toString() + Math.random().toString(16).slice(2),
+      date: "",
+      commodity: "",
+      unit: "",
+      qty: "",
+      rate: "",
+      amount: "",
+      advance: "",
+      amountDue: "",
+      amountPaid: "",
+      remarks: "",
+      saved: false,
+    };
+    state.purchases.unshift(newPurchase);
+    state.ui.purchases.page = 1;
+    renderPurchasesTable();
+  }
+
+  function addSale() {
+    if (!state.editMode) return;
+
+    const newSale = {
+      id: Date.now().toString() + Math.random().toString(16).slice(2),
+      date: "",
+      commodity: "",
+      unit: "",
+      qty: "",
+      rate: "",
+      amount: "",
+      advance: "",
+      finalAmount: "",
+      total: "",
+      saved: false,
+    };
+    state.sales.unshift(newSale);
+    state.ui.sales.page = 1;
+    renderSalesTable();
+  }
+
+  // ============================================================
+  // Update funcs (same behavior)
+  // ============================================================
+  function updatePurchase(id, field, value) {
+    const purchase = state.purchases.find((p) => p.id === id);
+    if (!purchase) return;
+
+    purchase[field] = value;
+
+    if (field === "qty" || field === "rate") {
+      const qty = parseFloat(purchase.qty) || 0;
+      const rate = parseFloat(purchase.rate) || 0;
+      purchase.amount = (qty * rate).toFixed(2);
+      const amt = document.querySelector(`[data-purchase-id="${id}"] [data-field="amount"]`);
+      if (amt) amt.value = purchase.amount;
     }
 
-    // ============================================================
-    // Add Sale Entry
-    // ============================================================
-    function addSale() {
-      const newSale = {
-        id: Date.now().toString(),
-        date: "",
-        commodity: "",
-        unit: "",
-        qty: "",
-        rate: "",
-        amount: "",
-        advance: "",
-        finalAmount: "",
-        total: "",
-        saved: false,
-      };
-      state.sales.push(newSale);
-      renderSales();
+    if (field === "amount" || field === "advance" || field==="qty" || field==="rate") {
+      const amount = parseFloat(purchase.amount) || 0;
+      const advance = parseFloat(purchase.advance) || 0;
+      purchase.amountDue = (amount - advance).toFixed(2);
+      const due = document.querySelector(`[data-purchase-id="${id}"] [data-field="amountDue"]`);
+      if (due) due.value = purchase.amountDue;
+    }
+  }
+
+  function updateSale(id, field, value) {
+    const sale = state.sales.find((s) => s.id === id);
+    if (!sale) return;
+
+    sale[field] = value;
+
+    if (field === "qty" || field === "rate") {
+      const qty = parseFloat(sale.qty) || 0;
+      const rate = parseFloat(sale.rate) || 0;
+      sale.amount = (qty * rate).toFixed(2);
+      const amt = document.querySelector(`[data-sale-id="${id}"] [data-field="amount"]`);
+      if (amt) amt.value = sale.amount;
     }
 
-    // ============================================================
-    // Update Purchase Entry
-    // ============================================================
-    function updatePurchase(id, field, value) {
-      const purchase = state.purchases.find((p) => p.id === id);
-      if (!purchase) return;
+    if (field === "amount" || field === "advance" || field === "finalAmount" || field==="qty" || field==="rate") {
+      const amount = parseFloat(sale.amount) || 0;
+      const advance = parseFloat(sale.advance) || 0;
+      const finalAmount = parseFloat(sale.finalAmount) || 0;
+      sale.total = (amount + advance + finalAmount).toFixed(2);
+      const total = document.querySelector(`[data-sale-id="${id}"] [data-field="total"]`);
+      if (total) total.value = sale.total;
+    }
+  }
 
-      purchase[field] = value;
+  // ============================================================
+  // Delete (single / multi / all) - edit-mode only
+  // ============================================================
+  function deletePurchase(id) {
+    if (!state.editMode) return;
+    askConfirm(t("confirmDelete"), () => {
+      state.purchases = state.purchases.filter((p) => p.id !== id);
+      state.ui.purchases.selected.delete(id);
+      renderPurchasesTable();
+      showToast(t("deleteSuccess"), "success");
+    }, {danger:true});
+  }
 
-      // Auto-calculate amount
-      if (field === "qty" || field === "rate") {
-        const qty = parseFloat(purchase.qty) || 0;
-        const rate = parseFloat(purchase.rate) || 0;
-        purchase.amount = (qty * rate).toFixed(2);
-      }
+  function deleteSale(id) {
+    if (!state.editMode) return;
+    askConfirm(t("confirmDelete"), () => {
+      state.sales = state.sales.filter((s) => s.id !== id);
+      state.ui.sales.selected.delete(id);
+      renderSalesTable();
+      showToast(t("deleteSuccess"), "success");
+    }, {danger:true});
+  }
 
-      // Auto-calculate amount due
-      if (field === "amount" || field === "advance") {
-        const amount = parseFloat(purchase.amount) || 0;
-        const advance = parseFloat(purchase.advance) || 0;
-        purchase.amountDue = (amount - advance).toFixed(2);
-      }
+  function deleteSelected(tab){
+    if (!state.editMode) return;
 
-      renderPurchases();
+    const ui = state.ui[tab];
+    const ids = Array.from(ui.selected || []);
+    if (ids.length === 0){
+      showToast("No rows selected", "warn");
+      return;
     }
 
-    // ============================================================
-    // Update Sale Entry
-    // ============================================================
-    function updateSale(id, field, value) {
-      const sale = state.sales.find((s) => s.id === id);
-      if (!sale) return;
-
-      sale[field] = value;
-
-      // Auto-calculate amount
-      if (field === "qty" || field === "rate") {
-        const qty = parseFloat(sale.qty) || 0;
-        const rate = parseFloat(sale.rate) || 0;
-        sale.amount = (qty * rate).toFixed(2);
-      }
-
-      // Auto-calculate total
-      if (field === "amount" || field === "advance" || field === "finalAmount") {
-        const amount = parseFloat(sale.amount) || 0;
-        const advance = parseFloat(sale.advance) || 0;
-        const finalAmount = parseFloat(sale.finalAmount) || 0;
-        sale.total = (amount + advance + finalAmount).toFixed(2);
-      }
-
-      renderSales();
-    }
-
-    // ============================================================
-    // Delete Purchase
-    // ============================================================
-    function deletePurchase(id) {
-      if (confirm(t("deleteSuccess") + "?")) {
-        state.purchases = state.purchases.filter((p) => p.id !== id);
-        renderPurchases();
-        showToast(t("deleteSuccess"));
-      }
-    }
-
-    // ============================================================
-    // Delete Sale
-    // ============================================================
-    function deleteSale(id) {
-      if (confirm(t("deleteSuccess") + "?")) {
-        state.sales = state.sales.filter((s) => s.id !== id);
-        renderSales();
-        showToast(t("deleteSuccess"));
-      }
-    }
-
-    // ============================================================
-    // Save Purchase Entry
-    // ============================================================
-    function savePurchaseEntry(id) {
-      const purchase = state.purchases.find((p) => p.id === id);
-      if (purchase) {
-        purchase.saved = true;
-        renderPurchases();
-        showToast(t("entrySavedSuccess"));
-      }
-    }
-
-    // ============================================================
-    // Save Sale Entry
-    // ============================================================
-    function saveSaleEntry(id) {
-      const sale = state.sales.find((s) => s.id === id);
-      if (sale) {
-        sale.saved = true;
-        renderSales();
-        showToast(t("entrySavedSuccess"));
-      }
-    }
-
-    // ============================================================
-    // Edit Purchase Entry
-    // ============================================================
-    function editPurchaseEntry(id) {
-      const purchase = state.purchases.find((p) => p.id === id);
-      if (purchase) {
-        purchase.saved = false;
-        renderPurchases();
-      }
-    }
-
-    // ============================================================
-    // Edit Sale Entry
-    // ============================================================
-    function editSaleEntry(id) {
-      const sale = state.sales.find((s) => s.id === id);
-      if (sale) {
-        sale.saved = false;
-        renderSales();
-      }
-    }
-
-    // ============================================================
-    // Render Purchase Card
-    // ============================================================
-    function renderPurchaseCard(purchase) {
-      return `
-        <div class="entry-card">
-          <div class="entry-card-header">
-            <div class="entry-card-title">
-              <div class="indicator"></div>
-              <span>${t("purchaseEntry")}</span>
-            </div>
-            <button class="btn-delete" onclick="deletePurchase('${purchase.id}')" type="button">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-              </svg>
-            </button>
-          </div>
-
-          <div class="entry-card-content">
-            <div class="entry-grid">
-              <div class="input-group">
-                <label class="label-small">${t("date")}</label>
-                <input type="date" class="input" value="${purchase.date}"
-                  onchange="updatePurchase('${purchase.id}', 'date', this.value)">
-              </div>
-
-              <div class="input-group">
-                <label class="label-small">${t("unit")}</label>
-                <input type="text" class="input" value="${purchase.unit}"
-                  placeholder="Kg/L/Pcs"
-                  onchange="updatePurchase('${purchase.id}', 'unit', this.value)">
-              </div>
-
-              <div class="input-group input-group-full-grid">
-                <label class="label-small">${t("commodity")}</label>
-                <input type="text" class="input" value="${purchase.commodity}"
-                  placeholder="${t("enterCommodity")}"
-                  onchange="updatePurchase('${purchase.id}', 'commodity', this.value)">
-              </div>
-
-              <div class="input-group">
-                <label class="label-small">${t("qty")}</label>
-                <input type="number" class="input" value="${purchase.qty}"
-                  placeholder="0"
-                  oninput="updatePurchase('${purchase.id}', 'qty', this.value)">
-              </div>
-
-              <div class="input-group">
-                <label class="label-small">${t("rate")}</label>
-                <input type="number" class="input" value="${purchase.rate}"
-                  placeholder="0.00"
-                  oninput="updatePurchase('${purchase.id}', 'rate', this.value)">
-              </div>
-
-              <div class="input-group">
-                <label class="label-small label-with-check">
-                  ${t("amount")}
-                  <span class="check-mark">✓</span>
-                </label>
-                <input type="number" class="input input-calculated" value="${purchase.amount}"
-                  placeholder="0.00" readonly>
-              </div>
-
-              <div class="input-group">
-                <label class="label-small">${t("advance")}</label>
-                <input type="number" class="input" value="${purchase.advance}"
-                  placeholder="0.00"
-                  oninput="updatePurchase('${purchase.id}', 'advance', this.value)">
-              </div>
-
-              <div class="input-group">
-                <label class="label-small label-with-check">
-                  ${t("amountDue")}
-                  <span class="check-mark">✓</span>
-                </label>
-                <input type="number" class="input input-calculated" value="${purchase.amountDue}"
-                  placeholder="0.00" readonly>
-              </div>
-
-              <div class="input-group">
-                <label class="label-small">${t("amountPaid")}</label>
-                <input type="number" class="input" value="${purchase.amountPaid}"
-                  placeholder="0.00"
-                  onchange="updatePurchase('${purchase.id}', 'amountPaid', this.value)">
-              </div>
-
-              <div class="input-group input-group-full-grid">
-                <label class="label-small">${t("remarks")}</label>
-                <input type="text" class="input" value="${purchase.remarks}"
-                  placeholder="${t("enterRemarks")}"
-                  onchange="updatePurchase('${purchase.id}', 'remarks', this.value)">
-              </div>
-            </div>
-
-            <div class="entry-buttons">
-              ${
-                purchase.saved
-                  ? `
-                    <button class="btn-edit-entry" onclick="editPurchaseEntry('${purchase.id}')" type="button">
-                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                      </svg>
-                      ${t("edit")}
-                    </button>
-                  `
-                  : `
-                    <button class="btn-save-entry" onclick="savePurchaseEntry('${purchase.id}')" type="button">
-                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-                        <path d="M17 21v-8H7v8M7 3v5h8"/>
-                      </svg>
-                      ${t("saveEntry")}
-                    </button>
-                  `
-              }
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    // ============================================================
-    // Render Sale Card
-    // ============================================================
-    function renderSaleCard(sale) {
-      return `
-        <div class="entry-card">
-          <div class="entry-card-header">
-            <div class="entry-card-title">
-              <div class="indicator"></div>
-              <span>${t("saleEntry")}</span>
-            </div>
-            <button class="btn-delete" onclick="deleteSale('${sale.id}')" type="button">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-              </svg>
-            </button>
-          </div>
-
-          <div class="entry-card-content">
-            <div class="entry-grid">
-              <div class="input-group">
-                <label class="label-small">${t("date")}</label>
-                <input type="date" class="input" value="${sale.date}"
-                  onchange="updateSale('${sale.id}', 'date', this.value)">
-              </div>
-
-              <div class="input-group">
-                <label class="label-small">${t("unit")}</label>
-                <input type="text" class="input" value="${sale.unit}"
-                  placeholder="Kg/L/Pcs"
-                  onchange="updateSale('${sale.id}', 'unit', this.value)">
-              </div>
-
-              <div class="input-group input-group-full-grid">
-                <label class="label-small">${t("commodity")}</label>
-                <input type="text" class="input" value="${sale.commodity}"
-                  placeholder="${t("enterCommodity")}"
-                  onchange="updateSale('${sale.id}', 'commodity', this.value)">
-              </div>
-
-              <div class="input-group">
-                <label class="label-small">${t("qty")}</label>
-                <input type="number" class="input" value="${sale.qty}"
-                  placeholder="0"
-                  oninput="updateSale('${sale.id}', 'qty', this.value)">
-              </div>
-
-              <div class="input-group">
-                <label class="label-small">${t("rate")}</label>
-                <input type="number" class="input" value="${sale.rate}"
-                  placeholder="0.00"
-                  oninput="updateSale('${sale.id}', 'rate', this.value)">
-              </div>
-
-              <div class="input-group">
-                <label class="label-small label-with-check">
-                  ${t("amount")}
-                  <span class="check-mark">✓</span>
-                </label>
-                <input type="number" class="input input-calculated" value="${sale.amount}"
-                  placeholder="0.00" readonly>
-              </div>
-
-              <div class="input-group">
-                <label class="label-small">${t("advance")}</label>
-                <input type="number" class="input" value="${sale.advance}"
-                  placeholder="0.00"
-                  oninput="updateSale('${sale.id}', 'advance', this.value)">
-              </div>
-
-              <div class="input-group input-group-full-grid">
-                <label class="label-small">${t("amount")}</label>
-                <input type="number" class="input" value="${sale.finalAmount}"
-                  placeholder="0.00"
-                  oninput="updateSale('${sale.id}', 'finalAmount', this.value)">
-              </div>
-
-              <div class="input-group input-group-full-grid">
-                <label class="label-small label-total label-with-check">
-                  ${t("total")}
-                  <span class="check-mark">✓</span>
-                </label>
-                <input type="number" class="input input-total" value="${sale.total}"
-                  placeholder="0.00" readonly>
-              </div>
-            </div>
-
-            <div class="entry-buttons">
-              ${
-                sale.saved
-                  ? `
-                    <button class="btn-edit-entry" onclick="editSaleEntry('${sale.id}')" type="button">
-                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                      </svg>
-                      ${t("edit")}
-                    </button>
-                  `
-                  : `
-                    <button class="btn-save-entry" onclick="saveSaleEntry('${sale.id}')" type="button">
-                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-                        <path d="M17 21v-8H7v8M7 3v5h8"/>
-                      </svg>
-                      ${t("saveEntry")}
-                    </button>
-                  `
-              }
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    // ============================================================
-    // Render Purchases
-    // ============================================================
-    function renderPurchases() {
-      const list = document.getElementById("purchases-list");
-
-      if (state.purchases.length === 0) {
-        list.innerHTML = `
-          <div class="empty-state">
-            <p id="no-purchases-text">${t("noPurchases")}</p>
-          </div>
-        `;
+    askConfirm(t("confirmDeleteSelected"), () => {
+      if (tab === "purchases"){
+        state.purchases = state.purchases.filter(x => !ui.selected.has(x.id));
       } else {
-        list.innerHTML = state.purchases.map((p) => renderPurchaseCard(p)).join("");
+        state.sales = state.sales.filter(x => !ui.selected.has(x.id));
       }
-    }
+      ui.selected.clear();
+      if (tab === "purchases") renderPurchasesTable(); else renderSalesTable();
+      showToast(t("deleteSuccess"), "success");
+    }, {danger:true});
+  }
 
-    // ============================================================
-    // Render Sales
-    // ============================================================
-    function renderSales() {
-      const list = document.getElementById("sales-list");
+  function deleteAll(tab){
+    if (!state.editMode) return;
 
-      if (state.sales.length === 0) {
-        list.innerHTML = `
-          <div class="empty-state">
-            <p id="no-sales-text">${t("noSales")}</p>
-          </div>
-        `;
+    askConfirm(t("confirmDeleteAll"), () => {
+      if (tab === "purchases"){
+        state.purchases = [];
+        state.ui.purchases.selected.clear();
+        renderPurchasesTable();
       } else {
-        list.innerHTML = state.sales.map((s) => renderSaleCard(s)).join("");
+        state.sales = [];
+        state.ui.sales.selected.clear();
+        renderSalesTable();
       }
-    }
+      showToast(t("deleteSuccess"), "success");
+    }, {danger:true});
+  }
 
-    // ============================================================
-    // Switch Tab
-    // ============================================================
-    function switchTab(tab) {
-      state.activeTab = tab;
+  // ============================================================
+  // Save / Cancel (only ways to exit edit mode)
+  // ============================================================
+  function saveData() {
+    if (!state.editMode) return;
 
-      // Update tab buttons
-      document.querySelectorAll(".tab").forEach((btn) => btn.classList.remove("active"));
-      const activeBtn = document.querySelector(`[data-tab="${tab}"]`);
-      if (activeBtn) activeBtn.classList.add("active");
-
-      // Update tab content
-      document.querySelectorAll(".tab-pane").forEach((pane) => pane.classList.remove("active"));
-      const activePane = document.getElementById(`${tab}-content`);
-      if (activePane) activePane.classList.add("active");
-    }
-
-    // ============================================================
-    // Save All Data
-    // ============================================================
-    function saveData() {
+    askConfirm(t("confirmSavePage"), () => {
       const data = {
         producerName: state.producerName,
         stockingUnit: state.stockingUnit,
@@ -1405,127 +1451,489 @@
         sales: state.sales,
         savedAt: new Date().toISOString(),
       };
-
       console.log("Saving data:", data);
-      showToast(t("savedSuccess"));
+
+      showToast(t("savedSuccess"), "success");
+      exitEditMode(true);
+    }, {danger:false});
+  }
+
+  function cancelEdits(){
+    if (!state.editMode) return;
+
+    askConfirm(t("confirmCancel"), () => {
+      exitEditMode(false);
+      showToast(t("cancel"), "warn");
+    }, {danger:true});
+  }
+
+  // ============================================================
+  // Table helpers: filter + paginate
+  // ============================================================
+  function normalize(s){ return (s||"").toString().toLowerCase().trim(); }
+
+  function filterRows(tab, rows){
+    const q = normalize(state.ui[tab].search);
+    if (!q) return rows;
+
+    return rows.filter(r=>{
+      const blob = Object.keys(r).map(k => normalize(r[k])).join(" ");
+      return blob.includes(q);
+    });
+  }
+
+  function paginate(tab, rows){
+    const ui = state.ui[tab];
+    const per = ui.perPage || 25;
+    const total = rows.length;
+    const pages = Math.max(1, Math.ceil(total / per));
+    ui.page = Math.min(Math.max(1, ui.page), pages);
+
+    const start = (ui.page - 1) * per;
+    const end = start + per;
+    return { pageRows: rows.slice(start, end), total, pages, start, end };
+  }
+
+  function setMeta(tab, start, end, total){
+    const meta = document.getElementById(tab+"-meta");
+    if (meta){
+      const a = total === 0 ? 0 : (start + 1);
+      const b = Math.min(end, total);
+      meta.textContent = `${a}–${b} of ${total}`;
+    }
+    const p = document.getElementById(tab+"-page");
+    if (p){
+      p.textContent = `Page ${state.ui[tab].page}`;
+    }
+  }
+
+  function setEmpty(tab, isEmpty){
+    const empty = document.getElementById(tab+"-empty");
+    const card = document.getElementById(tab+"-tbody")?.closest(".table-card");
+    if (empty) empty.style.display = isEmpty ? "block" : "none";
+    if (card) card.style.display = isEmpty ? "none" : "block";
+  }
+
+  // ============================================================
+  // Render Purchases Table
+  // ============================================================
+  function renderPurchasesTable(){
+    const tbody = document.getElementById("purchases-tbody");
+    if (!tbody) return;
+
+    const canEdit = !!state.editMode;
+
+    const filtered = filterRows("purchases", state.purchases);
+    const pg = paginate("purchases", filtered);
+    setMeta("purchases", pg.start, pg.end, pg.total);
+    setEmpty("purchases", state.purchases.length === 0);
+
+    tbody.innerHTML = pg.pageRows.map((p, idx) => {
+      const sl = pg.start + idx + 1;
+      const disabledAttr = canEdit ? "" : "disabled";
+      const roCalc = "readonly";
+
+      const checked = state.ui.purchases.selected.has(p.id) ? "checked" : "";
+      return `
+        <tr data-purchase-id="${p.id}">
+          <td class="cell-tight cell-center">
+            <input class="chk" type="checkbox" ${checked} ${disabledAttr}
+              onchange="toggleSelect('purchases','${p.id}', this.checked)">
+          </td>
+          <td class="cell-tight">${sl}</td>
+
+          <td><input class="mini-input" type="date" value="${p.date || ""}" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','date',this.value)"></td>
+
+          <td><input class="mini-input" type="text" value="${(p.unit||"")}" placeholder="Kg/L/Pcs" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','unit',this.value)"></td>
+
+          <td><input class="mini-input" type="text" value="${(p.commodity||"")}" placeholder="${t("enterCommodity")}" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','commodity',this.value)"></td>
+
+          <td><input class="mini-input" type="number" value="${(p.qty||"")}" placeholder="0" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','qty',this.value)"></td>
+
+          <td><input class="mini-input" type="number" value="${(p.rate||"")}" placeholder="0.00" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','rate',this.value)"></td>
+
+          <td><input class="mini-input calc" data-field="amount" type="number" value="${(p.amount||"")}" placeholder="0.00" ${roCalc}></td>
+
+          <td><input class="mini-input" type="number" value="${(p.advance||"")}" placeholder="0.00" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','advance',this.value)"></td>
+
+          <td><input class="mini-input calc" data-field="amountDue" type="number" value="${(p.amountDue||"")}" placeholder="0.00" ${roCalc}></td>
+
+          <td><input class="mini-input" type="number" value="${(p.amountPaid||"")}" placeholder="0.00" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','amountPaid',this.value)"></td>
+
+          <td><input class="mini-input" type="text" value="${(p.remarks||"")}" placeholder="${t("enterRemarks")}" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','remarks',this.value)"></td>
+
+          <td class="cell-tight" style="text-align:right;">
+            <div class="row-actions">
+              <button class="btn btn-danger" type="button" ${canEdit ? "" : "disabled"}
+                onclick="deletePurchase('${p.id}')">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    const selAll = document.getElementById("purchases-select-all");
+    if (selAll){
+      const pageIds = pg.pageRows.map(x=>x.id);
+      const allChecked = pageIds.length>0 && pageIds.every(id => state.ui.purchases.selected.has(id));
+      const anyChecked = pageIds.some(id => state.ui.purchases.selected.has(id));
+      selAll.checked = allChecked;
+      selAll.indeterminate = !allChecked && anyChecked;
+      selAll.disabled = !canEdit;
     }
 
-    // ============================================================
-    // Update UI Text
-    // ============================================================
-    function updateUI() {
-      // Update header
-      document.getElementById("header-title").textContent = t("title");
-      document.getElementById("save-text").textContent = t("save");
+    const prev = document.getElementById("purchases-prev");
+    const next = document.getElementById("purchases-next");
+    if (prev) prev.disabled = (state.ui.purchases.page <= 1);
+    if (next) next.disabled = (state.ui.purchases.page >= pg.pages);
+  }
 
-      // Update producer info
-      document.getElementById("producer-info-title").textContent = t("producerInfo");
-      document.getElementById("producer-name-label").textContent = t("producerName");
-      document.getElementById("stocking-unit-label").textContent = t("stockingUnit");
-      document.getElementById("producer-name").placeholder = t("enterProducerName");
+  // ============================================================
+  // Render Sales Table
+  // ============================================================
+  function renderSalesTable(){
+    const tbody = document.getElementById("sales-tbody");
+    if (!tbody) return;
 
-      // Update stocking unit options
-      const stockingSelect = document.getElementById("stocking-unit");
-      stockingSelect.options[0].text = t("selectUnit");
-      stockingSelect.options[1].text = t("kg");
-      stockingSelect.options[2].text = t("liter");
-      stockingSelect.options[3].text = t("bag");
-      stockingSelect.options[4].text = t("piece");
+    const canEdit = !!state.editMode;
 
-      // Update tabs
-      document.getElementById("tab-purchases-text").textContent = t("purchases");
-      document.getElementById("tab-sales-text").textContent = t("sales");
+    const filtered = filterRows("sales", state.sales);
+    const pg = paginate("sales", filtered);
+    setMeta("sales", pg.start, pg.end, pg.total);
+    setEmpty("sales", state.sales.length === 0);
 
-      // Update tab headers
-      document.getElementById("purchases-title").textContent = t("purchases");
-      document.getElementById("sales-title").textContent = t("sales");
-      document.getElementById("add-purchase-text").textContent = t("add");
-      document.getElementById("add-sale-text").textContent = t("add");
+    tbody.innerHTML = pg.pageRows.map((s, idx) => {
+      const sl = pg.start + idx + 1;
+      const disabledAttr = canEdit ? "" : "disabled";
+      const roCalc = "readonly";
 
-      // Update empty states (only if those nodes exist right now)
-      const np = document.getElementById("no-purchases-text");
-      if (np) np.textContent = t("noPurchases");
-      const ns = document.getElementById("no-sales-text");
-      if (ns) ns.textContent = t("noSales");
+      const checked = state.ui.sales.selected.has(s.id) ? "checked" : "";
+      return `
+        <tr data-sale-id="${s.id}">
+          <td class="cell-tight cell-center">
+            <input class="chk" type="checkbox" ${checked} ${disabledAttr}
+              onchange="toggleSelect('sales','${s.id}', this.checked)">
+          </td>
+          <td class="cell-tight">${sl}</td>
 
-      // Re-render entries
-      renderPurchases();
-      renderSales();
+          <td><input class="mini-input" type="date" value="${s.date || ""}" ${disabledAttr}
+              oninput="updateSale('${s.id}','date',this.value)"></td>
+
+          <td><input class="mini-input" type="text" value="${(s.unit||"")}" placeholder="Kg/L/Pcs" ${disabledAttr}
+              oninput="updateSale('${s.id}','unit',this.value)"></td>
+
+          <td><input class="mini-input" type="text" value="${(s.commodity||"")}" placeholder="${t("enterCommodity")}" ${disabledAttr}
+              oninput="updateSale('${s.id}','commodity',this.value)"></td>
+
+          <td><input class="mini-input" type="number" value="${(s.qty||"")}" placeholder="0" ${disabledAttr}
+              oninput="updateSale('${s.id}','qty',this.value)"></td>
+
+          <td><input class="mini-input" type="number" value="${(s.rate||"")}" placeholder="0.00" ${disabledAttr}
+              oninput="updateSale('${s.id}','rate',this.value)"></td>
+
+          <td><input class="mini-input calc" data-field="amount" type="number" value="${(s.amount||"")}" placeholder="0.00" ${roCalc}></td>
+
+          <td><input class="mini-input" type="number" value="${(s.advance||"")}" placeholder="0.00" ${disabledAttr}
+              oninput="updateSale('${s.id}','advance',this.value)"></td>
+
+          <td><input class="mini-input" type="number" value="${(s.finalAmount||"")}" placeholder="0.00" ${disabledAttr}
+              oninput="updateSale('${s.id}','finalAmount',this.value)"></td>
+
+          <td><input class="mini-input total" data-field="total" type="number" value="${(s.total||"")}" placeholder="0.00" ${roCalc}></td>
+
+          <td class="cell-tight" style="text-align:right;">
+            <div class="row-actions">
+              <button class="btn btn-danger" type="button" ${canEdit ? "" : "disabled"}
+                onclick="deleteSale('${s.id}')">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    const selAll = document.getElementById("sales-select-all");
+    if (selAll){
+      const pageIds = pg.pageRows.map(x=>x.id);
+      const allChecked = pageIds.length>0 && pageIds.every(id => state.ui.sales.selected.has(id));
+      const anyChecked = pageIds.some(id => state.ui.sales.selected.has(id));
+      selAll.checked = allChecked;
+      selAll.indeterminate = !allChecked && anyChecked;
+      selAll.disabled = !canEdit;
     }
 
-    // ============================================================
-    // Initialize
-    // ============================================================
-    document.addEventListener("DOMContentLoaded", () => {
-      // Event Listeners
-      document.getElementById("language-btn").addEventListener("click", toggleLanguage);
-      document.getElementById("save-btn").addEventListener("click", saveData);
-      document.getElementById("add-purchase-btn").addEventListener("click", addPurchase);
-      document.getElementById("add-sale-btn").addEventListener("click", addSale);
+    const prev = document.getElementById("sales-prev");
+    const next = document.getElementById("sales-next");
+    if (prev) prev.disabled = (state.ui.sales.page <= 1);
+    if (next) next.disabled = (state.ui.sales.page >= pg.pages);
+  }
 
-      // Producer info inputs
-      document.getElementById("producer-name").addEventListener("change", (e) => {
-        state.producerName = e.target.value;
-      });
+  // selection toggle (exposed for inline handlers)
+  function toggleSelect(tab, id, checked){
+    const ui = state.ui[tab];
+    if (!ui) return;
+    if (!state.editMode) return;
 
-      document.getElementById("stocking-unit").addEventListener("change", (e) => {
-        state.stockingUnit = e.target.value;
-      });
+    if (checked) ui.selected.add(id);
+    else ui.selected.delete(id);
 
-      // Tab buttons
-      document.getElementById("tab-purchases").addEventListener("click", () => switchTab("purchases"));
-      document.getElementById("tab-sales").addEventListener("click", () => switchTab("sales"));
+    if (tab === "purchases") renderPurchasesTable();
+    else renderSalesTable();
+  }
 
-      // Initial render
-      updateUI();
+  // select-all current page
+  function toggleSelectAll(tab, checked){
+    if (!state.editMode) return;
+
+    const ui = state.ui[tab];
+    if (!ui) return;
+
+    const rows = tab === "purchases" ? filterRows("purchases", state.purchases) : filterRows("sales", state.sales);
+    const pg = paginate(tab, rows);
+    pg.pageRows.forEach(r => {
+      if (checked) ui.selected.add(r.id);
+      else ui.selected.delete(r.id);
     });
 
-    // ============================================================
-    // IMPORTANT: Make functions available to inline onclick handlers
-    // ============================================================
-    window.updatePurchase = updatePurchase;
-    window.updateSale = updateSale;
-    window.deletePurchase = deletePurchase;
-    window.deleteSale = deleteSale;
-    window.savePurchaseEntry = savePurchaseEntry;
-    window.saveSaleEntry = saveSaleEntry;
-    window.editPurchaseEntry = editPurchaseEntry;
-    window.editSaleEntry = editSaleEntry;
-  </script>
+    if (tab === "purchases") renderPurchasesTable();
+    else renderSalesTable();
+  }
 
-  <!-- ============================================================
-       INCLUDED (AS-IS) REACT COMPONENT SOURCE YOU PROVIDED
-       NOTE: This is preserved so "nothing is skipped".
-       It is NOT executed in this standalone HTML unless you add a bundler/CDN setup.
-       ============================================================ -->
-  <script type="text/plain" id="react-member-ledger-source">
-/**
- * Member Ledger - Complete Standalone JavaScript File
- *
- * This is a complete, self-contained React component for a Member Ledger
- * with dual entry systems for Purchases and Sales.
- *
- * Features:
- * - Producer information management
- * - Purchase entries with auto-calculations
- * - Sale entries with auto-calculations
- * - English/Bengali language switcher
- * - Beautiful animations
- * - Mobile-responsive design
- *
- * Dependencies Required:
- * - react
- * - motion (framer-motion alternative)
- * - lucide-react
- * - sonner (for toast notifications)
- * - @radix-ui/react-tabs
- * - @radix-ui/react-select
- * - @radix-ui/react-label
- *
- * Note: This uses Tailwind CSS for styling
- */
+  // ============================================================
+  // Tabs
+  // ============================================================
+  function switchTab(tab) {
+    state.activeTab = tab;
 
-/* (Your full React code remains here exactly as provided in the prompt.) */
-  </script>
-</body>
-</html>
+    document.querySelectorAll(".member-ledger-page .tab").forEach((btn) => btn.classList.remove("active"));
+    const activeBtn = document.querySelector(`.member-ledger-page [data-tab="${tab}"]`);
+    if (activeBtn) activeBtn.classList.add("active");
+
+    document.querySelectorAll(".member-ledger-page .tab-pane").forEach((pane) => pane.classList.remove("active"));
+    const activePane = document.getElementById(`${tab}-content`);
+    if (activePane) activePane.classList.add("active");
+  }
+
+  // ============================================================
+  // UI text updates
+  // ============================================================
+  function updateUI() {
+    const ht = document.getElementById("header-title");
+    if (ht) ht.textContent = t("title");
+
+    const et = document.getElementById("edit-text");
+    if (et) et.textContent = t("edit");
+
+    const st = document.getElementById("save-text");
+    if (st) st.textContent = t("save");
+
+    const ct = document.getElementById("cancel-text");
+    if (ct) ct.textContent = t("cancel");
+
+    const at = document.getElementById("add-text");
+    if (at) at.textContent = t("add");
+
+    const pit = document.getElementById("producer-info-title");
+    if (pit) pit.textContent = t("producerInfo");
+
+    const pnl = document.getElementById("producer-name-label");
+    if (pnl) pnl.textContent = t("producerName");
+
+    const sul = document.getElementById("stocking-unit-label");
+    if (sul) sul.textContent = t("stockingUnit");
+
+    const pn = document.getElementById("producer-name");
+    if (pn) pn.placeholder = t("enterProducerName");
+
+    const tpt = document.getElementById("tab-purchases-text");
+    if (tpt) tpt.textContent = t("purchases");
+
+    const tst = document.getElementById("tab-sales-text");
+    if (tst) tst.textContent = t("sales");
+
+    const pt = document.getElementById("purchases-title");
+    if (pt) pt.textContent = t("purchases");
+
+    const sat = document.getElementById("sales-title");
+    if (sat) sat.textContent = t("sales");
+
+    const np = document.getElementById("no-purchases-text");
+    if (np) np.textContent = t("noPurchases");
+
+    const ns = document.getElementById("no-sales-text");
+    if (ns) ns.textContent = t("noSales");
+
+    // Also keep modal localized
+    const abt = document.getElementById("ab-title");
+    const abm = document.getElementById("ab-msg");
+    if (abt) abt.textContent = t("actionBlockedTitle");
+    if (abm) abm.textContent = t("actionBlockedMsg");
+
+    renderPurchasesTable();
+    renderSalesTable();
+    updateEditableStates();
+  }
+
+  // ============================================================
+  // ✅ Sync with base.html global language toggle
+  // ============================================================
+  function applyLanguageFromBase(lang) {
+    const L = (lang === "bn") ? "bn" : "en";
+    state.language = L;
+    updateUI();
+  }
+
+  // ============================================================
+  // DOM bind
+  // ============================================================
+  document.addEventListener("DOMContentLoaded", () => {
+    // Buttons
+    document.getElementById("edit-btn")?.addEventListener("click", enterEditMode);
+    document.getElementById("save-btn")?.addEventListener("click", saveData);
+    document.getElementById("cancel-btn")?.addEventListener("click", cancelEdits);
+
+    // Action blocked modal OK + backdrop click + ESC
+    document.getElementById("ab-ok")?.addEventListener("click", closeActionBlockedModal);
+    document.getElementById("ab-overlay")?.addEventListener("click", (e)=>{
+      if (e.target && e.target.id === "ab-overlay") closeActionBlockedModal();
+    });
+    window.addEventListener("keydown", (e)=>{
+      if (e.key === "Escape") closeActionBlockedModal();
+    });
+
+    document.getElementById("add-btn")?.addEventListener("click", () => {
+      if (!state.editMode) return;
+      if (state.activeTab === "purchases") addPurchase();
+      else addSale();
+    });
+
+    document.getElementById("delete-selected-btn")?.addEventListener("click", () => {
+      if (!state.editMode) return;
+      deleteSelected(state.activeTab);
+    });
+
+    document.getElementById("delete-all-btn")?.addEventListener("click", () => {
+      if (!state.editMode) return;
+      deleteAll(state.activeTab);
+    });
+
+    // Producer fields
+    document.getElementById("producer-name")?.addEventListener("input", (e) => {
+      state.producerName = e.target.value;
+    });
+    document.getElementById("stocking-unit")?.addEventListener("change", (e) => {
+      state.stockingUnit = e.target.value;
+    });
+
+    // Tabs
+    document.getElementById("tab-purchases")?.addEventListener("click", () => switchTab("purchases"));
+    document.getElementById("tab-sales")?.addEventListener("click", () => switchTab("sales"));
+
+    // Search + per-page + pagination
+    document.getElementById("purchases-search")?.addEventListener("input", (e)=>{
+      state.ui.purchases.search = e.target.value || "";
+      state.ui.purchases.page = 1;
+      renderPurchasesTable();
+    });
+    document.getElementById("sales-search")?.addEventListener("input", (e)=>{
+      state.ui.sales.search = e.target.value || "";
+      state.ui.sales.page = 1;
+      renderSalesTable();
+    });
+
+    document.getElementById("purchases-per-page")?.addEventListener("change", (e)=>{
+      state.ui.purchases.perPage = parseInt(e.target.value,10) || 25;
+      state.ui.purchases.page = 1;
+      renderPurchasesTable();
+    });
+    document.getElementById("sales-per-page")?.addEventListener("change", (e)=>{
+      state.ui.sales.perPage = parseInt(e.target.value,10) || 25;
+      state.ui.sales.page = 1;
+      renderSalesTable();
+    });
+
+    document.getElementById("purchases-prev")?.addEventListener("click", ()=>{
+      state.ui.purchases.page = Math.max(1, state.ui.purchases.page - 1);
+      renderPurchasesTable();
+    });
+    document.getElementById("purchases-next")?.addEventListener("click", ()=>{
+      state.ui.purchases.page = state.ui.purchases.page + 1;
+      renderPurchasesTable();
+    });
+    document.getElementById("sales-prev")?.addEventListener("click", ()=>{
+      state.ui.sales.page = Math.max(1, state.ui.sales.page - 1);
+      renderSalesTable();
+    });
+    document.getElementById("sales-next")?.addEventListener("click", ()=>{
+      state.ui.sales.page = state.ui.sales.page + 1;
+      renderSalesTable();
+    });
+
+    // select-all checkbox
+    document.getElementById("purchases-select-all")?.addEventListener("change", (e)=>{
+      toggleSelectAll("purchases", e.target.checked);
+    });
+    document.getElementById("sales-select-all")?.addEventListener("change", (e)=>{
+      toggleSelectAll("sales", e.target.checked);
+    });
+
+    // (kept) table control delete buttons (edit-mode only)
+    document.getElementById("purchases-delete-selected")?.addEventListener("click", ()=> deleteSelected("purchases"));
+    document.getElementById("sales-delete-selected")?.addEventListener("click", ()=> deleteSelected("sales"));
+    document.getElementById("purchases-delete-all")?.addEventListener("click", ()=> deleteAll("purchases"));
+    document.getElementById("sales-delete-all")?.addEventListener("click", ()=> deleteAll("sales"));
+
+    // initial language from base
+    applyLanguageFromBase(window.PGMIS_LANG || "en");
+
+    // listen to base event
+    window.addEventListener("pgmis-language-change", (e) => {
+      const next = (e && e.detail && e.detail.lang) ? e.detail.lang : (window.PGMIS_LANG || "en");
+      applyLanguageFromBase(next);
+    });
+
+    // allow base to call us directly
+    window.onPGMISLanguageChange = (lang) => {
+      applyLanguageFromBase(lang);
+    };
+
+    // Start in read-only
+    setEditingUI(false);
+    updateEditableStates();
+
+    // set initial producer inputs from state
+    const pn = document.getElementById("producer-name");
+    if (pn) pn.value = state.producerName;
+    const su = document.getElementById("stocking-unit");
+    if (su) su.value = state.stockingUnit;
+
+    renderPurchasesTable();
+    renderSalesTable();
+    updateUI();
+  });
+
+  // ============================================================
+  // Expose functions for inline handlers
+  // ============================================================
+  window.updatePurchase = updatePurchase;
+  window.updateSale = updateSale;
+  window.deletePurchase = deletePurchase;
+  window.deleteSale = deleteSale;
+  window.toggleSelect = toggleSelect;
+</script>
+{% endblock %}

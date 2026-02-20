@@ -6,507 +6,492 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <style>
+  /* ============================================================
+     PG REGISTRATION (SCOPED) — keep ALL data + logic same
+     ✅ ONLY UI/Design/Coloring updated to match Ledger Book style
+     ✅ No changes to ids/names/inputs/data bindings/JS logic
+     ============================================================ */
 
-.pgr-wrap{
-  width:100%;
-  max-width:1100px;
-  margin:0 auto;
-}
+  .pgr-wrap{
+    width: 100%;
+    padding: clamp(12px, 2.2vw, 22px);
+    max-width: 1100px;
+    margin: 0 auto;
 
-/* ---------- HERO ---------- */
-.pgr-hero{
-  background:linear-gradient(to right,#059669,#10b981);
-  border-radius:1.25rem;
-  padding:1.2rem;
-  color:#fff;
-  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
-  position:relative;
-  overflow:hidden;
-}
-.pgr-hero:before{
-  content:"";
-  position:absolute;
-  inset:-40% -20%;
-  background:radial-gradient(closest-side,rgba(255,255,255,.12),transparent 60%);
-  pointer-events:none;
-}
-.pgr-hero-top{
-  position:relative;
-  z-index:1;
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:.9rem;
-  flex-wrap:wrap;
-}
-.pgr-title{
-  display:flex;
-  gap:.75rem;
-  align-items:center;
-  min-width:0;
-  flex:1;
-}
-.pgr-icon{
-  width:42px;height:42px;
-  border-radius:9999px;
-  background:rgba(255,255,255,.20);
-  border:1px solid rgba(255,255,255,.25);
-  display:flex;align-items:center;justify-content:center;
-  flex:0 0 auto;
-}
-.pgr-icon svg{width:20px;height:20px;color:#fff;}
-.pgr-hgroup{min-width:0;}
-.pgr-h1{
-  margin:0;
-  font-size:clamp(1.25rem,2vw,1.65rem);
-  font-weight:950;
-  line-height:1.1;
-  word-break:normal;
-  overflow-wrap:break-word;
-}
-.pgr-sub{
-  margin-top:.25rem;
-  color:#d1fae5;
-  font-size:.92rem;
-  font-weight:800;
-}
+    --ink:#0f172a;
+    --muted:#64748b;
 
-/* status badge */
-.pgr-status{
-  display:inline-flex;
-  align-items:center;
-  gap:.5rem;
-  padding:.55rem .9rem;
-  border-radius:9999px;
-  border:1px solid rgba(255,255,255,.25);
-  background:rgba(255,255,255,.18);
-  font-weight:900;
-  font-size:.86rem;
-  user-select:none;
-  white-space:nowrap;
-}
-.pgr-dot{
-  width:8px;height:8px;border-radius:9999px;
-  background:#d1fae5;
-  box-shadow:0 0 0 3px rgba(209,250,229,.18);
-}
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
 
-/* ---------- FORM CARD ---------- */
-.pgr-card{
-  margin-top:1rem;
-  background:#fff;
-  border-radius:1.25rem;
-  padding:1.25rem;
-  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
-  border:1px solid rgba(4,120,87,.10);
-}
+    --paper:#ffffff;
+    --soft:#f7faf9;
 
-/* section header */
-.pgr-section{
-  display:flex;
-  align-items:center;
-  gap:.55rem;
-  color:#047857;
-  margin:0 0 .75rem;
-}
-.pgr-section svg{width:18px;height:18px;color:#059669;}
-.pgr-section-title{
-  margin:0;
-  font-size:1rem;
-  font-weight:950;
-  color:#065f46;
-}
+    --accent:#0b4d3a;
+    color: var(--ink);
+  }
+  .pgr-wrap *{ box-sizing:border-box; }
 
-/* ---------- GRID ---------- */
-.pgr-grid{
-  display:grid;
-  grid-template-columns:repeat(12,1fr);
-  gap:.85rem;
-}
-.pgr-field{
-  display:flex;
-  flex-direction:column;
-  gap:.35rem;
-  min-width:0;
-}
-.pgr-label{
-  font-size:.78rem;
-  color:#059669;
-  font-weight:950;
-  letter-spacing:.2px;
-}
-.pgr-input,
-.pgr-select{
-  width:100%;
-  background:#f0fdf4;
-  color:#1f2937;
-  border-radius:.65rem;
-  padding:.62rem .75rem;
-  border:2px solid transparent;
-  outline:none;
-  font-size:1rem;
-  font-weight:850;
-  min-width:0;
-  transition: box-shadow .2s ease, border-color .2s ease, background .2s ease;
-}
-.pgr-input[readonly]{
-  background:#f8fafc;
-  color:#0f172a;
-  border-color:rgba(15,23,42,.06);
-}
-.pgr-input:focus,
-.pgr-select:focus{
-  border-color:#34d399;
-  box-shadow:0 0 0 3px rgba(52,211,153,.12);
-  background:#ecfdf5;
-}
+  /* ======= Sheet / Card like Ledger Book ======= */
+  .pgr-hero,
+  .pgr-card{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  }
 
-.pgr-hr{
-  height:1px;
-  background:#d1fae5;
-  border:none;
-  margin:1.2rem 0 1rem;
-}
+  /* ======= Header like lb-head ======= */
+  .pgr-hero{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+    position: relative;
+  }
 
-/* spans */
-.col-12{grid-column:span 12;}
-.col-9{grid-column:span 9;}
-.col-8{grid-column:span 8;}
-.col-6{grid-column:span 6;}
-.col-4{grid-column:span 4;}
-.col-3{grid-column:span 3;}
-
-/* help text */
-.pgr-help{
-  font-size:.82rem;
-  color:#6b7280;
-  font-weight:700;
-  margin-top:.35rem;
-}
-
-/* ---------- MEMBERS PREVIEW CARD ---------- */
-.pgr-preview{
-  border-radius:1.25rem;
-  border:1px solid rgba(4,120,87,.10);
-  overflow:hidden;
-  background:#fff;
-  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
-}
-.pgr-preview-head{
-  padding:.8rem 1rem;
-  background:linear-gradient(to right, rgba(5,150,105,.10), rgba(16,185,129,.10));
-  border-bottom:1px solid rgba(15,23,42,.08);
-  font-weight:950;
-  color:#064e3b;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:.75rem;
-  flex-wrap:wrap;
-}
-.pgr-count{
-  display:inline-flex;
-  align-items:center;
-  gap:.45rem;
-  padding:.35rem .65rem;
-  border-radius:9999px;
-  background:rgba(16,185,129,.12);
-  border:1px solid rgba(16,185,129,.25);
-  color:#065f46;
-  font-weight:950;
-  font-size:.82rem;
-}
-.pgr-preview-body{ padding:.9rem 1rem; }
-.pgr-empty{
-  color:#6b7280;
-  font-weight:700;
-  font-size:.9rem;
-}
-
-/* preview row */
-.pgr-chip{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:.75rem;
-  padding:.7rem .75rem;
-  border:1px solid rgba(15,23,42,.10);
-  border-radius:.9rem;
-  background:#fff;
-  margin-bottom:.6rem;
-}
-.pgr-chip-text{
-  font-weight:800;
-  color:#0f172a;
-  font-size:.92rem;
-  line-height:1.25;
-}
-.pgr-chip-btn{
-  border:none;
-  cursor:pointer;
-  user-select:none;
-  padding:.5rem .75rem;
-  border-radius:9999px;
-  font-weight:950;
-  font-size:.82rem;
-  color:#991b1b;
-  background:rgba(239,68,68,.10);
-  border:1px solid rgba(239,68,68,.25);
-  transition: transform .15s ease, box-shadow .2s ease;
-  white-space:nowrap;
-}
-.pgr-chip-btn:hover{
-  transform: translateY(-1px);
-  box-shadow:0 14px 22px -18px rgba(0,0,0,.35);
-}
-
-/* ---------- BUTTONS ---------- */
-.pgr-actions{
-  display:flex;
-  justify-content:flex-end;
-  gap:.65rem;
-  flex-wrap:wrap;
-  margin-top:1rem;
-}
-.pgr-btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:.55rem;
-  padding:.7rem 1.15rem;
-  border-radius:9999px;
-  font-weight:950;
-  cursor:pointer;
-  user-select:none;
-  border:1px solid transparent;
-  transition: transform .15s ease, box-shadow .2s ease;
-  min-height:44px;
-}
-.pgr-btn-primary{
-  background:linear-gradient(to right,#059669,#10b981);
-  color:#fff;
-  box-shadow:0 14px 22px -18px rgba(0,0,0,.35);
-}
-.pgr-btn-primary:hover{
-  transform:translateY(-1px);
-  box-shadow:0 18px 28px -18px rgba(0,0,0,.45);
-}
-
-/* ---------- Select2 THEME (scoped via container class) ---------- */
-.pgr-card .select2-container{ width:100% !important; }
-
-.pgr-card .select2-container--default .select2-selection--multiple{
-  min-height:46px;
-  border-radius:.65rem;
-  border:2px solid transparent;
-  background:#f0fdf4;
-  padding:.35rem .5rem;
-}
-.pgr-card .select2-container--default.select2-container--focus .select2-selection--multiple{
-  border-color:#34d399;
-  box-shadow:0 0 0 3px rgba(52,211,153,.12);
-  background:#ecfdf5;
-}
-.pgr-card .select2-container--default .select2-selection--multiple .select2-selection__rendered{
-  padding-left:.1rem;
-}
-.pgr-card .select2-container--default .select2-selection__choice{
-  background:rgba(16,185,129,.12);
-  border:1px solid rgba(16,185,129,.30);
-  color:#065f46;
-  border-radius:9999px;
-  padding:.25rem .55rem;
-  font-weight:900;
-  margin-top:.35rem;
-}
-.pgr-card .select2-container--default .select2-selection__choice__remove{
-  color:#065f46;
-  margin-right:.35rem;
-}
-.pgr-card .select2-dropdown{
-  border-radius:.9rem;
-  border:1px solid rgba(15,23,42,.10);
-  overflow:hidden;
-  box-shadow:0 22px 44px -30px rgba(0,0,0,.35);
-}
-.pgr-card .select2-container--default .select2-search--inline .select2-search__field{
-  font-weight:800;
-}
-.pgr-card .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable{
-  background:rgba(16,185,129,.12);
-  color:#064e3b;
-  font-weight:900;
-}
-/* ============================================================
-   FIX: Selected Members Preview — make it look clean + modern
-   Works for BOTH:
-   1) your old preview markup: .border.rounded ... .remove-member (btn btn-danger)
-   2) the new preview markup: .pgr-chip / .pgr-chip-btn
-============================================================ */
-
-/* Card body spacing */
-#memberPreview{
-  display: grid;
-  gap: 10px;
-}
-
-/* --------- OLD injected preview blocks (from your original JS) --------- */
-#memberPreview > .border.rounded{
-  border: 1px solid rgba(15,23,42,0.10) !important;
-  border-radius: 14px !important;
-  padding: 10px 12px !important;
-  background: #ffffff !important;
-  box-shadow: 0 10px 18px -16px rgba(0,0,0,0.35);
-}
-
-/* Make it align nicely */
-#memberPreview > .border.rounded.d-flex{
-  align-items: center !important;
-  gap: 12px !important;
-}
-
-/* Text inside old preview */
-#memberPreview > .border.rounded > div:first-child{
-  font-weight: 850;
-  color: #0f172a;
-  line-height: 1.25;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Old remove button – convert to nice pill */
-#memberPreview .remove-member.btn,
-#memberPreview .remove-member{
-  appearance: none;
-  border: 1px solid rgba(239,68,68,0.25) !important;
-  background: rgba(239,68,68,0.10) !important;
-  color: #991b1b !important;
-  font-weight: 950 !important;
-  border-radius: 9999px !important;
-  padding: 8px 12px !important;
-  font-size: 12.5px !important;
-  line-height: 1 !important;
-  box-shadow: none !important;
-  white-space: nowrap;
-}
-#memberPreview .remove-member:hover{
-  transform: translateY(-1px);
-  box-shadow: 0 14px 22px -18px rgba(0,0,0,0.35);
-}
-
-/* --------- NEW preview blocks (if your page uses pgr-chip) --------- */
-#memberPreview .pgr-chip{
-  border: 1px solid rgba(15,23,42,0.10);
-  border-radius: 14px;
-  background: #fff;
-  padding: 10px 12px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 12px;
-  box-shadow: 0 10px 18px -16px rgba(0,0,0,0.35);
-}
-#memberPreview .pgr-chip-text{
-  font-weight: 850;
-  color:#0f172a;
-  line-height: 1.25;
-  min-width:0;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-#memberPreview .pgr-chip-btn{
-  border: 1px solid rgba(239,68,68,0.25);
-  background: rgba(239,68,68,0.10);
-  color:#991b1b;
-  border-radius:9999px;
-  padding:8px 12px;
-  font-weight:950;
-  font-size:12.5px;
-  white-space:nowrap;
-}
-#memberPreview .pgr-chip-btn:hover{
-  transform: translateY(-1px);
-  box-shadow: 0 14px 22px -18px rgba(0,0,0,0.35);
-}
-
-/* Empty state */
-#memberPreview .text-muted.small,
-#memberPreview .pgr-empty{
-  padding: 8px 2px;
-  color: rgba(15,23,42,0.55) !important;
-  font-weight: 800;
-}
-
-/* Selected Member Row */
-.pgr-member-row {
-    display: flex;
+  .pgr-hero-top{
+    display:flex;
+    align-items:center;
     justify-content: space-between;
-    align-items: center;
-    padding: .75rem 1rem;
-    border-radius: 10px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    margin-bottom: .6rem;
-    transition: all .2s ease;
-}
+    gap: 10px;
+    flex-wrap: wrap;
+  }
 
-.pgr-member-row:hover {
-    box-shadow: 0 2px 6px rgba(0,0,0,.05);
-}
+  .pgr-title{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+  }
 
-/* Member Name */
-.pgr-member-name {
-    font-weight: 600;
-    color: #1f2937;
-}
+  .pgr-icon{
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid rgba(16,185,129,.22);
+    background: rgba(16,185,129,.10);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex: 0 0 auto;
+  }
+  .pgr-icon svg{ width: 20px; height: 20px; color: var(--accent); }
 
-/* Right Side Buttons */
-.pgr-member-actions {
-    display: flex;
-    gap: .4rem;
-}
+  .pgr-hgroup{ min-width:0; }
 
-/* Icon Button */
-.pgr-icon-btn {
+  .pgr-h1{
+    margin:0;
+    font-weight: 950;
+    font-size: 18px;
+    letter-spacing: .2px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+  }
+
+  .pgr-sub{
+    margin-top: 3px;
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.70);
+  }
+
+  .pgr-status{
+    display:inline-flex;
+    align-items:center;
+    gap:.5rem;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,.12);
+    background: rgba(247,250,249,.60);
+    font-weight: 950;
+    font-size: 12px;
+    user-select:none;
+    white-space:nowrap;
+    color: rgba(15,23,42,.80);
+  }
+  .pgr-dot{
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(11,77,58,.90);
+    box-shadow: 0 0 0 6px rgba(16,185,129,.12);
+  }
+
+  /* ======= Inner section (like lb-actions-bar separators) ======= */
+  .pgr-card{
+    margin-top: 12px;
+    padding: 0; /* we will pad sections inside */
+  }
+
+  .pgr-card form{
+    padding: 12px 16px 16px;
+  }
+
+  .pgr-section{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 10px 0 12px;
+    margin: 0;
+    border-bottom: 1.5px solid var(--line2);
+  }
+  .pgr-section svg{
+    width: 18px;
+    height: 18px;
+    color: rgba(11,77,58,.95);
+  }
+  .pgr-section-title{
+    margin:0;
+    font-size: 12px;
+    font-weight: 950;
+    color: rgba(15,23,42,.78);
+    letter-spacing: .2px;
+    text-transform: uppercase;
+  }
+
+  /* ======= Grid ======= */
+  .pgr-grid{
+    padding-top: 12px;
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 10px 14px;
+  }
+
+  .pgr-field{
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width:0;
+  }
+
+  .pgr-label{
+    font-weight: 900;
+    font-size: 12px;
+    color: rgba(15,23,42,.78);
+    letter-spacing: .2px;
+    white-space: nowrap;
+  }
+
+  .pgr-input,
+  .pgr-select{
+    width:100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: rgba(247,250,249,.75);
+    font-weight: 800;
+    font-size: 12px;
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+    color: var(--ink);
+  }
+
+  .pgr-input:focus,
+  .pgr-select:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+
+  .pgr-input[readonly]{
+    background: transparent;
+    border-color: rgba(15,23,42,.12);
+    color: rgba(15,23,42,.92);
+  }
+
+  .pgr-hr{
+    height: 1px;
     border: none;
-    background: #f3f4f6;
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    cursor: pointer;
+    background: var(--line2);
+    margin: 6px 0 2px;
+  }
+
+  /* spans */
+  .col-12{grid-column:span 12;}
+  .col-9{grid-column:span 9;}
+  .col-8{grid-column:span 8;}
+  .col-6{grid-column:span 6;}
+  .col-4{grid-column:span 4;}
+  .col-3{grid-column:span 3;}
+
+  .pgr-help{
+    font-size: 12px;
+    color: rgba(15,23,42,.60);
+    font-weight: 800;
+    margin-top: 2px;
+  }
+
+  /* ======= Preview card -> ledger-ish ======= */
+  .pgr-preview{
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    overflow:hidden;
+    background: #fff;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  }
+
+  .pgr-preview-head{
+    padding: 10px 12px;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(16,185,129,.12), transparent 55%),
+      linear-gradient(to right, rgba(5,150,105,.10), rgba(16,185,129,.10));
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    font-weight: 950;
+    color:#0b4d3a;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+
+  .pgr-count{
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 999px;
+    background: rgba(247,250,249,.55);
+    font-weight: 950;
+    font-size: 12px;
+    color: rgba(15,23,42,.80);
+  }
+
+  .pgr-preview-body{
+    padding: 12px;
+  }
+
+  /* Keep your cleanup rules for member preview (old/new injections) */
+  #memberPreview{
+    display: grid;
+    gap: 10px;
+  }
+
+  #memberPreview > .border.rounded{
+    border: 1px solid rgba(15,23,42,0.10) !important;
+    border-radius: 14px !important;
+    padding: 10px 12px !important;
+    background: #ffffff !important;
+    box-shadow: 0 10px 18px -16px rgba(0,0,0,0.35);
+  }
+
+  #memberPreview > .border.rounded.d-flex{
+    align-items: center !important;
+    gap: 12px !important;
+  }
+
+  #memberPreview > .border.rounded > div:first-child{
+    font-weight: 850;
+    color: #0f172a;
+    line-height: 1.25;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #memberPreview .remove-member.btn,
+  #memberPreview .remove-member{
+    appearance: none;
+    border: 1px solid rgba(239,68,68,0.25) !important;
+    background: rgba(239,68,68,0.10) !important;
+    color: #991b1b !important;
+    font-weight: 950 !important;
+    border-radius: 9999px !important;
+    padding: 8px 12px !important;
+    font-size: 12.5px !important;
+    line-height: 1 !important;
+    box-shadow: none !important;
+    white-space: nowrap;
+    transition: transform .15s ease, box-shadow .2s ease;
+  }
+  #memberPreview .remove-member:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 14px 22px -18px rgba(0,0,0,0.35);
+  }
+
+  /* Your chosen member row UI stays (just make it match ledger skin) */
+  .pgr-member-row{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(15,23,42,.14);
+    box-shadow: 0 14px 22px -22px rgba(15,23,42,.22);
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .pgr-member-row:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 18px 28px -24px rgba(15,23,42,.28);
+    background: #fff;
+  }
+  .pgr-member-name{
+    font-weight: 850;
+    color: var(--ink);
+    font-size: 12.5px;
+    min-width:0;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pgr-member-actions{
+    display:flex;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+  .pgr-icon-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.75);
+    width: 38px;
+    height: 34px;
+    border-radius: 12px;
+    cursor:pointer;
     font-size: 14px;
-    transition: all .2s ease;
-}
+    font-weight: 950;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    user-select:none;
+    color: rgba(15,23,42,.85);
+  }
+  .pgr-icon-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.20);
+  }
+  .pgr-icon-btn.edit-member:hover{
+    border-color: rgba(2,132,199,.22);
+    background: rgba(2,132,199,.10);
+    color: rgba(2,132,199,.95);
+  }
+  .pgr-icon-btn.remove-member:hover{
+    border-color: rgba(239,68,68,.28);
+    background: rgba(239,68,68,.10);
+    color: rgba(127,29,29,.95);
+  }
 
-/* Edit */
-.pgr-icon-btn.edit-member:hover {
-    background: #e0f2fe;
-    color: #0284c7;
-}
+  .pgr-empty,
+  #memberPreview .text-muted.small{
+    padding: 8px 2px;
+    color: rgba(15,23,42,.55) !important;
+    font-weight: 800;
+    font-size: 12px;
+  }
 
-/* Remove */
-.pgr-icon-btn.remove-member:hover {
-    background: #fee2e2;
-    color: #dc2626;
-}
+  /* ======= Actions (Save button like lb-btn primary) ======= */
+  .pgr-actions{
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1.5px solid var(--line2);
+    display:flex;
+    justify-content:flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
 
+  .pgr-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+    min-height: 44px;
+  }
+  .pgr-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
 
-/* ---------- RESPONSIVE ---------- */
-@media(max-width:768px){
-  .col-4,.col-3,.col-6,.col-8,.col-9{grid-column:span 12;}
-  .pgr-card{padding:1rem;}
-}
-@media(max-width:420px){
-  .pgr-status{font-size:.82rem;padding:.5rem .75rem;}
-}
+  .pgr-btn-primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .pgr-btn-primary:hover{
+    background: rgba(16,185,129,.16);
+  }
+
+  /* ======= Select2 (match ledger inputs) ======= */
+  .pgr-card .select2-container{ width:100% !important; }
+
+  .pgr-card .select2-container--default .select2-selection--multiple{
+    min-height: 46px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.16);
+    background: rgba(247,250,249,.75);
+    padding: 6px 10px;
+  }
+  .pgr-card .select2-container--default.select2-container--focus .select2-selection--multiple{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+  .pgr-card .select2-container--default .select2-selection--multiple .select2-selection__rendered{
+    padding-left: .1rem;
+  }
+  .pgr-card .select2-container--default .select2-selection__choice{
+    background: rgba(16,185,129,.12);
+    border: 1px solid rgba(16,185,129,.30);
+    color: #0b4d3a;
+    border-radius: 9999px;
+    padding: .25rem .55rem;
+    font-weight: 900;
+    margin-top: .35rem;
+  }
+  .pgr-card .select2-container--default .select2-selection__choice__remove{
+    color: #0b4d3a;
+    margin-right: .35rem;
+  }
+  .pgr-card .select2-dropdown{
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,.10);
+    overflow:hidden;
+    box-shadow: 0 22px 44px -30px rgba(0,0,0,.35);
+  }
+  .pgr-card .select2-container--default .select2-search--inline .select2-search__field{
+    font-weight: 800;
+    font-size: 12px;
+  }
+  .pgr-card .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable{
+    background: rgba(16,185,129,.12);
+    color: #0b4d3a;
+    font-weight: 900;
+  }
+
+  /* ======= Responsive like ledger ======= */
+  @media(max-width:768px){
+    .col-4,.col-3,.col-6,.col-8,.col-9{grid-column:span 12;}
+    .pgr-card form{ padding: 12px; }
+    .pgr-hero{ padding: 14px 12px 12px; }
+  }
+  @media(max-width:420px){
+    .pgr-status{ font-size:12px; padding:8px 10px; }
+  }
 </style>
 
 <div class="pgr-wrap">
 
-  <!-- HERO -->
+  <!-- HERO (same data, new ledger-like skin) -->
   <div class="pgr-hero">
     <div class="pgr-hero-top">
       <div class="pgr-title">
@@ -637,7 +622,7 @@
 
         <!-- MEMBERS -->
         <div class="pgr-field col-12">
-          <label class="pgr-label" style="font-size:.9rem;">Add PG Members</label>
+          <label class="pgr-label" style="font-size:12px;">Add PG Members</label>
           <select id="memberSelect" class="pgr-select" multiple>
             {% for m in shg_members %}
               <option value="{{ m._id }}">
@@ -649,7 +634,7 @@
         </div>
 
         <!-- Preview -->
-        <div class="col-12" style="margin-top:.5rem;">
+        <div class="col-12" style="margin-top:6px;">
           <div class="pgr-preview">
             <div class="pgr-preview-head">
               <span>Selected Members</span>
@@ -703,7 +688,6 @@
 <script>
     const PG_MEMBERSHIP_URL_TEMPLATE = "{{ url_for('pg.pg_members', pg_id='__PGID__') }}";
 </script>
-
 
 <script>
 $(document).ready(function() {
@@ -897,8 +881,5 @@ $(document).ready(function() {
 
 });
 </script>
-
-
-
 
 {% endblock %}
