@@ -29,6 +29,15 @@ def login():
             return jsonify({"error": "Username and password required"}), 400
 
         user = db.users.find_one({"username": username})
+        
+        # After: user = db.users.find_one({"username": username})
+        # Add this block before building the JWT payload: ---- "ATLANTA GOGOI"
+
+        pg_name = None
+        if user.get("pg_id"):
+            pg_doc = db.pgs.find_one({"_id": ObjectId(user["pg_id"])}, {"name": 1})
+            if pg_doc:
+                pg_name = pg_doc.get("name")
 
         if not user or not verify_password(password, user["password_hash"]):
             return jsonify({"error": "Invalid username or password"}), 401
@@ -43,6 +52,7 @@ def login():
         payload = {
             "user_id": str(user["_id"]),
             "role": user["role"],
+            "pg_id": str(user.get("pg_id")) if user.get("pg_id") else None,
             "exp": datetime.utcnow() + timedelta(hours=24),
         }
 
@@ -64,6 +74,7 @@ def login():
                 "block_id": str(user.get("block_id")) if user.get("block_id") else None,
                 "clf_id": str(user.get("clf_id")) if user.get("clf_id") else None,
                 "pg_id": str(user.get("pg_id")) if user.get("pg_id") else None,
+                "pg_name" : pg_name,
                 "validator_level": user.get("validator_level"),
             }
         }), 200

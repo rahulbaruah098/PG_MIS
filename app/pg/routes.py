@@ -648,6 +648,238 @@ def pg_view(pg_id):
     metrics = _pg_metrics(db, pg_id)
     return render_template("dashboard_pg.html", pg=pg_doc, metrics=metrics)
 
+# ATLANTA GOGOI API for APP 
+ 
+@pg_bp.route("/api/dashboard", methods=["GET"])
+@login_required
+@roles_required("PG_DATA_ENTRY")
+def api_pg_dashboard():
+    db = current_app.mongo_db
+
+    # session first (web), fallback to query (mobile)
+    pg_id = g.pg_id 
+
+    if not pg_id:
+        return jsonify({"ok": False, "error": "pg_id missing"}), 400
+
+    oid = safe_objectid(pg_id)
+    if not oid:
+        return jsonify({"ok": False, "error": "Invalid pg_id"}), 400
+
+    pg_doc = db.pgs.find_one({"_id": oid}, {
+        "_id": 1,
+        "pg_name": 1,
+        "name": 1,
+        "pg_code": 1,
+        "block": 1,
+        "district": 1,
+        "gp": 1,
+        "village": 1
+    })
+
+    metrics = _pg_metrics(db, pg_id)
+
+    # Aliases for mobile UI (keep web keys too)
+    metrics["lakhpati_didi_count"] = metrics.get("lakhpati_count", 0)
+    metrics["grants_received"] = metrics.get("grants_received_total", "₹0")
+
+    # optional: compute net_balance from 7d income/expense if you want
+    # metrics["net_balance"] = ...
+
+    return jsonify({
+        "ok": True,
+        "pg_id": str(oid),
+        "role": session.get("role") or "PG_DATA_ENTRY",
+        "pg": pg_doc or {},
+        "metrics": metrics
+    }), 200
+
+@pg_bp.route("/api/dashboard/metrics", methods=["GET"])
+@login_required
+@roles_required("PG_DATA_ENTRY")
+def api_pg_dashboard_metrics():
+    db = current_app.mongo_db
+    pg_id = getattr(g, "pg_id", None) or request.args.get("pg_id")
+    metrics = _pg_metrics(db, pg_id)
+
+    metrics["lakhpati_didi_count"] = metrics.get("lakhpati_count", 0)
+    metrics["grants_received"] = metrics.get("grants_received_total", "₹0")
+
+    return jsonify(metrics), 200
+
+
+@pg_bp.route("/api/registration/<pg_id>", methods=["GET", "POST"])
+@login_required
+def api_pg_registration(pg_id):
+    """
+    Mobile: GET returns PG data + available SHG members.
+            POST validates and saves registration details.
+    """
+    db = current_app.mongo_db
+    role = g.role
+    token_pg_id = str(g.pg_id) if g.pg_id else None
+
+    # ── Shared: scope check + PG lookup ──────────────────────────────────────
+    if role == "PG_DATA_ENTRY" and token_pg_id != str(pg_id):
+        return jsonify({"ok": False, "error": "Forbidden"}), 403
+
+    pg = db.pgs.find_one({"_id": safe_objectid(pg_id)})
+    if not pg:
+        return jsonify({"ok": False, "error": "PG not found"}), 404
+
+    # ── GET ───────────────────────────────────────────────────────────────────
+    if request.method == "GET":
+        shg_members = list(db.shg_members_master.find({"Village": pg.get("Village")}))
+
+        def _safe_str(v):
+            return str(v) if v is not None else None
+
+        pg_out = {
+            "_id": str(pg["_id"]),
+            "name": pg.get("name") or pg.get("PG Name"),
+            "status": pg.get("status", "draft"),
+            "State": pg.get("State"),
+            "District": pg.get("District"),
+            "Block": pg.get("Block"),
+            "Gram Panchayat": pg.get("Gram Panchayat"),
+            "Village": pg.get("Village"),
+            "pg_type": pg.get("pg_type"),
+            "sector": pg.get("sector"),
+            "formation_date": pg.get("formation_date"),
+            "office_bearers": {
+                "president_id": _safe_str(pg.get("office_bearers", {}).get("president_id")),
+                "secretary_id": _safe_str(pg.get("office_bearers", {}).get("secretary_id")),
+                "cashier_id":   _safe_str(pg.get("office_bearers", {}).get("cashier_id")),
+                "contact_number": pg.get("office_bearers", {}).get("contact_number"),
+            } if pg.get("office_bearers") else None,
+            "bank_details": pg.get("bank_details"),
+            "aggregation_centre": pg.get("aggregation_centre"),
+            "members": [
+                {
+                    "member_id":   _safe_str(m.get("member_id")),
+                    "member_name": m.get("member_name"),
+                    "shg_name":    m.get("shg_name"),
+                    "shg_code":    m.get("shg_code"),
+                    "role":        m.get("role"),
+                }
+                for m in (pg.get("members") or [])
+            ],
+        }
+
+        members_out = [
+            {
+                "_id":         str(m["_id"]),
+                "Member Name": m.get("Member Name"),
+                "SHG Name":    m.get("SHG Name"),
+                "SHG Code":    m.get("SHG Code"),
+            }
+            for m in shg_members
+        ]
+
+        return jsonify({"ok": True, "pg": pg_out, "shg_members": members_out}), 200
+
+    # ── POST ──────────────────────────────────────────────────────────────────
+    payload = request.get_json(silent=True) or {}
+
+    required = ["pg_type", "sector", "formation_date", "contact_number",
+                "bank_name", "branch", "account_number", "ifsc",
+                "agg_centre_name", "agg_centre_address"]
+    for field in required:
+        if not payload.get(field, "").strip():
+            return jsonify({"ok": False, "error": f"{field} is required."}), 400
+
+    if not payload["contact_number"].isdigit():
+        return jsonify({"ok": False, "error": "Contact number must be numeric."}), 400
+
+    member_ids   = payload.get("member_ids[]") or []
+    president_id = payload.get("president_id", "").strip()
+    secretary_id = payload.get("secretary_id", "").strip()
+    cashier_id   = payload.get("cashier_id",   "").strip()
+
+    if not member_ids:
+        return jsonify({"ok": False, "error": "Please select at least one member."}), 400
+    if len(member_ids) != len(set(member_ids)):
+        return jsonify({"ok": False, "error": "Duplicate members detected."}), 400
+    if len(member_ids) > 40:
+        return jsonify({"ok": False, "error": "Maximum 40 members allowed."}), 400
+    if not president_id or not secretary_id or not cashier_id:
+        return jsonify({"ok": False, "error": "Please select President, Secretary and Cashier."}), 400
+    if len({president_id, secretary_id, cashier_id}) != 3:
+        return jsonify({"ok": False, "error": "President, Secretary and Cashier must be different members."}), 400
+    if president_id not in member_ids or secretary_id not in member_ids or cashier_id not in member_ids:
+        return jsonify({"ok": False, "error": "Office bearers must be chosen from selected members."}), 400
+
+    try:
+        member_object_ids = [ObjectId(mid) for mid in member_ids]
+    except Exception:
+        return jsonify({"ok": False, "error": "Invalid member selection."}), 400
+
+    members_from_db = list(db.shg_members_master.find({
+        "_id": {"$in": member_object_ids},
+        "Village": pg.get("Village"),
+    }))
+    if len(members_from_db) != len(member_object_ids):
+        return jsonify({"ok": False, "error": "Some members are invalid or not from this village."}), 400
+
+    members_array = []
+    for m in members_from_db:
+        mid_str   = str(m["_id"])
+        role_name = "member"
+        if mid_str == president_id:   role_name = "president"
+        elif mid_str == secretary_id: role_name = "secretary"
+        elif mid_str == cashier_id:   role_name = "cashier"
+        members_array.append({
+            "member_id":   m["_id"],
+            "member_name": m.get("Member Name"),
+            "shg_name":    m.get("SHG Name"),
+            "shg_code":    m.get("SHG Code"),
+            "role":        role_name,
+        })
+
+    data = {
+        "pg_type":        payload["pg_type"].strip(),
+        "sector":         payload["sector"].strip(),
+        "formation_date": payload["formation_date"].strip(),
+        "office_bearers": {
+            "president_id":   ObjectId(president_id),
+            "secretary_id":   ObjectId(secretary_id),
+            "cashier_id":     ObjectId(cashier_id),
+            "contact_number": payload["contact_number"].strip(),
+        },
+        "bank_details": {
+            "bank_name":      payload["bank_name"].strip(),
+            "branch":         payload["branch"].strip(),
+            "account_number": payload["account_number"].strip(),
+            "ifsc":           payload["ifsc"].strip().upper(),
+        },
+        "aggregation_centre": {
+            "name":    payload["agg_centre_name"].strip(),
+            "address": payload["agg_centre_address"].strip(),
+        },
+        "total_members": len(members_array),
+        "members":       members_array,
+        "updated_at":    datetime.utcnow(),
+    }
+
+    if ensure_pg_locked(pg):
+        create_change_request(
+            db,
+            collection="pgs",
+            doc_id=pg["_id"],
+            proposed_changes=data,
+            user={"user_id": g.user_id, "role": g.role},
+            reason="PG is locked; update submitted for approval via mobile.",
+        )
+        return jsonify({"ok": True, "locked": True,
+                        "message": "PG is locked. Changes submitted for approval."}), 200
+
+    db.pgs.update_one({"_id": pg["_id"]}, {"$set": data})
+    log_audit(db, action="update", collection="pgs", doc_id=pg["_id"],
+              user={"user_id": g.user_id, "role": g.role}, after=data)
+
+    return jsonify({"ok": True, "message": "PG registration saved successfully."}), 200
+
+#above codes api registration for mobile app by atlanta gogoi 
 
 @pg_bp.route("/registration/<pg_id>", methods=["GET", "POST"])
 @login_required
@@ -1900,13 +2132,17 @@ def api_generic_register(name, pg_id):
 def pg_profile_data(pg_id):
     """
     Fetch PG profile data as JSON for frontend profile modal.
+    Works for both web (session) and mobile (JWT via g).
     """
 
     db = current_app.mongo_db
-    role = session.get("role")
+
+    # Use g for mobile JWT, fall back to session for web
+    role = getattr(g, "role", None) or session.get("role")
+    token_pg_id = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
 
     try:
-        oid = (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))
+        oid = safe_objectid(pg_id) or safe_objectid(token_pg_id)
     except Exception:
         abort(400, "Invalid PG ID")
 
@@ -1914,24 +2150,20 @@ def pg_profile_data(pg_id):
     if not pg:
         abort(404, "PG not found")
 
-    # -----------------------------
-    # Scope restriction (same logic as pg_view)
-    # -----------------------------
+    # Scope restriction — works for both web and mobile
     if role == "PG_DATA_ENTRY":
-        if session.get("pg_id") != pg_id:
+        if token_pg_id != str(pg["_id"]):
             abort(403)
 
-    if session.get("clf_id") and str(pg.get("clf_id")) != session.get("clf_id"):
-        abort(403)
+    clf_id   = getattr(g, "clf_id",      None) or session.get("clf_id")
+    block_id = getattr(g, "block_id",    None) or session.get("block_id")
+    dist_id  = getattr(g, "district_id", None) or session.get("district_id")
+    state_id = getattr(g, "state_id",    None) or session.get("state_id")
 
-    if session.get("block_id") and str(pg.get("block_id")) != session.get("block_id"):
-        abort(403)
-
-    if session.get("district_id") and str(pg.get("district_id")) != session.get("district_id"):
-        abort(403)
-
-    if session.get("state_id") and str(pg.get("state_id")) != session.get("state_id"):
-        abort(403)
+    if clf_id      and str(pg.get("clf_id"))      != str(clf_id):   abort(403)
+    if block_id    and str(pg.get("block_id"))    != str(block_id): abort(403)
+    if dist_id     and str(pg.get("district_id")) != str(dist_id):  abort(403)
+    if state_id    and str(pg.get("state_id"))    != str(state_id): abort(403)
 
     # -------------------------------------------------
     # 🔥 Fetch Block Admin Name (CLF equivalent)
