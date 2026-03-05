@@ -1,0 +1,2450 @@
+{# templates/output_produce_register.html #}
+{% extends "base.html" %}
+{% block title %}Output / Produce Register (Purchase/Sale/Stock){% endblock %}
+
+{% block head_extra %}
+{{ super() }}
+
+<!-- Ionicons (match Meeting Minutes Book icon style) -->
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+<style>
+  /* ============================================================
+     OUTPUT / PRODUCE REGISTER (SCOPED) — CLEAN + SECTIONED
+     ✅ Bill No replaces SL (manual input)
+     ✅ Tabs active text RED
+     ✅ Mobile rows: horizontal swipe grid (scroll-snap)
+     ✅ Tabs on mobile: single-row scroll (no messy wrap)
+     ✅ Edit button toggles to Save
+     ✅ Clear removed (web + app)
+     ✅ Desktop uses available width better
+     ✅ Added: ALL tab (shows all data together)
+     ✅ Added: Edit-mode page lock (no navigation/refresh until Save/Cancel)
+     ✅ NEW: ALL is FIRST tab
+     ✅ NEW: Active tab persists after refresh
+     ✅ NEW: Edit-lock "Action blocked" popup matches provided design
+     ✅ NEW: Page content also translates EN <-> BN based on base navbar language
+     ✅ No backend/route changes (localStorage only)
+     ============================================================ */
+
+  .opr-wrap{
+    width: 100%;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.10);
+
+    --paper:#ffffff;
+    --soft:#f7faf9;
+
+    --accent:#0b4d3a;
+    --danger:#dc2626;
+    --activeRed:#b91c1c; /* ✅ active tab text */
+
+    --shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+    --shadow2: 0 16px 22px -18px rgba(15,23,42,.25);
+
+    --r18: 18px;
+    --r16: 16px;
+    --r14: 14px;
+
+    color: var(--ink);
+  }
+  .opr-wrap *{ box-sizing:border-box; }
+
+  /* ✅ Fill available space better on desktop */
+  .opr-shell{
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .opr-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--r18);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .opr-head{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1px solid var(--line2);
+  }
+
+  .opr-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: .2px;
+  }
+  .opr-sub{
+    margin: 6px 0 0;
+    text-align:center;
+    color: rgba(15,23,42,.72);
+    font-weight: 850;
+    font-size: 12.5px;
+    line-height: 1.25;
+  }
+  @media (max-width: 560px){
+    .opr-title{ font-size: 16px; }
+  }
+
+  /* Buttons */
+  .opr-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.88);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .opr-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: var(--shadow2);
+  }
+  .opr-btn:active{ transform: translateY(0); }
+  .opr-btn ion-icon{ font-size: 18px; }
+
+  .opr-btnPrimary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color: var(--accent);
+  }
+  .opr-btnPrimary:hover{ background: rgba(16,185,129,.16); }
+
+  .opr-btnDanger{
+    border-color: rgba(239,68,68,.35);
+    background: rgba(239,68,68,.10);
+    color: rgba(127,29,29,.95);
+  }
+  .opr-btnDanger:hover{ background: rgba(239,68,68,.14); }
+
+  .opr-btnMuted{
+    border-color: rgba(15,23,42,.14);
+    background: rgba(241,245,249,.75);
+    color: rgba(15,23,42,.78);
+  }
+
+  /* Actions bar */
+  .opr-actionsBar{
+    padding: 10px 16px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    background: rgba(255,255,255,.94);
+    flex-wrap: wrap;
+  }
+  .opr-actionsLeft, .opr-actionsRight{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ✅ Mobile/tablet: clean button placement (no messy wrap) */
+  @media (max-width: 760px){
+    .opr-actionsBar{
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .opr-actionsLeft, .opr-actionsRight{
+      width:100%;
+      justify-content: space-between;
+    }
+    .opr-actionsLeft{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .opr-actionsRight{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .opr-actionsLeft .opr-btn,
+    .opr-actionsRight .opr-btn{
+      width:100%;
+    }
+  }
+
+  .opr-divider{ height:1px; background: var(--line2); width:100%; }
+
+  /* Top fields */
+  .opr-topfields{
+    padding: 12px 16px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 16px;
+    background: rgba(255,255,255,.92);
+  }
+  @media (max-width: 900px){
+    .opr-topfields{ grid-template-columns: 1fr; }
+  }
+
+  .opr-field{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .opr-label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight: 900;
+    font-size: 13px;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .opr-label ion-icon{ color: rgba(11,77,58,.95); font-size: 18px; }
+
+  .opr-input{
+    flex: 1;
+    width:100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: rgba(247,250,249,.82);
+    font-weight: 900;
+    font-size: 14px;
+    outline: none;
+    transition: box-shadow .12s ease, border-color .12s ease, background .12s ease;
+    color: var(--ink);
+    min-height: 46px;
+  }
+  .opr-input:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+  .opr-input[readonly]{
+    background: rgba(241,245,249,.55);
+    border-color: rgba(15,23,42,.12);
+  }
+
+  .opr-input::placeholder,
+  .opr-tdInput::placeholder{
+    color: rgba(15,23,42,.42);
+    font-weight: 750;
+  }
+
+  /* Tabs */
+  .opr-tabs{
+    padding: 12px 16px;
+    display:flex;
+    gap: 10px;
+    background: rgba(255,255,255,.94);
+    border-top: 1px solid var(--line2);
+    border-bottom: 1px solid var(--line2);
+  }
+
+  .opr-tab{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.88);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12.5px;
+    cursor: pointer;
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    user-select:none;
+    white-space: nowrap;
+  }
+  .opr-tab:hover{ transform: translateY(-1px); background:#fff; box-shadow: var(--shadow2); }
+
+  /* ✅ Active tab: text red */
+  .opr-tab[aria-selected="true"]{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color: var(--activeRed);
+  }
+  .opr-tab ion-icon{ font-size: 18px; }
+
+  /* ✅ Mobile/app: keep ALL tabs on ONE line (scroll) */
+  @media (max-width: 760px){
+    .opr-tabs{
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+    .opr-tabs::-webkit-scrollbar{ height: 8px; }
+    .opr-tabs::-webkit-scrollbar-thumb{
+      background: rgba(15,23,42,.18);
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.9);
+    }
+    .opr-tab{ flex: 0 0 auto; }
+  }
+
+  /* Section header */
+  .opr-sectionHead{
+    padding: 12px 16px;
+    display:flex;
+    align-items:flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: rgba(255,255,255,.96);
+  }
+  .opr-sectionTitle{
+    margin:0;
+    font-weight: 950;
+    font-size: 14px;
+    color: rgba(15,23,42,.92);
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+  .opr-sectionTitle ion-icon{ color: rgba(11,77,58,.95); font-size: 18px; }
+  .opr-sectionNote{
+    margin: 2px 0 0;
+    color: rgba(15,23,42,.65);
+    font-weight: 850;
+    font-size: 12.5px;
+  }
+
+  .opr-sectionTools{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items:center;
+    justify-content:flex-end;
+  }
+
+  /* ✅ Mobile: tools row neat */
+  @media (max-width: 760px){
+    .opr-sectionTools{
+      width:100%;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      justify-content: stretch;
+    }
+    .opr-sectionTools .opr-btn{ width:100%; }
+  }
+
+  /* Table wrap */
+  .opr-tableWrap{
+    width: 100%;
+    overflow: auto;
+    background: #fff;
+    -webkit-overflow-scrolling: touch;
+    border-top: 1px solid var(--line2);
+  }
+
+  .opr-tableWrap::-webkit-scrollbar{ height: 10px; width: 10px; }
+  .opr-tableWrap::-webkit-scrollbar-thumb{
+    background: rgba(15,23,42,.18);
+    border-radius: 999px;
+    border: 2px solid rgba(255,255,255,.9);
+  }
+
+  .opr-table{
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 980px;
+  }
+
+  .opr-table th, .opr-table td{
+    border: 1px solid rgba(15,23,42,.08);
+    padding: 12px 12px;
+    vertical-align: middle;
+    background: rgba(255,255,255,.98);
+    font-size: 14px;
+  }
+
+  .opr-table thead th{
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--soft);
+    color: rgba(15,23,42,.82);
+    font-weight: 950;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .opr-table tbody tr:nth-child(even) td{
+    background: rgba(247,250,249,.55);
+  }
+
+  .opr-tdInput{
+    width: 100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: rgba(247,250,249,.82);
+    font-weight: 900;
+    color: var(--ink);
+    outline: none;
+    transition: box-shadow .12s ease, border-color .12s ease, background .12s ease;
+    font-size: 14px;
+    min-height: 46px;
+  }
+  .opr-tdInput:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  .opr-tdInput[readonly]{
+    background: rgba(241,245,249,.55);
+    border-color: rgba(15,23,42,.12);
+    font-weight: 950;
+  }
+
+  .opr-num{ text-align:right; font-variant-numeric: tabular-nums; }
+  .opr-center{ text-align:center; }
+
+  /* Sticky first columns (checkbox + billno) on desktop */
+  .opr-stickyLeft{
+    position: sticky;
+    left: 0;
+    z-index: 6;
+    background: rgba(247,250,249,.96) !important;
+  }
+  .opr-stickyLeft2{
+    position: sticky;
+    left: 56px;
+    z-index: 6;
+    background: rgba(247,250,249,.96) !important;
+  }
+
+  .opr-chk{
+    width: 18px;
+    height: 18px;
+    accent-color: #0b4d3a;
+    cursor:pointer;
+  }
+
+  /* Totals strip */
+  .opr-totals{
+    padding: 12px 16px;
+    background: rgba(240,253,244,.55);
+    border-top: 1px solid rgba(15,23,42,.10);
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .opr-kpi{
+    background: #fff;
+    border: 1px solid rgba(15,23,42,.10);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 10px 18px -16px rgba(15,23,42,.35);
+    min-height: 62px;
+  }
+  .opr-kpi b{
+    display:block;
+    font-size: 12px;
+    color: rgba(15,23,42,.62);
+    font-weight: 950;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+  }
+  .opr-kpi span{
+    display:block;
+    margin-top: 6px;
+    font-size: 15px;
+    font-weight: 950;
+    color: rgba(15,23,42,.90);
+  }
+  @media (max-width: 900px){
+    .opr-totals{ grid-template-columns: 1fr; }
+  }
+
+  /* Mobile/app swipe cards */
+  .opr-mobileList{
+    display:none;
+    padding: 12px 12px 16px;
+    background:#fff;
+    border-top: 1px solid var(--line2);
+  }
+
+  .opr-card{
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 16px;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(11,77,58,.06), transparent 55%),
+      #fff;
+    box-shadow: 0 14px 26px -24px rgba(15,23,42,.45);
+    padding: 12px;
+  }
+
+  /* ✅ keep your design; just make container horizontal swipe */
+  @media (max-width: 860px){
+    .opr-tableWrap{ display:none; }
+    .opr-mobileList{
+      display:flex;
+      gap: 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 18px;
+    }
+    .opr-mobileList::-webkit-scrollbar{ height: 10px; }
+    .opr-mobileList::-webkit-scrollbar-thumb{
+      background: rgba(15,23,42,.18);
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.9);
+    }
+
+    .opr-card{
+      flex: 0 0 min(560px, 86%);
+      scroll-snap-align: start;
+    }
+
+    .opr-stickyLeft, .opr-stickyLeft2{ position: static; left: auto; }
+  }
+
+  .opr-cardTop{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .opr-pill{
+    font-weight: 950;
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(241,245,249,.85);
+    border: 1px solid rgba(15,23,42,.10);
+    color: rgba(15,23,42,.80);
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .opr-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .opr-item label{
+    display:block;
+    font-weight: 950;
+    font-size: 12px;
+    color: rgba(15,23,42,.65);
+    margin-bottom: 6px;
+  }
+  .opr-item .opr-tdInput{ min-height: 44px; }
+  @media (max-width: 520px){
+    .opr-grid{ grid-template-columns: 1fr; }
+  }
+
+  /* Funky toast top-right (not green) */
+  .opr-toast{
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 9999;
+    display:none;
+    max-width: min(360px, calc(100vw - 28px));
+    background: rgba(15,23,42,.92);
+    color: rgba(255,255,255,.92);
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 22px 48px -26px rgba(0,0,0,.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-weight: 900;
+    font-size: 12.5px;
+    letter-spacing: .2px;
+    transform: translateY(-6px);
+    animation: oprToastIn .18s ease-out forwards;
+  }
+  .opr-toast::before{
+    content:"";
+    position:absolute;
+    inset:-2px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255,255,255,.28), rgba(255,255,255,0) 55%);
+    pointer-events:none;
+    opacity:.55;
+  }
+  .opr-toast::after{
+    content:"";
+    position:absolute;
+    top: 10px;
+    left: 10px;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 0 0 6px rgba(255,255,255,.10);
+    opacity:.85;
+    pointer-events:none;
+  }
+  @keyframes oprToastIn{
+    from{ opacity:0; transform: translateY(-10px) scale(.98); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
+
+  /* Confirm modal */
+  .opr-confirm{
+    position: fixed;
+    inset: 0;
+    z-index: 11000;
+    display: none;
+    background: rgba(2,6,23,.58);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 16px;
+    align-items: center;
+    justify-content: center;
+  }
+  .opr-confirmCard{
+    width: min(520px, 100%);
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid rgba(15,23,42,.12);
+    box-shadow: 0 24px 70px -40px rgba(0,0,0,.6);
+    overflow: hidden;
+  }
+  .opr-confirmHead{
+    padding: 12px 14px;
+    background: linear-gradient(135deg, rgba(240,253,244,.95), rgba(255,255,255,.98));
+    border-bottom: 1px solid rgba(15,23,42,.10);
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    font-weight: 950;
+  }
+  .opr-confirmHead ion-icon{ font-size: 18px; color: rgba(11,77,58,.95); }
+  .opr-confirmBody{
+    padding: 14px;
+    color: rgba(15,23,42,.80);
+    font-weight: 850;
+    line-height: 1.35;
+    font-size: 13px;
+  }
+  .opr-confirmBtns{
+    padding: 12px 14px 14px;
+    display:flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  /* ✅ Action-blocked modal — compact like screenshot */
+  .opr-block{
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: none;
+    background: rgba(2,6,23,.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 16px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .opr-blockCard{
+    width: min(560px, 92vw);
+    background: #fff;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,.10);
+    box-shadow: 0 22px 55px -35px rgba(0,0,0,.75);
+    overflow: hidden;
+  }
+
+  .opr-blockHead{
+    padding: 10px 12px;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 15px;
+    color: rgba(11,77,58,.98);
+    background:
+      radial-gradient(circle at 12% 35%, rgba(16,185,129,.20), transparent 62%),
+      linear-gradient(90deg, rgba(224,247,239,1), rgba(236,253,245,1));
+    border-bottom: 1px solid rgba(15,23,42,.08);
+  }
+
+  .opr-blockDot{
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background: rgba(11,77,58,.18);
+    display:grid;
+    place-items:center;
+    flex: 0 0 auto;
+  }
+  .opr-blockDot::after{
+    content:"";
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: rgba(11,77,58,.95);
+  }
+
+  .opr-blockBody{
+    padding: 14px 14px 12px;
+    font-weight: 600;
+    color: rgba(15,23,42,.88);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .opr-blockBtns{
+    padding: 10px 14px 14px;
+    display:flex;
+    justify-content: flex-end;
+  }
+
+  .opr-blockOk{
+    border: 1px solid rgba(16,185,129,.40);
+    background: rgba(16,185,129,.10);
+    color: rgba(11,77,58,.98);
+    border-radius: 12px;
+    padding: 9px 14px;
+    min-width: 110px;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .opr-blockOk:hover{
+    transform: translateY(-1px);
+    background: rgba(16,185,129,.14);
+    box-shadow: 0 14px 22px -18px rgba(15,23,42,.30);
+  }
+  .opr-blockOk:active{ transform: translateY(0); }
+
+  @media (max-width: 420px){
+    .opr-blockCard{ width: min(520px, 94vw); border-radius: 12px; }
+    .opr-blockHead{ font-size: 14px; }
+    .opr-blockBody{ font-size: 13px; }
+    .opr-blockOk{ min-width: 96px; padding: 8px 12px; }
+  }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="opr-wrap">
+  <div class="opr-shell">
+    <div class="opr-sheet">
+
+      <div class="opr-head">
+        <h1 class="opr-title" data-i18n="page_title">Output / Produce Register (Purchase / Sale / Stock)</h1>
+        <p class="opr-sub" data-i18n="page_sub">
+          Record purchases from members, sales to buyers, and live stock balance. Amounts & stock auto-calculate.
+        </p>
+      </div>
+
+      <!-- Actions -->
+      <div class="opr-actionsBar">
+        <div class="opr-actionsLeft">
+          <!-- ✅ Edit toggles to Save (single button) -->
+          <button type="button" class="opr-btn opr-btnPrimary" id="oprEditSave">
+            <ion-icon id="oprEditSaveIcon" name="create"></ion-icon>
+            <span id="oprEditSaveText" data-i18n="btn_edit">Edit</span>
+          </button>
+
+          <button type="button" class="opr-btn opr-btnMuted" id="oprCancel" style="display:none;">
+            <ion-icon name="close-circle"></ion-icon>
+            <span data-i18n="btn_cancel">Cancel</span>
+          </button>
+        </div>
+
+        <div class="opr-actionsRight">
+          <button type="button" class="opr-btn" id="oprExport">
+            <ion-icon name="download"></ion-icon>
+            <span data-i18n="btn_export">Export</span>
+          </button>
+
+          <button type="button" class="opr-btn" id="oprPrint">
+            <ion-icon name="print"></ion-icon>
+            <span data-i18n="btn_print">Print</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="opr-divider"></div>
+
+      <!-- Top fields -->
+      <div class="opr-topfields">
+        <div class="opr-field">
+          <div class="opr-label">
+            <ion-icon name="leaf"></ion-icon>
+            <span data-i18n="lbl_produce">Name of the Produce</span>
+          </div>
+          <input id="produceName" class="opr-input" type="text"
+                 placeholder="e.g., Paddy / Vegetable / Fish etc."
+                 readonly />
+        </div>
+
+        <div class="opr-field">
+          <div class="opr-label">
+            <ion-icon name="cube"></ion-icon>
+            <span data-i18n="lbl_unit">Unit of Stocking</span>
+          </div>
+          <input id="unitStock" class="opr-input" type="text"
+                 placeholder="e.g., Kg / Quintal / Nos / Litre"
+                 readonly />
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="opr-tabs" role="tablist" aria-label="Register Sections">
+        <!-- ✅ ALL FIRST -->
+        <button class="opr-tab" id="tabAll" role="tab" aria-selected="true" data-tab="all">
+          <ion-icon name="grid"></ion-icon> <span data-i18n="tab_all">All</span>
+        </button>
+        <button class="opr-tab" id="tabPurchases" role="tab" aria-selected="false" data-tab="purchases">
+          <ion-icon name="cart"></ion-icon> <span data-i18n="tab_purchases">Purchases</span>
+        </button>
+        <button class="opr-tab" id="tabSales" role="tab" aria-selected="false" data-tab="sales">
+          <ion-icon name="receipt"></ion-icon> <span data-i18n="tab_sales">Sales</span>
+        </button>
+        <button class="opr-tab" id="tabStock" role="tab" aria-selected="false" data-tab="stock">
+          <ion-icon name="layers"></ion-icon> <span data-i18n="tab_stock">Stock</span>
+        </button>
+      </div>
+
+      <!-- Section head + tools -->
+      <div class="opr-sectionHead">
+        <div>
+          <h3 class="opr-sectionTitle" id="sectionTitle">
+            <ion-icon name="grid"></ion-icon>
+            <span id="sectionTitleText">All (Purchases + Sales + Stock)</span>
+          </h3>
+          <div class="opr-sectionNote" id="sectionNote">All records shown together. Amounts & stock auto-calculate.</div>
+        </div>
+
+        <div class="opr-sectionTools" id="sectionTools">
+          <button type="button" class="opr-btn opr-btnPrimary" id="oprAddRow" style="display:none;">
+            <ion-icon name="add-circle"></ion-icon>
+            <span data-i18n="btn_add_row">Add Row</span>
+          </button>
+
+          <button type="button" class="opr-btn opr-btnDanger" id="oprDeleteSelected" style="display:none;">
+            <ion-icon name="trash"></ion-icon>
+            <span data-i18n="btn_delete_selected">Delete Selected</span>
+          </button>
+
+          <button type="button" class="opr-btn opr-btnDanger" id="oprDeleteAll" style="display:none;">
+            <ion-icon name="trash-bin"></ion-icon>
+            <span data-i18n="btn_delete_all">Delete All</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Desktop table -->
+      <div class="opr-tableWrap">
+        <table class="opr-table" id="sectionTable" aria-label="Section Table">
+          <thead id="sectionThead"></thead>
+          <tbody id="sectionTbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Mobile/app cards -->
+      <div class="opr-mobileList" id="mobileList"></div>
+
+      <!-- Totals -->
+      <div class="opr-totals" id="totalsStrip">
+        <div class="opr-kpi">
+          <b id="kpi1Label">Total Purchase Amount</b>
+          <span id="kpi1Val">0</span>
+        </div>
+        <div class="opr-kpi">
+          <b id="kpi2Label">Total Sale Amount</b>
+          <span id="kpi2Val">0</span>
+        </div>
+        <div class="opr-kpi">
+          <b id="kpi3Label">Live Stock Amount</b>
+          <span id="kpi3Val">0</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="opr-toast" id="toast"></div>
+
+  <!-- Confirm modal -->
+  <div class="opr-confirm" id="oprConfirm">
+    <div class="opr-confirmCard">
+      <div class="opr-confirmHead">
+        <ion-icon name="help-circle"></ion-icon>
+        <span id="oprConfirmTitle">Confirm</span>
+      </div>
+      <div class="opr-confirmBody" id="oprConfirmMsg">Are you sure?</div>
+      <div class="opr-confirmBtns">
+        <button type="button" class="opr-btn opr-btnMuted" id="oprConfirmNo">
+          <span data-i18n="btn_no">No</span>
+        </button>
+        <button type="button" class="opr-btn opr-btnPrimary" id="oprConfirmYes">
+          <span data-i18n="btn_yes">Yes</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Action-blocked modal (used during edit lock) -->
+  <div class="opr-block" id="oprBlocked">
+    <div class="opr-blockCard" role="dialog" aria-modal="true" aria-labelledby="oprBlockedTitle">
+      <div class="opr-blockHead">
+        <span class="opr-blockDot" aria-hidden="true"></span>
+        <span id="oprBlockedTitle" data-i18n="blocked_title">Action blocked</span>
+      </div>
+      <div class="opr-blockBody" id="oprBlockedMsg" data-i18n="blocked_msg">
+        You are in Edit mode. Please Save or Cancel before leaving this page.
+      </div>
+      <div class="opr-blockBtns">
+        <button type="button" class="opr-blockOk" id="oprBlockedOk" data-i18n="btn_ok">OK</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  /* ============================================================
+     Output / Produce Register (Sectioned)
+     ✅ Bill No replaces SL (manual)
+     ✅ Edit <-> Save toggle (single button)
+     ✅ Clear removed
+     ✅ Mobile swipe cards
+     ✅ ALL tab FIRST
+     ✅ Active tab persists after refresh
+     ✅ Edit-mode page lock uses "Action blocked" popup design
+     ✅ Translation EN <-> BN follows base navbar toggle (localStorage / html attrs / base events)
+     ============================================================ */
+
+  const STORAGE_KEY = "pgmis_output_register_v3_billno_swipe";
+
+  /* ===========================
+     ✅ i18n (EN / BN)
+     =========================== */
+  const I18N = {
+    en: {
+      page_title: "Output / Produce Register (Purchase / Sale / Stock)",
+      page_sub: "Record purchases from members, sales to buyers, and live stock balance. Amounts & stock auto-calculate.",
+
+      btn_edit: "Edit",
+      btn_save: "Save",
+      btn_cancel: "Cancel",
+      btn_export: "Export",
+      btn_print: "Print",
+      btn_add_row: "Add Row",
+      btn_delete_selected: "Delete Selected",
+      btn_delete_all: "Delete All",
+      btn_yes: "Yes",
+      btn_no: "No",
+      btn_ok: "OK",
+
+      lbl_produce: "Name of the Produce",
+      lbl_unit: "Unit of Stocking",
+      ph_produce: "e.g., Paddy / Vegetable / Fish etc.",
+      ph_unit: "e.g., Kg / Quintal / Nos / Litre",
+
+      tab_all: "All",
+      tab_purchases: "Purchases",
+      tab_sales: "Sales",
+      tab_stock: "Stock",
+
+      sec_all_title: "All (Purchases + Sales + Stock)",
+      sec_all_note: "All records shown together. Amounts & stock auto-calculate.",
+      sec_pur_title: "Purchases (From Member)",
+      sec_pur_note: "Enter purchase details. Amount is auto-calculated.",
+      sec_sale_title: "Sales (To Buyers)",
+      sec_sale_note: "Enter sale details. Amount is auto-calculated.",
+      sec_stock_title: "Stock (Auto Calculated)",
+      sec_stock_note: "Closing stock qty is auto. You can edit stock rate if needed.",
+
+      kpi_pur_qty: "Total Purchase Qty",
+      kpi_pur_amt: "Total Purchase Amount",
+      kpi_sale_qty: "Total Sale Qty",
+      kpi_sale_amt: "Total Sale Amount",
+      kpi_stock_qty: "Live Stock Qty",
+      kpi_stock_rate: "Live Stock Rate (avg)*",
+      kpi_stock_amt: "Live Stock Amount",
+
+      th_select: "Select",
+      th_bill_no: "Bill No",
+      th_date: "Date",
+      th_farmer: "Name of Farmer",
+      th_buyer: "Buyer Name",
+      th_qty: "Qty",
+      th_rate: "Rate",
+      th_amount: "Amount",
+      th_folio: "Cash Book Folio No",
+      th_ref_bill: "Ref / Bill No",
+      th_closing_qty: "Closing Stock Qty",
+      th_stock_rate: "Stock Rate",
+      th_stock_amount: "Stock Amount",
+
+      th_p_bill: "Purchase Bill No",
+      th_p_date: "Purchase Date",
+      th_p_farmer: "Farmer Name",
+      th_p_qty: "Purchase Qty",
+      th_p_rate: "Purchase Rate",
+      th_p_amt: "Purchase Amount",
+      th_p_folio: "Purchase Folio",
+      th_s_bill: "Sale Bill No",
+      th_s_date: "Sale Date",
+      th_s_buyer: "Buyer Name",
+      th_s_qty: "Sale Qty",
+      th_s_rate: "Sale Rate",
+      th_s_amt: "Sale Amount",
+      th_s_folio: "Sale Folio",
+      th_stk_ref: "Stock Ref No",
+      th_stk_qty: "Closing Stock Qty",
+      th_stk_rate: "Stock Rate",
+      th_stk_amt: "Stock Amount",
+
+      ph_bill: "Bill no",
+      ph_ref: "Ref no",
+      ph_farmer: "Farmer name",
+      ph_buyer: "Buyer name",
+      ph_folio: "Folio",
+
+      confirm: "Confirm",
+      confirm_q: "Are you sure?",
+      confirm_save_title: "Save changes?",
+      confirm_save_msg: "Save all changes?",
+      confirm_cancel_title: "Discard changes?",
+      confirm_cancel_msg: "Cancel will discard your edits. Continue?",
+      confirm_del_sel_title: "Delete selected?",
+      confirm_del_sel_msg: (n)=>`Delete ${n} selected row(s)?`,
+      confirm_del_all_title: "Delete all?",
+      confirm_del_all_msg: "Delete ALL rows? This cannot be undone.",
+      confirm_export_title: "Export CSV?",
+      confirm_export_msg: "Export all records to CSV file?",
+
+      blocked_title: "Action blocked",
+      blocked_msg: "You are in Edit mode. Please Save or Cancel before leaving this page.",
+
+      toast_all: "All",
+      toast_purchases: "Purchases",
+      toast_sales: "Sales",
+      toast_stock: "Stock",
+      toast_edit_on: "Edit mode ON",
+      toast_saved: "Saved",
+      toast_canceled: "Canceled",
+      toast_row_added: "Row added",
+      toast_none_selected: "No rows selected",
+      toast_deleted_selected: "Deleted selected",
+      toast_deleted_all: "All rows deleted",
+      toast_csv_exported: "CSV exported"
+    },
+
+    bn: {
+      page_title: "আউটপুট / উৎপাদন রেজিস্টার (ক্রয় / বিক্রয় / স্টক)",
+      page_sub: "সদস্যদের কাছ থেকে ক্রয়, ক্রেতাদের কাছে বিক্রয় এবং লাইভ স্টক ব্যালেন্স রেকর্ড করুন। টাকা ও স্টক স্বয়ংক্রিয়ভাবে হিসাব হবে।",
+
+      btn_edit: "এডিট",
+      btn_save: "সেভ",
+      btn_cancel: "বাতিল",
+      btn_export: "এক্সপোর্ট",
+      btn_print: "প্রিন্ট",
+      btn_add_row: "রো যোগ করুন",
+      btn_delete_selected: "নির্বাচিত মুছুন",
+      btn_delete_all: "সব মুছুন",
+      btn_yes: "হ্যাঁ",
+      btn_no: "না",
+      btn_ok: "ঠিক আছে",
+
+      lbl_produce: "পণ্যের নাম",
+      lbl_unit: "স্টকিং ইউনিট",
+      ph_produce: "যেমন: ধান / সবজি / মাছ ইত্যাদি",
+      ph_unit: "যেমন: কেজি / কুইন্টাল / সংখ্যা / লিটার",
+
+      tab_all: "সব",
+      tab_purchases: "ক্রয়",
+      tab_sales: "বিক্রয়",
+      tab_stock: "স্টক",
+
+      sec_all_title: "সব (ক্রয় + বিক্রয় + স্টক)",
+      sec_all_note: "সব রেকর্ড একসাথে দেখানো হচ্ছে। টাকা ও স্টক স্বয়ংক্রিয়ভাবে হিসাব হবে।",
+      sec_pur_title: "ক্রয় (সদস্য থেকে)",
+      sec_pur_note: "ক্রয়ের তথ্য দিন। টাকার হিসাব স্বয়ংক্রিয়।",
+      sec_sale_title: "বিক্রয় (ক্রেতার কাছে)",
+      sec_sale_note: "বিক্রয়ের তথ্য দিন। টাকার হিসাব স্বয়ংক্রিয়।",
+      sec_stock_title: "স্টক (স্বয়ংক্রিয় হিসাব)",
+      sec_stock_note: "ক্লোজিং স্টক পরিমাণ স্বয়ংক্রিয়। প্রয়োজন হলে স্টক রেট এডিট করতে পারবেন।",
+
+      kpi_pur_qty: "মোট ক্রয় পরিমাণ",
+      kpi_pur_amt: "মোট ক্রয় টাকা",
+      kpi_sale_qty: "মোট বিক্রয় পরিমাণ",
+      kpi_sale_amt: "মোট বিক্রয় টাকা",
+      kpi_stock_qty: "লাইভ স্টক পরিমাণ",
+      kpi_stock_rate: "লাইভ স্টক রেট (গড়)*",
+      kpi_stock_amt: "লাইভ স্টক টাকা",
+
+      th_select: "নির্বাচন",
+      th_bill_no: "বিল নং",
+      th_date: "তারিখ",
+      th_farmer: "কৃষকের নাম",
+      th_buyer: "ক্রেতার নাম",
+      th_qty: "পরিমাণ",
+      th_rate: "দর",
+      th_amount: "টাকা",
+      th_folio: "ক্যাশ বুক ফোলিও নং",
+      th_ref_bill: "রেফ / বিল নং",
+      th_closing_qty: "ক্লোজিং স্টক পরিমাণ",
+      th_stock_rate: "স্টক দর",
+      th_stock_amount: "স্টক টাকা",
+
+      th_p_bill: "ক্রয় বিল নং",
+      th_p_date: "ক্রয় তারিখ",
+      th_p_farmer: "কৃষকের নাম",
+      th_p_qty: "ক্রয় পরিমাণ",
+      th_p_rate: "ক্রয় দর",
+      th_p_amt: "ক্রয় টাকা",
+      th_p_folio: "ক্রয় ফোলিও",
+      th_s_bill: "বিক্রয় বিল নং",
+      th_s_date: "বিক্রয় তারিখ",
+      th_s_buyer: "ক্রেতার নাম",
+      th_s_qty: "বিক্রয় পরিমাণ",
+      th_s_rate: "বিক্রয় দর",
+      th_s_amt: "বিক্রয় টাকা",
+      th_s_folio: "বিক্রয় ফোলিও",
+      th_stk_ref: "স্টক রেফ নং",
+      th_stk_qty: "ক্লোজিং স্টক পরিমাণ",
+      th_stk_rate: "স্টক দর",
+      th_stk_amt: "স্টক টাকা",
+
+      ph_bill: "বিল নং",
+      ph_ref: "রেফ নং",
+      ph_farmer: "কৃষকের নাম",
+      ph_buyer: "ক্রেতার নাম",
+      ph_folio: "ফোলিও",
+
+      confirm: "নিশ্চিত করুন",
+      confirm_q: "আপনি কি নিশ্চিত?",
+      confirm_save_title: "পরিবর্তন সেভ করবেন?",
+      confirm_save_msg: "সব পরিবর্তন সেভ করবেন?",
+      confirm_cancel_title: "পরিবর্তন বাতিল করবেন?",
+      confirm_cancel_msg: "বাতিল করলে আপনার এডিট করা তথ্য হারাবে। চালিয়ে যাবেন?",
+      confirm_del_sel_title: "নির্বাচিত মুছবেন?",
+      confirm_del_sel_msg: (n)=>`নির্বাচিত ${n}টি রো মুছবেন?`,
+      confirm_del_all_title: "সব মুছবেন?",
+      confirm_del_all_msg: "সব রো মুছে যাবে। এটি আর ফেরানো যাবে না।",
+      confirm_export_title: "CSV এক্সপোর্ট করবেন?",
+      confirm_export_msg: "সব রেকর্ড CSV ফাইলে এক্সপোর্ট করবেন?",
+
+      blocked_title: "অ্যাকশন ব্লকড",
+      blocked_msg: "আপনি এডিট মোডে আছেন। পেজ ছাড়ার আগে সেভ বা বাতিল করুন।",
+
+      toast_all: "সব",
+      toast_purchases: "ক্রয়",
+      toast_sales: "বিক্রয়",
+      toast_stock: "স্টক",
+      toast_edit_on: "এডিট মোড চালু",
+      toast_saved: "সেভ হয়েছে",
+      toast_canceled: "বাতিল হয়েছে",
+      toast_row_added: "রো যোগ হয়েছে",
+      toast_none_selected: "কোনো রো নির্বাচিত নয়",
+      toast_deleted_selected: "নির্বাচিত মুছে গেছে",
+      toast_deleted_all: "সব রো মুছে গেছে",
+      toast_csv_exported: "CSV এক্সপোর্ট হয়েছে"
+    }
+  };
+
+  let _lang = "en";
+
+  /* ============================================================
+     ✅ FIX: Base sync priority + stable detection
+     Problem you had:
+     - Many bases keep <html lang="en"> always, but store actual UI lang in storage/attrs.
+     - Old detectLang prioritized html lang too early, forcing EN always.
+     Fix:
+     - Priority: window/global -> localStorage -> sessionStorage -> html/body data-* -> html lang -> cookies
+     - Adds more common storage keys used in PGMIS bases.
+     ============================================================ */
+  function normalizeLang(v){
+    const s = (v || "").toString().toLowerCase().trim();
+    if(!s) return "";
+    if(s === "bn" || s === "bangla" || s === "বাংলা" || s === "bn-bd" || s === "bn_bd" || s === "bn_in" || s === "bn-in") return "bn";
+    if(s === "en" || s === "english" || s === "en-in" || s === "en_in" || s === "en_us" || s === "en-us") return "en";
+    return "";
+  }
+
+  function safeGetLS(key){
+    try{ return localStorage.getItem(key); }catch(e){ return ""; }
+  }
+  function safeGetSS(key){
+    try{ return sessionStorage.getItem(key); }catch(e){ return ""; }
+  }
+
+  function detectLang(){
+    // 0) global hooks (some bases expose this)
+    try{
+      const g = window.__PGMIS_LANG || window.__LANG || window.PGMIS_LANG || "";
+      const ng = normalizeLang(g);
+      if(ng) return ng;
+      // also allow function hook
+      if(typeof window.getCurrentLanguage === "function"){
+        const v = window.getCurrentLanguage();
+        const nrm = normalizeLang(v);
+        if(nrm) return nrm;
+      }
+    }catch(_e){}
+
+    // 1) localStorage (most reliable in your base setups)
+    const lsKeys = [
+      "pgmis_lang","pgmis_language","lang","language","site_lang","ui_lang","app_lang",
+      "selectedLanguage","selected_language","selectedLang","selected_lang",
+      "currentLang","current_language","navbar_lang","nav_lang","pg_lang","pg_language",
+      "langPreference","languagePreference","preferredLanguage","preferred_language"
+    ];
+    for(const k of lsKeys){
+      const norm = normalizeLang(safeGetLS(k));
+      if(norm) return norm;
+    }
+
+    // 2) sessionStorage (some mobile/webview bases use this)
+    const ssKeys = [
+      "pgmis_lang","pgmis_language","lang","language","site_lang","ui_lang","app_lang",
+      "selectedLanguage","selected_language","selectedLang","selected_lang",
+      "currentLang","current_language","navbar_lang","nav_lang","pg_lang","pg_language",
+      "langPreference","languagePreference","preferredLanguage","preferred_language"
+    ];
+    for(const k of ssKeys){
+      const norm = normalizeLang(safeGetSS(k));
+      if(norm) return norm;
+    }
+
+    const html = document.documentElement;
+    const body = document.body;
+
+    // 3) data-* attributes (if base sets them)
+    const attrCandidates = [
+      html.getAttribute("data-lang"),
+      html.getAttribute("data-language"),
+      html.getAttribute("data-current-lang"),
+      html.getAttribute("data-selected-lang"),
+      body ? body.getAttribute("data-lang") : "",
+      body ? body.getAttribute("data-language") : "",
+      body ? body.getAttribute("data-current-lang") : "",
+      body ? body.getAttribute("data-selected-lang") : ""
+    ];
+    for(const a of attrCandidates){
+      const norm = normalizeLang(a);
+      if(norm) return norm;
+      const la = (a || "").toString().toLowerCase().trim();
+      if(la.startsWith("bn")) return "bn";
+      if(la.startsWith("en")) return "en";
+    }
+
+    // 4) html lang attribute (lowest priority because many bases leave it static)
+    const langAttr = (html.getAttribute("lang") || "").toString().toLowerCase().trim();
+    if(langAttr.startsWith("bn")) return "bn";
+    if(langAttr.startsWith("en")) return "en";
+
+    // 5) cookies fallback
+    const m = document.cookie.match(/(?:^|;\s*)(lang|language|pgmis_lang|pgmis_language|site_lang|currentLang|app_lang|ui_lang)=([^;]+)/i);
+    if(m && m[2]){
+      const norm = normalizeLang(decodeURIComponent(m[2]));
+      if(norm) return norm;
+    }
+
+    return "en";
+  }
+
+  function t(key){
+    const dict = I18N[_lang] || I18N.en;
+    const v = dict[key];
+    return (v === undefined || v === null) ? (I18N.en[key] ?? key) : v;
+  }
+
+  function applyStaticTranslations(){
+    // data-i18n elements
+    document.querySelectorAll("[data-i18n]").forEach(el=>{
+      const k = el.getAttribute("data-i18n");
+      if(!k) return;
+      const val = t(k);
+      el.textContent = val;
+    });
+
+    // placeholders
+    if(els.produceName) els.produceName.placeholder = t("ph_produce");
+    if(els.unitStock) els.unitStock.placeholder = t("ph_unit");
+
+    // confirm modal defaults
+    if(els.confirmTitle) els.confirmTitle.textContent = t("confirm");
+    if(els.confirmMsg) els.confirmMsg.textContent = t("confirm_q");
+
+    // blocked modal defaults
+    const bt = document.getElementById("oprBlockedTitle");
+    if(bt) bt.textContent = t("blocked_title");
+    if(els.blockedMsg) els.blockedMsg.textContent = t("blocked_msg");
+  }
+
+  function setLanguage(next){
+    const norm = normalizeLang(next) || "en";
+    const nextLang = (norm === "bn") ? "bn" : "en";
+    if(_lang === nextLang) {
+      // still ensure static is applied (covers initial run)
+      applyStaticTranslations();
+      return;
+    }
+    _lang = nextLang;
+    applyStaticTranslations();
+    renderAll(); // re-render dynamic/table strings & placeholders
+  }
+
+  /* ============================================================
+     ✅ FIX: robust base sync watcher
+     - Listens storage + attribute changes + custom events
+     - Also reads after clicks on common toggle selectors
+     - Interval slower to avoid over-render spam
+     ============================================================ */
+  function startLangWatcher(){
+    let last = detectLang();
+    setLanguage(last);
+
+    const syncNow = ()=>{
+      const now = detectLang();
+      if(now !== last){
+        last = now;
+        setLanguage(now);
+      }
+    };
+
+    // A) cross-tab storage updates
+    window.addEventListener("storage", syncNow);
+
+    // B) attribute observer (if base toggles html/body attrs)
+    const mo = new MutationObserver(syncNow);
+    mo.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["lang","data-lang","data-language","data-current-lang","data-selected-lang"]
+    });
+    if(document.body){
+      mo.observe(document.body, {
+        attributes: true,
+        attributeFilter: ["data-lang","data-language","data-current-lang","data-selected-lang"]
+      });
+    }
+
+    // C) click hook
+    document.addEventListener("click", (e)=>{
+      const el = e.target && e.target.closest ? e.target.closest(
+        [
+          '#langToggle','#languageToggle','#toggleLanguage','#langBtn','#languageBtn',
+          '[data-lang]','[data-language]','[data-set-lang]','[data-set-language]',
+          '.lang-toggle','.language-toggle','.langBtn','.languageBtn',
+          'button[aria-label*="Language" i]','button[aria-label*="lang" i]',
+          'a[aria-label*="Language" i]','a[aria-label*="lang" i]',
+          '[data-action="toggle-language"]','[data-action="toggle-lang"]'
+        ].join(",")
+      ) : null;
+
+      if(!el) return;
+      setTimeout(syncNow, 30);
+      setTimeout(syncNow, 120);
+      setTimeout(syncNow, 260);
+    }, true);
+
+    // D) base custom events (safe listeners)
+    const evts = [
+      "languageChanged","langChanged","pgmis:lang","pgmis:language","app:lang","ui:lang",
+      "pgmis_language_changed","pgmis_lang_changed","language:changed","lang:changed"
+    ];
+    evts.forEach(evt=>{
+      window.addEventListener(evt, (e)=>{
+        const d = e && e.detail ? (e.detail.lang || e.detail.language || e.detail.value || e.detail) : "";
+        const norm = normalizeLang(d);
+        if(norm) setLanguage(norm);
+        else syncNow();
+      });
+    });
+
+    // E) interval fallback (slower; prevents heavy re-render)
+    setInterval(syncNow, 900);
+  }
+
+  const els = {
+    produceName: document.getElementById("produceName"),
+    unitStock: document.getElementById("unitStock"),
+
+    editSaveBtn: document.getElementById("oprEditSave"),
+    editSaveText: document.getElementById("oprEditSaveText"),
+    editSaveIcon: document.getElementById("oprEditSaveIcon"),
+    cancelBtn: document.getElementById("oprCancel"),
+
+    exportBtn: document.getElementById("oprExport"),
+    printBtn: document.getElementById("oprPrint"),
+
+    tabAll: document.getElementById("tabAll"),
+    tabPurchases: document.getElementById("tabPurchases"),
+    tabSales: document.getElementById("tabSales"),
+    tabStock: document.getElementById("tabStock"),
+
+    sectionTitle: document.getElementById("sectionTitle"),
+    sectionTitleText: document.getElementById("sectionTitleText"),
+    sectionNote: document.getElementById("sectionNote"),
+
+    addRowBtn: document.getElementById("oprAddRow"),
+    delSelectedBtn: document.getElementById("oprDeleteSelected"),
+    delAllBtn: document.getElementById("oprDeleteAll"),
+
+    thead: document.getElementById("sectionThead"),
+    tbody: document.getElementById("sectionTbody"),
+
+    mobileList: document.getElementById("mobileList"),
+
+    kpi1Label: document.getElementById("kpi1Label"),
+    kpi2Label: document.getElementById("kpi2Label"),
+    kpi3Label: document.getElementById("kpi3Label"),
+    kpi1Val: document.getElementById("kpi1Val"),
+    kpi2Val: document.getElementById("kpi2Val"),
+    kpi3Val: document.getElementById("kpi3Val"),
+
+    toast: document.getElementById("toast"),
+
+    confirmWrap: document.getElementById("oprConfirm"),
+    confirmTitle: document.getElementById("oprConfirmTitle"),
+    confirmMsg: document.getElementById("oprConfirmMsg"),
+    confirmYes: document.getElementById("oprConfirmYes"),
+    confirmNo: document.getElementById("oprConfirmNo"),
+
+    blockedWrap: document.getElementById("oprBlocked"),
+    blockedMsg: document.getElementById("oprBlockedMsg"),
+    blockedOk: document.getElementById("oprBlockedOk"),
+  };
+
+  function toast(msg){
+    els.toast.textContent = msg;
+    els.toast.style.display = "block";
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => els.toast.style.display = "none", 1800);
+  }
+
+  function confirmBox(title, msg){
+    return new Promise((resolve)=>{
+      els.confirmTitle.textContent = title || t("confirm");
+      els.confirmMsg.textContent = msg || t("confirm_q");
+      els.confirmWrap.style.display = "flex";
+
+      const cleanup = ()=>{
+        els.confirmWrap.style.display = "none";
+        els.confirmYes.onclick = null;
+        els.confirmNo.onclick = null;
+        document.removeEventListener("keydown", onKey);
+      };
+
+      const onKey = (e)=>{
+        if(e.key === "Escape"){ cleanup(); resolve(false); }
+      };
+      document.addEventListener("keydown", onKey);
+
+      els.confirmYes.onclick = ()=>{ cleanup(); resolve(true); };
+      els.confirmNo.onclick  = ()=>{ cleanup(); resolve(false); };
+    });
+  }
+
+  // ✅ Edit-lock popup: "Action blocked" design
+  function blockedBox(msg){
+    if(!editMode) return;
+    els.blockedMsg.textContent = msg || t("blocked_msg");
+    els.blockedWrap.style.display = "flex";
+  }
+
+  els.blockedOk.addEventListener("click", ()=>{ els.blockedWrap.style.display = "none"; });
+
+  function n(x){
+    const v = parseFloat(String(x ?? "").replace(/,/g,"").trim());
+    return Number.isFinite(v) ? v : 0;
+  }
+  function fmt(x){
+    const v = n(x);
+    return v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+  }
+
+  function newRow(){
+    return {
+      id: String(Date.now()) + Math.random().toString(16).slice(2),
+
+      // ✅ Manual bill numbers (replacing SL)
+      p_bill_no: "",
+      s_bill_no: "",
+      stk_ref_no: "",
+
+      // Purchases
+      p_date: "",
+      farmer: "",
+      p_qty: "",
+      p_rate: "",
+      p_amt: 0,
+      p_folio: "",
+
+      // Sales
+      s_date: "",
+      buyer: "",
+      s_qty: "",
+      s_rate: "",
+      s_amt: 0,
+      s_folio: "",
+
+      // Stock
+      stk_qty: 0,
+      stk_rate: "",
+      stk_amt: 0,
+
+      selected: false
+    };
+  }
+
+  function computeRow(r){
+    const pQty = n(r.p_qty);
+    const pRate = n(r.p_rate);
+    const sQty = n(r.s_qty);
+    const sRate = n(r.s_rate);
+
+    r.p_amt = pQty * pRate;
+    r.s_amt = sQty * sRate;
+
+    r.stk_qty = pQty - sQty;
+
+    const userStkRate = n(r.stk_rate);
+    const effectiveRate = userStkRate > 0 ? userStkRate : pRate;
+
+    if(userStkRate > 0){
+      r.stk_rate = r.stk_rate;
+    }else{
+      r.stk_rate = (pRate ? pRate : r.stk_rate);
+    }
+    r.stk_amt = r.stk_qty * effectiveRate;
+
+    return r;
+  }
+
+  function computeTotals(rows){
+    let tpq=0, tpa=0, tsq=0, tsa=0, tstkq=0, tstka=0;
+
+    rows.forEach(r=>{
+      tpq += n(r.p_qty);
+      tpa += n(r.p_amt);
+      tsq += n(r.s_qty);
+      tsa += n(r.s_amt);
+      tstkq += n(r.stk_qty);
+      tstka += n(r.stk_amt);
+    });
+
+    if(activeTab === "purchases"){
+      els.kpi1Label.textContent = t("kpi_pur_qty");
+      els.kpi2Label.textContent = t("kpi_pur_amt");
+      els.kpi3Label.textContent = t("kpi_stock_qty");
+      els.kpi1Val.textContent = fmt(tpq);
+      els.kpi2Val.textContent = fmt(tpa);
+      els.kpi3Val.textContent = fmt(tstkq);
+    }else if(activeTab === "sales"){
+      els.kpi1Label.textContent = t("kpi_sale_qty");
+      els.kpi2Label.textContent = t("kpi_sale_amt");
+      els.kpi3Label.textContent = t("kpi_stock_qty");
+      els.kpi1Val.textContent = fmt(tsq);
+      els.kpi2Val.textContent = fmt(tsa);
+      els.kpi3Val.textContent = fmt(tstkq);
+    }else if(activeTab === "stock"){
+      els.kpi1Label.textContent = t("kpi_stock_qty");
+      els.kpi2Label.textContent = t("kpi_stock_rate");
+      els.kpi3Label.textContent = t("kpi_stock_amt");
+      const avgRate = tstkq !== 0 ? (tstka / tstkq) : 0;
+      els.kpi1Val.textContent = fmt(tstkq);
+      els.kpi2Val.textContent = fmt(avgRate);
+      els.kpi3Val.textContent = fmt(tstka);
+    }else{
+      // ✅ ALL
+      els.kpi1Label.textContent = t("kpi_pur_amt");
+      els.kpi2Label.textContent = t("kpi_sale_amt");
+      els.kpi3Label.textContent = t("kpi_stock_amt");
+      els.kpi1Val.textContent = fmt(tpa);
+      els.kpi2Val.textContent = fmt(tsa);
+      els.kpi3Val.textContent = fmt(tstka);
+    }
+  }
+
+  function saveToStorage(){
+    const payload = {
+      produceName: state.produceName || "",
+      unitStock: state.unitStock || "",
+      rows: state.rows,
+      activeTab: activeTab
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    saveToServer(payload);
+  }
+
+  function loadFromStorage(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return null;
+      return JSON.parse(raw);
+    }catch(e){
+      return null;
+    }
+  }
+
+ 
+  async function loadFromServer(){
+    const pg = (window.PG_ID || "").trim();
+    if(!pg) return null;
+    try{
+      const res = await fetch(`/pg/api/register/output/${encodeURIComponent(pg)}`, { method:"GET" });
+      if(!res.ok) return null;
+      const doc = await res.json().catch(()=>null);
+      const payload = doc && (doc.data || doc) ? (doc.data || doc) : null;
+      if(payload){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      }
+      return payload;
+    }catch(_e){
+      return null;
+    }
+  }
+
+  function saveToServer(payload){
+    const pg = (window.PG_ID || "").trim();
+    if(!pg) return;
+    fetch(`/pg/api/register/output/${encodeURIComponent(pg)}`,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ data: payload }),
+      keepalive: true
+    }).catch(()=>{});
+  }
+
+
+  function exportCSV(rows){
+    const headers = [
+      "Purchase Bill No","Purchase Date","Farmer Name","Purchase Qty","Purchase Rate","Purchase Amount","Purchase Cashbook Folio",
+      "Sale Bill No","Sale Date","Buyer Name","Sale Qty","Sale Rate","Sale Amount","Sale Cashbook Folio",
+      "Stock Ref No","Balance Stock Qty","Stock Rate","Stock Amount",
+      "Produce Name","Unit"
+    ];
+
+    const lines = [headers.join(",")];
+
+    rows.forEach((r)=>{
+      const row = computeRow({...r});
+      const arr = [
+        `"${(row.p_bill_no||"").replace(/"/g,'""')}"`,
+        row.p_date || "",
+        `"${(row.farmer||"").replace(/"/g,'""')}"`,
+        n(row.p_qty),
+        n(row.p_rate),
+        n(row.p_amt),
+        `"${(row.p_folio||"").replace(/"/g,'""')}"`,
+        `"${(row.s_bill_no||"").replace(/"/g,'""')}"`,
+        row.s_date || "",
+        `"${(row.buyer||"").replace(/"/g,'""')}"`,
+        n(row.s_qty),
+        n(row.s_rate),
+        n(row.s_amt),
+        `"${(row.s_folio||"").replace(/"/g,'""')}"`,
+        `"${(row.stk_ref_no||"").replace(/"/g,'""')}"`,
+        n(row.stk_qty),
+        n(row.stk_rate),
+        n(row.stk_amt),
+        `"${(state.produceName||"").replace(/"/g,'""')}"`,
+        `"${(state.unitStock||"").replace(/"/g,'""')}"`,
+      ];
+      lines.push(arr.join(","));
+    });
+
+    const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `output_produce_register_${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  let state = {
+    produceName: "",
+    unitStock: "",
+    rows: [ computeRow(newRow()) ]
+  };
+
+  let activeTab = "all";
+  let editMode = false;
+  let beforeEditSnapshot = null;
+
+  /* ===========================
+     ✅ EDIT-MODE PAGE LOCK
+     =========================== */
+  const _lock = {
+    armed: false,
+    onBeforeUnload: null,
+    onKeyDown: null,
+    onClick: null,
+    onSubmit: null,
+    onPopState: null,
+    statePushed: false
+  };
+
+  function enableEditLock(){
+    if(_lock.armed) return;
+    _lock.armed = true;
+
+    _lock.onBeforeUnload = (e)=>{
+      if(!editMode) return;
+      e.preventDefault();
+      e.returnValue = "";
+      blockedBox(t("blocked_msg"));
+      return "";
+    };
+    window.addEventListener("beforeunload", _lock.onBeforeUnload);
+
+    _lock.onKeyDown = (e)=>{
+      if(!editMode) return;
+
+      const key = (e.key || "").toLowerCase();
+      const ctrlOrMeta = e.ctrlKey || e.metaKey;
+
+      const isF5 = e.key === "F5";
+      const isCtrlR = ctrlOrMeta && key === "r";
+      const isCtrlShiftR = ctrlOrMeta && e.shiftKey && key === "r";
+      const isCtrlL = ctrlOrMeta && key === "l";
+
+      if(isF5 || isCtrlR || isCtrlShiftR || isCtrlL){
+        e.preventDefault();
+        e.stopPropagation();
+        blockedBox(t("blocked_msg"));
+      }
+    };
+    document.addEventListener("keydown", _lock.onKeyDown, true);
+
+    _lock.onClick = (e)=>{
+      if(!editMode) return;
+      const a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if(!a) return;
+
+      const href = (a.getAttribute("href") || "").trim();
+      if(href.startsWith("#") || href === "" ) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      blockedBox(t("blocked_msg"));
+    };
+    document.addEventListener("click", _lock.onClick, true);
+
+    _lock.onSubmit = (e)=>{
+      if(!editMode) return;
+      e.preventDefault();
+      e.stopPropagation();
+      blockedBox(t("blocked_msg"));
+    };
+    document.addEventListener("submit", _lock.onSubmit, true);
+
+    if(!_lock.statePushed){
+      try{
+        history.pushState({oprLock: true}, "", location.href);
+        _lock.statePushed = true;
+      }catch(_e){}
+    }
+    _lock.onPopState = (e)=>{
+      if(!editMode) return;
+      try{
+        history.pushState({oprLock: true}, "", location.href);
+      }catch(_e){}
+      blockedBox(t("blocked_msg"));
+    };
+    window.addEventListener("popstate", _lock.onPopState);
+  }
+
+  function disableEditLock(){
+    if(!_lock.armed) return;
+    _lock.armed = false;
+
+    if(_lock.onBeforeUnload) window.removeEventListener("beforeunload", _lock.onBeforeUnload);
+    if(_lock.onKeyDown) document.removeEventListener("keydown", _lock.onKeyDown, true);
+    if(_lock.onClick) document.removeEventListener("click", _lock.onClick, true);
+    if(_lock.onSubmit) document.removeEventListener("submit", _lock.onSubmit, true);
+    if(_lock.onPopState) window.removeEventListener("popstate", _lock.onPopState);
+
+    _lock.onBeforeUnload = _lock.onKeyDown = _lock.onClick = _lock.onSubmit = _lock.onPopState = null;
+  }
+
+  function setEditUI(){
+    // keep your logic as-is
+    els.produceName.toggleAttribute("readonly", !editMode);
+    els.unitStock.toggleAttribute("readonly", !editMode);
+
+    els.editSaveText.textContent = editMode ? t("btn_save") : t("btn_edit");
+    els.editSaveIcon.setAttribute("name", editMode ? "save" : "create");
+
+    els.cancelBtn.style.display = editMode ? "inline-flex" : "none";
+    els.addRowBtn.style.display = editMode ? "inline-flex" : "none";
+    els.delSelectedBtn.style.display = editMode ? "inline-flex" : "none";
+    els.delAllBtn.style.display = editMode ? "inline-flex" : "none";
+
+    if(editMode) enableEditLock();
+    else disableEditLock();
+  }
+
+  function setTabsUI(){
+    const map = { all: els.tabAll, purchases: els.tabPurchases, sales: els.tabSales, stock: els.tabStock };
+    Object.keys(map).forEach(k=>{
+      map[k].setAttribute("aria-selected", k === activeTab ? "true" : "false");
+    });
+  }
+
+  function renderSectionHead(){
+    if(activeTab === "purchases"){
+      els.sectionTitle.innerHTML = `<ion-icon name="cart"></ion-icon><span>${t("sec_pur_title")}</span>`;
+      els.sectionNote.textContent = t("sec_pur_note");
+    }else if(activeTab === "sales"){
+      els.sectionTitle.innerHTML = `<ion-icon name="receipt"></ion-icon><span>${t("sec_sale_title")}</span>`;
+      els.sectionNote.textContent = t("sec_sale_note");
+    }else if(activeTab === "stock"){
+      els.sectionTitle.innerHTML = `<ion-icon name="layers"></ion-icon><span>${t("sec_stock_title")}</span>`;
+      els.sectionNote.textContent = t("sec_stock_note");
+    }else{
+      els.sectionTitle.innerHTML = `<ion-icon name="grid"></ion-icon><span>${t("sec_all_title")}</span>`;
+      els.sectionNote.textContent = t("sec_all_note");
+    }
+  }
+
+  function theadHTML(){
+    if(activeTab === "purchases"){
+      return `
+        <tr>
+          <th class="opr-center opr-stickyLeft" style="width:56px;">
+            <input type="checkbox" class="opr-chk" id="oprSelectAll" ${editMode ? "" : "disabled"}>
+          </th>
+          <th class="opr-center opr-stickyLeft2" style="min-width:160px;">${t("th_bill_no")}</th>
+          <th class="opr-center" style="min-width:160px;">${t("th_date")}</th>
+          <th style="min-width:220px;">${t("th_farmer")}</th>
+          <th class="opr-num" style="min-width:140px;">${t("th_qty")}</th>
+          <th class="opr-num" style="min-width:140px;">${t("th_rate")}</th>
+          <th class="opr-num" style="min-width:160px;">${t("th_amount")}</th>
+          <th class="opr-center" style="min-width:200px;">${t("th_folio")}</th>
+        </tr>
+      `;
+    }
+    if(activeTab === "sales"){
+      return `
+        <tr>
+          <th class="opr-center opr-stickyLeft" style="width:56px;">
+            <input type="checkbox" class="opr-chk" id="oprSelectAll" ${editMode ? "" : "disabled"}>
+          </th>
+          <th class="opr-center opr-stickyLeft2" style="min-width:160px;">${t("th_bill_no")}</th>
+          <th class="opr-center" style="min-width:160px;">${t("th_date")}</th>
+          <th style="min-width:220px;">${t("th_buyer")}</th>
+          <th class="opr-num" style="min-width:140px;">${t("th_qty")}</th>
+          <th class="opr-num" style="min-width:140px;">${t("th_rate")}</th>
+          <th class="opr-num" style="min-width:160px;">${t("th_amount")}</th>
+          <th class="opr-center" style="min-width:200px;">${t("th_folio")}</th>
+        </tr>
+      `;
+    }
+    if(activeTab === "stock"){
+      return `
+        <tr>
+          <th class="opr-center opr-stickyLeft" style="width:56px;">
+            <input type="checkbox" class="opr-chk" id="oprSelectAll" ${editMode ? "" : "disabled"}>
+          </th>
+          <th class="opr-center opr-stickyLeft2" style="min-width:160px;">${t("th_ref_bill")}</th>
+          <th class="opr-num" style="min-width:190px;">${t("th_closing_qty")}</th>
+          <th class="opr-num" style="min-width:170px;">${t("th_stock_rate")}</th>
+          <th class="opr-num" style="min-width:190px;">${t("th_stock_amount")}</th>
+        </tr>
+      `;
+    }
+    return `
+      <tr>
+        <th class="opr-center opr-stickyLeft" style="width:56px;">
+          <input type="checkbox" class="opr-chk" id="oprSelectAll" ${editMode ? "" : "disabled"}>
+        </th>
+        <th class="opr-center opr-stickyLeft2" style="min-width:160px;">${t("th_p_bill")}</th>
+        <th class="opr-center" style="min-width:160px;">${t("th_p_date")}</th>
+        <th style="min-width:220px;">${t("th_p_farmer")}</th>
+        <th class="opr-num" style="min-width:140px;">${t("th_p_qty")}</th>
+        <th class="opr-num" style="min-width:140px;">${t("th_p_rate")}</th>
+        <th class="opr-num" style="min-width:160px;">${t("th_p_amt")}</th>
+        <th class="opr-center" style="min-width:200px;">${t("th_p_folio")}</th>
+
+        <th class="opr-center" style="min-width:160px;">${t("th_s_bill")}</th>
+        <th class="opr-center" style="min-width:160px;">${t("th_s_date")}</th>
+        <th style="min-width:220px;">${t("th_s_buyer")}</th>
+        <th class="opr-num" style="min-width:140px;">${t("th_s_qty")}</th>
+        <th class="opr-num" style="min-width:140px;">${t("th_s_rate")}</th>
+        <th class="opr-num" style="min-width:160px;">${t("th_s_amt")}</th>
+        <th class="opr-center" style="min-width:200px;">${t("th_s_folio")}</th>
+
+        <th class="opr-center" style="min-width:160px;">${t("th_stk_ref")}</th>
+        <th class="opr-num" style="min-width:190px;">${t("th_stk_qty")}</th>
+        <th class="opr-num" style="min-width:170px;">${t("th_stk_rate")}</th>
+        <th class="opr-num" style="min-width:190px;">${t("th_stk_amt")}</th>
+      </tr>
+    `;
+  }
+
+  function rowHTML(r){
+    const ro = editMode ? "" : "readonly";
+    const dis = editMode ? "" : "disabled";
+
+    if(activeTab === "purchases"){
+      return `
+        <tr data-row-id="${r.id}">
+          <td class="opr-center opr-stickyLeft">
+            <input type="checkbox" class="opr-chk" data-chk="1" ${r.selected ? "checked" : ""} ${dis}>
+          </td>
+          <td class="opr-stickyLeft2"><input class="opr-tdInput" type="text" data-k="p_bill_no" value="${r.p_bill_no || ""}" placeholder="${t("ph_bill")}" ${ro}></td>
+          <td><input class="opr-tdInput" type="date" data-k="p_date" value="${r.p_date || ""}" ${ro}></td>
+          <td><input class="opr-tdInput" type="text" data-k="farmer" value="${r.farmer || ""}" placeholder="${t("ph_farmer")}" ${ro}></td>
+          <td><input class="opr-tdInput opr-num" type="number" step="0.01" data-k="p_qty" value="${r.p_qty ?? ""}" placeholder="0" ${ro}></td>
+          <td><input class="opr-tdInput opr-num" type="number" step="0.01" data-k="p_rate" value="${r.p_rate ?? ""}" placeholder="0" ${ro}></td>
+          <td><input class="opr-tdInput opr-num" type="text" data-k="p_amt" value="${fmt(r.p_amt)}" readonly></td>
+          <td><input class="opr-tdInput" type="text" data-k="p_folio" value="${r.p_folio || ""}" placeholder="${t("ph_folio")}" ${ro}></td>
+        </tr>
+      `;
+    }
+
+    if(activeTab === "sales"){
+      return `
+        <tr data-row-id="${r.id}">
+          <td class="opr-center opr-stickyLeft">
+            <input type="checkbox" class="opr-chk" data-chk="1" ${r.selected ? "checked" : ""} ${dis}>
+          </td>
+          <td class="opr-stickyLeft2"><input class="opr-tdInput" type="text" data-k="s_bill_no" value="${r.s_bill_no || ""}" placeholder="${t("ph_bill")}" ${ro}></td>
+          <td><input class="opr-tdInput" type="date" data-k="s_date" value="${r.s_date || ""}" ${ro}></td>
+          <td><input class="opr-tdInput" type="text" data-k="buyer" value="${r.buyer || ""}" placeholder="${t("ph_buyer")}" ${ro}></td>
+          <td><input class="opr-tdInput opr-num" type="number" step="0.01" data-k="s_qty" value="${r.s_qty ?? ""}" placeholder="0" ${ro}></td>
+          <td><input class="opr-tdInput opr-num" type="number" step="0.01" data-k="s_rate" value="${r.s_rate ?? ""}" placeholder="0" ${ro}></td>
+          <td><input class="opr-tdInput opr-num" type="text" data-k="s_amt" value="${fmt(r.s_amt)}" readonly></td>
+          <td><input class="opr-tdInput" type="text" data-k="s_folio" value="${r.s_folio || ""}" placeholder="${t("ph_folio")}" ${ro}></td>
+        </tr>
+      `;
+    }
+
+    if(activeTab === "stock"){
+      return `
+        <tr data-row-id="${r.id}">
+          <td class="opr-center opr-stickyLeft">
+            <input type="checkbox" class="opr-chk" data-chk="1" ${r.selected ? "checked" : ""} ${dis}>
+          </td>
+          <td class="opr-stickyLeft2"><input class="opr-tdInput" type="text" data-k="stk_ref_no" value="${r.stk_ref_no || ""}" placeholder="${t("ph_ref")}" ${ro}></td>
+          <td><input class="opr-tdInput opr-num" type="text" data-k="stk_qty" value="${fmt(r.stk_qty)}" readonly></td>
+          <td><input class="opr-tdInput opr-num" type="number" step="0.01" data-k="stk_rate" value="${r.stk_rate ?? ""}" placeholder="0" ${ro}></td>
+          <td><input class="opr-tdInput opr-num" type="text" data-k="stk_amt" value="${fmt(r.stk_amt)}" readonly></td>
+        </tr>
+      `;
+    }
+
+    return `
+      <tr data-row-id="${r.id}">
+        <td class="opr-center opr-stickyLeft">
+          <input type="checkbox" class="opr-chk" data-chk="1" ${r.selected ? "checked" : ""} ${dis}>
+        </td>
+
+        <td class="opr-stickyLeft2"><input class="opr-tdInput" type="text" data-k="p_bill_no" value="${r.p_bill_no || ""}" placeholder="${t("ph_bill")}" ${ro}></td>
+        <td><input class="opr-tdInput" type="date" data-k="p_date" value="${r.p_date || ""}" ${ro}></td>
+        <td><input class="opr-tdInput" type="text" data-k="farmer" value="${r.farmer || ""}" placeholder="${t("ph_farmer")}" ${ro}></td>
+        <td><input class="opr-tdInput opr-num" type="number" step="0.01" data-k="p_qty" value="${r.p_qty ?? ""}" placeholder="0" ${ro}></td>
+        <td><input class="opr-tdInput opr-num" type="number" step="0.01" data-k="p_rate" value="${r.p_rate ?? ""}" placeholder="0" ${ro}></td>
+        <td><input class="opr-tdInput opr-num" type="text" data-k="p_amt" value="${fmt(r.p_amt)}" readonly></td>
+        <td><input class="opr-tdInput" type="text" data-k="p_folio" value="${r.p_folio || ""}" placeholder="${t("ph_folio")}" ${ro}></td>
+
+        <td><input class="opr-tdInput" type="text" data-k="s_bill_no" value="${r.s_bill_no || ""}" placeholder="${t("ph_bill")}" ${ro}></td>
+        <td><input class="opr-tdInput" type="date" data-k="s_date" value="${r.s_date || ""}" ${ro}></td>
+        <td><input class="opr-tdInput" type="text" data-k="buyer" value="${r.buyer || ""}" placeholder="${t("ph_buyer")}" ${ro}></td>
+        <td><input class="opr-tdInput opr-num" type="number" step="0.01" data-k="s_qty" value="${r.s_qty ?? ""}" placeholder="0" ${ro}></td>
+        <td><input class="opr-tdInput opr-num" type="number" step="0.01" data-k="s_rate" value="${r.s_rate ?? ""}" placeholder="0" ${ro}></td>
+        <td><input class="opr-tdInput opr-num" type="text" data-k="s_amt" value="${fmt(r.s_amt)}" readonly></td>
+        <td><input class="opr-tdInput" type="text" data-k="s_folio" value="${r.s_folio || ""}" placeholder="${t("ph_folio")}" ${ro}></td>
+
+        <td><input class="opr-tdInput" type="text" data-k="stk_ref_no" value="${r.stk_ref_no || ""}" placeholder="${t("ph_ref")}" ${ro}></td>
+        <td><input class="opr-tdInput opr-num" type="text" data-k="stk_qty" value="${fmt(r.stk_qty)}" readonly></td>
+        <td><input class="opr-tdInput opr-num" type="number" step="0.01" data-k="stk_rate" value="${r.stk_rate ?? ""}" placeholder="0" ${ro}></td>
+        <td><input class="opr-tdInput opr-num" type="text" data-k="stk_amt" value="${fmt(r.stk_amt)}" readonly></td>
+      </tr>
+    `;
+  }
+
+  function renderDesktop(){
+    els.thead.innerHTML = theadHTML();
+    els.tbody.innerHTML = state.rows.map((r)=> rowHTML(r)).join("");
+  }
+
+  function mobileCardHTML(r){
+    const ro = editMode ? "" : "readonly";
+    const dis = editMode ? "" : "disabled";
+
+    const top = `
+      <div class="opr-cardTop">
+        <span class="opr-pill"><ion-icon name="albums" style="font-size:16px;"></ion-icon> ${t("th_select")}</span>
+        <span class="opr-pill">
+          <input type="checkbox" class="opr-chk" data-chk="1" ${r.selected ? "checked" : ""} ${dis}>
+          ${t("th_select")}
+        </span>
+      </div>
+    `;
+
+    if(activeTab === "purchases"){
+      return `
+        <div class="opr-card" data-row-id="${r.id}">
+          ${top}
+          <div class="opr-grid">
+            <div class="opr-item">
+              <label>${t("th_bill_no")}</label>
+              <input class="opr-tdInput" type="text" data-k="p_bill_no" value="${r.p_bill_no || ""}" placeholder="${t("ph_bill")}" ${ro}>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_date")}</label>
+              <input class="opr-tdInput" type="date" data-k="p_date" value="${r.p_date || ""}" ${ro}>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_farmer")}</label>
+              <input class="opr-tdInput" type="text" data-k="farmer" value="${r.farmer || ""}" placeholder="${t("ph_farmer")}" ${ro}>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_qty")}</label>
+              <input class="opr-tdInput opr-num" type="number" step="0.01" data-k="p_qty" value="${r.p_qty ?? ""}" placeholder="0" ${ro}>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_rate")}</label>
+              <input class="opr-tdInput opr-num" type="number" step="0.01" data-k="p_rate" value="${r.p_rate ?? ""}" placeholder="0" ${ro}>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_amount")} (${_lang==="bn" ? "অটো" : "Auto"})</label>
+              <input class="opr-tdInput opr-num" type="text" data-k="p_amt" value="${fmt(r.p_amt)}" readonly>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_folio")}</label>
+              <input class="opr-tdInput" type="text" data-k="p_folio" value="${r.p_folio || ""}" placeholder="${t("ph_folio")}" ${ro}>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if(activeTab === "sales"){
+      return `
+        <div class="opr-card" data-row-id="${r.id}">
+          ${top}
+          <div class="opr-grid">
+            <div class="opr-item">
+              <label>${t("th_bill_no")}</label>
+              <input class="opr-tdInput" type="text" data-k="s_bill_no" value="${r.s_bill_no || ""}" placeholder="${t("ph_bill")}" ${ro}>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_date")}</label>
+              <input class="opr-tdInput" type="date" data-k="s_date" value="${r.s_date || ""}" ${ro}>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_buyer")}</label>
+              <input class="opr-tdInput" type="text" data-k="buyer" value="${r.buyer || ""}" placeholder="${t("ph_buyer")}" ${ro}>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_qty")}</label>
+              <input class="opr-tdInput opr-num" type="number" step="0.01" data-k="s_qty" value="${r.s_qty ?? ""}" placeholder="0" ${ro}>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_rate")}</label>
+              <input class="opr-tdInput opr-num" type="number" step="0.01" data-k="s_rate" value="${r.s_rate ?? ""}" placeholder="0" ${ro}>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_amount")} (${_lang==="bn" ? "অটো" : "Auto"})</label>
+              <input class="opr-tdInput opr-num" type="text" data-k="s_amt" value="${fmt(r.s_amt)}" readonly>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_folio")}</label>
+              <input class="opr-tdInput" type="text" data-k="s_folio" value="${r.s_folio || ""}" placeholder="${t("ph_folio")}" ${ro}>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    if(activeTab === "stock"){
+      return `
+        <div class="opr-card" data-row-id="${r.id}">
+          ${top}
+          <div class="opr-grid">
+            <div class="opr-item">
+              <label>${t("th_ref_bill")}</label>
+              <input class="opr-tdInput" type="text" data-k="stk_ref_no" value="${r.stk_ref_no || ""}" placeholder="${t("ph_ref")}" ${ro}>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_closing_qty")} (${_lang==="bn" ? "অটো" : "Auto"})</label>
+              <input class="opr-tdInput opr-num" type="text" data-k="stk_qty" value="${fmt(r.stk_qty)}" readonly>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_stock_rate")}</label>
+              <input class="opr-tdInput opr-num" type="number" step="0.01" data-k="stk_rate" value="${r.stk_rate ?? ""}" placeholder="0" ${ro}>
+            </div>
+            <div class="opr-item">
+              <label>${t("th_stock_amount")} (${_lang==="bn" ? "অটো" : "Auto"})</label>
+              <input class="opr-tdInput opr-num" type="text" data-k="stk_amt" value="${fmt(r.stk_amt)}" readonly>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="opr-card" data-row-id="${r.id}">
+        ${top}
+        <div class="opr-grid">
+          <div class="opr-item">
+            <label>${t("th_p_bill")}</label>
+            <input class="opr-tdInput" type="text" data-k="p_bill_no" value="${r.p_bill_no || ""}" placeholder="${t("ph_bill")}" ${ro}>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_p_date")}</label>
+            <input class="opr-tdInput" type="date" data-k="p_date" value="${r.p_date || ""}" ${ro}>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_p_farmer")}</label>
+            <input class="opr-tdInput" type="text" data-k="farmer" value="${r.farmer || ""}" placeholder="${t("ph_farmer")}" ${ro}>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_p_qty")}</label>
+            <input class="opr-tdInput opr-num" type="number" step="0.01" data-k="p_qty" value="${r.p_qty ?? ""}" placeholder="0" ${ro}>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_p_rate")}</label>
+            <input class="opr-tdInput opr-num" type="number" step="0.01" data-k="p_rate" value="${r.p_rate ?? ""}" placeholder="0" ${ro}>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_p_amt")} (${_lang==="bn" ? "অটো" : "Auto"})</label>
+            <input class="opr-tdInput opr-num" type="text" data-k="p_amt" value="${fmt(r.p_amt)}" readonly>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_p_folio")}</label>
+            <input class="opr-tdInput" type="text" data-k="p_folio" value="${r.p_folio || ""}" placeholder="${t("ph_folio")}" ${ro}>
+          </div>
+
+          <div class="opr-item">
+            <label>${t("th_s_bill")}</label>
+            <input class="opr-tdInput" type="text" data-k="s_bill_no" value="${r.s_bill_no || ""}" placeholder="${t("ph_bill")}" ${ro}>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_s_date")}</label>
+            <input class="opr-tdInput" type="date" data-k="s_date" value="${r.s_date || ""}" ${ro}>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_s_buyer")}</label>
+            <input class="opr-tdInput" type="text" data-k="buyer" value="${r.buyer || ""}" placeholder="${t("ph_buyer")}" ${ro}>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_s_qty")}</label>
+            <input class="opr-tdInput opr-num" type="number" step="0.01" data-k="s_qty" value="${r.s_qty ?? ""}" placeholder="0" ${ro}>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_s_rate")}</label>
+            <input class="opr-tdInput opr-num" type="number" step="0.01" data-k="s_rate" value="${r.s_rate ?? ""}" placeholder="0" ${ro}>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_s_amt")} (${_lang==="bn" ? "অটো" : "Auto"})</label>
+            <input class="opr-tdInput opr-num" type="text" data-k="s_amt" value="${fmt(r.s_amt)}" readonly>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_s_folio")}</label>
+            <input class="opr-tdInput" type="text" data-k="s_folio" value="${r.s_folio || ""}" placeholder="${t("ph_folio")}" ${ro}>
+          </div>
+
+          <div class="opr-item">
+            <label>${t("th_stk_ref")}</label>
+            <input class="opr-tdInput" type="text" data-k="stk_ref_no" value="${r.stk_ref_no || ""}" placeholder="${t("ph_ref")}" ${ro}>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_stk_qty")} (${_lang==="bn" ? "অটো" : "Auto"})</label>
+            <input class="opr-tdInput opr-num" type="text" data-k="stk_qty" value="${fmt(r.stk_qty)}" readonly>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_stk_rate")}</label>
+            <input class="opr-tdInput opr-num" type="number" step="0.01" data-k="stk_rate" value="${r.stk_rate ?? ""}" placeholder="0" ${ro}>
+          </div>
+          <div class="opr-item">
+            <label>${t("th_stk_amt")} (${_lang==="bn" ? "অটো" : "Auto"})</label>
+            <input class="opr-tdInput opr-num" type="text" data-k="stk_amt" value="${fmt(r.stk_amt)}" readonly>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderMobile(){
+    els.mobileList.innerHTML = state.rows.map((r)=> mobileCardHTML(r)).join("");
+  }
+
+  function renderAll(){
+    applyStaticTranslations();
+    setTabsUI();
+    setEditUI();
+    renderSectionHead();
+
+    els.produceName.value = state.produceName || "";
+    els.unitStock.value = state.unitStock || "";
+
+    renderDesktop();
+    renderMobile();
+    computeTotals(state.rows);
+  }
+
+  function findRowById(id){
+    return state.rows.find(x => x.id === id);
+  }
+
+  function updateComputedUI(containerEl, row){
+    const pAmt = containerEl.querySelector('[data-k="p_amt"]');
+    if(pAmt) pAmt.value = fmt(row.p_amt);
+
+    const sAmt = containerEl.querySelector('[data-k="s_amt"]');
+    if(sAmt) sAmt.value = fmt(row.s_amt);
+
+    const stkQty = containerEl.querySelector('[data-k="stk_qty"]');
+    const stkAmt = containerEl.querySelector('[data-k="stk_amt"]');
+    if(stkQty) stkQty.value = fmt(row.stk_qty);
+    if(stkAmt) stkAmt.value = fmt(row.stk_amt);
+  }
+
+  function syncRowFromContainer(containerEl){
+    const id = containerEl.getAttribute("data-row-id");
+    const r = findRowById(id);
+    if(!r) return;
+
+    containerEl.querySelectorAll("input[data-k]").forEach(inp=>{
+      const k = inp.getAttribute("data-k");
+      if(k === "p_amt" || k === "s_amt" || k === "stk_qty" || k === "stk_amt") return;
+      r[k] = inp.value;
+    });
+
+    const chk = containerEl.querySelector('input[data-chk="1"]');
+    if(chk) r.selected = !!chk.checked;
+
+    computeRow(r);
+    updateComputedUI(containerEl, r);
+  }
+
+  (async function init(){
+  await loadFromServer();
+
+  const saved = loadFromStorage();
+  if(saved && Array.isArray(saved.rows)){
+    state.rows = saved.rows.map(r => computeRow(r));
+    state.produceName = saved.produceName || "";
+    state.unitStock = saved.unitStock || "";
+    state.rows.forEach(r => { if(typeof r.selected !== "boolean") r.selected = false; });
+
+    const ttab = (saved.activeTab || "").toString().trim();
+    if(ttab === "all" || ttab === "purchases" || ttab === "sales" || ttab === "stock"){
+      activeTab = ttab;
+    }else{
+      activeTab = "all";
+    }
+  }else{
+    state.rows = [ computeRow(newRow()) ];
+    state.produceName = "";
+    state.unitStock = "";
+    activeTab = "all";
+  }
+
+  els.produceName.setAttribute("readonly","readonly");
+  els.unitStock.setAttribute("readonly","readonly");
+
+  startLangWatcher();
+  renderAll();
+})();
+
+  function setTab(tab){
+    activeTab = tab;
+    saveToStorage();
+    renderAll();
+    toast(
+      tab === "purchases" ? t("toast_purchases") :
+      tab === "sales" ? t("toast_sales") :
+      tab === "stock" ? t("toast_stock") : t("toast_all")
+    );
+  }
+
+  // ✅ Tabs
+  els.tabAll.addEventListener("click", ()=> setTab("all"));
+  els.tabPurchases.addEventListener("click", ()=> setTab("purchases"));
+  els.tabSales.addEventListener("click", ()=> setTab("sales"));
+  els.tabStock.addEventListener("click", ()=> setTab("stock"));
+
+  // ✅ Edit/Save toggle button
+  els.editSaveBtn.addEventListener("click", async ()=>{
+    if(!editMode){
+      beforeEditSnapshot = JSON.parse(JSON.stringify(state));
+      editMode = true;
+      renderAll();
+      toast(t("toast_edit_on"));
+      return;
+    }
+
+    const ok = await confirmBox(t("confirm_save_title"), t("confirm_save_msg"));
+    if(!ok) return;
+
+    state.produceName = els.produceName.value || "";
+    state.unitStock = els.unitStock.value || "";
+    state.rows = state.rows.map(r => computeRow(r));
+
+    saveToStorage();
+    editMode = false;
+    renderAll();
+    toast(t("toast_saved"));
+  });
+
+  els.cancelBtn.addEventListener("click", async ()=>{
+    const ok = await confirmBox(t("confirm_cancel_title"), t("confirm_cancel_msg"));
+    if(!ok) return;
+
+    state = JSON.parse(JSON.stringify(beforeEditSnapshot || state));
+    state.rows = state.rows.map(r => computeRow(r));
+    saveToStorage();
+
+    editMode = false;
+    renderAll();
+    toast(t("toast_canceled"));
+  });
+
+  // ✅ ESC is not allowed to exit edit mode
+  document.addEventListener("keydown", (e)=>{
+    if(e.key !== "Escape") return;
+    if(!editMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    blockedBox(t("blocked_msg"));
+  }, true);
+
+  // Add/Delete
+  els.addRowBtn.addEventListener("click", ()=>{
+    if(!editMode) return;
+    state.rows.push(computeRow(newRow()));
+    renderAll();
+    toast(t("toast_row_added"));
+  });
+
+  els.delSelectedBtn.addEventListener("click", async ()=>{
+    if(!editMode) return;
+    const count = state.rows.filter(r => r.selected).length;
+    if(count === 0){ toast(t("toast_none_selected")); return; }
+
+    const ok = await confirmBox(t("confirm_del_sel_title"), (I18N[_lang].confirm_del_sel_msg || I18N.en.confirm_del_sel_msg)(count));
+    if(!ok) return;
+
+    state.rows = state.rows.filter(r => !r.selected);
+    if(state.rows.length === 0) state.rows = [ computeRow(newRow()) ];
+    renderAll();
+    toast(t("toast_deleted_selected"));
+  });
+
+  els.delAllBtn.addEventListener("click", async ()=>{
+    if(!editMode) return;
+    const ok = await confirmBox(t("confirm_del_all_title"), t("confirm_del_all_msg"));
+    if(!ok) return;
+
+    state.rows = [ computeRow(newRow()) ];
+    renderAll();
+    toast(t("toast_deleted_all"));
+  });
+
+  document.addEventListener("change", (e)=>{
+    const selAll = e.target && e.target.id === "oprSelectAll";
+    if(!selAll) return;
+    if(!editMode) { e.target.checked = false; return; }
+
+    const on = !!e.target.checked;
+    state.rows.forEach(r => r.selected = on);
+    renderAll();
+  });
+
+  // Input events
+  els.tbody.addEventListener("input", (e)=>{
+    if(!editMode) return;
+    const rowEl = e.target.closest("tr");
+    if(!rowEl) return;
+
+    syncRowFromContainer(rowEl);
+    computeTotals(state.rows);
+  });
+
+  els.tbody.addEventListener("change", (e)=>{
+    if(!editMode) return;
+    const rowEl = e.target.closest("tr");
+    if(!rowEl) return;
+
+    if(e.target && e.target.matches('input[data-chk="1"]')){
+      syncRowFromContainer(rowEl);
+      computeTotals(state.rows);
+    }
+  });
+
+  els.mobileList.addEventListener("input", (e)=>{
+    if(!editMode) return;
+    const cardEl = e.target.closest(".opr-card");
+    if(!cardEl) return;
+
+    syncRowFromContainer(cardEl);
+    computeTotals(state.rows);
+  });
+
+  els.mobileList.addEventListener("change", (e)=>{
+    if(!editMode) return;
+    const cardEl = e.target.closest(".opr-card");
+    if(!cardEl) return;
+
+    if(e.target && e.target.matches('input[data-chk="1"]')){
+      syncRowFromContainer(cardEl);
+      computeTotals(state.rows);
+    }
+  });
+
+  els.produceName.addEventListener("input", ()=>{
+    if(!editMode) return;
+    state.produceName = els.produceName.value || "";
+  });
+  els.unitStock.addEventListener("input", ()=>{
+    if(!editMode) return;
+    state.unitStock = els.unitStock.value || "";
+  });
+
+  // Export / Print
+  els.exportBtn.addEventListener("click", async ()=>{
+    const ok = await confirmBox(t("confirm_export_title"), t("confirm_export_msg"));
+    if(!ok) return;
+
+    exportCSV(state.rows);
+    toast(t("toast_csv_exported"));
+  });
+
+  els.printBtn.addEventListener("click", ()=>{
+    window.print();
+  });
+</script>
+{% endblock %}

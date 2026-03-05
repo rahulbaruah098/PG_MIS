@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>Create State Admin</h4>
+<form method="POST">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Username</label>
+      <input type="text" class="form-control" name="username" required>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Password</label>
+      <input type="password" class="form-control" name="password" required>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">State</label>
+      <select class="form-select" name="state_id" required>
+        {% for s in states %}
+        <option value="{{ s._id }}">{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <button class="btn btn-primary mt-3" type="submit">Create</button>
+</form>
+{% endblock %}

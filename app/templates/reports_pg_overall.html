@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}PG Overall Export{% endblock %}
+{% block content %}
+
+<style>
+  .po-wrap{max-width:1200px;margin:0 auto;padding:18px}
+  .po-hero{background:linear-gradient(135deg,#0b4d3a,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 16px 30px -18px rgba(0,0,0,.35)}
+  .po-hero h1{margin:0;font-weight:950;letter-spacing:.2px}
+  .po-hero .sub{margin-top:.35rem;opacity:.92;font-weight:700}
+  .po-card{background:#fff;border:1px solid rgba(15,23,42,.12);border-radius:18px;box-shadow:0 14px 26px -18px rgba(15,23,42,.22)}
+  .po-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;margin-top:14px}
+  @media(max-width:980px){.po-grid{grid-template-columns:1fr}}
+  .po-card h3{margin:0;padding:14px 16px;border-bottom:1px solid rgba(15,23,42,.10);font-weight:950;color:#0b4d3a}
+  .po-body{padding:14px 16px}
+  .po-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  @media(max-width:720px){.po-row{grid-template-columns:1fr}}
+  .po-field label{display:block;font-weight:900;color:#0f172a;font-size:.9rem;margin-bottom:6px}
+  .po-field select,.po-field input{width:100%;padding:10px 12px;border-radius:14px;border:1px solid rgba(15,23,42,.14);background:#f8fafc;font-weight:800;outline:none}
+  .po-field select:focus,.po-field input:focus{border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.18)}
+  .po-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .po-btn{border:0;border-radius:999px;padding:10px 14px;font-weight:950;cursor:pointer}
+  .po-btn.primary{background:#0b4d3a;color:#fff}
+  .po-btn.ghost{background:#eef2f7;color:#0f172a}
+  .po-table{width:100%;border-collapse:separate;border-spacing:0}
+  .po-table th,.po-table td{padding:10px 10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-weight:800}
+  .po-table th{font-weight:950;color:#0b4d3a;background:#f8fafc;position:sticky;top:0}
+  .po-small{font-size:.88rem;color:#64748b;font-weight:800}
+</style>
+
+<div class="po-wrap">
+  <div class="po-hero">
+    <h1>PG Overall Export</h1>
+    <div class="sub">Download a complete PG snapshot as a ZIP (Members, Cashbook, Ledger, Loans, Meetings, Grants, Utilization).</div>
+  </div>
+
+  <div class="po-grid">
+    <div class="po-card">
+      <h3>Filters (Scope-based)</h3>
+      <div class="po-body">
+        <form method="get" action="{{ url_for('reports.pg_overall_report') }}">
+          <div class="po-row">
+            <div class="po-field">
+              <label>State</label>
+              <select name="state">
+                <option value="">All</option>
+                {% for s in states %}<option value="{{ s }}" {% if filters.State==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="po-field">
+              <label>District</label>
+              <select name="district">
+                <option value="">All</option>
+                {% for s in districts %}<option value="{{ s }}" {% if filters.District==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="po-row">
+            <div class="po-field">
+              <label>Block</label>
+              <select name="block">
+                <option value="">All</option>
+                {% for s in blocks %}<option value="{{ s }}" {% if filters.Block==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="po-field">
+              <label>Gram Panchayat</label>
+              <select name="gp">
+                <option value="">All</option>
+                {% for s in gps %}<option value="{{ s }}" {% if filters['Gram Panchayat']==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="po-row">
+            <div class="po-field">
+              <label>Village</label>
+              <select name="village">
+                <option value="">All</option>
+                {% for s in villages %}<option value="{{ s }}" {% if filters.Village==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="po-field">
+              <label>PG Name (search)</label>
+              <input name="pg_name" value="{{ filters.pg_name }}" placeholder="Type PG name..." />
+            </div>
+          </div>
+          <div class="po-actions">
+            <button class="po-btn primary" type="submit">Apply</button>
+            <a class="po-btn ghost" href="{{ url_for('reports.pg_overall_report') }}">Reset</a>
+          </div>
+        </form>
+
+        <hr style="border:none;border-top:1px solid rgba(15,23,42,.10);margin:14px 0" />
+
+        <div class="po-small">Tip: Select a PG from the list and download its full ZIP. If you download without selecting a PG, it will export all PGs in the current filtered scope (may be large).</div>
+      </div>
+    </div>
+
+    <div class="po-card">
+      <h3>Download</h3>
+      <div class="po-body">
+        <form method="get" action="{{ url_for('reports.pg_overall_download') }}">
+          <input type="hidden" name="state" value="{{ filters.State }}" />
+          <input type="hidden" name="district" value="{{ filters.District }}" />
+          <input type="hidden" name="block" value="{{ filters.Block }}" />
+          <input type="hidden" name="gp" value="{{ filters['Gram Panchayat'] }}" />
+          <input type="hidden" name="village" value="{{ filters.Village }}" />
+          <input type="hidden" name="pg_name" value="{{ filters.pg_name }}" />
+
+          <div class="po-field">
+            <label>Select PG</label>
+            <select name="pg_id">
+              <option value="">(Optional) Export all in filter</option>
+              {% for p in pgs %}
+                <option value="{{ p._id }}">{{ p.name }} — {{ p.District or '' }} {{ p.Block or '' }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="po-actions" style="margin-top:12px">
+            <button class="po-btn primary" type="submit">Download ZIP</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="po-card" style="margin-top:14px">
+    <h3>PGs in Scope ({{ pgs|length }})</h3>
+    <div class="po-body" style="padding:0;max-height:420px;overflow:auto">
+      <table class="po-table">
+        <thead>
+          <tr>
+            <th>PG</th><th>District</th><th>Block</th><th>GP</th><th>Village</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in pgs %}
+          <tr>
+            <td style="font-weight:950">{{ p.name }}</td>
+            <td>{{ p.District or '' }}</td>
+            <td>{{ p.Block or '' }}</td>
+            <td>{{ p['Gram Panchayat'] or '' }}</td>
+            <td>{{ p.Village or '' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

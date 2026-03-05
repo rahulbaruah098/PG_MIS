@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}State Dashboard{% endblock %}
+
+{% block head_extra %}
+  <!-- Tailwind + Chart.js (scoped dashboard UI) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* =========================
+       UNIFIED LANDING DASHBOARD (SCOPED)
+       - Reuses the modern chart-card language from dashboard_pg.html
+       - Safe: does not touch global/base styles
+       ========================= */
+    .sdx{ padding: clamp(12px, 2.2vw, 22px); }
+    .sdx .cardx{ border:1px solid rgba(148,163,184,.55); border-radius:18px; background:rgba(255,255,255,.85); box-shadow: 0 18px 50px rgba(2,6,23,.08); }
+    .sdx .cardx .hdr{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 16px; border-bottom:1px solid rgba(226,232,240,.8); }
+    .sdx .cardx .bd{ padding:16px; }
+    .sdx .kpi{ border-radius:18px; border:1px solid rgba(226,232,240,.9); background:rgba(255,255,255,.90); box-shadow: 0 12px 30px rgba(2,6,23,.06); }
+    .sdx .kpi .t{ color:#475569; font-weight:700; font-size:12px; letter-spacing:.04em; text-transform:uppercase; }
+    .sdx .kpi .v{ color:#0f172a; font-weight:900; font-size:28px; line-height:1.1; margin-top:6px; }
+    .sdx .kpi .s{ color:#64748b; font-size:12px; margin-top:6px; }
+    .sdx .chip{ display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(203,213,225,.8); background:rgba(255,255,255,.8); padding:8px 12px; border-radius:999px; font-weight:800; color:#0f172a; }
+    .sdx .muted{ color:#64748b; }
+    .sdx .gridA{ display:grid; grid-template-columns: 2.3fr 1.2fr; gap:14px; }
+    @media (max-width: 1100px){ .sdx .gridA{ grid-template-columns: 1fr; } }
+    .sdx .gridK{ display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap:12px; }
+    @media (max-width: 1200px){ .sdx .gridK{ grid-template-columns: repeat(3, minmax(0,1fr)); } }
+    @media (max-width: 640px){ .sdx .gridK{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    .sdx .chartBox{ height: 340px; }
+    @media (max-width: 640px){ .sdx .chartBox{ height: 280px; } }
+    .sdx .btnlink{
+      display:inline-flex; align-items:center; justify-content:center;
+      border-radius:12px; padding:10px 12px;
+      font-weight:900;
+      border:1px solid rgba(148,163,184,.55);
+      background: rgba(255,255,255,.75);
+    }
+    .sdx .btnlink.primary{ background: rgba(37,99,235,.10); border-color: rgba(37,99,235,.35); color:#1d4ed8; }
+    .sdx .btnlink:hover{ transform: translateY(-1px); box-shadow: 0 14px 30px rgba(2,6,23,.10); }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="sdx">
+  <!-- Header -->
+  <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-4">
+    <div>
+      <div class="text-xs font-extrabold tracking-widest text-slate-600 uppercase">
+        Unified Landing Dashboard · {{ scope_label }}
+      </div>
+      <div class="text-3xl md:text-4xl font-black text-slate-900 mt-1">State Dashboard</div>
+      <div class="muted mt-1 text-sm">
+        Reports include <b>all PGs inside your jurisdiction</b> (Super Admin: all states; State Admin: your state; District Admin: your district).
+      </div>
+    </div>
+
+    <div class="flex gap-2 flex-wrap">
+      <a class="btnlink primary" href="{{ url_for('reports.hierarchy_dashboard') }}">Hierarchy Dashboard</a>
+      <a class="btnlink" href="{{ url_for('master_data.manage_pgs') }}">PG Management</a>
+      <a class="btnlink" href="{{ url_for('master_data.shg_browser') }}">SHG Master Browser</a>
+      <a class="btnlink" href="{{ url_for('reports.export_scope_csv') }}">Download CSV</a>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="gridK mb-4">
+    <div class="kpi p-4">
+      <div class="t">States</div>
+      <div class="v">{{ states_total or 0 }}</div>
+      <div class="s">In scope</div>
+    </div>
+    <div class="kpi p-4">
+      <div class="t">Districts</div>
+      <div class="v">{{ districts_total or 0 }}</div>
+      <div class="s">In scope</div>
+    </div>
+    <div class="kpi p-4">
+      <div class="t">Blocks</div>
+      <div class="v">{{ blocks_total or 0 }}</div>
+      <div class="s">In scope</div>
+    </div>
+    <div class="kpi p-4">
+      <div class="t">Total PGs</div>
+      <div class="v">{{ pg_count or 0 }}</div>
+      <div class="s">All PGs (scope)</div>
+    </div>
+    <div class="kpi p-4">
+      <div class="t">Total Members</div>
+      <div class="v">{{ member_count or 0 }}</div>
+      <div class="s">Membership register</div>
+    </div>
+    <div class="kpi p-4">
+      <div class="t">Turnover (Latest)</div>
+      <div class="v">{{ total_turnover or 0 }}</div>
+      <div class="s">{% if turnover_period %}Period: {{ turnover_period }}{% else %}From Monthly Business{% endif %}</div>
+    </div>
+
+    <div class="kpi p-4">
+      <div class="t">Profit (Total)</div>
+      <div class="v">{{ total_profit or 0 }}</div>
+      <div class="s">Income–Expenditure (cumulative)</div>
+    </div>
+
+    <div class="kpi p-4">
+      <div class="t">Loss (Total)</div>
+      <div class="v">{{ total_loss or 0 }}</div>
+      <div class="s">Income–Expenditure (cumulative)</div>
+    </div>
+
+    <div class="kpi p-4">
+      <div class="t">PGs with Grants</div>
+      <div class="v">{{ pgs_with_grants or 0 }}</div>
+      <div class="s">At least 1 grant received</div>
+    </div>
+
+    <div class="kpi p-4">
+      <div class="t">Grants Received (Total)</div>
+      <div class="v">{{ grants_total or 0 }}</div>
+      <div class="s">All PGs (scope)</div>
+    </div>
+
+    <div class="kpi p-4">
+      <div class="t">Lakhpati Didi (Members)</div>
+      <div class="v">{{ lakhpati_total or 0 }}</div>
+      <div class="s">Members marked across PGs</div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="gridA">
+    <div class="cardx">
+      <div class="hdr">
+        <div>
+          <div class="text-sm font-extrabold text-slate-900">Turnover Trend (Last 12 Months)</div>
+          <div class="text-xs muted">{% if turnover_period %}Latest period: {{ turnover_period }}{% else %}No turnover data found yet{% endif %}</div>
+        </div>
+        <span class="chip">CHART</span>
+      </div>
+      <div class="bd">
+        <div class="chartBox">
+          <canvas id="turnoverTrend"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="cardx">
+      <div class="hdr">
+        <div>
+          <div class="text-sm font-extrabold text-slate-900">SHG Master (LokOS)</div>
+          <div class="text-xs muted">Total: {{ shg_total or 0 }} · Active: {{ shg_active or 0 }}</div>
+        </div>
+        <span class="chip">Top districts</span>
+      </div>
+      <div class="bd">
+        <div class="chartBox" style="height:340px;">
+          <canvas id="shgTopDistricts"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Geo Charts -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+    <div class="cardx">
+      <div class="hdr">
+        <div>
+          <div class="text-sm font-extrabold text-slate-900">PGs by State</div>
+          <div class="text-xs muted">Top 10 states in scope</div>
+        </div>
+        <span class="chip">Bars</span>
+      </div>
+      <div class="bd">
+        <div class="chartBox" style="height:300px;"><canvas id="pgByState"></canvas></div>
+      </div>
+    </div>
+
+    <div class="cardx">
+      <div class="hdr">
+        <div>
+          <div class="text-sm font-extrabold text-slate-900">PGs by District</div>
+          <div class="text-xs muted">Top 10 districts in scope</div>
+        </div>
+        <span class="chip">Bars</span>
+      </div>
+      <div class="bd">
+        <div class="chartBox" style="height:300px;"><canvas id="pgByDistrict"></canvas></div>
+      </div>
+    </div>
+
+    <div class="cardx">
+      <div class="hdr">
+        <div>
+          <div class="text-sm font-extrabold text-slate-900">PGs by Block</div>
+          <div class="text-xs muted">Top 10 blocks in scope</div>
+        </div>
+        <span class="chip">Bars</span>
+      </div>
+      <div class="bd">
+        <div class="chartBox" style="height:300px;"><canvas id="pgByBlock"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const charts = {{ charts|tojson }};
+  const shgTop = {{ shg_top_districts|tojson }};
+
+  function makeBar(id, labels, values, horizontal=false){
+    const el = document.getElementById(id);
+    if(!el) return;
+    const ctx = el.getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Count', data: values }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: horizontal ? 'y' : 'x',
+        plugins: { legend: { display:false } },
+        scales: {
+          x: { ticks: { maxRotation: 45, minRotation: 0 }, grid: { display: false } },
+          y: { beginAtZero: true, grid: { color: 'rgba(226,232,240,.9)' } }
+        }
+      }
+    });
+  }
+
+  function makeLine(id, labels, values){
+    const el = document.getElementById(id);
+    if(!el) return;
+    const ctx = el.getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'Turnover', data: values, tension: 0.35, fill: true }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display:false } },
+        scales: {
+          x: { grid: { display:false } },
+          y: { beginAtZero: true, grid: { color: 'rgba(226,232,240,.9)' } }
+        }
+      }
+    });
+  }
+
+  // Turnover trend
+  makeLine('turnoverTrend', (charts.turnover_ts && charts.turnover_ts.labels) || [], (charts.turnover_ts && charts.turnover_ts.values) || []);
+
+  // PG geo charts
+  makeBar('pgByState', (charts.pg_by_state && charts.pg_by_state.labels) || [], (charts.pg_by_state && charts.pg_by_state.values) || [], true);
+  makeBar('pgByDistrict', (charts.pg_by_district && charts.pg_by_district.labels) || [], (charts.pg_by_district && charts.pg_by_district.values) || [], true);
+  makeBar('pgByBlock', (charts.pg_by_block && charts.pg_by_block.labels) || [], (charts.pg_by_block && charts.pg_by_block.values) || [], true);
+
+  // SHG Top districts
+  const shgLabels = (shgTop || []).map(x => x._id || 'Unknown');
+  const shgValues = (shgTop || []).map(x => x.count || 0);
+  makeBar('shgTopDistricts', shgLabels, shgValues, true);
+})();
+</script>
+{% endblock %}

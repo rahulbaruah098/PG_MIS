@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <div>
+    <h4 class="mb-1">Replace TRESP Master (Excel Upload)</h4>
+    <div class="text-muted small">
+      SUPER_ADMIN only. This will drop and re-import <code>shg_master</code> and <code>shg_members_master</code>.
+      Geo masters (<code>states/districts/blocks</code>) are upserted from the Excel and not deleted.
+    </div>
+  </div>
+  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('master_data.shg_members_browser') }}">Open Members Browser</a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+      <div class="col-md-8">
+        <label class="form-label">Excel file (.xlsx)</label>
+        <input class="form-control" type="file" name="file" accept=".xlsx" required>
+        <div class="form-text">Use the latest TRESP master workbook that contains SHG + Member rows.</div>
+      </div>
+      <div class="col-md-4">
+        <button class="btn btn-danger w-100" type="submit">Replace Master Data</button>
+      </div>
+    </form>
+
+    <hr>
+    <div class="small text-muted">
+      <div class="fw-semibold mb-1">What happens on replace?</div>
+      <ul class="mb-0">
+        <li><span class="fw-semibold">Deletes</span> previous master collections: <code>shg_master</code>, <code>shg_members_master</code></li>
+        <li><span class="fw-semibold">Re-imports</span> using the same importer used in server setup</li>
+        <li><span class="fw-semibold">Derives</span> 8 districts + 23 blocks (and any others) from the same Excel</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  /* ============================================================
+     FUND / ESTABLISHMENT COST — RESKIN (LEDGER BOOK LOOK)
+     ✅ ONLY UI/CSS/UX changed
+     ✅ ALL data contents + form fields kept as-is
+     ✅ UPDATE (as requested):
+        - REMOVE bottom Back button (near Save)
+        - Back button INSIDE page header line (top-left of title row)
+        - Show that Back button ONLY in app/mobile/tablet view
+     ✅ Scoped under .fund-wrap only (no global body/* rules)
+     ============================================================ */
+
+  .fund-wrap{
+    width: 100%;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    /* same token language as Ledger Book */
+    --ink:#0f172a;
+    --muted:#64748b;
+
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    color: var(--ink);
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .fund-wrap *{ box-sizing:border-box; }
+
+  .fund-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+    position: relative;
+  }
+
+  .fund-head{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+    position: relative; /* ✅ anchor for absolute back button */
+  }
+  .fund-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: .2px;
+  }
+
+  /* ✅ Back button INSIDE header (same line as title)
+        - hidden on desktop
+        - appears only on mobile/tablet/app
+  */
+  .fund-back{
+    display:none; /* hidden by default (desktop/web) */
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: rgba(11,77,58,.98);
+    user-select: none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .fund-back:hover{
+    transform: translateY(-50%) translateX(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .fund-back:active{
+    transform: translateY(-50%) scale(.98);
+  }
+  .fund-back svg{ width: 18px; height: 18px; display:block; }
+
+  /* top fields like ledger */
+  .fund-topfields{
+    padding: 10px 16px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .fund-field{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .fund-label{
+    font-weight: 900;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+
+  .fund-input,
+  .fund-select,
+  .fund-textarea{
+    flex: 1;
+    width: 100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(247,250,249,.75);
+    font-weight: 800;
+    font-size: 12px;
+    outline: none;
+    min-width: 0;
+    color: var(--ink);
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .fund-input:focus,
+  .fund-select:focus,
+  .fund-textarea:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+  .fund-input[readonly]{
+    background: transparent;
+    border-color: rgba(15,23,42,.12);
+  }
+  .fund-textarea{
+    min-height: 92px;
+    resize: vertical;
+    line-height: 1.35;
+  }
+  .fund-hint{
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: rgba(15,23,42,.62);
+    font-weight: 750;
+  }
+
+  /* actions bar like ledger */
+  .fund-actions-bar{
+    padding: 10px 16px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.94);
+    flex-wrap: wrap;
+  }
+  .fund-actions-right{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+
+  .fund-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+    text-decoration:none;
+  }
+  .fund-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .fund-btn:disabled{
+    opacity: .45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .fund-btn.fund-primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .fund-btn.fund-primary:hover{ background: rgba(16,185,129,.16); }
+
+  .fund-icon{ width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* form section */
+  .fund-form{
+    padding: 12px 16px 14px;
+    background: rgba(255,255,255,.96);
+    border-bottom: 1.5px solid var(--line2);
+  }
+
+  .fund-grid{
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 10px 14px;
+    align-items: start;
+  }
+
+  .col-3{ grid-column: span 3; }
+  .col-4{ grid-column: span 4; }
+  .col-6{ grid-column: span 6; }
+  .col-9{ grid-column: span 9; }
+  .col-12{ grid-column: span 12; }
+
+  .fund-stack{
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .fund-stack .fund-label{ font-size: 12px; }
+
+  /* totals/kpi bar like ledger summary */
+  .fund-summary{
+    padding: 10px 16px;
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    border-top: 1.5px solid var(--line2);
+    background: rgba(247,250,249,.72);
+  }
+  .fund-kpi{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 999px;
+    background: rgba(255,255,255,.86);
+    font-weight: 950;
+    font-size: 12px;
+  }
+  .fund-kpi b{ font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 720px){
+    .fund-topfields{ grid-template-columns: 1fr; }
+    .fund-summary{ justify-content: flex-start; }
+    .col-3, .col-4, .col-6, .col-9{ grid-column: span 12; }
+
+    /* ✅ show the header back button only on mobile/tablet */
+    .fund-back{ display:flex; }
+  }
+</style>
+
+<div class="fund-wrap">
+  <div class="fund-sheet">
+
+    <!-- Header (Ledger-style) -->
+    <div class="fund-head">
+
+      <!-- ✅ Back INSIDE header line (ONLY mobile/tablet/app) -->
+      <a class="fund-back" href="javascript:history.back()" aria-label="Go Back">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <h2 class="fund-title">Fund / Establishment Cost</h2>
+    </div>
+
+    <!-- Top fields (Ledger-style) -->
+    <div class="fund-topfields">
+      <div class="fund-field">
+        <div class="fund-label">Producer Group</div>
+        <input class="fund-input" type="text" value="{{ pg.name }}" readonly />
+      </div>
+
+      <div class="fund-field">
+        <div class="fund-label">Page</div>
+        <input class="fund-input" type="text" value="Establishment Cost Details" readonly />
+      </div>
+    </div>
+
+    <!-- Actions bar (Ledger-style) -->
+    <div class="fund-actions-bar">
+      <div style="font-weight:950; font-size:12px; color:rgba(15,23,42,.72);">
+        <!-- intentionally blank label space; keeps UI clean -->
+      </div>
+
+      <!-- ✅ removed the top "Back" from here (now only the mobile header back exists) -->
+      <div class="fund-actions-right"></div>
+    </div>
+
+    <!-- Form (same fields/logic as your original page) -->
+    <div class="fund-form">
+      <form method="POST">
+        <div class="fund-grid">
+
+          <div class="fund-stack col-3">
+            <label class="fund-label" for="establishment_cost_received">Establishment Cost Received?</label>
+            <select id="establishment_cost_received" class="fund-select" name="establishment_cost_received">
+              <option value="no" {% if fund and not fund.establishment_cost_received %}selected{% endif %}>No</option>
+              <option value="yes" {% if fund and fund.establishment_cost_received %}selected{% endif %}>Yes</option>
+            </select>
+            <div class="fund-hint">Choose “Yes” if the fund has been received.</div>
+          </div>
+
+          <div class="fund-stack col-3">
+            <label class="fund-label" for="receiving_date">Receiving Date</label>
+            <input id="receiving_date" type="date" class="fund-input" name="receiving_date"
+                   value="{{ fund.receiving_date if fund else '' }}">
+          </div>
+
+          <div class="fund-stack col-3">
+            <label class="fund-label" for="source">Source</label>
+            <input id="source" type="text" class="fund-input" name="source"
+                   placeholder="e.g., Govt / Scheme / NGO"
+                   value="{{ fund.source if fund else '' }}">
+          </div>
+
+          <div class="fund-stack col-3">
+            <label class="fund-label" for="amount_received">Amount Received</label>
+            <input id="amount_received" type="number" step="0.01" class="fund-input" name="amount_received"
+                   placeholder="0.00"
+                   value="{{ fund.amount_received if fund else '' }}">
+          </div>
+
+          <div class="fund-stack col-3">
+            <label class="fund-label" for="total_utilized_amount">Total Utilized Amount</label>
+            <input id="total_utilized_amount" type="number" step="0.01" class="fund-input" name="total_utilized_amount"
+                   placeholder="0.00"
+                   value="{{ fund.total_utilized_amount if fund else '' }}">
+          </div>
+
+          <div class="fund-stack col-9">
+            <label class="fund-label" for="notes">Notes</label>
+            <textarea id="notes" class="fund-textarea" name="notes"
+                      placeholder="Add any notes, utilization details, or remarks...">{{ fund.notes if fund else '' }}</textarea>
+          </div>
+
+          <div class="col-12" style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin-top: 6px;">
+            <!-- ✅ removed bottom Back button (as requested) -->
+
+            <button class="fund-btn fund-primary" type="submit">
+              <svg class="fund-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              Save
+            </button>
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+    <!-- Summary KPI (same data as your original mini cards, now ledger-style pills) -->
+    <div class="fund-summary" aria-hidden="true">
+      <div class="fund-kpi">
+        Status:
+        <b>{% if fund and fund.establishment_cost_received %}Received{% else %}Not Received{% endif %}</b>
+      </div>
+
+      <div class="fund-kpi">
+        Receiving Date:
+        <b>{% if fund and fund.receiving_date %}{{ fund.receiving_date }}{% else %}—{% endif %}</b>
+      </div>
+
+      <div class="fund-kpi">
+        Amount:
+        <b>{% if fund and fund.amount_received %}{{ fund.amount_received }}{% else %}—{% endif %}</b>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

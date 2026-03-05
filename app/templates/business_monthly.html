@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Monthly Business{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-6">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Monthly Business (Manual 6.1 + 6.2)</h1>
+      <p class="text-slate-600 text-sm mt-1">
+        PG: <span class="font-medium">{{ pg.name or pg.pg_name or '—' }}</span>
+      </p>
+    </div>
+
+    <form method="get" class="flex items-end gap-2">
+      <div>
+        <label class="block text-xs text-slate-600 mb-1">Year</label>
+        <input name="year" value="{{ year }}" class="w-28 rounded-xl border border-slate-200 px-3 py-2 bg-white"/>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-600 mb-1">Month</label>
+        <input name="month" value="{{ month }}" class="w-20 rounded-xl border border-slate-200 px-3 py-2 bg-white"/>
+      </div>
+      <button class="rounded-xl px-4 py-2 bg-slate-900 text-white">Go</button>
+    </form>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-4 mt-6">
+    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="text-xs text-slate-500">Turnover (6.4)</div>
+      <div class="text-2xl font-semibold mt-1">₹{{ "%.2f"|format(turnover or 0) }}</div>
+      <div class="text-xs text-slate-500 mt-2">Internal + Market totals</div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="text-xs text-slate-500">Members involved (Input)</div>
+      <div class="text-2xl font-semibold mt-1">{{ internal.members_input_count or 0 }} <span class="text-slate-500 text-sm">/ {{ total_members }}</span></div>
+      <div class="text-xs text-slate-500 mt-2">{{ pct_in }}%</div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="text-xs text-slate-500">Members involved (Output)</div>
+      <div class="text-2xl font-semibold mt-1">{{ internal.members_output_count or 0 }} <span class="text-slate-500 text-sm">/ {{ total_members }}</span></div>
+      <div class="text-xs text-slate-500 mt-2">{{ pct_out }}%</div>
+    </div>
+  </div>
+
+  <form method="post" class="mt-6 space-y-6">
+    <input type="hidden" name="year" value="{{ year }}"/>
+    <input type="hidden" name="month" value="{{ month }}"/>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="text-lg font-semibold text-slate-900">6.1 Internal / Member Transactions (summary)</h2>
+      <p class="text-sm text-slate-600 mt-1">Enter totals for the month. Turnover is auto-calculated.</p>
+
+      <div class="grid md:grid-cols-2 gap-4 mt-4">
+        <div>
+          <label class="block text-sm text-slate-700 mb-1">Input sold to members (₹)</label>
+          <input name="input_sold_to_members_value" value="{{ internal.input_sold_to_members_value or '' }}"
+                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
+        </div>
+        <div>
+          <label class="block text-sm text-slate-700 mb-1">Product bought from members (₹)</label>
+          <input name="product_bought_from_members_value" value="{{ internal.product_bought_from_members_value or '' }}"
+                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
+        </div>
+        <div>
+          <label class="block text-sm text-slate-700 mb-1">Other internal (₹)</label>
+          <input name="other_internal_value" value="{{ internal.other_internal_value or '' }}"
+                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
+        </div>
+        <div>
+          <label class="block text-sm text-slate-700 mb-1">Internal total (auto)</label>
+          <input value="{{ internal.internal_total or 0 }}" readonly
+                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50 text-slate-700" />
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-700 mb-1">Members procuring inputs from PG (count)</label>
+          <input name="members_input_count" value="{{ internal.members_input_count or '' }}"
+                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
+        </div>
+        <div>
+          <label class="block text-sm text-slate-700 mb-1">Members selling product to PG (count)</label>
+          <input name="members_output_count" value="{{ internal.members_output_count or '' }}"
+                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm text-slate-700 mb-1">Internal notes</label>
+          <textarea name="internal_notes" rows="2"
+                    class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white">{{ internal.notes or '' }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="text-lg font-semibold text-slate-900">6.2 Market / Outsider Transactions (summary)</h2>
+
+      <div class="grid md:grid-cols-2 gap-4 mt-4">
+        <div>
+          <label class="block text-sm text-slate-700 mb-1">Input procured from market (₹)</label>
+          <input name="input_procured_from_market_value" value="{{ market.input_procured_from_market_value or '' }}"
+                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
+        </div>
+        <div>
+          <label class="block text-sm text-slate-700 mb-1">Input sold to outsiders (₹)</label>
+          <input name="input_sold_to_outsiders_value" value="{{ market.input_sold_to_outsiders_value or '' }}"
+                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
+        </div>
+        <div>
+          <label class="block text-sm text-slate-700 mb-1">Product sold to market (₹)</label>
+          <input name="product_sold_to_market_value" value="{{ market.product_sold_to_market_value or '' }}"
+                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
+        </div>
+        <div>
+          <label class="block text-sm text-slate-700 mb-1">Other market (₹)</label>
+          <input name="other_market_value" value="{{ market.other_market_value or '' }}"
+                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-700 mb-1">Market total (auto)</label>
+          <input value="{{ market.market_total or 0 }}" readonly
+                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50 text-slate-700" />
+        </div>
+        <div>
+          <label class="block text-sm text-slate-700 mb-1">Total turnover (auto)</label>
+          <input value="{{ market.total_turnover or turnover or 0 }}" readonly
+                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50 text-slate-700" />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm text-slate-700 mb-1">Market notes</label>
+          <textarea name="market_notes" rows="2"
+                    class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white">{{ market.notes or '' }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between">
+      <div class="text-xs text-slate-500">
+        Saving this page will also try to auto-generate the MPR snapshot for the same month.
+      </div>
+      <button class="rounded-xl px-5 py-2.5 bg-emerald-600 text-white font-medium hover:bg-emerald-700">Save</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

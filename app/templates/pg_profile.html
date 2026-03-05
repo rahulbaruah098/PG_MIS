@@ -1,0 +1,1201 @@
+{% extends "base.html" %}
+
+{% block title %}Producer Group Profile{% endblock %}
+
+{% block head %}
+  {{ super() }}
+  <style>
+    /* ============================================================
+       PROFILE PAGE (SCOPED)
+       - Green header on top, white content below (NO 2 cards)
+       - ✅ All “black text” fields are INPUTS (empty placeholders)
+       - ✅ Date field: manual entry + calendar picker
+       - ✅ Bank Details in 2*2 format
+       - ✅ Remove dashboard/sidebar (profile only)  (handled by base layout)
+       - ✅ Remove duplicate language toggle on mobile (keep only one)
+       - ✅ Strict date input validation
+       - ✅ Real centered modal popup with background blur (Save + Clear All)
+       NOTE: This file EXTENDS base.html (NO <html><head><body> here)
+       ============================================================ */
+
+    /* Keep everything scoped to this page only */
+    .pg-profile-page *{margin:0;padding:0;box-sizing:border-box}
+
+    .pg-profile-page{
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue',sans-serif;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      color:#0f172a;
+    }
+
+    /* Page wrapper (profile only) */
+    .pg-profile-page .main{
+      min-height: 100svh;
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+    }
+
+    .pg-profile-page .content-area{
+      padding: 16px;
+      min-width:0;
+    }
+
+    .pg-profile-page .content-wrapper{
+      width:100%;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* Language Toggle (single instance only) */
+    .pg-profile-page .language-container{
+      display:flex;
+      justify-content:flex-end;
+      margin-bottom:.75rem;
+    }
+
+    .pg-profile-page .language-button{
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+      background:#fff;
+      color:#047857;
+      padding:.55rem 1rem;
+      border-radius:9999px;
+      border:1px solid rgba(4,120,87,.15);
+      box-shadow:0 4px 6px -1px rgba(0,0,0,.10),0 2px 4px -1px rgba(0,0,0,.06);
+      cursor:pointer;
+      transition:transform .15s ease, box-shadow .2s ease;
+      font-size:.9rem;
+      font-weight:700;
+    }
+    .pg-profile-page .language-button:hover{
+      box-shadow:0 12px 18px -8px rgba(0,0,0,.20);
+      transform: translateY(-1px);
+    }
+
+    /* Green header */
+    .pg-profile-page .header{
+      background: linear-gradient(to right, #059669, #10b981);
+      border-radius: 1.25rem;
+      padding: 1.15rem;
+      color: #fff;
+      overflow:hidden;
+      position:relative;
+    }
+    .pg-profile-page .header:before{
+      content:"";
+      position:absolute;
+      inset:-40% -20%;
+      background: radial-gradient(closest-side, rgba(255,255,255,.12), transparent 60%);
+      pointer-events:none;
+    }
+
+    .pg-profile-page .header-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:.75rem;
+      margin-bottom:1rem;
+      position:relative;
+      z-index:1;
+    }
+
+    .pg-profile-page .header-title-container{
+      display:flex;
+      align-items:center;
+      gap:.75rem;
+      flex:1;
+      min-width:0;
+    }
+
+    .pg-profile-page .icon-container{
+      background:rgba(255,255,255,.20);
+      padding:.55rem;
+      border-radius:9999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex:0 0 auto;
+    }
+
+    .pg-profile-page .header-subtitle{
+      color: rgba(209,250,229,1);
+      font-size:.95rem;
+      font-weight:700;
+      line-height:1.2;
+      word-break: normal;
+      overflow-wrap: break-word;
+      white-space: normal;
+    }
+
+    .pg-profile-page .edit-button{
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+      background:rgba(255,255,255,.20);
+      padding:.55rem 1rem;
+      border-radius:9999px;
+      border:none;
+      color:#fff;
+      cursor:pointer;
+      transition:background-color .2s ease, transform .15s ease;
+      font-size:.9rem;
+      font-weight:800;
+      white-space:nowrap;
+      flex:0 0 auto;
+    }
+    .pg-profile-page .edit-button:hover{
+      background:rgba(255,255,255,.30);
+      transform: translateY(-1px);
+    }
+
+    .pg-profile-page .header-cards{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:.75rem;
+      position:relative;
+      z-index:1;
+    }
+
+    .pg-profile-page .header-card{
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.18);
+      backdrop-filter: blur(10px);
+      border-radius: .9rem;
+      padding:.85rem;
+    }
+
+    .pg-profile-page .header-card-label{
+      color: rgba(236,253,245,1);
+      font-size:.78rem;
+      margin-bottom:.25rem;
+      font-weight:700;
+      letter-spacing:.2px;
+    }
+
+    .pg-profile-page .header-input{
+      width:100%;
+      background:rgba(255,255,255,.18);
+      color:#fff;
+      font-size:1.05rem;
+      font-weight:900;
+      border-radius:.65rem;
+      padding:.55rem .75rem;
+      border:1px solid rgba(255,255,255,.25);
+      outline:none;
+    }
+    .pg-profile-page .header-input::placeholder{ color: rgba(236,253,245,.80); font-weight:800; }
+    .pg-profile-page .header-input:focus{ background:rgba(255,255,255,.26); border-color: rgba(255,255,255,.42); }
+
+    /* White content */
+    .pg-profile-page .content{
+      margin-top: .95rem;
+      background:#fff;
+      border-radius: 1.25rem;
+      padding: 1.15rem;
+      box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+    }
+
+    .pg-profile-page .section{margin-bottom:1.1rem}
+
+    .pg-profile-page .section-header{
+      display:flex;
+      align-items:center;
+      gap:.55rem;
+      color:#047857;
+      margin-bottom:.65rem;
+    }
+
+    .pg-profile-page .section-title{
+      color:#065f46;
+      font-size:1rem;
+      font-weight:900;
+      line-height:1.2;
+    }
+
+    .pg-profile-page .section-content{padding-left: 1.75rem}
+
+    .pg-profile-page .grid-container{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:.75rem;
+    }
+
+    .pg-profile-page .field{display:flex;flex-direction:column}
+
+    .pg-profile-page .field-label{
+      font-size:.78rem;
+      color:#059669;
+      margin-bottom:.25rem;
+      font-weight:900;
+    }
+
+    .pg-profile-page .field-input,
+    .pg-profile-page .single-input{
+      width:100%;
+      background:#f0fdf4;
+      color:#1f2937;
+      border-radius:.65rem;
+      padding:.62rem .75rem;
+      border:2px solid transparent;
+      outline:none;
+      font-size:1rem;
+      font-weight:800;
+    }
+    .pg-profile-page .field-input::placeholder,
+    .pg-profile-page .single-input::placeholder{ color:#6b7280; font-weight:700; }
+
+    .pg-profile-page .field-input:focus,
+    .pg-profile-page .single-input:focus{
+      border-color:#34d399;
+      box-shadow:0 0 0 3px rgba(52,211,153,.12);
+    }
+
+    /* Date invalid visuals */
+    .pg-profile-page .is-invalid{
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 3px rgba(239,68,68,.14) !important;
+    }
+    .pg-profile-page .date-error{
+      display:none;
+      margin-top:.35rem;
+      font-size:.78rem;
+      color:#b91c1c;
+      font-weight:900;
+    }
+    .pg-profile-page .date-error.show{ display:block; }
+
+    .pg-profile-page .date-row{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:.55rem;
+      max-width: 520px;
+    }
+    .pg-profile-page .date-help{
+      font-size:.78rem;
+      color:#047857;
+      font-weight:800;
+      opacity:.9;
+    }
+
+    .pg-profile-page .divider{
+      height:1px;
+      background:#d1fae5;
+      margin:1.1rem 0;
+    }
+
+    .pg-profile-page .footer{
+      display:flex;
+      justify-content:center;
+      margin-top:.9rem;
+    }
+    .pg-profile-page .footer-indicator{
+      width: 10rem;
+      height: .28rem;
+      background:#86efac;
+      border-radius:9999px;
+    }
+
+    .pg-profile-page .icon-small{width:1rem;height:1rem}
+    .pg-profile-page .icon-medium{width:1.5rem;height:1.5rem}
+    .pg-profile-page .section-header .icon-small{width:1.2rem;height:1.2rem}
+
+    .pg-profile-page .hidden{display:none!important}
+
+    /* Tablet */
+    @media (min-width: 640px){
+      .pg-profile-page .grid-container{grid-template-columns: repeat(2, 1fr);}
+      .pg-profile-page .header-cards{grid-template-columns: repeat(2, 1fr);}
+      .pg-profile-page .header{padding:1.25rem}
+      .pg-profile-page .content{padding:1.25rem}
+      .pg-profile-page .date-row{grid-template-columns: 1fr 220px; align-items:end;}
+    }
+
+    /* Bank 2x2 grid */
+    .pg-profile-page .bank-grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:.75rem;
+    }
+    @media (min-width: 640px){
+      .pg-profile-page .bank-grid{
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Short-height */
+    @media (max-height: 700px){
+      .pg-profile-page .header{padding:1.05rem}
+      .pg-profile-page .content{padding:1.05rem}
+      .pg-profile-page .divider{margin:.9rem 0}
+    }
+
+    /* ============================================================
+       ✅ MOBILE: keep title + Edit on same row
+       ✅ BUT when editing (Clear All visible), push buttons to next row
+       ============================================================ */
+    @media (max-width: 520px){
+      .pg-profile-page .header-top{
+        flex-wrap: nowrap;
+        align-items: center;
+      }
+
+      .pg-profile-page .header-title-container{
+        flex: 1;
+        min-width: 0;
+      }
+
+      .pg-profile-page .edit-button{
+        flex-shrink: 0;
+      }
+
+      .pg-profile-page .header-top.is-editing{
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+
+      .pg-profile-page .header-top.is-editing .header-title-container{
+        flex: 1 1 100%;
+      }
+
+      .pg-profile-page .header-top.is-editing #clearAllButton,
+      .pg-profile-page .header-top.is-editing #editSaveButton{
+        order: 10;
+        margin-top: .6rem;
+      }
+
+      .pg-profile-page .header-top.is-editing #clearAllButton{
+        margin-right: .5rem;
+      }
+    }
+
+    /* ============================================================
+       MODAL (REAL POPUP CENTER + BLUR BACKDROP)
+       ============================================================ */
+    .pg-profile-page .pg-modal-overlay{
+      position: fixed;
+      inset: 0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 9999;
+      padding: 18px;
+      background: rgba(15, 23, 42, .28);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .pg-profile-page .pg-modal-overlay.show{ display:flex; }
+
+    .pg-profile-page .pg-modal{
+      width: 100%;
+      max-width: 460px;
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid rgba(15,23,42,.10);
+      box-shadow: 0 30px 60px -30px rgba(0,0,0,.45);
+      overflow:hidden;
+      transform: translateY(6px);
+      animation: pgModalIn .18s ease-out forwards;
+    }
+    @keyframes pgModalIn{
+      from{ opacity:.0; transform: translateY(10px) scale(.98); }
+      to{ opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .pg-profile-page .pg-modal-head{
+      padding: 14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      background: linear-gradient(to right, rgba(5,150,105,.10), rgba(16,185,129,.10));
+      border-bottom: 1px solid rgba(15,23,42,.08);
+    }
+    .pg-profile-page .pg-modal-title{
+      font-weight: 950;
+      color:#064e3b;
+      font-size: 15px;
+      letter-spacing:.2px;
+    }
+    .pg-profile-page .pg-modal-close{
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 1px solid rgba(15,23,42,.10);
+      background:#fff;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      transition: transform .15s ease, box-shadow .2s ease;
+    }
+    .pg-profile-page .pg-modal-close:hover{ transform: translateY(-1px); box-shadow:0 12px 18px -14px rgba(0,0,0,.35); }
+
+    .pg-profile-page .pg-modal-body{
+      padding: 14px 16px 6px;
+      color:#0f172a;
+    }
+    .pg-profile-page .pg-modal-text{
+      font-size: 14px;
+      font-weight: 800;
+      color:#0f172a;
+      line-height:1.35;
+    }
+    .pg-profile-page .pg-modal-sub{
+      margin-top: 6px;
+      font-size: 12.5px;
+      color: rgba(15,23,42,.68);
+      font-weight: 700;
+    }
+
+    .pg-profile-page .pg-modal-actions{
+      padding: 12px 16px 16px;
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      flex-wrap: wrap;
+    }
+
+    .pg-profile-page .pg-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 900;
+      cursor:pointer;
+      border:1px solid transparent;
+      background:#fff;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+      user-select:none;
+      font-size: 13.5px;
+      min-width: 120px;
+    }
+    .pg-profile-page .pg-btn:hover{ transform: translateY(-1px); box-shadow:0 14px 22px -18px rgba(0,0,0,.35); }
+
+    .pg-profile-page .pg-btn-cancel{
+      border-color: rgba(15,23,42,.14);
+      color:#0f172a;
+      background:#fff;
+    }
+    .pg-profile-page .pg-btn-confirm{
+      border-color: rgba(16,185,129,.35);
+      background: rgba(16,185,129,.12);
+      color:#065f46;
+    }
+    .pg-profile-page .pg-btn-danger{
+      border-color: rgba(239,68,68,.30);
+      background: rgba(239,68,68,.10);
+      color:#991b1b;
+    }
+
+    @media (max-width: 420px){
+      .pg-profile-page .pg-btn{ min-width: 100%; }
+      .pg-profile-page .pg-modal-actions{ justify-content: stretch; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="pg-profile-page">
+    <div class="main">
+      <main class="content-area">
+        <div class="content-wrapper">
+
+          <!-- Language Toggle -->
+          <div class="language-container">
+            <button id="languageToggle" class="language-button" type="button">
+              <svg class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              <span id="languageText">বাংলা</span>
+            </button>
+          </div>
+
+          <!-- GREEN TOP -->
+          <div class="header">
+            <div class="header-top" id="headerTop">
+              <div class="header-title-container">
+                <div class="icon-container">
+                  <svg class="icon-medium" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div style="min-width:0">
+                  <p class="header-subtitle" id="headerTitle">Producer Group Profile</p>
+                </div>
+              </div>
+
+              <button id="editSaveButton" class="edit-button" type="button">
+                <svg id="editIcon" class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+
+                <svg id="saveIcon" class="icon-small hidden" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+
+                <span id="editSaveText">Edit</span>
+              </button>
+            </div>
+
+            <div class="header-cards">
+              <div class="header-card">
+                <p class="header-card-label" id="labelPgName">PG Name</p>
+                <input type="text" id="inputPgName" class="header-input" placeholder="Enter PG Name" value="{{ current_pg_name }}" />
+              </div>
+
+              <div class="header-card">
+                <p class="header-card-label" id="labelActivity">Activity</p>
+                <input type="text" id="inputActivity" class="header-input" placeholder="Enter Activity" value="" />
+              </div>
+            </div>
+          </div>
+
+          <!-- BELOW CONTENT -->
+          <div class="content">
+
+            <!-- Address -->
+            <div class="section">
+              <div class="section-header">
+                <svg class="icon-small" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <h3 class="section-title" id="labelAddress">Address</h3>
+              </div>
+
+              <div class="section-content">
+                <div class="grid-container">
+                  <div class="field">
+                    <p class="field-label" id="labelVillage">Village</p>
+                    <input type="text" id="inputVillage" class="field-input" placeholder="Enter Village" value="" />
+                  </div>
+
+                  <div class="field">
+                    <p class="field-label" id="labelBlock">Block</p>
+                    <input type="text" id="inputBlock" class="field-input" placeholder="Enter Block" value="" />
+                  </div>
+
+                  <div class="field">
+                    <p class="field-label" id="labelDistrict">District</p>
+                    <input type="text" id="inputDistrict" class="field-input" placeholder="Enter District" value="" />
+                  </div>
+
+                  <div class="field">
+                    <p class="field-label" id="labelState">State</p>
+                    <input type="text" id="inputState" class="field-input" placeholder="Enter State" value="" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Formation Date -->
+            <div class="section">
+              <div class="section-header">
+                <svg class="icon-small" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <h3 class="section-title" id="labelFormationDate">Date of Formation</h3>
+              </div>
+
+              <div class="section-content">
+                <div class="date-row">
+                  <div>
+                    <input type="text" id="inputFormationDateText" class="single-input"
+                           placeholder="DD/MM/YYYY (manual entry)" value="" inputmode="numeric" autocomplete="off" />
+                    <div class="date-help">You can type date OR pick from calendar.</div>
+                    <div class="date-error" id="dateError">Invalid date. Use DD/MM/YYYY (e.g., 05/02/2026).</div>
+                  </div>
+
+                  <div>
+                    <input type="date" id="inputFormationDatePicker" class="single-input" value="" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Total Members -->
+            <div class="section">
+              <div class="section-header">
+                <svg class="icon-small" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <h3 class="section-title" id="labelTotalMembers">Total Members in PG</h3>
+              </div>
+
+              <div class="section-content">
+                <input type="number" id="inputTotalMembers" class="single-input"
+                       placeholder="Enter Total Members" min="0" step="1" value="" />
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- CLF Name -->
+            <div class="section">
+              <div class="section-header">
+                <svg class="icon-small" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <h3 class="section-title" id="labelClfName">Name of CLF under which PG belongs to</h3>
+              </div>
+
+              <div class="section-content">
+                <input type="text" id="inputClfName" class="single-input" placeholder="Enter CLF Name" value="{{ current_clf_name }}" />
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Bank Details -->
+            <div class="section">
+              <div class="section-header">
+                <svg class="icon-small" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                  <line x1="1" y1="10" x2="23" y2="10"></line>
+                </svg>
+                <h3 class="section-title" id="labelBankDetails">Bank Details</h3>
+              </div>
+
+              <div class="section-content">
+                <div class="bank-grid">
+                  <div class="field">
+                    <p class="field-label" id="labelAccountNo">Account Number</p>
+                    <input type="text" id="inputAccountNo" class="field-input" placeholder="Enter Account Number" value="" />
+                  </div>
+
+                  <div class="field">
+                    <p class="field-label" id="labelIfsc">IFSC Code</p>
+                    <input type="text" id="inputIfsc" class="field-input" placeholder="Enter IFSC Code" value="" />
+                  </div>
+
+                  <div class="field">
+                    <p class="field-label" id="labelBankName">Bank Name</p>
+                    <input type="text" id="inputBankName" class="field-input" placeholder="Enter Bank Name" value="" />
+                  </div>
+
+                  <div class="field">
+                    <p class="field-label" id="labelBranch">Branch</p>
+                    <input type="text" id="inputBranch" class="field-input" placeholder="Enter Branch" value="" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="footer">
+              <div class="footer-indicator"></div>
+            </div>
+
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- REAL CENTER POPUP MODAL (Save / Clear All confirmation) -->
+    <div id="confirmOverlay" class="pg-modal-overlay" aria-hidden="true">
+      <div class="pg-modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <div class="pg-modal-head">
+          <div class="pg-modal-title" id="confirmTitle">Confirm</div>
+          <button class="pg-modal-close" id="confirmCloseBtn" type="button" aria-label="Close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6L6 18"></path>
+              <path d="M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="pg-modal-body">
+          <div class="pg-modal-text" id="confirmMessage">Do you want to save the changes?</div>
+          <div class="pg-modal-sub" id="confirmSub">Choose Confirm to continue or Cancel to return.</div>
+        </div>
+
+        <div class="pg-modal-actions">
+          <button class="pg-btn pg-btn-cancel" id="confirmCancelBtn" type="button">Cancel</button>
+          <button class="pg-btn pg-btn-confirm" id="confirmOkBtn" type="button">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    // ============================================================
+    // LANGUAGE + EDIT/VIEW LOGIC
+    // ============================================================
+    const translations = {
+      en: {
+        title: "Producer Group Profile",
+        pgName: "PG Name",
+        activity: "Activity",
+        address: "Address",
+        village: "Village",
+        block: "Block",
+        district: "District",
+        state: "State",
+        formationDate: "Date of Formation",
+        totalMembers: "Total Members in PG",
+        clfName: "Name of CLF under which PG belongs to",
+        bankDetails: "Bank Details",
+        accountNo: "Account Number",
+        ifsc: "IFSC Code",
+        bankName: "Bank Name",
+        branch: "Branch",
+        editButton: "Edit",
+        saveButton: "Save",
+        languageToggle: "বাংলা",
+        // Modal strings
+        confirmTitle: "Confirm",
+        confirmSave: "Do you want to save the changes?",
+        confirmClear: "Do you want to clear all data?",
+        confirmSub: "Choose Confirm to continue or Cancel to return.",
+        confirmBtn: "Confirm",
+        cancelBtn: "Cancel",
+        clearAllBtn: "Clear All"
+      },
+      bn: {
+        title: "উৎপাদক গোষ্ঠী প্রোফাইল",
+        pgName: "পিজি নাম",
+        activity: "কার্যকলাপ",
+        address: "ঠিকানা",
+        village: "গ্রাম",
+        block: "ব্লক",
+        district: "জেলা",
+        state: "রাজ্য",
+        formationDate: "গঠনের তারিখ",
+        totalMembers: "পিজিতে মোট সদস্য",
+        clfName: "সিএলএফ-এর নাম যার অধীনে পিজি রয়েছে",
+        bankDetails: "ব্যাংক বিবরণ",
+        accountNo: "অ্যাকাউন্ট নম্বর",
+        ifsc: "আইএফএসসি কোড",
+        bankName: "ব্যাংকের নাম",
+        branch: "শাখা",
+        editButton: "সম্পাদনা করুন",
+        saveButton: "সংরক্ষণ করুন",
+        languageToggle: "English",
+        // Modal strings
+        confirmTitle: "নিশ্চিত করুন",
+        confirmSave: "আপনি কি পরিবর্তনগুলো সংরক্ষণ করতে চান?",
+        confirmClear: "আপনি কি সব ডেটা মুছে ফেলতে চান?",
+        confirmSub: "চালিয়ে যেতে Confirm চাপুন অথবা ফিরে যেতে Cancel চাপুন।",
+        confirmBtn: "Confirm",
+        cancelBtn: "Cancel",
+        clearAllBtn: "সব মুছুন"
+      }
+    };
+
+    let currentLanguage = 'en';
+    let isEditing = false;
+
+    const languageToggle = document.getElementById('languageToggle');
+    const languageText = document.getElementById('languageText');
+
+    const headerTopEl = document.getElementById('headerTop');
+
+    const editSaveButton = document.getElementById('editSaveButton');
+    const editIcon = document.getElementById('editIcon');
+    const saveIcon = document.getElementById('saveIcon');
+    const editSaveText = document.getElementById('editSaveText');
+
+    // Date fields
+    const dateText = document.getElementById('inputFormationDateText');
+    const datePicker = document.getElementById('inputFormationDatePicker');
+    const dateError = document.getElementById('dateError');
+
+    // ------------------------------------------------------------
+    // Strict date rules:
+    // - Manual: allow ONLY digits and auto-format as DD/MM/YYYY
+    // - Must be a real calendar date (incl leap year)
+    // - Year range: 1900 - 2100
+    // ------------------------------------------------------------
+    const DATE_MIN_YEAR = 1900;
+    const DATE_MAX_YEAR = 2100;
+
+    function daysInMonth(y, m){ // m: 1-12
+      return new Date(y, m, 0).getDate();
+    }
+
+    function isValidDDMMYYYY(str){
+      if(!str) return { ok:true, reason:"empty" }; // allow empty
+      if(!/^\d{2}\/\d{2}\/\d{4}$/.test(str)) return { ok:false, reason:"format" };
+      const [dd, mm, yyyy] = str.split("/").map(n => parseInt(n,10));
+      if(yyyy < DATE_MIN_YEAR || yyyy > DATE_MAX_YEAR) return { ok:false, reason:"year" };
+      if(mm < 1 || mm > 12) return { ok:false, reason:"month" };
+      const dim = daysInMonth(yyyy, mm);
+      if(dd < 1 || dd > dim) return { ok:false, reason:"day" };
+      return { ok:true, reason:"ok" };
+    }
+
+    function toDDMMYYYY(yyyyMmDd){
+      if(!yyyyMmDd) return "";
+      const [y,m,d] = yyyyMmDd.split("-");
+      if(!y || !m || !d) return "";
+      return `${d}/${m}/${y}`;
+    }
+
+    function toYYYYMMDD(ddMmYyyy){
+      if(!ddMmYyyy) return "";
+      const v = isValidDDMMYYYY(ddMmYyyy);
+      if(!v.ok) return "";
+      const [dd, mm, yyyy] = ddMmYyyy.split("/");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function setDateInvalid(isInvalid){
+      if(isInvalid){
+        dateText.classList.add('is-invalid');
+        datePicker.classList.add('is-invalid');
+        dateError.classList.add('show');
+      }else{
+        dateText.classList.remove('is-invalid');
+        datePicker.classList.remove('is-invalid');
+        dateError.classList.remove('show');
+      }
+    }
+
+    // Live strict typing: allow only digits, auto-insert /, max length 10
+    dateText.addEventListener('input', () => {
+      if(!isEditing) return;
+
+      let v = dateText.value;
+      v = v.replace(/[^\d]/g, "");
+      v = v.slice(0, 8);
+
+      let out = "";
+      if(v.length <= 2) out = v;
+      else if(v.length <= 4) out = v.slice(0,2) + "/" + v.slice(2);
+      else out = v.slice(0,2) + "/" + v.slice(2,4) + "/" + v.slice(4);
+
+      dateText.value = out;
+
+      if(out.length === 10){
+        const ok = isValidDDMMYYYY(out).ok;
+        setDateInvalid(!ok);
+        if(ok) datePicker.value = toYYYYMMDD(out);
+      } else {
+        setDateInvalid(false);
+      }
+    });
+
+    dateText.addEventListener('blur', () => {
+      const out = dateText.value.trim();
+      const v = isValidDDMMYYYY(out);
+      if(!v.ok){
+        if(out.length === 0){
+          setDateInvalid(false);
+          datePicker.value = "";
+        } else {
+          setDateInvalid(true);
+        }
+        return;
+      }
+      setDateInvalid(false);
+      const iso = toYYYYMMDD(out);
+      if(iso) datePicker.value = iso;
+    });
+
+    datePicker.addEventListener('change', () => {
+      dateText.value = toDDMMYYYY(datePicker.value);
+      setDateInvalid(false);
+    });
+
+    function toggleLanguage(){
+      currentLanguage = currentLanguage === 'en' ? 'bn' : 'en';
+      updateLanguage();
+    }
+    languageToggle?.addEventListener('click', toggleLanguage);
+
+    function setDisabledAll(disabled){
+      const ids = [
+        "inputPgName","inputActivity","inputVillage","inputBlock","inputDistrict","inputState",
+        "inputFormationDateText","inputFormationDatePicker","inputTotalMembers","inputClfName",
+        "inputAccountNo","inputIfsc","inputBankName","inputBranch"
+      ];
+      ids.forEach(id=>{
+        const el = document.getElementById(id);
+        if(el) el.disabled = disabled;
+      });
+    }
+
+    function updateLanguage() {
+      const t = translations[currentLanguage];
+      languageText.textContent = t.languageToggle;
+
+      document.getElementById('headerTitle').textContent = t.title;
+      document.getElementById('labelPgName').textContent = t.pgName;
+      document.getElementById('labelActivity').textContent = t.activity;
+
+      document.getElementById('labelAddress').textContent = t.address;
+      document.getElementById('labelVillage').textContent = t.village;
+      document.getElementById('labelBlock').textContent = t.block;
+      document.getElementById('labelDistrict').textContent = t.district;
+      document.getElementById('labelState').textContent = t.state;
+
+      document.getElementById('labelFormationDate').textContent = t.formationDate;
+      document.getElementById('labelTotalMembers').textContent = t.totalMembers;
+      document.getElementById('labelClfName').textContent = t.clfName;
+
+      document.getElementById('labelBankDetails').textContent = t.bankDetails;
+      document.getElementById('labelAccountNo').textContent = t.accountNo;
+      document.getElementById('labelIfsc').textContent = t.ifsc;
+      document.getElementById('labelBankName').textContent = t.bankName;
+      document.getElementById('labelBranch').textContent = t.branch;
+
+      editSaveText.textContent = isEditing ? t.saveButton : t.editButton;
+
+      dateError.textContent = currentLanguage === 'bn'
+        ? "অবৈধ তারিখ। DD/MM/YYYY ফরম্যাট ব্যবহার করুন (যেমন, 05/02/2026)।"
+        : "Invalid date. Use DD/MM/YYYY (e.g., 05/02/2026).";
+
+      document.getElementById('confirmTitle').textContent = t.confirmTitle;
+      document.getElementById('confirmSub').textContent = t.confirmSub;
+      document.getElementById('confirmCancelBtn').textContent = t.cancelBtn;
+      document.getElementById('confirmOkBtn').textContent = t.confirmBtn;
+
+      const clearLabel = document.getElementById('clearAllText');
+      if(clearLabel) clearLabel.textContent = t.clearAllBtn;
+    }
+
+    function validateBeforeSave(){
+      const v = isValidDDMMYYYY(dateText.value.trim());
+      if(!v.ok){
+        if(dateText.value.trim().length === 0){
+          setDateInvalid(false);
+          return true;
+        }
+        setDateInvalid(true);
+        dateText.focus();
+        return false;
+      }
+      setDateInvalid(false);
+      return true;
+    }
+
+    function updateEditMode() {
+      const t = translations[currentLanguage];
+
+      if (isEditing) {
+        editIcon.classList.add('hidden');
+        saveIcon.classList.remove('hidden');
+        editSaveText.textContent = t.saveButton;
+        setDisabledAll(false);
+      } else {
+        editIcon.classList.remove('hidden');
+        saveIcon.classList.add('hidden');
+        editSaveText.textContent = t.editButton;
+        setDisabledAll(true);
+      }
+
+      headerTopEl.classList.toggle('is-editing', isEditing);
+    }
+
+    // ============================================================
+    // REAL MODAL POPUP LOGIC (Save + Clear All)
+    // ============================================================
+    const confirmOverlay = document.getElementById('confirmOverlay');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const confirmOkBtn = document.getElementById('confirmOkBtn');
+    const confirmCancelBtn = document.getElementById('confirmCancelBtn');
+    const confirmCloseBtn = document.getElementById('confirmCloseBtn');
+
+    let pendingAction = null; // "save" | "clear"
+
+    function openConfirmModal(actionType){
+      const t = translations[currentLanguage];
+      pendingAction = actionType;
+
+      document.getElementById('confirmTitle').textContent = t.confirmTitle;
+
+      if(actionType === "save"){
+        confirmMessage.textContent = t.confirmSave;
+        confirmOkBtn.classList.remove('pg-btn-danger');
+        confirmOkBtn.classList.add('pg-btn-confirm');
+      } else if(actionType === "clear"){
+        confirmMessage.textContent = t.confirmClear;
+        confirmOkBtn.classList.remove('pg-btn-confirm');
+        confirmOkBtn.classList.add('pg-btn-danger');
+      }
+
+      document.getElementById('confirmSub').textContent = t.confirmSub;
+      confirmCancelBtn.textContent = t.cancelBtn;
+      confirmOkBtn.textContent = t.confirmBtn;
+
+      confirmOverlay.classList.add('show');
+      confirmOverlay.setAttribute('aria-hidden', 'false');
+
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+
+      setTimeout(() => { confirmOkBtn.focus(); }, 0);
+    }
+
+    function closeConfirmModal(){
+      confirmOverlay.classList.remove('show');
+      confirmOverlay.setAttribute('aria-hidden', 'true');
+
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+
+      pendingAction = null;
+    }
+
+    function getFieldIds(){
+      return [
+        "inputPgName","inputActivity","inputVillage","inputBlock","inputDistrict","inputState",
+        "inputFormationDateText","inputFormationDatePicker","inputTotalMembers","inputClfName",
+        "inputAccountNo","inputIfsc","inputBankName","inputBranch"
+      ];
+    }
+
+    function clearAllData(){
+      const ids = getFieldIds();
+      ids.forEach(id=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+        el.value = "";
+      });
+      setDateInvalid(false);
+    }
+
+    confirmCancelBtn.addEventListener('click', closeConfirmModal);
+    confirmCloseBtn.addEventListener('click', closeConfirmModal);
+
+    confirmOverlay.addEventListener('click', (e) => {
+      if(e.target === confirmOverlay) closeConfirmModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if(!confirmOverlay.classList.contains('show')) return;
+      if(e.key === "Escape") closeConfirmModal();
+    });
+
+    confirmOkBtn.addEventListener('click', () => {
+      if(pendingAction === "save"){
+        isEditing = false;
+        updateEditMode();
+        closeConfirmModal();
+        return;
+      }
+      if(pendingAction === "clear"){
+        clearAllData();
+        closeConfirmModal();
+        return;
+      }
+      closeConfirmModal();
+    });
+
+    // ============================================================
+    // SAVE + EDIT TOGGLE
+    // ============================================================
+    editSaveButton.addEventListener('click', () => {
+      if(isEditing){
+        if(!validateBeforeSave()) return;
+        openConfirmModal("save");
+        return;
+      }
+      isEditing = true;
+      updateEditMode();
+      setDateInvalid(false);
+    });
+
+    // ============================================================
+    // ADD "CLEAR ALL" BUTTON
+    // ============================================================
+    function injectClearAllButton(){
+      const headerTop = document.querySelector('.pg-profile-page .header-top');
+      if(!headerTop) return;
+
+      const existing = document.getElementById('clearAllButton');
+      if(existing) return;
+
+      const btn = document.createElement('button');
+      btn.id = "clearAllButton";
+      btn.type = "button";
+      btn.className = "edit-button";
+      btn.style.background = "rgba(255,255,255,.14)";
+      btn.style.border = "1px solid rgba(255,255,255,.24)";
+      btn.style.marginRight = ".5rem";
+      btn.innerHTML = `
+        <svg class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+          <path d="M10 11v6"></path>
+          <path d="M14 11v6"></path>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+        </svg>
+        <span id="clearAllText">Clear All</span>
+      `;
+
+      headerTop.insertBefore(btn, editSaveButton);
+
+      btn.addEventListener('click', () => {
+        if(!isEditing) return;
+        openConfirmModal("clear");
+      });
+    }
+
+    function setClearAllVisibility(){
+      const btn = document.getElementById('clearAllButton');
+      if(!btn) return;
+      btn.style.display = isEditing ? "flex" : "none";
+
+      const t = translations[currentLanguage];
+      const label = document.getElementById('clearAllText');
+      if(label) label.textContent = t.clearAllBtn;
+    }
+
+    const _updateEditMode = updateEditMode;
+    updateEditMode = function(){
+      _updateEditMode();
+      setClearAllVisibility();
+    };
+
+    function init(){
+      setDisabledAll(true);
+      updateLanguage();
+      isEditing = false;
+      setDisabledAll(true);
+      editIcon.classList.remove('hidden');
+      saveIcon.classList.add('hidden');
+      editSaveText.textContent = translations[currentLanguage].editButton;
+      setDateInvalid(false);
+
+      injectClearAllButton();
+      setClearAllVisibility();
+      headerTopEl.classList.remove('is-editing');
+    }
+
+    init();
+  </script>
+{% endblock %}

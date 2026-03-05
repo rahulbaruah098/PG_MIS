@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Monthly Progress Report{% endblock %}
+{% block content %}
+<style>
+  .wrap{max-width:980px;margin:0 auto;padding:18px}
+  .hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18)}
+  .hero h1{margin:0;font-weight:950}
+  .hero .sub{margin-top:.35rem;color:#d1fae5;font-weight:800}
+  .card{margin-top:14px;background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
+  .f{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+  label{font-size:.78rem;color:#059669;font-weight:900}
+  input{background:#f0fdf4;border:1px solid rgba(5,150,105,.22);border-radius:12px;padding:10px 12px;outline:none}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(5,150,105,.28);background:#ecfdf5;color:#065f46;font-weight:950;cursor:pointer;text-decoration:none}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+  .k{background:#ecfdf5;border:1px solid rgba(5,150,105,.18);border-radius:16px;padding:12px}
+  .k .t{font-size:.78rem;color:#047857;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+  .k .v{margin-top:4px;font-weight:950;font-size:1.1rem;color:#064e3b}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid rgba(15,23,42,.12);font-weight:950}
+  .pill.lock{background:#fee2e2;border-color:rgba(220,38,38,.25);color:#991b1b}
+  .pill.ok{background:#ecfdf5;border-color:rgba(5,150,105,.25);color:#065f46}
+  @media(max-width:720px){.kpis{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>MPR — {{ pg.pg_name or pg.name }}</h1>
+    <div class="sub">Auto-aggregated monthly metrics</div>
+    <div style="margin-top:10px">
+      {% if locked %}
+        <span class="pill lock">🔒 Locked period — data frozen</span>
+      {% else %}
+        <span class="pill ok">✅ Open period</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="GET" class="f">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label>Year</label>
+        <input name="year" type="number" value="{{ mpr.year }}">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label>Month</label>
+        <input name="month" type="number" min="1" max="12" value="{{ mpr.month }}">
+      </div>
+      <button class="btn" type="submit">View</button>
+      <a class="btn" href="{{ url_for('pg.pg_home') }}">Back</a>
+      <a class="btn" href="{{ url_for('reports.period_lock', scope='pg', ref_id=pg._id, year=mpr.year, month=mpr.month) }}">Period Lock</a>
+    </form>
+
+    <div class="kpis">
+      <div class="k"><div class="t">Turnover</div><div class="v">₹{{ "{:,.2f}".format(mpr.turnover or 0) }}</div></div>
+      <div class="k"><div class="t">Profit</div><div class="v">₹{{ "{:,.2f}".format(mpr.profit or 0) }}</div></div>
+      <div class="k"><div class="t">Loans Outstanding</div><div class="v">₹{{ "{:,.2f}".format(mpr.loans_outstanding or 0) }}</div></div>
+      <div class="k"><div class="t">Loans Overdue</div><div class="v">₹{{ "{:,.2f}".format(mpr.loans_overdue or 0) }}</div></div>
+      <div class="k"><div class="t">Meetings Held</div><div class="v">{{ mpr.meetings_count }}</div></div>
+      <div class="k"><div class="t">Stock Closing Value</div><div class="v">₹{{ "{:,.2f}".format(mpr.stock_closing_value or 0) }}</div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

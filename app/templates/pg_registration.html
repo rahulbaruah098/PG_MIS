@@ -1,0 +1,1287 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<style>
+  /* ============================================================
+     PG REGISTRATION (SCOPED) — keep ALL data + logic same
+     ✅ ONLY UI/Design/Coloring updated to match Ledger Book style
+     ✅ No changes to ids/names/inputs/data bindings/JS logic
+     ✅ NEW: Validation popups + success popup + saving indicator
+     ============================================================ */
+
+  .pgr-wrap{
+    width: 100%;
+    padding: clamp(12px, 2.2vw, 22px);
+    max-width: 1100px;
+    margin: 0 auto;
+
+    --ink:#0f172a;
+    --muted:#64748b;
+
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+
+    --paper:#ffffff;
+    --soft:#f7faf9;
+
+    --accent:#0b4d3a;
+    color: var(--ink);
+  }
+  .pgr-wrap *{ box-sizing:border-box; }
+
+  /* ======= Sheet / Card like Ledger Book ======= */
+  .pgr-hero,
+  .pgr-card{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  }
+
+  /* ======= Header like lb-head ======= */
+  .pgr-hero{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+    position: relative;
+  }
+
+  .pgr-hero-top{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .pgr-title{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .pgr-icon{
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid rgba(16,185,129,.22);
+    background: rgba(16,185,129,.10);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex: 0 0 auto;
+  }
+  .pgr-icon svg{ width: 20px; height: 20px; color: var(--accent); }
+
+  .pgr-hgroup{ min-width:0; }
+
+  .pgr-h1{
+    margin:0;
+    font-weight: 950;
+    font-size: 18px;
+    letter-spacing: .2px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+  }
+
+  .pgr-sub{
+    margin-top: 3px;
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.70);
+  }
+
+  .pgr-status{
+    display:inline-flex;
+    align-items:center;
+    gap:.5rem;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,.12);
+    background: rgba(247,250,249,.60);
+    font-weight: 950;
+    font-size: 12px;
+    user-select:none;
+    white-space:nowrap;
+    color: rgba(15,23,42,.80);
+  }
+  .pgr-dot{
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(11,77,58,.90);
+    box-shadow: 0 0 0 6px rgba(16,185,129,.12);
+  }
+
+  /* ======= Inner section (like lb-actions-bar separators) ======= */
+  .pgr-card{
+    margin-top: 12px;
+    padding: 0;
+  }
+
+  .pgr-card form{
+    padding: 12px 16px 16px;
+  }
+
+  .pgr-section{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 10px 0 12px;
+    margin: 0;
+    border-bottom: 1.5px solid var(--line2);
+  }
+  .pgr-section svg{
+    width: 18px;
+    height: 18px;
+    color: rgba(11,77,58,.95);
+  }
+  .pgr-section-title{
+    margin:0;
+    font-size: 12px;
+    font-weight: 950;
+    color: rgba(15,23,42,.78);
+    letter-spacing: .2px;
+    text-transform: uppercase;
+  }
+
+  /* ======= Grid ======= */
+  .pgr-grid{
+    padding-top: 12px;
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 10px 14px;
+  }
+
+  .pgr-field{
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width:0;
+  }
+
+  .pgr-label{
+    font-weight: 900;
+    font-size: 12px;
+    color: rgba(15,23,42,.78);
+    letter-spacing: .2px;
+    white-space: nowrap;
+  }
+
+  .pgr-input,
+  .pgr-select{
+    width:100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: rgba(247,250,249,.75);
+    font-weight: 800;
+    font-size: 12px;
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+    color: var(--ink);
+  }
+
+  .pgr-input:focus,
+  .pgr-select:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+
+  .pgr-input[readonly]{
+    background: transparent;
+    border-color: rgba(15,23,42,.12);
+    color: rgba(15,23,42,.92);
+  }
+
+  .pgr-hr{
+    height: 1px;
+    border: none;
+    background: var(--line2);
+    margin: 6px 0 2px;
+  }
+
+  /* spans */
+  .col-12{grid-column:span 12;}
+  .col-9{grid-column:span 9;}
+  .col-8{grid-column:span 8;}
+  .col-6{grid-column:span 6;}
+  .col-4{grid-column:span 4;}
+  .col-3{grid-column:span 3;}
+
+  .pgr-help{
+    font-size: 12px;
+    color: rgba(15,23,42,.60);
+    font-weight: 800;
+    margin-top: 2px;
+  }
+
+  /* ======= Preview card -> ledger-ish ======= */
+  .pgr-preview{
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    overflow:hidden;
+    background: #fff;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  }
+
+  .pgr-preview-head{
+    padding: 10px 12px;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(16,185,129,.12), transparent 55%),
+      linear-gradient(to right, rgba(5,150,105,.10), rgba(16,185,129,.10));
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    font-weight: 950;
+    color:#0b4d3a;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+
+  .pgr-count{
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 999px;
+    background: rgba(247,250,249,.55);
+    font-weight: 950;
+    font-size: 12px;
+    color: rgba(15,23,42,.80);
+  }
+
+  .pgr-preview-body{
+    padding: 12px;
+  }
+
+  #memberPreview{ display: grid; gap: 10px; }
+
+  .pgr-member-row{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(15,23,42,.14);
+    box-shadow: 0 14px 22px -22px rgba(15,23,42,.22);
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .pgr-member-row:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 18px 28px -24px rgba(15,23,42,.28);
+    background: #fff;
+  }
+  .pgr-member-name{
+    font-weight: 850;
+    color: var(--ink);
+    font-size: 12.5px;
+    min-width:0;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pgr-member-actions{
+    display:flex;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+  .pgr-icon-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.75);
+    width: 38px;
+    height: 34px;
+    border-radius: 12px;
+    cursor:pointer;
+    font-size: 14px;
+    font-weight: 950;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    user-select:none;
+    color: rgba(15,23,42,.85);
+  }
+  .pgr-icon-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.20);
+  }
+  .pgr-icon-btn.edit-member:hover{
+    border-color: rgba(2,132,199,.22);
+    background: rgba(2,132,199,.10);
+    color: rgba(2,132,199,.95);
+  }
+  .pgr-icon-btn.remove-member:hover{
+    border-color: rgba(239,68,68,.28);
+    background: rgba(239,68,68,.10);
+    color: rgba(127,29,29,.95);
+  }
+
+  .pgr-empty,
+  #memberPreview .text-muted.small{
+    padding: 8px 2px;
+    color: rgba(15,23,42,.55) !important;
+    font-weight: 800;
+    font-size: 12px;
+  }
+
+  /* ======= Actions ======= */
+  .pgr-actions{
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1.5px solid var(--line2);
+    display:flex;
+    justify-content:flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items:center;
+  }
+
+  .pgr-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+    min-height: 44px;
+  }
+  .pgr-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  .pgr-btn-primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .pgr-btn-primary:hover{ background: rgba(16,185,129,.16); }
+
+  .pgr-btn[disabled]{
+    opacity: .55;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* ======= Select2 (match ledger inputs) ======= */
+  .pgr-card .select2-container{ width:100% !important; }
+
+  .pgr-card .select2-container--default .select2-selection--multiple{
+    min-height: 46px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.16);
+    background: rgba(247,250,249,.75);
+    padding: 6px 10px;
+  }
+  .pgr-card .select2-container--default.select2-container--focus .select2-selection--multiple{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+  .pgr-card .select2-container--default .select2-selection__choice{
+    background: rgba(16,185,129,.12);
+    border: 1px solid rgba(16,185,129,.30);
+    color: #0b4d3a;
+    border-radius: 9999px;
+    padding: .25rem .55rem;
+    font-weight: 900;
+    margin-top: .35rem;
+  }
+  .pgr-card .select2-dropdown{
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,.10);
+    overflow:hidden;
+    box-shadow: 0 22px 44px -30px rgba(0,0,0,.35);
+  }
+  .pgr-card .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable{
+    background: rgba(16,185,129,.12);
+    color: #0b4d3a;
+    font-weight: 900;
+  }
+
+  /* ======= NEW: Toast popup (scoped) ======= */
+  .pgr-toast{
+    position: fixed;
+    right: 18px;
+    top: 18px;
+    z-index: 9999;
+    width: min(420px, calc(100% - 24px));
+    border-radius: 16px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.95);
+    box-shadow: 0 24px 60px -40px rgba(15,23,42,.55);
+    padding: 12px 12px 10px;
+    display: none;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .pgr-toast.is-show{ display:block; animation: pgrPop .18s ease-out; }
+  @keyframes pgrPop{ from{ transform: translateY(-6px); opacity:.0; } to{ transform: translateY(0); opacity:1; } }
+
+  .pgr-toastTop{
+    display:flex;
+    align-items:flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .pgr-toastTitle{
+    font-weight: 950;
+    font-size: 12.5px;
+    margin: 0;
+    color: rgba(15,23,42,.88);
+  }
+  .pgr-toastClose{
+    border: 1px solid rgba(15,23,42,.12);
+    background: rgba(247,250,249,.75);
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    cursor:pointer;
+    display:grid;
+    place-items:center;
+    font-weight: 950;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .pgr-toastClose:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .pgr-toastBody{
+    font-size: 12.25px;
+    font-weight: 800;
+    color: rgba(15,23,42,.76);
+    line-height: 1.45;
+  }
+  .pgr-toastBody ul{
+    margin: 8px 0 0 18px;
+    padding: 0;
+  }
+  .pgr-toastBody li{ margin: 4px 0; }
+
+  .pgr-toast--error{
+    border-color: rgba(239,68,68,.22);
+    background: rgba(255,255,255,.97);
+  }
+  .pgr-toast--error .pgr-toastTitle{ color: rgba(127,29,29,.95); }
+
+  .pgr-toast--ok{
+    border-color: rgba(16,185,129,.25);
+    background: rgba(255,255,255,.97);
+  }
+  .pgr-toast--ok .pgr-toastTitle{ color: rgba(11,77,58,.95); }
+
+  .pgr-toast--info{
+    border-color: rgba(2,132,199,.22);
+    background: rgba(255,255,255,.97);
+  }
+  .pgr-toast--info .pgr-toastTitle{ color: rgba(2,132,199,.95); }
+
+  /* ======= Responsive ======= */
+  @media(max-width:768px){
+    .col-4,.col-3,.col-6,.col-8,.col-9{grid-column:span 12;}
+    .pgr-card form{ padding: 12px; }
+    .pgr-hero{ padding: 14px 12px 12px; }
+    .pgr-toast{ right: 12px; top: 12px; }
+  }
+</style>
+
+<!-- ✅ Toast container (scoped, no backend dependency) -->
+<div class="pgr-toast" id="pgrToast" aria-live="polite" aria-atomic="true">
+  <div class="pgr-toastTop">
+    <p class="pgr-toastTitle" id="pgrToastTitle">Notice</p>
+    <button type="button" class="pgr-toastClose" id="pgrToastClose" aria-label="Close">×</button>
+  </div>
+  <div class="pgr-toastBody" id="pgrToastBody"></div>
+</div>
+
+<div class="pgr-wrap">
+
+  <!-- HERO -->
+  <div class="pgr-hero">
+    <div class="pgr-hero-top">
+      <div class="pgr-title">
+        <div class="pgr-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M4 20V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12" stroke="currentColor" stroke-width="2"/>
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
+            <path d="M7 20v-8h10v8" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="pgr-hgroup">
+          <div class="pgr-h1">
+            <span id="pgrTitlePrefix">PG Registration –</span> {{ pg.name }}
+          </div>
+          <div class="pgr-sub" id="pgrSubtitle">Location, bank, aggregation &amp; member selection</div>
+        </div>
+      </div>
+
+      <div class="pgr-status">
+        <span class="pgr-dot"></span>
+        <span id="pgrStatusLabel">Status:</span> {{ pg.status or 'draft' }}
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM CARD -->
+  <div class="pgr-card">
+    <form method="POST" id="pgRegForm">
+      <div class="pgr-section">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <h3 class="pgr-section-title" id="pgrSectionTitle">Registration Details</h3>
+      </div>
+
+      <div class="pgr-grid">
+        <!-- LOCATION -->
+        <div class="pgr-field col-4">
+          <label class="pgr-label" id="lblState">State</label>
+          <input type="text" class="pgr-input" value="{{ pg.State }}" readonly>
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label" id="lblDistrict">District</label>
+          <input type="text" class="pgr-input" value="{{ pg.District }}" readonly>
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label" id="lblBlock">Block</label>
+          <input type="text" class="pgr-input" value="{{ pg.Block }}" readonly>
+        </div>
+
+        <div class="pgr-field col-6">
+          <label class="pgr-label" id="lblGp">Gram Panchayat</label>
+          <input type="text" class="pgr-input" value="{{ pg['Gram Panchayat'] }}" readonly>
+        </div>
+
+        <div class="pgr-field col-6">
+          <label class="pgr-label" id="lblVillage">Village</label>
+          <input type="text" class="pgr-input" value="{{ pg.Village }}" readonly>
+        </div>
+
+        <div class="col-12"><hr class="pgr-hr"></div>
+
+        <!-- BASIC INFO -->
+        <div class="pgr-field col-4">
+          <label class="pgr-label" id="lblPgType">PG Type</label>
+          <input type="text" class="pgr-input" name="pg_type" value="{{ pg.pg_type or '' }}">
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label" id="lblSector">Sector</label>
+          <input type="text" class="pgr-input" name="sector" value="{{ pg.sector or '' }}">
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label" id="lblFormationDate">Formation Date</label>
+          <input type="date" class="pgr-input" name="formation_date" value="{{ pg.formation_date or '' }}">
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label" id="lblContact">Contact Number</label>
+          <input type="text" class="pgr-input" name="contact_number"
+                 value="{{ pg.office_bearers.contact_number if pg.office_bearers else '' }}">
+        </div>
+
+        <div class="col-12"><hr class="pgr-hr"></div>
+
+        <!-- BANK -->
+        <div class="pgr-field col-3">
+          <label class="pgr-label" id="lblBankName">Bank Name</label>
+          <input type="text" class="pgr-input" name="bank_name"
+                 value="{{ pg.bank_details.bank_name if pg.bank_details else '' }}">
+        </div>
+
+        <div class="pgr-field col-3">
+          <label class="pgr-label" id="lblBranch">Branch</label>
+          <input type="text" class="pgr-input" name="branch"
+                 value="{{ pg.bank_details.branch if pg.bank_details else '' }}">
+        </div>
+
+        <div class="pgr-field col-3">
+          <label class="pgr-label" id="lblAccountNumber">Account Number</label>
+          <input type="text" class="pgr-input" name="account_number"
+                 value="{{ pg.bank_details.account_number if pg.bank_details else '' }}">
+        </div>
+
+        <div class="pgr-field col-3">
+          <label class="pgr-label" id="lblIfsc">IFSC</label>
+          <input type="text" class="pgr-input" name="ifsc"
+                 value="{{ pg.bank_details.ifsc if pg.bank_details else '' }}">
+        </div>
+
+        <div class="col-12"><hr class="pgr-hr"></div>
+
+        <!-- AGGREGATION -->
+        <div class="pgr-field col-6">
+          <label class="pgr-label" id="lblAggCentreName">Aggregation Centre Name</label>
+          <input type="text" class="pgr-input" name="agg_centre_name"
+                 value="{{ pg.aggregation_centre.name if pg.aggregation_centre else '' }}">
+        </div>
+
+        <div class="pgr-field col-6">
+          <label class="pgr-label" id="lblAggCentreAddress">Aggregation Centre Address</label>
+          <input type="text" class="pgr-input" name="agg_centre_address"
+                 value="{{ pg.aggregation_centre.address if pg.aggregation_centre else '' }}">
+        </div>
+
+        <div class="col-12"><hr class="pgr-hr"></div>
+
+        <!-- MEMBERS -->
+        <div class="pgr-field col-12">
+          <label class="pgr-label" id="lblAddMembers" style="font-size:12px;">Add PG Members</label>
+          <select id="memberSelect" class="pgr-select" multiple>
+            {% for m in shg_members %}
+              <option value="{{ m._id }}">
+                {{ m["Member Name"] }} | {{ m["SHG Name"] }} | {{ m["SHG Code"] }}
+              </option>
+            {% endfor %}
+          </select>
+          <div class="pgr-help" id="pgrMemberHelp">Maximum 40 members allowed.</div>
+        </div>
+
+        <!-- Preview -->
+        <div class="col-12" style="margin-top:6px;">
+          <div class="pgr-preview">
+            <div class="pgr-preview-head">
+              <span id="pgrSelectedMembersTitle">Selected Members</span>
+              <span class="pgr-count"><span id="pgrCountLabel">Count:</span> <span id="memberCount">0</span></span>
+            </div>
+            <div class="pgr-preview-body" id="memberPreview">
+              <div class="pgr-empty" id="pgrNoMembersSelected">No members selected</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12"><hr class="pgr-hr"></div>
+
+        <!-- Office Bearers -->
+        <div class="pgr-field col-4">
+          <label class="pgr-label" id="lblPresident">President</label>
+          <select name="president_id" id="presidentSelect" class="pgr-select"></select>
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label" id="lblSecretary">Secretary</label>
+          <select name="secretary_id" id="secretarySelect" class="pgr-select"></select>
+        </div>
+
+        <div class="pgr-field col-4">
+          <label class="pgr-label" id="lblCashier">Cashier</label>
+          <select name="cashier_id" id="cashierSelect" class="pgr-select"></select>
+        </div>
+
+        <div class="pgr-field col-3">
+          <label class="pgr-label" id="lblTotalMembers">Total Members</label>
+          <input type="number" id="totalMembers" name="total_members" class="pgr-input"
+                 value="{{ pg.total_members or 0 }}" readonly>
+        </div>
+
+      </div>
+
+      <div id="hiddenMemberInputs"></div>
+
+      <div class="pgr-actions">
+        <button class="pgr-btn pgr-btn-primary" id="pgrSaveBtn" type="submit">Save</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script id="existing-members-data" type="application/json">
+{{ safe_members | tojson | safe }}
+</script>
+<script>
+  const PG_MEMBERSHIP_URL_TEMPLATE = "{{ url_for('pg.pg_members', pg_id='__PGID__') }}";
+</script>
+
+<script>
+$(document).ready(function() {
+
+    // ===============================
+    // Page language (NEW - hooks into base.html)
+    // ===============================
+    const PGR_I18N = {
+      en: {
+        titlePrefix: "PG Registration –",
+        subtitle: "Location, bank, aggregation & member selection",
+        statusLabel: "Status:",
+        sectionTitle: "Registration Details",
+
+        lblState: "State",
+        lblDistrict: "District",
+        lblBlock: "Block",
+        lblGp: "Gram Panchayat",
+        lblVillage: "Village",
+
+        lblPgType: "PG Type",
+        lblSector: "Sector",
+        lblFormationDate: "Formation Date",
+        lblContact: "Contact Number",
+
+        lblBankName: "Bank Name",
+        lblBranch: "Branch",
+        lblAccountNumber: "Account Number",
+        lblIfsc: "IFSC",
+
+        lblAggCentreName: "Aggregation Centre Name",
+        lblAggCentreAddress: "Aggregation Centre Address",
+
+        lblAddMembers: "Add PG Members",
+        memberHelp: "Maximum 40 members allowed.",
+        selectedMembersTitle: "Selected Members",
+        countLabel: "Count:",
+        noMembersSelected: "No members selected",
+
+        lblPresident: "President",
+        lblSecretary: "Secretary",
+        lblCashier: "Cashier",
+        lblTotalMembers: "Total Members",
+
+        saveBtn: "Save",
+        selectPlaceholder: "Search and select SHG members",
+
+        // Toast/validation strings used in JS
+        toastNotice: "Notice",
+        toastCloseAria: "Close",
+        limitTitle: "Member limit exceeded",
+        limitBody: "<div>Maximum <b>40 members</b> allowed.</div>",
+
+        okSavedTitle: "PG Registration Saved",
+        errFixTitle: "Please fix these issues",
+        infoUpdateTitle: "Update",
+        savedFallbackTitle: "Saved successfully",
+        savedFallbackBody: "<div>PG registration details submitted successfully.</div>",
+
+        cannotSaveTitle: "Cannot Save — Fix These",
+        submittingTitle: "Submitting",
+        submittingBody: "<div>Your PG registration is being submitted…</div>",
+        savingBtnText: "Saving…",
+
+        issueSelectAtLeastOne: "Please select at least <b>1 member</b>.",
+        issueMax40: "Maximum <b>40 members</b> allowed.",
+        issueSelectPresident: "Please select a <b>President</b>.",
+        issueSelectSecretary: "Please select a <b>Secretary</b>.",
+        issueSelectCashier: "Please select a <b>Cashier</b>.",
+        issuePresidentFromSelected: "<b>President</b> must be chosen from selected members.",
+        issueSecretaryFromSelected: "<b>Secretary</b> must be chosen from selected members.",
+        issueCashierFromSelected: "<b>Cashier</b> must be chosen from selected members.",
+        issuePresidentSecretaryDifferent: "<b>President</b> and <b>Secretary</b> must be different.",
+        issuePresidentCashierDifferent: "<b>President</b> and <b>Cashier</b> must be different.",
+        issueSecretaryCashierDifferent: "<b>Secretary</b> and <b>Cashier</b> must be different."
+      },
+      bn: {
+        titlePrefix: "পিজি রেজিস্ট্রেশন –",
+        subtitle: "অবস্থান, ব্যাংক, অ্যাগ্রিগেশন ও সদস্য নির্বাচন",
+        statusLabel: "স্ট্যাটাস:",
+        sectionTitle: "রেজিস্ট্রেশন বিবরণ",
+
+        lblState: "রাজ্য",
+        lblDistrict: "জেলা",
+        lblBlock: "ব্লক",
+        lblGp: "গ্রাম পঞ্চায়েত",
+        lblVillage: "গ্রাম",
+
+        lblPgType: "পিজি টাইপ",
+        lblSector: "সেক্টর",
+        lblFormationDate: "গঠনের তারিখ",
+        lblContact: "যোগাযোগ নম্বর",
+
+        lblBankName: "ব্যাংকের নাম",
+        lblBranch: "শাখা",
+        lblAccountNumber: "অ্যাকাউন্ট নম্বর",
+        lblIfsc: "আইএফএসসি",
+
+        lblAggCentreName: "অ্যাগ্রিগেশন সেন্টারের নাম",
+        lblAggCentreAddress: "অ্যাগ্রিগেশন সেন্টারের ঠিকানা",
+
+        lblAddMembers: "পিজি সদস্য যোগ করুন",
+        memberHelp: "সর্বোচ্চ ৪০ জন সদস্য অনুমোদিত।",
+        selectedMembersTitle: "নির্বাচিত সদস্য",
+        countLabel: "সংখ্যা:",
+        noMembersSelected: "কোনো সদস্য নির্বাচিত নেই",
+
+        lblPresident: "সভাপতি",
+        lblSecretary: "সম্পাদক",
+        lblCashier: "ক্যাশিয়ার",
+        lblTotalMembers: "মোট সদস্য",
+
+        saveBtn: "সংরক্ষণ করুন",
+        selectPlaceholder: "SHG সদস্য খুঁজে নির্বাচন করুন",
+
+        toastNotice: "নোটিস",
+        toastCloseAria: "বন্ধ করুন",
+        limitTitle: "সদস্য সীমা অতিক্রম করেছে",
+        limitBody: "<div>সর্বোচ্চ <b>৪০ জন সদস্য</b> অনুমোদিত।</div>",
+
+        okSavedTitle: "পিজি রেজিস্ট্রেশন সংরক্ষিত",
+        errFixTitle: "দয়া করে এই সমস্যাগুলো ঠিক করুন",
+        infoUpdateTitle: "আপডেট",
+        savedFallbackTitle: "সফলভাবে সংরক্ষিত",
+        savedFallbackBody: "<div>পিজি রেজিস্ট্রেশন তথ্য সফলভাবে জমা হয়েছে।</div>",
+
+        cannotSaveTitle: "সংরক্ষণ করা যাবে না — সমস্যা ঠিক করুন",
+        submittingTitle: "জমা হচ্ছে",
+        submittingBody: "<div>আপনার পিজি রেজিস্ট্রেশন জমা হচ্ছে…</div>",
+        savingBtnText: "সেভ হচ্ছে…",
+
+        issueSelectAtLeastOne: "অন্তত <b>১ জন সদস্য</b> নির্বাচন করুন।",
+        issueMax40: "সর্বোচ্চ <b>৪০ জন সদস্য</b> অনুমোদিত।",
+        issueSelectPresident: "<b>সভাপতি</b> নির্বাচন করুন।",
+        issueSelectSecretary: "<b>সম্পাদক</b> নির্বাচন করুন।",
+        issueSelectCashier: "<b>ক্যাশিয়ার</b> নির্বাচন করুন।",
+        issuePresidentFromSelected: "<b>সভাপতি</b> নির্বাচিত সদস্যদের মধ্য থেকেই হতে হবে।",
+        issueSecretaryFromSelected: "<b>সম্পাদক</b> নির্বাচিত সদস্যদের মধ্য থেকেই হতে হবে।",
+        issueCashierFromSelected: "<b>ক্যাশিয়ার</b> নির্বাচিত সদস্যদের মধ্য থেকেই হতে হবে।",
+        issuePresidentSecretaryDifferent: "<b>সভাপতি</b> এবং <b>সম্পাদক</b> আলাদা হতে হবে।",
+        issuePresidentCashierDifferent: "<b>সভাপতি</b> এবং <b>ক্যাশিয়ার</b> আলাদা হতে হবে।",
+        issueSecretaryCashierDifferent: "<b>সম্পাদক</b> এবং <b>ক্যাশিয়ার</b> আলাদা হতে হবে।"
+      }
+    };
+
+    function getLang(){
+      try{
+        if(window.PGMIS && typeof window.PGMIS.getLanguage === 'function'){
+          const l = window.PGMIS.getLanguage();
+          if(l === 'en' || l === 'bn') return l;
+        }
+      }catch(_){}
+      const s = sessionStorage.getItem('PGMIS_LANG_SESSION');
+      return (s === 'bn') ? 'bn' : 'en';
+    }
+
+    let _pgrLang = getLang();
+
+    function setText(id, txt){
+      const el = document.getElementById(id);
+      if(el) el.textContent = txt;
+    }
+
+    function updateSelect2Placeholder(txt){
+      try{
+        // Update search input placeholder when dropdown opens/exists
+        const $search = $('.select2-container--open .select2-search__field');
+        if($search.length) $search.attr('placeholder', txt);
+
+        // Update stored selection placeholder if Select2 rendered it
+        const $inlineSearch = $('#memberSelect').next('.select2-container').find('.select2-search__field');
+        if($inlineSearch.length) $inlineSearch.attr('placeholder', txt);
+
+        const $ph = $('#memberSelect').next('.select2-container').find('.select2-selection__placeholder');
+        if($ph.length) $ph.text(txt);
+      }catch(_){}
+    }
+
+    function applyPgrLanguage(lang){
+      _pgrLang = (lang === 'bn') ? 'bn' : 'en';
+      const t = PGR_I18N[_pgrLang];
+
+      setText('pgrTitlePrefix', t.titlePrefix);
+      setText('pgrSubtitle', t.subtitle);
+      setText('pgrStatusLabel', t.statusLabel);
+      setText('pgrSectionTitle', t.sectionTitle);
+
+      setText('lblState', t.lblState);
+      setText('lblDistrict', t.lblDistrict);
+      setText('lblBlock', t.lblBlock);
+      setText('lblGp', t.lblGp);
+      setText('lblVillage', t.lblVillage);
+
+      setText('lblPgType', t.lblPgType);
+      setText('lblSector', t.lblSector);
+      setText('lblFormationDate', t.lblFormationDate);
+      setText('lblContact', t.lblContact);
+
+      setText('lblBankName', t.lblBankName);
+      setText('lblBranch', t.lblBranch);
+      setText('lblAccountNumber', t.lblAccountNumber);
+      setText('lblIfsc', t.lblIfsc);
+
+      setText('lblAggCentreName', t.lblAggCentreName);
+      setText('lblAggCentreAddress', t.lblAggCentreAddress);
+
+      setText('lblAddMembers', t.lblAddMembers);
+      setText('pgrMemberHelp', t.memberHelp);
+      setText('pgrSelectedMembersTitle', t.selectedMembersTitle);
+      setText('pgrCountLabel', t.countLabel);
+
+      // Only replace "No members selected" text when it's actually empty state
+      const preview = document.getElementById('memberPreview');
+      if(preview){
+        const hasRows = preview.querySelector('.pgr-member-row');
+        if(!hasRows){
+          const empty = document.getElementById('pgrNoMembersSelected') || preview.querySelector('.pgr-empty, .text-muted.small');
+          if(empty){
+            empty.id = 'pgrNoMembersSelected';
+            empty.textContent = t.noMembersSelected;
+          }
+        }
+      }
+
+      setText('lblPresident', t.lblPresident);
+      setText('lblSecretary', t.lblSecretary);
+      setText('lblCashier', t.lblCashier);
+      setText('lblTotalMembers', t.lblTotalMembers);
+
+      const saveBtn = document.getElementById('pgrSaveBtn');
+      if(saveBtn && !saveBtn.disabled){
+        saveBtn.textContent = t.saveBtn;
+      }
+
+      // toast base labels
+      const toastTitleEl = document.getElementById('pgrToastTitle');
+      const toastCloseEl = document.getElementById('pgrToastClose');
+      if(toastTitleEl && toastTitleEl.textContent.trim() === 'Notice') toastTitleEl.textContent = t.toastNotice;
+      if(toastCloseEl) toastCloseEl.setAttribute('aria-label', t.toastCloseAria);
+
+      // Select2 placeholder without re-init (no selection loss)
+      updateSelect2Placeholder(t.selectPlaceholder);
+    }
+
+    // ✅ Hook method called by base.html (compat)
+    window.updatePageLanguage = function(lang /*, baseT */){
+      applyPgrLanguage(lang);
+    };
+
+    // ✅ Event-based connectivity from base.html
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = (e && e.detail && e.detail.lang) ? e.detail.lang : getLang();
+      applyPgrLanguage(lang);
+    });
+
+    // Apply immediately on page load too
+    applyPgrLanguage(_pgrLang);
+
+    // ===============================
+    // Toast helpers (NEW)
+    // ===============================
+    const toast = document.getElementById('pgrToast');
+    const toastTitle = document.getElementById('pgrToastTitle');
+    const toastBody = document.getElementById('pgrToastBody');
+    const toastClose = document.getElementById('pgrToastClose');
+
+    function tkey(k){
+      const t = PGR_I18N[_pgrLang] || PGR_I18N.en;
+      return (t && t[k] != null) ? t[k] : (PGR_I18N.en[k] != null ? PGR_I18N.en[k] : '');
+    }
+
+    function showToast(kind, title, bodyHtml){
+      if(!toast) return;
+      toast.classList.remove('pgr-toast--error','pgr-toast--ok','pgr-toast--info','is-show');
+      toastTitle.textContent = title || tkey('toastNotice') || 'Notice';
+      toastBody.innerHTML = bodyHtml || '';
+      if(kind === 'error') toast.classList.add('pgr-toast--error');
+      else if(kind === 'ok') toast.classList.add('pgr-toast--ok');
+      else toast.classList.add('pgr-toast--info');
+      toast.classList.add('is-show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => toast.classList.remove('is-show'), 5000);
+    }
+
+    if(toastClose){
+      toastClose.addEventListener('click', () => toast.classList.remove('is-show'));
+    }
+
+    // ===============================
+    // Show backend flash messages as popups (NEW, non-breaking)
+    // Looks for common bootstrap alert markup if present in base.html
+    // ===============================
+    function findFlashMessages(){
+      const alerts = Array.from(document.querySelectorAll('.alert'));
+      const msgs = alerts
+        .map(a => (a.innerText || '').trim())
+        .filter(Boolean);
+
+      if(!msgs.length) return null;
+
+      // naive classification
+      const isError = alerts.some(a => a.classList.contains('alert-danger') || a.classList.contains('alert-warning'));
+      const isOk = alerts.some(a => a.classList.contains('alert-success'));
+
+      return { msgs, isError, isOk };
+    }
+
+    // If user attempted submit before reload, show flash in toast
+    try{
+      const attempted = sessionStorage.getItem('pgr_submit_attempt') === '1';
+      const flash = findFlashMessages();
+      if(attempted){
+        sessionStorage.removeItem('pgr_submit_attempt');
+        if(flash){
+          if(flash.isOk){
+            showToast('ok', tkey('okSavedTitle'), `<div>${flash.msgs.join('<br>')}</div>`);
+          }else if(flash.isError){
+            showToast('error', tkey('errFixTitle'), `<div>${flash.msgs.join('<br>')}</div>`);
+          }else{
+            showToast('info', tkey('infoUpdateTitle'), `<div>${flash.msgs.join('<br>')}</div>`);
+          }
+        }else{
+          // fallback success if no error flash exists
+          showToast('ok', tkey('savedFallbackTitle'), tkey('savedFallbackBody'));
+        }
+      }
+    }catch(e){}
+
+    // ===============================
+    // Load existing members safely
+    // ===============================
+    let existingMembers = JSON.parse(
+        document.getElementById("existing-members-data").textContent || "[]"
+    );
+
+    // ===============================
+    // Initialize Select2
+    // ===============================
+    $('#memberSelect').select2({
+        width: '100%',
+        placeholder: tkey('selectPlaceholder')
+    });
+
+    // keep placeholder updated when opening dropdown (no re-init)
+    $('#memberSelect').on('select2:open', function(){
+      updateSelect2Placeholder(tkey('selectPlaceholder'));
+    });
+
+    // ===============================
+    // Refresh UI
+    // ===============================
+    function refreshUI(){
+
+      let selected = $('#memberSelect').select2('data') || [];
+
+      // 🔹 Max 40 validation (keep same behavior; now also show toast)
+      if (selected.length > 40) {
+          showToast('error', tkey('limitTitle'), tkey('limitBody'));
+          selected.pop();
+          $('#memberSelect')
+              .val(selected.map(x => x.id))
+              .trigger('change');
+          return;
+      }
+
+      let preview = $('#memberPreview');
+      let hiddenContainer = $('#hiddenMemberInputs');
+
+      preview.empty();
+      hiddenContainer.empty();
+
+      if (selected.length === 0) {
+          preview.html(`<div class="text-muted small" id="pgrNoMembersSelected">${tkey('noMembersSelected')}</div>`);
+      }
+
+      selected.forEach(member => {
+
+          // 🔹 Extract ONLY member name (before first "|")
+          let memberName = member.text.split('|')[0].trim();
+
+          preview.append(`
+              <div class="pgr-member-row">
+                  <div class="pgr-member-name">
+                      ${memberName}
+                  </div>
+                  <div class="pgr-member-actions">
+                      <button type="button"
+                              class="pgr-icon-btn edit-member"
+                              data-id="${member.id}"
+                              title="Edit Member">✏</button>
+
+                      <button type="button"
+                              class="pgr-icon-btn remove-member"
+                              data-id="${member.id}"
+                              title="Remove Member">✕</button>
+                  </div>
+              </div>
+          `);
+
+          hiddenContainer.append(
+              `<input type="hidden" name="member_ids[]" value="${member.id}">`
+          );
+      });
+
+      $('#memberCount').text(selected.length);
+      $('#totalMembers').val(selected.length);
+
+      updateOfficeBearers(selected);
+    }
+
+    // ===============================
+    // Update Office Bearers
+    // ===============================
+    function updateOfficeBearers(selected) {
+
+        let p = $('#presidentSelect');
+        let s = $('#secretarySelect');
+        let c = $('#cashierSelect');
+
+        let selectedIds = selected.map(m => String(m.id));
+
+        // Store current selection before rebuilding
+        let currentPresident = p.val();
+        let currentSecretary = s.val();
+        let currentCashier = c.val();
+
+        p.empty();
+        s.empty();
+        c.empty();
+
+        selected.forEach(member => {
+            let option = `<option value="${member.id}">${member.text}</option>`;
+            p.append(option);
+            s.append(option);
+            c.append(option);
+        });
+
+        // Restore previous values if still valid
+        if (selectedIds.includes(currentPresident)) p.val(currentPresident);
+        if (selectedIds.includes(currentSecretary)) s.val(currentSecretary);
+        if (selectedIds.includes(currentCashier)) c.val(currentCashier);
+
+        // First load (edit mode only)
+        if (existingMembers.length > 0) {
+            existingMembers.forEach(m => {
+
+                let id = String(m.member_id);
+
+                if (!selectedIds.includes(id)) return;
+
+                if (m.role === "president") p.val(id);
+                if (m.role === "secretary") s.val(id);
+                if (m.role === "cashier") c.val(id);
+            });
+
+            // Prevent re-running edit preload
+            existingMembers = [];
+        }
+    }
+
+    // ===============================
+    // Remove Member
+    // ===============================
+    $(document).on('click', '.remove-member', function() {
+        let id = String($(this).data('id'));
+        let current = $('#memberSelect').val() || [];
+        current = current.filter(v => v !== id);
+        $('#memberSelect').val(current).trigger('change');
+    });
+
+    // ===============================
+    // Edit Member
+    // ===============================
+    $(document).on('click', '.edit-member', function() {
+      let memberId = $(this).data('id');
+      let url = PG_MEMBERSHIP_URL_TEMPLATE.replace('__PGID__', PG_ID);
+      window.location.href = `${url}?member_id=${memberId}`;
+    });
+
+    // ===============================
+    // Select Change
+    // ===============================
+    $('#memberSelect').on('change', refreshUI);
+
+    // ===============================
+    // Preload Existing Members
+    // ===============================
+    if (existingMembers.length > 0) {
+        let ids = existingMembers.map(m => String(m.member_id));
+        $('#memberSelect').val(ids).trigger('change');
+    } else {
+        refreshUI();
+    }
+
+    // ===============================
+    // NEW: Pre-submit validation + success feedback
+    // (No backend change; just clear user feedback)
+    // ===============================
+    function preSubmitValidate(){
+      const selectedIds = ($('#memberSelect').val() || []).map(String);
+      const total = selectedIds.length;
+
+      const president = String($('#presidentSelect').val() || '');
+      const secretary = String($('#secretarySelect').val() || '');
+      const cashier = String($('#cashierSelect').val() || '');
+
+      const issues = [];
+
+      if(total === 0) issues.push(tkey('issueSelectAtLeastOne'));
+      if(total > 40) issues.push(tkey('issueMax40'));
+
+      // Office bearer checks (common backend rules)
+      if(total > 0){
+        if(!president) issues.push(tkey('issueSelectPresident'));
+        if(!secretary) issues.push(tkey('issueSelectSecretary'));
+        if(!cashier) issues.push(tkey('issueSelectCashier'));
+
+        // must belong to selected members
+        if(president && !selectedIds.includes(president)) issues.push(tkey('issuePresidentFromSelected'));
+        if(secretary && !selectedIds.includes(secretary)) issues.push(tkey('issueSecretaryFromSelected'));
+        if(cashier && !selectedIds.includes(cashier)) issues.push(tkey('issueCashierFromSelected'));
+
+        // must be distinct
+        if(president && secretary && president === secretary) issues.push(tkey('issuePresidentSecretaryDifferent'));
+        if(president && cashier && president === cashier) issues.push(tkey('issuePresidentCashierDifferent'));
+        if(secretary && cashier && secretary === cashier) issues.push(tkey('issueSecretaryCashierDifferent'));
+      }
+
+      return issues;
+    }
+
+    const form = document.getElementById('pgRegForm');
+    const saveBtn = document.getElementById('pgrSaveBtn');
+
+    if(form && saveBtn){
+      form.addEventListener('submit', function(e){
+        const issues = preSubmitValidate();
+        if(issues.length){
+          e.preventDefault();
+          showToast('error', tkey('cannotSaveTitle'), `<ul>${issues.map(x => `<li>${x}</li>`).join('')}</ul>`);
+          return;
+        }
+
+        // Passed pre-check: show "saving" feedback
+        try{ sessionStorage.setItem('pgr_submit_attempt', '1'); }catch(_){}
+
+        saveBtn.disabled = true;
+        const oldTxt = saveBtn.textContent;
+        saveBtn.textContent = tkey('savingBtnText');
+
+        showToast('info', tkey('submittingTitle'), tkey('submittingBody'));
+
+        // Allow normal backend submit
+        setTimeout(() => { saveBtn.textContent = oldTxt; }, 2000);
+      }, true);
+    }
+
+});
+</script>
+
+{% endblock %}

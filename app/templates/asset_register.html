@@ -1,0 +1,1591 @@
+{# templates/asset_register.html #}
+{% extends "base.html" %}
+{% block title %}Asset Register{% endblock %}
+
+{% block head_extra %}
+  <!-- Ionicons (same look as your other pages) -->
+  
+<script>
+  /* ============================================================
+     Backend persistence (MongoDB)
+     - Uses /pg/api/register/asset/<pg_id>
+     - Stores monthly snapshots (year/month from current date)
+  ============================================================ */
+  const AS_PG = (window.PG_ID || "").trim();
+  const AS_STORAGE_KEY = `PGMIS_ASSET_${AS_PG || "anon"}`;
+
+  function asPeriodNow(){
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth()+1 };
+  }
+
+  async function asLoadFromServer(){
+    if(!AS_PG) return null;
+    const p = asPeriodNow();
+    const qs = `?year=${encodeURIComponent(p.year)}&month=${encodeURIComponent(p.month)}`;
+    try{
+      const res = await fetch(`/pg/api/register/asset/${encodeURIComponent(AS_PG)}${qs}`, { method:"GET" });
+      if(!res.ok) return null;
+      const doc = await res.json().catch(()=>null);
+      const payload = doc && (doc.data || doc) ? (doc.data || doc) : null;
+      if(payload){
+        localStorage.setItem(AS_STORAGE_KEY, JSON.stringify(payload));
+        return payload;
+      }
+    }catch(_e){}
+    return null;
+  }
+
+  async function asSaveToServer(payload){
+    if(!AS_PG) return {ok:false, message:"Missing PG context"};
+    const p = asPeriodNow();
+    const qs = `?year=${encodeURIComponent(p.year)}&month=${encodeURIComponent(p.month)}`;
+    try{
+      const res = await fetch(`/pg/api/register/asset/${encodeURIComponent(AS_PG)}${qs}`, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ data: payload })
+      });
+      const data = await res.json().catch(()=>null);
+      if(!res.ok) return {ok:false, message:(data && (data.message||data.error)) || "Save failed"};
+      return {ok:true, message:(data && data.message) || "Saved"};
+    }catch(_e){
+      return {ok:false, message:"Network error"};
+    }
+  }
+</script>
+
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
+{% block content %}
+<style>
+/* ============================================================
+   ASSET REGISTER — SCOPED under .ar-wrap
+   ✅ UI/UX skin copied from Ledger Book (compact + clean)
+   ✅ WebView: modals compact (not huge)
+   ✅ Mobile/WebView: inputs are BIG + values visible (no blank look)
+   ✅ NO changes to existing data contents / IDs / logic
+============================================================ */
+
+.ar-wrap{
+  width: 100%;
+  padding: clamp(12px, 2.2vw, 22px);
+
+  --ink:#0f172a;
+  --muted:#64748b;
+
+  --line: rgba(15,23,42,.18);
+  --line2: rgba(15,23,42,.12);
+
+  --paper:#ffffff;
+  --soft:#f7faf9;
+
+  --accent:#0b4d3a;
+  --accent2:#059669;
+
+  --danger:#dc2626;
+
+  --shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  --shadow2: 0 16px 22px -18px rgba(15,23,42,.25);
+
+  color: var(--ink);
+}
+.ar-wrap *{ box-sizing:border-box; }
+
+/* ✅ prevent any horizontal bleed on small screens */
+.ar-wrap, .ar-shell, .ar-sheet, .ar-card, .ar-table-wrap, .ar-table-scroll{ max-width:100%; }
+.ar-shell{ width:100%; max-width:none; margin:0; }
+
+/* i18n (English default) */
+.ar-i18n [data-lang]{ display:none; }
+.ar-i18n [data-lang="en"]{ display:inline; }
+.ar-wrap.is-bn .ar-i18n [data-lang="en"]{ display:none; }
+.ar-wrap.is-bn .ar-i18n [data-lang="bn"]{ display:inline; }
+
+/* ===== Ledger-like sheet ===== */
+.ar-sheet{
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+/* Header (Ledger style) */
+.ar-head{
+  padding: 14px 16px 12px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border-bottom: 1.5px solid var(--line2);
+  position: relative;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+.ar-titleWrap{
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align:center;
+}
+.ar-title{
+  margin:0;
+  font-weight: 950;
+  font-size: 18px;
+  letter-spacing: .2px;
+  line-height: 1.1;
+}
+.ar-sub{
+  margin: 4px 0 0;
+  color: rgba(15,23,42,.70);
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+@media (max-width: 900px){
+  .ar-head{ flex-wrap: wrap; }
+  .ar-titleWrap{ text-align:left; width: 100%; order: 3; }
+}
+
+/* Buttons (Ledger style) */
+.ar-btn{
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(247,250,249,.8);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 950;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  user-select: none;
+  white-space: nowrap;
+  text-decoration:none;
+  max-width: 100%;
+}
+.ar-btn:hover{
+  transform: translateY(-1px);
+  background: #fff;
+  box-shadow: var(--shadow2);
+}
+.ar-btn:active{ transform: translateY(0); }
+.ar-btn ion-icon{ font-size: 18px; }
+
+.ar-btnBack{
+  border-color: rgba(16,185,129,.35);
+  background: rgba(16,185,129,.12);
+  color:#0b4d3a;
+}
+.ar-btnBack:hover{ background: rgba(16,185,129,.16); }
+
+.ar-primary{
+  border-color: rgba(16,185,129,.35);
+  background: rgba(16,185,129,.12);
+  color:#0b4d3a;
+}
+.ar-primary:hover{ background: rgba(16,185,129,.16); }
+
+.ar-danger{
+  border-color: rgba(239,68,68,.35);
+  background: rgba(239,68,68,.10);
+  color: rgba(127,29,29,.95);
+}
+.ar-danger:hover{ background: rgba(239,68,68,.14); }
+
+.ar-ghost{
+  border-color: rgba(15,23,42,.14);
+  background: rgba(247,250,249,.8);
+  color: rgba(15,23,42,.84);
+}
+
+/* Card body (Ledger-like sections) */
+.ar-card{
+  padding: 0;
+  background: rgba(255,255,255,.96);
+}
+
+/* Top action bar (Ledger actions-bar) */
+.ar-actions-bar{
+  padding: 10px 16px;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1.5px solid var(--line2);
+  background: rgba(255,255,255,.94);
+  flex-wrap: wrap;
+}
+.ar-cardTitle{
+  margin:0;
+  font-size: 16px;
+  font-weight: 950;
+  color:#0b4d3a;
+  letter-spacing:.2px;
+}
+.ar-toolbar{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content:flex-end;
+}
+
+/* ✅ Make this toolbar section mobile-responsive (only layout improvement) */
+@media (max-width: 680px){
+  .ar-actions-bar{
+    align-items:flex-start;
+  }
+  .ar-toolbar{
+    width: 100%;
+    justify-content:flex-start; /* looks better on mobile */
+  }
+  .ar-toolbar .ar-btn{
+    flex: 1 1 calc(50% - 10px); /* 2 buttons per row */
+    justify-content:center;
+    min-width: 0;
+  }
+}
+@media (max-width: 420px){
+  .ar-toolbar .ar-btn{
+    flex: 1 1 100%; /* stack */
+  }
+}
+
+/* Top fields (Ledger topfields) */
+.ar-topFields{
+  padding: 12px 16px 14px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  border-bottom: 1.5px solid var(--line2);
+  background: rgba(255,255,255,.92);
+}
+.ar-labelLine{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.ar-labelMain{
+  font-weight: 900;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.ar-inputLine{
+  flex: 1 1 320px;
+  min-width: 220px;
+}
+
+/* Inputs (WebView-safe) */
+.ar-input{
+  width:100%;
+  display:block;
+  border: 1px solid rgba(15,23,42,.16);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(247,250,249,.75);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+
+  /* WebView: prevent “blank text” */
+  -webkit-text-fill-color: var(--ink);
+  caret-color: var(--ink);
+  opacity: 1;
+  text-shadow: none;
+
+  /* ✅ allow shrinking inside flex cells */
+  min-width: 0;
+}
+
+/* ✅ Placeholders should be LIGHTER and NOT BOLD */
+.ar-input::placeholder{
+  color: rgba(15,23,42,.38);
+  font-weight: 600;
+}
+.ar-input::-webkit-input-placeholder{ color: rgba(15,23,42,.38); font-weight: 600; }
+.ar-input::-moz-placeholder{ color: rgba(15,23,42,.38); font-weight: 600; opacity: 1; }
+.ar-input:-ms-input-placeholder{ color: rgba(15,23,42,.38); font-weight: 600; }
+.ar-input::-ms-input-placeholder{ color: rgba(15,23,42,.38); font-weight: 600; }
+
+.ar-input:focus{
+  border-color: rgba(11,77,58,.40);
+  box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+  background: #fff;
+}
+.ar-input:disabled,
+.ar-input[readonly]{
+  opacity: 1 !important;
+  color: var(--ink) !important;
+  -webkit-text-fill-color: var(--ink) !important;
+  background: rgba(247,250,249,.60) !important;
+  border-color: rgba(15,23,42,.12) !important;
+}
+
+/* View mode lock */
+.ar-wrap.is-view .ar-input{
+  pointer-events:none;
+}
+
+
+/* Table wrapper (Ledger-like) */
+.ar-table-wrap{
+  width: 100%;
+  overflow: hidden;
+  background: #fff;
+  border-top: 1.5px solid var(--line2);
+  border-bottom: 1.5px solid var(--line2);
+}
+.ar-table-scroll{
+  overflow-x: auto;
+  overflow-y: hidden;
+  width:100%;
+  -webkit-overflow-scrolling: touch;
+}
+.ar-table{
+  width:100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  min-width: 1020px;
+}
+
+/* Table header */
+.ar-table th{
+  background: var(--soft);
+  color: rgba(15,23,42,.80);
+  font-weight: 950;
+  font-size: 12px;
+  padding: 10px 10px;
+  text-align:left;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  line-height: 1.2;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.ar-table td{
+  padding: 8px 10px;
+  border-top: 1px solid rgba(15,23,42,.07);
+  vertical-align: middle;
+  background: rgba(255,255,255,.98);
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  min-width: 0; /* ✅ prevent pushing out */
+}
+.ar-table th, .ar-table td{
+  border-right: 1px solid rgba(15,23,42,.07);
+}
+.ar-table th:last-child, .ar-table td:last-child{
+  border-right: none;
+}
+
+/* Columns */
+.ar-col-sel{ width: 54px; min-width:54px; max-width:54px; text-align:center; }
+.ar-col-sl{ width: 64px; min-width:64px; max-width:64px; text-align:center; }
+.ar-col-asset{ min-width: 260px; }
+.ar-col-qty{ width: 120px; min-width:120px; }
+.ar-col-date{ width: 160px; min-width:160px; }
+.ar-col-assetno{ width: 160px; min-width:160px; }
+.ar-col-value{ width: 190px; min-width:190px; }
+.ar-col-remarks{ min-width: 220px; }
+.ar-col-action{ width: 120px; min-width:120px; text-align:center; }
+
+.ar-sl{
+  font-weight: 950;
+  font-size: 12px;
+  color: rgba(15,23,42,.75);
+  font-variant-numeric: tabular-nums;
+  text-align:center;
+}
+
+/* Checkbox */
+.ar-check{
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1px solid rgba(15,23,42,.18);
+  background: rgba(247,250,249,.70);
+  accent-color: var(--accent);
+  cursor: pointer;
+  margin: 0;
+}
+.ar-wrap:not(.is-view) .ar-check{ cursor:pointer; }
+
+/* Hide checks in view mode */
+.ar-wrap.is-view .ar-check{ display:none; }
+.ar-wrap.is-view th.ar-col-sel, .ar-wrap.is-view td.ar-col-sel{ display:none; }
+
+/* Row remove (Ledger-like delete button) */
+.ar-miniDanger{
+  width: 110px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(239,68,68,.28);
+  background: rgba(239,68,68,.08);
+  color: rgba(127,29,29,.95);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  user-select:none;
+  font-weight: 950;
+  font-size: 12px;
+}
+.ar-miniDanger:hover{
+  transform: translateY(-1px);
+  background: rgba(239,68,68,.12);
+  box-shadow: var(--shadow2);
+}
+.ar-miniDanger ion-icon{ font-size: 16px; }
+.ar-wrap.is-view .ar-miniDanger{ display:none; }
+
+/* Footer */
+.ar-foot{
+  padding: 12px 16px;
+  text-align:center;
+  border-top: 1.5px solid var(--line2);
+  background: rgba(255,255,255,.94);
+  color: rgba(15,23,42,.70);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+/* ============================================================
+   ✅ LEDGER-STYLE COMPACT MODALS (WebView-safe)
+============================================================ */
+.ar-modal-overlay{
+  position: fixed;
+  inset: 0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index: 99999;
+  padding: 18px;
+  background: rgba(15, 23, 42, .28);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.ar-modal-overlay.is-open{ display:flex; }
+
+.ar-modal{
+  width: 100%;
+  max-width: 520px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(15,23,42,.10);
+  box-shadow: 0 30px 60px -30px rgba(0,0,0,.45);
+  overflow:hidden;
+  transform: translateY(6px);
+  animation: arModalIn .18s ease-out forwards;
+}
+@keyframes arModalIn{
+  from{ opacity:0; transform: translateY(10px) scale(.98); }
+  to{ opacity:1; transform: translateY(0) scale(1); }
+}
+
+.ar-mhead{
+  padding: 14px 16px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  justify-content: flex-start;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(16,185,129,.12), transparent 55%),
+    linear-gradient(to right, rgba(5,150,105,.10), rgba(16,185,129,.10));
+  border-bottom: 1px solid rgba(15,23,42,.08);
+}
+.ar-dot{
+  width: 10px; height: 10px;
+  border-radius: 999px;
+  background: rgba(11,77,58,.90);
+  box-shadow: 0 0 0 6px rgba(16,185,129,.12);
+  flex: 0 0 auto;
+}
+.ar-mtitle{
+  font-weight: 950;
+  color:#0b4d3a;
+  font-size: 15px;
+  letter-spacing:.2px;
+}
+
+.ar-mbody{
+  padding: 14px 16px 6px;
+  color:#0f172a;
+  font-size: 14px;
+  font-weight: 850;
+  line-height:1.35;
+}
+.ar-mactions{
+  padding: 12px 16px 16px;
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap: wrap;
+}
+
+.ar-ghostBtn{
+  border: 1px solid rgba(15,23,42,.14);
+  color:#0f172a;
+  background:#fff;
+  min-width: 120px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 950;
+  padding: 10px 12px;
+  cursor:pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+}
+.ar-ghostBtn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 22px -18px rgba(0,0,0,.20);
+  background: rgba(11,77,58,.06);
+}
+
+.ar-solidBtn{
+  border: 1px solid rgba(16,185,129,.35);
+  background: rgba(16,185,129,.12);
+  color:#0b4d3a;
+  min-width: 120px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 950;
+  padding: 10px 12px;
+  cursor:pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+}
+.ar-solidBtn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 22px -18px rgba(0,0,0,.20);
+  background: rgba(16,185,129,.16);
+}
+.ar-solidBtn.ar-dangerBtn{
+  border-color: rgba(239,68,68,.35);
+  background: rgba(239,68,68,.10);
+  color: rgba(127,29,29,.95);
+}
+.ar-solidBtn.ar-dangerBtn:hover{ background: rgba(239,68,68,.14); }
+
+
+
+/* ============================================================
+   ✅ Mobile/app: swipe row-cards + BIG inputs (like Ledger)
+   ✅ FIX: nothing should overflow / go out of card on small screens
+============================================================ */
+@media (max-width: 860px){
+  .ar-titleWrap{ text-align:left; }
+  .ar-table{ min-width: 0; }
+  .ar-table, .ar-table thead, .ar-table tbody{ display:block; width: 100%; }
+  .ar-table thead{ display:none; }
+
+  .ar-table-wrap{ border-bottom: none; }
+  .ar-table-scroll{
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 12px;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ar-table tbody{
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 84%;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .ar-table tr{
+    scroll-snap-align: start;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.96);
+    overflow: hidden;
+    box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
+    min-width: 0;
+  }
+
+  /* ✅ KEY FIX: allow cell content to wrap instead of pushing outside */
+  .ar-table td{
+    border-right: none;
+    border-top: none;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    padding: 10px 12px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .ar-table td:last-child{ border-bottom: none; }
+
+  /* ✅ Make label full width on mobile so input never gets squeezed */
+  .ar-table td::before{
+    content: attr(data-label);
+    font-weight: 950;
+    font-size: 12px;
+    color: rgba(15,23,42,.70);
+    flex: 0 0 100%;
+    width: 100%;
+    white-space: normal;
+    line-height: 1.2;
+  }
+
+  /* Force BIG input sizes (WebView-safe) — FULL WIDTH inside card */
+  .ar-wrap .ar-table td input.ar-input{
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    padding: 16px 16px !important;
+    font-size: 16px !important;
+    min-height: 56px !important;
+    border-radius: 14px !important;
+
+    background: #fff !important;
+    color: var(--ink) !important;
+    -webkit-text-fill-color: var(--ink) !important;
+    opacity: 1 !important;
+
+    font-weight: 800 !important;
+  }
+
+  /* keep select/sl labels correct */
+  .ar-table td.ar-col-sel::before{ content:"Select"; }
+  .ar-table td.ar-col-sl::before{ content:"Sl"; }
+
+  /* action button aligns */
+  .ar-col-action{ text-align:left !important; justify-content:flex-end; }
+}
+
+/* ✅ top PG name field should not overflow on very small screens */
+@media (max-width: 520px){
+  .ar-topFields{ padding: 12px 14px 14px; }
+  .ar-inputLine{ min-width: 0; flex: 1 1 100%; }
+  .ar-labelMain{ white-space: normal; }
+}
+
+@media (max-width: 420px){
+  .ar-table tbody{ grid-auto-columns: 90%; }
+  .ar-title{ font-size: 16px; }
+  .ar-mactions{ justify-content: stretch; }
+  .ar-ghostBtn, .ar-solidBtn{ min-width: 100%; }
+}
+
+/* ✅ Keep Select + checkbox on SAME LINE */
+@media (max-width: 860px){
+  .ar-table td.ar-col-sel{
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .ar-table td.ar-col-sel::before{
+    flex: 0 0 auto !important;
+    width: auto !important;
+    white-space: nowrap !important;
+  }
+
+  .ar-table td.ar-col-sel .ar-check{
+    flex: 0 0 auto;
+  }
+
+  /* ✅ Keep SL label + number on SAME LINE */
+  .ar-table td.ar-col-sl{
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+
+  .ar-table td.ar-col-sl::before{
+    flex: 0 0 auto !important;
+    width: auto !important;
+    white-space: nowrap !important;
+  }
+
+  .ar-table td.ar-col-sl .ar-sl{
+    flex: 0 0 auto;
+  }
+}
+</style>
+<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
+
+
+<div class="ar-wrap ar-i18n is-view" id="arWrap">
+  <div class="ar-shell">
+    <div class="ar-sheet">
+
+      <!-- Header -->
+      <div class="ar-head">
+        <a class="ar-btn ar-btnBack" href="{{ url_for('pg.pg_home') }}" aria-label="Back">
+          <ion-icon name="arrow-back"></ion-icon>
+          <span class="ar-i18n">
+            <span data-lang="en">Back</span>
+            <span data-lang="bn">ফিরে যান</span>
+          </span>
+        </a>
+
+        <div class="ar-titleWrap">
+          <h1 class="ar-title ar-i18n">
+            <span data-lang="en">Asset Register</span>
+            <span data-lang="bn">সম্পদ খাতা</span>
+          </h1>
+          <div class="ar-sub ar-i18n">
+            <span data-lang="en">Register & track PG assets</span>
+            <span data-lang="bn">উৎপাদক দলের সম্পদ রেকর্ড ও ট্র্যাকিং</span>
+          </div>
+        </div>
+
+        <div class="ar-actionsTop" aria-hidden="true"></div>
+      </div>
+
+      <!-- Main Card -->
+      <div class="ar-card">
+        <div class="ar-actions-bar">
+          <!-- ✅ Removed duplicate "Asset Register" title (keep only header one) -->
+
+          <div class="ar-toolbar" id="arToolbar">
+            <button type="button" class="ar-btn ar-primary" id="arEditBtn">
+              <ion-icon name="create-outline"></ion-icon>
+              <span class="ar-i18n">
+                <span data-lang="en">Edit</span>
+                <span data-lang="bn">এডিট</span>
+              </span>
+            </button>
+
+            <button type="button" class="ar-btn ar-ghost" id="arAddRowBtn" style="display:none;">
+              <ion-icon name="add-circle-outline"></ion-icon>
+              <span class="ar-i18n">
+                <span data-lang="en">Add Row</span>
+                <span data-lang="bn">রো যোগ করুন</span>
+              </span>
+            </button>
+
+            <button type="button" class="ar-btn ar-danger" id="arDeleteSelectedBtn" style="display:none;">
+              <ion-icon name="trash-outline"></ion-icon>
+              <span class="ar-i18n">
+                <span data-lang="en">Delete Selected</span>
+                <span data-lang="bn">নির্বাচিত ডিলিট</span>
+              </span>
+            </button>
+
+            <button type="button" class="ar-btn ar-danger" id="arDeleteAllBtn" style="display:none;">
+              <ion-icon name="trash-bin-outline"></ion-icon>
+              <span class="ar-i18n">
+                <span data-lang="en">Delete All</span>
+                <span data-lang="bn">সব ডিলিট</span>
+              </span>
+            </button>
+
+            <button type="button" class="ar-btn ar-primary" id="arSaveBtn" style="display:none;">
+              <ion-icon name="save-outline"></ion-icon>
+              <span class="ar-i18n">
+                <span data-lang="en">Save</span>
+                <span data-lang="bn">সেভ</span>
+              </span>
+            </button>
+
+            <button type="button" class="ar-btn ar-ghost" id="arCancelBtn" style="display:none;">
+              <ion-icon name="close-circle-outline"></ion-icon>
+              <span class="ar-i18n">
+                <span data-lang="en">Cancel</span>
+                <span data-lang="bn">বাতিল</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div class="ar-topFields">
+          <div class="ar-labelLine">
+            <div class="ar-labelMain ar-i18n">
+              <span data-lang="en">Name of Producers Group</span>
+              <span data-lang="bn">উৎপাদক দলের নাম</span>
+            </div>
+
+            <div class="ar-inputLine">
+              <input
+                class="ar-input"
+                name="pg_name_display"
+                id="arPgName"
+                value="{{ pg.name if pg is defined and pg and pg.name else (session.get('pg_name') or '') }}"
+                placeholder="Enter Producers Group name"
+                autocomplete="off"
+                disabled
+              />
+            </div>
+          </div>
+
+         
+        </div>
+
+        <form method="POST" id="arForm">
+          <div class="ar-table-wrap">
+            <div class="ar-table-scroll">
+              <table class="ar-table" id="arTable">
+                <thead>
+                  <tr>
+                    <th class="ar-col-sel">
+                      <input type="checkbox" class="ar-check" id="arSelectAll" aria-label="Select all" style="display:none;">
+                    </th>
+
+                    <th class="ar-col-sl ar-i18n">
+                      <span data-lang="en">Sl. No</span>
+                      <span data-lang="bn">ক্রমিক</span>
+                    </th>
+
+                    <th class="ar-col-asset ar-i18n">
+                      <span data-lang="en">Name of the Asset</span>
+                      <span data-lang="bn">সম্পত্তির নাম</span>
+                    </th>
+
+                    <th class="ar-col-qty ar-i18n">
+                      <span data-lang="en">Quantity</span>
+                      <span data-lang="bn">পরিমাণ</span>
+                    </th>
+
+                    <th class="ar-col-date ar-i18n">
+                      <span data-lang="en">Date of Purchase</span>
+                      <span data-lang="bn">ক্রয়ের তারিখ</span>
+                    </th>
+
+                    <th class="ar-col-assetno ar-i18n">
+                      <span data-lang="en">Asset No.</span>
+                      <span data-lang="bn">সম্পত্তি নম্বর</span>
+                    </th>
+
+                    <th class="ar-col-value ar-i18n">
+                      <span data-lang="en">Value of Asset (Rupees)</span>
+                      <span data-lang="bn">সম্পত্তির মূল্য (টাকা)</span>
+                    </th>
+
+                    <th class="ar-col-remarks ar-i18n">
+                      <span data-lang="en">Remarks</span>
+                      <span data-lang="bn">মন্তব্য</span>
+                    </th>
+
+                    <th class="ar-col-action ar-i18n">
+                      <span data-lang="en">Action</span>
+                      <span data-lang="bn">অ্যাকশন</span>
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody id="arTbody">
+                  {% set existing = asset_rows if asset_rows is defined and asset_rows else [] %}
+
+                  {% if existing and existing|length > 0 %}
+                    {% for row in existing %}
+                      <tr>
+                        <td class="ar-col-sel" data-label="Select">
+                          <input type="checkbox" class="ar-check arRowCheck" aria-label="Select row" style="display:none;">
+                        </td>
+
+                        <td class="ar-col-sl" data-label="Sl. No">
+                          <div class="ar-sl">{{ loop.index }}</div>
+                        </td>
+
+                        <td class="ar-col-asset" data-label="Name of the Asset">
+                          <input class="ar-input" name="asset_name[]" value="{{ row.asset_name or '' }}" placeholder="e.g.Sprayer / Weighing Scale" autocomplete="off" disabled>
+                        </td>
+
+                        <td class="ar-col-qty" data-label="Quantity">
+                          <input class="ar-input" name="quantity[]" value="{{ row.quantity or '' }}" placeholder="0" inputmode="numeric" autocomplete="off" disabled>
+                        </td>
+
+                        <td class="ar-col-date" data-label="Date of Purchase">
+                          <input class="ar-input" name="purchase_date[]" value="{{ row.purchase_date or '' }}" placeholder="DD/MM/YYYY" autocomplete="off" disabled>
+                        </td>
+
+                        <td class="ar-col-assetno" data-label="Asset No.">
+                          <input class="ar-input" name="asset_no[]" value="{{ row.asset_no or '' }}" placeholder="Asset No." autocomplete="off" disabled>
+                        </td>
+
+                        <td class="ar-col-value" data-label="Value of Asset (Rupees)">
+                          <input class="ar-input" name="asset_value[]" value="{{ row.asset_value or '' }}" placeholder="₹ 0" inputmode="decimal" autocomplete="off" disabled>
+                        </td>
+
+                        <td class="ar-col-remarks" data-label="Remarks">
+                          <input class="ar-input" name="remarks[]" value="{{ row.remarks or '' }}" placeholder="Remarks" autocomplete="off" disabled>
+                        </td>
+
+                        <td class="ar-col-action" data-label="Action">
+                          <button type="button" class="ar-miniDanger arRemoveRow" aria-label="Remove row">
+                            <ion-icon name="trash-outline"></ion-icon>
+                            <span class="ar-i18n">
+                              <span data-lang="en">Remove</span>
+                              <span data-lang="bn">ডিলিট</span>
+                            </span>
+                          </button>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr>
+                      <td class="ar-col-sel" data-label="Select">
+                        <input type="checkbox" class="ar-check arRowCheck" aria-label="Select row" style="display:none;">
+                      </td>
+
+                      <td class="ar-col-sl" data-label="Sl. No">
+                        <div class="ar-sl">1</div>
+                      </td>
+
+                      <td class="ar-col-asset" data-label="Name of the Asset">
+                        <input class="ar-input" name="asset_name[]" value="" placeholder="e.g.Sprayer / Weighing Scale" autocomplete="off" disabled>
+                      </td>
+
+                      <td class="ar-col-qty" data-label="Quantity">
+                        <input class="ar-input" name="quantity[]" value="" placeholder="0" inputmode="numeric" autocomplete="off" disabled>
+                      </td>
+
+                      <td class="ar-col-date" data-label="Date of Purchase">
+                        <input class="ar-input" name="purchase_date[]" value="" placeholder="DD/MM/YYYY" autocomplete="off" disabled>
+                      </td>
+
+                      <td class="ar-col-assetno" data-label="Asset No.">
+                        <input class="ar-input" name="asset_no[]" value="" placeholder="Asset No." autocomplete="off" disabled>
+                      </td>
+
+                      <td class="ar-col-value" data-label="Value of Asset (Rupees)">
+                        <input class="ar-input" name="asset_value[]" value="" placeholder="₹ 0" inputmode="decimal" autocomplete="off" disabled>
+                      </td>
+
+                      <td class="ar-col-remarks" data-label="Remarks">
+                        <input class="ar-input" name="remarks[]" value="" placeholder="Remarks" autocomplete="off" disabled>
+                      </td>
+
+                      <td class="ar-col-action" data-label="Action">
+                        <button type="button" class="ar-miniDanger arRemoveRow" aria-label="Remove row">
+                          <ion-icon name="trash-outline"></ion-icon>
+                          <span class="ar-i18n">
+                            <span data-lang="en">Remove</span>
+                            <span data-lang="bn">ডিলিট</span>
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </form>
+
+        <div class="ar-foot ar-i18n">
+          <span data-lang="en">PGMIS • Asset Register</span>
+          <span data-lang="bn">PGMIS • সম্পদ খাতা</span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Confirm Modal (Ledger-style compact) -->
+<div class="ar-modal-overlay" id="arConfirmModal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="ar-modal" data-panel="1">
+    <div class="ar-mhead">
+      <span class="ar-dot"></span>
+      <div class="ar-mtitle ar-i18n" id="arConfirmTitle">
+        <span data-lang="en">Confirm</span>
+        <span data-lang="bn">নিশ্চিত করুন</span>
+      </div>
+    </div>
+    <div class="ar-mbody ar-i18n" id="arConfirmMsg">
+      <span data-lang="en">Are you sure?</span>
+      <span data-lang="bn">আপনি কি নিশ্চিত?</span>
+    </div>
+    <div class="ar-mactions">
+      <button type="button" class="ar-ghostBtn ar-i18n" id="arConfirmCancelBtn">
+        <span data-lang="en">Cancel</span>
+        <span data-lang="bn">বাতিল</span>
+      </button>
+      <button type="button" class="ar-solidBtn ar-i18n" id="arConfirmOkBtn">
+        <span data-lang="en">OK</span>
+        <span data-lang="bn">ঠিক আছে</span>
+      </button>
+    </div>
+    <div class="ar-miniNote ar-i18n" id="arConfirmNote" style="display:none;">
+      <span data-lang="en">Tip: Save or Cancel to unlock navigation.</span>
+      <span data-lang="bn">টিপ: সেভ বা বাতিল করলে ন্যাভিগেশন আনলক হবে।</span>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Lock Modal (Ledger-style compact) -->
+<div class="ar-modal-overlay" id="arLockModal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="ar-modal" data-panel="1">
+    <div class="ar-mhead">
+      <span class="ar-dot"></span>
+      <div class="ar-mtitle ar-i18n" id="arLockTitle">
+        <span data-lang="en">Action blocked</span>
+        <span data-lang="bn">অ্যাকশন ব্লকড</span>
+      </div>
+    </div>
+    <div class="ar-mbody ar-i18n" id="arLockMsg">
+      <span data-lang="en">You are in Edit mode. Please Save or Cancel before leaving this page.</span>
+      <span data-lang="bn">আপনি এডিট মোডে আছেন। বের হতে হলে সেভ বা বাতিল করুন।</span>
+    </div>
+    <div class="ar-mactions">
+      <button type="button" class="ar-solidBtn ar-i18n" id="arLockOkBtn">
+        <span data-lang="en">OK</span>
+        <span data-lang="bn">ঠিক আছে</span>
+      </button>
+    </div>
+   
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Language (unchanged)
+============================================================ */
+(function(){
+  const wrap = document.getElementById('arWrap');
+  if(!wrap) return;
+
+  function readCookie(name){
+    const safe = name.replace(/([.*+?^${}()|[\]\\])/g, '\\$1');
+    const m = document.cookie.match(new RegExp('(?:^|; )' + safe + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  function getLang(){
+    const htmlLang = (document.documentElement.getAttribute('lang') || '').toLowerCase();
+    const ls1 = (localStorage.getItem('lang') || '').toLowerCase();
+    const ls2 = (localStorage.getItem('language') || '').toLowerCase();
+    const ck1 = (readCookie('lang') || '').toLowerCase();
+    const ck2 = (readCookie('language') || '').toLowerCase();
+
+    const val = [ls1, ls2, ck1, ck2, htmlLang].join(' ');
+    if(val.includes('bn') || val.includes('bangla') || val.includes('bengali') || val.includes('বাংলা')) return 'bn';
+    return 'en';
+  }
+
+  function applyLang(){
+    const lang = getLang();
+    wrap.classList.toggle('is-bn', lang === 'bn');
+  }
+
+  applyLang();
+  setInterval(applyLang, 1200);
+})();
+
+/* ============================================================
+   ✅ Modal Helpers (same API as before)
+============================================================ */
+(function(){
+  const confirmModal = document.getElementById('arConfirmModal');
+  const confirmTitle = document.getElementById('arConfirmTitle');
+  const confirmMsg   = document.getElementById('arConfirmMsg');
+  const confirmOk    = document.getElementById('arConfirmOkBtn');
+  const confirmCancel= document.getElementById('arConfirmCancelBtn');
+  const confirmNote  = document.getElementById('arConfirmNote');
+
+  const lockModal = document.getElementById('arLockModal');
+  const lockOk    = document.getElementById('arLockOkBtn');
+
+  function openModal(el){
+    if(!el) return;
+    el.classList.add('is-open');
+    el.setAttribute('aria-hidden','false');
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(el){
+    if(!el) return;
+    el.classList.remove('is-open');
+    el.setAttribute('aria-hidden','true');
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+  }
+
+  function overlayCloseOnBackdrop(modalEl){
+    if(!modalEl) return;
+    modalEl.addEventListener('click', (e)=>{
+      if(e.target === modalEl) closeModal(modalEl);
+    });
+  }
+  overlayCloseOnBackdrop(confirmModal);
+  overlayCloseOnBackdrop(lockModal);
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){
+      if(confirmModal && confirmModal.classList.contains('is-open')) closeModal(confirmModal);
+      if(lockModal && lockModal.classList.contains('is-open')) closeModal(lockModal);
+    }
+  });
+
+  window.__arModal = {
+    confirm(opts){
+      const o = opts || {};
+      if(!confirmModal) return;
+
+      if(confirmTitle){
+        const en = confirmTitle.querySelector('[data-lang="en"]');
+        const bn = confirmTitle.querySelector('[data-lang="bn"]');
+        if(en) en.textContent = o.titleEn || 'Confirm';
+        if(bn) bn.textContent = o.titleBn || 'নিশ্চিত করুন';
+      }
+
+      if(confirmMsg){
+        const en = confirmMsg.querySelector('[data-lang="en"]');
+        const bn = confirmMsg.querySelector('[data-lang="bn"]');
+        if(en) en.textContent = o.msgEn || 'Are you sure?';
+        if(bn) bn.textContent = o.msgBn || 'আপনি কি নিশ্চিত?';
+      }
+
+      if(confirmNote){
+        confirmNote.style.display = o.note ? '' : 'none';
+      }
+
+      if(confirmCancel){
+        confirmCancel.style.display = o.cancelHidden ? 'none' : '';
+      }
+
+      if(confirmOk){
+        const en = confirmOk.querySelector('[data-lang="en"]');
+        const bn = confirmOk.querySelector('[data-lang="bn"]');
+        if(en) en.textContent = (o.okTextEn || 'OK');
+        if(bn) bn.textContent = (o.okTextBn || 'ঠিক আছে');
+      }
+
+      let cleaned = false;
+      function cleanup(){
+        if(cleaned) return;
+        cleaned = true;
+        if(confirmOk) confirmOk.onclick = null;
+        if(confirmCancel) confirmCancel.onclick = null;
+      }
+
+      if(confirmOk){
+        confirmOk.onclick = ()=>{
+          closeModal(confirmModal);
+          cleanup();
+          if(typeof o.onOk === 'function') o.onOk();
+        };
+      }
+
+      if(confirmCancel){
+        confirmCancel.onclick = ()=>{
+          closeModal(confirmModal);
+          cleanup();
+          if(typeof o.onCancel === 'function') o.onCancel();
+        };
+      }
+
+      openModal(confirmModal);
+    },
+
+    lock(){
+      if(!lockModal) return;
+      openModal(lockModal);
+      if(lockOk){
+        lockOk.onclick = ()=> closeModal(lockModal);
+      }
+    },
+
+    closeAll(){
+      if(confirmModal) closeModal(confirmModal);
+      if(lockModal) closeModal(lockModal);
+    }
+  };
+})();
+
+/* ============================================================
+   Asset Register — Edit toggle + Multi delete + Confirmations
+   (LOGIC unchanged)
+============================================================ */
+(function(){
+  const wrap = document.getElementById('arWrap');
+  const form = document.getElementById('arForm');
+  const tbody = document.getElementById('arTbody');
+
+  const pgName = document.getElementById('arPgName');
+
+  const editBtn = document.getElementById('arEditBtn');
+  const saveBtn = document.getElementById('arSaveBtn');
+  const addBtn  = document.getElementById('arAddRowBtn');
+  const delSelBtn = document.getElementById('arDeleteSelectedBtn');
+  const delAllBtn = document.getElementById('arDeleteAllBtn');
+  const cancelBtn = document.getElementById('arCancelBtn');
+
+  const selectAll = document.getElementById('arSelectAll');
+
+  if(!wrap || !form || !tbody || !editBtn || !saveBtn || !addBtn || !delSelBtn || !delAllBtn || !cancelBtn) return;
+
+  let isEditing = false;
+  let navLockOn = false;
+
+  function modalLock(){
+    if(window.__arModal && typeof window.__arModal.lock === 'function'){
+      window.__arModal.lock();
+    }
+  }
+
+  function modalConfirm(opts){
+    if(window.__arModal && typeof window.__arModal.confirm === 'function'){
+      window.__arModal.confirm(opts);
+    }else{
+      const ok = window.confirm((opts && opts.msgEn) || 'Are you sure?');
+      if(ok && opts && typeof opts.onOk === 'function') opts.onOk();
+      if(!ok && opts && typeof opts.onCancel === 'function') opts.onCancel();
+    }
+  }
+
+  function setInputsDisabled(disabled){
+    if(pgName) pgName.disabled = disabled;
+    tbody.querySelectorAll('input.ar-input').forEach(inp => inp.disabled = disabled);
+  }
+
+  function showChecks(show){
+    if(selectAll) selectAll.style.display = show ? '' : 'none';
+    tbody.querySelectorAll('.arRowCheck').forEach(ch => ch.style.display = show ? '' : 'none');
+  }
+
+  function setToolbarMode(editing){
+    wrap.classList.toggle('is-view', !editing);
+
+    editBtn.style.display = editing ? 'none' : '';
+    saveBtn.style.display = editing ? '' : 'none';
+
+    addBtn.style.display = editing ? '' : 'none';
+    delSelBtn.style.display = editing ? '' : 'none';
+    delAllBtn.style.display = editing ? '' : 'none';
+    cancelBtn.style.display = editing ? '' : 'none';
+
+    setInputsDisabled(!editing);
+    showChecks(editing);
+
+    if(!editing){
+      if(selectAll) selectAll.checked = false;
+      tbody.querySelectorAll('.arRowCheck').forEach(ch => ch.checked = false);
+    }
+  }
+
+  function renumber(){
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.forEach((tr, idx) => {
+      const sl = tr.querySelector('.ar-sl');
+      if(sl) sl.textContent = String(idx + 1);
+    });
+  }
+
+  function newRow(){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="ar-col-sel" data-label="Select">
+        <input type="checkbox" class="ar-check arRowCheck" aria-label="Select row">
+      </td>
+
+      <td class="ar-col-sl" data-label="Sl. No">
+        <div class="ar-sl">1</div>
+      </td>
+
+      <td class="ar-col-asset" data-label="Name of the Asset">
+        <input class="ar-input" name="asset_name[]" value="" placeholder="e.g.Sprayer / Weighing Scale" autocomplete="off">
+      </td>
+
+      <td class="ar-col-qty" data-label="Quantity">
+        <input class="ar-input" name="quantity[]" value="" placeholder="0" inputmode="numeric" autocomplete="off">
+      </td>
+
+      <td class="ar-col-date" data-label="Date of Purchase">
+        <input class="ar-input" name="purchase_date[]" value="" placeholder="DD/MM/YYYY" autocomplete="off">
+      </td>
+
+      <td class="ar-col-assetno" data-label="Asset No.">
+        <input class="ar-input" name="asset_no[]" value="" placeholder="Asset No." autocomplete="off">
+      </td>
+
+      <td class="ar-col-value" data-label="Value of Asset (Rupees)">
+        <input class="ar-input" name="asset_value[]" value="" placeholder="₹ 0" inputmode="decimal" autocomplete="off">
+      </td>
+
+      <td class="ar-col-remarks" data-label="Remarks">
+        <input class="ar-input" name="remarks[]" value="" placeholder="Remarks" autocomplete="off">
+      </td>
+
+      <td class="ar-col-action" data-label="Action">
+        <button type="button" class="ar-miniDanger arRemoveRow" aria-label="Remove row">
+          <ion-icon name="trash-outline"></ion-icon>
+          <span class="ar-i18n">
+            <span data-lang="en">Remove</span>
+            <span data-lang="bn">ডিলিট</span>
+          </span>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    renumber();
+
+    const first = tr.querySelector('input[name="asset_name[]"]');
+    if(first) first.focus();
+  }
+
+  function ensureAtLeastOneRow(){
+    if(tbody.querySelectorAll('tr').length === 0){
+      newRow();
+    }
+  }
+
+  /* ---------- Page lock (Edit mode) ---------- */
+  function beforeUnloadHandler(e){
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+
+  function keydownBlockRefresh(e){
+    if(!navLockOn) return;
+    const k = (e.key || '').toLowerCase();
+
+    if(e.key === 'F5'){
+      e.preventDefault();
+      e.stopPropagation();
+      modalLock();
+      return;
+    }
+
+    if((e.ctrlKey || e.metaKey) && (k === 'r')){
+      e.preventDefault();
+      e.stopPropagation();
+      modalLock();
+      return;
+    }
+
+    if((e.ctrlKey || e.metaKey) && e.shiftKey && (k === 'r')){
+      e.preventDefault();
+      e.stopPropagation();
+      modalLock();
+      return;
+    }
+  }
+
+  function clickBlockNav(e){
+    if(!navLockOn) return;
+
+    const a = e.target.closest('a');
+    if(!a) return;
+
+    if (e.target.closest('#arWrap')) return;
+
+    const href = a.getAttribute('href') || '';
+    if(href.startsWith('#') || href === '') return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    modalLock();
+  }
+
+  function trapBackButton(){
+    if(!navLockOn) return;
+    try{ history.pushState({ ar_lock: true }, '', window.location.href); }catch(_){}
+  }
+
+  function popstateHandler(e){
+    if(!navLockOn) return;
+    trapBackButton();
+    modalLock();
+  }
+
+  function enableNavLock(){
+    if(navLockOn) return;
+    navLockOn = true;
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+    window.addEventListener('keydown', keydownBlockRefresh, true);
+    document.addEventListener('click', clickBlockNav, true);
+    window.addEventListener('popstate', popstateHandler);
+    trapBackButton();
+  }
+
+  function disableNavLock(){
+    navLockOn = false;
+    window.removeEventListener('beforeunload', beforeUnloadHandler);
+    window.removeEventListener('keydown', keydownBlockRefresh, true);
+    document.removeEventListener('click', clickBlockNav, true);
+    window.removeEventListener('popstate', popstateHandler);
+  }
+
+  function enterEdit(){
+    isEditing = true;
+    setToolbarMode(true);
+    enableNavLock();
+  }
+
+  /* Default mode */
+  setToolbarMode(false);
+
+  editBtn.addEventListener('click', () => enterEdit());
+
+  addBtn.addEventListener('click', () => {
+    if(!isEditing) return;
+    newRow();
+  });
+
+  if(selectAll){
+    selectAll.addEventListener('change', () => {
+      if(!isEditing) return;
+      const checked = !!selectAll.checked;
+      tbody.querySelectorAll('.arRowCheck').forEach(ch => ch.checked = checked);
+    });
+  }
+
+  tbody.addEventListener('click', (e) => {
+    const btn = e.target.closest('.arRemoveRow');
+    if(!btn) return;
+    if(!isEditing) return;
+
+    const tr = btn.closest('tr');
+    if(!tr) return;
+
+    tr.remove();
+    ensureAtLeastOneRow();
+    renumber();
+  });
+
+  delSelBtn.addEventListener('click', () => {
+    if(!isEditing) return;
+
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const selected = rows.filter(tr => {
+      const ch = tr.querySelector('.arRowCheck');
+      return ch && ch.checked;
+    });
+
+    if(selected.length === 0){
+      modalConfirm({
+        titleEn: 'Action blocked',
+        titleBn: 'অ্যাকশন ব্লকড',
+        msgEn: 'No rows selected.',
+        msgBn: 'কোনো সারি নির্বাচন করা হয়নি।',
+        okTextEn: 'OK',
+        okTextBn: 'ঠিক আছে',
+        cancelHidden: true
+      });
+      return;
+    }
+
+    modalConfirm({
+      titleEn: 'Confirm',
+      titleBn: 'নিশ্চিত করুন',
+      msgEn: `Delete ${selected.length} selected row(s)?`,
+      msgBn: `${selected.length} টি নির্বাচিত সারি ডিলিট করবেন?`,
+      okTextEn: 'OK',
+      okTextBn: 'ঠিক আছে',
+      onOk: () => {
+        selected.forEach(tr => tr.remove());
+        ensureAtLeastOneRow();
+        renumber();
+        if(selectAll) selectAll.checked = false;
+      },
+      onCancel: () => {}
+    });
+  });
+
+  delAllBtn.addEventListener('click', () => {
+    if(!isEditing) return;
+
+    modalConfirm({
+      titleEn: 'Confirm',
+      titleBn: 'নিশ্চিত করুন',
+      msgEn: 'Delete ALL rows?',
+      msgBn: 'সব সারি ডিলিট করবেন?',
+      okTextEn: 'OK',
+      okTextBn: 'ঠিক আছে',
+      onOk: () => {
+        tbody.innerHTML = '';
+        newRow();
+        renumber();
+        if(selectAll) selectAll.checked = false;
+      },
+      onCancel: () => {}
+    });
+  });
+
+  saveBtn.addEventListener('click', () => {
+    if(!isEditing) return;
+
+    modalConfirm({
+      titleEn: 'Confirm',
+      titleBn: 'নিশ্চিত করুন',
+      msgEn: 'Save changes?',
+      msgBn: 'পরিবর্তন সেভ করবেন?',
+      okTextEn: 'OK',
+      okTextBn: 'ঠিক আছে',
+      onOk: () => {
+        disableNavLock();
+        form.submit();
+      },
+      onCancel: () => {}
+    });
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    if(!isEditing) return;
+
+    modalConfirm({
+      titleEn: 'Confirm',
+      titleBn: 'নিশ্চিত করুন',
+      msgEn: 'Cancel and discard all changes?',
+      msgBn: 'বাতিল করে সব পরিবর্তন বাতিল করবেন?',
+      okTextEn: 'OK',
+      okTextBn: 'ঠিক আছে',
+      onOk: () => {
+        disableNavLock();
+        window.location.reload();
+      },
+      onCancel: () => {}
+    });
+  });
+})();
+
+// AS_AUTO_WIRE: persist Asset Register snapshot to MongoDB
+(function(){
+  const btn = document.getElementById("arSaveBtn");
+  if(!btn) return;
+  btn.addEventListener("click", async ()=>{
+    try{
+      // Try common snapshot shapes used in this page
+      const payload = (typeof snapshotState === "function") ? snapshotState() :
+                      (typeof snapshot === "function") ? snapshot() :
+                      (window.state && typeof window.state === "object") ? window.state :
+                      null;
+      if(!payload){ return; }
+      localStorage.setItem(AS_STORAGE_KEY, JSON.stringify(payload));
+      const r = await asSaveToServer(payload);
+      if(typeof showToast === "function"){
+        showToast(r.ok ? "Saved" : (r.message||"Save failed"), r.ok ? "success" : "danger");
+      }
+    }catch(_e){}
+  });
+
+  (async ()=>{
+    const server = await asLoadFromServer();
+    const payload = server || (()=>{
+      try{ return JSON.parse(localStorage.getItem(AS_STORAGE_KEY)||"null"); }catch(_e){ return null; }
+    })();
+    if(!payload) return;
+    try{
+      if(typeof restoreSnapshot === "function") restoreSnapshot(payload);
+      else if(typeof restoreState === "function") restoreState(payload);
+      else if(typeof hydrate === "function") hydrate(payload);
+    }catch(_e){}
+  })();
+})();
+
+</script>
+{% endblock %}

@@ -1,0 +1,745 @@
+{% extends "base.html" %}
+{% block title %}Meeting Register{% endblock %}
+
+{% block head_extra %}
+  <!-- Ionicons (same look as Meeting Minutes Book) -->
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
+{% block content %}
+<style>
+/* ============================================================
+   MEETING REGISTER — RESPONSIVE FIX (SCOPED)
+   ✅ Same visual language
+   ✅ NO data/logic/route changes (same variables + form names)
+   ✅ Fully responsive for: small/large laptops, short/tall screens, tablets
+   Scope: .mr-wrap
+============================================================ */
+
+.mr-wrap{
+  width: 100%;
+  padding: clamp(10px, 2.2vw, 22px);
+
+  --ink:#0f172a;
+  --muted:#64748b;
+
+  --line: rgba(15,23,42,.18);
+  --line2: rgba(15,23,42,.12);
+
+  --paper:#ffffff;
+  --soft:#f7faf9;
+
+  --accent:#0b4d3a;
+  --accent2:#059669;
+
+  --shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  --shadow2: 0 16px 22px -18px rgba(15,23,42,.25);
+
+  --r16: 16px;
+  --r14: 14px;
+  --r12: 12px;
+
+  color: var(--ink);
+}
+.mr-wrap *{ box-sizing: border-box; }
+.mr-shell{
+  width: 100%;
+  max-width: 1400px;     /* ✅ fits big laptops */
+  margin: 0 auto;        /* ✅ centered on wide screens */
+}
+
+/* ---------- Header ---------- */
+.mr-head{
+  padding: clamp(12px, 1.4vw, 16px);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border: 1px solid var(--line);
+  border-radius: var(--r16);
+  box-shadow: var(--shadow);
+  position: relative;
+
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+
+  /* ✅ Helps on short heights (small laptops) */
+  min-height: 64px;
+}
+
+/* Title block */
+.mr-titleWrap{
+  flex: 1 1 auto;
+  min-width: 240px;
+  text-align:center;
+  padding: 0 8px;
+}
+.mr-title{
+  margin:0;
+  font-weight: 800;
+  font-size: clamp(15px, 1.35vw, 18px);
+  letter-spacing: .2px;
+  white-space: nowrap;
+  overflow:hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.mr-sub{
+  margin: 4px 0 0;
+  color: rgba(15,23,42,.70);
+  font-weight: 600;
+  font-size: clamp(11px, 1.05vw, 12px);
+  line-height: 1.25;
+}
+
+/* Buttons */
+.mr-btn{
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(247,250,249,.8);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  user-select: none;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.mr-btn:hover{
+  transform: translateY(-1px);
+  background: #fff;
+  box-shadow: var(--shadow2);
+}
+.mr-btn:active{ transform: translateY(0); }
+.mr-btn ion-icon{ font-size: 18px; }
+
+.mr-btnBack{
+  border-color: rgba(11,77,58,.28);
+  background: rgba(16,185,129,.10);
+  color: var(--accent);
+}
+
+.mr-actions{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
+/* ✅ Tablet/laptop wrap improvements */
+@media (max-width: 1100px){
+  .mr-head{
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 10px 10px;
+  }
+  .mr-actions{ margin-left: auto; }
+  .mr-titleWrap{
+    order: 3;
+    width: 100%;
+    text-align: left;
+    padding: 0;
+    min-width: 0;
+  }
+  .mr-title{
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.15;
+  }
+}
+@media (max-width: 420px){
+  .mr-btn{ padding: 9px 11px; }
+}
+
+/* ---------- Main grid ---------- */
+.mr-grid2{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+  align-items: start;
+}
+
+/* ✅ Tablet (portrait) + smaller laptops: stack */
+@media (max-width: 1024px){
+  .mr-grid2{ grid-template-columns: 1fr; }
+}
+
+/* Cards */
+.mr-card{
+  padding: clamp(12px, 1.6vw, 16px);
+  background: rgba(255,255,255,.92);
+  border: 1px solid var(--line);
+  border-radius: var(--r16);
+  box-shadow: var(--shadow);
+  min-width: 0; /* ✅ important for overflow on narrow layouts */
+}
+
+.mr-cardTitle{
+  margin: 0 0 10px;
+  text-align:center;
+  font-size: clamp(15px, 1.25vw, 17px);
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: .2px;
+}
+@media (max-width: 640px){
+  .mr-cardTitle{ text-align:left; }
+}
+
+.mr-note{
+  margin: 10px auto 0;
+  max-width: 1050px;
+  color: rgba(15,23,42,.72);
+  font-weight: 600;
+  font-size: 12.25px;
+  line-height: 1.45;
+  text-align:center;
+}
+
+/* ---------- Form grid ---------- */
+.mr-formGrid{
+  display:grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr)); /* ✅ prevents overflow */
+  gap: 10px;
+}
+.mr-f{
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.mr-f label{
+  font-size: 12px;
+  color: rgba(11,77,58,.90);
+  font-weight: 800;
+}
+.mr-input, .mr-select, .mr-textarea{
+  width:100%;
+  max-width: 100%;
+  display:block;
+  border: 1px solid rgba(15,23,42,.16);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 12.8px;
+  background: rgba(247,250,249,.75);
+  color: var(--ink);
+  outline: none;
+  transition: box-shadow .12s ease, border-color .12s ease, background .12s ease;
+  font-weight: 500;
+}
+.mr-input:focus, .mr-select:focus, .mr-textarea:focus{
+  border-color: rgba(11,77,58,.40);
+  box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+  background: #fff;
+}
+.mr-textarea{ min-height: 74px; resize: vertical; }
+
+/* ✅ Make date/type span nicer on tablets */
+@media (max-width: 1024px){
+  /* those inline grid-column:span 4 will still apply,
+     but we override to 6 to avoid tiny fields */
+  .mr-formGrid > .mr-f[style*="grid-column:span 4"]{ grid-column: span 6 !important; }
+}
+@media (max-width: 560px){
+  .mr-formGrid > .mr-f[style*="grid-column:span 4"]{ grid-column: span 12 !important; }
+}
+
+.mr-formActions{
+  grid-column: span 12;
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+/* Primary/secondary buttons (form) */
+.mr-btnPrimary{
+  border: 1px solid rgba(16,185,129,.35);
+  border-radius: 999px;
+  background: rgba(16,185,129,.14);
+  color: var(--accent);
+  font-weight: 800;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding: 10px 14px;
+  cursor:pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  user-select:none;
+  white-space: nowrap;
+}
+.mr-btnPrimary ion-icon{ font-size: 18px; }
+.mr-btnPrimary:hover{
+  transform: translateY(-1px);
+  box-shadow: var(--shadow2);
+  background: rgba(16,185,129,.18);
+}
+.mr-btnPrimary:active{ transform: translateY(0); }
+
+.mr-btnSoft{
+  border: 1px solid rgba(11,77,58,.22);
+  background: rgba(16,185,129,.10);
+  color: var(--accent);
+}
+
+/* ---------- Attendance list ---------- */
+.mr-attList{
+  max-height: clamp(190px, 24vh, 260px); /* ✅ adapts to short/tall screens */
+  overflow:auto;
+  border: 1px solid rgba(15,23,42,.14);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255,255,255,.94);
+}
+.mr-attList::-webkit-scrollbar{ width: 10px; height:10px; }
+.mr-attList::-webkit-scrollbar-track{ background:#f1f5f9; border-radius:9999px; }
+.mr-attList::-webkit-scrollbar-thumb{ background:rgba(5,150,105,.30); border-radius:9999px; }
+.mr-attList::-webkit-scrollbar-thumb:hover{ background:rgba(5,150,105,.45); }
+
+.mr-attItem{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-bottom: 1px dashed rgba(15,23,42,.10);
+  user-select: none;
+}
+.mr-attItem:last-child{ border-bottom: none; }
+.mr-attItem input{ transform: scale(1.02); }
+.mr-attName{
+  font-weight: 650;
+  color: rgba(15,23,42,.86);
+  line-height: 1.2;
+}
+
+/* ---------- Table wrapper ---------- */
+.mr-tableWrap{
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255,255,255,.96);
+  overflow: hidden;
+}
+.mr-tableScroll{
+  overflow-x: auto;
+  overflow-y: hidden;
+  width:100%;
+  -webkit-overflow-scrolling: touch;
+}
+.mr-tableScroll::-webkit-scrollbar{ height:10px; }
+.mr-tableScroll::-webkit-scrollbar-track{ background:#f1f5f9; border-radius:9999px; }
+.mr-tableScroll::-webkit-scrollbar-thumb{ background:rgba(5,150,105,.30); border-radius:9999px; }
+.mr-tableScroll::-webkit-scrollbar-thumb:hover{ background:rgba(5,150,105,.45); }
+
+.mr-table{
+  width:100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  min-width: 980px; /* desktop default */
+}
+
+/* ✅ Laptop/tablet widths: reduce required min-width so it fits more screens */
+@media (max-width: 1280px){
+  .mr-table{ min-width: 900px; }
+}
+@media (max-width: 1100px){
+  .mr-table{ min-width: 820px; }
+}
+@media (max-width: 980px){
+  .mr-table{ min-width: 760px; }
+}
+
+.mr-table th{
+  background: var(--soft);
+  color: rgba(15,23,42,.78);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 10px 10px;
+  text-align:left;
+  border-bottom: 1px solid var(--line2);
+  white-space: nowrap;
+  line-height: 1.25;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.mr-table td{
+  padding: 10px 10px;
+  border-top: 1px solid var(--line2);
+  vertical-align: top;
+  background: rgba(255,255,255,.96);
+  white-space: normal;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+}
+.mr-muted{ color: rgba(15,23,42,.62); font-weight: 600; font-size: 12px; }
+
+/* Small screens: card-mode (no horizontal scroll) */
+@media (max-width: 860px){
+  .mr-table{ min-width: 0; }
+  .mr-tableScroll{ overflow-x: hidden; }
+
+  .mr-table, .mr-table thead, .mr-table tbody, .mr-table th, .mr-table td, .mr-table tr{
+    display: block;
+    width: 100%;
+  }
+  .mr-table thead{ display: none; }
+
+  .mr-table tr{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    margin: 12px;
+    overflow: hidden;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
+  }
+  .mr-table td{
+    border-top: 1px solid rgba(15,23,42,.10);
+    padding: 10px 12px;
+  }
+  .mr-table td::before{
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(15,23,42,.70);
+    margin-bottom: 6px;
+  }
+}
+
+/* ✅ Better spacing on very short laptop screens */
+@media (max-height: 720px){
+  .mr-note{ margin-top: 8px; }
+  .mr-grid2{ gap: 12px; }
+  .mr-card{ padding: 12px; }
+  .mr-attList{ max-height: clamp(160px, 22vh, 220px); }
+}
+
+/* Footer */
+.mr-foot{
+  margin-top: 14px;
+  padding: 12px 16px;
+  text-align:center;
+  border: 1px solid var(--line);
+  border-radius: var(--r16);
+  background: rgba(255,255,255,.94);
+  color: rgba(15,23,42,.70);
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+</style>
+
+<div class="mr-wrap">
+  <div class="mr-shell">
+
+    <!-- Header -->
+    <div class="mr-head">
+      <a class="mr-btn mr-btnBack" href="{{ url_for('pg.pg_home') }}" aria-label="Back to PG Home">
+        <ion-icon name="arrow-back"></ion-icon>
+        <span data-i18n="mr_back">Back</span>
+      </a>
+
+      <div class="mr-titleWrap">
+        <h1 class="mr-title">
+          <span data-i18n="mr_title_prefix">Meeting &amp; Governance —</span>
+          {{ pg.pg_name or pg.name }}
+        </h1>
+        <div class="mr-sub" data-i18n="mr_sub">Meeting register • attendance • resolutions</div>
+      </div>
+
+      <div class="mr-actions" aria-label="Quick actions">
+        <span class="mr-btn" style="pointer-events:none; opacity:.92;">
+          <ion-icon name="clipboard-outline"></ion-icon>
+          <span data-i18n="mr_register">Register</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="mr-grid2">
+
+      <!-- Add Meeting -->
+      <div class="mr-card">
+        <div class="mr-cardTitle" data-i18n="mr_add_meeting">Add Meeting</div>
+
+        <form method="POST" class="mr-formGrid" style="margin-top:10px">
+          <div class="mr-f" style="grid-column:span 4">
+            <label data-i18n="mr_date">Date</label>
+            <input class="mr-input" name="meeting_date" type="date" required>
+          </div>
+
+          <div class="mr-f" style="grid-column:span 4">
+            <label data-i18n="mr_type">Type</label>
+            <select class="mr-select" name="meeting_type">
+              <option data-i18n="mr_type_general">General</option>
+              <option data-i18n="mr_type_executive">Executive</option>
+              <option data-i18n="mr_type_finance">Finance</option>
+              <option data-i18n="mr_type_business">Business</option>
+              <option data-i18n="mr_type_audit">Audit</option>
+            </select>
+          </div>
+
+          <div class="mr-f" style="grid-column:span 12">
+            <label data-i18n="mr_agenda">Agenda</label>
+            <textarea class="mr-textarea" name="agenda"></textarea>
+          </div>
+
+          <div class="mr-f" style="grid-column:span 12">
+            <label data-i18n="mr_attendance">Attendance</label>
+            <div class="mr-attList">
+              {% for m in members %}
+                <label class="mr-attItem">
+                  <input type="checkbox" name="attendance" value="{{ m._id }}">
+                  <span class="mr-attName">{{ m.name or m.member_name or 'Member' }}</span>
+                </label>
+              {% else %}
+                <div class="mr-muted" data-i18n="mr_no_members">No members found.</div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="mr-f" style="grid-column:span 12">
+            <label data-i18n="mr_resolutions">Resolutions / Decisions</label>
+            <textarea class="mr-textarea" name="resolution"></textarea>
+          </div>
+
+          <div class="mr-formActions">
+            <button class="mr-btnPrimary" type="submit">
+              <ion-icon name="save-outline"></ion-icon>
+              <span data-i18n="mr_save_meeting">Save Meeting</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="mr-note">
+          <span data-i18n="mr_tip">Tip: Select attendance members, then capture agenda &amp; resolutions for your records.</span>
+        </div>
+      </div>
+
+      <!-- Meeting History -->
+      <div class="mr-card">
+        <div class="mr-cardTitle" data-i18n="mr_history">Meeting History</div>
+
+        <div class="mr-tableWrap">
+          <div class="mr-tableScroll">
+            <table class="mr-table">
+              <thead>
+                <tr>
+                  <th data-i18n="mr_th_date">Date</th>
+                  <th data-i18n="mr_th_type">Type</th>
+                  <th data-i18n="mr_th_attendance">Attendance</th>
+                  <th data-i18n="mr_th_agenda">Agenda</th>
+                  <th data-i18n="mr_th_resolutions">Resolutions</th>
+                </tr>
+              </thead>
+
+              <tbody>
+              {% for m in meetings %}
+                <tr>
+                  <td data-label="Date">{{ m.meeting_date }}</td>
+                  <td data-label="Type">{{ m.meeting_type }}</td>
+                  <td data-label="Attendance">{{ m.attendance_count or (m.attendance|length) }}</td>
+                  <td data-label="Agenda">{{ m.agenda }}</td>
+                  <td data-label="Resolutions">{{ m.resolution }}</td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="5" class="mr-muted" style="padding:14px;" data-i18n="mr_no_meetings">No meetings saved yet.</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="mr-note" style="margin-top:10px;">
+          <span data-i18n="mr_history_note">👁️ History shows saved meetings with attendance count, agenda and resolutions.</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mr-foot" data-i18n="mr_footer">PGMIS • Meeting Register</div>
+
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ✅ PAGE I18N (SCOPED) — Meeting Register (MATCHES YOUR BASE.html)
+   - Reads language EXACTLY like base:
+     1) window.PGMIS.getLanguage()
+     2) sessionStorage['PGMIS_LANG_SESSION']
+     3) listens to 'pgmis:language-change' (base emits this)
+     4) observes #languageText for EN/BN changes (backup)
+   - No backend/route/data changes
+============================================================ */
+(function(){
+  const MR_I18N = {
+    en: {
+      mr_back: "Back",
+      mr_title_prefix: "Meeting & Governance —",
+      mr_sub: "Meeting register • attendance • resolutions",
+      mr_register: "Register",
+      mr_add_meeting: "Add Meeting",
+      mr_date: "Date",
+      mr_type: "Type",
+      mr_type_general: "General",
+      mr_type_executive: "Executive",
+      mr_type_finance: "Finance",
+      mr_type_business: "Business",
+      mr_type_audit: "Audit",
+      mr_agenda: "Agenda",
+      mr_attendance: "Attendance",
+      mr_no_members: "No members found.",
+      mr_resolutions: "Resolutions / Decisions",
+      mr_save_meeting: "Save Meeting",
+      mr_tip: "Tip: Select attendance members, then capture agenda & resolutions for your records.",
+      mr_history: "Meeting History",
+      mr_th_date: "Date",
+      mr_th_type: "Type",
+      mr_th_attendance: "Attendance",
+      mr_th_agenda: "Agenda",
+      mr_th_resolutions: "Resolutions",
+      mr_no_meetings: "No meetings saved yet.",
+      mr_history_note: "👁️ History shows saved meetings with attendance count, agenda and resolutions.",
+      mr_footer: "PGMIS • Meeting Register",
+      mr_doc_title: "Meeting Register"
+    },
+    bn: {
+      mr_back: "পেছনে",
+      mr_title_prefix: "সভা ও শাসনব্যবস্থা —",
+      mr_sub: "সভা রেজিস্টার • উপস্থিতি • সিদ্ধান্ত",
+      mr_register: "রেজিস্টার",
+      mr_add_meeting: "সভা যোগ করুন",
+      mr_date: "তারিখ",
+      mr_type: "ধরন",
+      mr_type_general: "সাধারণ",
+      mr_type_executive: "কার্যনির্বাহী",
+      mr_type_finance: "অর্থ",
+      mr_type_business: "ব্যবসা",
+      mr_type_audit: "অডিট",
+      mr_agenda: "এজেন্ডা",
+      mr_attendance: "উপস্থিতি",
+      mr_no_members: "কোনো সদস্য পাওয়া যায়নি।",
+      mr_resolutions: "সিদ্ধান্ত / প্রস্তাব",
+      mr_save_meeting: "সভা সংরক্ষণ করুন",
+      mr_tip: "টিপ: উপস্থিত সদস্য নির্বাচন করুন, তারপর নথির জন্য এজেন্ডা ও সিদ্ধান্ত লিখুন।",
+      mr_history: "সভা ইতিহাস",
+      mr_th_date: "তারিখ",
+      mr_th_type: "ধরন",
+      mr_th_attendance: "উপস্থিতি",
+      mr_th_agenda: "এজেন্ডা",
+      mr_th_resolutions: "সিদ্ধান্ত",
+      mr_no_meetings: "এখনও কোনো সভা সংরক্ষণ করা হয়নি।",
+      mr_history_note: "👁️ ইতিহাসে সংরক্ষিত সভা, উপস্থিতির সংখ্যা, এজেন্ডা ও সিদ্ধান্ত দেখা যায়।",
+      mr_footer: "PGMIS • সভা রেজিস্টার",
+      mr_doc_title: "সভা রেজিস্টার"
+    }
+  };
+
+  const BASE_LANG_KEY = "PGMIS_LANG_SESSION";
+
+  function normalizeLang(v){
+    if(!v) return "en";
+    const s = String(v).trim().toLowerCase();
+    if (s === "bn" || s === "bangla" || s === "বাংলা" || s === "bn-bd") return "bn";
+    if (s === "en" || s === "english" || s === "en-us" || s === "en-in") return "en";
+    if (s === "bn") return "bn";
+    if (s === "en") return "en";
+    return "en";
+  }
+
+  function readBaseLang(){
+    try{
+      if (window.PGMIS && typeof window.PGMIS.getLanguage === "function"){
+        const v = window.PGMIS.getLanguage();
+        if (v) return normalizeLang(v);
+      }
+    }catch(_e){}
+
+    try{
+      const ss = sessionStorage.getItem(BASE_LANG_KEY);
+      if (ss) return normalizeLang(ss);
+    }catch(_e){}
+
+    const lt = document.getElementById("languageText");
+    if (lt && lt.textContent){
+      const s = lt.textContent.trim().toUpperCase();
+      if (s === "BN") return "bn";
+      if (s === "EN") return "en";
+    }
+
+    return "en";
+  }
+
+  function applyMRLang(lang){
+    const dict = MR_I18N[lang] || MR_I18N.en;
+
+    document.querySelectorAll("[data-i18n]").forEach(el=>{
+      const key = el.getAttribute("data-i18n");
+      const val = (dict[key] != null) ? dict[key] : MR_I18N.en[key];
+      if (val == null) return;
+      el.textContent = val;
+    });
+
+    try{
+      const baseTitle = document.title || "";
+      const target = dict.mr_doc_title || MR_I18N.en.mr_doc_title;
+      document.title = baseTitle.includes(" - ")
+        ? (target + baseTitle.slice(baseTitle.indexOf(" - ")))
+        : target;
+    }catch(_e){}
+  }
+
+  let lastLang = null;
+  function syncNow(force){
+    const lang = readBaseLang();
+    if (force || lang !== lastLang){
+      lastLang = lang;
+      applyMRLang(lang);
+    }
+  }
+
+  syncNow(true);
+
+  window.addEventListener("pgmis:language-change", (e)=>{
+    const lang = normalizeLang(e?.detail?.lang || readBaseLang());
+    lastLang = null;
+    syncNow(true);
+  });
+
+  try{
+    const lt = document.getElementById("languageText");
+    if (lt){
+      const mo = new MutationObserver(()=> syncNow(false));
+      mo.observe(lt, { childList:true, characterData:true, subtree:true });
+    }
+  }catch(_e){}
+
+  document.addEventListener("click", ()=>{
+    setTimeout(()=>syncNow(false), 0);
+    setTimeout(()=>syncNow(false), 80);
+    setTimeout(()=>syncNow(false), 180);
+  }, true);
+
+  setInterval(()=>syncNow(false), 500);
+
+  window.__meetingRegisterSyncLang = syncNow;
+})();
+</script>
+
+{% endblock %}

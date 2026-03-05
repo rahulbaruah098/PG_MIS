@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Grants Report{% endblock %}
+{% block content %}
+<style>
+  .rp-wrap{max-width:1200px;margin:0 auto;padding:1.25rem 1rem 2rem;}
+  .rp-head{display:flex;flex-wrap:wrap;gap:.8rem;align-items:flex-end;justify-content:space-between;margin-bottom:1rem;}
+  .rp-title{font-size:1.25rem;font-weight:950;color:var(--ink,#0f172a);}
+  .rp-sub{color:rgba(15,23,42,.62);font-weight:700;font-size:.92rem}
+  .rp-card{background:rgba(255,255,255,.72);border:1px solid rgba(15,23,42,.10);border-radius:18px;box-shadow:0 14px 40px rgba(2,6,23,.06);padding:1rem;}
+  .rp-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.7rem}
+  .rp-grid .f{grid-column:span 2}
+  .rp-grid .f.wide{grid-column:span 3}
+  .rp-grid label{display:block;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:rgba(15,23,42,.55);margin-bottom:.25rem}
+  .rp-grid select,.rp-grid input{width:100%;padding:.6rem .7rem;border-radius:14px;border:1px solid rgba(15,23,42,.12);background:#fff;font-weight:700}
+  .rp-actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.9rem}
+  .btn{border:1px solid rgba(15,23,42,.14);background:#fff;border-radius:999px;padding:.55rem .9rem;font-weight:900}
+  .btn.primary{background:linear-gradient(90deg, rgba(16,185,129,.18), rgba(14,165,233,.16));border-color:rgba(16,185,129,.25)}
+  .btn.dl{background:linear-gradient(90deg, rgba(99,102,241,.16), rgba(14,165,233,.12));border-color:rgba(99,102,241,.25)}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:1rem}
+  th,td{padding:.7rem .7rem;border-bottom:1px solid rgba(15,23,42,.08);font-size:.92rem}
+  th{position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);font-weight:950;text-align:left}
+  .rp-kpis{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.8rem}
+  .kpi{padding:.7rem .9rem;border-radius:16px;border:1px solid rgba(15,23,42,.10);background:rgba(255,255,255,.65);font-weight:950}
+  @media (max-width:980px){.rp-grid{grid-template-columns:repeat(2,1fr)} .rp-grid .f,.rp-grid .f.wide{grid-column:span 1}}
+</style>
+
+<div class="rp-wrap">
+  <div class="rp-head">
+    <div>
+      <div class="rp-title">Grants & Utilization — Report</div>
+      <div class="rp-sub">Filter by State → District → Block → GP → Village → PG • Download CSV</div>
+    </div>
+    <div class="rp-kpis">
+      <div class="kpi">Rows: {{ total }}</div>
+      <div class="kpi">Received: ₹{{ total_received }}</div>
+      <div class="kpi">Utilized: ₹{{ total_utilized }}</div>
+      <div class="kpi">Balance: ₹{{ total_balance }}</div>
+    </div>
+  </div>
+
+  <div class="rp-card">
+    <form method="GET">
+      <div class="rp-grid">
+        <div class="f">
+          <label>Period</label>
+          <select name="period">
+            <option value="" {% if not period %}selected{% endif %}>All</option>
+            <option value="weekly" {% if period=='weekly' %}selected{% endif %}>Weekly</option>
+            <option value="monthly" {% if period=='monthly' %}selected{% endif %}>Monthly</option>
+            <option value="6monthly" {% if period=='6monthly' %}selected{% endif %}>6 Monthly</option>
+            <option value="yearly" {% if period=='yearly' %}selected{% endif %}>Yearly</option>
+          </select>
+        </div>
+
+        <div class="f">
+          <label>Download Summary By</label>
+          <select name="group_by">
+            <option value="">(Detail CSV)</option>
+            <option value="District" {% if group_by=='District' %}selected{% endif %}>District</option>
+            <option value="Block" {% if group_by=='Block' %}selected{% endif %}>Block</option>
+            <option value="Gram Panchayat" {% if group_by=='Gram Panchayat' %}selected{% endif %}>Gram Panchayat</option>
+            <option value="Village" {% if group_by=='Village' %}selected{% endif %}>Village</option>
+            <option value="PG" {% if group_by=='PG' %}selected{% endif %}>PG</option>
+          </select>
+        </div>
+
+        <div class="f">
+          <label>State</label>
+          <select name="state">
+            <option value="">All</option>
+            {% for s in states %}<option value="{{ s }}" {% if filters.State==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+          </select>
+        </div>
+
+        <div class="f">
+          <label>District</label>
+          <select name="district">
+            <option value="">All</option>
+            {% for s in districts %}<option value="{{ s }}" {% if filters.District==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+          </select>
+        </div>
+
+        <div class="f">
+          <label>Block</label>
+          <select name="block">
+            <option value="">All</option>
+            {% for s in blocks %}<option value="{{ s }}" {% if filters.Block==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+          </select>
+        </div>
+
+        <div class="f">
+          <label>Gram Panchayat</label>
+          <select name="gp">
+            <option value="">All</option>
+            {% for s in gps %}<option value="{{ s }}" {% if filters['Gram Panchayat']==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+          </select>
+        </div>
+
+        <div class="f">
+          <label>Village</label>
+          <select name="village">
+            <option value="">All</option>
+            {% for s in villages %}<option value="{{ s }}" {% if filters.Village==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+          </select>
+        </div>
+
+        <div class="f wide">
+          <label>PG Name</label>
+          <input type="text" name="pg_name" value="{{ filters.pg_name }}" placeholder="Search PG name…" />
+        </div>
+      </div>
+
+      <div class="rp-actions">
+        <button class="btn primary" type="submit">Apply Filters</button>
+        <a class="btn dl" href="{{ url_for('reports.export_grants_csv', state=filters.State, district=filters.District, block=filters.Block, gp=filters['Gram Panchayat'], village=filters.Village, pg_name=filters.pg_name, period=period) }}">Download CSV</a>
+        {% if group_by %}
+          <a class="btn dl" href="{{ url_for('reports.export_grants_csv', state=filters.State, district=filters.District, block=filters.Block, gp=filters['Gram Panchayat'], village=filters.Village, pg_name=filters.pg_name, period=period, mode='summary', group_by=group_by) }}">Download Summary CSV</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <div class="rp-card" style="margin-top:1rem;padding:0;overflow:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>PG</th>
+          <th>District</th>
+          <th>Block</th>
+          <th>Category</th>
+          <th>Source</th>
+          <th>Received</th>
+          <th>Utilized</th>
+          <th>Balance</th>
+          <th>UC Status</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if rows %}
+          {% for r in rows %}
+          <tr>
+            <td>{{ r['PG Name'] }}</td>
+            <td>{{ r['District'] }}</td>
+            <td>{{ r['Block'] }}</td>
+            <td>{{ r['Category'] }}</td>
+            <td>{{ r['Source'] }}</td>
+            <td>₹{{ r['Amount Received'] }}</td>
+            <td>₹{{ r['Utilized'] }}</td>
+            <td>₹{{ r['Balance'] }}</td>
+            <td>{{ r['UC Status'] }}</td>
+            <td>{{ r['Created At'] }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="10" style="padding:1.1rem;color:rgba(15,23,42,.62);font-weight:800">No grant records found for the selected filters.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

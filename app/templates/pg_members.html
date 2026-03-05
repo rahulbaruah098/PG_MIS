@@ -1,0 +1,1371 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% block head_extra %}
+  <!-- Ionicons (same look as Meeting Minutes Book) -->
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+{% endblock %}
+
+<style>
+/* ============================================================
+   PG MEMBER DETAILS — UI POLISH (SCOPED)
+   ✅ Toggle (Edit / View) + Read-only table section
+   ✅ Option 1 sync: Edit inputs mirror into View instantly (no refresh)
+   ✅ Save uses fetch enhancement (no backend change) + updates View row
+   ✅ View "Full Window" modal with Close icon (top-right)
+   ✅ FULL VIEW: now shows a proper table WITH headings (desktop)
+      + mobile-friendly “row cards” WITH labels (no messy garbage)
+   ✅ Fully responsive: web + tablet + mobile (keeps your <=860 card-mode)
+   ✅ NEW: Save confirmation toast under action button
+   ✅ NEW: "Already saved" toast if no changes since last save
+   ✅ FIX: Form is now VALID HTML (button always submits, fetch always runs)
+   ✅ FIX: "Already saved" will NOT show for empty/unfilled rows
+   ✅ NEW: On Save for unfilled rows → prompt to fill required inputs first
+   ✅ FIX NOW: Full View modal is TRUE full-screen + NO header/data overlap
+   ⚠️ NO data/logic changes (same fields, same POST endpoint)
+   Scope: .pmd-wrap
+============================================================ */
+
+.pmd-wrap{
+  width: 100%;
+  padding: clamp(12px, 2.2vw, 22px);
+
+  --ink:#0f172a;
+  --muted:#64748b;
+
+  --line: rgba(15,23,42,.18);
+  --line2: rgba(15,23,42,.12);
+
+  --paper:#ffffff;
+  --soft:#f7faf9;
+
+  --accent:#0b4d3a;
+  --accent2:#059669;
+
+  --danger:#dc2626;
+
+  --shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  --shadow2: 0 16px 22px -18px rgba(15,23,42,.25);
+
+  --r16: 16px;
+  --r14: 14px;
+  --r12: 12px;
+  --r10: 10px;
+  --r8: 8px;
+
+  color: var(--ink);
+}
+.pmd-wrap *{ box-sizing:border-box; }
+
+.pmd-shell{ width:100%; max-width:none; margin:0; }
+
+/* Header */
+.pmd-head{
+  padding: 14px 16px 12px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border: 1px solid var(--line);
+  border-radius: var(--r16);
+  box-shadow: var(--shadow);
+  position: relative;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Header responsive wrap */
+@media (max-width: 900px){
+  .pmd-head{
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 10px 10px;
+  }
+  .pmd-titleWrap{
+    order: 3;
+    width: 100%;
+    text-align: left;
+    padding: 0;
+  }
+  .pmd-toggle{
+    order: 2;
+    margin-left: auto;
+  }
+}
+
+.pmd-titleWrap{
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align:center;
+  padding: 0 8px;
+}
+.pmd-title{
+  margin:0;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: .2px;
+  white-space: nowrap;
+  overflow:hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.pmd-sub{
+  margin: 4px 0 0;
+  color: rgba(15,23,42,.70);
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.25;
+}
+@media (max-width: 560px){
+  .pmd-title{
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.15;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
+@media (max-width: 420px){
+  .pmd-title{ font-size: 15px; }
+}
+
+/* Buttons */
+.pmd-btn{
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(247,250,249,.8);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  user-select: none;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.pmd-btn:hover{
+  transform: translateY(-1px);
+  background: #fff;
+  box-shadow: var(--shadow2);
+}
+.pmd-btn:active{ transform: translateY(0); }
+.pmd-btn ion-icon{ font-size: 18px; }
+
+.pmd-btnBack{
+  border-color: rgba(11,77,58,.28);
+  background: rgba(16,185,129,.10);
+  color: var(--accent);
+}
+
+/* Toggle group */
+.pmd-toggle{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+.pmd-pill{
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(247,250,249,.8);
+  color: rgba(15,23,42,.82);
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+  user-select: none;
+}
+.pmd-pill:hover{
+  transform: translateY(-1px);
+  background:#fff;
+  box-shadow: var(--shadow2);
+}
+.pmd-pill.is-active{
+  border-color: rgba(16,185,129,.38);
+  background: rgba(16,185,129,.12);
+  color: var(--accent);
+}
+.pmd-pill ion-icon{ font-size: 18px; }
+
+/* Card */
+.pmd-card{
+  margin-top: 14px;
+  padding: 16px;
+  background: rgba(255,255,255,.92);
+  border: 1px solid var(--line);
+  border-radius: var(--r16);
+  box-shadow: var(--shadow);
+}
+
+.pmd-cardTop{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pmd-cardTitle{
+  margin: 4px 0 12px;
+  text-align:center;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: .2px;
+  flex: 1 1 auto;
+}
+.pmd-cardTitle.is-left{ text-align:left; margin:0; }
+@media (max-width: 640px){
+  .pmd-cardTitle{ text-align:left; }
+}
+
+.pmd-note{
+  margin: 10px auto 0;
+  max-width: 1050px;
+  color: rgba(15,23,42,.72);
+  font-weight: 600;
+  font-size: 12.25px;
+  line-height: 1.45;
+  text-align:center;
+}
+
+/* Alert */
+.pmd-alertWrap{
+  margin-top: 14px;
+  padding: 16px;
+  background: rgba(255,255,255,.92);
+  border: 1px solid var(--line);
+  border-radius: var(--r16);
+  box-shadow: var(--shadow);
+}
+.pmd-alertWrap .alert{
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(247,250,249,.80);
+}
+
+/* Table wrapper */
+.pmd-table-wrap{
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255,255,255,.96);
+  overflow: hidden;
+}
+.pmd-table-scroll{
+  overflow-x: auto;
+  overflow-y: hidden;
+  width:100%;
+  -webkit-overflow-scrolling: touch;
+}
+.pmd-table{
+  width:100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  min-width: 1180px;
+}
+.pmd-table th{
+  background: var(--soft);
+  color: rgba(15,23,42,.78);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 10px 10px;
+  text-align:left;
+  border-bottom: 1px solid var(--line2);
+  white-space: nowrap;
+  line-height: 1.25;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.pmd-table td{
+  padding: 10px 10px;
+  border-top: 1px solid var(--line2);
+  vertical-align: top;
+  background: rgba(255,255,255,.96);
+  white-space: normal;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+}
+
+.pmd-fixed{ white-space:nowrap; }
+.pmd-strong{ font-weight: 700; color: rgba(15,23,42,.88); }
+
+/* Column widths */
+.pmd-col-sl{ width: 86px; min-width: 86px; max-width: 86px; }
+.pmd-col-member{ min-width: 200px; }
+.pmd-col-spouse{ min-width: 210px; }
+.pmd-col-cat{ width: 110px; min-width:110px; }
+.pmd-col-shg{ min-width: 200px; }
+.pmd-col-contact{ min-width: 170px; }
+.pmd-col-id{ min-width: 190px; }
+.pmd-col-bank{ width: 150px; min-width:150px; }
+.pmd-col-branch{ width: 150px; min-width:150px; }
+.pmd-col-account{ min-width: 220px; }
+.pmd-col-fee{ width: 140px; min-width:140px; }
+.pmd-col-action{ width: 160px; min-width:160px; }
+
+/* Sl. No cell */
+.pmd-slno{
+  white-space: nowrap !important;
+  font-weight: 700 !important;
+}
+
+/* Inputs */
+.pmd-input{
+  width:100%;
+  display:block;
+  border: 1px solid rgba(15,23,42,.16);
+  border-radius: 12px;
+  padding: 9px 10px;
+  font-size: 12.5px;
+  background: rgba(247,250,249,.75);
+  color: var(--ink);
+  outline: none;
+  transition: box-shadow .12s ease, border-color .12s ease, background .12s ease;
+  font-weight: 600;
+}
+.pmd-input:focus{
+  border-color: rgba(11,77,58,.40);
+  box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+  background: #fff;
+}
+
+/* Save button */
+.pmd-actions{
+  display:flex;
+  justify-content:flex-end;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:8px;
+}
+.pmd-btn-save{
+  border: 1px solid rgba(16,185,129,.35);
+  border-radius: 999px;
+  background: rgba(16,185,129,.12);
+  color: var(--accent);
+  font-weight: 800;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding: 9px 12px;
+  cursor:pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  user-select:none;
+  white-space: nowrap;
+}
+.pmd-btn-save ion-icon{ font-size: 18px; }
+.pmd-btn-save:hover{
+  transform: translateY(-1px);
+  box-shadow: var(--shadow2);
+  background: rgba(16,185,129,.16);
+}
+.pmd-btn-save:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
+}
+
+/* Inline confirmation (under Action button) */
+.pmd-toast{
+  display:none;
+  width: min(260px, 100%);
+  border-radius: 12px;
+  padding: 9px 10px;
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(247,250,249,.92);
+  color: rgba(15,23,42,.82);
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1.25;
+  box-shadow: 0 14px 22px -18px rgba(15,23,42,.25);
+}
+.pmd-toast.is-show{ display:block; }
+.pmd-toast ion-icon{ font-size: 16px; vertical-align: -3px; margin-right: 6px; }
+.pmd-toast--ok{
+  border-color: rgba(16,185,129,.32);
+  background: rgba(16,185,129,.10);
+  color: rgba(11,77,58,.95);
+}
+.pmd-toast--info{
+  border-color: rgba(2,132,199,.25);
+  background: rgba(2,132,199,.10);
+  color: rgba(2,132,199,.95);
+}
+
+/* Saved highlight */
+.pmd-row-saved{ background: rgba(16,185,129,.06); }
+.pmd-row-saved td{ background: rgba(16,185,129,.06); }
+
+/* Footer */
+.pmd-foot{
+  margin-top: 14px;
+  padding: 12px 16px;
+  text-align:center;
+  border: 1px solid var(--line);
+  border-radius: var(--r16);
+  background: rgba(255,255,255,.94);
+  color: rgba(15,23,42,.70);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+}
+
+/* Small screens: card-mode (same behavior) */
+@media (max-width: 860px){
+  .pmd-table{ min-width: 0; }
+  .pmd-table-scroll{ overflow-x: hidden; }
+
+  .pmd-table, .pmd-table thead, .pmd-table tbody, .pmd-table th, .pmd-table td, .pmd-table tr{
+    display: block;
+    width: 100%;
+  }
+  .pmd-table thead{ display: none; }
+
+  .pmd-table tr{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    margin: 12px;
+    overflow: hidden;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
+  }
+  .pmd-table td{
+    border-top: 1px solid rgba(15,23,42,.10);
+    padding: 10px 12px;
+  }
+  .pmd-table td::before{
+    content: attr(data-label);
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    color: rgba(15,23,42,.70);
+    margin-bottom: 6px;
+  }
+  .pmd-actions{ justify-content: flex-start; align-items:flex-start; }
+  .pmd-toast{ width: 100%; }
+}
+
+/* Toggle sections */
+.pmd-section{ display:none; }
+.pmd-section.is-active{ display:block; }
+
+/* ============================================================
+   ✅ MODAL (FULL SCREEN) — FIX
+   - Your old modal card was capped to 1280px + 88vh.
+   - Now it truly takes full viewport: 100vw x 100vh.
+============================================================ */
+.pmd-modal{
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: none;
+  align-items: stretch;       /* ✅ full height */
+  justify-content: stretch;   /* ✅ full width */
+  padding: 0;                 /* ✅ remove gaps */
+  z-index: 9999;
+}
+.pmd-modal.is-open{ display:flex; }
+
+.pmd-modalCard{
+  width: 100vw;          /* ✅ full width */
+  height: 100vh;         /* ✅ full height */
+  max-height: none;      /* ✅ no cap */
+  background: rgba(255,255,255,.98);
+  border: 0;
+  border-radius: 0;      /* ✅ true full-screen */
+  box-shadow: 0 30px 70px -40px rgba(15,23,42,.55);
+  overflow: hidden;
+  display:flex;
+  flex-direction: column;
+}
+
+.pmd-modalHead{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border-bottom: 1px solid rgba(15,23,42,.12);
+}
+.pmd-modalTitle{
+  font-weight: 900;
+  font-size: 14px;
+  color: rgba(15,23,42,.88);
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+.pmd-x{
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(255,255,255,.9);
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+}
+.pmd-x:hover{ transform: translateY(-1px); box-shadow: var(--shadow2); background:#fff; }
+.pmd-x ion-icon{ font-size: 20px; color: rgba(15,23,42,.78); }
+
+/* ✅ Modal body now uses full remaining height cleanly */
+.pmd-modalBody{
+  padding: 14px;
+  flex: 1 1 auto;
+  min-height: 0;      /* important for flex scrolling */
+  overflow: hidden;   /* scroll happens inside pmd-fullScroll */
+}
+
+/* Mini button */
+.pmd-btnMini{
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(247,250,249,.8);
+  color: rgba(15,23,42,.82);
+  border-radius: 999px;
+  padding: 9px 12px;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  white-space: nowrap;
+}
+.pmd-btnMini:hover{ transform: translateY(-1px); background:#fff; box-shadow: var(--shadow2); }
+.pmd-btnMini ion-icon{ font-size: 18px; }
+
+/* ============================================================
+   ✅ FULL VIEW (MODAL) — FIX OVERLAP
+   - Overlap was happening because modal table was forced to
+     table-layout: fixed with no column widths.
+   - Now: auto layout + a sensible min-width + scroll if needed.
+============================================================ */
+.pmd-fullWrap{
+  height: 100%;
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 16px;
+  background: rgba(255,255,255,.96);
+  overflow: hidden;
+  box-shadow: 0 18px 34px -28px rgba(15,23,42,.35);
+}
+.pmd-fullScroll{
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ✅ Modal table: allow browser to size columns (no overlap) */
+#pmdViewModal .pmd-table{
+  min-width: 1200px;      /* prevents squishing => overlap */
+  width: 100%;
+  table-layout: auto;     /* ✅ important */
+}
+#pmdViewModal .pmd-table th,
+#pmdViewModal .pmd-table td{
+  font-size: 12.25px;
+}
+#pmdViewModal .pmd-table th{
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  white-space: nowrap;
+}
+#pmdViewModal .pmd-table td{
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Gentle zebra for desktop modal table */
+@media (min-width: 861px){
+  #pmdViewModal .pmd-table tbody tr:nth-child(even) td{
+    background: rgba(247,250,249,.8);
+  }
+  #pmdViewModal .pmd-table tbody tr:hover td{
+    background: rgba(16,185,129,.07);
+  }
+}
+
+/* Mobile modal: keep the same card-mode behavior, but nicer spacing */
+@media (max-width: 860px){
+  #pmdViewModal .pmd-modalBody{ padding: 10px; }
+  #pmdViewModal .pmd-table{ min-width: 0; } /* mobile uses card-mode anyway */
+  #pmdViewModal .pmd-table tr{ margin: 10px; }
+}
+
+/* A little tighter on very small phones */
+@media (max-width: 420px){
+  #pmdViewModal .pmd-table td{ padding: 9px 10px; }
+}
+</style>
+
+<div class="pmd-wrap">
+  <div class="pmd-shell">
+
+    <!-- Header -->
+    <div class="pmd-head">
+      <a class="pmd-btn pmd-btnBack" href="{{ url_for('pg.pg_registration', pg_id=pg._id) }}" aria-label="Back to PG Registration">
+        <ion-icon name="arrow-back"></ion-icon>
+        <span id="pmdBackText">Back</span>
+      </a>
+
+      <div class="pmd-titleWrap">
+        <h1 class="pmd-title" id="pmdPageTitle">II. PG Member Details</h1>
+        <div class="pmd-sub" id="pmdPageSub">
+          PG: <b>{{ pg.name }}</b> • Members loaded from PG Registration (master data)
+        </div>
+      </div>
+
+      <!-- Toggle buttons (Edit / View) -->
+      <div class="pmd-toggle" aria-label="View mode">
+        <button type="button" class="pmd-pill is-active" id="pmdBtnEdit">
+          <ion-icon name="create-outline"></ion-icon>
+          <span id="pmdEditText">Edit</span>
+        </button>
+        <button type="button" class="pmd-pill" id="pmdBtnView">
+          <ion-icon name="eye-outline"></ion-icon>
+          <span id="pmdViewText">View</span>
+        </button>
+      </div>
+    </div>
+
+    {% if not rows %}
+      <div class="pmd-alertWrap">
+        <div class="alert alert-warning mb-0" id="pmdNoMembersAlert">
+          No members found for this PG. First select members inside <b>PG Registration</b>, then come back here.
+        </div>
+      </div>
+    {% else %}
+
+      <!-- EDIT SECTION -->
+      <div class="pmd-card pmd-section is-active" id="pmdSectionEdit">
+        <div class="pmd-cardTitle" id="pmdEditTitle">PG Member Details (Edit)</div>
+
+        <div class="pmd-note" id="pmdEditNote">
+          ✅ Name/SHG/Category/Spouse are coming from master + PG Registration selection.
+          Fill bank/account/fee and save member-wise (no overwriting).
+        </div>
+
+        <div class="pmd-table-wrap">
+          <div class="pmd-table-scroll">
+            <table class="pmd-table" id="pmdEditTable">
+              <thead>
+                <tr>
+                  <th class="pmd-col-sl" id="thSl">Sl. No</th>
+                  <th class="pmd-col-member" id="thMember">Member</th>
+                  <th class="pmd-col-spouse" id="thSpouse">Father/Mother/Spouse Name</th>
+                  <th class="pmd-col-cat" id="thCategory">Category</th>
+                  <th class="pmd-col-shg" id="thShg">SHG</th>
+                  <th class="pmd-col-contact" id="thContact">Contact</th>
+                  <th class="pmd-col-id" id="thId">AADHAR/Voter/Govt ID</th>
+                  <th class="pmd-col-bank" id="thBank">Bank</th>
+                  <th class="pmd-col-branch" id="thBranch">Branch</th>
+                  <th class="pmd-col-account" id="thAccount">Account</th>
+                  <th class="pmd-col-fee" id="thFee">Fee</th>
+                  <th class="pmd-col-fee" id="thLakhpati">Lakhpati Didi?</th>
+                  <th class="pmd-col-action" style="text-align:right;" id="thAction">Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for r in rows %}
+                {% set fid = 'pmdForm_' ~ loop.index %}
+                <tr class="{% if r._just_saved %}pmd-row-saved{% endif %}" data-member-id="{{ r.member_id }}">
+                  <td class="pmd-fixed pmd-col-sl pmd-slno" style="text-align:center;" data-label="Sl. No">{{ '2.' ~ loop.index }}</td>
+
+                  <td class="pmd-col-member" data-label="Member">
+                    <div class="pmd-strong">{{ r.name or '-' }}</div>
+                  </td>
+
+                  <td class="pmd-col-spouse" data-label="Father/Mother/Spouse Name">
+                    <div class="pmd">{{ r.spouse_name or '-' }}</div>
+                  </td>
+
+                  <td class="pmd-col-cat" data-label="Category">
+                    <div class="pmd-strong">{{ r.category or '-' }}</div>
+                  </td>
+
+                  <td class="pmd-col-shg" data-label="SHG">
+                    <div class="pmd-strong">{{ r.shg_name or '-' }}</div>
+                  </td>
+
+                  <!-- ✅ Inputs are now linked to form via form="..." (VALID HTML) -->
+                  <td class="pmd-col-contact" style="vertical-align:top;" data-label="Contact">
+                    <input class="pmd-input" name="contact" value="{{ r.contact or '' }}" placeholder="Contact" data-field="contact" form="{{ fid }}">
+                  </td>
+
+                  <td class="pmd-col-id" style="vertical-align:top;" data-label="AADHAR/Voter/Govt ID">
+                    <input class="pmd-input" name="photo_id_number" value="{{ r.photo_id_number or '' }}" placeholder="ID No" data-field="photo_id_number" form="{{ fid }}">
+                  </td>
+
+                  <td class="pmd-col-bank" style="vertical-align:top;" data-label="Bank">
+                    <input class="pmd-input" name="bank_name" value="{{ r.bank_name or '' }}" placeholder="Bank" data-field="bank_name" form="{{ fid }}">
+                  </td>
+
+                  <td class="pmd-col-branch" style="vertical-align:top;" data-label="Branch">
+                    <input class="pmd-input" name="branch" value="{{ r.branch or '' }}" placeholder="Branch" data-field="branch" form="{{ fid }}">
+                  </td>
+
+                  <td class="pmd-col-account" style="vertical-align:top;" data-label="Account">
+                    <input class="pmd-input" name="account_number" value="{{ r.account_number or '' }}" placeholder="Account" data-field="account_number" form="{{ fid }}">
+                  </td>
+
+                  <td class="pmd-col-fee" style="vertical-align:top;" data-label="Fee">
+                    <input class="pmd-input" name="membership_fee_paid" value="{{ r.membership_fee_paid or '' }}" placeholder="0" inputmode="decimal" data-field="membership_fee_paid" form="{{ fid }}">
+                  </td>
+
+                  <td class="pmd-col-fee" style="vertical-align:top;" data-label="Lakhpati Didi?">
+                    <!-- Yes/No selector (requested) -->
+                    <select class="pmd-input" data-field="lakh_pati_didi" name="lakh_pati_didi" form="{{ fid }}" style="font-weight:800;">
+                      <option value="no" {% if not r.lakh_pati_didi %}selected{% endif %}>No</option>
+                      <option value="yes" {% if r.lakh_pati_didi %}selected{% endif %}>Yes</option>
+                    </select>
+                  </td>
+
+                  <td class="pmd-col-action" style="vertical-align:top; text-align:right;" data-label="Action">
+                    <!-- ✅ The ONLY form lives inside Action cell (valid) -->
+                    <form method="POST" class="m-0 p-0 pmd-editForm" id="{{ fid }}">
+                      <input type="hidden" name="member_id" value="{{ r.member_id }}">
+                      <div class="pmd-actions">
+                        <button class="pmd-btn-save" type="submit">
+                          <ion-icon name="save"></ion-icon>
+                          <span class="pmdSaveText">Save</span>
+                        </button>
+                        <div class="pmd-toast" aria-live="polite"></div>
+                      </div>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW SECTION -->
+      <div class="pmd-card pmd-section" id="pmdSectionView">
+        <div class="pmd-cardTop">
+          <div class="pmd-cardTitle is-left" id="pmdViewTitle">PG Member Details (View)</div>
+          <button type="button" class="pmd-btnMini" id="pmdOpenFull">
+            <ion-icon name="expand-outline"></ion-icon>
+            <span id="pmdFullViewBtnText">Full View</span>
+          </button>
+        </div>
+
+        <div class="pmd-note" style="margin-top:10px;" id="pmdViewNote">
+          👁️ This section shows the current values. It updates instantly while you edit (no refresh).
+        </div>
+
+        <div class="pmd-table-wrap">
+          <div class="pmd-table-scroll">
+            <table class="pmd-table" id="pmdViewTable">
+              <thead>
+                <tr>
+                  <th class="pmd-col-sl" id="thSlV">Sl. No</th>
+                  <th class="pmd-col-member" id="thMemberV">Member</th>
+                  <th class="pmd-col-spouse" id="thSpouseV">Father/Mother/Spouse Name</th>
+                  <th class="pmd-col-cat" id="thCategoryV">Category</th>
+                  <th class="pmd-col-shg" id="thShgV">SHG</th>
+                  <th class="pmd-col-contact" id="thContactV">Contact</th>
+                  <th class="pmd-col-id" id="thIdV">AADHAR/Voter/Govt ID</th>
+                  <th class="pmd-col-bank" id="thBankV">Bank</th>
+                  <th class="pmd-col-branch" id="thBranchV">Branch</th>
+                  <th class="pmd-col-account" id="thAccountV">Account</th>
+                  <th class="pmd-col-fee" id="thFeeV">Fee</th>
+                  <th class="pmd-col-fee" id="thLakhpatiV">Lakhpati Didi?</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for r in rows %}
+                <tr data-member-id="{{ r.member_id }}">
+                  <td class="pmd-fixed pmd-col-sl pmd-slno" style="text-align:center;" data-label="Sl. No">{{ '2.' ~ loop.index }}</td>
+                  <td class="pmd-col-member" data-label="Member"><div class="pmd-strong">{{ r.name or '-' }}</div></td>
+                  <td class="pmd-col-spouse" data-label="Father/Mother/Spouse Name"><div class="pmd">{{ r.spouse_name or '-' }}</div></td>
+                  <td class="pmd-col-cat" data-label="Category"><div class="pmd-strong">{{ r.category or '-' }}</div></td>
+                  <td class="pmd-col-shg" data-label="SHG"><div class="pmd-strong">{{ r.shg_name or '-' }}</div></td>
+                  <td class="pmd-col-contact" data-label="Contact"><div class="pmd"><span data-field="contact">{{ r.contact or '-' }}</span></div></td>
+                  <td class="pmd-col-id" data-label="AADHAR/Voter/Govt ID"><div class="pmd"><span data-field="photo_id_number">{{ r.photo_id_number or '-' }}</span></div></td>
+                  <td class="pmd-col-bank" data-label="Bank"><div class="pmd"><span data-field="bank_name">{{ r.bank_name or '-' }}</span></div></td>
+                  <td class="pmd-col-branch" data-label="Branch"><div class="pmd"><span data-field="branch">{{ r.branch or '-' }}</span></div></td>
+                  <td class="pmd-col-account" data-label="Account"><div class="pmd"><span data-field="account_number">{{ r.account_number or '-' }}</span></div></td>
+                  <td class="pmd-col-fee" data-label="Fee"><div class="pmd"><span data-field="membership_fee_paid">{{ r.membership_fee_paid or '-' }}</span></div></td>
+                  <td class="pmd-col-fee" data-label="Lakhpati Didi?"><div class="pmd"><span data-field="lakh_pati_didi">{{ 'Yes' if r.lakh_pati_didi else 'No' }}</span></div></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    {% endif %}
+
+    <div class="pmd-foot" id="pmdFooterText">PGMIS • PG Member Details</div>
+
+  </div>
+</div>
+
+<!-- Full Window Modal (View) -->
+<div class="pmd-modal" id="pmdViewModal" aria-hidden="true">
+  <div class="pmd-modalCard" role="dialog" aria-modal="true" aria-label="Full View">
+    <div class="pmd-modalHead">
+      <div class="pmd-modalTitle" id="pmdModalTitle">
+        <ion-icon name="eye-outline"></ion-icon>
+        Full View — PG Member Details
+      </div>
+      <button class="pmd-x" type="button" id="pmdCloseFull" aria-label="Close">
+        <ion-icon name="close-outline"></ion-icon>
+      </button>
+    </div>
+    <div class="pmd-modalBody" id="pmdModalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   NEW: Language Translation Hook (NO UI/logic changes)
+   - Works with base.html language system:
+     1) calls window.updatePageLanguage(lang) if base calls it
+     2) also listens to pgmis:language-change event
+   ============================================================ */
+(function(){
+  const PMD_I18N = {
+    en: {
+      back: "Back",
+      pageTitle: "II. PG Member Details",
+      subPrefix: "PG:",
+      subSuffix: "• Members loaded from PG Registration (master data)",
+      edit: "Edit",
+      view: "View",
+      noMembers: 'No members found for this PG. First select members inside <b>PG Registration</b>, then come back here.',
+      editTitle: "PG Member Details (Edit)",
+      editNote: "✅ Name/SHG/Category/Spouse are coming from master + PG Registration selection. Fill bank/account/fee and save member-wise (no overwriting).",
+      viewTitle: "PG Member Details (View)",
+      fullViewBtn: "Full View",
+      viewNote: "👁️ This section shows the current values. It updates instantly while you edit (no refresh).",
+      footer: "PGMIS • PG Member Details",
+      modalTitle: "Full View — PG Member Details",
+      // table headers
+      thSl: "Sl. No",
+      thMember: "Member",
+      thSpouse: "Father/Mother/Spouse Name",
+      thCategory: "Category",
+      thShg: "SHG",
+      thContact: "Contact",
+      thId: "AADHAR/Voter/Govt ID",
+      thBank: "Bank",
+      thBranch: "Branch",
+      thAccount: "Account",
+      thFee: "Fee",
+      thAction: "Action",
+      // placeholders (inputs)
+      phContact: "Contact",
+      phId: "ID No",
+      phBank: "Bank",
+      phBranch: "Branch",
+      phAccount: "Account",
+      phFee: "0"
+    },
+    bn: {
+      back: "পেছনে",
+      pageTitle: "II. পিজি সদস্য বিবরণ",
+      subPrefix: "পিজি:",
+      subSuffix: "• পিজি রেজিস্ট্রেশন থেকে সদস্য লোড হয়েছে (মাস্টার ডাটা)",
+      edit: "এডিট",
+      view: "ভিউ",
+      noMembers: 'এই পিজিতে কোনো সদস্য পাওয়া যায়নি। আগে <b>PG Registration</b> এ সদস্য নির্বাচন করুন, তারপর এখানে আসুন।',
+      editTitle: "পিজি সদস্য বিবরণ (এডিট)",
+      editNote: "✅ নাম/SHG/ক্যাটাগরি/স্বামী/পিতা/মাতা মাস্টার + পিজি রেজিস্ট্রেশন নির্বাচন থেকে এসেছে। ব্যাংক/অ্যাকাউন্ট/ফি পূরণ করে সদস্য অনুযায়ী সেভ করুন (ওভাররাইট হবে না)।",
+      viewTitle: "পিজি সদস্য বিবরণ (ভিউ)",
+      fullViewBtn: "ফুল ভিউ",
+      viewNote: "👁️ এই অংশে বর্তমান ভ্যালু দেখায়। আপনি এডিট করলে সাথে সাথে আপডেট হয় (রিফ্রেশ ছাড়া)।",
+      footer: "PGMIS • পিজি সদস্য বিবরণ",
+      modalTitle: "ফুল ভিউ — পিজি সদস্য বিবরণ",
+      // table headers
+      thSl: "ক্রমিক নং",
+      thMember: "সদস্য",
+      thSpouse: "পিতা/মাতা/স্বামী/স্ত্রীর নাম",
+      thCategory: "ক্যাটাগরি",
+      thShg: "SHG",
+      thContact: "যোগাযোগ",
+      thId: "আধার/ভোটার/সরকারি আইডি",
+      thBank: "ব্যাংক",
+      thBranch: "শাখা",
+      thAccount: "অ্যাকাউন্ট",
+      thFee: "ফি",
+      thAction: "অ্যাকশন",
+      // placeholders (inputs)
+      phContact: "যোগাযোগ",
+      phId: "আইডি নং",
+      phBank: "ব্যাংক",
+      phBranch: "শাখা",
+      phAccount: "অ্যাকাউন্ট",
+      phFee: "০"
+    }
+  };
+
+  function getLang(){
+    try{
+      if(window.PGMIS && typeof window.PGMIS.getLanguage === 'function'){
+        const l = window.PGMIS.getLanguage();
+        if(l === 'en' || l === 'bn') return l;
+      }
+    }catch(_){}
+    const s = sessionStorage.getItem('PGMIS_LANG_SESSION');
+    return (s === 'bn') ? 'bn' : 'en';
+  }
+
+  function applyPMDLanguage(lang){
+    const L = (lang === 'bn') ? 'bn' : 'en';
+    const t = PMD_I18N[L];
+
+    const back = document.getElementById('pmdBackText');
+    if(back) back.textContent = t.back;
+
+    const pt = document.getElementById('pmdPageTitle');
+    if(pt) pt.textContent = t.pageTitle;
+
+    const sub = document.getElementById('pmdPageSub');
+    if(sub){
+      sub.innerHTML = `${t.subPrefix} <b>{{ pg.name }}</b> ${t.subSuffix}`;
+    }
+
+    const eTxt = document.getElementById('pmdEditText');
+    if(eTxt) eTxt.textContent = t.edit;
+
+    const vTxt = document.getElementById('pmdViewText');
+    if(vTxt) vTxt.textContent = t.view;
+
+    const noAlert = document.getElementById('pmdNoMembersAlert');
+    if(noAlert) noAlert.innerHTML = t.noMembers;
+
+    const et = document.getElementById('pmdEditTitle');
+    if(et) et.textContent = t.editTitle;
+
+    const enote = document.getElementById('pmdEditNote');
+    if(enote) enote.textContent = t.editNote;
+
+    const vt = document.getElementById('pmdViewTitle');
+    if(vt) vt.textContent = t.viewTitle;
+
+    const fv = document.getElementById('pmdFullViewBtnText');
+    if(fv) fv.textContent = t.fullViewBtn;
+
+    const vnote = document.getElementById('pmdViewNote');
+    if(vnote) vnote.textContent = t.viewNote;
+
+    const foot = document.getElementById('pmdFooterText');
+    if(foot) foot.textContent = t.footer;
+
+    const mtitle = document.getElementById('pmdModalTitle');
+    if(mtitle){
+      mtitle.innerHTML = `<ion-icon name="eye-outline"></ion-icon> ${t.modalTitle}`;
+    }
+
+    // Headers (Edit)
+    const thMap = [
+      ['thSl', t.thSl], ['thMember', t.thMember], ['thSpouse', t.thSpouse], ['thCategory', t.thCategory],
+      ['thShg', t.thShg], ['thContact', t.thContact], ['thId', t.thId], ['thBank', t.thBank],
+      ['thBranch', t.thBranch], ['thAccount', t.thAccount], ['thFee', t.thFee], ['thAction', t.thAction]
+    ];
+    thMap.forEach(([id,val]) => { const el = document.getElementById(id); if(el) el.textContent = val; });
+
+    // Headers (View)
+    const thMapV = [
+      ['thSlV', t.thSl], ['thMemberV', t.thMember], ['thSpouseV', t.thSpouse], ['thCategoryV', t.thCategory],
+      ['thShgV', t.thShg], ['thContactV', t.thContact], ['thIdV', t.thId], ['thBankV', t.thBank],
+      ['thBranchV', t.thBranch], ['thAccountV', t.thAccount], ['thFeeV', t.thFee]
+    ];
+    thMapV.forEach(([id,val]) => { const el = document.getElementById(id); if(el) el.textContent = val; });
+
+    // Save button text (all rows)
+    document.querySelectorAll('.pmdSaveText').forEach(el => { el.textContent = (L === 'bn') ? 'সেভ' : 'Save'; });
+
+    // Placeholders (inputs)
+    document.querySelectorAll('input.pmd-input[name="contact"]').forEach(i => i.setAttribute('placeholder', t.phContact));
+    document.querySelectorAll('input.pmd-input[name="photo_id_number"]').forEach(i => i.setAttribute('placeholder', t.phId));
+    document.querySelectorAll('input.pmd-input[name="bank_name"]').forEach(i => i.setAttribute('placeholder', t.phBank));
+    document.querySelectorAll('input.pmd-input[name="branch"]').forEach(i => i.setAttribute('placeholder', t.phBranch));
+    document.querySelectorAll('input.pmd-input[name="account_number"]').forEach(i => i.setAttribute('placeholder', t.phAccount));
+    document.querySelectorAll('input.pmd-input[name="membership_fee_paid"]').forEach(i => i.setAttribute('placeholder', t.phFee));
+
+    // data-label for mobile card mode (Edit table + View table)
+    const setDataLabels = (tableId) => {
+      const table = document.getElementById(tableId);
+      if(!table) return;
+      const headLabels = [
+        t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg, t.thContact, t.thId, t.thBank, t.thBranch, t.thAccount, t.thFee
+      ];
+      const isEdit = tableId === 'pmdEditTable';
+      const labels = isEdit ? headLabels.concat([t.thAction]) : headLabels;
+
+      table.querySelectorAll('tbody tr').forEach(tr => {
+        const tds = Array.from(tr.children);
+        tds.forEach((td, idx) => {
+          if(idx < labels.length) td.setAttribute('data-label', labels[idx]);
+        });
+      });
+    };
+    setDataLabels('pmdEditTable');
+    setDataLabels('pmdViewTable');
+
+    // ✅ Used by Full View modal builder (so it prints headings properly)
+    window.__PMD_MODAL_LABELS__ = [t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg, t.thContact, t.thId, t.thBank, t.thBranch, t.thAccount, t.thFee];
+  }
+
+  // base.html compatibility
+  window.updatePageLanguage = function(lang){
+    applyPMDLanguage(lang);
+  };
+
+  window.addEventListener('pgmis:language-change', (e)=>{
+    const lang = (e && e.detail && e.detail.lang) ? e.detail.lang : getLang();
+    applyPMDLanguage(lang);
+  });
+
+  // initial apply
+  applyPMDLanguage(getLang());
+})();
+</script>
+
+<script>
+/* Toggle between Edit and View */
+(function(){
+  const btnEdit = document.getElementById('pmdBtnEdit');
+  const btnView = document.getElementById('pmdBtnView');
+  const secEdit = document.getElementById('pmdSectionEdit');
+  const secView = document.getElementById('pmdSectionView');
+  if(!btnEdit || !btnView || !secEdit || !secView) return;
+
+  function setMode(mode){
+    const isEdit = mode === 'edit';
+    secEdit.classList.toggle('is-active', isEdit);
+    secView.classList.toggle('is-active', !isEdit);
+    btnEdit.classList.toggle('is-active', isEdit);
+    btnView.classList.toggle('is-active', !isEdit);
+  }
+  btnEdit.addEventListener('click', () => setMode('edit'));
+  btnView.addEventListener('click', () => setMode('view'));
+})();
+
+/* Instant View sync + Save confirmations (UPDATED to validate before "Already saved") */
+(function(){
+  const viewTable = document.getElementById('pmdViewTable');
+  const editTable = document.getElementById('pmdEditTable');
+  if(!viewTable || !editTable) return;
+
+  function getViewRowByMemberId(memberId){
+    if(!memberId) return null;
+    return viewTable.querySelector('tbody tr[data-member-id="'+ CSS.escape(memberId) +'"]');
+  }
+
+  function setViewField(memberId, field, value){
+    const vr = getViewRowByMemberId(memberId);
+    if(!vr) return;
+    const el = vr.querySelector('[data-field="'+ CSS.escape(field) +'"]');
+    if(!el) return;
+    let v;
+    if(field === 'lakh_pati_didi'){
+      const raw = String(value || '').trim().toLowerCase();
+      const yes = (raw === '1' || raw === 'true' || raw === 'on' || raw === 'yes');
+      v = yes ? 'Yes' : 'No';
+    }else{
+      v = (value === null || value === undefined || String(value).trim() === '') ? '-' : String(value);
+    }
+    el.textContent = v;
+  }
+
+  function markSaved(memberId){
+    const er = editTable.querySelector('tbody tr[data-member-id="'+ CSS.escape(memberId) +'"]');
+    const vr = getViewRowByMemberId(memberId);
+    if(er) er.classList.add('pmd-row-saved');
+    if(vr) vr.classList.add('pmd-row-saved');
+    setTimeout(() => {
+      if(er) er.classList.remove('pmd-row-saved');
+      if(vr) vr.classList.remove('pmd-row-saved');
+    }, 1400);
+  }
+
+  function getToastForForm(form){
+    return form.querySelector('.pmd-toast');
+  }
+
+  function showToast(form, kind, html){
+    const toast = getToastForForm(form);
+    if(!toast) return;
+    toast.classList.remove('pmd-toast--ok','pmd-toast--info','is-show');
+    toast.innerHTML = html;
+
+    if(kind === 'ok') toast.classList.add('pmd-toast--ok');
+    else toast.classList.add('pmd-toast--info');
+
+    toast.classList.add('is-show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toast.classList.remove('is-show'), 2000);
+  }
+
+  function getInputsForForm(form){
+    const id = form.id;
+    return Array.from(document.querySelectorAll('input[data-field][form="'+ CSS.escape(id) +'"]'));
+  }
+
+  function snapshotObject(form){
+    const obj = {};
+    getInputsForForm(form).forEach(inp => {
+      const key = inp.getAttribute('data-field');
+      if(!key) return;
+      if((inp.type || '').toLowerCase() === 'checkbox'){
+        obj[key] = inp.checked ? '1' : '';
+      }else{
+        obj[key] = (inp.value || '').trim();
+      }
+    });
+    return obj;
+  }
+
+  function snapshot(form){
+    return JSON.stringify(snapshotObject(form));
+  }
+
+  function hasAnyValue(obj){
+    try{
+      return Object.values(obj || {}).some(v => String(v || '').trim() !== '');
+    }catch(e){
+      return false;
+    }
+  }
+
+  // ✅ Required fields for saving a row (client-side prompt only; no backend changes)
+  const REQUIRED_FIELDS = [
+    { key: 'contact', label: 'Contact' },
+    { key: 'photo_id_number', label: 'AADHAR/Voter/Govt ID' },
+    { key: 'bank_name', label: 'Bank' },
+    { key: 'branch', label: 'Branch' },
+    { key: 'account_number', label: 'Account' },
+    { key: 'membership_fee_paid', label: 'Fee' }
+  ];
+
+  function validateRequired(form){
+    const obj = snapshotObject(form);
+
+    const missing = [];
+    REQUIRED_FIELDS.forEach(f => {
+      const v = (obj[f.key] || '').trim();
+      if(!v) missing.push(f.label);
+    });
+
+    const fee = (obj.membership_fee_paid || '').trim();
+    if(fee){
+      const n = Number(fee);
+      if(Number.isNaN(n)){
+        return { ok:false, message: 'Fee must be a number.' };
+      }
+    }
+
+    if(missing.length){
+      return { ok:false, message: 'Please fill: ' + missing.join(', ') };
+    }
+    return { ok:true, message: '' };
+  }
+
+  editTable.querySelectorAll('form.pmd-editForm').forEach(form => {
+    const midInput = form.querySelector('input[name="member_id"]');
+    const memberId = midInput ? midInput.value : null;
+
+    form.dataset.savedSnapshot = snapshot(form);
+    form.dataset.dirty = "0";
+
+    function markDirty(){ form.dataset.dirty = "1"; }
+
+    getInputsForForm(form).forEach(inp => {
+      inp.addEventListener('input', () => {
+        setViewField(memberId, inp.getAttribute('data-field'), inp.value);
+        markDirty();
+      });
+      inp.addEventListener('change', () => {
+        setViewField(memberId, inp.getAttribute('data-field'), inp.value);
+        markDirty();
+      });
+    });
+
+    form.addEventListener('submit', async (e) => {
+      if(!window.fetch) return;
+
+      const v = validateRequired(form);
+      if(!v.ok){
+        e.preventDefault();
+        showToast(
+          form,
+          'info',
+          `<ion-icon name="alert-circle-outline"></ion-icon>${v.message}`
+        );
+        return;
+      }
+
+      const nowSnap = snapshot(form);
+      const wasSaved = form.dataset.savedSnapshot || "";
+      const dirty = form.dataset.dirty === "1";
+
+      let nowObj = null, savedObj = null;
+      try{ nowObj = JSON.parse(nowSnap); }catch(_){ nowObj = {}; }
+      try{ savedObj = JSON.parse(wasSaved); }catch(_){ savedObj = {}; }
+
+      const nowHas = hasAnyValue(nowObj);
+      const savedHas = hasAnyValue(savedObj);
+
+      if(!dirty && nowSnap === wasSaved && nowHas && savedHas){
+        e.preventDefault();
+        showToast(form,'info',`<ion-icon name="information-circle-outline"></ion-icon>Already saved`);
+        return;
+      }
+
+      e.preventDefault();
+
+      const btn = form.querySelector('button[type="submit"]');
+      if(btn) btn.disabled = true;
+
+      try{
+        const fd = new FormData(form);
+        getInputsForForm(form).forEach(inp => fd.set(inp.name, inp.value));
+
+        const res = await fetch(window.location.href, {
+          method: 'POST',
+          body: fd,
+          headers: { 'X-Requested-With': 'fetch' },
+          credentials: 'same-origin'
+        });
+
+        if(!res || !res.ok){
+          if(btn) btn.disabled = false;
+          form.submit();
+          return;
+        }
+
+        getInputsForForm(form).forEach(inp => setViewField(memberId, inp.getAttribute('data-field'), inp.value));
+        markSaved(memberId);
+
+        form.dataset.savedSnapshot = snapshot(form);
+        form.dataset.dirty = "0";
+
+        showToast(form,'ok',`<ion-icon name="checkmark-circle-outline"></ion-icon>Saved successfully`);
+
+        if(btn) btn.disabled = false;
+      }catch(err){
+        if(btn) btn.disabled = false;
+        form.submit();
+      }
+    }, { capture: true });
+  });
+})();
+
+/* ============================================================
+   ✅ Full View Modal (FIXED)
+============================================================ */
+(function(){
+  const modal = document.getElementById('pmdViewModal');
+  const body = document.getElementById('pmdModalBody');
+  const openBtn = document.getElementById('pmdOpenFull');
+  const closeBtn = document.getElementById('pmdCloseFull');
+  const viewTable = document.getElementById('pmdViewTable');
+  if(!modal || !body || !openBtn || !closeBtn || !viewTable) return;
+
+  function getLabels(){
+    return (window.__PMD_MODAL_LABELS__ && Array.isArray(window.__PMD_MODAL_LABELS__) && window.__PMD_MODAL_LABELS__.length === 11)
+      ? window.__PMD_MODAL_LABELS__
+      : ["Sl. No","Member","Father/Mother/Spouse Name","Category","SHG","Contact","AADHAR/Voter/Govt ID","Bank","Branch","Account","Fee"];
+  }
+
+  function extractRowCells(tr){
+    const tds = Array.from(tr.children);
+    return tds.map(td => (td.innerText || td.textContent || '').replace(/\s+/g,' ').trim());
+  }
+
+  function buildFullTable(){
+    const LABELS = getLabels();
+    const rows = Array.from(viewTable.querySelectorAll('tbody tr'));
+
+    const wrap = document.createElement('div');
+    wrap.className = 'pmd-fullWrap';
+
+    const scroll = document.createElement('div');
+    scroll.className = 'pmd-fullScroll';
+
+    const table = document.createElement('table');
+    table.className = 'pmd-table';
+
+    const thead = document.createElement('thead');
+    const hr = document.createElement('tr');
+    LABELS.forEach(lab => {
+      const th = document.createElement('th');
+      th.textContent = lab;
+      hr.appendChild(th);
+    });
+    thead.appendChild(hr);
+
+    const tbody = document.createElement('tbody');
+    rows.forEach(tr => {
+      const vals = extractRowCells(tr);
+      const r = document.createElement('tr');
+
+      LABELS.forEach((lab, i) => {
+        const td = document.createElement('td');
+        td.setAttribute('data-label', lab);
+        td.textContent = (vals[i] && vals[i].length) ? vals[i] : '-';
+        r.appendChild(td);
+      });
+
+      tbody.appendChild(r);
+    });
+
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    scroll.appendChild(table);
+    wrap.appendChild(scroll);
+
+    return wrap;
+  }
+
+  function open(){
+    body.innerHTML = '';
+    body.appendChild(buildFullTable());
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden','false');
+    document.documentElement.style.overflow = 'hidden';
+  }
+
+  function close(){
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden','true');
+    document.documentElement.style.overflow = '';
+  }
+
+  openBtn.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if(e.target === modal) close(); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && modal.classList.contains('is-open')) close(); });
+})();
+</script>
+
+{% endblock %}

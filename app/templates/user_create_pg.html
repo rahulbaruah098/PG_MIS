@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>{{ title or 'Create PG Login' }}</h4>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Username</label>
+        <input name="username" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Password</label>
+        <input name="password" type="password" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">PG</label>
+        <select name="pg_id" class="form-select" required>
+          {% for pg in pgs %}
+            <option value="{{ pg._id|string }}">{{ pg.name }}</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">PG must exist in Master Data.</div>
+      </div>
+      <div class="col-12">
+        <button class="btn btn-primary" type="submit">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

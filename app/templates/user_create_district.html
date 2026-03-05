@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>Create District Admin</h4>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Username</label>
+        <input name="username" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Password</label>
+        <input name="password" type="password" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">District</label>
+        <select name="district_id" class="form-select" required>
+          {% for d in districts %}
+            <option value="{{ d._id|string }}">{{ d.name }}</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">District must exist in Master Data.</div>
+      </div>
+      <div class="col-12">
+        <button class="btn btn-primary" type="submit">Create District Admin</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

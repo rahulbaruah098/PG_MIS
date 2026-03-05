@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Reports Hub{% endblock %}
+{% block content %}
+
+<style>
+  .rh-wrap{max-width:1200px;margin:0 auto;padding:18px}
+  .rh-hero{background:linear-gradient(90deg,#0b4d3a,#059669);color:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 14px 22px -12px rgba(0,0,0,.18)}
+  .rh-hero h1{margin:0;font-weight:950;letter-spacing:.2px}
+  .rh-hero .sub{margin-top:.35rem;color:#d1fae5;font-weight:800}
+  .rh-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-top:12px}
+  .rh-card{background:#fff;border:1px solid rgba(15,23,42,.12);border-radius:18px;box-shadow:0 10px 18px -14px rgba(0,0,0,.22);padding:12px}
+  .rh-row{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+  .rh-row .f{display:flex;flex-direction:column;gap:6px}
+  .rh-row label{font-size:12px;font-weight:900;color:#334155}
+  .rh-row select,.rh-row input{border:1px solid rgba(15,23,42,.18);border-radius:12px;padding:10px 10px;font-weight:800;outline:none}
+  .rh-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .rh-btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:10px 14px;font-weight:900;border:1px solid rgba(15,23,42,.16);background:#fff;color:#0f172a;cursor:pointer;text-decoration:none}
+  .rh-btn.primary{background:#0b4d3a;color:#fff;border-color:transparent}
+  .rh-btn:hover{filter:brightness(.98)}
+  .rh-list{display:grid;gap:10px}
+  .rh-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px dashed rgba(15,23,42,.18);border-radius:16px;padding:10px 12px}
+  .rh-item .meta{display:flex;flex-direction:column}
+  .rh-item .meta b{font-weight:950}
+  .rh-item .meta span{color:#64748b;font-weight:800;font-size:12px}
+  @media(max-width:980px){.rh-grid{grid-template-columns:1fr}.rh-row{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.rh-row{grid-template-columns:1fr}}
+</style>
+
+<div class="rh-wrap">
+  <div class="rh-hero">
+    <h1>Reports Hub</h1>
+    <div class="sub">Download CSV/ZIP reports with your jurisdiction filters (State/District/Block/GP/Village/PG) + period filters.</div>
+  </div>
+
+  <div class="rh-grid">
+    <div class="rh-card">
+      <form id="rhForm" method="get" action="#">
+        <div class="rh-row">
+          <div class="f"><label>State</label><input name="state" value="{{ request.args.get('state','') }}" placeholder="State"/></div>
+          <div class="f"><label>District</label><input name="district" value="{{ request.args.get('district','') }}" placeholder="District"/></div>
+          <div class="f"><label>Block</label><input name="block" value="{{ request.args.get('block','') }}" placeholder="Block"/></div>
+          <div class="f"><label>Gram Panchayat</label><input name="gp" value="{{ request.args.get('gp','') }}" placeholder="GP"/></div>
+          <div class="f"><label>Village</label><input name="village" value="{{ request.args.get('village','') }}" placeholder="Village"/></div>
+          <div class="f"><label>PG Name contains</label><input name="pg_name" value="{{ request.args.get('pg_name','') }}" placeholder="PG name"/></div>
+        </div>
+
+        <div class="rh-row" style="margin-top:10px">
+          <div class="f"><label>Period</label>
+            <select name="period">
+              {% set p = (request.args.get('period') or '') %}
+              <option value="" {% if not p %}selected{% endif %}>All time</option>
+              <option value="weekly" {% if p=='weekly' %}selected{% endif %}>Weekly</option>
+              <option value="monthly" {% if p=='monthly' %}selected{% endif %}>Monthly</option>
+              <option value="six_monthly" {% if p in ['six_monthly','6_monthly'] %}selected{% endif %}>6 Monthly</option>
+              <option value="yearly" {% if p=='yearly' %}selected{% endif %}>Yearly</option>
+            </select>
+          </div>
+          <div class="f"><label>Group By</label>
+            {% set gb = (request.args.get('group_by') or '') %}
+            <select name="group_by">
+              <option value="" {% if not gb %}selected{% endif %}>None</option>
+              <option value="district" {% if gb=='district' %}selected{% endif %}>District</option>
+              <option value="block" {% if gb=='block' %}selected{% endif %}>Block</option>
+              <option value="gp" {% if gb=='gp' %}selected{% endif %}>Gram Panchayat</option>
+              <option value="village" {% if gb=='village' %}selected{% endif %}>Village</option>
+              <option value="pg" {% if gb=='pg' %}selected{% endif %}>PG</option>
+            </select>
+          </div>
+          <div class="f"><label>Search (q)</label><input name="q" value="{{ request.args.get('q','') }}" placeholder="Name / keyword"/></div>
+          <div class="f"><label>From</label><input type="date" name="from" value="{{ request.args.get('from','') }}"/></div>
+          <div class="f"><label>To</label><input type="date" name="to" value="{{ request.args.get('to','') }}"/></div>
+          <div class="f"><label>&nbsp;</label>
+            <a class="rh-btn primary" id="rhOpenOverall" href="#">Open Overall Export</a>
+          </div>
+        </div>
+
+        <div class="rh-actions">
+          <a class="rh-btn" id="rhLakhpati" href="#">Download Lakhpati CSV</a>
+          <a class="rh-btn" id="rhGrants" href="#">Download Grants CSV</a>
+          <a class="rh-btn" id="rhMembers" href="#">Download Members CSV</a>
+          <a class="rh-btn" id="rhCashbook" href="#">Download Cashbook CSV</a>
+          <a class="rh-btn" id="rhLoans" href="#">Download Loans CSV</a>
+          <a class="rh-btn" id="rhTurnover" href="#">Download Turnover CSV</a>
+          <a class="rh-btn" id="rhOverallZip" href="#">Download Overall ZIP</a>
+        </div>
+
+        <div style="margin-top:8px;color:#64748b;font-weight:800;font-size:12px">Tip: Set Group By for summary tables (district/block/gp/village/pg). If Group By is blank, downloads give row-level data.</div>
+      </form>
+    </div>
+
+    <div class="rh-card">
+      <div class="rh-list">
+        <div class="rh-item">
+          <div class="meta"><b>Lakhpati Didi</b><span>Member-level + grouped summary</span></div>
+          <a class="rh-btn" href="{{ url_for('reports.lakhpati_report') }}">Open</a>
+        </div>
+        <div class="rh-item">
+          <div class="meta"><b>Grants & Utilization</b><span>Grant received + utilization balance</span></div>
+          <a class="rh-btn" href="{{ url_for('reports.grants_report') }}">Open</a>
+        </div>
+        <div class="rh-item">
+          <div class="meta"><b>PG Overall Export</b><span>Everything about selected PGs (ZIP)</span></div>
+          <a class="rh-btn" href="{{ url_for('reports.pg_overall_report') }}">Open</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const form = document.getElementById('rhForm');
+    const qs = () => new URLSearchParams(new FormData(form)).toString();
+
+    const bind = (id, path) => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const q = qs();
+        window.location.href = path + (q ? ('?' + q) : '');
+      });
+    };
+
+    bind('rhOpenOverall', '/reports/pg-overall');
+    bind('rhOverallZip', '/reports/pg-overall/download');
+    bind('rhLakhpati', '/reports/export/lakhpati.csv');
+    bind('rhGrants', '/reports/export/grants.csv');
+    bind('rhMembers', '/reports/export/members.csv');
+    bind('rhCashbook', '/reports/export/cashbook.csv');
+    bind('rhLoans', '/reports/export/loans.csv');
+    bind('rhTurnover', '/reports/export/turnover.csv');
+  })();
+</script>
+
+{% endblock %}

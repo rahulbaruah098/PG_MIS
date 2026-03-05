@@ -1,0 +1,2557 @@
+{# templates/cash_book.html #}
+{% extends "base.html" %}
+
+{% block title %}Cash Book{% endblock %}
+
+{% block content %}
+<style>
+  /* ============================================================
+     CASHBOOK (SCOPED) — UPDATED UI SKIN to match your other pages
+     ✅ ONLY CSS/UI changed (no data/logic changes)
+     ✅ Mobile: actions (Edit/Cancel) move ABOVE table (not in top hero)
+     ✅ Mobile: table becomes horizontal swipe grid (left/right)
+     ✅ Removes “messy” mobile look (tighter spacing, cleaner surfaces)
+     ============================================================ */
+
+  .cb-wrap{ color:#0f172a; }
+  .cb-wrap *{ box-sizing:border-box; }
+
+  /* ✅ FULL WIDTH WRAP */
+  .cb-wrap{
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: clamp(12px, 2.2vw, 22px);
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    position: relative;
+    overflow: visible;
+
+    /* shared */
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,0.10);
+    --line2: rgba(15,23,42,0.08);
+
+    /* Receipts palette */
+    --r-900:#2f8f73;
+    --r-700:#4fb596;
+    --r-500:#7fd4ba;
+    --r-200:#e8f6f1;
+    --r-150:#f3fbf8;
+
+    /* Payments palette */
+    --p-900:#0b4d3a;
+    --p-700:#137e5f;
+    --p-500:#29b383;
+    --p-200:#d9f5e8;
+    --p-150:#eefcf6;
+
+    /* active defaults = receipts */
+    --g-900: var(--r-900);
+    --g-700: var(--r-700);
+    --g-500: var(--r-500);
+    --c-900: var(--r-900);
+    --c-700: var(--r-700);
+    --c-500: var(--r-500);
+    --c-200: var(--r-200);
+    --c-150: var(--r-150);
+
+    --surface:#ffffff;
+    --surface-2: rgba(255,255,255,0.92);
+    --surface-3: rgba(248,250,252,0.92); /* input bg */
+    --focus-ring: rgba(16,185,129,.14);
+
+    /* “other pages” style: soft radius + clean shadow */
+    --radius: 18px;
+    --radius-sm: 14px;
+    --shadow: 0 18px 38px -28px rgba(15,23,42,.28);
+    --shadow-soft: 0 14px 24px -22px rgba(15,23,42,.22);
+  }
+
+  .cb-wrap[data-theme="receipts"]{
+    --g-900: var(--r-900);
+    --g-700: var(--r-700);
+    --g-500: var(--r-500);
+    --c-900: var(--r-900);
+    --c-700: var(--r-700);
+    --c-500: var(--r-500);
+    --c-200: var(--r-200);
+    --c-150: var(--r-150);
+    --focus-ring: rgba(16,185,129,.14);
+  }
+  .cb-wrap[data-theme="payments"]{
+    --g-900: var(--p-900);
+    --g-700: var(--p-700);
+    --g-500: var(--p-500);
+    --c-900: var(--p-900);
+    --c-700: var(--p-700);
+    --c-500: var(--p-500);
+    --c-200: var(--p-200);
+    --c-150: var(--p-150);
+    --focus-ring: rgba(11,77,58,.16);
+  }
+
+  /* ============================================================
+     SECTION SURFACES (match “clean card” look)
+     ============================================================ */
+  .cb-section{
+    position: relative;
+    z-index: 1;
+    padding: 14px;
+    border-radius: var(--radius);
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(15,23,42,0.10);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .cb-wrap[data-theme="payments"] .cb-section{
+    border-color: rgba(11,77,58,0.14);
+  }
+
+  .cb-section.cb-flat{
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  /* ============================================================
+     Buttons (aligned to your other pages)
+     ============================================================ */
+  .cb-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:.55rem;
+    padding: .58rem .95rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(15,23,42,0.12);
+    background: rgba(255,255,255,0.90);
+    color: var(--ink);
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+    font-size: .9rem;
+    font-weight: 950;
+    user-select:none;
+    white-space: nowrap;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.28);
+  }
+  .cb-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 26px -22px rgba(15,23,42,.32);
+    border-color: rgba(15,23,42,0.18);
+  }
+  .cb-btn:active{ transform: translateY(0); }
+
+  .cb-solid{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(16,185,129,.28);
+    background: rgba(16,185,129,.12);
+    color: var(--g-900);
+    cursor:pointer;
+    font-weight: 950;
+    font-size: 12px;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+    min-height: 40px;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.22);
+  }
+  .cb-wrap[data-theme="payments"] .cb-solid{
+    border-color: rgba(11,77,58,.24);
+    background: rgba(11,77,58,.10);
+    color: var(--g-900);
+  }
+  .cb-solid:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 26px -22px rgba(15,23,42,.28);
+    background: rgba(16,185,129,.16);
+  }
+  .cb-wrap[data-theme="payments"] .cb-solid:hover{
+    background: rgba(11,77,58,.14);
+  }
+
+  .cb-ghost{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,.14);
+    background:#fff;
+    color: var(--ink);
+    cursor:pointer;
+    font-weight: 950;
+    font-size: 12px;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    min-height: 40px;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.20);
+  }
+  .cb-ghost:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 26px -22px rgba(15,23,42,.26);
+    background: rgba(2,6,23,.02);
+  }
+  .cb-ghost.cb-danger{
+    border-color: rgba(239,68,68,.28);
+    background: rgba(239,68,68,.10);
+    color:#991b1b;
+  }
+
+  .cb-icon{ width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* ============================================================
+     Inputs/selects (cleaner, consistent)
+     ============================================================ */
+  .cb-select{
+    padding: 9px 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,0.12);
+    background: rgba(248,250,252,0.92);
+    font-weight: 950;
+    font-size: 12px;
+    color: var(--ink);
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease, transform .15s ease, background .2s ease;
+  }
+  .cb-select:focus{
+    border-color: rgba(16,185,129,0.55);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+    transform: translateY(-1px);
+    background: #fff;
+  }
+
+  .cb-search{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,0.12);
+    background: rgba(248,250,252,0.92);
+    min-width: 260px;
+  }
+  .cb-search svg{ width: 16px; height: 16px; color: var(--g-900); opacity:.75; }
+  .cb-search input{
+    border:none;
+    outline:none;
+    width: 100%;
+    font-size: 12px;
+    font-weight: 850;
+    color: var(--ink);
+    background: transparent;
+  }
+
+  .cb-input{
+    width:100%;
+    border: 1px solid rgba(15,23,42,0.12);
+    border-radius: 14px;
+    padding: 9px 10px;
+    font-size: 12px;
+    outline:none;
+    background: rgba(248,250,252,0.92);
+    color: var(--ink);
+    font-weight: 850;
+    transition: box-shadow .2s ease, border-color .2s ease, transform .15s ease, background .2s ease;
+  }
+  .cb-input:focus{
+    border-color: rgba(16,185,129,0.55);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+    transform: translateY(-1px);
+    background: #fff;
+  }
+  .cb-input[readonly]{
+    border-color: transparent;
+    background: transparent;
+    padding-left: 0;
+    padding-right: 0;
+    border-radius: 0;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+  .cb-input.cb-amt{ text-align:right; font-variant-numeric: tabular-nums; }
+
+  /* Date input group */
+  .cb-date-wrap{
+    width: 100%;
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .cb-date-wrap .cb-input{ flex: 1 1 auto; min-width: 0; }
+  .cb-date-btn{
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    border: 1px solid rgba(15,23,42,0.12);
+    background: #fff;
+    color: var(--c-900);
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    flex: 0 0 auto;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.20);
+  }
+  .cb-date-btn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 26px -22px rgba(15,23,42,.26);
+    background: rgba(16,185,129,.08);
+  }
+  .cb-wrap[data-theme="payments"] .cb-date-btn:hover{
+    background: rgba(11,77,58,.08);
+  }
+  .cb-date-hidden{
+    position:absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding:0 !important;
+    margin:-1px !important;
+    overflow:hidden !important;
+    clip: rect(0,0,0,0) !important;
+    white-space: nowrap !important;
+    border:0 !important;
+  }
+  .cb-input.cb-invalid{
+    border-color: rgba(239,68,68,.45) !important;
+    box-shadow: 0 0 0 3px rgba(239,68,68,.14) !important;
+    background: rgba(254,242,242,.85) !important;
+  }
+
+  /* ============================================================
+     PERIOD GATE (same logic, new card-like styling)
+     ============================================================ */
+  .cb-gate{ background: transparent; border: none; box-shadow: none; overflow: visible; }
+  .cb-gate-top{ padding: 0 0 10px; color: var(--ink); background: transparent; }
+  .cb-gate-title{
+    font-weight: 950;
+    font-size: 15px;
+    margin: 0 0 4px;
+    letter-spacing: .2px;
+    color: var(--c-900);
+  }
+  .cb-gate-sub{
+    margin: 0;
+    font-weight: 850;
+    font-size: 12px;
+    color: rgba(15,23,42,.70);
+    line-height: 1.35;
+  }
+  .cb-gate-body{ padding: 0; display:flex; flex-direction: column; gap: 12px; }
+  .cb-gate-row{ display:flex; gap: 10px; flex-wrap: wrap; }
+  .cb-gate-field{
+    flex: 1;
+    min-width: 180px;
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .cb-gate-field label{
+    font-size: .78rem;
+    font-weight: 950;
+    color: rgba(15,23,42,.72);
+    letter-spacing: .2px;
+  }
+  .cb-gate-actions{
+    display:flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  /* ============================================================
+     TOP HERO (clean header, consistent with other pages)
+     ============================================================ */
+  .cb-top{
+    border-radius: var(--radius);
+    padding: clamp(14px, 2vw, 20px);
+    color: var(--ink);
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(15,23,42,0.10);
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  .cb-top::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:
+      radial-gradient(closest-side at 12% 0%, rgba(16,185,129,.14), transparent 60%),
+      radial-gradient(closest-side at 92% 22%, rgba(16,185,129,.10), transparent 64%);
+    opacity: .75;
+  }
+  .cb-wrap[data-theme="payments"] .cb-top::before{
+    background:
+      radial-gradient(closest-side at 12% 0%, rgba(11,77,58,.14), transparent 60%),
+      radial-gradient(closest-side at 92% 22%, rgba(11,77,58,.10), transparent 64%);
+  }
+
+  .cb-top-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+  }
+  .cb-title-wrap{
+    display:flex;
+    align-items:center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
+  }
+  .cb-badge{
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    background: rgba(248,250,252,0.92);
+    border: 1px solid rgba(15,23,42,0.10);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex: 0 0 auto;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.22);
+  }
+  .cb-badge svg{ width: 22px; height: 22px; opacity: .95; color: var(--ink); }
+
+  .cb-title-block{ min-width: 0; flex: 1; }
+  .cb-title-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .cb-title{
+    font-size: clamp(18px, 1.2vw + 14px, 22px);
+    font-weight: 950;
+    line-height: 1.12;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+    color: var(--ink);
+    letter-spacing: .2px;
+  }
+  .cb-pill{
+    display:inline-flex;
+    align-items:center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(248,250,252,0.92);
+    border: 1px solid rgba(15,23,42,.10);
+    font-weight: 950;
+    font-size: 12px;
+    color: var(--ink);
+    white-space: nowrap;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.20);
+    cursor: default;
+  }
+  .cb-actions{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content:flex-end;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cb-summary{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+    position: relative;
+    z-index: 1;
+  }
+  .cb-s-card{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 999px;
+    background: rgba(248,250,252,0.92);
+    border: 1px solid rgba(15,23,42,0.10);
+    min-width: 0;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.18);
+  }
+  .cb-s-head{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    color: rgba(15,23,42,0.92);
+    font-size: 12px;
+    font-weight: 950;
+  }
+  .cb-s-val{
+    font-size: 13px;
+    font-weight: 950;
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+
+  /* ============================================================
+     MAIN CONTENT
+     ============================================================ */
+  .cb-card{
+    margin-top: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    overflow: visible;
+    display:flex;
+    flex-direction: column;
+    min-height: 520px;
+  }
+
+  .cb-tabs{
+    display:flex;
+    gap: 10px;
+    padding: 6px 0 10px;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+  }
+  .cb-tab{
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,0.12);
+    cursor:pointer;
+    color: rgba(15,23,42,.86);
+    font-size: 13px;
+    font-weight: 950;
+    background: rgba(248,250,252,0.92);
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, color .2s ease, border-color .2s ease;
+    position: relative;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.18);
+  }
+  .cb-tab:hover{ transform: translateY(-1px); box-shadow: 0 16px 26px -22px rgba(15,23,42,.24); }
+  .cb-tab.cb-active{
+    background: rgba(16,185,129,.10);
+    border-color: rgba(16,185,129,.26);
+  }
+
+  /* ✅ Active tab text should be RED */
+  .cb-tab.cb-active,
+  .cb-tab.cb-active #cbTabReceipts,
+  .cb-tab.cb-active #cbTabPayments{
+    color: #dc2626 !important;
+  }
+  .cb-tab.cb-active{
+    border-color: rgba(220,38,38,.28) !important;
+    background: rgba(254,242,242,.75) !important;
+  }
+
+  .cb-toolbar{
+    display:flex;
+    align-items:flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0 10px;
+  }
+  .cb-tl, .cb-tr{
+    display:flex;
+    gap: 8px;
+    align-items:center;
+    flex-wrap: wrap;
+  }
+  .cb-tr{ justify-content: flex-end; }
+
+  .cb-mini{
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(16,185,129,.10);
+    border: 1px solid rgba(16,185,129,.20);
+    color: var(--c-900);
+    font-weight: 950;
+    font-size: 12px;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.16);
+  }
+  .cb-wrap[data-theme="payments"] .cb-mini{
+    background: rgba(11,77,58,.10);
+    border-color: rgba(11,77,58,.18);
+  }
+
+  .cb-body{
+    flex:1;
+    min-height:0;
+    display:flex;
+    flex-direction: column;
+    padding: 0;
+  }
+
+  /* ============================================================
+     TABLE: grid rows + horizontal swipe on mobile
+     ============================================================ */
+  .cb-table-wrap{
+    flex:1;
+    min-height:0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid rgba(15,23,42,0.10);
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 12px 22px -22px rgba(15,23,42,.20);
+  }
+
+  .cb-table{ min-width: 980px; }
+  .cb-th, .cb-row{
+    display:grid;
+    grid-template-columns: 44px 70px 190px 1fr 90px 140px 140px 140px 60px;
+  }
+
+  .cb-th{
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(248,250,252,0.92);
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+    backdrop-filter: blur(10px);
+  }
+
+  .cb-h{
+    padding: 10px 10px;
+    font-size: 12px;
+    font-weight: 950;
+    color: var(--ink);
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    border-right: 1px solid rgba(15,23,42,0.06);
+    white-space: nowrap;
+  }
+  .cb-h:last-child{ border-right: none; }
+  .cb-h.cb-center{ justify-content:center; }
+
+  .cb-rows{ display:flex; flex-direction: column; }
+  .cb-row{
+    border-bottom: 1px solid rgba(15,23,42,0.06);
+    background: transparent;
+  }
+  .cb-row:last-child{ border-bottom:none; }
+
+  .cb-c{
+    padding: 10px 10px;
+    border-right: 1px solid rgba(15,23,42,0.04);
+    font-size: 12px;
+    color: var(--ink);
+    min-width:0;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+  }
+  .cb-c:last-child{ border-right:none; }
+  .cb-c.cb-center{ justify-content:center; }
+  .cb-c.cb-right{ justify-content:flex-end; font-variant-numeric: tabular-nums; }
+
+  .cb-check{
+    width: 16px; height: 16px;
+    accent-color: var(--c-500);
+    cursor:pointer;
+  }
+
+  .cb-del{
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    color:#dc2626;
+    border: 1px solid rgba(239,68,68,.28);
+    background: rgba(239,68,68,.08);
+    margin: 0 auto;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    box-shadow: 0 10px 18px -18px rgba(239,68,68,.18);
+  }
+  .cb-del:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 26px -22px rgba(239,68,68,.30);
+    background: rgba(239,68,68,.12);
+  }
+
+  .cb-totals{
+    border-top: 1px solid rgba(15,23,42,0.08);
+    background: rgba(248,250,252,0.92);
+  }
+  .cb-total-row{
+    display:grid;
+    grid-template-columns: 44px 70px 190px 1fr 90px 140px 140px 140px 60px;
+    border-top: 1px solid rgba(15,23,42,0.05);
+  }
+  .cb-total-row.cb-grand{ background: rgba(16,185,129,.08); }
+  .cb-wrap[data-theme="payments"] .cb-total-row.cb-grand{ background: rgba(11,77,58,.08); }
+
+  .cb-tcell{
+    padding: 10px 10px;
+    border-right: 1px solid rgba(15,23,42,0.04);
+    display:flex;
+    align-items:center;
+    font-size: 12px;
+    color: var(--ink);
+    font-weight: 850;
+  }
+  .cb-tcell:last-child{ border-right:none; }
+  .cb-tlabel{ font-weight: 950; color: rgba(15,23,42,.72); }
+  .cb-tvalue{ justify-content:flex-end; color: var(--c-900); font-variant-numeric: tabular-nums; }
+
+  .cb-footer{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0 0;
+    flex-wrap: wrap;
+  }
+  .cb-pager{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .cb-info{
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--ink);
+    opacity:.82;
+  }
+  .cb-pbtn{
+    padding: 8px 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,0.12);
+    background: rgba(248,250,252,0.92);
+    font-weight: 950;
+    font-size: 12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    color: var(--ink);
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.18);
+  }
+  .cb-pbtn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 26px -22px rgba(15,23,42,.22);
+    background: #fff;
+  }
+  .cb-pbtn:disabled{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  .cb-hidden{ display:none !important; }
+
+  /* ============================================================
+     MODALS
+     ============================================================ */
+  .cb-modal-overlay{
+    position: fixed;
+    inset: 0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index: 9999;
+    padding: 18px;
+    background: rgba(15, 23, 42, .28);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .cb-modal-overlay.cb-show{ display:flex; }
+
+  .cb-modal{
+    width: 100%;
+    max-width: 520px;
+    background: #ffffff;
+    border-radius: var(--radius);
+    border: 1px solid rgba(15,23,42,.10);
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,.45);
+    overflow:hidden;
+    transform: translateY(6px);
+    animation: cbModalIn .18s ease-out forwards;
+  }
+  @keyframes cbModalIn{
+    from{ opacity:0; transform: translateY(10px) scale(.98); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
+
+  .cb-mhead{
+    padding: 14px 16px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    justify-content: flex-start;
+    background: rgba(248,250,252,0.92);
+    border-bottom: 1px solid rgba(15,23,42,.08);
+  }
+  .cb-dot{
+    width: 10px; height: 10px;
+    border-radius: 999px;
+    background: var(--c-900);
+    box-shadow: 0 0 0 6px rgba(16,185,129,.10);
+    flex: 0 0 auto;
+  }
+  .cb-mtitle{
+    font-weight: 950;
+    color: var(--ink);
+    font-size: 15px;
+    letter-spacing:.2px;
+  }
+  .cb-mbody{
+    padding: 14px 16px 6px;
+    color:#0f172a;
+    font-size: 14px;
+    font-weight: 850;
+    line-height:1.35;
+  }
+  .cb-mactions{
+    padding: 12px 16px 16px;
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    flex-wrap: wrap;
+  }
+  .cb-mactions .cb-ghost,
+  .cb-mactions .cb-solid{
+    min-width: 120px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    font-weight: 950;
+  }
+  .cb-mactions #cbDeleteYes.cb-danger{
+    border-color: rgba(239,68,68,.30);
+    background: rgba(239,68,68,.10);
+    color:#991b1b;
+  }
+
+  /* ============================================================
+     MOBILE
+     ============================================================ */
+  .cb-mobile{ display:none !important; }
+  #cbMobileTotals{ display:none !important; }
+
+  .cb-mobile-actions-slot{
+    display:none;
+    width: 100%;
+    gap: 10px;
+    align-items:center;
+    justify-content:flex-end;
+    flex-wrap: wrap;
+    margin: 2px 0 0;
+  }
+
+  @media (max-width: 920px){
+    .cb-search{ min-width: 200px; }
+    .cb-card{ min-height: 540px; }
+    .cb-table{ min-width: 940px; }
+  }
+
+  @media (max-width: 720px){
+    .cb-top-row{
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .cb-actions{ display:none; }
+
+    .cb-toolbar{
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .cb-tl, .cb-tr{
+      width: 100%;
+      justify-content: space-between;
+    }
+    .cb-search{ width: 100%; min-width: 0; }
+
+    .cb-mobile-actions-slot{ display:flex; }
+
+    .cb-table-wrap{
+      overflow-x: auto;
+      overflow-y: auto;
+      border-radius: var(--radius-sm);
+    }
+
+    .cb-th, .cb-row{
+      grid-template-columns: 40px 56px 160px 220px 72px 120px 120px 120px 52px;
+    }
+    .cb-total-row{
+      grid-template-columns: 40px 56px 160px 220px 72px 120px 120px 120px 52px;
+    }
+
+    .cb-h, .cb-c, .cb-tcell{ padding: 9px 9px; }
+    .cb-solid, .cb-ghost{ min-height: 40px; }
+  }
+
+  @media (max-width: 420px){
+    .cb-section{ padding: 12px; }
+    .cb-badge{ width: 42px; height: 42px; border-radius: 14px; }
+    .cb-s-card{ width: 100%; justify-content: space-between; }
+
+    .cb-th, .cb-row{
+      grid-template-columns: 38px 52px 150px 200px 68px 112px 112px 112px 48px;
+    }
+    .cb-total-row{
+      grid-template-columns: 38px 52px 150px 200px 68px 112px 112px 112px 48px;
+    }
+
+    .cb-footer{ flex-direction: column; align-items: stretch; }
+    .cb-pager{ justify-content: space-between; }
+  }
+
+  @media (max-width: 420px){
+    .cb-mactions{ justify-content: stretch; }
+    .cb-mactions .cb-ghost,
+    .cb-mactions .cb-solid{ min-width: 100%; }
+  }
+</style>
+
+<div class="cb-wrap" id="cbWrap" data-theme="receipts">
+
+  <!-- ✅ PERIOD-FIRST SCREEN -->
+  <div class="cb-section" id="cbGate">
+    <div class="cb-gate">
+      <div class="cb-gate-top">
+        <p class="cb-gate-title" id="cbGateTitle">Select Cashbook Period</p>
+        <p class="cb-gate-sub" id="cbGateSub">Choose Month & Year first. After confirmation, Cash Book will load.</p>
+      </div>
+
+      <div class="cb-gate-body">
+        <div class="cb-gate-row">
+          <div class="cb-gate-field">
+            <label for="cbGateMonth" id="cbGateMonthLabel">Month</label>
+            <select id="cbGateMonth" class="cb-select"></select>
+          </div>
+
+          <div class="cb-gate-field">
+            <label for="cbGateYear" id="cbGateYearLabel">Year</label>
+            <select id="cbGateYear" class="cb-select"></select>
+          </div>
+        </div>
+
+        <div class="cb-gate-actions">
+          <button id="cbGateReset" class="cb-ghost" type="button">Reset</button>
+          <button id="cbGateContinue" class="cb-solid" type="button">Continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ MAIN APP -->
+  <div id="cbApp" class="cb-hidden">
+
+    <!-- TOP -->
+    <div class="cb-top">
+      <div class="cb-top-row">
+        <div class="cb-title-wrap">
+          <div class="cb-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 3h12a2 2 0 0 1 2 2v16H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path>
+              <path d="M8 7h8"></path>
+              <path d="M8 11h8"></path>
+              <path d="M8 15h6"></path>
+            </svg>
+          </div>
+
+          <div class="cb-title-block">
+            <div class="cb-title-row">
+              <p class="cb-title" id="cbHeaderTitle">Cash Book</p>
+              <span class="cb-pill" id="cbPeriodBadge" aria-label="Selected Month & Year">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cb-actions" id="cbTopActions">
+          <button id="cbCancelBtn" class="cb-btn cb-hidden" type="button">
+            <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18"></path>
+              <path d="M6 6l12 12"></path>
+            </svg>
+            <span id="cbCancelText">Cancel</span>
+          </button>
+
+          <button id="cbEditSaveBtn" class="cb-btn" type="button">
+            <svg id="cbEditIcon" class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <svg id="cbSaveIcon" class="cb-icon cb-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span id="cbEditSaveText">Edit</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="cb-summary">
+        <div class="cb-s-card">
+          <div class="cb-s-head">
+            <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <p id="cbLabelReceipts">Receipts</p>
+          </div>
+          <p class="cb-s-val" id="cbReceiptsTotal">₹0</p>
+        </div>
+
+        <div class="cb-s-card">
+          <div class="cb-s-head">
+            <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+              <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            <p id="cbLabelPayments">Payments</p>
+          </div>
+          <p class="cb-s-val" id="cbPaymentsTotal">₹0</p>
+        </div>
+
+        <div class="cb-s-card">
+          <div class="cb-s-head">
+            <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 5h10"></path>
+              <path d="M6 9h10"></path>
+              <path d="M9 21 6 17h4a6 6 0 0 0 0-12H6"></path>
+            </svg>
+            <p id="cbLabelBalance">Balance</p>
+          </div>
+          <p class="cb-s-val" id="cbBalanceTotal">₹0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="cb-section">
+
+      <div class="cb-card">
+        <div class="cb-tabs">
+          <button id="cbReceiptsTab" class="cb-tab cb-active" type="button">
+            <span id="cbTabReceipts">Receipts</span>
+            <div class="cb-ind"></div>
+          </button>
+          <button id="cbPaymentsTab" class="cb-tab" type="button">
+            <span id="cbTabPayments">Payments</span>
+            <div class="cb-ind"></div>
+          </button>
+        </div>
+
+        <div class="cb-toolbar">
+          <div class="cb-tl">
+            <span class="cb-mini" id="cbActivePill">Receipts</span>
+
+            <div class="cb-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input id="cbSearch" type="text" placeholder="Search date, particulars, LF, amount..." />
+            </div>
+          </div>
+
+          <div class="cb-tr" id="cbToolbarRight">
+            <div id="cbMobileActionsSlot" class="cb-mobile-actions-slot"></div>
+
+            <select id="cbPageSize" class="cb-select">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+
+            <button id="cbBulkDeleteBtn" class="cb-ghost cb-danger" type="button">
+              <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span id="cbBulkDeleteText">Delete</span>
+            </button>
+
+            <button id="cbAddBtn" class="cb-solid" type="button">
+              <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span id="cbAddText">Add</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="cb-body">
+          <div class="cb-table-wrap">
+            <div class="cb-table">
+              <div class="cb-th">
+                <div class="cb-h cb-center">
+                  <input id="cbSelectAll" class="cb-check cb-hidden" type="checkbox" />
+                </div>
+                <div class="cb-h cb-center" id="cbThSL">SL</div>
+                <div class="cb-h" id="cbThDate">Date</div>
+                <div class="cb-h" id="cbThParticulars">Particulars</div>
+                <div class="cb-h" id="cbThLF">LF</div>
+                <div class="cb-h" id="cbThAmount">Amount</div>
+                <div class="cb-h" id="cbThBankAmount">Bank Amount</div>
+                <div class="cb-h" id="cbThTotal">Total</div>
+                <div class="cb-h cb-center">&nbsp;</div>
+              </div>
+
+              <div id="cbRows" class="cb-rows"></div>
+
+              <div class="cb-totals">
+                <div class="cb-total-row">
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell cb-tlabel" id="cbPresentLabel">Present Total</div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell cb-tvalue" id="cbPresentTotal">₹0</div>
+                  <div class="cb-tcell"></div>
+                </div>
+
+                <div class="cb-total-row cb-grand">
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell cb-tlabel" id="cbGrandLabel">Grand Total</div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell cb-tvalue" id="cbGrandTotal">₹0</div>
+                  <div class="cb-tcell"></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="cb-footer">
+            <div class="cb-info" id="cbPagerInfo">Showing 0–0 of 0</div>
+            <div class="cb-pager">
+              <button id="cbPrev" class="cb-pbtn" type="button">Prev</button>
+              <span class="cb-info" id="cbPageInd">Page 1 / 1</span>
+              <button id="cbNext" class="cb-pbtn" type="button">Next</button>
+            </div>
+          </div>
+
+          <div id="cbMobile" class="cb-mobile"></div>
+          <div id="cbMobileTotals" class="cb-mtotals" style="display:none;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- SAVE MODAL -->
+<div id="cbSaveOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbSaveTitle">Confirm Save</div>
+    </div>
+    <div class="cb-mbody" id="cbSaveMsg">Do you want to save these changes?</div>
+    <div class="cb-mactions">
+      <button id="cbSaveCancel" class="cb-ghost" type="button">Cancel</button>
+      <button id="cbSaveYes" class="cb-solid" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div id="cbDeleteOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbDeleteTitle">Confirm Delete</div>
+    </div>
+    <div class="cb-mbody" id="cbDeleteMsg">Do you want to delete the selected rows?</div>
+    <div class="cb-mactions">
+      <button id="cbDeleteCancel" class="cb-ghost" type="button">Cancel</button>
+      <button id="cbDeleteYes" class="cb-ghost cb-danger" type="button">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- PERIOD CONFIRM MODAL -->
+<div id="cbPeriodConfirmOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbPeriodConfirmTitle">Confirm Period</div>
+    </div>
+    <div class="cb-mbody" id="cbPeriodConfirmMsg">Do you want to set this period?</div>
+    <div class="cb-mactions">
+      <button id="cbPeriodConfirmCancel" class="cb-ghost" type="button">Cancel</button>
+      <button id="cbPeriodConfirmYes" class="cb-solid" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ RESET PERIOD CONFIRM MODAL -->
+<div id="cbGateResetOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbGateResetTitle">Confirm Reset</div>
+    </div>
+    <div class="cb-mbody" id="cbGateResetMsg">Reset Month & Year selection to current date?</div>
+    <div class="cb-mactions">
+      <button id="cbGateResetCancel" class="cb-ghost" type="button">Cancel</button>
+      <button id="cbGateResetYes" class="cb-solid" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ EDIT-LOCK MODAL -->
+<div id="cbLockOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbLockTitle">Action blocked</div>
+    </div>
+    <div class="cb-mbody" id="cbLockMsg">You are in Edit mode. Please Save or Cancel before leaving this page.</div>
+    <div class="cb-mactions">
+      <button id="cbLockOk" class="cb-solid" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const cashbookTranslations = {
+    en: {
+      title: "Cash Book",
+      receipts: "Receipts",
+      payments: "Payments",
+      balance: "Balance",
+      sl: "SL",
+      date: "Date",
+      particulars: "Particulars",
+      lf: "LF",
+      amount: "Amount",
+      bankAmount: "Bank Amount",
+      total: "Total",
+      presentTotal: "Present Total",
+      grandTotal: "Grand Total",
+      editButton: "Edit",
+      saveButton: "Save",
+      addButton: "Add",
+      cancelButton: "Cancel",
+      bulkDelete: "Delete",
+      bulkDeleteSelected: "Delete Selected",
+      searchPh: "Search date, particulars, LF, amount...",
+      datePh: "DD-MM-YYYY HH:MM",
+      calendarTitle: "Calendar",
+      confirmTitle: "Confirm Save",
+      confirmMsg: "Do you want to save these changes?",
+      confirmYes: "Confirm",
+      confirmNo: "Cancel",
+      deleteTitle: "Confirm Delete",
+      deleteMsg: "Do you want to delete the selected rows?",
+      deleteYes: "Delete",
+      pageInfo: (a,b,c)=>`Showing ${a}–${b} of ${c}`,
+      pageInd: (p,t)=>`Page ${p} / ${t}`,
+      prev: "Prev",
+      next: "Next",
+
+      gateTitle: "Select Cashbook Period",
+      gateSub: "Choose Month & Year first. After confirmation, Cash Book will load.",
+      gateMonth: "Month",
+      gateYear: "Year",
+      gateReset: "Reset",
+      gateContinue: "Continue",
+      periodConfirmTitle: "Confirm Period",
+      periodConfirmMsg: (m,y)=>`Set Cash Book period to ${m} ${y}?`,
+
+      gateResetTitle: "Confirm Reset",
+      gateResetMsg: "Reset Month & Year selection to current date?",
+
+      lockTitle: "Action blocked",
+      lockOk: "OK",
+      lockMsg: "You are in Edit mode. Please Save or Cancel before leaving this page."
+    },
+    bn: {
+      title: "ক্যাশ বুক",
+      receipts: "প্রাপ্তি",
+      payments: "প্রদান",
+      balance: "ব্যালেন্স",
+      sl: "ক্রমিক",
+      date: "তারিখ",
+      particulars: "বিবরণ",
+      lf: "এলএফ",
+      amount: "পরিমাণ",
+      bankAmount: "ব্যাংক পরিমাণ",
+      total: "মোট",
+      presentTotal: "বর্তমান মোট",
+      grandTotal: "সর্বমোট",
+      editButton: "সম্পাদনা",
+      saveButton: "সংরক্ষণ",
+      addButton: "যোগ করুন",
+      cancelButton: "বাতিল",
+      bulkDelete: "মুছুন",
+      bulkDeleteSelected: "নির্বাচিত মুছুন",
+      searchPh: "তারিখ, বিবরণ, এলএফ, পরিমাণ খুঁজুন...",
+      datePh: "দিন-মাস-বছর ঘ:মি",
+      calendarTitle: "ক্যালেন্ডার",
+      confirmTitle: "সংরক্ষণ নিশ্চিত করুন",
+      confirmMsg: "আপনি কি পরিবর্তনগুলো সংরক্ষণ করতে চান?",
+      confirmYes: "নিশ্চিত",
+      confirmNo: "বাতিল",
+      deleteTitle: "মুছা নিশ্চিত করুন",
+      deleteMsg: "আপনি কি নির্বাচিত সারিগুলো মুছতে চান?",
+      deleteYes: "মুছুন",
+      pageInfo: (a,b,c)=>`দেখানো হচ্ছে ${a}–${b} / মোট ${c}`,
+      pageInd: (p,t)=>`পৃষ্ঠা ${p} / ${t}`,
+      prev: "আগে",
+      next: "পরে",
+
+      gateTitle: "ক্যাশ বুক-এর সময়কাল নির্বাচন করুন",
+      gateSub: "প্রথমে মাস ও বছর নির্বাচন করুন। নিশ্চিত করার পর ক্যাশ বুক লোড হবে।",
+      gateMonth: "মাস",
+      gateYear: "বছর",
+      gateReset: "রিসেট",
+      gateContinue: "চালিয়ে যান",
+      periodConfirmTitle: "সময়কাল নিশ্চিত করুন",
+      periodConfirmMsg: (m,y)=>`ক্যাশ বুক-এর সময়কাল ${m} ${y} সেট করবেন?`,
+
+      gateResetTitle: "রিসেট নিশ্চিত করুন",
+      gateResetMsg: "মাস ও বছর বর্তমান তারিখে রিসেট করবেন?",
+
+      lockTitle: "অ্যাকশন বন্ধ করা হয়েছে",
+      lockOk: "ঠিক আছে",
+      lockMsg: "আপনি এডিট মোডে আছেন। অনুগ্রহ করে সংরক্ষণ করুন অথবা বাতিল করুন, তারপর পেজ ছাড়ুন।"
+    }
+  };
+
+  let cashbookLang = 'en';
+  let cbIsEditing = false;
+  let cbActiveTab = 'receipts';
+
+  let cbSearch = '';
+  let cbPageSize = 25;
+  let cbPage = 1;
+
+  let cbBulkMode = false;
+  let cbSelected = new Set();
+
+  let cbPeriodMonth = null;
+  let cbPeriodYear = null;
+  let cbPendingPeriod = { month: null, year: null };
+
+  // PG context for server persistence
+  window.PG_ID = "{{ pg_id or '' }}";
+
+  const cbReceipts = [];
+  const cbPayments = [];
+  let cbSnapshot = { receipts: [], payments: [] };
+  let cbPendingDeleteIds = [];
+
+  const cb$ = (id)=>document.getElementById(id);
+  const cbWrap = cb$("cbWrap");
+
+  const cbGate = cb$("cbGate");
+  const cbApp = cb$("cbApp");
+  const cbGateTitle = cb$("cbGateTitle");
+  const cbGateSub = cb$("cbGateSub");
+  const cbGateMonthLabel = cb$("cbGateMonthLabel");
+  const cbGateYearLabel = cb$("cbGateYearLabel");
+  const cbGateMonth = cb$("cbGateMonth");
+  const cbGateYear = cb$("cbGateYear");
+  const cbGateReset = cb$("cbGateReset");
+  const cbGateContinue = cb$("cbGateContinue");
+
+  const cbHeaderTitle = cb$("cbHeaderTitle");
+  const cbPeriodBadge = cb$("cbPeriodBadge");
+
+  const cbCancelBtn = cb$("cbCancelBtn");
+  const cbCancelText = cb$("cbCancelText");
+
+  const cbEditSaveBtn = cb$("cbEditSaveBtn");
+  const cbEditIcon = cb$("cbEditIcon");
+  const cbSaveIcon = cb$("cbSaveIcon");
+  const cbEditSaveText = cb$("cbEditSaveText");
+
+  const cbLabelReceipts = cb$("cbLabelReceipts");
+  const cbLabelPayments = cb$("cbLabelPayments");
+  const cbLabelBalance = cb$("cbLabelBalance");
+  const cbReceiptsTotal = cb$("cbReceiptsTotal");
+  const cbPaymentsTotal = cb$("cbPaymentsTotal");
+  const cbBalanceTotal = cb$("cbBalanceTotal");
+
+  const cbReceiptsTab = cb$("cbReceiptsTab");
+  const cbPaymentsTab = cb$("cbPaymentsTab");
+  const cbTabReceipts = cb$("cbTabReceipts");
+  const cbTabPayments = cb$("cbTabPayments");
+  const cbActivePill = cb$("cbActivePill");
+
+  const cbSearchInput = cb$("cbSearch");
+  const cbPageSizeSelect = cb$("cbPageSize");
+
+  const cbBulkDeleteBtn = cb$("cbBulkDeleteBtn");
+  const cbBulkDeleteText = cb$("cbBulkDeleteText");
+  const cbSelectAll = cb$("cbSelectAll");
+
+  const cbAddBtn = cb$("cbAddBtn");
+  const cbAddText = cb$("cbAddText");
+
+  const cbRows = cb$("cbRows");
+  const cbPresentLabel = cb$("cbPresentLabel");
+  const cbGrandLabel = cb$("cbGrandLabel");
+  const cbPresentTotal = cb$("cbPresentTotal");
+  const cbGrandTotal = cb$("cbGrandTotal");
+
+  const cbPagerInfo = cb$("cbPagerInfo");
+  const cbPrev = cb$("cbPrev");
+  const cbNext = cb$("cbNext");
+  const cbPageInd = cb$("cbPageInd");
+
+  const cbMobile = cb$("cbMobile");
+  const cbMobileTotals = cb$("cbMobileTotals");
+
+  const cbSaveOverlay = cb$("cbSaveOverlay");
+  const cbSaveTitle = cb$("cbSaveTitle");
+  const cbSaveMsg = cb$("cbSaveMsg");
+  const cbSaveCancel = cb$("cbSaveCancel");
+  const cbSaveYes = cb$("cbSaveYes");
+
+  const cbDeleteOverlay = cb$("cbDeleteOverlay");
+  const cbDeleteTitle = cb$("cbDeleteTitle");
+  const cbDeleteMsg = cb$("cbDeleteMsg");
+  const cbDeleteCancel = cb$("cbDeleteCancel");
+  const cbDeleteYes = cb$("cbDeleteYes");
+
+  const cbPeriodConfirmOverlay = cb$("cbPeriodConfirmOverlay");
+  const cbPeriodConfirmTitle = cb$("cbPeriodConfirmTitle");
+  const cbPeriodConfirmMsg = cb$("cbPeriodConfirmMsg");
+  const cbPeriodConfirmCancel = cb$("cbPeriodConfirmCancel");
+  const cbPeriodConfirmYes = cb$("cbPeriodConfirmYes");
+
+  const cbGateResetOverlay = cb$("cbGateResetOverlay");
+  const cbGateResetTitle = cb$("cbGateResetTitle");
+  const cbGateResetMsg = cb$("cbGateResetMsg");
+  const cbGateResetCancel = cb$("cbGateResetCancel");
+  const cbGateResetYes = cb$("cbGateResetYes");
+
+  const cbLockOverlay = cb$("cbLockOverlay");
+  const cbLockTitle = cb$("cbLockTitle");
+  const cbLockMsg = cb$("cbLockMsg");
+  const cbLockOk = cb$("cbLockOk");
+
+  const cbTopActions = cb$("cbTopActions");
+  const cbMobileActionsSlot = cb$("cbMobileActionsSlot");
+
+  function cbRehomeActions(){
+    try{
+      const mq = window.matchMedia("(max-width: 720px)");
+      const place = () => {
+        if (mq.matches){
+          if (cbMobileActionsSlot && cbEditSaveBtn && cbCancelBtn){
+            if (cbEditSaveBtn.parentElement !== cbMobileActionsSlot) cbMobileActionsSlot.appendChild(cbEditSaveBtn);
+            if (cbCancelBtn.parentElement !== cbMobileActionsSlot) cbMobileActionsSlot.appendChild(cbCancelBtn);
+          }
+        } else {
+          if (cbTopActions && cbEditSaveBtn && cbCancelBtn){
+            if (cbEditSaveBtn.parentElement !== cbTopActions) cbTopActions.appendChild(cbEditSaveBtn);
+            if (cbCancelBtn.parentElement !== cbTopActions) cbTopActions.appendChild(cbCancelBtn);
+          }
+        }
+      };
+      place();
+      if (typeof mq.addEventListener === "function") mq.addEventListener("change", place);
+      else mq.addListener(place);
+    }catch(_){}
+  }
+
+  function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
+
+  function makeTx(){
+    return { id: Date.now().toString() + Math.random().toString(16).slice(2), date:'', particulars:'', lf:'', amount:0, bankAmount:0 };
+  }
+
+  function ensureRows(){
+    if (cbReceipts.length === 0) cbReceipts.push(makeTx());
+    if (cbPayments.length === 0) cbPayments.push(makeTx());
+  }
+
+  async function cbLoadServer(){
+    const pg = (window.PG_ID || "").trim();
+    if (!pg || !cbPeriodYear || !cbPeriodMonth) return false;
+    try{
+      const res = await fetch(`/pg/api/cashbook/${encodeURIComponent(pg)}?year=${encodeURIComponent(cbPeriodYear)}&month=${encodeURIComponent(cbPeriodMonth)}`, { method:"GET" });
+      if (!res.ok) return false;
+      const data = await res.json().catch(()=>null);
+      if (!data) return false;
+      cbReceipts.length = 0;
+      cbPayments.length = 0;
+      (data.receipts || []).forEach(r => cbReceipts.push(r));
+      (data.payments || []).forEach(r => cbPayments.push(r));
+      ensureRows();
+      return true;
+    }catch(_){
+      return false;
+    }
+  }
+
+  async function cbSaveServer(){
+    const pg = (window.PG_ID || "").trim();
+    if (!pg || !cbPeriodYear || !cbPeriodMonth) return { ok:false, message:"Missing period/PG context" };
+    const payload = { receipts: cbReceipts, payments: cbPayments, meta: {} };
+    try{
+      const res = await fetch(`/pg/api/cashbook/${encodeURIComponent(pg)}?year=${encodeURIComponent(cbPeriodYear)}&month=${encodeURIComponent(cbPeriodMonth)}`,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(()=>null);
+      if (!res.ok) return { ok:false, message:(data && (data.error || data.message)) ? (data.error || data.message) : `HTTP ${res.status}` };
+      return { ok:true, message:(data && data.message) ? data.message : "Saved" };
+    }catch(err){
+      return { ok:false, message: (err && err.message) ? err.message : "Network error" };
+    }
+  }
+
+  function txTotal(tx){
+    const a = Number(tx.amount || 0);
+    const b = Number(tx.bankAmount || 0);
+    return a + b;
+  }
+
+  function sumTotals(arr){
+    return arr.reduce((s,t)=>s + txTotal(t), 0);
+  }
+
+  function formatINR(n){
+    const v = Number(n || 0);
+    return "₹" + v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+  }
+
+  function getActiveArr(){
+    return cbActiveTab === 'receipts' ? cbReceipts : cbPayments;
+  }
+
+  function matchesSearch(tx, q){
+    if (!q) return true;
+    const s = q.toLowerCase();
+    return (
+      String(tx.date||'').toLowerCase().includes(s) ||
+      String(tx.particulars||'').toLowerCase().includes(s) ||
+      String(tx.lf||'').toLowerCase().includes(s) ||
+      String(tx.amount||'').toLowerCase().includes(s) ||
+      String(tx.bankAmount||'').toLowerCase().includes(s)
+    );
+  }
+
+  function getFiltered(arr){
+    return arr.filter(tx => matchesSearch(tx, cbSearch));
+  }
+
+  function paginate(arr){
+    const total = arr.length;
+    const pages = Math.max(1, Math.ceil(total / cbPageSize));
+    cbPage = Math.min(cbPage, pages);
+    const start = (cbPage - 1) * cbPageSize;
+    const end = start + cbPageSize;
+    return { pageItems: arr.slice(start, end), total, pages, startIndex: start };
+  }
+
+  function setTheme(){
+    cbWrap.setAttribute("data-theme", cbActiveTab);
+  }
+
+  function setTabUI(){
+    cbReceiptsTab.classList.toggle("cb-active", cbActiveTab === "receipts");
+    cbPaymentsTab.classList.toggle("cb-active", cbActiveTab === "payments");
+    cbActivePill.textContent = cbActiveTab === "receipts"
+      ? cashbookTranslations[cashbookLang].receipts
+      : cashbookTranslations[cashbookLang].payments;
+    setTheme();
+    renderAll();
+  }
+
+  function setEditingUI(){
+    const t = cashbookTranslations[cashbookLang];
+
+    cbEditIcon.classList.toggle("cb-hidden", cbIsEditing);
+    cbSaveIcon.classList.toggle("cb-hidden", !cbIsEditing);
+    cbEditSaveText.textContent = cbIsEditing ? t.saveButton : t.editButton;
+
+    cbCancelBtn.classList.toggle("cb-hidden", !cbIsEditing);
+    cbCancelText.textContent = t.cancelButton;
+
+    cbSelectAll.classList.toggle("cb-hidden", !cbIsEditing || !cbBulkMode);
+
+    cbBulkDeleteText.textContent = cbBulkMode ? t.bulkDeleteSelected : t.bulkDelete;
+  }
+
+  function setBulkMode(on){
+    cbBulkMode = on;
+    cbSelected.clear();
+    cbSelectAll.checked = false;
+    cbSelectAll.classList.toggle("cb-hidden", !cbIsEditing || !cbBulkMode);
+
+    setEditingUI();
+    renderAll();
+  }
+
+  function openOverlay(el){
+    el.classList.add("cb-show");
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }
+  function closeOverlay(el){
+    el.classList.remove("cb-show");
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+  }
+
+  function openSaveConfirm(){
+    const t = cashbookTranslations[cashbookLang];
+    cbSaveTitle.textContent = t.confirmTitle;
+    cbSaveMsg.textContent = t.confirmMsg;
+    cbSaveCancel.textContent = t.confirmNo;
+    cbSaveYes.textContent = t.confirmYes;
+    openOverlay(cbSaveOverlay);
+  }
+
+  function openDeleteConfirm(customMsg){
+    const t = cashbookTranslations[cashbookLang];
+    cbDeleteTitle.textContent = t.deleteTitle;
+    cbDeleteMsg.textContent = customMsg || t.deleteMsg;
+    cbDeleteCancel.textContent = t.confirmNo;
+    cbDeleteYes.textContent = t.deleteYes;
+    openOverlay(cbDeleteOverlay);
+  }
+
+  function openGateResetConfirm(){
+    const t = cashbookTranslations[cashbookLang];
+    cbGateResetTitle.textContent = t.gateResetTitle;
+    cbGateResetMsg.textContent = t.gateResetMsg;
+    cbGateResetCancel.textContent = t.confirmNo;
+    cbGateResetYes.textContent = t.confirmYes;
+    openOverlay(cbGateResetOverlay);
+  }
+
+  function openLockModal(){
+    const t = cashbookTranslations[cashbookLang];
+    cbLockTitle.textContent = t.lockTitle;
+    cbLockMsg.textContent = t.lockMsg;
+    cbLockOk.textContent = t.lockOk;
+    openOverlay(cbLockOverlay);
+  }
+
+  /* ✅ INFO MODAL (FIXED)
+     Reuse lock modal as a generic "Info / Success / Error" popup.
+     (Previously your save handler crashed due to CBT/cbLang undefined.) */
+  function openInfoModal(title, message){
+    cbLockTitle.textContent = title || "Info";
+    cbLockMsg.textContent = message || "";
+    cbLockOk.textContent = (cashbookTranslations[cashbookLang] || {}).lockOk || "OK";
+    openOverlay(cbLockOverlay);
+  }
+
+  function monthNames(lang){
+    if (lang === "bn"){
+      return ["জানু","ফেব","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগ","সেপ্ট","অক্টো","নভে","ডিসে"];
+    }
+    return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  }
+
+  function periodText(m, y){
+    const names = monthNames(cashbookLang);
+    if (m === null || y === null) return "—";
+    return `${names[m]} ${y}`;
+  }
+
+  function fillGateSelects(){
+    const now = new Date();
+    const names = monthNames(cashbookLang);
+
+    cbGateMonth.innerHTML = "";
+    names.forEach((m,i)=>{
+      const o = document.createElement("option");
+      o.value = String(i);
+      o.textContent = m;
+      cbGateMonth.appendChild(o);
+    });
+
+    cbGateYear.innerHTML = "";
+    const y0 = now.getFullYear() - 5;
+    const y1 = now.getFullYear() + 5;
+    for (let y=y0; y<=y1; y++){
+      const o = document.createElement("option");
+      o.value = String(y);
+      o.textContent = String(y);
+      cbGateYear.appendChild(o);
+    }
+
+    cbGateMonth.value = String(now.getMonth());
+    cbGateYear.value = String(now.getFullYear());
+  }
+
+  function showGate(){
+    cbGate.classList.remove("cb-hidden");
+    cbApp.classList.add("cb-hidden");
+  }
+
+  function showApp(){
+    cbGate.classList.add("cb-hidden");
+    cbApp.classList.remove("cb-hidden");
+  }
+
+  function applyPeriodToHeader(){
+    cbPeriodBadge.textContent = periodText(cbPeriodMonth, cbPeriodYear);
+  }
+
+  function applyLanguage(){
+    const t = cashbookTranslations[cashbookLang];
+
+    // Gate
+    cbGateTitle.textContent = t.gateTitle;
+    cbGateSub.textContent = t.gateSub;
+    cbGateMonthLabel.textContent = t.gateMonth;
+    cbGateYearLabel.textContent = t.gateYear;
+    cbGateReset.textContent = t.gateReset;
+    cbGateContinue.textContent = t.gateContinue;
+
+    // Header + summary
+    cbHeaderTitle.textContent = t.title;
+    cbLabelReceipts.textContent = t.receipts;
+    cbLabelPayments.textContent = t.payments;
+    cbLabelBalance.textContent = t.balance;
+
+    // Tabs + active pill
+    cbTabReceipts.textContent = t.receipts;
+    cbTabPayments.textContent = t.payments;
+    cbActivePill.textContent = cbActiveTab === "receipts" ? t.receipts : t.payments;
+
+    // Toolbar
+    cbAddText.textContent = t.addButton;
+    cbBulkDeleteText.textContent = cbBulkMode ? t.bulkDeleteSelected : t.bulkDelete;
+
+    // Table heads
+    cb$("cbThSL").textContent = t.sl;
+    cb$("cbThDate").textContent = t.date;
+    cb$("cbThParticulars").textContent = t.particulars;
+    cb$("cbThLF").textContent = t.lf;
+    cb$("cbThAmount").textContent = t.amount;
+    cb$("cbThBankAmount").textContent = t.bankAmount;
+    cb$("cbThTotal").textContent = t.total;
+
+    // Totals
+    cbPresentLabel.textContent = t.presentTotal;
+    cbGrandLabel.textContent = t.grandTotal;
+
+    // Pager buttons (Page label becomes translated via renderTable)
+    cbPrev.textContent = t.prev;
+    cbNext.textContent = t.next;
+
+    // Search placeholder
+    cbSearchInput.placeholder = t.searchPh;
+
+    // ✅ Make ALL modals translated even before opening
+    cbSaveTitle.textContent = t.confirmTitle;
+    cbSaveMsg.textContent = t.confirmMsg;
+    cbSaveCancel.textContent = t.confirmNo;
+    cbSaveYes.textContent = t.confirmYes;
+
+    cbDeleteTitle.textContent = t.deleteTitle;
+    cbDeleteMsg.textContent = t.deleteMsg;
+    cbDeleteCancel.textContent = t.confirmNo;
+    cbDeleteYes.textContent = t.deleteYes;
+
+    cbPeriodConfirmTitle.textContent = t.periodConfirmTitle;
+    cbPeriodConfirmCancel.textContent = t.confirmNo;
+    cbPeriodConfirmYes.textContent = t.confirmYes;
+
+    cbGateResetTitle.textContent = t.gateResetTitle;
+    cbGateResetMsg.textContent = t.gateResetMsg;
+    cbGateResetCancel.textContent = t.confirmNo;
+    cbGateResetYes.textContent = t.confirmYes;
+
+    cbLockTitle.textContent = t.lockTitle;
+    cbLockMsg.textContent = t.lockMsg;
+    cbLockOk.textContent = t.lockOk;
+
+    fillGateSelects();
+    applyPeriodToHeader();
+
+    setEditingUI();
+    if (!cbApp.classList.contains("cb-hidden")) renderAll();
+  }
+
+  /* ============================================================
+     DATE helpers (unchanged)
+     ============================================================ */
+  function cbPad2(n){ return String(n).padStart(2,"0"); }
+  function cbIsLeapYear(y){ return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0); }
+  function cbDaysInMonth(m, y){
+    const mm = Number(m);
+    const yy = Number(y);
+    const days = [31, (cbIsLeapYear(yy)?29:28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    return days[mm-1] || 31;
+  }
+  function cbFormatDateTimeFromDigits(raw){
+    const digits = String(raw || "").replace(/\D/g, "");
+    const d = digits.slice(0,2);
+    const m = digits.slice(2,4);
+    const y = digits.slice(4,8);
+    const t = digits.slice(8,12);
+    let out = "";
+    if (d) out += d;
+    if (m) out += (out.length>=2 ? "-" : "") + m;
+    if (y) out += (out.length>=5 ? "-" : (out.length>=4 ? "-" : "")) + y;
+    if (t){
+      const hh = t.slice(0,2);
+      const mm = t.slice(2,4);
+      out += " " + hh + (mm ? ":" + mm : "");
+    }
+    return out;
+  }
+  function cbNormalizeManualDateTime(value){ return cbFormatDateTimeFromDigits(value); }
+  function cbIsValidDateTime(value){
+    const s = String(value || "").trim();
+    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})$/);
+    if (!m) return false;
+    const dd = Number(m[1]);
+    const mm = Number(m[2]);
+    const yyyy = Number(m[3]);
+    const HH = Number(m[4]);
+    const MIN = Number(m[5]);
+    if (yyyy < 1900 || yyyy > 2100) return false;
+    if (mm < 1 || mm > 12) return false;
+    const maxD = cbDaysInMonth(mm, yyyy);
+    if (dd < 1 || dd > maxD) return false;
+    if (HH < 0 || HH > 23) return false;
+    if (MIN < 0 || MIN > 59) return false;
+    return true;
+  }
+  function cbToDatetimeLocal(str){
+    const s = String(str || "").trim();
+    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})$/);
+    if (!m) return "";
+    const dd = m[1], mm = m[2], yyyy = m[3], HH = m[4], MIN = m[5];
+    return `${yyyy}-${mm}-${dd}T${HH}:${MIN}`;
+  }
+  function cbFromDatetimeLocal(v){
+    const s = String(v || "").trim();
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (!m) return "";
+    const yyyy = m[1], mm = m[2], dd = m[3], HH = m[4], MIN = m[5];
+    return `${dd}-${mm}-${yyyy} ${HH}:${MIN}`;
+  }
+  function cbAttachDateBehavior(textInput, hiddenPicker, onValue){
+    textInput.addEventListener("input", ()=>{
+      if (!cbIsEditing) return;
+      const before = textInput.value;
+      const after = cbNormalizeManualDateTime(before);
+      if (after !== before){
+        const pos = textInput.selectionStart || after.length;
+        textInput.value = after;
+        try{ textInput.setSelectionRange(pos, pos); }catch(_){}
+      }
+      textInput.classList.remove("cb-invalid");
+      onValue(textInput.value);
+    });
+
+    textInput.addEventListener("blur", ()=>{
+      if (!cbIsEditing) return;
+      const v = String(textInput.value || "").trim();
+      if (!v){
+        textInput.classList.remove("cb-invalid");
+        onValue("");
+        return;
+      }
+      const ok = cbIsValidDateTime(v);
+      textInput.classList.toggle("cb-invalid", !ok);
+      onValue(textInput.value);
+      if (ok && hiddenPicker){
+        hiddenPicker.value = cbToDatetimeLocal(v);
+      }
+    });
+
+    if (hiddenPicker){
+      hiddenPicker.addEventListener("change", ()=>{
+        if (!cbIsEditing) return;
+        const formatted = cbFromDatetimeLocal(hiddenPicker.value);
+        if (formatted){
+          textInput.value = formatted;
+          textInput.classList.remove("cb-invalid");
+          onValue(formatted);
+        }
+      });
+    }
+  }
+  function cbOpenPicker(pickerEl){
+    if (!pickerEl) return;
+    try{
+      if (typeof pickerEl.showPicker === "function"){
+        pickerEl.showPicker();
+        return;
+      }
+    }catch(_){}
+    try{ pickerEl.focus(); pickerEl.click(); }catch(_){}
+  }
+
+  /* ============================================================
+     EDIT LOCK (unchanged)
+     ============================================================ */
+  let cbLockActive = false;
+  let cbLockPushed = false;
+  let cbLockOpen = false;
+
+  function cbSetLock(on){
+    cbLockActive = !!on;
+
+    if (cbLockActive && !cbLockPushed){
+      try{
+        history.pushState({ cb_lock: true }, document.title, location.href);
+        cbLockPushed = true;
+      }catch(_){}
+    }
+    if (!cbLockActive){
+      cbLockPushed = false;
+      cbLockOpen = false;
+      closeOverlay(cbLockOverlay);
+    }
+  }
+
+  function cbTriggerLockModal(){
+    if (!cbLockActive) return;
+    if (cbLockOpen) return;
+    cbLockOpen = true;
+    openLockModal();
+  }
+
+  cbLockOk.addEventListener("click", ()=>{
+    cbLockOpen = false;
+    closeOverlay(cbLockOverlay);
+  });
+  cbLockOverlay.addEventListener("click", (e)=>{
+    if (e.target === cbLockOverlay){
+      cbLockOpen = false;
+      closeOverlay(cbLockOverlay);
+    }
+  });
+
+  window.addEventListener("popstate", ()=>{
+    if (!cbLockActive) return;
+    try{ history.pushState({ cb_lock: true }, document.title, location.href); }catch(_){}
+    cbTriggerLockModal();
+  });
+
+  document.addEventListener("click", (e)=>{
+    if (!cbLockActive) return;
+
+    const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
+    if (!a) return;
+
+    const href = (a.getAttribute("href") || "").trim();
+    if (!href || href === "#" || href.startsWith("#") || href.toLowerCase().startsWith("javascript:")) return;
+
+    if (e.ctrlKey || e.metaKey || e.button === 1) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    cbTriggerLockModal();
+  }, true);
+
+  window.addEventListener("keydown", (e)=>{
+    if (!cbLockActive) return;
+
+    const key = (e.key || "").toLowerCase();
+    const isF5 = (key === "f5") || (e.keyCode === 116);
+    const isCtrlF5 = (e.ctrlKey && isF5);
+    const isCtrlR = (e.ctrlKey || e.metaKey) && (key === "r");
+    const isHardReload = ((e.ctrlKey || e.metaKey) && e.shiftKey && key === "r") || isCtrlF5;
+
+    if (isF5 || isCtrlR || isHardReload){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      cbTriggerLockModal();
+      return false;
+    }
+  }, true);
+
+  window.addEventListener("beforeunload", (e) => {
+    if (!cbLockActive) return;
+    e.preventDefault();
+    e.returnValue = "";
+  });
+
+  /* ============================================================
+     ✅ LANGUAGE SYNC (FIXED: supports BOTH event names)
+     ============================================================ */
+  function cbNormalizeLang(v){
+    if (!v) return null;
+    const s = String(v).toLowerCase();
+    if (s === "bn" || s.includes("bangla") || s.includes("বাংলা") || s.includes("bengali")) return "bn";
+    if (s === "en" || s.includes("english")) return "en";
+    return null;
+  }
+
+  function cbDetectGlobalLang(){
+    try{
+      // Prefer base helper
+      if (window.PGMIS && typeof window.PGMIS.getLanguage === "function"){
+        const n = cbNormalizeLang(window.PGMIS.getLanguage());
+        if (n) return n;
+      }
+
+      // Legacy globals
+      if (typeof window.currentLanguage !== "undefined" && window.currentLanguage){
+        const n = cbNormalizeLang(window.currentLanguage);
+        if (n) return n;
+      }
+
+      // HTML hints
+      const hl = (document.documentElement.getAttribute("lang") || "");
+      const hdl = (document.documentElement.getAttribute("data-lang") || "");
+      const bdl = (document.body && document.body.getAttribute("data-lang") || "");
+      const n1 = cbNormalizeLang(hl) || cbNormalizeLang(hdl) || cbNormalizeLang(bdl);
+      if (n1) return n1;
+
+      // Storage
+      const keys = ["PGMIS_LANG_SESSION","pgmis_lang","pgmisLang","lang","language","locale","i18n_lang"];
+      for (const k of keys){
+        const lv = (sessionStorage.getItem(k) || localStorage.getItem(k) || "");
+        const n = cbNormalizeLang(lv);
+        if (n) return n;
+      }
+    }catch(_){}
+    return null;
+  }
+
+  function syncFromGlobal(){
+    const g = cbDetectGlobalLang();
+    if (!g) return;
+    if (g === cashbookLang) return;
+    cashbookLang = g;
+    applyLanguage();
+  }
+
+  // ✅ Support both broadcast names from base pages
+  window.addEventListener("pgmis:language-change", (e)=>{
+    const lang = cbNormalizeLang(e?.detail?.lang) || cbDetectGlobalLang() || "en";
+    if (lang === cashbookLang) return;
+    cashbookLang = lang;
+    applyLanguage();
+  });
+  window.addEventListener("pgmis-language-change", (e)=>{
+    const lang = cbNormalizeLang(e?.detail?.lang) || cbDetectGlobalLang() || "en";
+    if (lang === cashbookLang) return;
+    cashbookLang = lang;
+    applyLanguage();
+  });
+
+  window.addEventListener("storage", syncFromGlobal);
+  window.addEventListener("languagechange", syncFromGlobal);
+
+  try{
+    const _langObs = new MutationObserver(()=>syncFromGlobal());
+    _langObs.observe(document.documentElement, { attributes:true, attributeFilter:["lang","data-lang"] });
+    if (document.body) _langObs.observe(document.body, { attributes:true, attributeFilter:["data-lang"] });
+  }catch(_){}
+
+  /* ============================================================
+     rest of your logic unchanged
+     ============================================================ */
+  function renderTotals(){
+    const r = sumTotals(cbReceipts);
+    const p = sumTotals(cbPayments);
+    cbReceiptsTotal.textContent = formatINR(r);
+    cbPaymentsTotal.textContent = formatINR(p);
+    cbBalanceTotal.textContent = formatINR(r - p);
+  }
+
+  function renderTable(){
+    const active = getActiveArr();
+    const filtered = getFiltered(active);
+    const { pageItems, total, pages, startIndex } = paginate(filtered);
+
+    const t = cashbookTranslations[cashbookLang];
+    const from = total === 0 ? 0 : startIndex + 1;
+    const to = Math.min(startIndex + pageItems.length, total);
+    cbPagerInfo.textContent = t.pageInfo(from, to, total);
+    cbPageInd.textContent = t.pageInd(cbPage, pages);
+
+    cbPrev.disabled = (cbPage <= 1);
+    cbNext.disabled = (cbPage >= pages);
+
+    cbRows.innerHTML = "";
+
+    cbSelectAll.classList.toggle("cb-hidden", !cbIsEditing || !cbBulkMode);
+    if (!cbIsEditing) cbSelectAll.checked = false;
+
+    pageItems.forEach((tx, idx) => {
+      const slNo = startIndex + idx + 1;
+
+      const row = document.createElement("div");
+      row.className = "cb-row";
+
+      const c0 = document.createElement("div");
+      c0.className = "cb-c cb-center";
+      if (cbIsEditing && cbBulkMode){
+        const chk = document.createElement("input");
+        chk.type = "checkbox";
+        chk.className = "cb-check";
+        chk.checked = cbSelected.has(tx.id);
+        chk.addEventListener("change", ()=>{
+          if (chk.checked) cbSelected.add(tx.id);
+          else cbSelected.delete(tx.id);
+          const allIds = pageItems.map(x=>x.id);
+          cbSelectAll.checked = allIds.length > 0 && allIds.every(id=>cbSelected.has(id));
+        });
+        c0.appendChild(chk);
+      }
+      row.appendChild(c0);
+
+      const c1 = document.createElement("div");
+      c1.className = "cb-c cb-center";
+      c1.textContent = String(slNo);
+      row.appendChild(c1);
+
+      const c2 = document.createElement("div");
+      c2.className = "cb-c";
+
+      const dateWrap = document.createElement("div");
+      dateWrap.className = "cb-date-wrap";
+
+      const inDate = document.createElement("input");
+      inDate.className = "cb-input";
+      inDate.value = tx.date || "";
+      inDate.readOnly = !cbIsEditing;
+      inDate.placeholder = cashbookTranslations[cashbookLang].datePh;
+
+      const dtPick = document.createElement("input");
+      dtPick.type = "datetime-local";
+      dtPick.className = "cb-date-hidden";
+      dtPick.tabIndex = -1;
+      dtPick.value = tx.date ? cbToDatetimeLocal(tx.date) : "";
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cb-date-btn";
+      btn.title = cashbookTranslations[cashbookLang].calendarTitle;
+      btn.innerHTML = `
+        <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      `;
+      btn.disabled = !cbIsEditing;
+      btn.addEventListener("click", ()=>{
+        if (!cbIsEditing) return;
+        cbOpenPicker(dtPick);
+      });
+
+      cbAttachDateBehavior(inDate, dtPick, (v)=>{ tx.date = v; });
+
+      dateWrap.appendChild(inDate);
+      dateWrap.appendChild(btn);
+      dateWrap.appendChild(dtPick);
+      c2.appendChild(dateWrap);
+      row.appendChild(c2);
+
+      const c3 = document.createElement("div");
+      c3.className = "cb-c";
+      const inPar = document.createElement("input");
+      inPar.className = "cb-input";
+      inPar.value = tx.particulars || "";
+      inPar.readOnly = !cbIsEditing;
+      inPar.placeholder = t.particulars;
+      inPar.addEventListener("input", ()=>{ tx.particulars = inPar.value; });
+      c3.appendChild(inPar);
+      row.appendChild(c3);
+
+      const c4 = document.createElement("div");
+      c4.className = "cb-c";
+      const inLf = document.createElement("input");
+      inLf.className = "cb-input";
+      inLf.value = tx.lf || "";
+      inLf.readOnly = !cbIsEditing;
+      inLf.placeholder = t.lf;
+      inLf.addEventListener("input", ()=>{ tx.lf = inLf.value; });
+      c4.appendChild(inLf);
+      row.appendChild(c4);
+
+      const c5 = document.createElement("div");
+      c5.className = "cb-c cb-right";
+      const inA = document.createElement("input");
+      inA.className = "cb-input cb-amt";
+      inA.value = Number(tx.amount || 0);
+      inA.readOnly = !cbIsEditing;
+      inA.inputMode = "decimal";
+      inA.addEventListener("input", ()=>{
+        tx.amount = Number(inA.value || 0);
+        renderTotals();
+        renderPresentGrand();
+        renderMobile();
+      });
+      c5.appendChild(inA);
+      row.appendChild(c5);
+
+      const c6 = document.createElement("div");
+      c6.className = "cb-c cb-right";
+      const inB = document.createElement("input");
+      inB.className = "cb-input cb-amt";
+      inB.value = Number(tx.bankAmount || 0);
+      inB.readOnly = !cbIsEditing;
+      inB.inputMode = "decimal";
+      inB.addEventListener("input", ()=>{
+        tx.bankAmount = Number(inB.value || 0);
+        renderTotals();
+        renderPresentGrand();
+        renderMobile();
+      });
+      c6.appendChild(inB);
+      row.appendChild(c6);
+
+      const c7 = document.createElement("div");
+      c7.className = "cb-c cb-right";
+      c7.style.fontWeight = "950";
+      c7.style.color = "var(--c-900)";
+      c7.textContent = formatINR(txTotal(tx));
+      row.appendChild(c7);
+
+      const c8 = document.createElement("div");
+      c8.className = "cb-c cb-center";
+      if (cbIsEditing){
+        const del = document.createElement("button");
+        del.className = "cb-del";
+        del.type = "button";
+        del.innerHTML = "🗑";
+        del.addEventListener("click", ()=>{
+          cbPendingDeleteIds = [tx.id];
+          openDeleteConfirm();
+        });
+        c8.appendChild(del);
+      }
+      row.appendChild(c8);
+
+      cbRows.appendChild(row);
+    });
+
+    cbSelectAll.onchange = ()=>{
+      if (!cbIsEditing || !cbBulkMode) return;
+      const ids = pageItems.map(x=>x.id);
+      if (cbSelectAll.checked){
+        ids.forEach(id=>cbSelected.add(id));
+      } else {
+        ids.forEach(id=>cbSelected.delete(id));
+      }
+      renderTable();
+    };
+  }
+
+  function renderPresentGrand(){
+    const active = getActiveArr();
+    const filtered = getFiltered(active);
+    const { pageItems } = paginate(filtered);
+
+    const present = sumTotals(pageItems);
+    const grand = sumTotals(filtered);
+
+    cbPresentTotal.textContent = formatINR(present);
+    cbGrandTotal.textContent = formatINR(grand);
+
+    cbMobileTotals.style.display = "none";
+  }
+
+  function renderMobile(){
+    const active = getActiveArr();
+    const filtered = getFiltered(active);
+    const { pageItems, startIndex } = paginate(filtered);
+
+    cbMobile.innerHTML = "";
+
+    pageItems.forEach((tx, idx)=>{
+      const slNo = startIndex + idx + 1;
+
+      const card = document.createElement("div");
+      card.className = "cb-mcard";
+
+      const top = document.createElement("div");
+      top.className = "cb-mtop";
+
+      const title = document.createElement("div");
+      title.className = "cb-mtitle";
+      title.innerHTML = `<span class="cb-sl-badge">${slNo}</span> <span>${tx.particulars || "-"}</span>`;
+
+      top.appendChild(title);
+      card.appendChild(top);
+
+      cbMobile.appendChild(card);
+    });
+
+    const present = sumTotals(pageItems);
+    const grand = sumTotals(filtered);
+    cbMobileTotals.style.display = "flex";
+    cbMobileTotals.innerHTML = `
+      <div class="cb-mtrow"><span>${cashbookTranslations[cashbookLang].presentTotal}</span><strong>${formatINR(present)}</strong></div>
+      <div class="cb-mtrow cb-grand"><span>${cashbookTranslations[cashbookLang].grandTotal}</span><strong>${formatINR(grand)}</strong></div>
+    `;
+  }
+
+  function renderAll(){
+    renderTotals();
+    renderPresentGrand();
+    renderTable();
+    renderMobile();
+  }
+
+  function openPeriodConfirm(){
+    const t = cashbookTranslations[cashbookLang];
+    const m = monthNames(cashbookLang)[cbPendingPeriod.month];
+    const y = cbPendingPeriod.year;
+
+    cbPeriodConfirmTitle.textContent = t.periodConfirmTitle;
+    cbPeriodConfirmMsg.textContent = t.periodConfirmMsg(m, y);
+    cbPeriodConfirmCancel.textContent = t.confirmNo;
+    cbPeriodConfirmYes.textContent = t.confirmYes;
+
+    openOverlay(cbPeriodConfirmOverlay);
+  }
+
+  async function applyPeriodAndLoad(){
+    cbPeriodMonth = cbPendingPeriod.month;
+    cbPeriodYear = cbPendingPeriod.year;
+
+    applyPeriodToHeader();
+    showApp();
+
+    ensureRows();
+    await cbLoadServer();
+    setTheme();
+    setEditingUI();
+    renderAll();
+  }
+
+  cbReceiptsTab.addEventListener("click", ()=>{
+    cbActiveTab = "receipts";
+    cbPage = 1;
+    setTabUI();
+  });
+  cbPaymentsTab.addEventListener("click", ()=>{
+    cbActiveTab = "payments";
+    cbPage = 1;
+    setTabUI();
+  });
+
+  cbSearchInput.addEventListener("input", ()=>{
+    cbSearch = cbSearchInput.value.trim();
+    cbPage = 1;
+    renderAll();
+  });
+
+  cbPageSizeSelect.addEventListener("change", ()=>{
+    cbPageSize = Number(cbPageSizeSelect.value || 25);
+    cbPage = 1;
+    renderAll();
+  });
+
+  cbPrev.addEventListener("click", ()=>{
+    cbPage = Math.max(1, cbPage - 1);
+    renderAll();
+  });
+  cbNext.addEventListener("click", ()=>{
+    cbPage = cbPage + 1;
+    renderAll();
+  });
+
+  cbAddBtn.addEventListener("click", ()=>{
+    if (!cbIsEditing) return;
+    const arr = getActiveArr();
+    arr.push(makeTx());
+    renderAll();
+  });
+
+  cbBulkDeleteBtn.addEventListener("click", ()=>{
+    if (!cbIsEditing) return;
+
+    if (!cbBulkMode){
+      setBulkMode(true);
+      return;
+    }
+
+    if (cbSelected.size === 0){
+      openDeleteConfirm(cashbookLang === "bn"
+        ? "দয়া করে মুছতে সারি নির্বাচন করুন।"
+        : "Please select rows to delete.");
+      cbPendingDeleteIds = [];
+      return;
+    }
+
+    cbPendingDeleteIds = [];
+    openDeleteConfirm();
+  });
+
+  cbEditSaveBtn.addEventListener("click", ()=>{
+    if (!cbIsEditing){
+      cbIsEditing = true;
+      cbSnapshot = { receipts: deepClone(cbReceipts), payments: deepClone(cbPayments) };
+
+      cbSetLock(true);
+
+      setEditingUI();
+      renderAll();
+      return;
+    }
+    openSaveConfirm();
+  });
+
+  cbCancelBtn.addEventListener("click", ()=>{
+    if (!cbIsEditing) return;
+    cbReceipts.length = 0; cbSnapshot.receipts.forEach(x=>cbReceipts.push(x));
+    cbPayments.length = 0; cbSnapshot.payments.forEach(x=>cbPayments.push(x));
+    cbIsEditing = false;
+
+    cbSetLock(false);
+
+    setBulkMode(false);
+    setEditingUI();
+    renderAll();
+  });
+
+  cbSaveCancel.addEventListener("click", ()=>closeOverlay(cbSaveOverlay));
+
+  /* ✅ SAVE FLOW FIXED: always shows success/failure popup (no undefined vars) */
+  cbSaveYes.addEventListener("click", async ()=>{
+    const result = await cbSaveServer();
+
+    // Close confirm modal first so the info popup is visible
+    closeOverlay(cbSaveOverlay);
+
+    const t = cashbookTranslations[cashbookLang] || {};
+    if (!result.ok){
+      openInfoModal(
+        (cashbookLang === "bn") ? "সংরক্ষণ ব্যর্থ" : "Save failed",
+        (cashbookLang === "bn")
+          ? ("সার্ভারে সংরক্ষণ করা যায়নি: " + (result.message || "ত্রুটি"))
+          : ("Server save failed: " + (result.message || "Error"))
+      );
+    } else {
+      openInfoModal(
+        (cashbookLang === "bn") ? "সংরক্ষণ সম্পন্ন" : "Saved",
+        result.message || ((cashbookLang === "bn") ? "সফলভাবে সংরক্ষিত" : "Saved successfully")
+      );
+    }
+
+    cbIsEditing = false;
+    cbSetLock(false);
+    setBulkMode(false);
+    setEditingUI();
+    renderAll();
+  });
+
+  cbSaveOverlay.addEventListener("click", (e)=>{ if (e.target === cbSaveOverlay) closeOverlay(cbSaveOverlay); });
+
+  cbDeleteCancel.addEventListener("click", ()=>{ cbPendingDeleteIds = []; closeOverlay(cbDeleteOverlay); });
+
+  cbDeleteYes.addEventListener("click", ()=>{
+    const arr = getActiveArr();
+    const ids = cbPendingDeleteIds.length ? cbPendingDeleteIds : Array.from(cbSelected);
+
+    if (!ids.length){
+      closeOverlay(cbDeleteOverlay);
+      return;
+    }
+
+    const keep = arr.filter(tx => !ids.includes(tx.id));
+    arr.length = 0; keep.forEach(x=>arr.push(x));
+
+    cbPendingDeleteIds = [];
+    cbSelected.clear();
+    cbSelectAll.checked = false;
+
+    closeOverlay(cbDeleteOverlay);
+    renderAll();
+  });
+  cbDeleteOverlay.addEventListener("click", (e)=>{ if (e.target === cbDeleteOverlay) closeOverlay(cbDeleteOverlay); });
+
+  cbGateContinue.addEventListener("click", ()=>{
+    cbPendingPeriod = {
+      month: Number(cbGateMonth.value),
+      year: Number(cbGateYear.value),
+    };
+    openPeriodConfirm();
+  });
+
+  cbPeriodConfirmCancel.addEventListener("click", ()=>closeOverlay(cbPeriodConfirmOverlay));
+  cbPeriodConfirmYes.addEventListener("click", async ()=>{
+    closeOverlay(cbPeriodConfirmOverlay);
+    applyPeriodAndLoad();
+  });
+  cbPeriodConfirmOverlay.addEventListener("click", (e)=>{ if (e.target === cbPeriodConfirmOverlay) closeOverlay(cbPeriodConfirmOverlay); });
+
+  cbGateReset.addEventListener("click", ()=>openGateResetConfirm());
+
+  cbGateResetCancel.addEventListener("click", ()=>closeOverlay(cbGateResetOverlay));
+  cbGateResetYes.addEventListener("click", ()=>{
+    closeOverlay(cbGateResetOverlay);
+    const now = new Date();
+    cbGateMonth.value = String(now.getMonth());
+    cbGateYear.value = String(now.getFullYear());
+  });
+  cbGateResetOverlay.addEventListener("click", (e)=>{ if (e.target === cbGateResetOverlay) closeOverlay(cbGateResetOverlay); });
+
+  document.addEventListener("keydown", (e)=>{
+    if (e.key !== "Escape") return;
+    [cbSaveOverlay, cbDeleteOverlay, cbPeriodConfirmOverlay, cbGateResetOverlay, cbLockOverlay].forEach(ov=>{
+      if (ov.classList.contains("cb-show")) closeOverlay(ov);
+    });
+    cbLockOpen = false;
+  });
+
+  function init(){
+    showGate();
+    setTheme();
+    setEditingUI();
+
+    // ✅ get language first from base (so initial render is Bangla if BN selected)
+    syncFromGlobal();
+    applyLanguage();
+
+    cbSetLock(false);
+    cbRehomeActions();
+  }
+
+  init();
+
+})();
+</script>
+
+<script>
+  // Required for cash_book.html API calls:
+  window.PG_ID = "{{ pg_id }}";
+</script>
+
+{% endblock %}

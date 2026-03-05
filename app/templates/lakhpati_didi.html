@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Lakhpati Didi – {{ pg.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <div>
+      <h4 class="mb-0">Lakhpati Didi Members</h4>
+      <div class="text-muted">PG: <b>{{ pg.name }}</b></div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary" href="{{ url_for('pg.pg_view', pg_id=pg._id) if session.get('role') != 'PG_DATA_ENTRY' else url_for('pg.pg_home') }}">Back to Dashboard</a>
+      <a class="btn btn-primary" href="/pg/export/{{ pg._id }}/summary.csv">Download CSV</a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      {% if not members %}
+        <div class="alert alert-info mb-0">No members are marked as Lakhpati Didi for this PG yet.</div>
+      {% else %}
+        <div class="table-responsive">
+          <table class="table table-striped align-middle mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Member Name</th>
+                <th>Spouse/Father</th>
+                <th>Category</th>
+                <th>SHG</th>
+                <th>Contact</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in members %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ m.name or '' }}</td>
+                <td>{{ m.spouse_name or '' }}</td>
+                <td>{{ m.category or '' }}</td>
+                <td>{{ m.shg_name or '' }}</td>
+                <td>{{ m.contact or '' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

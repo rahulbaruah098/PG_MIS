@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width: 1100px; margin: 18px auto;">
+  <h2>Pending Update Requests</h2>
+  <p style="color:#6b7280;">These are change-based updates created when a record is locked (post-approval). Approve/reject to apply.</p>
+
+  <div style="border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; background:#fff;">
+    <table class="table" style="width:100%; margin:0;">
+      <thead>
+        <tr>
+          <th style="padding:10px; background:#f8fafc;">Created</th>
+          <th style="padding:10px; background:#f8fafc;">Collection</th>
+          <th style="padding:10px; background:#f8fafc;">Doc</th>
+          <th style="padding:10px; background:#f8fafc;">By</th>
+          <th style="padding:10px; background:#f8fafc;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cr in pending %}
+        <tr>
+          <td style="padding:10px;">{{ cr.created_at }}</td>
+          <td style="padding:10px;">{{ cr.collection }}</td>
+          <td style="padding:10px;">{{ cr.doc_id }}</td>
+          <td style="padding:10px;">{{ cr.created_by.username }} ({{ cr.created_by.role }})</td>
+          <td style="padding:10px;">
+            <form method="post" action="{{ url_for('reports.decide_change', request_id=cr._id) }}" style="display:flex; gap:8px; align-items:center;">
+              <select name="decision" style="padding:8px; border:1px solid #e5e7eb; border-radius:10px;">
+                <option value="approve">Approve</option>
+                <option value="reject">Reject</option>
+              </select>
+              <input name="note" placeholder="Note (optional)" style="padding:8px; border:1px solid #e5e7eb; border-radius:10px; flex:1;">
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="padding:10px; color:#6b7280;">No pending requests.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

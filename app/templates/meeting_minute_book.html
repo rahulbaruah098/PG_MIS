@@ -1,0 +1,2430 @@
+{# templates/meeting_minute_book.html #}
+{% extends "base.html" %}
+{% block title %}Meeting Minutes Book{% endblock %}
+
+{% block head_extra %}
+  <!-- Ionicons (icons like React Native Ionicons) -->
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+  <style>
+    /* ============================================================
+       MEETING MINUTES BOOK (SCOPED) — under .mmb-wrap only
+       ✅ Single page: Meeting Minutes + Members Present (tabs)
+       ✅ Works inside your base.html layout (extends base)
+       ✅ Uses your global language system (EN/BN) from navbar
+       ✅ Responsive: mobile/tablet friendly (members rows become cards)
+       ✅ UPDATED THEME: matches your Ledger Book (paper/soft/line/accent)
+       ✅ REMOVED: page-local language button (navbar already has it)
+       ============================================================ */
+
+    .mmb-wrap{
+      width: 100%;
+      padding: clamp(12px, 2.2vw, 22px);
+
+      --ink:#0f172a;
+      --muted:#64748b;
+
+      --line: rgba(15,23,42,.18);
+      --line2: rgba(15,23,42,.12);
+
+      --paper:#ffffff;
+      --soft:#f7faf9;
+
+      --accent:#0b4d3a;
+      --accent2:#059669;
+
+      --danger:#dc2626;
+
+      --shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+      --shadow2: 0 16px 22px -18px rgba(15,23,42,.25);
+
+      --r16: 16px;
+      --r14: 14px;
+      --r12: 12px;
+      --r10: 10px;
+      --r8: 8px;
+
+      color: var(--ink);
+    }
+    .mmb-wrap *{ box-sizing:border-box; }
+
+    .mmb-shell{
+      width: 100%;
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    /* Paper sheet like ledger */
+    .mmb-sheet{
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--r16);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    /* Header like lb-head */
+    .mmb-head{
+      padding: 14px 16px 12px;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+        linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+      border-bottom: 1.5px solid var(--line2);
+      position: relative;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    /* ✅ allow center to shrink properly */
+    .mmb-titleWrap{
+      flex: 1 1 auto;
+      min-width: 0;
+      text-align:center;
+      padding: 0 8px;
+    }
+
+    .mmb-title{
+      margin:0;
+      font-weight: 950;
+      font-size: 18px;
+      letter-spacing: .2px;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    /* ✅ MOBILE FIX — prevent cropping */
+    @media (max-width: 560px){
+      .mmb-head{
+        align-items:flex-start;
+      }
+
+      .mmb-title{
+        white-space: normal;        /* allow wrap */
+        overflow: visible;
+        text-overflow: clip;
+        line-height: 1.15;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;      /* max 2 lines */
+        -webkit-box-orient: vertical;
+      }
+    }
+
+    /* very small phones */
+    @media (max-width: 420px){
+      .mmb-title{
+        font-size: 15px;
+      }
+    }
+
+    .mmb-btn{
+      border: 1px solid rgba(15,23,42,.14);
+      background: rgba(247,250,249,.8);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-weight: 950;
+      font-size: 12px;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .mmb-btn:hover{
+      transform: translateY(-1px);
+      background: #fff;
+      box-shadow: var(--shadow2);
+    }
+    .mmb-btn:active{ transform: translateY(0); }
+
+    .mmb-btnBack{
+      border-color: rgba(11,77,58,.28);
+      background: rgba(16,185,129,.10);
+      color: var(--accent);
+    }
+    .mmb-btn ion-icon{ font-size: 18px; }
+
+    /* Tabs row */
+    .mmb-tabs{
+      padding: 12px 16px 14px;
+      border-bottom: 1.5px solid var(--line2);
+      background: rgba(255,255,255,.94);
+    }
+
+    /* segmented control container */
+    .mmb-tabWrap{
+      border: 1px solid rgba(15,23,42,.14);
+      border-radius: 999px;
+      padding: 6px;
+      background: rgba(247,250,249,.75);
+      display:flex;
+      gap: 6px;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    /* each tab */
+    .mmb-tab{
+      flex: 1 1 0;
+      min-width: 0;
+      border: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 10px 10px;
+      background: transparent;
+      color: rgba(15,23,42,.75);
+      font-weight: 950;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 10px;
+      transition: background .15s ease, color .15s ease, transform .12s ease;
+      user-select:none;
+      white-space: normal;
+      line-height: 1.15;
+      text-align: center;
+    }
+
+    .mmb-tab ion-icon{
+      font-size: 18px;
+      flex: 0 0 auto;
+    }
+
+    .mmb-tab span{
+      display:block;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .mmb-tab:hover{ transform: translateY(-1px); }
+
+    .mmb-tab.active{
+      background: rgba(16,185,129,.14);
+      color: var(--accent);
+      border: 1px solid rgba(16,185,129,.25);
+    }
+
+    /* small tablet */
+    @media (max-width: 720px){
+      .mmb-tabs{ padding: 10px 12px 12px; }
+      .mmb-tab{ padding: 10px 8px; gap: 8px; }
+      .mmb-tab ion-icon{ font-size: 17px; }
+    }
+
+    /* ✅ mobile stacked tabs (FIXED brace + kept scoped) */
+    @media (max-width: 520px){
+      .mmb-tabWrap{
+        border-radius: 16px;
+        padding: 8px;
+        gap: 8px;
+        flex-direction: column;
+        overflow: visible;
+      }
+
+      .mmb-tab{
+        width: 100%;
+        justify-content: flex-start; /* nice mobile feel */
+        text-align: left;
+        border-radius: 14px;
+        padding: 12px 12px;
+        transform: none !important;
+      }
+
+      .mmb-tab span{
+        font-size: 13.5px;
+      }
+    }
+
+    /* ✅ very small phones */
+    @media (max-width: 380px){
+      .mmb-tab{ padding: 11px 11px; gap: 8px; }
+      .mmb-tab ion-icon{ font-size: 16px; }
+      .mmb-tab span{ font-size: 13px; }
+    }
+
+    /* Card panels like ledger interior sections */
+    .mmb-card{
+      padding: 16px;
+      background: rgba(255,255,255,.92);
+    }
+
+    .mmb-cardTitle{
+      margin: 4px 0 14px;
+      text-align:center;
+      font-size: 18px;
+      font-weight: 950;
+      color: var(--accent);
+      letter-spacing: .2px;
+    }
+
+    .mmb-field{ margin-bottom: 18px; }
+
+    .mmb-labelRow{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-bottom: 8px;
+      color: rgba(15,23,42,.78);
+      font-weight: 950;
+      font-size: 13px;
+    }
+    .mmb-labelRow ion-icon{ font-size: 16px; color: rgba(11,77,58,.95); }
+
+    .mmb-dateBtn{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      border: 1px solid rgba(15,23,42,.16);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: rgba(247,250,249,.75);
+      font-weight: 900;
+    }
+    .mmb-dateInput{
+      appearance: none;
+      border:0;
+      outline:0;
+      background: transparent;
+      color: var(--ink);
+      font-weight: 900;
+      font-size: 13px;
+      width: 100%;
+    }
+
+    .mmb-section{ margin: 16px 0 18px; }
+
+    .mmb-sectionTitle{
+      margin: 0 0 10px;
+      font-size: 14px;
+      font-weight: 950;
+      color: rgba(15,23,42,.78);
+    }
+
+    .mmb-rowLine{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      margin-bottom: 12px;
+    }
+
+    .mmb-wrap textarea,
+    .mmb-wrap input[type="text"]{
+      width: 100%;
+      border: 1px solid rgba(15,23,42,.16);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 13px;
+      background: rgba(247,250,249,.75);
+      color: var(--ink);
+      outline: none;
+      transition: box-shadow .12s ease, border-color .12s ease, background .12s ease;
+      font-weight: 800;
+    }
+    .mmb-wrap textarea{ min-height: 86px; resize: vertical; }
+    .mmb-wrap textarea:focus,
+    .mmb-wrap input[type="text"]:focus{
+      border-color: rgba(11,77,58,.40);
+      box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+      background: #fff;
+    }
+
+    .mmb-iconBtn{
+      border:0;
+      background: transparent;
+      cursor:pointer;
+      padding: 10px;
+      border-radius: 12px;
+      flex: 0 0 auto;
+      transition: transform .12s ease, background .12s ease;
+    }
+    .mmb-iconBtn:hover{ transform: translateY(-1px); background: rgba(239,68,68,.06); }
+    .mmb-iconBtnDanger ion-icon{ color: var(--danger); font-size: 18px; }
+
+    .mmb-addBtn{
+      width: 100%;
+      border: 1px dashed rgba(15,23,42,.20);
+      border-radius: 12px;
+      background: rgba(240,253,244,.8);
+      color: var(--accent);
+      font-weight: 950;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding: 10px 12px;
+      cursor:pointer;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+      user-select:none;
+    }
+    .mmb-addBtn:hover{
+      transform: translateY(-1px);
+      background: rgba(240,253,244,.95);
+      box-shadow: var(--shadow2);
+    }
+    .mmb-addBtn ion-icon{ font-size: 20px; }
+
+    .mmb-saveBtn{
+      width: 100%;
+      border: 1px solid rgba(16,185,129,.35);
+      border-radius: 12px;
+      background: rgba(16,185,129,.12);
+      color: var(--accent);
+      font-weight: 950;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding: 12px 14px;
+      cursor:pointer;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+      user-select:none;
+    }
+    .mmb-saveBtn:hover{
+      transform: translateY(-1px);
+      box-shadow: var(--shadow2);
+      background: rgba(16,185,129,.16);
+    }
+    .mmb-saveBtn ion-icon{ font-size: 20px; }
+
+    /* Members table (ledger-like rows) */
+    .mmb-tableHeader{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 12px 12px 0 0;
+      padding: 12px;
+      color: rgba(15,23,42,.78);
+      font-weight: 950;
+      font-size: 12px;
+    }
+    .mmb-thSl{ width:56px; text-align:center; }
+    .mmb-thName{ flex:1; }
+    .mmb-thSig{ width: 180px; }
+
+    .mmb-tableRow{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 12px;
+      background: rgba(255,255,255,.96);
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line2);
+    }
+
+    .mmb-tdSl{ width:56px; text-align:center; font-weight: 950; color: rgba(15,23,42,.80); }
+    .mmb-tdName{ flex:1; }
+    .mmb-tdSig{ width: 180px; }
+
+    .mmb-nameInput{
+      border: 1px solid rgba(15,23,42,.16) !important;
+      background: rgba(247,250,249,.75) !important;
+      padding: 10px 12px !important;
+      border-radius: 12px !important;
+      font-weight: 850 !important;
+    }
+
+    .mmb-captureBtn{
+      width: 100%;
+      border: 1px solid rgba(15,23,42,.16);
+      background: rgba(247,250,249,.75);
+      border-radius: 12px;
+      padding: 10px 10px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      font-weight: 950;
+      color: rgba(15,23,42,.80);
+      font-size: 12px;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+      user-select:none;
+    }
+    .mmb-captureBtn:hover{
+      transform: translateY(-1px);
+      background: #fff;
+      box-shadow: var(--shadow2);
+    }
+    .mmb-captureBtn ion-icon{ font-size: 18px; color: rgba(11,77,58,.95); }
+
+    .mmb-sigPreview{
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(15,23,42,.16);
+      background: #fff;
+    }
+    .mmb-sigPreview img{
+      width: 100%;
+      height: 64px;
+      object-fit: cover;
+      display:block;
+    }
+    .mmb-sigRemove{
+      position:absolute;
+      top: 6px;
+      right: 6px;
+      border:0;
+      background: #fff;
+      border-radius: 999px;
+      cursor:pointer;
+      padding: 0;
+      width: 26px;
+      height: 26px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 6px 14px rgba(0,0,0,.14);
+    }
+    .mmb-sigRemove ion-icon{ color: var(--danger); font-size: 18px; }
+
+    .mmb-rowDelete{
+      border:0;
+      background: transparent;
+      cursor:pointer;
+      padding: 8px;
+      border-radius: 12px;
+      margin-left: 4px;
+      transition: background .12s ease, transform .12s ease;
+    }
+    .mmb-rowDelete:hover{ background: rgba(239,68,68,.06); transform: translateY(-1px); }
+    .mmb-rowDelete ion-icon{ color: var(--danger); font-size: 18px; }
+
+    .mmb-mobileMeta{ display:none; }
+
+    .mmb-foot{
+      padding: 12px 16px;
+      text-align:center;
+      border-top: 1.5px solid var(--line2);
+      background: rgba(255,255,255,.94);
+      color: rgba(15,23,42,.70);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .mmb-fileInput{ display:none; }
+
+    @media (max-width: 720px){
+      .mmb-title{ font-size: 16px; }
+      .mmb-thSig, .mmb-tdSig{ width: 150px; }
+    }
+
+    @media (max-width: 560px){
+      .mmb-tableHeader{ display:none; }
+
+      .mmb-tableRow{
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        border-radius: 14px;
+        border: 1px solid rgba(15,23,42,.14);
+        margin-top: 10px;
+        box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
+      }
+
+      .mmb-tdSl, .mmb-tdName, .mmb-tdSig{
+        width: 100%;
+        text-align:left;
+      }
+
+      .mmb-mobileMeta{
+        display:flex;
+        align-items:center;
+        justify-content: space-between;
+        gap:10px;
+      }
+
+      .mmb-mobileSl{
+        font-weight: 950;
+        color: rgba(15,23,42,.78);
+      }
+
+      .mmb-rowDelete{ align-self: flex-end; margin-left: 0; }
+      .mmb-sigPreview img{ height: 90px; }
+    }
+
+    /* ============================================================
+       ✅ SIGNATURE LOGIC UPGRADE (Receipt Voucher style)
+       - Capture image (NOW uses real camera via getUserMedia when possible)
+       - Upload image
+       - Digital signature (canvas)
+       - Scoped to .mmb-wrap only
+       ============================================================ */
+    .mmb-sigActions{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+    @media (min-width: 561px){
+      .mmb-sigActions{
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .mmb-sigHint{
+      font-size: 11.5px;
+      font-weight: 900;
+      color: rgba(15,23,42,.65);
+      text-align:center;
+      margin-top: 8px;
+    }
+
+    /* Modal */
+    .mmb-sigModal{
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      background: rgba(15,23,42,.55);
+      backdrop-filter: blur(6px);
+    }
+    .mmb-sigModal.show{ display:flex; }
+
+    .mmb-sigModalCard{
+      width: min(920px, 100%);
+      background: rgba(255,255,255,.96);
+      border: 1px solid rgba(255,255,255,.45);
+      border-radius: 18px;
+      box-shadow: 0 26px 60px -30px rgba(0,0,0,.55);
+      overflow:hidden;
+    }
+    .mmb-sigModalHead{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap:10px;
+      padding: 12px 14px;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+        linear-gradient(135deg, rgba(240,253,244,.92), rgba(255,255,255,.96));
+      border-bottom: 1px solid rgba(15,23,42,.10);
+    }
+    .mmb-sigModalTitle{
+      font-weight: 950;
+      color: var(--accent);
+      letter-spacing: .2px;
+      font-size: 14px;
+      margin:0;
+    }
+    .mmb-sigClose{
+      border:0;
+      background:#fff;
+      border-radius: 999px;
+      width: 34px;
+      height: 34px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      box-shadow: 0 10px 18px -12px rgba(0,0,0,.35);
+    }
+    .mmb-sigClose ion-icon{ color: var(--danger); font-size: 20px; }
+
+    .mmb-sigModalBody{
+      padding: 14px;
+    }
+
+    .mmb-sigGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: stretch;
+    }
+    @media (max-width: 820px){
+      .mmb-sigGrid{ grid-template-columns: 1fr; }
+    }
+
+    .mmb-sigPane{
+      border: 1px solid rgba(15,23,42,.14);
+      border-radius: 14px;
+      background: rgba(247,250,249,.6);
+      overflow:hidden;
+    }
+    .mmb-sigPaneHead{
+      padding: 10px 12px;
+      font-weight: 950;
+      font-size: 12px;
+      color: rgba(15,23,42,.72);
+      border-bottom: 1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.8);
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap:10px;
+    }
+
+    .mmb-sigPaneBody{ padding: 12px; }
+
+    .mmb-sigPreviewLarge{
+      border: 1px solid rgba(15,23,42,.14);
+      border-radius: 12px;
+      background:#fff;
+      overflow:hidden;
+      height: 170px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .mmb-sigPreviewLarge img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display:block;
+      background:#fff;
+    }
+    .mmb-sigEmpty{
+      font-weight: 950;
+      color: rgba(15,23,42,.55);
+      font-size: 12px;
+    }
+
+    .mmb-padWrap{
+      border: 1px solid rgba(15,23,42,.14);
+      border-radius: 12px;
+      background:#fff;
+      overflow:hidden;
+    }
+    .mmb-pad{
+      width: 100%;
+      height: 170px;
+      display:block;
+      touch-action: none;
+      background:#fff;
+    }
+
+    .mmb-padBar{
+      display:flex;
+      gap:10px;
+      padding: 10px;
+      border-top: 1px solid rgba(15,23,42,.10);
+      background: rgba(247,250,249,.65);
+    }
+    .mmb-miniBtn{
+      flex: 1 1 auto;
+      border: 1px solid rgba(15,23,42,.14);
+      background: rgba(255,255,255,.92);
+      border-radius: 12px;
+      padding: 10px 10px;
+      cursor:pointer;
+      font-weight: 950;
+      font-size: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+      user-select:none;
+      white-space: nowrap;
+    }
+    .mmb-miniBtn:hover{
+      transform: translateY(-1px);
+      box-shadow: var(--shadow2);
+      background:#fff;
+    }
+    .mmb-miniBtn ion-icon{ font-size: 18px; color: rgba(11,77,58,.95); }
+
+    .mmb-miniBtnDanger{
+      border-color: rgba(220,38,38,.25);
+      background: rgba(239,68,68,.06);
+      color: var(--danger);
+    }
+    .mmb-miniBtnDanger ion-icon{ color: var(--danger); }
+
+    .mmb-miniBtnPrimary{
+      border-color: rgba(16,185,129,.35);
+      background: rgba(16,185,129,.12);
+      color: var(--accent);
+    }
+    .mmb-miniBtnPrimary ion-icon{ color: rgba(11,77,58,.95); }
+
+    /* ============================================================
+       ✅ REAL POPUP (replaces browser alert / localhost popup)
+       - Same overlay + card feel like your other popups
+       - Scoped to .mmb-wrap only
+       ============================================================ */
+    .mmb-pop{
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      background: rgba(15,23,42,.55);
+      backdrop-filter: blur(6px);
+    }
+    .mmb-pop.show{ display:flex; }
+
+    .mmb-popCard{
+      width: min(520px, 100%);
+      background: rgba(255,255,255,.96);
+      border: 1px solid rgba(255,255,255,.45);
+      border-radius: 18px;
+      box-shadow: 0 26px 60px -30px rgba(0,0,0,.55);
+      overflow:hidden;
+      transform: translateY(6px);
+      animation: mmbPopIn .18s ease-out forwards;
+    }
+    @keyframes mmbPopIn{
+      from{ opacity:.0; transform: translateY(10px) scale(.985); }
+      to{ opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .mmb-popHead{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap:10px;
+      padding: 12px 14px;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+        linear-gradient(135deg, rgba(240,253,244,.92), rgba(255,255,255,.96));
+      border-bottom: 1px solid rgba(15,23,42,.10);
+    }
+    .mmb-popTitle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin:0;
+      font-weight: 950;
+      color: var(--accent);
+      letter-spacing: .2px;
+      font-size: 14px;
+    }
+    .mmb-popTitle ion-icon{ font-size: 18px; }
+
+    .mmb-popClose{
+      border:0;
+      background:#fff;
+      border-radius: 999px;
+      width: 34px;
+      height: 34px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      box-shadow: 0 10px 18px -12px rgba(0,0,0,.35);
+    }
+    .mmb-popClose ion-icon{ color: var(--danger); font-size: 20px; }
+
+    .mmb-popBody{
+      padding: 14px;
+    }
+    .mmb-popMsg{
+      margin: 0;
+      color: rgba(15,23,42,.78);
+      font-weight: 900;
+      font-size: 13px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    .mmb-popFoot{
+      display:flex;
+      gap:10px;
+      padding: 12px 14px 14px;
+      background: rgba(247,250,249,.65);
+      border-top: 1px solid rgba(15,23,42,.10);
+    }
+    .mmb-popOk{
+      width: 100%;
+      border: 1px solid rgba(16,185,129,.35);
+      border-radius: 12px;
+      background: rgba(16,185,129,.12);
+      color: var(--accent);
+      font-weight: 950;
+      padding: 12px 12px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+      user-select:none;
+    }
+    .mmb-popOk:hover{
+      transform: translateY(-1px);
+      box-shadow: var(--shadow2);
+      background: rgba(16,185,129,.16);
+    }
+    .mmb-popOk ion-icon{ font-size: 18px; color: rgba(11,77,58,.95); }
+
+    .mmb-popCard[data-tone="danger"] .mmb-popTitle{ color: var(--danger); }
+    .mmb-popCard[data-tone="danger"] .mmb-popTitle ion-icon{ color: var(--danger); }
+    .mmb-popCard[data-tone="danger"] .mmb-popOk{
+      border-color: rgba(220,38,38,.25);
+      background: rgba(239,68,68,.06);
+      color: var(--danger);
+    }
+    .mmb-popCard[data-tone="danger"] .mmb-popOk ion-icon{ color: var(--danger); }
+  </style>
+<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
+
+{% endblock %}
+
+{% block content %}
+  <div class="mmb-wrap">
+    <div class="mmb-shell">
+      <div class="mmb-sheet">
+
+        <!-- Header -->
+        <div class="mmb-head">
+          <button class="mmb-btn mmb-btnBack" id="mmbBackBtn" type="button" aria-label="Back">
+            <ion-icon name="arrow-back"></ion-icon>
+            <span id="mmbBackTxt">Back</span>
+          </button>
+
+          <div class="mmb-titleWrap">
+            <h1 class="mmb-title" id="mmbAppTitle">Meeting Minutes Book</h1>
+          </div>
+
+          <!-- right spacer (keeps title perfectly centered like ledger head) -->
+          <div style="width:92px;"></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="mmb-tabs">
+          <div class="mmb-tabWrap">
+            <button class="mmb-tab active" id="mmbTabMinutes" type="button">
+              <ion-icon name="document-text"></ion-icon>
+              <span id="mmbTabMinutesTxt">Meeting Minutes</span>
+            </button>
+
+            <button class="mmb-tab" id="mmbTabMembers" type="button">
+              <ion-icon name="people"></ion-icon>
+              <span id="mmbTabMembersTxt">Members Present</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Minutes -->
+        <div id="mmbPanelMinutes" class="mmb-card">
+          <div class="mmb-cardTitle" id="mmbMinutesTitle">Meeting Minutes</div>
+
+          <!-- Date -->
+          <div class="mmb-field">
+            <div class="mmb-labelRow">
+              <ion-icon name="calendar"></ion-icon>
+              <span id="mmbDateLabel">Date of Meeting</span>
+            </div>
+
+            <div class="mmb-dateBtn">
+              <ion-icon name="calendar-outline" style="color:rgba(11,77,58,.95)"></ion-icon>
+              <input id="mmbMeetingDate" class="mmb-dateInput" type="date" />
+            </div>
+          </div>
+
+          <!-- Agenda -->
+          <div class="mmb-section">
+            <div class="mmb-sectionTitle" id="mmbAgendaTitle">Agenda Items</div>
+            <div id="mmbAgendaList"></div>
+
+            <button class="mmb-addBtn" id="mmbAddAgenda" type="button">
+              <ion-icon name="add-circle"></ion-icon>
+              <span id="mmbAddRowTxt1">Add Row</span>
+            </button>
+          </div>
+
+          <!-- Deliberations -->
+          <div class="mmb-section">
+            <div class="mmb-sectionTitle" id="mmbDelibTitle">Details of Deliberations</div>
+            <div id="mmbDelibList"></div>
+
+            <button class="mmb-addBtn" id="mmbAddDelib" type="button">
+              <ion-icon name="add-circle"></ion-icon>
+              <span id="mmbAddRowTxt2">Add Row</span>
+            </button>
+          </div>
+
+          <!-- Decisions -->
+          <div class="mmb-section">
+            <div class="mmb-sectionTitle" id="mmbDecTitle">Decisions Taken</div>
+            <div id="mmbDecList"></div>
+
+            <button class="mmb-addBtn" id="mmbAddDec" type="button">
+              <ion-icon name="add-circle"></ion-icon>
+              <span id="mmbAddRowTxt3">Add Row</span>
+            </button>
+          </div>
+
+          <button class="mmb-saveBtn" id="mmbSaveMinutes" type="button">
+            <ion-icon name="save"></ion-icon>
+            <span id="mmbSaveMinutesTxt">Save Meeting Minutes</span>
+          </button>
+        </div>
+
+        <!-- Members -->
+        <div id="mmbPanelMembers" class="mmb-card" style="display:none;">
+          <div class="mmb-cardTitle" id="mmbMembersTitle">Members Present</div>
+
+          <div class="mmb-tableHeader">
+            <div class="mmb-thSl" id="mmbThSl">Sl No</div>
+            <div class="mmb-thName" id="mmbThName">Name of Member</div>
+            <div class="mmb-thSig" id="mmbThSig">Signature</div>
+          </div>
+
+          <div id="mmbMembersList"></div>
+
+          <button class="mmb-addBtn" id="mmbAddMember" type="button" style="margin-top:16px;">
+            <ion-icon name="person-add"></ion-icon>
+            <span id="mmbAddMemberTxt">Add Member</span>
+          </button>
+
+          <button class="mmb-saveBtn" id="mmbSaveMembers" type="button" style="margin-top:16px;">
+            <ion-icon name="save"></ion-icon>
+            <span id="mmbSaveMembersTxt">Save Members Present</span>
+          </button>
+        </div>
+
+        <div class="mmb-foot" id="mmbFooterTxt">PGMIS • Meeting Minutes Book</div>
+      </div>
+    </div>
+
+    {# ✅ Signature Modal (Receipt Voucher style) #}
+    <div class="mmb-sigModal" id="mmbSigModal" aria-hidden="true">
+      <div class="mmb-sigModalCard" role="dialog" aria-modal="true" aria-labelledby="mmbSigModalTitle">
+        <div class="mmb-sigModalHead">
+          <h3 class="mmb-sigModalTitle" id="mmbSigModalTitle">Signature</h3>
+          <button class="mmb-sigClose" id="mmbSigCloseBtn" type="button" aria-label="Close">
+            <ion-icon name="close"></ion-icon>
+          </button>
+        </div>
+
+        <div class="mmb-sigModalBody">
+          <div class="mmb-sigGrid">
+            <!-- Preview pane -->
+            <div class="mmb-sigPane">
+              <div class="mmb-sigPaneHead">
+                <span id="mmbSigPreviewHead">Preview</span>
+                <button class="mmb-miniBtn mmb-miniBtnDanger" id="mmbSigRemoveBtn" type="button" style="max-width:160px;">
+                  <ion-icon name="trash"></ion-icon>
+                  <span id="mmbSigRemoveTxt">Remove</span>
+                </button>
+              </div>
+              <div class="mmb-sigPaneBody">
+                <div class="mmb-sigPreviewLarge" id="mmbSigPreviewLarge">
+                  <div class="mmb-sigEmpty" id="mmbSigEmptyTxt">No signature image</div>
+                </div>
+                <div class="mmb-sigHint" id="mmbSigHintTxt">Capture / Upload / Draw a signature</div>
+              </div>
+            </div>
+
+            <!-- Digital pad + actions -->
+            <div class="mmb-sigPane">
+              <div class="mmb-sigPaneHead">
+                <span id="mmbSigDrawHead">Digital Signature</span>
+                <div style="display:flex; gap:10px;">
+                  <button class="mmb-miniBtn" id="mmbSigUploadBtn" type="button" style="max-width:160px;">
+                    <ion-icon name="cloud-upload"></ion-icon>
+                    <span id="mmbSigUploadTxt">Upload</span>
+                  </button>
+                  <button class="mmb-miniBtn" id="mmbSigCaptureBtn" type="button" style="max-width:160px;">
+                    <ion-icon name="camera"></ion-icon>
+                    <span id="mmbSigCaptureTxt">Capture</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="mmb-sigPaneBody">
+                <div class="mmb-padWrap">
+                  <canvas class="mmb-pad" id="mmbSigPad"></canvas>
+                  <div class="mmb-padBar">
+                    <button class="mmb-miniBtn mmb-miniBtnDanger" id="mmbSigClearPad" type="button">
+                      <ion-icon name="brush"></ion-icon>
+                      <span id="mmbSigClearTxt">Clear</span>
+                    </button>
+                    <button class="mmb-miniBtn mmb-miniBtnPrimary" id="mmbSigUsePad" type="button">
+                      <ion-icon name="checkmark-circle"></ion-icon>
+                      <span id="mmbSigUseTxt">Use</span>
+                    </button>
+                    <button class="mmb-miniBtn mmb-miniBtnPrimary" id="mmbSigSaveBtn" type="button">
+                      <ion-icon name="save"></ion-icon>
+                      <span id="mmbSigSaveTxt">Save</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- hidden inputs -->
+                <input class="mmb-fileInput" id="mmbSigUploadInput" type="file" accept="image/*" />
+                <input class="mmb-fileInput" id="mmbSigCaptureInput" type="file" accept="image/*" capture="environment" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ✅ REAL POPUP (replaces alert) #}
+    <div class="mmb-pop" id="mmbPop" aria-hidden="true">
+      <div class="mmb-popCard" id="mmbPopCard" role="dialog" aria-modal="true" aria-labelledby="mmbPopTitleText">
+        <div class="mmb-popHead">
+          <h3 class="mmb-popTitle" id="mmbPopTitleText">
+            <ion-icon id="mmbPopIcon" name="checkmark-circle"></ion-icon>
+            <span id="mmbPopTitleSpan">Saved</span>
+          </h3>
+          <button class="mmb-popClose" id="mmbPopClose" type="button" aria-label="Close">
+            <ion-icon name="close"></ion-icon>
+          </button>
+        </div>
+        <div class="mmb-popBody">
+          <p class="mmb-popMsg" id="mmbPopMsg">Done</p>
+        </div>
+        <div class="mmb-popFoot">
+          <button class="mmb-popOk" id="mmbPopOk" type="button">
+            <ion-icon name="checkmark"></ion-icon>
+            <span id="mmbPopOkTxt">OK</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    /* ============================================================
+       Meeting Minutes Book (Web)
+       ✅ Extends base.html
+       ✅ FIX: Persist language so it NEVER resets on refresh
+           and ONLY changes when navbar language changes.
+
+       ✅ CAMERA FIX (IMPORTANT):
+       - HTML file input with capture=environment does NOT force camera on many desktop browsers
+         and sometimes still opens file picker.
+       - So now Capture uses navigator.mediaDevices.getUserMedia() first (REAL camera),
+         then falls back to the file input capture chooser if camera isn't available/allowed.
+       - Works best on HTTPS or localhost (browser requirement for getUserMedia).
+
+       ✅ NEW: Replaced alert() with REAL popup modal (same style as your other popups)
+       ============================================================ */
+
+    (function(){
+      "use strict";
+
+      /* =========================
+         Translations (EN + BN)
+         ========================= */
+      const translations = {
+        en: {
+          back: "Back",
+          appTitle: "Meeting Minutes Book",
+          meetingMinutesTab: "Meeting Minutes",
+          membersPresentTab: "Members Present",
+          footerText: "PGMIS • Meeting Minutes Book",
+
+          meetingMinutesTitle: "Meeting Minutes",
+          dateOfMeeting: "Date of Meeting",
+
+          agendaItems: "Agenda Items",
+          detailsOfDeliberations: "Details of Deliberations",
+          decisionsTaken: "Decisions Taken",
+
+          agendaPlaceholder: "Enter agenda item...",
+          deliberationPlaceholder: "Enter deliberation details...",
+          decisionPlaceholder: "Enter decision taken...",
+
+          addRow: "Add Row",
+          saveMeetingMinutes: "Save Meeting Minutes",
+
+          membersPresentTitle: "Members Present",
+          slNo: "Sl No",
+          nameOfMember: "Name of Member",
+          signature: "Signature",
+          enterMemberName: "Enter member name",
+          capturePhoto: "Capture Photo",
+          addMember: "Add Member",
+          saveMembersPresent: "Save Members Present",
+
+          deleteRow: "Delete",
+
+          savedMinutes: "Meeting minutes saved successfully!",
+          savedMembers: "Members present data saved successfully!",
+
+          // ✅ Signature modal texts (kept minimal + scoped)
+          sigTitle: "Signature",
+          sigPreview: "Preview",
+          sigNoImage: "No signature image",
+          sigHint: "Capture / Upload / Draw a signature",
+          sigDraw: "Digital Signature",
+          sigUpload: "Upload",
+          sigCapture: "Capture",
+          sigRemove: "Remove",
+          sigClear: "Clear",
+          sigUse: "Use",
+          sigSave: "Save",
+          sigPleaseSign: "Please sign on the pad first.",
+
+          // ✅ Popup text
+          popOk: "OK",
+          popSaved: "Saved",
+          popWarning: "Warning",
+
+          // camera flow (inline-only)
+          camAllow: "Allow camera permission to capture.",
+          camNotSupported: "Camera not supported here. Use Upload instead.",
+          camTake: "Take Photo",
+          camUse: "Use Photo",
+          camCancel: "Cancel"
+        },
+        bn: {
+          back: "ফিরে যান",
+          appTitle: "মিটিং মিনিটস বুক",
+          meetingMinutesTab: "মিটিং মিনিটস",
+          membersPresentTab: "উপস্থিত সদস্য",
+          footerText: "PGMIS • মিটিং মিনিটস বুক",
+
+          meetingMinutesTitle: "মিটিং মিনিটস",
+          dateOfMeeting: "মিটিং তারিখ",
+
+          agendaItems: "এজেন্ডা",
+          detailsOfDeliberations: "আলোচনার বিবরণ",
+          decisionsTaken: "গৃহীত সিদ্ধান্ত",
+
+          agendaPlaceholder: "এজেন্ডা লিখুন...",
+          deliberationPlaceholder: "আলোচনার বিবরণ লিখুন...",
+          decisionPlaceholder: "সিদ্ধান্ত লিখুন...",
+
+          addRow: "রো যোগ করুন",
+          saveMeetingMinutes: "মিটিং মিনিটস সংরক্ষণ",
+
+          membersPresentTitle: "উপস্থিত সদস্য",
+          slNo: "ক্রমিক",
+          nameOfMember: "সদস্যের নাম",
+          signature: "স্বাক্ষর",
+          enterMemberName: "সদস্যের নাম লিখুন",
+          capturePhoto: "ছবি তুলুন",
+          addMember: "সদস্য যোগ করুন",
+          saveMembersPresent: "সদস্য তালিকা সংরক্ষণ",
+
+          deleteRow: "মুছুন",
+
+          savedMinutes: "মিটিং মিনিটস সফলভাবে সংরক্ষণ হয়েছে!",
+          savedMembers: "উপস্থিত সদস্যের তথ্য সফলভাবে সংরক্ষণ হয়েছে!",
+
+          // ✅ Signature modal texts
+          sigTitle: "স্বাক্ষর",
+          sigPreview: "প্রিভিউ",
+          sigNoImage: "স্বাক্ষরের ছবি নেই",
+          sigHint: "ছবি তুলুন / আপলোড / ডিজিটাল স্বাক্ষর",
+          sigDraw: "ডিজিটাল স্বাক্ষর",
+          sigUpload: "আপলোড",
+          sigCapture: "ছবি তুলুন",
+          sigRemove: "মুছুন",
+          sigClear: "পরিষ্কার",
+          sigUse: "ব্যবহার",
+          sigSave: "সংরক্ষণ",
+          sigPleaseSign: "অনুগ্রহ করে আগে প্যাডে স্বাক্ষর করুন।",
+
+          // ✅ Popup text
+          popOk: "ঠিক আছে",
+          popSaved: "সংরক্ষণ হয়েছে",
+          popWarning: "সতর্কতা",
+
+          camAllow: "ক্যামেরা অনুমতি দিন, তারপর ছবি তুলুন।",
+          camNotSupported: "এখানে ক্যামেরা সাপোর্ট নেই। আপলোড ব্যবহার করুন।",
+          camTake: "ছবি তুলুন",
+          camUse: "ব্যবহার",
+          camCancel: "বাতিল"
+        }
+      };
+
+      /* =========================
+         Language bootstrap (PERMANENT FIX)
+         ========================= */
+      const LANG_KEYS = [
+        "PGMIS_LANG","pgmis_lang","language","lang","site_lang","selectedLanguage","pgmisLanguage","PG_LANGUAGE"
+      ];
+
+      function normalizeLang(v){
+        const s = (v || "").toString().trim().toLowerCase();
+        if(!s) return null;
+        if(s === "bn" || s === "bangla" || s === "বাংলা") return "bn";
+        if(s === "en" || s === "english") return "en";
+        if(s.startsWith("bn")) return "bn";
+        if(s.startsWith("en")) return "en";
+        return null;
+      }
+
+      function persistLang(lang){
+        const v = (lang === "bn") ? "bn" : "en";
+        try{
+          LANG_KEYS.forEach(k => localStorage.setItem(k, v));
+        }catch(e){}
+        try{
+          document.documentElement && document.documentElement.setAttribute("lang", v);
+        }catch(e){}
+        try{ window.PGMIS_LANG = v; }catch(e){}
+      }
+
+      function detectFromHtmlLang(){
+        const htmlLang = document.documentElement && document.documentElement.getAttribute("lang");
+        return normalizeLang(htmlLang);
+      }
+
+      function detectFromStorage(){
+        try{
+          for(const k of LANG_KEYS){
+            const v = normalizeLang(localStorage.getItem(k)) || normalizeLang(sessionStorage.getItem(k));
+            if(v) return v;
+          }
+        }catch(e){}
+        return null;
+      }
+
+      function isActiveLangNode(node){
+        if(!node) return false;
+        const cls = (node.className || "").toString();
+        const ariaPressed = (node.getAttribute && node.getAttribute("aria-pressed")) || "";
+        const ariaCurrent = (node.getAttribute && node.getAttribute("aria-current")) || "";
+        const dataActive = (node.getAttribute && node.getAttribute("data-active")) || "";
+        const dataSelected = (node.getAttribute && node.getAttribute("data-selected")) || "";
+
+        if(String(ariaPressed).toLowerCase() === "true") return true;
+        if(String(ariaCurrent).toLowerCase() === "true" || String(ariaCurrent).toLowerCase() === "page") return true;
+        if(String(dataActive).toLowerCase() === "true") return true;
+        if(String(dataSelected).toLowerCase() === "true") return true;
+
+        if(/\bactive\b/i.test(cls)) return true;
+        if(/\bselected\b/i.test(cls)) return true;
+        if(/\bis-active\b/i.test(cls)) return true;
+
+        return false;
+      }
+
+      function detectFromNavbarActiveState(){
+        const candidates = Array.from(document.querySelectorAll("button, a"))
+          .filter(el => el && el.textContent && el.textContent.trim().length);
+
+        const bnNodes = [];
+        const enNodes = [];
+
+        for(const el of candidates){
+          const txt = el.textContent.trim();
+          if(txt === "BN" || txt === "বাংলা") bnNodes.push(el);
+          if(txt === "EN" || txt === "English") enNodes.push(el);
+        }
+
+        for(const el of bnNodes){
+          if(isActiveLangNode(el) || isActiveLangNode(el.parentElement)) return "bn";
+        }
+        for(const el of enNodes){
+          if(isActiveLangNode(el) || isActiveLangNode(el.parentElement)) return "en";
+        }
+
+        if(bnNodes.length && !enNodes.length) return "bn";
+        if(enNodes.length && !bnNodes.length) return "en";
+
+        return null;
+      }
+
+      function detectFromVisibleToggleLoose(){
+        const nodes = Array.from(document.querySelectorAll("button, a, span, div"))
+          .filter(n => n && n.textContent && n.textContent.trim().length);
+
+        for(const n of nodes){
+          const txt = n.textContent.trim();
+          if(txt === "BN" || txt === "বাংলা") return "bn";
+          if(txt === "EN" || txt === "English") return "en";
+        }
+        return null;
+      }
+
+      function detectLanguageStrict(){
+        const nav = detectFromNavbarActiveState();
+        if(nav) return nav;
+
+        const w = normalizeLang(window.PGMIS_LANG);
+        if(w) return w;
+
+        const h = detectFromHtmlLang();
+        if(h) return h;
+
+        const s = detectFromStorage();
+        if(s) return s;
+
+        const v = detectFromVisibleToggleLoose();
+        if(v) return v;
+
+        return "en";
+      }
+
+      /* =========================
+         State
+         ========================= */
+      let language = detectLanguageStrict();
+      persistLang(language);
+
+      let activeTab = "minutes";
+
+      // Minutes
+      let meetingDate = new Date();
+      let agendaItems = [{ id: "1", content: "" }];
+      let deliberations = [{ id: "1", content: "" }];
+      let decisions = [{ id: "1", content: "" }];
+
+      // Members
+      let members = [{ id: "1", name: "", signature: null }];
+
+      /* =========================
+         Helpers
+         ========================= */
+      const $ = (id) => document.getElementById(id);
+
+      function uid(){
+        return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+      }
+
+      function toDateInputValue(d){
+        const pad = (n)=> String(n).padStart(2,"0");
+        const yyyy = d.getFullYear();
+        const mm = pad(d.getMonth()+1);
+        const dd = pad(d.getDate());
+        return `${yyyy}-${mm}-${dd}`;
+      }
+
+      function formatDatePretty(d){
+        const opts = { day: "2-digit", month: "short", year: "numeric" };
+        return d.toLocaleDateString("en-GB", opts);
+      }
+
+      /* ============================================================
+         ✅ REAL POPUP HELPERS (replaces alert)
+         ============================================================ */
+      const Pop = {
+        open: false,
+        tone: "success"
+      };
+
+      function showPopup(msg, tone){
+        const t = translations[language] || translations.en;
+
+        const pop = $("mmbPop");
+        const card = $("mmbPopCard");
+        const titleSpan = $("mmbPopTitleSpan");
+        const icon = $("mmbPopIcon");
+        const msgEl = $("mmbPopMsg");
+        const okTxt = $("mmbPopOkTxt");
+
+        if(!pop || !card || !titleSpan || !icon || !msgEl) return;
+
+        const useTone = (tone === "danger" || tone === "warning") ? "danger" : "success";
+        Pop.tone = useTone;
+
+        card.setAttribute("data-tone", useTone);
+
+        titleSpan.textContent = (useTone === "danger") ? t.popWarning : t.popSaved;
+        icon.setAttribute("name", (useTone === "danger") ? "alert-circle" : "checkmark-circle");
+        msgEl.textContent = msg || "";
+        if(okTxt) okTxt.textContent = t.popOk;
+
+        pop.classList.add("show");
+        pop.setAttribute("aria-hidden", "false");
+        Pop.open = true;
+
+        // focus OK for keyboard
+        setTimeout(() => {
+          try{ $("mmbPopOk").focus(); }catch(e){}
+        }, 20);
+      }
+
+      function closePopup(){
+        const pop = $("mmbPop");
+        if(!pop) return;
+        pop.classList.remove("show");
+        pop.setAttribute("aria-hidden", "true");
+        Pop.open = false;
+      }
+
+      function wirePopup(){
+        const pop = $("mmbPop");
+        const closeBtn = $("mmbPopClose");
+        const okBtn = $("mmbPopOk");
+        if(!pop || !closeBtn || !okBtn) return;
+
+        closeBtn.addEventListener("click", closePopup);
+        okBtn.addEventListener("click", closePopup);
+
+        pop.addEventListener("click", (e) => {
+          if(e.target && e.target.id === "mmbPop") closePopup();
+        });
+
+        window.addEventListener("keydown", (e) => {
+          if(!Pop.open) return;
+          if(e.key === "Escape"){
+            closePopup();
+          }
+        });
+      }
+
+      function applyTranslations(){
+        const t = translations[language] || translations.en;
+
+        $("mmbBackTxt").textContent = t.back;
+        $("mmbAppTitle").textContent = t.appTitle;
+        $("mmbTabMinutesTxt").textContent = t.meetingMinutesTab;
+        $("mmbTabMembersTxt").textContent = t.membersPresentTab;
+        $("mmbFooterTxt").textContent = t.footerText;
+
+        $("mmbMinutesTitle").textContent = t.meetingMinutesTitle;
+        $("mmbDateLabel").textContent = t.dateOfMeeting;
+
+        $("mmbAgendaTitle").textContent = t.agendaItems;
+        $("mmbDelibTitle").textContent = t.detailsOfDeliberations;
+        $("mmbDecTitle").textContent = t.decisionsTaken;
+
+        $("mmbAddRowTxt1").textContent = t.addRow;
+        $("mmbAddRowTxt2").textContent = t.addRow;
+        $("mmbAddRowTxt3").textContent = t.addRow;
+
+        $("mmbSaveMinutesTxt").textContent = t.saveMeetingMinutes;
+
+        $("mmbMembersTitle").textContent = t.membersPresentTitle;
+        $("mmbThSl").textContent = t.slNo;
+        $("mmbThName").textContent = t.nameOfMember;
+        $("mmbThSig").textContent = t.signature;
+
+        $("mmbAddMemberTxt").textContent = t.addMember;
+        $("mmbSaveMembersTxt").textContent = t.saveMembersPresent;
+
+        // ✅ Signature modal texts
+        const modalTitle = $("mmbSigModalTitle");
+        if(modalTitle) modalTitle.textContent = t.sigTitle;
+        const prevHead = $("mmbSigPreviewHead");
+        if(prevHead) prevHead.textContent = t.sigPreview;
+        const emptyTxt = $("mmbSigEmptyTxt");
+        if(emptyTxt) emptyTxt.textContent = t.sigNoImage;
+        const hintTxt = $("mmbSigHintTxt");
+        if(hintTxt) hintTxt.textContent = t.sigHint;
+        const drawHead = $("mmbSigDrawHead");
+        if(drawHead) drawHead.textContent = t.sigDraw;
+
+        const upTxt = $("mmbSigUploadTxt");
+        if(upTxt) upTxt.textContent = t.sigUpload;
+        const capTxt = $("mmbSigCaptureTxt");
+        if(capTxt) capTxt.textContent = t.sigCapture;
+        const rmTxt = $("mmbSigRemoveTxt");
+        if(rmTxt) rmTxt.textContent = t.sigRemove;
+        const clTxt = $("mmbSigClearTxt");
+        if(clTxt) clTxt.textContent = t.sigClear;
+        const useTxt = $("mmbSigUseTxt");
+        if(useTxt) useTxt.textContent = t.sigUse;
+        const saveTxt = $("mmbSigSaveTxt");
+        if(saveTxt) saveTxt.textContent = t.sigSave;
+
+        // ✅ popup OK text will be set on showPopup(), but keep in sync if open
+        if(Pop.open){
+          const okTxt = $("mmbPopOkTxt");
+          if(okTxt) okTxt.textContent = t.popOk;
+        }
+      }
+
+      function setTab(tab){
+        activeTab = tab;
+
+        const minutesBtn = $("mmbTabMinutes");
+        const membersBtn = $("mmbTabMembers");
+        const panelMinutes = $("mmbPanelMinutes");
+        const panelMembers = $("mmbPanelMembers");
+
+        if(tab === "minutes"){
+          minutesBtn.classList.add("active");
+          membersBtn.classList.remove("active");
+          panelMinutes.style.display = "";
+          panelMembers.style.display = "none";
+        } else {
+          membersBtn.classList.add("active");
+          minutesBtn.classList.remove("active");
+          panelMembers.style.display = "";
+          panelMinutes.style.display = "none";
+        }
+      }
+
+      /* =========================
+         Render: Minutes rows
+         ========================= */
+      function renderTextRows(containerEl, rows, type){
+        const t = translations[language] || translations.en;
+        containerEl.innerHTML = "";
+
+        rows.forEach((row) => {
+          const line = document.createElement("div");
+          line.className = "mmb-rowLine";
+
+          const isAgenda = type === "agenda";
+          const placeholder =
+            isAgenda ? t.agendaPlaceholder :
+            (type === "deliberation" ? t.deliberationPlaceholder : t.decisionPlaceholder);
+
+          const field = document.createElement(isAgenda ? "input" : "textarea");
+          if(isAgenda){
+            field.type = "text";
+          } else {
+            field.rows = 3;
+          }
+          field.placeholder = placeholder;
+          field.value = row.content || "";
+
+          field.addEventListener("input", (e) => {
+            const val = e.target.value;
+            if(type === "agenda"){
+              agendaItems = agendaItems.map(x => x.id === row.id ? ({...x, content: val}) : x);
+            } else if(type === "deliberation"){
+              deliberations = deliberations.map(x => x.id === row.id ? ({...x, content: val}) : x);
+            } else {
+              decisions = decisions.map(x => x.id === row.id ? ({...x, content: val}) : x);
+            }
+          });
+
+          line.appendChild(field);
+
+          const listRef = (type === "agenda") ? agendaItems : (type === "deliberation" ? deliberations : decisions);
+          if(listRef.length > 1){
+            const delBtn = document.createElement("button");
+            delBtn.className = "mmb-iconBtn mmb-iconBtnDanger";
+            delBtn.type = "button";
+            delBtn.title = t.deleteRow;
+            delBtn.setAttribute("aria-label", t.deleteRow);
+            delBtn.innerHTML = '<ion-icon name="trash"></ion-icon>';
+            delBtn.addEventListener("click", () => {
+              if(type === "agenda" && agendaItems.length > 1){
+                agendaItems = agendaItems.filter(x => x.id !== row.id);
+                renderAll();
+              } else if(type === "deliberation" && deliberations.length > 1){
+                deliberations = deliberations.filter(x => x.id !== row.id);
+                renderAll();
+              } else if(type === "decision" && decisions.length > 1){
+                decisions = decisions.filter(x => x.id !== row.id);
+                renderAll();
+              }
+            });
+            line.appendChild(delBtn);
+          }
+
+          containerEl.appendChild(line);
+        });
+      }
+
+      /* ============================================================
+         ✅ SIGNATURE LOGIC (Receipt Voucher style)
+         - Works only inside Members Present signature column
+         - Keeps members[].signature as dataURL (same as your existing state)
+         ============================================================ */
+      const Sig = {
+        openForMemberId: null,
+        draftDataUrl: null,
+
+        // ✅ camera runtime
+        camStream: null,
+        camVideoEl: null,
+        camUiMounted: false
+      };
+
+      function stopCamera(){
+        try{
+          if(Sig.camStream){
+            Sig.camStream.getTracks().forEach(t => { try{ t.stop(); }catch(e){} });
+          }
+        }catch(e){}
+        Sig.camStream = null;
+
+        // remove dynamic video UI if present
+        try{
+          if(Sig.camVideoEl && Sig.camVideoEl.parentNode){
+            Sig.camVideoEl.pause && Sig.camVideoEl.pause();
+          }
+        }catch(e){}
+        Sig.camVideoEl = null;
+        Sig.camUiMounted = false;
+      }
+
+      function showInlineMsgInPreview(msg){
+        const host = $("mmbSigPreviewLarge");
+        if(!host) return;
+        host.innerHTML = "";
+        const div = document.createElement("div");
+        div.className = "mmb-sigEmpty";
+        div.textContent = msg || "";
+        host.appendChild(div);
+      }
+
+      function mountCameraUI(){
+        const t = translations[language] || translations.en;
+        const host = $("mmbSigPreviewLarge");
+        if(!host) return;
+
+        host.innerHTML = "";
+
+        const wrap = document.createElement("div");
+        wrap.style.width = "100%";
+        wrap.style.height = "100%";
+        wrap.style.display = "flex";
+        wrap.style.flexDirection = "column";
+        wrap.style.gap = "10px";
+        wrap.style.padding = "10px";
+
+        const video = document.createElement("video");
+        video.autoplay = true;
+        video.playsInline = true;
+        video.muted = true;
+        video.style.width = "100%";
+        video.style.height = "calc(100% - 46px)";
+        video.style.borderRadius = "10px";
+        video.style.background = "#000";
+        video.style.objectFit = "cover";
+
+        const bar = document.createElement("div");
+        bar.style.display = "flex";
+        bar.style.gap = "10px";
+
+        const takeBtn = document.createElement("button");
+        takeBtn.type = "button";
+        takeBtn.className = "mmb-miniBtn mmb-miniBtnPrimary";
+        takeBtn.innerHTML = `<ion-icon name="camera"></ion-icon><span>${t.camTake}</span>`;
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "mmb-miniBtn mmb-miniBtnDanger";
+        cancelBtn.innerHTML = `<ion-icon name="close-circle"></ion-icon><span>${t.camCancel}</span>`;
+
+        bar.appendChild(takeBtn);
+        bar.appendChild(cancelBtn);
+
+        wrap.appendChild(video);
+        wrap.appendChild(bar);
+
+        host.appendChild(wrap);
+
+        Sig.camVideoEl = video;
+        Sig.camUiMounted = true;
+
+        cancelBtn.addEventListener("click", () => {
+          stopCamera();
+          renderSigPreview(Sig.draftDataUrl);
+        });
+
+        takeBtn.addEventListener("click", () => {
+          try{
+            const v = Sig.camVideoEl;
+            if(!v) return;
+            const w = v.videoWidth || 1280;
+            const h = v.videoHeight || 720;
+
+            const c = document.createElement("canvas");
+            c.width = w;
+            c.height = h;
+            const ctx = c.getContext("2d");
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0,0,w,h);
+            ctx.drawImage(v, 0, 0, w, h);
+
+            const url = c.toDataURL("image/png");
+            Sig.draftDataUrl = url;
+
+            stopCamera();
+            renderSigPreview(url);
+          }catch(e){
+            stopCamera();
+            renderSigPreview(Sig.draftDataUrl);
+          }
+        });
+      }
+
+      async function startCameraCapture(){
+        const t = translations[language] || translations.en;
+
+        // MUST be in secure context for most browsers
+        const canMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+        if(!canMedia){
+          // fallback to file input capture chooser
+          try{ $("mmbSigCaptureInput").click(); }catch(e){}
+          return;
+        }
+
+        // if not secure context, getUserMedia will fail -> fallback
+        try{
+          showInlineMsgInPreview(t.camAllow);
+
+          const constraints = {
+            video: {
+              facingMode: { ideal: "environment" },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: false
+          };
+
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          Sig.camStream = stream;
+
+          mountCameraUI();
+
+          if(Sig.camVideoEl){
+            Sig.camVideoEl.srcObject = stream;
+            try{ await Sig.camVideoEl.play(); }catch(e){}
+          }
+        }catch(err){
+          // fallback to file input capture chooser
+          stopCamera();
+          try{ $("mmbSigCaptureInput").click(); }catch(e){}
+        }
+      }
+
+      // ✅ FIX: allow row buttons to trigger camera/upload after modal opens
+      function openSigModal(memberId, autoAction){
+        Sig.openForMemberId = memberId;
+        Sig.draftDataUrl = (members.find(x => x.id === memberId) || {}).signature || null;
+
+        stopCamera();
+        renderSigPreview(Sig.draftDataUrl);
+        clearPad();
+        showModal(true);
+
+        // ✅ Auto trigger chosen action (capture/upload) after modal is visible
+        if(autoAction === "capture"){
+          setTimeout(() => { startCameraCapture(); }, 60);
+        } else if(autoAction === "upload"){
+          setTimeout(() => { try { $("mmbSigUploadInput").click(); } catch(e){} }, 60);
+        } else if(autoAction === "draw"){
+          setTimeout(() => { try { resizePad(); } catch(e){} }, 60);
+        }
+      }
+
+      function showModal(show){
+        const modal = $("mmbSigModal");
+        if(!modal) return;
+        modal.classList.toggle("show", !!show);
+        modal.setAttribute("aria-hidden", show ? "false" : "true");
+        if(show){
+          setTimeout(() => { try { resizePad(); } catch(e){} }, 20);
+        } else {
+          stopCamera();
+        }
+      }
+
+      function renderSigPreview(dataUrl){
+        const host = $("mmbSigPreviewLarge");
+        if(!host) return;
+        host.innerHTML = "";
+
+        if(dataUrl){
+          const img = document.createElement("img");
+          img.src = dataUrl;
+          img.alt = (translations[language] || translations.en).signature;
+          host.appendChild(img);
+        } else {
+          const div = document.createElement("div");
+          div.className = "mmb-sigEmpty";
+          div.id = "mmbSigEmptyTxt";
+          div.textContent = (translations[language] || translations.en).sigNoImage;
+          host.appendChild(div);
+        }
+      }
+
+      function setMemberSignature(memberId, dataUrl){
+        members = members.map(x => x.id === memberId ? ({...x, signature: dataUrl || null}) : x);
+      }
+
+      function readFileAsDataUrl(file, cb){
+        if(!file) return cb(null);
+        const reader = new FileReader();
+        reader.onload = () => cb(reader.result);
+        reader.onerror = () => cb(null);
+        reader.readAsDataURL(file);
+      }
+
+      // Canvas pad (digital signature)
+      let pad = null, padCtx = null;
+      let drawing = false;
+      let last = { x: 0, y: 0 };
+      let dpr = 1;
+
+      function getPad(){
+        if(pad) return pad;
+        pad = $("mmbSigPad");
+        if(!pad) return null;
+        padCtx = pad.getContext("2d");
+        return pad;
+      }
+
+      function resizePad(){
+        const c = getPad();
+        if(!c) return;
+        const rect = c.getBoundingClientRect();
+        dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+        c.width = Math.floor(rect.width * dpr);
+        c.height = Math.floor(rect.height * dpr);
+        padCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        // white bg
+        padCtx.save();
+        padCtx.setTransform(1,0,0,1,0,0);
+        padCtx.fillStyle = "#fff";
+        padCtx.fillRect(0,0,c.width,c.height);
+        padCtx.restore();
+
+        padCtx.lineWidth = 2.2;
+        padCtx.lineCap = "round";
+        padCtx.lineJoin = "round";
+        padCtx.strokeStyle = "#0f172a";
+      }
+
+      function clearPad(){
+        const c = getPad();
+        if(!c) return;
+        padCtx.save();
+        padCtx.setTransform(1,0,0,1,0,0);
+        padCtx.clearRect(0,0,c.width,c.height);
+        padCtx.fillStyle = "#fff";
+        padCtx.fillRect(0,0,c.width,c.height);
+        padCtx.restore();
+      }
+
+      function getPos(e){
+        const c = getPad();
+        const rect = c.getBoundingClientRect();
+        const pt = (e.touches && e.touches[0]) ? e.touches[0] : e;
+        return {
+          x: (pt.clientX - rect.left),
+          y: (pt.clientY - rect.top)
+        };
+      }
+
+      function hasInk(){
+        const c = getPad();
+        if(!c) return false;
+        const img = padCtx.getImageData(0, 0, c.width, c.height).data;
+        for(let i=0; i<img.length; i+=4){
+          const r = img[i], g = img[i+1], b = img[i+2], a = img[i+3];
+          if(a !== 0 && !(r === 255 && g === 255 && b === 255)) return true;
+        }
+        return false;
+      }
+
+      function startDraw(e){
+        drawing = true;
+        last = getPos(e);
+        e.preventDefault();
+      }
+      function moveDraw(e){
+        if(!drawing) return;
+        const p = getPos(e);
+        padCtx.beginPath();
+        padCtx.moveTo(last.x, last.y);
+        padCtx.lineTo(p.x, p.y);
+        padCtx.stroke();
+        last = p;
+        e.preventDefault();
+      }
+      function endDraw(e){
+        drawing = false;
+        e.preventDefault();
+      }
+
+      function padToDataUrl(){
+        const c = getPad();
+        if(!c) return null;
+        return c.toDataURL("image/png");
+      }
+
+      function wireSignatureModal(){
+        $("mmbSigCloseBtn").addEventListener("click", () => showModal(false));
+        $("mmbSigModal").addEventListener("click", (e) => {
+          if(e.target && e.target.id === "mmbSigModal") showModal(false);
+        });
+
+        $("mmbSigRemoveBtn").addEventListener("click", () => {
+          stopCamera();
+          Sig.draftDataUrl = null;
+          renderSigPreview(null);
+        });
+
+        const upBtn = $("mmbSigUploadBtn");
+        const upInput = $("mmbSigUploadInput");
+        upBtn.addEventListener("click", () => {
+          stopCamera();
+          upInput.click();
+        });
+        upInput.addEventListener("change", () => {
+          stopCamera();
+          const f = upInput.files && upInput.files[0];
+          readFileAsDataUrl(f, (url) => {
+            if(url){
+              Sig.draftDataUrl = url;
+              renderSigPreview(url);
+            }
+            upInput.value = "";
+          });
+        });
+
+        const capBtn = $("mmbSigCaptureBtn");
+        const capInput = $("mmbSigCaptureInput");
+        capBtn.addEventListener("click", () => {
+          stopCamera();
+          startCameraCapture();
+        });
+        capInput.addEventListener("change", () => {
+          stopCamera();
+          const f = capInput.files && capInput.files[0];
+          readFileAsDataUrl(f, (url) => {
+            if(url){
+              Sig.draftDataUrl = url;
+              renderSigPreview(url);
+            }
+            capInput.value = "";
+          });
+        });
+
+        const c = getPad();
+        if(c){
+          c.addEventListener("pointerdown", startDraw);
+          c.addEventListener("pointermove", moveDraw);
+          c.addEventListener("pointerup", endDraw);
+          c.addEventListener("pointercancel", endDraw);
+          c.addEventListener("pointerleave", endDraw);
+
+          c.addEventListener("touchstart", startDraw, {passive:false});
+          c.addEventListener("touchmove", moveDraw, {passive:false});
+          c.addEventListener("touchend", endDraw, {passive:false});
+        }
+
+        $("mmbSigClearPad").addEventListener("click", () => clearPad());
+
+        $("mmbSigUsePad").addEventListener("click", () => {
+          const t = translations[language] || translations.en;
+          stopCamera();
+          if(!hasInk()){
+            // ✅ replaced alert()
+            showPopup(t.sigPleaseSign, "warning");
+            return;
+          }
+          const url = padToDataUrl();
+          Sig.draftDataUrl = url;
+          renderSigPreview(url);
+        });
+
+        $("mmbSigSaveBtn").addEventListener("click", () => {
+          stopCamera();
+          if(!Sig.openForMemberId) { showModal(false); return; }
+          setMemberSignature(Sig.openForMemberId, Sig.draftDataUrl);
+          showModal(false);
+          renderAll();
+        });
+
+        window.addEventListener("resize", () => {
+          if($("mmbSigModal").classList.contains("show")){
+            try{ resizePad(); }catch(e){}
+          }
+        });
+      }
+
+      /* =========================
+         Render: Members rows
+         ========================= */
+      function renderMembers(){
+        const t = translations[language] || translations.en;
+        const host = $("mmbMembersList");
+        host.innerHTML = "";
+
+        members.forEach((m, idx) => {
+          const row = document.createElement("div");
+          row.className = "mmb-tableRow";
+
+          // Mobile meta
+          const mobileMeta = document.createElement("div");
+          mobileMeta.className = "mmb-mobileMeta";
+
+          const mobileSl = document.createElement("div");
+          mobileSl.className = "mmb-mobileSl";
+          mobileSl.textContent = `${t.slNo}: ${idx + 1}`;
+          mobileMeta.appendChild(mobileSl);
+
+          const delRowBtnMobile = document.createElement("button");
+          delRowBtnMobile.className = "mmb-rowDelete";
+          delRowBtnMobile.type = "button";
+          delRowBtnMobile.innerHTML = '<ion-icon name="trash"></ion-icon>';
+          delRowBtnMobile.title = t.deleteRow;
+          delRowBtnMobile.setAttribute("aria-label", t.deleteRow);
+          delRowBtnMobile.style.display = (members.length > 1) ? "" : "none";
+          delRowBtnMobile.addEventListener("click", () => {
+            if(members.length > 1){
+              members = members.filter(x => x.id !== m.id);
+              renderAll();
+            }
+          });
+          mobileMeta.appendChild(delRowBtnMobile);
+
+          row.appendChild(mobileMeta);
+
+          // Sl
+          const sl = document.createElement("div");
+          sl.className = "mmb-tdSl";
+          sl.textContent = (idx + 1).toString();
+          row.appendChild(sl);
+
+          // Name
+          const nameCol = document.createElement("div");
+          nameCol.className = "mmb-tdName";
+
+          const nameInput = document.createElement("input");
+          nameInput.type = "text";
+          nameInput.className = "mmb-nameInput";
+          nameInput.placeholder = t.enterMemberName;
+          nameInput.value = m.name || "";
+          nameInput.addEventListener("input", (e) => {
+            const val = e.target.value;
+            members = members.map(x => x.id === m.id ? ({...x, name: val}) : x);
+          });
+
+          nameCol.appendChild(nameInput);
+          row.appendChild(nameCol);
+
+          // Signature (✅ fixed capture opens REAL camera when possible)
+          const sigCol = document.createElement("div");
+          sigCol.className = "mmb-tdSig";
+
+          if(m.signature){
+            const preview = document.createElement("div");
+            preview.className = "mmb-sigPreview";
+
+            const img = document.createElement("img");
+            img.src = m.signature;
+            img.alt = t.signature;
+            preview.appendChild(img);
+
+            const rm = document.createElement("button");
+            rm.className = "mmb-sigRemove";
+            rm.type = "button";
+            rm.innerHTML = '<ion-icon name="close-circle"></ion-icon>';
+            rm.setAttribute("aria-label", t.deleteRow);
+            rm.title = t.deleteRow;
+            rm.addEventListener("click", () => {
+              members = members.map(x => x.id === m.id ? ({...x, signature: null}) : x);
+              renderAll();
+            });
+            preview.appendChild(rm);
+
+            preview.style.cursor = "pointer";
+            preview.addEventListener("click", (e) => {
+              if(e.target && e.target.closest && e.target.closest(".mmb-sigRemove")) return;
+              openSigModal(m.id);
+            });
+
+            sigCol.appendChild(preview);
+          } else {
+            const actions = document.createElement("div");
+            actions.className = "mmb-sigActions";
+
+            const btnCapture = document.createElement("button");
+            btnCapture.className = "mmb-captureBtn";
+            btnCapture.type = "button";
+            btnCapture.innerHTML = `<ion-icon name="camera"></ion-icon><span>${t.sigCapture}</span>`;
+            btnCapture.addEventListener("click", () => openSigModal(m.id, "capture"));
+
+            const btnUpload = document.createElement("button");
+            btnUpload.className = "mmb-captureBtn";
+            btnUpload.type = "button";
+            btnUpload.innerHTML = `<ion-icon name="cloud-upload"></ion-icon><span>${t.sigUpload}</span>`;
+            btnUpload.addEventListener("click", () => openSigModal(m.id, "upload"));
+
+            const btnDraw = document.createElement("button");
+            btnDraw.className = "mmb-captureBtn";
+            btnDraw.type = "button";
+            btnDraw.innerHTML = `<ion-icon name="brush"></ion-icon><span>${t.sigDraw}</span>`;
+            btnDraw.addEventListener("click", () => openSigModal(m.id, "draw"));
+
+            actions.appendChild(btnCapture);
+            actions.appendChild(btnUpload);
+            actions.appendChild(btnDraw);
+
+            sigCol.appendChild(actions);
+          }
+
+          row.appendChild(sigCol);
+
+          // Desktop delete button
+          const desktopDel = document.createElement("button");
+          desktopDel.className = "mmb-rowDelete";
+          desktopDel.type = "button";
+          desktopDel.innerHTML = '<ion-icon name="trash"></ion-icon>';
+          desktopDel.title = t.deleteRow;
+          desktopDel.setAttribute("aria-label", t.deleteRow);
+          desktopDel.style.display = (members.length > 1) ? "" : "none";
+          desktopDel.addEventListener("click", () => {
+            if(members.length > 1){
+              members = members.filter(x => x.id !== m.id);
+              renderAll();
+            }
+          });
+
+          row.appendChild(desktopDel);
+          host.appendChild(row);
+        });
+      }
+
+      function refreshMobileBits(){
+        const isMobile = window.matchMedia("(max-width: 560px)").matches;
+
+        document.querySelectorAll(".mmb-mobileMeta").forEach(el => {
+          el.style.display = isMobile ? "flex" : "none";
+        });
+
+        const rows = document.querySelectorAll("#mmbMembersList .mmb-tableRow");
+        rows.forEach(r => {
+          const btns = r.querySelectorAll(".mmb-rowDelete");
+          if(btns.length >= 2){
+            btns[0].style.display = (isMobile && members.length > 1) ? "" : "none";
+            btns[1].style.display = (!isMobile && members.length > 1) ? "" : "none";
+          }
+        });
+      }
+
+      function renderAll(){
+        applyTranslations();
+
+        const dateEl = $("mmbMeetingDate");
+        dateEl.value = toDateInputValue(meetingDate);
+
+        renderTextRows($("mmbAgendaList"), agendaItems, "agenda");
+        renderTextRows($("mmbDelibList"), deliberations, "deliberation");
+        renderTextRows($("mmbDecList"), decisions, "decision");
+
+        renderMembers();
+        refreshMobileBits();
+      }
+
+      /* =========================
+         Language sync with base.html (ONLY source of change)
+         ========================= */
+      function setLanguageFromBase(lang){
+        language = (lang === "bn") ? "bn" : "en";
+        persistLang(language);
+        renderAll();
+      }
+
+      const prevHook = window.onPGMISLanguageChange;
+      window.onPGMISLanguageChange = function(lang){
+        try { if (typeof prevHook === "function") prevHook(lang); } catch(e){}
+        setLanguageFromBase(normalizeLang(lang) || "en");
+      };
+
+      /* =========================
+         Events
+         ========================= */
+      
+      /* =========================
+         Backend persistence (MongoDB)
+         - Uses /pg/api/register/minutes/<pg_id>
+         - Stores monthly snapshots (year/month derived from meeting date)
+         ========================= */
+      const MMB_PG = (window.PG_ID || "").trim();
+      const MMB_STORAGE_KEY = `PGMIS_MMB_${MMB_PG || "anon"}`;
+
+      function mmbPeriodFromDate(d){
+        const dt = (d instanceof Date) ? d : new Date();
+        return { year: dt.getFullYear(), month: dt.getMonth()+1 };
+      }
+
+      function mmbBuildPayload(){
+        return {
+          minutes: {
+            dateISO: (meetingDate instanceof Date) ? meetingDate.toISOString() : new Date().toISOString(),
+            datePretty: formatDatePretty(meetingDate),
+            agendaItems: agendaItems.map(x => x.content),
+            deliberations: deliberations.map(x => x.content),
+            decisions: decisions.map(x => x.content),
+          },
+          members: members.map(m => ({
+            id: m.id,
+            name: m.name,
+            signature: m.signature || null,
+          })),
+          meta: { savedAt: new Date().toISOString() }
+        };
+      }
+
+      function mmbRestorePayload(payload){
+        if(!payload) return;
+        try{
+          const mins = payload.minutes || {};
+          if(mins.dateISO){
+            const d = new Date(mins.dateISO);
+            if(!isNaN(d.getTime())){
+              meetingDate = d;
+              $("mmbMeetingDate").value = toDateInputValue(meetingDate);
+            }
+          }
+          agendaItems = (mins.agendaItems || []).map(c => ({ id: uid(), content: (c||"") }));
+          deliberations = (mins.deliberations || []).map(c => ({ id: uid(), content: (c||"") }));
+          decisions = (mins.decisions || []).map(c => ({ id: uid(), content: (c||"") }));
+          members = (payload.members || []).map(m => ({ id: m.id || uid(), name: m.name || "", signature: m.signature || null }));
+          renderAll();
+        }catch(_e){}
+      }
+
+      async function mmbLoadFromServer(){
+        if(!MMB_PG) return null;
+        const p = mmbPeriodFromDate(meetingDate);
+        const qs = `?year=${encodeURIComponent(p.year)}&month=${encodeURIComponent(p.month)}`;
+        try{
+          const res = await fetch(`/pg/api/register/minutes/${encodeURIComponent(MMB_PG)}${qs}`, { method:"GET" });
+          if(!res.ok) return null;
+          const doc = await res.json().catch(()=>null);
+          const payload = doc && (doc.data || doc) ? (doc.data || doc) : null;
+          if(payload){
+            localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(payload));
+            return payload;
+          }
+        }catch(_e){}
+        return null;
+      }
+
+      async function mmbSaveToServer(payload){
+        if(!MMB_PG) return {ok:false, message:"Missing PG context"};
+        const p = mmbPeriodFromDate(meetingDate);
+        const qs = `?year=${encodeURIComponent(p.year)}&month=${encodeURIComponent(p.month)}`;
+        try{
+          const res = await fetch(`/pg/api/register/minutes/${encodeURIComponent(MMB_PG)}${qs}`, {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ data: payload })
+          });
+          const data = await res.json().catch(()=>null);
+          if(!res.ok) return {ok:false, message:(data && (data.message||data.error)) || "Save failed"};
+          return {ok:true, message:(data && data.message) || "Saved"};
+        }catch(_e){
+          return {ok:false, message:"Network error"};
+        }
+      }
+
+
+function wireEvents(){
+        $("mmbBackBtn").addEventListener("click", () => {
+          if(window.history.length > 1) window.history.back();
+          else window.location.href = "{{ url_for('pg.pg_home') }}";
+        });
+
+        $("mmbTabMinutes").addEventListener("click", () => setTab("minutes"));
+        $("mmbTabMembers").addEventListener("click", () => setTab("members"));
+
+        $("mmbMeetingDate").addEventListener("change", (e) => {
+          const v = e.target.value;
+          if(v){
+            const [y,m,d] = v.split("-").map(Number);
+            meetingDate = new Date(y, (m-1), d);
+          }
+        });
+
+        $("mmbAddAgenda").addEventListener("click", () => {
+          agendaItems = [...agendaItems, { id: uid(), content:"" }];
+          renderAll();
+        });
+        $("mmbAddDelib").addEventListener("click", () => {
+          deliberations = [...deliberations, { id: uid(), content:"" }];
+          renderAll();
+        });
+        $("mmbAddDec").addEventListener("click", () => {
+          decisions = [...decisions, { id: uid(), content:"" }];
+          renderAll();
+        });
+
+        $("mmbSaveMinutes").addEventListener("click", () => {
+          const t = translations[language] || translations.en;
+
+          const data = {
+            date: formatDatePretty(meetingDate),
+            agendaItems: agendaItems.map(x => x.content),
+            deliberations: deliberations.map(x => x.content),
+            decisions: decisions.map(x => x.content),
+          };
+
+          console.log("Meeting Minutes Data:", data);
+
+          const payload = mmbBuildPayload();
+          localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(payload));
+          mmbSaveToServer(payload).then(r=>{
+            showPopup(r.ok ? t.savedMinutes : (r.message||t.savedMinutes), r.ok ? "success" : "danger");
+          });
+        });
+
+        $("mmbAddMember").addEventListener("click", () => {
+          members = [...members, { id: uid(), name:"", signature:null }];
+          renderAll();
+        });
+
+        $("mmbSaveMembers").addEventListener("click", () => {
+          const t = translations[language] || translations.en;
+
+          const data = members.map(m => ({
+            name: m.name,
+            hasSignature: !!m.signature,
+          }));
+
+          console.log("Members Present Data:", data);
+
+          const payload = mmbBuildPayload();
+          localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(payload));
+          mmbSaveToServer(payload).then(r=>{
+            showPopup(r.ok ? t.savedMembers : (r.message||t.savedMembers), r.ok ? "success" : "danger");
+          });
+        });
+
+        window.addEventListener("resize", () => refreshMobileBits());
+      }
+
+      /* =========================
+         Init
+         ========================= */
+      (function init(){
+        language = detectLanguageStrict();
+        persistLang(language);
+
+        meetingDate = new Date();
+        $("mmbMeetingDate").value = toDateInputValue(meetingDate);
+
+        wirePopup();               // ✅ added
+        wireEvents();
+
+        // --- Load last saved snapshot (server first, local fallback) ---
+        (async ()=>{
+          const server = await mmbLoadFromServer();
+          if(server){ mmbRestorePayload(server); return; }
+          try{ const local = JSON.parse(localStorage.getItem(MMB_STORAGE_KEY) || "null"); if(local) mmbRestorePayload(local); }catch(_e){}
+        })();
+        wireSignatureModal();      // ✅ added (signature modal only)
+        setTab("minutes");
+        renderAll();
+
+        // ✅ Short sync window to catch base late DOM build:
+        let ticks = 0;
+        const syncTimer = setInterval(() => {
+          ticks += 1;
+          const now = detectLanguageStrict();
+          if(now && now !== language){
+            language = now;
+            persistLang(language);
+            renderAll();
+          }
+          if(ticks >= 15){
+            clearInterval(syncTimer);
+          }
+        }, 120);
+      })();
+
+    })();
+  </script>
+{% endblock %}

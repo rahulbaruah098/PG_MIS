@@ -1,0 +1,1377 @@
+{% extends "base.html" %}
+{% block title %}PGMIS Dashboard - Producer Group Management Information System{% endblock %}
+
+{% block head_extra %}
+  <!-- Tailwind + Chart.js (same as your setup) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- ✅ ALL CSS MERGED HERE (UPDATED: COLORS ONLY to match your other pages) -->
+  <style>
+    /* ============================================================
+      ✅ COLOR-ONLY UPDATE (MATCHES YOUR SITE THEME)
+      - NO layout changes
+      - NO JS changes (except translation wiring below, required)
+      - NO route/data changes
+      - ONLY adjusted palette + borders + surfaces to match your mint/green pages
+      ============================================================ */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      color: #0b2a23;               /* ✅ deeper green-ink */
+      background: #f1fbf5;          /* ✅ mint page bg */
+    }
+
+    html { scroll-behavior: smooth; }
+
+    /* ✅ Cursor rules (as requested) */
+    body, body * { cursor: pointer; }
+    #quickStats, #dashboardOverview, #cashFlowChart, #membershipChart, #loanDistributionChart, #produceStockChart, #recentTransactions,
+    #quickStats *, #dashboardOverview *, #cashFlowChart *, #membershipChart *, #loanDistributionChart *, #produceStockChart *, #recentTransactions * {
+      cursor: grab;
+    }
+    button, a, [role="button"] { cursor: pointer !important; }
+    canvas { cursor: grab !important; }
+
+    .backdrop-blur-sm { backdrop-filter: blur(4px); }
+
+    .transition-all { transition: all 0.3s ease; }
+    .transition-shadow { transition: box-shadow 0.3s ease; }
+    .transition-colors { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
+
+    .hover\:scale-105:hover { transform: scale(1.05); }
+    .hover\:-translate-y-1:hover { transform: translateY(-0.25rem); }
+    .hover\:-translate-y-0\.5:hover { transform: translateY(-0.125rem); }
+
+    .group:hover .group-hover\:shadow-xl {
+      box-shadow: 0 20px 25px -5px rgba(6, 95, 70, 0.16), 0 10px 10px -5px rgba(6, 95, 70, 0.08);
+    }
+    .group:hover .group-hover\:bg-white\/80 { background-color: rgba(255,255,255,0.86); }
+    .group:hover .group-hover\:text-gray-900 { color: rgb(17, 24, 39); }
+
+    /* Refined shadows (slightly greener like your pages) */
+    .shadow-md { box-shadow: 0 6px 14px rgba(6, 95, 70, 0.10); }
+    .shadow-lg { box-shadow: 0 14px 28px rgba(6, 95, 70, 0.12); }
+    .shadow-xl { box-shadow: 0 18px 38px rgba(6, 95, 70, 0.14); }
+    .shadow-2xl { box-shadow: 0 26px 60px rgba(6, 95, 70, 0.18); }
+
+    .hover\:shadow-md:hover { box-shadow: 0 6px 16px rgba(6, 95, 70, 0.14); }
+    .hover\:shadow-lg:hover { box-shadow: 0 14px 30px rgba(6, 95, 70, 0.16); }
+    .hover\:shadow-xl:hover { box-shadow: 0 18px 44px rgba(6, 95, 70, 0.18); }
+    .hover\:shadow-2xl:hover { box-shadow: 0 28px 70px rgba(6, 95, 70, 0.22); }
+
+    :root{
+      --ink:#0b2a23;
+      --muted:#2f5b4f;
+      --muted2:#4c7468;
+
+      /* ✅ Your site-like mint/green brand */
+      --brand:#0f766e;     /* teal */
+      --brand2:#15803d;    /* green */
+      --accent:#0f766e;
+      --accent2:#15803d;
+
+      --paper:#f1fbf5;
+      --paper2:#e9f8f0;
+      --card:#ffffff;
+      --line:#d8efe3;
+      --line2:#bfe6d2;
+      --ring: rgba(15, 118, 110, 0.22);
+    }
+
+    /* Welcome strip under navbar */
+    /* ✅ Welcome strip under navbar (WEB + WEBVIEW safe spacing) */
+    .welcome-strip{
+      width: 100%;
+      max-width: 80rem;              /* ✅ fixes invalid max-width: 7xl */
+      margin: 18px auto 0;
+      padding: 0;                    /* ✅ FIX 1: match main outer breadth (no extra inset) */
+    }
+
+    /* ✅ Welcome card styled like your other panels (NO green left line) */
+    .welcome-card{
+      position: relative;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.92);
+      border: 1.5px solid rgba(191,230,210,0.95);
+      box-shadow: 0 22px 60px rgba(6, 95, 70, 0.14);
+      overflow: hidden;
+      backdrop-filter: blur(6px);
+    }
+
+    /* subtle texture like main.max-w-7xl */
+    .welcome-card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      pointer-events:none;
+      background-image: radial-gradient(rgba(6,95,70,0.08) 0.6px, transparent 0.6px);
+      background-size: 18px 18px;
+      opacity: 0.07;
+      mix-blend-mode: multiply;
+    }
+
+    .welcome-inner{
+      position: relative;
+      z-index: 1;
+      padding: 18px 18px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 14px;
+    }
+
+    /* ✅ HARD FIX: gap between welcome + main (works in webview too) */
+    .welcome-strip{ margin-bottom: 16px; }
+    main.max-w-7xl{ margin-top: 16px; }
+
+    .welcome-title{ letter-spacing:-0.02em; }
+
+    .welcome-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(233,248,240,0.95);
+      border: 1px solid rgba(15,118,110,0.20);
+      color: #0b2a23;
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .welcome-dot{
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(21,128,61,0.95);
+      box-shadow: 0 0 0 4px rgba(21,128,61,0.12);
+    }
+
+    /* Main panel */
+    main.max-w-7xl{
+      position: relative;
+      border-radius: 22px;
+      padding-top: 22px;
+      padding-bottom: 24px;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(15,118,110,0.18);
+      box-shadow: 0 22px 60px rgba(6, 95, 70, 0.14);
+      overflow: clip;
+      backdrop-filter: blur(6px);
+    }
+
+    /* subtle texture (kept) */
+    main.max-w-7xl::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      pointer-events:none;
+      background-image: radial-gradient(rgba(6,95,70,0.08) 0.6px, transparent 0.6px);
+      background-size: 18px 18px;
+      opacity: 0.07;
+      mix-blend-mode: multiply;
+    }
+
+    #quickStats, #dashboardOverview, #recentTransactions,
+    #cashFlowChart, #membershipChart, #loanDistributionChart, #produceStockChart {
+      position: relative; z-index: 1;
+    }
+
+    .chart-container { position: relative; width: 100%; height: 300px; }
+    canvas { max-width: 100%; height: auto; }
+
+    table { border-collapse: collapse; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #e9f8f0; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(21,128,61,0.55); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(15,118,110,0.75); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.55s cubic-bezier(.2,.8,.2,1); }
+
+    /* ✅ Card skin closer to your other pages */
+    .card-border-soft{
+      border: 1.5px solid rgba(191,230,210,0.95) !important;
+      box-shadow: 0 14px 30px rgba(6,95,70,0.12) !important;
+      background: rgba(255,255,255,0.94) !important;
+    }
+
+    .stat-icon-soft{
+      background: rgba(233,248,240,0.95) !important;
+      border: 1px solid rgba(15,118,110,0.18) !important;
+    }
+
+    .human-title{ letter-spacing: -0.01em; }
+    .human-subtitle{ color: #2f5b4f !important; }
+
+    /* ✅ Small text tones like your pages */
+    .text-slate-900{ color:#0b2a23 !important; }
+    .text-slate-800{ color:#123a31 !important; }
+    .text-slate-700{ color:#2f5b4f !important; }
+    .text-slate-600{ color:#4c7468 !important; }
+    .text-slate-500{ color:#5b8376 !important; }
+
+    /* ✅ Table header background -> mint */
+    .bg-slate-50\/90{ background-color: rgba(233,248,240,0.92) !important; }
+
+    /* ✅ Borders a bit greener */
+    .border-slate-200{ border-color: rgba(191,230,210,0.95) !important; }
+    .border-slate-100{ border-color: rgba(216,239,227,0.95) !important; }
+
+    /* ✅ Button color stays brand teal */
+    /* (already inline style background:#0f766e) */
+
+
+    /* ============================================================
+      ✅ MOBILE/TABLET ONLY FIXES (NO WEB CHANGES)
+      1) Add visible GAP between Welcome card and Quick Stats section
+      2) Make Welcome card more eye-catching (mobile/tablet only)
+      ============================================================ */
+    @media (max-width: 1024px) {
+      /* Make the first section feel premium */
+      .welcome-card{
+        background:
+          radial-gradient(120% 120% at 10% 0%, rgba(15,118,110,0.16), transparent 55%),
+          radial-gradient(120% 120% at 100% 10%, rgba(21,128,61,0.12), transparent 55%),
+          rgba(255,255,255,0.94) !important;
+        border: 1px solid rgba(15,118,110,0.30) !important;
+        box-shadow:
+          0 26px 70px rgba(6,95,70,0.18),
+          0 2px 0 rgba(15,118,110,0.10) inset !important;
+      }
+      .welcome-card::before{
+        /* soft sheen + texture only for mobile/tablet */
+        content:"";
+        position:absolute;
+        inset:-1px;
+        pointer-events:none;
+        background:
+          radial-gradient(rgba(6,95,70,0.10) 0.6px, transparent 0.6px);
+        background-size: 18px 18px;
+        opacity: 0.10;
+        mix-blend-mode: multiply;
+      }
+
+      /* Make title stronger & clearer on small screens */
+      .welcome-card h1{
+        letter-spacing: -0.03em !important;
+        text-shadow: 0 1px 0 rgba(255,255,255,0.7);
+      }
+
+      /* ✅ IMPORTANT: add gap below welcome section (what you asked) */
+      .welcome-strip{
+        margin-bottom: 14px !important; /* creates separation from Quick Stats */
+      }
+
+      /* also add a tiny top breathing room for main container */
+      main.max-w-7xl{
+        margin-top: 10px !important;
+      }
+    }
+
+    /* ============================================================
+      ✅ MOBILE / APP VIEW — previous mobile redesign kept
+      (we only adjusted gaps + welcome card styling above)
+      ============================================================ */
+    @media (max-width: 768px) {
+      /* page paddings tighter */
+      main.max-w-7xl{ padding-left: 14px !important; padding-right: 14px !important; }
+      .welcome-strip{ padding: 0 !important; } /* ✅ FIX 1 (mobile): keep equal breadth */
+      .welcome-inner{ padding: 16px 14px !important; }
+
+      /* headings scale down slightly for app view */
+      .welcome-card h1{ font-size: 20px !important; line-height: 1.15 !important; }
+      .welcome-card p{ font-size: 13px !important; }
+      .welcome-pill{ display:none !important; }
+
+      /* add a bit more gap on phones */
+      .welcome-strip{ margin-bottom: 16px !important; }
+
+      /* ===============================
+         QUICK STATS — compact 2-col grid
+         =============================== */
+      #quickStats{
+        display:grid !important;
+        grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+        gap: 10px !important;
+        overflow: visible !important;
+        padding-bottom: 0 !important;
+        scroll-snap-type: none !important;
+      }
+      #quickStats > *{
+        flex: unset !important;
+        scroll-snap-align: unset !important;
+        transform: none !important;
+        min-width: 0 !important;
+      }
+
+      /* make stat cards tighter + cleaner */
+      #quickStats .card-border-soft{
+        border-radius: 18px !important;
+      }
+      #quickStats .p-5{
+        padding: 12px !important;
+      }
+      #quickStats h3{
+        font-size: 11px !important;
+        letter-spacing: .08em !important;
+        margin-bottom: 6px !important;
+      }
+      #quickStats .text-3xl{
+        font-size: 22px !important;
+        line-height: 1.1 !important;
+        margin-bottom: 6px !important;
+      }
+      #quickStats .human-subtitle{
+        font-size: 12px !important;
+        line-height: 1.2 !important;
+      }
+
+      /* icon box smaller */
+      #quickStats .p-3{
+        padding: 10px !important;
+        border-radius: 14px !important;
+      }
+      #quickStats svg{
+        width: 20px !important;
+        height: 20px !important;
+      }
+
+      /* remove hover transforms for app feel */
+      #quickStats .hover\:scale-105:hover,
+      #quickStats .hover\:-translate-y-1:hover{
+        transform: none !important;
+      }
+
+      /* ===============================
+         MODULES OVERVIEW — app-style grid
+         =============================== */
+      #dashboardOverview .p-6{ padding: 14px !important; }
+      #dashboardOverview h2{ font-size: 18px !important; line-height: 1.2 !important; }
+      #dashboardOverview p.text-sm{ font-size: 13px !important; }
+
+      .modules-grid{
+        display:grid !important;
+        grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+        gap: 10px !important;
+        overflow: visible !important;
+        padding-bottom: 0 !important;
+        scroll-snap-type: none !important;
+      }
+      .modules-grid > *{
+        flex: unset !important;
+        scroll-snap-align: unset !important;
+        min-width: 0 !important;
+      }
+
+      /* module card compact */
+      .modules-grid .p-5{ padding: 12px !important; }
+      .modules-grid h3{ font-size: 13px !important; margin-bottom: 4px !important; }
+      .modules-grid p.text-xs{ font-size: 12px !important; line-height: 1.25 !important; }
+      .modules-grid .text-2xl{
+        font-size: 16px !important;
+        font-weight: 900 !important;
+      }
+      .modules-grid .p-2{ padding: 8px !important; border-radius: 12px !important; }
+      .modules-grid svg{
+        width: 18px !important;
+        height: 18px !important;
+      }
+      .modules-grid .hover\:scale-105:hover,
+      .modules-grid .hover\:-translate-y-1:hover{
+        transform:none !important;
+      }
+
+      /* ===============================
+         CHARTS — stack as clean vertical cards
+         =============================== */
+      .mob-swipe{
+        display:grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+        overflow: visible !important;
+        padding-bottom: 0 !important;
+        scroll-snap-type: none !important;
+        -webkit-overflow-scrolling: auto !important;
+      }
+      .mob-swipe > *{
+        flex: unset !important;
+        scroll-snap-align: unset !important;
+      }
+
+      /* charts padding + title sizing */
+      #cashFlowChart .p-6,
+      #membershipChart .p-6,
+      #loanDistributionChart .p-6,
+      #produceStockChart .p-6{
+        padding: 14px !important;
+      }
+      #cashFlowChart h2,
+      #membershipChart h2,
+      #loanDistributionChart h2,
+      #produceStockChart h2{
+        font-size: 16px !important;
+        line-height: 1.2 !important;
+      }
+      #cashFlowChart p.text-sm,
+      #membershipChart p.text-sm,
+      #loanDistributionChart p.text-sm,
+      #produceStockChart p.text-sm{
+        font-size: 12.5px !important;
+      }
+
+      /* icons in chart headers smaller */
+      #cashFlowChart .p-2\.5,
+      #membershipChart .p-2\.5,
+      #loanDistributionChart .p-2\.5,
+      #produceStockChart .p-2\.5{
+        padding: 8px !important;
+        border-radius: 12px !important;
+      }
+      #cashFlowChart svg,
+      #membershipChart svg,
+      #loanDistributionChart svg,
+      #produceStockChart svg{
+        width: 18px !important;
+        height: 18px !important;
+      }
+
+      /* chart heights optimized for phones */
+      .chart-container{ height: 220px !important; }
+
+      /* ===============================
+         RECENT TRANSACTIONS — tighter header/button + summary stack
+         =============================== */
+      #recentTransactions .p-6{ padding: 14px !important; }
+      #recentTransactions h2{ font-size: 16px !important; line-height: 1.2 !important; }
+      #recentTransactions p.text-sm{ font-size: 12.5px !important; }
+
+      /* View All button: full width but shorter */
+      #recentTransactions button{
+        padding: 10px 14px !important;
+        border-radius: 14px !important;
+      }
+
+      /* summary footer cards: 1-col (no swipe) */
+      #recentTransactions .mob-swipe{
+        display:grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+      #recentTransactions .mob-swipe .p-5{ padding: 12px !important; }
+      #recentTransactions .mob-swipe .text-2xl{ font-size: 20px !important; }
+    }
+
+    /* Extra small devices */
+    @media (max-width: 420px) {
+      .welcome-card h1{ font-size: 19px !important; }
+      #quickStats{ gap: 9px !important; }
+      .modules-grid{ gap: 9px !important; }
+      .chart-container{ height: 210px !important; }
+      #dashboardOverview h2{ font-size: 17px !important; }
+    }
+  
+
+    /* MODULES SLIDER OVERRIDE */
+    /* Turns the Modules Overview cards into a horizontal slider without changing markup */
+    .modules-grid{
+      display:flex !important;
+      flex-wrap:nowrap !important;
+      gap:14px !important;
+      overflow-x:auto !important;
+      overflow-y:hidden !important;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch;
+      padding-bottom:10px;
+      margin-top:12px;
+    }
+    .modules-grid::-webkit-scrollbar{ height:10px; }
+    .modules-grid::-webkit-scrollbar-track{ background:rgba(148,163,184,.25); border-radius:999px; }
+    .modules-grid::-webkit-scrollbar-thumb{ background:rgba(15,23,42,.28); border-radius:999px; }
+    .modules-grid > *{
+      scroll-snap-align:start;
+      flex:0 0 min(86vw, 360px);
+    }
+    @media (min-width: 720px){
+      .modules-grid > *{ flex-basis: min(52vw, 360px); }
+    }
+    @media (min-width: 1024px){
+      .modules-grid > *{ flex-basis: 320px; }
+    }
+    @media (min-width: 1280px){
+      .modules-grid > *{ flex-basis: 340px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+  <!-- ✅ Welcome Heading under navbar -->
+  <section class="welcome-strip">
+    <!-- ✅ FIX 2: apply SAME loading/fade animation class used elsewhere -->
+    <div class="welcome-card card-border-soft fade-in">
+      <div class="welcome-inner">
+        <div>
+          <p class="text-xs font-semibold text-slate-700/90 tracking-wider uppercase"
+             data-i18n="dash_tripura_pg_systems"
+             data-en="Tripura PG Systems"
+             data-bn="ত্রিপুরা পিজি সিস্টেমস">Tripura PG Systems</p>
+
+          <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 welcome-title mt-1">
+            <span
+              data-i18n="dash_welcome_pg"
+              data-en="WELCOME PG"
+              data-bn="স্বাগতম পিজি">WELCOME PG</span>
+            {{ (current_user.pg_name if current_user is defined and current_user.pg_name else (current_user.name if current_user is defined and current_user.name else (current_user.username if current_user is defined and current_user.username else "USER"))) }}
+          </h1>
+
+          <p class="text-sm md:text-[15px] text-slate-700 mt-2"
+             data-i18n="dash_snapshot_line"
+             data-en="Here’s a quick snapshot of your registers, books and key trends."
+             data-bn="আপনার রেজিস্টার, বই এবং গুরুত্বপূর্ণ ট্রেন্ডগুলোর একটি দ্রুত সারাংশ দেখুন।">
+            Here’s a quick snapshot of your registers, books and key trends.
+          </p>
+        </div>
+
+        <div class="welcome-pill">
+          <span class="welcome-dot"></span>
+          <span
+            data-i18n="dash_live_view"
+            data-en="Dashboard • Live View"
+            data-bn="ড্যাশবোর্ড • লাইভ ভিউ">Dashboard • Live View</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+    <!-- Quick Stats -->
+    <div id="quickStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+
+    <!-- Dashboard Overview -->
+    <div id="dashboardOverview"></div>
+
+    <!-- ✅ Charts Section (ALL 4 in SAME GRID) -->
+    <!-- Desktop: same 2-column layout, but single unified grid (not 2 blocks)
+         Mobile: one swipe rail containing all 4 cards -->
+    <div class="mob-swipe grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div id="cashFlowChart"></div>
+      <div id="membershipChart"></div>
+      <div id="loanDistributionChart"></div>
+      <div id="produceStockChart">
+      <!-- ============================================================
+           PG Data Entry Quick Links
+      ============================================================ -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-head" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-weight:950">PG Data Entry Quick Links</div>
+            <div style="color:rgba(0,0,0,.55);font-size:.92rem">Jump into registers and see saved counts</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <a class="btn" href="{{ url_for('pg.meeting_register', pg_id=pg._id) }}">Meeting Register ({{ metrics.meetings_count }})</a>
+            <a class="btn" href="{{ url_for('pg.meeting_minute_book') }}">Minute Book ({{ metrics.minutes_count }})</a>
+            <a class="btn" href="{{ url_for('pg.member_ledger') }}">Member Ledger ({{ metrics.member_ledger_entries }})</a>
+            <a class="btn" href="{{ url_for('pg.asset_register') }}">Asset Register ({{ metrics.assets_count }})</a>
+            <a class="btn" href="{{ url_for('pg.receipt_voucher') }}">Receipt Voucher ({{ metrics.receipt_vouchers_count }})</a>
+            <a class="btn" href="{{ url_for('pg.input_register') }}">Input ({{ metrics.input_rows_count }})</a>
+            <a class="btn" href="{{ url_for('pg.output_register') }}">Output ({{ metrics.output_rows_count }})</a>
+            <a class="btn" href="{{ url_for('pg.ledger_book') }}">Ledger Book</a>
+          </div>
+        </div>
+      </div>
+
+</div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div id="recentTransactions"></div>
+  </main>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    // ============================================================
+    // ✅ FIXED Language wiring (SYNC with base navbar language toggle)
+    // ✅ Root fix: your page was creating statsData/modulesData ONCE
+    //    so titles stayed in the old language after toggle.
+    // ✅ Now: all text arrays are rebuilt on every render.
+    // ✅ Also: charts are destroyed before re-create (prevents stacking).
+    // ============================================================
+
+    const __I18N = {
+      // Welcome
+      dash_tripura_pg_systems: { en: "Tripura PG Systems", bn: "ত্রিপুরা পিজি সিস্টেমস" },
+      dash_welcome_pg: { en: "WELCOME PG", bn: "স্বাগতম পিজি" },
+      dash_snapshot_line: { en: "Here’s a quick snapshot of your registers, books and key trends.", bn: "আপনার রেজিস্টার, বই এবং গুরুত্বপূর্ণ ট্রেন্ডগুলোর একটি দ্রুত সারাংশ দেখুন।" },
+      dash_live_view: { en: "Dashboard • Live View", bn: "ড্যাশবোর্ড • লাইভ ভিউ" },
+
+      // Quick stats
+      stat_total_members: { en: "Total Members", bn: "মোট সদস্য" },
+      stat_active_loans: { en: "Active Loans", bn: "সক্রিয় ঋণ" },
+      stat_loan_outstanding: { en: "Loan Outstanding", bn: "বকেয়া ঋণ" },
+      stat_categories: { en: "Categories", bn: "বিভাগ" },
+
+      stat_from_membership_register: { en: "From Membership Register", bn: "সদস্য নিবন্ধন থেকে" },
+      stat_from_loan_ledger: { en: "From Loan Ledger", bn: "ঋণ লেজার থেকে" },
+      stat_sum_outstanding_loans: { en: "Sum of outstanding loans", bn: "বকেয়া ঋণের মোট যোগফল" },
+      stat_from_pg_master: { en: "From PG master data", bn: "পিজি মাস্টার ডেটা থেকে" },
+
+      // Modules overview
+      modules_title: { en: "PGMIS Modules Overview", bn: "PGMIS মডিউল ওভারভিউ" },
+      modules_subtitle: { en: "Quick access to registers, books and vouchers", bn: "রেজিস্টার, বই ও ভাউচার দ্রুত অ্যাক্সেস" },
+      modules_updated_today: { en: "Updated: Today", bn: "আপডেট: আজ" },
+      modules_active: { en: "Active", bn: "সক্রিয়" },
+
+      mod_membership_register: { en: "Membership Register", bn: "সদস্য নিবন্ধন" },
+      mod_membership_desc: { en: "Manage PG members", bn: "পিজি সদস্য পরিচালনা" },
+
+      mod_cash_book: { en: "Cash Book", bn: "ক্যাশ বুক" },
+      mod_cash_book_desc: { en: "Receipts / Payments / Balance", bn: "রসিদ / পরিশোধ / ব্যালান্স" },
+
+      mod_loan_ledger: { en: "Loan Ledger", bn: "ঋণ লেজার" },
+      mod_loan_ledger_desc: { en: "PG loan tracking", bn: "পিজি ঋণ ট্র্যাকিং" },
+
+      mod_receipt_voucher: { en: "Receipt Voucher", bn: "রসিদ ভাউচার" },
+      mod_receipt_voucher_desc: { en: "Create & view vouchers", bn: "ভাউচার তৈরি ও দেখুন" },
+
+      mod_input_register: { en: "Input Register", bn: "ইনপুট রেজিস্টার" },
+      mod_input_register_desc: { en: "Purchase / Sale / Stock", bn: "ক্রয় / বিক্রয় / স্টক" },
+
+      mod_asset_register: { en: "Asset Register", bn: "সম্পদ রেজিস্টার" },
+      mod_asset_register_desc: { en: "Track PG assets", bn: "পিজি সম্পদ ট্র্যাক" },
+
+      mod_ledger_book: { en: "Ledger Book", bn: "লেজার বুক" },
+      mod_ledger_book_desc: { en: "All transactions summary", bn: "সব লেনদেনের সারাংশ" },
+
+      mod_output_register: { en: "Output Register", bn: "আউটপুট রেজিস্টার" },
+      mod_output_register_desc: { en: "Produce sale / stock", bn: "পণ্য বিক্রয় / স্টক" },
+
+      // Charts
+      chart_cashflow_title: { en: "Cash Flow Trend (Cash Book)", bn: "ক্যাশ ফ্লো ট্রেন্ড (ক্যাশ বুক)" },
+      chart_cashflow_sub: { en: "Income, expense and net movement overview", bn: "আয়, ব্যয় এবং নেট মুভমেন্ট ওভারভিউ" },
+
+      chart_membership_title: { en: "Membership Growth", bn: "সদস্য বৃদ্ধি" },
+      chart_membership_sub: { en: "Monthly member count progression", bn: "মাসিক সদস্য সংখ্যা অগ্রগতি" },
+      chart_current_members: { en: "Current Members", bn: "বর্তমান সদস্য" },
+      chart_new_this_month: { en: "New This Month", bn: "এই মাসে নতুন" },
+
+      chart_loan_dist_title: { en: "Loan Ledger Distribution", bn: "ঋণ লেজার বণ্টন" },
+      chart_loan_dist_sub: { en: "Disbursed vs recovered vs outstanding", bn: "বিতরণ বনাম আদায় বনাম বকেয়া" },
+      chart_total_outstanding: { en: "Total Outstanding Loans", bn: "মোট বকেয়া ঋণ" },
+      chart_across_active_loans: { en: "across", bn: "মোট" },
+      chart_active_loans_word: { en: "active loans", bn: "সক্রিয় ঋণ" },
+
+      chart_output_stock_title: { en: "Output Produce Stock", bn: "আউটপুট পণ্য স্টক" },
+      chart_output_stock_sub: { en: "Category-wise stock snapshot", bn: "বিভাগভিত্তিক স্টক সারাংশ" },
+      chart_total_stock: { en: "Total Stock", bn: "মোট স্টক" },
+      chart_categories: { en: "Categories", bn: "বিভাগ" },
+
+      // Recent transactions
+      tx_title: { en: "Recent Transactions (Ledger Book)", bn: "সাম্প্রতিক লেনদেন (লেজার বুক)" },
+      tx_sub: { en: "Latest entries from registers and vouchers", bn: "রেজিস্টার ও ভাউচার থেকে সর্বশেষ এন্ট্রি" },
+      tx_view_all: { en: "View All", bn: "সব দেখুন" },
+      tx_no_found: { en: "No transactions found.", bn: "কোনো লেনদেন পাওয়া যায়নি।" },
+
+      tx_col_id: { en: "ID", bn: "আইডি" },
+      tx_col_type: { en: "Type", bn: "ধরন" },
+      tx_col_desc: { en: "Description", bn: "বিবরণ" },
+      tx_col_date: { en: "Date", bn: "তারিখ" },
+      tx_col_amount: { en: "Amount", bn: "পরিমাণ" },
+      tx_col_status: { en: "Status", bn: "স্ট্যাটাস" },
+
+      // Summary footer
+      sum_income_7d: { en: "Total Income (Last 7 days)", bn: "মোট আয় (শেষ ৭ দিন)" },
+      sum_expense_7d: { en: "Total Expenses (Last 7 days)", bn: "মোট ব্যয় (শেষ ৭ দিন)" },
+      sum_net_balance: { en: "Net Balance", bn: "নেট ব্যালান্স" },
+
+      // Dataset labels (charts)
+      ds_income: { en: "Income", bn: "আয়" },
+      ds_expense: { en: "Expense", bn: "ব্যয়" },
+      ds_net_balance: { en: "Net Balance", bn: "নেট ব্যালান্স" },
+      ds_total_members: { en: "Total Members", bn: "মোট সদস্য" },
+      ds_disbursed: { en: "Disbursed", bn: "বিতরণ" },
+      ds_recovered: { en: "Recovered", bn: "আদায়" },
+      ds_outstanding: { en: "Outstanding", bn: "বকেয়া" }
+    };
+
+    function __getLang(){
+      // ✅ Match your base keys (and safe fallbacks)
+      const a = localStorage.getItem('pgmis_lang');
+      const b = localStorage.getItem('lang');
+      const c = localStorage.getItem('language');
+      const d = sessionStorage.getItem('PGMIS_LANG_SESSION');
+      const e = document.documentElement.getAttribute('data-lang');
+      const lang = (a || b || c || d || e || 'en').toLowerCase();
+      return (lang === 'bn' || lang === 'bangla') ? 'bn' : 'en';
+    }
+
+    function __t(key){
+      const lang = __getLang();
+      const hit = __I18N[key];
+      if (!hit) return key;
+      return hit[lang] || hit.en || key;
+    }
+
+    function __applyDomI18n(){
+      const lang = __getLang();
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const en = el.getAttribute('data-en');
+        const bn = el.getAttribute('data-bn');
+        if (lang === 'bn' && bn) el.textContent = bn;
+        else if (en) el.textContent = en;
+      });
+    }
+
+    // ============================================================
+    // Lucide Icons as SVG strings
+    // ============================================================
+    const icons = {
+      Users: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
+      IndianRupee: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"></path><path d="M6 8h12"></path><path d="m6 13 8.5 8"></path><path d="M6 13h3"></path><path d="M9 13c6.667 0 6.667-10 0-10"></path></svg>',
+      Wallet: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>',
+      PackageCheck: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 2 2 4-4"></path><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="M7.5 4.27l9 5.15"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" x2="12" y1="22" y2="12"></line></svg>',
+      BookOpen: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>',
+      // ✅ REPLACE ONLY THIS ICON
+      Receipt: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path>' +
+        '<path d="M7 6h10"></path>' +
+        '<path d="M7 10h10"></path>' +
+        '<path d="M7 14l7 7"></path>' +
+        '<path d="M7 14h3"></path>' +
+        '<path d="M10 14c6.2 0 6.2-8 0-8"></path>' +
+      '</svg>',
+
+      CreditCard: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"></rect><line x1="2" x2="22" y1="10" y2="10"></line></svg>',
+      ShoppingCart: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>',
+      Building2: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>',
+      BookMarked: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path><polyline points="10 2 10 10 13 7 16 10 16 2"></polyline></svg>',
+      TrendingUp: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>',
+      FileText: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" x2="8" y1="13" y2="13"></line><line x1="16" x2="8" y1="17" y2="17"></line><line x1="10" x2="8" y1="9" y2="9"></line></svg>',
+      UserPlus: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" x2="19" y1="8" y2="14"></line><line x1="22" x2="16" y1="11" y2="11"></line></svg>',
+      ShoppingBasket: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 11 4-7"></path><path d="m19 11-4-7"></path><path d="M2 11h20"></path><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8c.9 0 1.8-.7 2-1.6l1.7-7.4"></path><path d="m9 11 1 9"></path><path d="M4.5 15.5h15"></path><path d="m15 11-1 9"></path></svg>',
+      History: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>',
+      ArrowUpCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="m16 12-4-4-4 4"></path><path d="M12 16V8"></path></svg>',
+      ArrowDownCircle: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="m8 12 4 4 4-4"></path></svg>',
+      IndianRupeeSmall: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"></path><path d="M6 8h12"></path><path d="m6 13 8.5 8"></path><path d="M6 13h3"></path><path d="M9 13c6.667 0 6.667-10 0-10"></path></svg>'
+    };
+
+    // Transactions Data: intentionally empty (avoid hardcoded demo values)
+    const transactionsData = [];
+
+    // ============================================================
+    // ✅ Chart instances registry (prevents chart stacking on re-render)
+    // ============================================================
+    const __charts = {
+      cashFlow: null,
+      membership: null,
+      loanDist: null,
+      produceStock: null
+    };
+
+    function __destroyCharts(){
+      try { if (__charts.cashFlow) { __charts.cashFlow.destroy(); __charts.cashFlow = null; } } catch(e){}
+      try { if (__charts.membership) { __charts.membership.destroy(); __charts.membership = null; } } catch(e){}
+      try { if (__charts.loanDist) { __charts.loanDist.destroy(); __charts.loanDist = null; } } catch(e){}
+      try { if (__charts.produceStock) { __charts.produceStock.destroy(); __charts.produceStock = null; } } catch(e){}
+    }
+
+    // ============================================================
+    // ✅ FACTORIES (IMPORTANT FIX)
+    // - These rebuild on every render so language changes reflect
+    // ============================================================
+    function getStatsData(){
+      return [
+        { title: __t('stat_total_members'), value: '{{ (metrics.members_count if metrics is defined else 0) }}', change: __t('stat_from_membership_register'), icon: 'Users', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
+        { title: 'Lakhpati Didi', value: '{{ (metrics.lakhpati_count if metrics is defined and metrics.lakhpati_count is defined else 0) }}', change: 'Members marked as Lakhpati Didi', icon: 'BadgeCheck', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
+        { title: __t('stat_active_loans'), value: '{{ (metrics.loans_count if metrics is defined else 0) }}', change: __t('stat_from_loan_ledger'), icon: 'Wallet', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-teal-700' },
+        { title: __t('stat_loan_outstanding'), value: '{{ (metrics.outstanding_loans_amount if metrics is defined else "₹0") }}', change: __t('stat_sum_outstanding_loans'), icon: 'IndianRupee', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-green-700' },
+        { title: 'Turnover (Latest)', value: '{{ (metrics.turnover_latest if metrics is defined and metrics.turnover_latest is defined else "₹0") }}', change: '{{ (metrics.turnover_period if metrics is defined and metrics.turnover_period is defined else "") }}', icon: 'TrendingUp', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
+        { title: 'Profit (Latest)', value: '{{ (metrics.profit_latest if metrics is defined and metrics.profit_latest is defined else "₹0") }}', change: '{{ (metrics.profit_period if metrics is defined and metrics.profit_period is defined else "") }}', icon: 'TrendingUp', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-teal-700' },
+        { title: 'Loss (Latest)', value: '{{ (metrics.loss_latest if metrics is defined and metrics.loss_latest is defined else "₹0") }}', change: '{{ (metrics.profit_period if metrics is defined and metrics.profit_period is defined else "") }}', icon: 'TrendingDown', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-rose-700' },
+        { title: 'Grants Received', value: '{{ (metrics.grants_received_total if metrics is defined and metrics.grants_received_total is defined else "₹0") }}', change: '{{ (metrics.grants_count if metrics is defined and metrics.grants_count is defined else 0) }} grant(s)', icon: 'Landmark', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-lime-700' },
+        { title: __t('stat_categories'), value: '{{ (metrics.categories_count if metrics is defined else 0) }}', change: __t('stat_from_pg_master'), icon: 'PackageCheck', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-lime-700' },
+      ];
+    }
+
+    function getModulesData(){
+      return [
+        { title: __t('mod_membership_register'), description: __t('mod_membership_desc'), icon: 'Users', count: '{{ (metrics.members_count if metrics is defined else 0) }}', href: '/pg/members/{{ session.get("pg_id") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+        { title: 'Lakhpati Didi', description: 'View members marked as Lakhpati Didi', icon: 'BadgeCheck', count: '{{ (metrics.lakhpati_count if metrics is defined and metrics.lakhpati_count is defined else 0) }}', href: '/pg/lakhpati/{{ session.get("pg_id") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+        { title: __t('mod_cash_book'), description: __t('mod_cash_book_desc'), icon: 'BookOpen', count: '—', href: '{{ url_for("finance.cashbook") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+        { title: 'Grants & Utilization', description: 'Add grants and utilization details', icon: 'Landmark', count: '{{ (metrics.grants_count if metrics is defined and metrics.grants_count is defined else 0) }}', href: '/finance/grants/{{ session.get("pg_id") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+        { title: 'Download CSV', description: 'Download this PG report as CSV', icon: 'Download', count: '—', href: '/pg/export/{{ session.get("pg_id") }}/summary.csv', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+        { title: __t('mod_loan_ledger'), description: __t('mod_loan_ledger_desc'), icon: 'CreditCard', count: '{{ (metrics.loans_count if metrics is defined else 0) }}', href: '/finance/pg-loans/{{ session.get("pg_id") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+        { title: __t('mod_receipt_voucher'), description: __t('mod_receipt_voucher_desc'), icon: 'Receipt', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+        { title: __t('mod_input_register'), description: __t('mod_input_register_desc'), icon: 'ShoppingCart', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+        { title: __t('mod_asset_register'), description: __t('mod_asset_register_desc'), icon: 'Building2', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+        { title: __t('mod_ledger_book'), description: __t('mod_ledger_book_desc'), icon: 'BookMarked', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+        { title: __t('mod_output_register'), description: __t('mod_output_register_desc'), icon: 'TrendingUp', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
+      ];
+    }
+
+    function getCashFlowData(){
+      return {
+        labels: [],
+        datasets: [
+          { label: __t('ds_income'), data: [], borderColor: '#0f766e', backgroundColor: '#0f766e', borderWidth: 3, tension: 0.4, pointRadius: 6, pointHoverRadius: 8, pointBackgroundColor: '#0f766e', pointBorderColor: '#fff', pointBorderWidth: 2 },
+          { label: __t('ds_expense'), data: [], borderColor: '#b45309', backgroundColor: '#b45309', borderWidth: 3, tension: 0.4, pointRadius: 6, pointHoverRadius: 8, pointBackgroundColor: '#b45309', pointBorderColor: '#fff', pointBorderWidth: 2 },
+          { label: __t('ds_net_balance'), data: [], borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', borderWidth: 3, tension: 0.4, pointRadius: 6, pointHoverRadius: 8, pointBackgroundColor: '#0ea5e9', pointBorderColor: '#fff', pointBorderWidth: 2 },
+        ]
+      };
+    }
+
+    function getMembershipData(){
+      return {
+        labels: [],
+        datasets: [
+          { label: __t('ds_total_members'), data: [], borderColor: '#0f766e', backgroundColor: 'rgba(15, 118, 110, 0.12)', borderWidth: 3, fill: true, tension: 0.4 },
+        ]
+      };
+    }
+
+    function getLoanDistributionData(){
+      return {
+        labels: [],
+        datasets: [
+          { label: __t('ds_disbursed'), data: [], backgroundColor: 'rgba(15, 118, 110, 0.75)', borderRadius: 8 },
+          { label: __t('ds_recovered'), data: [], backgroundColor: 'rgba(21, 128, 61, 0.55)', borderRadius: 8 },
+          { label: __t('ds_outstanding'), data: [], backgroundColor: 'rgba(245, 158, 11, 0.65)', borderRadius: 8 },
+        ]
+      };
+    }
+
+    function getProduceStockData(){
+      return {
+        labels: [],
+        datasets: [
+          { data: [], backgroundColor: ['#0f766e'], borderWidth: 2, borderColor: '#fff' },
+        ]
+      };
+    }
+
+    // ============================================================
+    // Renderers
+    // ============================================================
+    function renderQuickStats() {
+      const container = document.getElementById('quickStats');
+      const statsData = getStatsData();
+
+      
+
+    // computeNetBalanceFrom7d: keep layout/data, just derive net balance from the shown 7-day income/expense
+    (function computeNetBalanceFrom7d(){
+      try{
+        const incomeStr = (statsData.income_7d || '').toString();
+        const expenseStr = (statsData.expense_7d || '').toString();
+        const toNum = (s)=>{ const n = parseFloat((s||'').replace(/[^0-9.\-]/g,'')) || 0; return n; };
+        const net = toNum(incomeStr) - toNum(expenseStr);
+        // Format like ₹4,95,000 (no decimals)
+        const fmt = (n)=>'₹' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        statsData.net_balance = fmt(net);
+      }catch(e){}
+    })();
+container.innerHTML = statsData.map((stat, index) => `
+        <div class="${stat.bg} rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 p-5 border ${stat.border} hover:scale-105 hover:-translate-y-1 cursor-pointer group fade-in card-border-soft" style="animation-delay: ${index * 0.1}s">
+          <div class="flex items-center justify-between mb-4">
+            <div class="p-3 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow ${stat.iconBg}">
+              ${icons[stat.icon]}
+            </div>
+          </div>
+          <h3 class="text-slate-600 text-xs font-semibold mb-2 uppercase tracking-wider">${stat.title}</h3>
+          <p class="text-3xl font-extrabold text-slate-900 mb-2 human-title">${stat.value}</p>
+          <p class="${stat.textColor} text-sm font-medium human-subtitle">${stat.change}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderDashboardOverview() {
+      const container = document.getElementById('dashboardOverview');
+      const modulesData = getModulesData();
+
+      container.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 fade-in card-border-soft">
+          <div class="flex items-start justify-between gap-4 mb-6">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-xl shadow-md stat-icon-soft">
+                ${icons.FileText}
+              </div>
+              <div>
+                <h2 class="text-2xl font-bold text-slate-900 human-title">${__t('modules_title')}</h2>
+                <p class="text-sm text-slate-600 mt-1">${__t('modules_subtitle')}</p>
+              </div>
+            </div>
+            <div class="hidden md:flex items-center gap-2">
+              <span class="text-xs px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 bg-white/70">${__t('modules_updated_today')}</span>
+              <span class="text-xs px-3 py-1.5 rounded-full border border-emerald-200 text-emerald-700 bg-emerald-50">${__t('modules_active')}</span>
+            </div>
+          </div>
+
+          <div class="modules-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            ${modulesData.map((module, index) => `
+              <div class="${module.bgColor} ${module.hoverBg} rounded-xl p-5 transition-all duration-300 cursor-pointer border ${module.borderColor} hover:shadow-lg hover:scale-105 hover:-translate-y-1 group card-border-soft" style="animation-delay: ${index * 0.05}s" onclick="if('${module.href}' && '${module.href}' !== '#'){ window.location.href = '${module.href}'; }">
+                <div class="flex items-start justify-between mb-3">
+                  <div class="bg-white/70 p-2 rounded-lg group-hover:bg-white/80 transition-colors border border-slate-100">
+                    <div class="${module.iconColor}">${icons[module.icon]}</div>
+                  </div>
+                  <span class="text-2xl font-bold text-slate-800 group-hover:text-slate-900 transition-colors">${module.count}</span>
+                </div>
+                <h3 class="font-bold text-slate-900 mb-1 text-sm">${module.title}</h3>
+                <p class="text-xs text-slate-600">${module.description}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCashFlowChart() {
+      const container = document.getElementById('cashFlowChart');
+      const cashFlowData = getCashFlowData();
+
+      container.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="p-2.5 rounded-xl shadow-md stat-icon-soft">
+              ${icons.IndianRupee.replace('width="28" height="28"', 'width="24" height="24"')}
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 human-title">${__t('chart_cashflow_title')}</h2>
+              <p class="text-sm text-slate-600 mt-1">${__t('chart_cashflow_sub')}</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="cashFlowCanvas"></canvas>
+          </div>
+        </div>
+      `;
+
+      const ctx = document.getElementById('cashFlowCanvas').getContext('2d');
+      __charts.cashFlow = new Chart(ctx, {
+        type: 'line',
+        data: cashFlowData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, labels: { font: { size: 13, weight: 500 } } },
+            tooltip: {
+              backgroundColor: '#ffffff',
+              titleColor: '#000',
+              bodyColor: '#000',
+              borderColor: 'rgba(15,118,110,0.55)',
+              borderWidth: 2,
+              padding: 12,
+              cornerRadius: 12,
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { font: { size: 13, weight: 500 }, color: '#2f5b4f' },
+              grid: { color: 'rgba(191,230,210,0.95)', drawBorder: false },
+            },
+            x: {
+              ticks: { font: { size: 13, weight: 500 }, color: '#2f5b4f' },
+              grid: { color: 'rgba(216,239,227,0.80)', drawBorder: false },
+            },
+          },
+        },
+      });
+    }
+
+    function renderMembershipChart() {
+      const container = document.getElementById('membershipChart');
+      const membershipData = getMembershipData();
+
+      container.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="p-2.5 rounded-xl shadow-md stat-icon-soft">
+              ${icons.UserPlus}
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 human-title">${__t('chart_membership_title')}</h2>
+              <p class="text-sm text-slate-600 mt-1">${__t('chart_membership_sub')}</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="membershipCanvas"></canvas>
+          </div>
+
+          <div class="mt-5 grid grid-cols-2 gap-4">
+            <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <p class="text-sm text-slate-600 font-medium mb-1">${__t('chart_current_members')}</p>
+              <p class="text-3xl font-bold text-slate-900">{{ metrics.members_count if metrics is defined else 0 }}</p>
+            </div>
+            <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <p class="text-sm text-slate-600 font-medium mb-1">${__t('chart_new_this_month')}</p>
+              <p class="text-3xl font-bold text-emerald-700">{{ metrics.new_members_month if metrics is defined and metrics.new_members_month is defined else 0 }}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const ctx = document.getElementById('membershipCanvas').getContext('2d');
+      __charts.membership = new Chart(ctx, {
+        type: 'line',
+        data: membershipData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#ffffff',
+              titleColor: '#000',
+              bodyColor: '#000',
+              borderColor: 'rgba(15,118,110,0.55)',
+              borderWidth: 2,
+              padding: 12,
+              cornerRadius: 12,
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              ticks: { font: { size: 13, weight: 500 }, color: '#2f5b4f' },
+              grid: { color: 'rgba(191,230,210,0.95)', drawBorder: false },
+            },
+            x: {
+              ticks: { font: { size: 13, weight: 500 }, color: '#2f5b4f' },
+              grid: { color: 'rgba(216,239,227,0.80)', drawBorder: false },
+            },
+          },
+        },
+      });
+    }
+
+    function renderLoanDistributionChart() {
+      const container = document.getElementById('loanDistributionChart');
+      const loanDistributionData = getLoanDistributionData();
+
+      container.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="p-2.5 rounded-xl shadow-md stat-icon-soft">
+              ${icons.Wallet.replace('width="28" height="28"', 'width="24" height="24"')}
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 human-title">${__t('chart_loan_dist_title')}</h2>
+              <p class="text-sm text-slate-600 mt-1">${__t('chart_loan_dist_sub')}</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="loanDistributionCanvas"></canvas>
+          </div>
+          <div class="mt-5 bg-white/85 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+            <p class="text-sm text-slate-600 font-medium mb-1">${__t('chart_total_outstanding')}</p>
+            <p class="text-3xl font-bold text-slate-900">{{ metrics.outstanding_loans_amount if metrics is defined else "₹0" }}</p>
+            <p class="text-sm text-slate-500 mt-1">
+              ${__t('chart_across_active_loans')} {{ metrics.loans_count if metrics is defined else 0 }} ${__t('chart_active_loans_word')}
+            </p>
+          </div>
+        </div>
+      `;
+
+      const ctx = document.getElementById('loanDistributionCanvas').getContext('2d');
+      __charts.loanDist = new Chart(ctx, {
+        type: 'bar',
+        data: loanDistributionData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, labels: { font: { size: 13, weight: 500 } } },
+            tooltip: {
+              backgroundColor: '#ffffff',
+              titleColor: '#000',
+              bodyColor: '#000',
+              borderColor: 'rgba(15,118,110,0.55)',
+              borderWidth: 2,
+              padding: 12,
+              cornerRadius: 12,
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { font: { size: 13, weight: 500 }, color: '#2f5b4f' },
+              grid: { color: 'rgba(191,230,210,0.95)', drawBorder: false },
+            },
+            x: {
+              ticks: { font: { size: 12, weight: 500 }, color: '#2f5b4f' },
+              grid: { display: false },
+            },
+          },
+        },
+      });
+    }
+
+    function renderProduceStockChart() {
+      const container = document.getElementById('produceStockChart');
+      const produceStockData = getProduceStockData();
+
+      container.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="p-2.5 rounded-xl shadow-md stat-icon-soft">
+              ${icons.ShoppingBasket}
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 human-title">${__t('chart_output_stock_title')}</h2>
+              <p class="text-sm text-slate-600 mt-1">${__t('chart_output_stock_sub')}</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="produceStockCanvas"></canvas>
+          </div>
+          <div class="mt-5 grid grid-cols-2 gap-4">
+            <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <p class="text-sm text-slate-600 font-medium mb-1">${__t('chart_total_stock')}</p>
+              <p class="text-3xl font-bold text-slate-900">{{ metrics.total_stock_kg if metrics is defined and metrics.total_stock_kg is defined else 0 }} kg</p>
+            </div>
+            <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <p class="text-sm text-slate-600 font-medium mb-1">${__t('chart_categories')}</p>
+              <p class="text-3xl font-bold text-emerald-700">{{ metrics.categories_count if metrics is defined else 0 }}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const ctx = document.getElementById('produceStockCanvas').getContext('2d');
+      __charts.produceStock = new Chart(ctx, {
+        type: 'doughnut',
+        data: produceStockData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+              labels: { font: { size: 12 }, padding: 15 },
+            },
+            tooltip: {
+              backgroundColor: '#ffffff',
+              titleColor: '#000',
+              bodyColor: '#000',
+              borderColor: 'rgba(15,118,110,0.55)',
+              borderWidth: 2,
+              padding: 12,
+              cornerRadius: 12,
+            },
+          },
+        },
+      });
+    }
+
+    function renderRecentTransactions() {
+      const container = document.getElementById('recentTransactions');
+
+      const hasTx = Array.isArray(transactionsData) && transactionsData.length > 0;
+
+      const tableRows = hasTx ? transactionsData.map(transaction => {
+        const date = new Date(transaction.date);
+        const formattedDate = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const arrowIcon = transaction.amount > 0 ? icons.ArrowUpCircle : icons.ArrowDownCircle;
+        const amountClass = transaction.amount > 0 ? 'text-emerald-700' : 'text-amber-700';
+        const iconClass = transaction.amount > 0 ? 'text-emerald-600' : 'text-amber-600';
+
+        return `
+          <tr class="border-b border-slate-200 hover:bg-slate-50/70 transition-all cursor-pointer">
+            <td class="py-4 px-4 text-sm font-bold text-slate-900">${transaction.id}</td>
+            <td class="py-4 px-4">
+              <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/80 text-slate-800 border border-slate-200">
+                ${transaction.type}
+              </span>
+            </td>
+            <td class="py-4 px-4 text-sm text-slate-700 font-medium">${transaction.description}</td>
+            <td class="py-4 px-4 text-sm text-slate-600 font-medium">${formattedDate}</td>
+            <td class="py-4 px-4 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <span class="${iconClass}">${arrowIcon}</span>
+                <span class="font-bold text-base ${amountClass}">₹${Math.abs(transaction.amount).toLocaleString('en-IN')}</span>
+              </div>
+            </td>
+            <td class="py-4 px-4 text-center">
+              <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/80 text-emerald-800 border border-emerald-200">
+                ${transaction.status}
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('') : `
+        <tr>
+          <td colspan="6" class="py-10 px-6 text-center text-slate-600">
+            ${__t('tx_no_found')}
+          </td>
+        </tr>
+      `;
+
+      const mobileCards = hasTx ? transactionsData.map(transaction => {
+        const date = new Date(transaction.date);
+        const formattedDate = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        const isIncome = transaction.amount > 0;
+        const amountClass = isIncome ? 'text-emerald-700' : 'text-amber-700';
+        const chipBorder = isIncome ? 'border-emerald-200' : 'border-amber-200';
+        const chipBg = isIncome ? 'bg-emerald-50' : 'bg-amber-50';
+
+        return `
+          <div class="bg-white/85 rounded-2xl border border-slate-200 p-4 hover:shadow-md transition-all card-border-soft">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xs font-bold text-slate-700 bg-white/80 border border-slate-200 px-2.5 py-1 rounded-lg">#${transaction.id}</span>
+                  <span class="text-xs font-semibold text-slate-700 bg-white/80 border border-slate-200 px-2.5 py-1 rounded-lg">${transaction.type}</span>
+                </div>
+                <p class="text-sm font-semibold text-slate-900 leading-snug break-words">${transaction.description}</p>
+                <p class="text-xs text-slate-600 mt-1">${formattedDate}</p>
+              </div>
+
+              <div class="text-right shrink-0">
+                <p class="text-lg font-extrabold ${amountClass}">₹${Math.abs(transaction.amount).toLocaleString('en-IN')}</p>
+                <span class="inline-flex items-center justify-center mt-2 px-2.5 py-1 rounded-lg text-xs font-semibold ${chipBg} ${chipBorder} border">
+                  ${transaction.status}
+                </span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('') : `
+        <div class="bg-white/85 rounded-2xl border border-slate-200 p-5 text-center text-slate-600 card-border-soft">
+          ${__t('tx_no_found')}
+        </div>
+      `;
+
+      container.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div class="flex items-center gap-3">
+              <div class="p-2.5 rounded-xl shadow-md stat-icon-soft">
+                ${icons.History}
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-slate-900 human-title">${__t('tx_title')}</h2>
+                <p class="text-sm text-slate-600 mt-1">${__t('tx_sub')}</p>
+              </div>
+            </div>
+
+            <button class="w-full md:w-auto px-5 py-2.5 rounded-xl transition-all text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+              style="background:#0f766e; color:#fff;">
+              ${__t('tx_view_all')}
+            </button>
+          </div>
+
+          <div class="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white/80">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-slate-50/90 border-b border-slate-200">
+                  <th class="text-left py-4 px-4 font-bold text-slate-700 text-sm">${__t('tx_col_id')}</th>
+                  <th class="text-left py-4 px-4 font-bold text-slate-700 text-sm">${__t('tx_col_type')}</th>
+                  <th class="text-left py-4 px-4 font-bold text-slate-700 text-sm">${__t('tx_col_desc')}</th>
+                  <th class="text-left py-4 px-4 font-bold text-slate-700 text-sm">${__t('tx_col_date')}</th>
+                  <th class="text-right py-4 px-4 font-bold text-slate-700 text-sm">${__t('tx_col_amount')}</th>
+                  <th class="text-center py-4 px-4 font-bold text-slate-700 text-sm">${__t('tx_col_status')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="md:hidden space-y-3">
+            ${mobileCards}
+          </div>
+
+          <div class="mob-swipe mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white/85 rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="bg-emerald-50 p-1.5 rounded-lg border border-emerald-200">
+                  ${icons.IndianRupeeSmall}
+                </div>
+                <p class="text-sm text-slate-600 font-semibold">${__t('sum_income_7d')}</p>
+              </div>
+              <p class="text-2xl font-extrabold text-emerald-700">{{ metrics.income_7d if metrics is defined else "₹0" }}</p>
+            </div>
+
+            <div class="bg-white/85 rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="bg-amber-50 p-1.5 rounded-lg border border-amber-200">
+                  ${icons.IndianRupeeSmall}
+                </div>
+                <p class="text-sm text-slate-600 font-semibold">${__t('sum_expense_7d')}</p>
+              </div>
+              <p class="text-2xl font-extrabold text-amber-700">{{ metrics.expense_7d if metrics is defined else "₹0" }}</p>
+            </div>
+
+            <div class="bg-white/85 rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+              <div class="flex items-center gap-2 mb-2">
+                <div class="bg-sky-50 p-1.5 rounded-lg border border-sky-200">
+                  ${icons.IndianRupeeSmall}
+                </div>
+                <p class="text-sm text-slate-600 font-semibold">${__t('sum_net_balance')}</p>
+              </div>
+              <p class="text-2xl font-extrabold text-sky-700">₹0</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function initDashboard() {
+      // ✅ prevent chart stacking when language toggles
+      __destroyCharts();
+
+      renderQuickStats();
+      renderDashboardOverview();
+      renderCashFlowChart();
+      renderMembershipChart();
+      renderLoanDistributionChart();
+      renderProduceStockChart();
+      renderRecentTransactions();
+    }
+
+    function __rerenderForLang(){
+      __applyDomI18n();
+      initDashboard();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      __applyDomI18n();
+      initDashboard();
+
+      // ✅ storage sync
+      window.addEventListener('storage', (e) => {
+        if (['pgmis_lang', 'lang', 'language', 'PGMIS_LANG_SESSION'].includes(e.key)) __rerenderForLang();
+      });
+
+      // ✅ base event sync (your base uses pgmis:language-change / pgmis:lang etc.)
+      window.addEventListener('pgmis:language-change', __rerenderForLang);
+      window.addEventListener('pgmis:lang', __rerenderForLang);
+
+      // keep your previous listeners (harmless)
+      window.addEventListener('languageChanged', __rerenderForLang);
+      window.addEventListener('pgmis:languageChanged', __rerenderForLang);
+      window.addEventListener('pgmis-lang-changed', __rerenderForLang);
+      document.addEventListener('languageChanged', __rerenderForLang);
+      document.addEventListener('pgmis:languageChanged', __rerenderForLang);
+
+      // ✅ If base exposes api, prefer it without breaking
+      if (window.PGMIS && typeof window.PGMIS.getLanguage === 'function') {
+        try { __rerenderForLang(); } catch(e) {}
+      }
+    });
+  </script>
+{% endblock %}

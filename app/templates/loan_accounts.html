@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}PG Loan Accounts{% endblock %}
+{% block content %}
+<style>
+  .wrap{max-width:1200px;margin:0 auto;padding:18px}
+  .hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18)}
+  .hero h1{margin:0;font-weight:950}
+  .card{margin-top:14px;background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+  .f{display:flex;flex-direction:column;gap:6px}
+  .f label{font-size:.78rem;color:#059669;font-weight:900}
+  input,select{background:#f0fdf4;border:1px solid rgba(5,150,105,.22);border-radius:12px;padding:10px 12px;outline:none}
+  input:focus,select:focus{box-shadow:0 0 0 4px rgba(16,185,129,.18)}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(5,150,105,.28);background:#059669;color:#fff;font-weight:950;cursor:pointer}
+  .btn2{background:#ecfdf5;color:#065f46}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px;border-radius:14px;overflow:hidden}
+  th,td{padding:10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-size:.92rem}
+  th{background:#f0fdf4;color:#065f46;font-weight:950}
+  @media(max-width:980px){.grid{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>PG Loan Accounts — {{ pg.pg_name or pg.name }}</h1>
+    <div style="margin-top:.35rem;color:#d1fae5;font-weight:800">Create multiple loans, track schedule + repayments.</div>
+  </div>
+
+  <div class="card">
+    {% if session.get('role') != 'PG_DATA_ENTRY' %}
+<form method="POST" class="grid">
+      <div class="f" style="grid-column:span 3"><label>Loan No</label><input name="loan_no" placeholder="e.g., LOAN-001"></div>
+      <div class="f" style="grid-column:span 3"><label>Lender / Source</label><input name="lender" placeholder="Bank / Scheme"></div>
+      <div class="f" style="grid-column:span 6"><label>Purpose</label><input name="purpose" placeholder="Working capital / equipment"></div>
+
+      <div class="f" style="grid-column:span 3"><label>Estimated Amount</label><input name="principal" type="number" step="0.01"></div>
+      <div class="f" style="grid-column:span 3"><label>Sanction Amount</label><input name="sanction_amount" type="number" step="0.01"></div>
+      <div class="f" style="grid-column:span 3"><label>Disbursed Amount</label><input name="disbursed_amount" type="number" step="0.01"></div>
+      <div class="f" style="grid-column:span 3"><label>Disbursement Date</label><input name="disbursement_date" type="date"></div>
+
+      <div class="f" style="grid-column:span 3"><label>ROI (% p.a.)</label><input name="roi" type="number" step="0.01"></div>
+      <div class="f" style="grid-column:span 3"><label>Tenure (months)</label><input name="tenure_months" type="number" step="1"></div>
+      <div class="f" style="grid-column:span 3"><label>Moratorium (months)</label><input name="moratorium_months" type="number" step="1" value="0"></div>
+      <div class="f" style="grid-column:span 3"><label>First Due Date</label><input name="first_due_date" type="date"></div>
+
+      <div class="f" style="grid-column:span 3"><label>Business plan submitted?</label>
+        <select name="business_plan_submitted"><option value="no">No</option><option value="yes">Yes</option></select>
+      </div>
+      <div class="f" style="grid-column:span 3"><label>Business plan date</label><input name="business_plan_date" type="date"></div>
+      <div class="f" style="grid-column:span 3"><label>Status</label>
+        <select name="status"><option value="active">Active</option><option value="closed">Closed</option><option value="npa">NPA</option></select>
+      </div>
+
+      <div style="grid-column:span 12;display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+        <button class="btn" type="submit">Save Loan Account</button>
+        <a class="btn btn2" href="{{ url_for('finance.loan_dashboard', pg_id=pg._id) }}">Back to Dashboard</a>
+      </div>
+    </form>
+{% else %}
+<div class="card" style="margin-top:14px;"><p style="margin:0;color:#065f46;font-weight:800;">View only: Loan entry/updates are handled by CLF/Block.</p></div>
+{% endif %}
+  </div>
+
+  <div class="card">
+    <div style="font-weight:950;color:#065f46">Existing PG Loans</div>
+    <table>
+      <thead><tr><th>Loan No</th><th>Sanction</th><th>Outstanding</th><th>Overdue</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for l in loans %}
+        <tr>
+          <td>{{ l.loan_no }}</td>
+          <td>₹{{ "{:,.2f}".format(l.sanction_amount or 0) }}</td>
+          <td>₹{{ "{:,.2f}".format(l.outstanding_amount or 0) }}</td>
+          <td>₹{{ "{:,.2f}".format(l.overdue_amount or 0) }}</td>
+          <td>{{ (l.status or 'active')|upper }}</td>
+          <td><a class="btn btn2" href="{{ url_for('finance.loan_account_view', loan_id=l._id) }}">Open</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" style="color:#64748b">No loans found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

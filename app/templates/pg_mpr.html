@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* ============================================================
+   MONTHLY PROGRESS PAGE — PGMIS STYLE
+   Scoped to .mpr-wrap
+============================================================ */
+
+.mpr-wrap{
+  width:100%;
+  max-width:1100px;
+  margin:0 auto;
+}
+
+/* ---------- HERO ---------- */
+.mpr-hero{
+  background:linear-gradient(to right,#059669,#10b981);
+  border-radius:1.25rem;
+  padding:1.2rem;
+  color:#fff;
+  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+  position:relative;
+  overflow:hidden;
+}
+.mpr-hero:before{
+  content:"";
+  position:absolute;
+  inset:-40% -20%;
+  background:radial-gradient(closest-side,rgba(255,255,255,.12),transparent 60%);
+}
+.mpr-title{
+  display:flex;
+  align-items:center;
+  gap:.7rem;
+}
+.mpr-icon{
+  width:42px;height:42px;
+  border-radius:9999px;
+  background:rgba(255,255,255,.2);
+  border:1px solid rgba(255,255,255,.25);
+  display:flex;align-items:center;justify-content:center;
+}
+.mpr-icon svg{width:20px;height:20px;color:#fff;}
+.mpr-h1{
+  margin:0;
+  font-size:clamp(1.25rem,2vw,1.6rem);
+  font-weight:950;
+}
+.mpr-sub{
+  font-size:.9rem;
+  color:#d1fae5;
+  font-weight:800;
+}
+
+/* ---------- TABLE CARD ---------- */
+.mpr-card{
+  margin-top:1rem;
+  background:#fff;
+  border-radius:1.25rem;
+  border:1px solid rgba(4,120,87,.1);
+  overflow:hidden;
+  box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+}
+
+/* ---------- TABLE ---------- */
+.mpr-table{
+  width:100%;
+  border-collapse:collapse;
+}
+.mpr-table th{
+  background:#f0fdf4;
+  color:#047857;
+  font-weight:900;
+  font-size:.8rem;
+  padding:.75rem;
+  text-align:left;
+}
+.mpr-table td{
+  padding:.75rem;
+  border-top:1px solid #e5e7eb;
+  font-weight:700;
+  font-size:.9rem;
+}
+
+/* ---------- MOBILE CARDS ---------- */
+.mpr-mobile{
+  display:none;
+  padding:1rem;
+}
+.mpr-item{
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:.8rem;
+  margin-bottom:.7rem;
+  background:#f9fafb;
+}
+.mpr-row{
+  display:flex;
+  justify-content:space-between;
+  font-size:.85rem;
+  margin-bottom:.25rem;
+}
+.mpr-label{
+  font-weight:900;
+  color:#059669;
+}
+.mpr-value{
+  font-weight:800;
+  color:#111827;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media(max-width:768px){
+  .mpr-table{display:none;}
+  .mpr-mobile{display:block;}
+}
+</style>
+
+<div class="mpr-wrap">
+
+  <!-- HERO -->
+  <div class="mpr-hero">
+    <div class="mpr-title">
+      <div class="mpr-icon">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 19h16M6 17V9M10 17V5M14 17v-7M18 17v-3" stroke="currentColor" stroke-width="2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="mpr-h1">PG Monthly Progress Reports</div>
+        <div class="mpr-sub">Turnover & Member Participation Snapshot</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="mpr-card">
+
+    <!-- Desktop Table -->
+    <table class="mpr-table">
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>Month</th>
+          <th>Monthly Turnover</th>
+          <th>% Members (Input)</th>
+          <th>% Members (Output)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in snapshots %}
+        <tr>
+          <td>{{ s.year }}</td>
+          <td>{{ s.month }}</td>
+          <td>{{ s.monthly_turnover }}</td>
+          <td>{{ s.pct_members_input }}</td>
+          <td>{{ s.pct_members_output }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Mobile Card View -->
+    <div class="mpr-mobile">
+      {% for s in snapshots %}
+      <div class="mpr-item">
+        <div class="mpr-row"><span class="mpr-label">Year</span><span class="mpr-value">{{ s.year }}</span></div>
+        <div class="mpr-row"><span class="mpr-label">Month</span><span class="mpr-value">{{ s.month }}</span></div>
+        <div class="mpr-row"><span class="mpr-label">Turnover</span><span class="mpr-value">{{ s.monthly_turnover }}</span></div>
+        <div class="mpr-row"><span class="mpr-label">Input %</span><span class="mpr-value">{{ s.pct_members_input }}</span></div>
+        <div class="mpr-row"><span class="mpr-label">Output %</span><span class="mpr-value">{{ s.pct_members_output }}</span></div>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
