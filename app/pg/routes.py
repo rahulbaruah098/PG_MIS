@@ -651,46 +651,193 @@ def pg_view(pg_id):
 
 @pg_bp.route("/registration/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def pg_registration(pg_id):
 
     db = current_app.mongo_db
 
-    pg = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))})
+    # -----------------------------
+    # Helpers (Hybrid response)
+    # -----------------------------
+    def _wants_json():
+        # Mobile: Authorization header present
+        if request.headers.get("Authorization"):
+            return True
+        # JSON body or explicit accept JSON
+        if request.is_json:
+            return True
+        accept = request.headers.get("Accept", "")
+        if "application/json" in accept.lower():
+            return True
+        return False
+
+    def _error(message, status=400, redirect_endpoint=None):
+        if _wants_json():
+            return jsonify({"ok": False, "error": message}), status
+        flash(message, "danger" if status >= 400 else "info")
+        if redirect_endpoint:
+            return redirect(redirect_endpoint)
+        return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+
+    def _info(message, redirect_endpoint=None, payload=None, status=200):
+        if _wants_json():
+            data = {"ok": True, "message": message}
+            if payload:
+                data.update(payload)
+            return jsonify(data), status
+        flash(message, "info")
+        if redirect_endpoint:
+            return redirect(redirect_endpoint)
+        return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+
+    def _success(message, redirect_endpoint=None, payload=None):
+        if _wants_json():
+            data = {"ok": True, "message": message}
+            if payload:
+                data.update(payload)
+            return jsonify(data), 200
+        flash(message, "success")
+        if redirect_endpoint:
+            return redirect(redirect_endpoint)
+        return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+
+    def _oid_str(x):
+        try:
+            return str(x) if x is not None else ""
+        except Exception:
+            return ""
+
+    def _serialize_pg_for_json(pg_doc):
+        # Keep only safe fields for mobile; adjust if you want more fields
+        out = {}
+        for k, v in (pg_doc or {}).items():
+            if k == "_id":
+                out["_id"] = str(v)
+            elif isinstance(v, ObjectId):
+                out[k] = str(v)
+            elif isinstance(v, datetime):
+                out[k] = v.isoformat()
+            elif k == "members" and isinstance(v, list):
+                members = []
+                for m in v:
+                    members.append({
+                        "member_id": _oid_str(m.get("member_id")),
+                        "member_name": m.get("member_name"),
+                        "shg_name": m.get("shg_name"),
+                        "shg_code": m.get("shg_code"),
+                        "role": m.get("role"),
+                    })
+                out["members"] = members
+            else:
+                out[k] = v
+        return out
+
+    # -----------------------------
+    # Load PG (URL pg_id preferred, fallback session pg_id)
+    # -----------------------------
+    pg_obj_id = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
+    pg = db.pgs.find_one({"_id": pg_obj_id})
     if not pg:
+        if _wants_json():
+            return jsonify({"ok": False, "error": "PG not found."}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    role = session.get("role")
-    session_pg_id = session.get("pg_id")
+    # -----------------------------
+    # Role + access (Hybrid)
+    # -----------------------------
+    role = getattr(g, "role", None) or session.get("role")
+    session_pg_id = session.get("pg_id")  # web only
 
-    if role == "PG_DATA_ENTRY" and session_pg_id != pg_id:
-        flash("You cannot edit this PG.", "danger")
-        return redirect(url_for("pg.pg_home"))
+    # Restrict PG_DATA_ENTRY to their own PG:
+    # - Web: session_pg_id enforced
+    # - Mobile JWT: best-effort enforcement using user_id -> pg mapping if present
+    if role == "PG_DATA_ENTRY":
+        # Web enforcement
+        if session_pg_id and str(session_pg_id) != str(pg_id):
+            return _error("You cannot edit this PG.", 403, redirect_endpoint=url_for("pg.pg_home"))
 
-    # ===============================
-    # GET — Load Members by Village
-    # ===============================
+        # Mobile enforcement (if no session_pg_id)
+        if not session_pg_id:
+            # Try mapping via users collection: user.pg_id or user.assigned_pg_id (adjust field names if needed)
+            uid = getattr(g, "user_id", None)
+            if uid:
+                user_doc = db.users.find_one({"_id": safe_objectid(uid) or uid}) or db.users.find_one({"user_id": uid})
+                assigned_pg = None
+                if user_doc:
+                    assigned_pg = user_doc.get("pg_id") or user_doc.get("assigned_pg_id")
+                if assigned_pg and str(assigned_pg) != str(pg_id):
+                    return _error("You cannot edit this PG.", 403)
+            # If you have no mapping available, we cannot strictly enforce per-PG for JWT users here.
+            # But roles_required already ensured they are PG_DATA_ENTRY.
+
+    # ==========================================================
+    # GET (Web => template, Mobile => JSON)
+    # ==========================================================
     if request.method == "GET":
+        village = pg.get("Village")
 
-        shg_members = list(db.shg_members_master.find(
-            {"Village": pg.get("Village")}
-        ))
-
-        # ✅ Convert ObjectId inside pg.members → string
+        # Safe members (existing selected members in this PG)
         safe_members = []
+        current_pg_member_ids = []
 
         if pg.get("members"):
             for m in pg["members"]:
+                mid = m.get("member_id")
+                if mid:
+                    current_pg_member_ids.append(mid)
+
                 safe_members.append({
-                    "member_id": str(m.get("member_id")),
+                    "member_id": _oid_str(mid),
                     "member_name": m.get("member_name"),
                     "shg_name": m.get("shg_name"),
                     "shg_code": m.get("shg_code"),
-                    "role": m.get("role")
+                    "role": m.get("role"),
                 })
 
+        # ✅ Find members used in OTHER PGs (same village), exclude current PG
+        used_in_other_pgs = db.pgs.distinct(
+            "members.member_id",
+            {
+                "Village": village,
+                "_id": {"$ne": pg["_id"]},
+                "members.member_id": {"$exists": True},
+            }
+        )
+
+        # ✅ Don’t exclude current PG's own members (edit mode)
+        used_in_other_pgs = [x for x in used_in_other_pgs if x not in current_pg_member_ids]
+
+        # ✅ Only show SHG members not already assigned elsewhere
+        shg_members = list(db.shg_members_master.find(
+            {
+                "Village": village,
+                "_id": {"$nin": used_in_other_pgs}
+            }
+        ))
+
+        # Mobile JSON response
+        if _wants_json():
+            # serialize shg_members
+            sm = []
+            for m in shg_members:
+                sm.append({
+                    "_id": _oid_str(m.get("_id")),
+                    "Member Name": m.get("Member Name"),
+                    "SHG Name": m.get("SHG Name"),
+                    "SHG Code": m.get("SHG Code"),
+                    "Village": m.get("Village"),
+                })
+
+            return jsonify({
+                "ok": True,
+                "pg": _serialize_pg_for_json(pg),
+                "shg_members": sm,
+                "safe_members": safe_members,
+            }), 200
+
+        # Web template response
         return render_template(
             "pg_registration.html",
             pg=pg,
@@ -698,68 +845,86 @@ def pg_registration(pg_id):
             safe_members=safe_members
         )
 
-
-    # ===============================
-    # POST
-    # ===============================
+    # ==========================================================
+    # POST (Web form OR Mobile JSON)
+    # ==========================================================
+    if request.is_json:
+        body = request.get_json(silent=True) or {}
+        getv = lambda k, default=None: body.get(k, default)
+        getlist = lambda k: body.get(k, []) if isinstance(body.get(k, []), list) else []
+    else:
+        getv = lambda k, default=None: request.form.get(k, default)
+        # support member_ids[] from web and member_ids from JSON-like forms
+        def getlist(k):
+            vals = request.form.getlist(k)
+            if vals:
+                return vals
+            if k.endswith("[]"):
+                return request.form.getlist(k[:-2])
+            return request.form.getlist(k)
 
     # ===============================
     # REQUIRED FIELD VALIDATION
     # ===============================
-
     required_fields = {
-        "PG Type": request.form.get("pg_type"),
-        "Sector": request.form.get("sector"),
-        "Formation Date": request.form.get("formation_date"),
-        "Contact Number": request.form.get("contact_number"),
-        "Bank Name": request.form.get("bank_name"),
-        "Branch": request.form.get("branch"),
-        "Account Number": request.form.get("account_number"),
-        "IFSC": request.form.get("ifsc"),
-        "Aggregation Centre Name": request.form.get("agg_centre_name"),
-        "Aggregation Centre Address": request.form.get("agg_centre_address"),
+        "PG Type": getv("pg_type"),
+        "Sector": getv("sector"),
+        "Formation Date": getv("formation_date"),
+        "Contact Number": getv("contact_number"),
+        "Bank Name": getv("bank_name"),
+        "Branch": getv("branch"),
+        "Account Number": getv("account_number"),
+        "IFSC": getv("ifsc"),
+        "Aggregation Centre Name": getv("agg_centre_name"),
+        "Aggregation Centre Address": getv("agg_centre_address"),
     }
 
     for field_name, value in required_fields.items():
         if not value or str(value).strip() == "":
-            flash(f"{field_name} is required.", "danger")
-            return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+            return _error(f"{field_name} is required.", 400)
 
-    # Contact number numeric validation
-    if not request.form.get("contact_number").isdigit():
-        flash("Contact number must be numeric.", "danger")
-        return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+    contact_number = str(getv("contact_number", "")).strip()
+    if not contact_number.isdigit():
+        return _error("Contact number must be numeric.", 400)
 
-    member_ids = request.form.getlist("member_ids[]")
-    president_id = request.form.get("president_id")
-    secretary_id = request.form.get("secretary_id")
-    cashier_id = request.form.get("cashier_id")
+    # members + office bearers
+    member_ids = getlist("member_ids[]") or getlist("member_ids")
+    president_id = getv("president_id")
+    secretary_id = getv("secretary_id")
+    cashier_id = getv("cashier_id")
 
-    # ---- Basic validation first
     if not member_ids:
-        flash("Please select at least one member.", "danger")
-        return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+        return _error("Please select at least one member.", 400)
 
-    # Prevent duplicates
     if len(member_ids) != len(set(member_ids)):
-        flash("Duplicate members detected.", "danger")
-        return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+        return _error("Duplicate members detected.", 400)
 
-    # Convert to ObjectId safely
+    # Convert to ObjectIds safely
     try:
         member_object_ids = [ObjectId(mid) for mid in member_ids]
-    except:
-        flash("Invalid member selection.", "danger")
-        return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+    except Exception:
+        return _error("Invalid member selection.", 400)
 
-    # Limit check
     if len(member_object_ids) > 40:
-        flash("Maximum 40 members allowed.", "danger")
-        return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+        return _error("Maximum 40 members allowed.", 400)
 
-    # ===============================
-    # Fetch Members (Village-level filter enforced in DB)
-    # ===============================
+    # ✅ POST SAFETY: block members already assigned to another PG
+    conflict_pg = db.pgs.find_one(
+        {
+            "Village": pg.get("Village"),
+            "_id": {"$ne": pg["_id"]},
+            "members.member_id": {"$in": member_object_ids}
+        },
+        {"name": 1}
+    )
+    if conflict_pg:
+        return _error(
+            f"Some selected members are already assigned to another PG "
+            f'("{conflict_pg.get("name", "Unknown")}"). Please remove them and try again.',
+            409
+        )
+
+    # Village-level enforced fetch from master
     members_from_db = list(db.shg_members_master.find(
         {
             "_id": {"$in": member_object_ids},
@@ -768,40 +933,27 @@ def pg_registration(pg_id):
     ))
 
     if len(members_from_db) != len(member_object_ids):
-        flash("Some members are invalid or do not belong to this village.", "danger")
-        return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+        return _error("Some members are invalid or do not belong to this village.", 400)
 
-    # ===============================
-    # Role validation
-    # ===============================
+    # Office bearer validation
     if not president_id or not secretary_id or not cashier_id:
-        flash("Please select President, Secretary and Cashier.", "danger")
-        return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+        return _error("Please select President, Secretary and Cashier.", 400)
 
-    if president_id not in member_ids or \
-       secretary_id not in member_ids or \
-       cashier_id not in member_ids:
-        flash("Office bearers must be selected from chosen members.", "danger")
-        return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+    if president_id not in member_ids or secretary_id not in member_ids or cashier_id not in member_ids:
+        return _error("Office bearers must be selected from chosen members.", 400)
 
     if len({president_id, secretary_id, cashier_id}) != 3:
-        flash("President, Secretary and Cashier must be different members.", "danger")
-        return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+        return _error("President, Secretary and Cashier must be different members.", 400)
 
-    # ===============================
-    # Build Members Array
-    # ===============================
+    # Build members array
     members_array = []
-
     for m in members_from_db:
-
         role_name = "member"
-
-        if str(m["_id"]) == president_id:
+        if str(m["_id"]) == str(president_id):
             role_name = "president"
-        elif str(m["_id"]) == secretary_id:
+        elif str(m["_id"]) == str(secretary_id):
             role_name = "secretary"
-        elif str(m["_id"]) == cashier_id:
+        elif str(m["_id"]) == str(cashier_id):
             role_name = "cashier"
 
         members_array.append({
@@ -812,40 +964,34 @@ def pg_registration(pg_id):
             "role": role_name
         })
 
-    # ===============================
-    # Prepare Update Data
-    # ===============================
+    # Prepare update data
     data = {
-        "pg_type": request.form.get("pg_type"),
-        "sector": request.form.get("sector"),
-        "formation_date": request.form.get("formation_date"),
-        "office_bearers":{
-                "president_id": ObjectId(president_id),
-                "secretary_id": ObjectId(secretary_id),
-                "cashier_id": ObjectId(cashier_id),
-                "contact_number": request.form.get("contact_number"),
+        "pg_type": getv("pg_type"),
+        "sector": getv("sector"),
+        "formation_date": getv("formation_date"),
+        "office_bearers": {
+            "president_id": ObjectId(president_id),
+            "secretary_id": ObjectId(secretary_id),
+            "cashier_id": ObjectId(cashier_id),
+            "contact_number": contact_number,
         },
-
         "bank_details": {
-            "bank_name": request.form.get("bank_name"),
-            "branch": request.form.get("branch"),
-            "account_number": request.form.get("account_number"),
-            "ifsc": request.form.get("ifsc"),
+            "bank_name": getv("bank_name"),
+            "branch": getv("branch"),
+            "account_number": getv("account_number"),
+            "ifsc": getv("ifsc"),
         },
         "aggregation_centre": {
-            "name": request.form.get("agg_centre_name"),
-            "address": request.form.get("agg_centre_address"),
+            "name": getv("agg_centre_name"),
+            "address": getv("agg_centre_address"),
         },
         "total_members": len(members_array),
         "members": members_array,
         "updated_at": datetime.utcnow(),
     }
 
-    # ===============================
-    # Lock Handling
-    # ===============================
+    # Lock handling
     if ensure_pg_locked(pg):
-
         create_change_request(
             db,
             collection="pgs",
@@ -863,16 +1009,20 @@ def pg_registration(pg_id):
             link=url_for("pg.pg_view", pg_id=str(pg["_id"])),
         )
 
+        # Web redirect / Mobile JSON
+        if _wants_json():
+            return jsonify({
+                "ok": True,
+                "message": "PG is already approved/locked. Changes submitted for approval.",
+                "status": "PENDING_APPROVAL",
+                "pg_id": str(pg["_id"]),
+            }), 202
+
         flash("PG is already approved/locked. Changes submitted for approval.", "info")
         return redirect(url_for("pg.pg_view", pg_id=pg_id))
 
-    # ===============================
-    # Save
-    # ===============================
-    db.pgs.update_one(
-        {"_id": pg["_id"]},
-        {"$set": data}
-    )
+    # Save directly
+    db.pgs.update_one({"_id": pg["_id"]}, {"$set": data})
 
     log_audit(
         db,
@@ -883,8 +1033,7 @@ def pg_registration(pg_id):
         after=data
     )
 
-    flash("PG registration details updated.", "success")
-    return redirect(url_for("pg.pg_registration", pg_id=pg_id))
+    return _success("PG registration details updated.", payload={"pg_id": str(pg["_id"])})
 
 
 @pg_bp.route("/submit/<pg_id>", methods=["POST"])
