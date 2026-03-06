@@ -1,6 +1,6 @@
 # PG MIS – Producer Group Management Information System (MVP)
 
-# rahulbaruah
+
 
 ## Tech Stack
 
