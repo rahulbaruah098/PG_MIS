@@ -89,202 +89,6 @@ def _sum_qty_from_rows(doc):
     return float(total)
 
 
-def _pg_metrics(db, pg_id):
-    """Compute dashboard metrics for a PG from existing MongoDB collections."""
-    try:
-        oid = (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))
-    except Exception:
-        oid = None
-
-    # If we can't resolve pg_id safely, return zeros so dashboard won't crash
-    if not oid:
-        return {
-            'meetings_count': 0,
-            'minutes_count': 0,
-            'member_ledger_entries': 0,
-            'assets_count': 0,
-            'receipt_vouchers_count': 0,
-            'input_rows_count': 0,
-            'output_rows_count': 0,
-            'total_stock_kg': 0.0,
-        }
-
-    # ---- PG Data Entry registers (counts + stock) ----
-    meetings_count = 0
-    minutes_count = 0
-    member_ledger_entries = 0
-    assets_count = 0
-    receipt_vouchers_count = 0
-    input_rows_count = 0
-    output_rows_count = 0
-    total_stock_kg = 0.0
-    try:
-        meetings_count = db.pg_meetings.count_documents({'pg_id': oid})
-    except Exception:
-        pass
-    try:
-        minutes_doc = db.pg_meeting_minutes.find_one({'pg_id': oid}, sort=[('updated_at', -1)])
-        minutes_count = _count_rows_from_register_doc(minutes_doc) or (1 if minutes_doc else 0)
-    except Exception:
-        pass
-    try:
-        member_doc = db.pg_member_ledgers.find_one({'pg_id': oid}, sort=[('updated_at', -1)])
-        member_ledger_entries = _count_rows_from_register_doc(member_doc)
-    except Exception:
-        pass
-    try:
-        asset_doc = db.pg_asset_registers.find_one({'pg_id': oid}, sort=[('updated_at', -1)])
-        assets_count = _count_rows_from_register_doc(asset_doc)
-    except Exception:
-        pass
-    try:
-        receipt_vouchers_count = db.pg_receipt_vouchers.count_documents({'pg_id': oid})
-    except Exception:
-        pass
-    try:
-        input_doc = db.pg_input_registers.find_one({'pg_id': oid}, sort=[('updated_at', -1)])
-        output_doc = db.pg_output_registers.find_one({'pg_id': oid}, sort=[('updated_at', -1)])
-        input_rows_count = _count_rows_from_register_doc(input_doc)
-        output_rows_count = _count_rows_from_register_doc(output_doc)
-        total_stock_kg = max(0.0, _sum_qty_from_rows(input_doc) - _sum_qty_from_rows(output_doc))
-    except Exception:
-        pass
-        return {
-            "members_count": 0,
-            "loans_count": 0,
-            "outstanding_loans_amount": _fmt_inr(0),
-            "categories_count": 0,
-            "income_7d": _fmt_inr(0),
-            "expense_7d": _fmt_inr(0),
-
-            # ✅ Cash Book metrics
-            "cashbook_receipts": _fmt_inr(0),
-            "cashbook_payments": _fmt_inr(0),
-            "cashbook_balance": _fmt_inr(0),
-            "cashbook_period": {"year": None, "month": None},
-        }
-
-    members_count = db.pg_members.count_documents({"pg_id": oid})
-
-    # Lakhpati Didi count (PG members flagged)
-    lakhpati_count = 0
-    try:
-        lakhpati_count = db.pg_members.count_documents({"pg_id": oid, "lakh_pati_didi": True})
-    except Exception:
-        lakhpati_count = 0
-
-    # Loans (legacy + new lifecycle)
-    legacy_loans = list(db.pg_loans.find({"pg_id": oid}))
-    new_pg_loans = list(db.pg_loan_accounts.find({"pg_id": oid}))
-    new_mb_loans = list(db.pg_member_loan_accounts.find({"pg_id": oid}))
-
-    loans_count = len(legacy_loans) + len(new_pg_loans) + len(new_mb_loans)
-    outstanding = 0.0
-
-    # legacy
-    for ln in legacy_loans:
-        for k in ("outstanding_amount", "outstanding", "balance", "amount"):
-            if k in ln and ln.get(k) not in (None, ""):
-                try:
-                    outstanding += float(ln.get(k) or 0)
-                except Exception:
-                    pass
-
-    # new lifecycle
-    for ln in (new_pg_loans + new_mb_loans):
-        try:
-            outstanding += float(ln.get("outstanding_amount") or 0)
-        except Exception:
-            pass
-
-    # Alerts (computed)
-    try:
-        from app.services.alerts import compute_pg_alerts
-        alerts_count = len(compute_pg_alerts(db, str(oid)))
-    except Exception:
-        alerts_count = 0
-
-    # Categories: try from PG profile if available, else 0
-    pg_doc = db.pgs.find_one({"_id": oid}, {"categories": 1, "commodities": 1, "primary_activities": 1})
-    categories_count = 0
-    if pg_doc:
-        for key in ("categories", "commodities", "primary_activities"):
-            val = pg_doc.get(key)
-            if isinstance(val, list):
-                categories_count = max(categories_count, len(val))
-
-    # Income/Expense last 7 days (if collection exists)
-    income_7d = 0.0
-    expense_7d = 0.0
-    try:
-        from datetime import timedelta
-        since = datetime.utcnow() - timedelta(days=7)
-        txns = list(db.pg_income_expenditure.find({"pg_id": oid, "created_at": {"$gte": since}}))
-        for t in txns:
-            amt = 0.0
-            try:
-                amt = float(t.get("amount") or 0)
-            except Exception:
-                amt = 0.0
-            ttype = (t.get("type") or t.get("txn_type") or "").lower()
-            if ttype in ("income", "receipt", "receipts", "credit"):
-                income_7d += amt
-            elif ttype in ("expense", "payment", "payments", "debit"):
-                expense_7d += amt
-    except Exception:
-        pass
-
-    # ------------------------------------------------------------
-    # ✅ Cash Book (latest saved period from pg_cashbooks)
-    # - Uses existing API storage schema: receipts[], payments[]
-    # - Picks latest by (year desc, month desc, updated_at desc)
-    # ------------------------------------------------------------
-    cb_receipts = 0.0
-    cb_payments = 0.0
-    cb_balance = 0.0
-    cb_year = None
-    cb_month = None
-
-    try:
-        latest_cb = db.pg_cashbooks.find_one(
-            {"pg_id": oid},
-            sort=[("year", -1), ("month", -1), ("updated_at", -1)]
-        )
-        if latest_cb:
-            cb_year = latest_cb.get("year")
-            cb_month = latest_cb.get("month")
-            cb_receipts = _sum_cashbook_rows(latest_cb.get("receipts"))
-            cb_payments = _sum_cashbook_rows(latest_cb.get("payments"))
-            cb_balance = round(cb_receipts - cb_payments, 2)
-    except Exception:
-        pass
-
-    return {
-        "members_count": members_count,
-        "meetings_count": meetings_count,
-        "minutes_count": minutes_count,
-        "member_ledger_entries": member_ledger_entries,
-        "assets_count": assets_count,
-        "receipt_vouchers_count": receipt_vouchers_count,
-        "input_rows_count": input_rows_count,
-        "output_rows_count": output_rows_count,
-        "total_stock_kg": f"{total_stock_kg:,.2f}",
-        "loans_count": loans_count,
-        "outstanding_loans_amount": _fmt_inr(outstanding),
-        "categories_count": categories_count,
-        "income_7d": _fmt_inr(income_7d),
-        "expense_7d": _fmt_inr(expense_7d),
-
-        # ✅ Cash Book metrics (latest period)
-        "cashbook_receipts": _fmt_inr(cb_receipts),
-        "cashbook_payments": _fmt_inr(cb_payments),
-        "cashbook_balance": _fmt_inr(cb_balance),
-        "cashbook_period": {"year": cb_year, "month": cb_month},
-
-        # (optional) you can use this later if needed
-        "alerts_count": alerts_count,
-    }
-
 def _set_pg_status(db, pg_id, status, extra=None):
     extra = extra or {}
     if status in ("active", "approved"):
@@ -298,13 +102,12 @@ def _set_pg_status(db, pg_id, status, extra=None):
     )
 
 def _current_user_dict():
+    # ✅ MOBILE FIX: prefer g (set by JWT in rbac.py) over session (web-only)
     return {
-        "user_id": session.get("user_id"),
-        "username": session.get("username"),
-        "role": session.get("role"),
+        "user_id": getattr(g, "user_id", None) or session.get("user_id"),
+        "username": getattr(g, "username", None) or session.get("username"),
+        "role": getattr(g, "role", None) or session.get("role"),
     }
-
-
 
 def _fmt_inr(amount):
     try:
@@ -464,7 +267,7 @@ def _pg_metrics(db, pg_id):
         alerts_count = 0
 
 
-# Categories: try from PG profile if available, else 0
+    # Categories: try from PG profile if available, else 0
     pg_doc = db.pgs.find_one({"_id": oid}, {"categories": 1, "commodities": 1, "primary_activities": 1})
     categories_count = 0
     if pg_doc:
@@ -574,8 +377,16 @@ def _pg_metrics(db, pg_id):
 @login_required
 def pg_home():
     db = current_app.mongo_db
-    pg_id = session.get("pg_id")
-    role = session.get("role")
+    # ✅ MOBILE FIX: prefer g (JWT) over session (web)
+    pg_id = getattr(g, "pg_id", None) or session.get("pg_id")
+    role  = getattr(g, "role",  None) or session.get("role")
+
+    def _wants_json():
+        return bool(
+            request.headers.get("Authorization")
+            or request.is_json
+            or "application/json" in request.headers.get("Accept", "").lower()
+        )
 
     if role == "PG_DATA_ENTRY" and pg_id:
         pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))})
@@ -1045,16 +856,35 @@ def pg_submit_for_authorization(pg_id):
     """After data entry, submit PG for state authorization."""
     db = current_app.mongo_db
     pg = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))})
+
+    # ✅ MOBILE FIX: helper to detect mobile/JSON requests
+    def _wants_json():
+        return bool(
+            request.headers.get("Authorization")
+            or request.is_json
+            or "application/json" in request.headers.get("Accept", "").lower()
+        )
+
     if not pg:
+        if _wants_json():
+            return jsonify({"ok": False, "error": "PG not found."}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    role = session.get("role")
-    if role == "PG_DATA_ENTRY" and session.get("pg_id") != pg_id:
+    # ✅ MOBILE FIX: read role from g (JWT) with session fallback
+    role       = getattr(g, "role",   None) or session.get("role")
+    token_pg   = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
+
+    if role == "PG_DATA_ENTRY" and token_pg and token_pg != pg_id:
+        if _wants_json():
+            return jsonify({"ok": False, "error": "You cannot submit this PG."}), 403
         flash("You cannot submit this PG.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    _set_pg_status(db, pg_id, "submitted", {"submitted_at": datetime.utcnow(), "submitted_by": session.get("user_id")})
+    _set_pg_status(db, pg_id, "submitted", {"submitted_at": datetime.utcnow(), "submitted_by": _current_user_dict().get("user_id")})
+
+    if _wants_json():
+        return jsonify({"ok": True, "message": "PG submitted for State Authorization.", "pg_id": str(pg["_id"])})
     flash("PG submitted for State Authorization.", "success")
     return redirect(url_for("pg.pg_registration", pg_id=pg_id))
 
@@ -1200,27 +1030,39 @@ def pg_members(pg_id):
     # ✅ INDIVIDUAL SAVE (Row-wise)
     # ============================================================
     if request.method == "POST":
-        mid = (request.form.get("member_id") or "").strip()
+        # ✅ MOBILE FIX: accept JSON body (app) or form data (web)
+        _is_mobile = bool(request.is_json or request.headers.get("Authorization"))
+        if _is_mobile:
+            _body = request.get_json(silent=True) or {}
+            _get  = lambda k, default="": (_body.get(k) or default)
+        else:
+            _get  = lambda k, default="": (request.form.get(k) or default)
+
+        mid = _get("member_id", "").strip()
         if not mid:
+            if _is_mobile:
+                return jsonify({"ok": False, "error": "Member ID missing."}), 400
             flash("Member ID missing.", "danger")
             return redirect(url_for("pg.pg_members", pg_id=pg_id))
 
         try:
             mid_obj = ObjectId(mid)
         except Exception:
+            if _is_mobile:
+                return jsonify({"ok": False, "error": "Invalid Member ID."}), 400
             flash("Invalid Member ID.", "danger")
             return redirect(url_for("pg.pg_members", pg_id=pg_id))
 
         master = master_by_id.get(mid)
 
         # Read single row fields
-        contact = (request.form.get("contact") or "").strip()
-        photo_id_number = (request.form.get("photo_id_number") or "").strip()
-        bank_name = (request.form.get("bank_name") or "").strip()
-        branch = (request.form.get("branch") or "").strip()
-        account_number = (request.form.get("account_number") or "").strip()
-        membership_fee_raw = (request.form.get("membership_fee_paid") or "").strip()
-        lakh_raw = (request.form.get("lakh_pati_didi") or "").strip().lower()
+        contact            = _get("contact",            "").strip()
+        photo_id_number    = _get("photo_id_number",    "").strip()
+        bank_name          = _get("bank_name",          "").strip()
+        branch             = _get("branch",             "").strip()
+        account_number     = _get("account_number",     "").strip()
+        membership_fee_raw = _get("membership_fee_paid","").strip()
+        lakh_raw           = _get("lakh_pati_didi",     "").strip().lower()
 
         # Safe fee parse
         membership_fee_paid = None
@@ -1298,6 +1140,10 @@ def pg_members(pg_id):
             {"$set": update_set, "$setOnInsert": {"created_at": datetime.utcnow()}},
             upsert=True
         )
+
+        # ✅ MOBILE FIX: return JSON for app, redirect for web
+        if _is_mobile:
+            return jsonify({"ok": True, "message": "Member details saved successfully."}), 200
 
         flash("Member details saved successfully.", "success")
         return redirect(url_for("pg.pg_members", pg_id=pg_id))
@@ -1456,19 +1302,39 @@ def submit_for_authorization(pg_id):
     """
     db = current_app.mongo_db
     pg = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))})
+
+    # ✅ MOBILE FIX: helper to detect mobile/JSON requests
+    def _wants_json():
+        return bool(
+            request.headers.get("Authorization")
+            or request.is_json
+            or "application/json" in request.headers.get("Accept", "").lower()
+        )
+
     if not pg:
+        if _wants_json():
+            return jsonify({"ok": False, "error": "PG not found."}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("reports.hierarchy_dashboard"))
 
     # PG_DATA_ENTRY can only submit their own PG.
-    if session.get("role") == "PG_DATA_ENTRY" and session.get("pg_id") != pg_id:
+    # ✅ MOBILE FIX: read role/pg_id from g (JWT) with session fallback
+    role     = getattr(g, "role",   None) or session.get("role")
+    token_pg = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
+
+    if role == "PG_DATA_ENTRY" and token_pg and token_pg != pg_id:
+        if _wants_json():
+            return jsonify({"ok": False, "error": "You cannot submit this PG."}), 403
         flash("You cannot submit this PG.", "danger")
         return redirect(url_for("pg.pg_home"))
 
     _set_pg_status(db, pg_id, "submitted", {
         "submitted_at": datetime.utcnow(),
-        "submitted_by": session.get("user_id"),
+        "submitted_by": _current_user_dict().get("user_id"),
     })
+
+    if _wants_json():
+        return jsonify({"ok": True, "message": "Submitted to State for authorization.", "pg_id": str(pg["_id"])})
     flash("Submitted to State for authorization.", "success")
     return redirect(url_for("pg.pg_registration", pg_id=pg_id))
 
@@ -1554,56 +1420,74 @@ def pg_upload_document(pg_id):
 @login_required
 @roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def meeting_minute_book():
-    pg_id = session.get('pg_id') or session.get('active_pg_id')
+    # ✅ MOBILE FIX: use g.pg_id (JWT) with session fallback
+    pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
+    if request.headers.get("Authorization") or request.is_json:
+        return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "meeting-minutes"})
     return render_template('meeting_minute_book.html', pg_id=pg_id)
+
 
 @pg_bp.route('/registers/member-ledger')
 @login_required
 @roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def member_ledger():
-    pg_id = session.get('pg_id') or session.get('active_pg_id')
+    pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
+    if request.headers.get("Authorization") or request.is_json:
+        return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "member-ledger"})
     return render_template('member_ledger.html', pg_id=pg_id)
 
 @pg_bp.route('/registers/loan-ledger')
 @login_required
 @roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def loan_ledger():
-    pg_id = session.get('pg_id') or session.get('active_pg_id')
+    pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
+    if request.headers.get("Authorization") or request.is_json:
+        return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "loan-ledger"})
     return render_template('loan_ledger.html', pg_id=pg_id)
 
 @pg_bp.route('/registers/receipt-voucher')
 @login_required
 @roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def receipt_voucher():
-    pg_id = session.get('pg_id') or session.get('active_pg_id')
+    pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
+    if request.headers.get("Authorization") or request.is_json:
+        return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "receipt-voucher"})
     return render_template('receipt_voucher.html', pg_id=pg_id)
 
 @pg_bp.route('/registers/input')
 @login_required
 @roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def input_register():
-    pg_id = session.get('pg_id') or session.get('active_pg_id')
+    pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
+    if request.headers.get("Authorization") or request.is_json:
+        return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "input"})
     return render_template('input_register.html', pg_id=pg_id)
 
 @pg_bp.route('/registers/asset')
 @login_required
 @roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def asset_register():
-    pg_id = session.get('pg_id') or session.get('active_pg_id')
+    pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
+    if request.headers.get("Authorization") or request.is_json:
+        return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "asset"})
     return render_template('asset_register.html', pg_id=pg_id)
 
 @pg_bp.route('/registers/ledger-book')
 @login_required
 @roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def ledger_book():
-    pg_id = session.get('pg_id') or session.get('active_pg_id')
+    pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
+    if request.headers.get("Authorization") or request.is_json:
+        return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "ledger-book"})
     return render_template('ledger_book.html', pg_id=pg_id)
 
 @pg_bp.route('/registers/output')
 @login_required
 @roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def output_register():
-    pg_id = session.get('pg_id') or session.get('active_pg_id')
+    pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
+    if request.headers.get("Authorization") or request.is_json:
+        return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "output"})
     return render_template('output_register.html', pg_id=pg_id)
 
 
@@ -1616,32 +1500,52 @@ def output_register():
 
 def _ctx_pg_id():
     """Return the active PG context.
-    PG user => session['pg_id']
-    Higher roles => session['active_pg_id'] (set via /pg/set_active/<pg_id>)
+    Web  => session['pg_id'] / session['active_pg_id']
+    Mobile JWT => g.pg_id (decoded from token by rbac._authenticate_request)
+    Fallback => query-string / form field 'pg_id'
     """
-    return session.get("pg_id") or session.get("active_pg_id") or request.args.get("pg_id") or request.form.get("pg_id")
+    # ✅ MOBILE FIX: g.pg_id is populated by JWT decode in rbac.py
+    return (
+        getattr(g, "pg_id", None)
+        or session.get("pg_id")
+        or session.get("active_pg_id")
+        or request.args.get("pg_id")
+        or (request.get_json(silent=True) or {}).get("pg_id")
+        or request.form.get("pg_id")
+    )
 
 
 def _enforce_pg_scope(pg_doc):
-    """Abort with 403 if current user is not allowed to access this PG document."""
-    role = session.get("role")
+    """Abort with 403 if current user is not allowed to access this PG document.
+    ✅ MOBILE FIX: reads from g (JWT) with session fallback so mobile JWT users
+    are scoped exactly the same as web session users.
+    """
+
+    # ✅ MOBILE FIX: use g first (JWT), fall back to session (web)
+    role     = getattr(g, "role",        None) or session.get("role")
+    pg_id_s  = str(getattr(g, "pg_id",  None) or session.get("pg_id") or "")
+    clf_id   = getattr(g, "clf_id",      None) or session.get("clf_id")
+    block_id = getattr(g, "block_id",    None) or session.get("block_id")
+    dist_id  = getattr(g, "district_id", None) or session.get("district_id")
+    state_id = getattr(g, "state_id",    None) or session.get("state_id")
 
     # PG user can only see own PG
     if role == "PG_DATA_ENTRY":
-        if str(pg_doc.get("_id")) != str(session.get("pg_id")):
+        if str(pg_doc.get("_id")) != pg_id_s:
             abort(403)
 
-    # Hierarchy scoping for other roles (if ids exist in session)
-    if session.get("clf_id") and str(pg_doc.get("clf_id")) != str(session.get("clf_id")):
-        abort(403)
-    if session.get("block_id") and str(pg_doc.get("block_id")) != str(session.get("block_id")):
-        abort(403)
-    if session.get("district_id") and str(pg_doc.get("district_id")) != str(session.get("district_id")):
-        abort(403)
-    if session.get("state_id") and str(pg_doc.get("state_id")) != str(session.get("state_id")):
+    # Hierarchy scoping for other roles
+    if clf_id and str(pg_doc.get("clf_id")) != str(clf_id):
         abort(403)
 
+    if block_id and str(pg_doc.get("block_id")) != str(block_id):
+        abort(403)
 
+    if dist_id and str(pg_doc.get("district_id")) != str(dist_id):
+        abort(403)
+
+    if state_id and str(pg_doc.get("state_id")) != str(state_id):
+        abort(403)
 def _load_pg_or_404(db, pg_id):
     try:
         oid = (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))
@@ -1897,89 +1801,96 @@ def api_generic_register(name, pg_id):
 
 @pg_bp.route("/profile/<pg_id>/data", methods=["GET"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def pg_profile_data(pg_id):
-    """
-    Fetch PG profile data as JSON for frontend profile modal.
-    Works for both web (session) and mobile (JWT via g).
-    """
-
     db = current_app.mongo_db
 
-    # Use g for mobile JWT, fall back to session for web
-    role = getattr(g, "role", None) or session.get("role")
-    token_pg_id = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
+    def _wants_json():
+        if request.headers.get("Authorization"):
+            return True
+        if request.is_json:
+            return True
+        accept = request.headers.get("Accept", "")
+        if "application/json" in accept.lower():
+            return True
+        return False
 
-    try:
-        oid = safe_objectid(pg_id) or safe_objectid(token_pg_id)
-    except Exception:
-        abort(400, "Invalid PG ID")
+    def _deny(status_code, message):
+        if _wants_json():
+            return jsonify({"ok": False, "error": message}), status_code
+        abort(status_code, message)
+
+    role = getattr(g, "role", None) or session.get("role")
+    auth_pg_id = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
+    auth_clf_id = str(getattr(g, "clf_id", None) or session.get("clf_id") or "")
+    auth_block_id = str(getattr(g, "block_id", None) or session.get("block_id") or "")
+    auth_dist_id = str(getattr(g, "district_id", None) or session.get("district_id") or "")
+    auth_state_id = str(getattr(g, "state_id", None) or session.get("state_id") or "")
+
+    oid = safe_objectid(pg_id)
+    if not oid:
+        return _deny(400, "Invalid PG ID")
 
     pg = db.pgs.find_one({"_id": oid})
     if not pg:
-        abort(404, "PG not found")
+        return _deny(404, "PG not found")
 
-    # Scope restriction — works for both web and mobile
     if role == "PG_DATA_ENTRY":
-        if token_pg_id != str(pg["_id"]):
-            abort(403)
+        if not auth_pg_id or auth_pg_id != str(pg["_id"]):
+            return _deny(403, "Forbidden")
 
-    clf_id   = getattr(g, "clf_id",      None) or session.get("clf_id")
-    block_id = getattr(g, "block_id",    None) or session.get("block_id")
-    dist_id  = getattr(g, "district_id", None) or session.get("district_id")
-    state_id = getattr(g, "state_id",    None) or session.get("state_id")
+    if auth_clf_id and str(pg.get("clf_id") or "") != auth_clf_id:
+        return _deny(403, "Forbidden")
 
-    if clf_id      and str(pg.get("clf_id"))      != str(clf_id):   abort(403)
-    if block_id    and str(pg.get("block_id"))    != str(block_id): abort(403)
-    if dist_id     and str(pg.get("district_id")) != str(dist_id):  abort(403)
-    if state_id    and str(pg.get("state_id"))    != str(state_id): abort(403)
+    if auth_block_id and str(pg.get("block_id") or "") != auth_block_id:
+        return _deny(403, "Forbidden")
 
-    # -------------------------------------------------
-    # 🔥 Fetch Block Admin Name (CLF equivalent)
-    # -------------------------------------------------
-    block_admin_name = None
+    if auth_dist_id and str(pg.get("district_id") or "") != auth_dist_id:
+        return _deny(403, "Forbidden")
 
-    block_id = pg.get("block_id")
+    if auth_state_id and str(pg.get("state_id") or "") != auth_state_id:
+        return _deny(403, "Forbidden")
 
-    if block_id:
+    clf_name = None
+    pg_block_id = pg.get("block_id")
+
+    if pg_block_id:
         block_admin = db.users.find_one({
-            "role": "BLOCK_ADMIN",
-            "block_id": block_id
+            "role": {"$in": ["CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN"]},
+            "block_id": pg_block_id
         })
-
         if block_admin:
-            block_admin_name = (
+            clf_name = (
                 block_admin.get("username")
                 or block_admin.get("name")
+                or block_admin.get("full_name")
+                or ""
             )
 
-    # -----------------------------
-    # Safe JSON Build (NO ObjectId)
-    # -----------------------------
     response = {
-        "pg_name": pg.get("name"),
-        "activity": pg.get("sector"),
-        "village": pg.get("Village"),
-        "block": pg.get("Block"),
-        "district": pg.get("District"),
-        "state": pg.get("State"),
-        "formation_date": pg.get("formation_date"),
-        "total_members": pg.get("total_members", 0),
-
-        # 🔥 Now showing Block Admin Name
-        "clf_name": block_admin_name,
-
-        "bank_details": {
-            "bank_name": pg.get("bank_details", {}).get("bank_name"),
-            "branch": pg.get("bank_details", {}).get("branch"),
-            "account_number": pg.get("bank_details", {}).get("account_number"),
-            "ifsc": pg.get("bank_details", {}).get("ifsc"),
+        "ok": True,
+        "data": {
+            "pg_id": str(pg["_id"]),
+            "pg_name": pg.get("name", ""),
+            "activity": pg.get("sector", ""),
+            "address": pg.get("address", ""),
+            "village": pg.get("Village", ""),
+            "block": pg.get("Block", ""),
+            "district": pg.get("District", ""),
+            "state": pg.get("State", ""),
+            "formation_date": pg.get("formation_date", ""),
+            "total_members": pg.get("total_members", 0),
+            "clf_name": clf_name,
+            "bank_details": {
+                "bank_name": pg.get("bank_details", {}).get("bank_name", ""),
+                "branch": pg.get("bank_details", {}).get("branch", ""),
+                "account_number": pg.get("bank_details", {}).get("account_number", ""),
+                "ifsc": pg.get("bank_details", {}).get("ifsc", ""),
+            }
         }
     }
 
-    return jsonify(response)
-
-
+    return jsonify(response), 200
 
 # ============================================================
 # NEW: MEETING & GOVERNANCE TRACKING

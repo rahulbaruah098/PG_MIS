@@ -29,18 +29,21 @@ def login():
             return jsonify({"error": "Username and password required"}), 400
 
         user = db.users.find_one({"username": username})
-        
-        # After: user = db.users.find_one({"username": username})
-        # Add this block before building the JWT payload: ---- "ATLANTA GOGOI"
-
-        pg_name = None
-        if user.get("pg_id"):
-            pg_doc = db.pgs.find_one({"_id": ObjectId(user["pg_id"])}, {"name": 1})
-            if pg_doc:
-                pg_name = pg_doc.get("name")
 
         if not user or not verify_password(password, user["password_hash"]):
             return jsonify({"error": "Invalid username or password"}), 401
+
+        pg_name = None
+        if user.get("pg_id"):
+            try:
+                pg_oid = user.get("pg_id")
+                if not isinstance(pg_oid, ObjectId):
+                    pg_oid = ObjectId(pg_oid)
+                pg_doc = db.pgs.find_one({"_id": pg_oid}, {"name": 1})
+                if pg_doc:
+                    pg_name = pg_doc.get("name")
+            except Exception:
+                pg_name = None
 
         # Update last login
         db.users.update_one(
@@ -48,11 +51,16 @@ def login():
             {"$set": {"last_login": datetime.utcnow()}}
         )
 
-        # 🔐 Generate JWT token for mobile
+        # 🔐 Generate JWT token for mobile (FULL HYBRID SCOPE)
         payload = {
             "user_id": str(user["_id"]),
-            "role": user["role"],
+            "role": user.get("role"),
+            "state_id": str(user.get("state_id")) if user.get("state_id") else None,
+            "district_id": str(user.get("district_id")) if user.get("district_id") else None,
+            "block_id": str(user.get("block_id")) if user.get("block_id") else None,
+            "clf_id": str(user.get("clf_id")) if user.get("clf_id") else None,
             "pg_id": str(user.get("pg_id")) if user.get("pg_id") else None,
+            "validator_level": user.get("validator_level"),
             "exp": datetime.utcnow() + timedelta(hours=24),
         }
 
@@ -67,14 +75,14 @@ def login():
             "token": token,
             "user": {
                 "id": str(user["_id"]),
-                "username": user["username"],
-                "role": user["role"],
+                "username": user.get("username"),
+                "role": user.get("role"),
                 "state_id": str(user.get("state_id")) if user.get("state_id") else None,
                 "district_id": str(user.get("district_id")) if user.get("district_id") else None,
                 "block_id": str(user.get("block_id")) if user.get("block_id") else None,
                 "clf_id": str(user.get("clf_id")) if user.get("clf_id") else None,
                 "pg_id": str(user.get("pg_id")) if user.get("pg_id") else None,
-                "pg_name" : pg_name,
+                "pg_name": pg_name,
                 "validator_level": user.get("validator_level"),
             }
         }), 200
@@ -123,7 +131,6 @@ def login():
     # GET REQUEST → Render login page (Web only)
     # ==========================================================
     return render_template("login.html")
-
 
 @auth_bp.route("/logout")
 @login_required

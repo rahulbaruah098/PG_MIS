@@ -2050,13 +2050,13 @@
 }
 
    function toggleLanguage(){
-  currentLanguage = (currentLanguage === 'en') ? 'bn' : 'en';
+      currentLanguage = (currentLanguage === 'en') ? 'bn' : 'en';
 
-  // ✅ store + broadcast for other templates
-  persistLang(currentLanguage);
+      // ✅ store + broadcast for other templates
+      persistLang(currentLanguage);
 
-  updateLanguage(true);
-}
+      updateLanguage(true);
+    }
     languageToggle?.addEventListener('click', toggleLanguage);
 
     // ------------------------------------------------------------
@@ -2064,201 +2064,224 @@
     // ------------------------------------------------------------
     let isProfileView = false;
 
-    const profileToggle = document.getElementById('profileToggle');
-    const profileToggleText = document.getElementById('profileToggleText');
-    const profileIcon = document.getElementById('profileIcon');
-    const backIcon = document.getElementById('backIcon');
+  const profileToggle = document.getElementById('profileToggle');
+  const profileToggleText = document.getElementById('profileToggleText');
+  const profileIcon = document.getElementById('profileIcon');
+  const backIcon = document.getElementById('backIcon');
 
-    const dashboardContainer = document.getElementById('dashboardContainer');
-    const profilePageContainer = document.getElementById('profilePageContainer');
+  const dashboardContainer = document.getElementById('dashboardContainer');
+  const profilePageContainer = document.getElementById('profilePageContainer');
 
-    // Required for fetch
-    const PG_ID = "{{ (pg._id|string) if pg else session.get('pg_id') }}";
+  // Required for fetch
+  const PG_ID = "{{ (pg._id|string) if pg else session.get('pg_id') }}";
 
-    function toYYYYMMDD(ddMmYyyy){
-      if(!ddMmYyyy) return "";
-      if(!/^\d{2}\/\d{2}\/\d{4}$/.test(ddMmYyyy)) return "";
-      const [dd,mm,yyyy] = ddMmYyyy.split("/");
-      return `${yyyy}-${mm}-${dd}`;
-    }
+  function toYYYYMMDD(ddMmYyyy){
+    if(!ddMmYyyy) return "";
+    if(!/^\d{2}\/\d{2}\/\d{4}$/.test(ddMmYyyy)) return "";
+    const [dd,mm,yyyy] = ddMmYyyy.split("/");
+    return `${yyyy}-${mm}-${dd}`;
+  }
 
-    function loadProfileData(){
-      if(!PG_ID) return;
-      fetch(`/pg/profile/${PG_ID}/data`)
-        .then(res => {
-          if(!res.ok) throw new Error("Failed to fetch profile data");
-          return res.json();
-        })
-        .then(data => {
-          document.getElementById("inputPgName").value = data.pg_name || "";
-          document.getElementById("inputActivity").value = data.activity || "";
-          document.getElementById("inputVillage").value = data.village || "";
-          document.getElementById("inputBlock").value = data.block || "";
-          document.getElementById("inputDistrict").value = data.district || "";
-          document.getElementById("inputState").value = data.state || "";
-          document.getElementById("inputTotalMembers").value = data.total_members || "";
-          document.getElementById("inputClfName").value = data.clf_name || "";
-
-          if(data.formation_date){
-            document.getElementById("inputFormationDateText").value = data.formation_date;
-            const iso = toYYYYMMDD(data.formation_date);
-            if(iso) document.getElementById("inputFormationDatePicker").value = iso;
-          } else {
-            document.getElementById("inputFormationDateText").value = "";
-            document.getElementById("inputFormationDatePicker").value = "";
-          }
-
-          if(data.bank_details){
-            document.getElementById("inputBankName").value = data.bank_details.bank_name || "";
-            document.getElementById("inputBranch").value = data.bank_details.branch || "";
-            document.getElementById("inputAccountNo").value = data.bank_details.account_number || "";
-            document.getElementById("inputIfsc").value = data.bank_details.ifsc || "";
-          } else {
-            document.getElementById("inputBankName").value = "";
-            document.getElementById("inputBranch").value = "";
-            document.getElementById("inputAccountNo").value = "";
-            document.getElementById("inputIfsc").value = "";
-          }
-        })
-        .catch(err => console.error("Profile load error:", err));
-    }
-
-    function toggleProfileView(forceState){
-      if(typeof forceState === 'boolean') isProfileView = forceState;
-      else isProfileView = !isProfileView;
-
-      if(isProfileView){
-        dashboardContainer.classList.add('hide');
-        profilePageContainer.classList.add('show');
-        profileIcon.classList.add('hidden');
-        backIcon.classList.remove('hidden');
-        loadProfileData();
-      }else{
-        dashboardContainer.classList.remove('hide');
-        profilePageContainer.classList.remove('show');
-        profileIcon.classList.remove('hidden');
-        backIcon.classList.add('hidden');
-      }
-
-      const t = baseTranslations[currentLanguage];
-      profileToggleText.textContent = isProfileView ? t.backBtn : t.profileBtn;
-
-      if(isMobile()) closeMenu();
-    }
-
-    profileToggle?.addEventListener('click', ()=> toggleProfileView());
-
-    // ------------------------------------------------------------
-    // ✅ PROFILE EDIT MODE IS COMMENTED OUT (VIEW ONLY)
-    // - All inputs stay disabled
-    // - Edit/Save/ClearAll logic removed from runtime
-    // ------------------------------------------------------------
-    function setDisabledAll(disabled){
-      const ids = [
-        "inputPgName","inputActivity","inputVillage","inputBlock","inputDistrict","inputState",
-        "inputFormationDateText","inputFormationDatePicker","inputTotalMembers","inputClfName",
-        "inputAccountNo","inputIfsc","inputBankName","inputBranch"
-      ];
-      ids.forEach(id=>{
-        const el = document.getElementById(id);
-        if(el) el.disabled = disabled;
-      });
-    }
-
-    // ------------------------------------------------------------
-    // UPDATE LANGUAGE TEXTS (base + profile) + broadcast hooks
-    // ------------------------------------------------------------
-    function safeSetText(id, text){
+  function clearProfileFields(){
+    const ids = [
+      "inputPgName","inputActivity","inputAddress","inputVillage","inputBlock","inputDistrict","inputState",
+      "inputFormationDateText","inputFormationDatePicker","inputTotalMembers","inputClfName",
+      "inputAccountNo","inputIfsc","inputBankName","inputBranch"
+    ];
+    ids.forEach(id=>{
       const el = document.getElementById(id);
-      if(el) el.textContent = text;
+      if(el) el.value = "";
+    });
+  }
+
+  async function loadProfileData(){
+    if(!PG_ID){
+      clearProfileFields();
+      return;
     }
 
-    function updateLanguage(shouldBroadcast){
-      const t = baseTranslations[currentLanguage];
+    try{
+      const res = await fetch(`/pg/profile/${PG_ID}/data`, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json"
+        },
+        credentials: "same-origin"
+      });
 
-      // top language label
-      if(languageText) languageText.textContent = t.languageToggle;
+      const resp = await res.json().catch(() => null);
 
-      // sidebar
-      safeSetText('sidebarTitle', t.sidebarTitle);
-      safeSetText('navSectionRegisters', t.navSectionRegisters);
-      safeSetText('navSectionAdministration', t.navSectionAdministration);
-
-      safeSetText('navDashboard', t.navDashboard);
-      safeSetText('navPgRegistration', t.navPgRegistration);
-      safeSetText('navMembershipRegister', t.navMembershipRegister);
-      safeSetText('navMeetingRegister', t.navMeetingRegister);
-      safeSetText('navCashBook', t.navCashBook);
-      safeSetText('navMeeting', t.navMeeting);
-      safeSetText('navMemberLedger', t.navMemberLedger);
-      safeSetText('navLoanLedger', t.navLoanLedger);
-      safeSetText('navReceiptVoucher', t.navReceiptVoucher);
-      safeSetText('navInputRegister', t.navInputRegister);
-      safeSetText('navAssetRegister', t.navAssetRegister);
-      safeSetText('navLedgerBook', t.navLedgerBook);
-      safeSetText('navOutputRegister', t.navOutputRegister);
-
-      safeSetText('navFunds', t.navFunds);
-      safeSetText('navLoans', t.navLoans);
-      safeSetText('navMPR', t.navMPR);
-      safeSetText('navUploadDocs', t.navUploadDocs);
-      safeSetText('navLogoutText', t.navLogout);
-
-      // profile toggle
-      if(profileToggleText) profileToggleText.textContent = isProfileView ? t.backBtn : t.profileBtn;
-
-      // profile labels
-      safeSetText('headerTitle', t.title);
-      safeSetText('labelPgName', t.pgName);
-      safeSetText('labelActivity', t.activity);
-      safeSetText('labelAddress', t.address);
-      safeSetText('labelVillage', t.village);
-      safeSetText('labelBlock', t.block);
-      safeSetText('labelDistrict', t.district);
-      safeSetText('labelState', t.state);
-      safeSetText('labelFormationDate', t.formationDate);
-      safeSetText('labelTotalMembers', t.totalMembers);
-      safeSetText('labelClfName', t.clfName);
-      safeSetText('labelBankDetails', t.bankDetails);
-      safeSetText('labelAccountNo', t.accountNo);
-      safeSetText('labelIfsc', t.ifsc);
-      safeSetText('labelBankName', t.bankName);
-      safeSetText('labelBranch', t.branch);
-
-      if(document.getElementById('dateError')){
-        document.getElementById('dateError').textContent = (currentLanguage === 'bn')
-          ? "অবৈধ তারিখ। DD/MM/YYYY ফরম্যাট ব্যবহার করুন (যেমন, 05/02/2026)।"
-          : "Invalid date. Use DD/MM/YYYY (e.g., 05/02/2026).";
+      if(!res.ok){
+        throw new Error((resp && (resp.error || resp.message)) || "Failed to fetch profile data");
       }
 
-      // confirm modal labels
-      safeSetText('confirmTitle', t.confirmTitle);
-      safeSetText('confirmSub', t.confirmSub);
-      safeSetText('confirmCancelBtn', t.cancelBtn);
-      safeSetText('confirmOkBtn', t.confirmBtn);
+      const data = (resp && resp.data) ? resp.data : (resp || {});
 
+      const setVal = (id, value) => {
+        const el = document.getElementById(id);
+        if(el) el.value = value ?? "";
+      };
 
+      setVal("inputPgName", data.pg_name);
+      setVal("inputActivity", data.activity);
+      setVal("inputAddress", data.address);
+      setVal("inputVillage", data.village);
+      setVal("inputBlock", data.block);
+      setVal("inputDistrict", data.district);
+      setVal("inputState", data.state);
+      setVal("inputTotalMembers", data.total_members);
+      setVal("inputClfName", data.clf_name);
 
-      // ✅ restored connectivity to other pages
-      if(shouldBroadcast) broadcastLanguage();
+      if(data.formation_date){
+        setVal("inputFormationDateText", data.formation_date);
+        const iso = toYYYYMMDD(data.formation_date);
+        setVal("inputFormationDatePicker", iso || "");
+      }else{
+        setVal("inputFormationDateText", "");
+        setVal("inputFormationDatePicker", "");
+      }
+
+      const bank = data.bank_details || {};
+      setVal("inputBankName", bank.bank_name);
+      setVal("inputBranch", bank.branch);
+      setVal("inputAccountNo", bank.account_number);
+      setVal("inputIfsc", bank.ifsc);
+
+    }catch(err){
+      console.error("Profile load error:", err);
+      clearProfileFields();
+    }
+  }
+
+  function toggleProfileView(forceState){
+    if(typeof forceState === 'boolean') isProfileView = forceState;
+    else isProfileView = !isProfileView;
+
+    if(isProfileView){
+      dashboardContainer.classList.add('hide');
+      profilePageContainer.classList.add('show');
+      profileIcon.classList.add('hidden');
+      backIcon.classList.remove('hidden');
+      loadProfileData();
+    }else{
+      dashboardContainer.classList.remove('hide');
+      profilePageContainer.classList.remove('show');
+      profileIcon.classList.remove('hidden');
+      backIcon.classList.add('hidden');
     }
 
-    // ------------------------------------------------------------
-    // INIT
-    // ------------------------------------------------------------
-    function init(){
-      // ✅ profile always view-only
-      setDisabledAll(true);
+    const t = baseTranslations[currentLanguage];
+    profileToggleText.textContent = isProfileView ? t.backBtn : t.profileBtn;
 
-      closeMenu();
-      persistLang(currentLanguage);
-      updateLanguage(false);
+    if(isMobile()) closeMenu();
+  }
 
-      // ✅ broadcast once on load so other pages immediately translate
-      broadcastLanguage();
+  profileToggle?.addEventListener('click', ()=> toggleProfileView());
+
+  // ------------------------------------------------------------
+  // ✅ PROFILE EDIT MODE IS COMMENTED OUT (VIEW ONLY)
+  // - All inputs stay disabled
+  // - Edit/Save/ClearAll logic removed from runtime
+  // ------------------------------------------------------------
+  function setDisabledAll(disabled){
+    const ids = [
+      "inputPgName","inputActivity","inputAddress","inputVillage","inputBlock","inputDistrict","inputState",
+      "inputFormationDateText","inputFormationDatePicker","inputTotalMembers","inputClfName",
+      "inputAccountNo","inputIfsc","inputBankName","inputBranch"
+    ];
+    ids.forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.disabled = disabled;
+    });
+  }
+
+  // ------------------------------------------------------------
+  // UPDATE LANGUAGE TEXTS (base + profile) + broadcast hooks
+  // ------------------------------------------------------------
+  function safeSetText(id, text){
+    const el = document.getElementById(id);
+    if(el) el.textContent = text;
+  }
+
+  function updateLanguage(shouldBroadcast){
+    const t = baseTranslations[currentLanguage];
+
+    // top language label
+    if(languageText) languageText.textContent = t.languageToggle;
+
+    // sidebar
+    safeSetText('sidebarTitle', t.sidebarTitle);
+    safeSetText('navSectionRegisters', t.navSectionRegisters);
+    safeSetText('navSectionAdministration', t.navSectionAdministration);
+
+    safeSetText('navDashboard', t.navDashboard);
+    safeSetText('navPgRegistration', t.navPgRegistration);
+    safeSetText('navMembershipRegister', t.navMembershipRegister);
+    safeSetText('navMeetingRegister', t.navMeetingRegister);
+    safeSetText('navCashBook', t.navCashBook);
+    safeSetText('navMeeting', t.navMeeting);
+    safeSetText('navMemberLedger', t.navMemberLedger);
+    safeSetText('navLoanLedger', t.navLoanLedger);
+    safeSetText('navReceiptVoucher', t.navReceiptVoucher);
+    safeSetText('navInputRegister', t.navInputRegister);
+    safeSetText('navAssetRegister', t.navAssetRegister);
+    safeSetText('navLedgerBook', t.navLedgerBook);
+    safeSetText('navOutputRegister', t.navOutputRegister);
+
+    safeSetText('navFunds', t.navFunds);
+    safeSetText('navLoans', t.navLoans);
+    safeSetText('navMPR', t.navMPR);
+    safeSetText('navUploadDocs', t.navUploadDocs);
+    safeSetText('navLogoutText', t.navLogout);
+
+    // profile toggle
+    if(profileToggleText) profileToggleText.textContent = isProfileView ? t.backBtn : t.profileBtn;
+
+    // profile labels
+    safeSetText('headerTitle', t.title);
+    safeSetText('labelPgName', t.pgName);
+    safeSetText('labelActivity', t.activity);
+    safeSetText('labelAddress', t.address);
+    safeSetText('labelVillage', t.village);
+    safeSetText('labelBlock', t.block);
+    safeSetText('labelDistrict', t.district);
+    safeSetText('labelState', t.state);
+    safeSetText('labelFormationDate', t.formationDate);
+    safeSetText('labelTotalMembers', t.totalMembers);
+    safeSetText('labelClfName', t.clfName);
+    safeSetText('labelBankDetails', t.bankDetails);
+    safeSetText('labelAccountNo', t.accountNo);
+    safeSetText('labelIfsc', t.ifsc);
+    safeSetText('labelBankName', t.bankName);
+    safeSetText('labelBranch', t.branch);
+
+    if(document.getElementById('dateError')){
+      document.getElementById('dateError').textContent = (currentLanguage === 'bn')
+        ? "অবৈধ তারিখ। DD/MM/YYYY ফরম্যাট ব্যবহার করুন (যেমন, 05/02/2026)।"
+        : "Invalid date. Use DD/MM/YYYY (e.g., 05/02/2026).";
     }
 
-    init();
+    // confirm modal labels
+    safeSetText('confirmTitle', t.confirmTitle);
+    safeSetText('confirmSub', t.confirmSub);
+    safeSetText('confirmCancelBtn', t.cancelBtn);
+    safeSetText('confirmOkBtn', t.confirmBtn);
+
+    if(shouldBroadcast) broadcastLanguage();
+  }
+
+  // ------------------------------------------------------------
+  // INIT
+  // ------------------------------------------------------------
+  function init(){
+    setDisabledAll(true);
+    closeMenu();
+    persistLang(currentLanguage);
+    updateLanguage(false);
+    broadcastLanguage();
+  }
+
+  init();
   </script>
 
   <!-- ============================================================
