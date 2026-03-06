@@ -227,13 +227,35 @@ def _pg_metrics(db, pg_id):
     except Exception:
         pass
 
+    # ------------------------------------------------------------
+    # ✅ ONLY ACTIVE MEMBERS SHOULD COUNT IN LIVE DASHBOARD
+    # - old rows without is_active are treated as active for backward compatibility
+    # ------------------------------------------------------------
+    active_member_filter = {
+        "pg_id": oid,
+        "$or": [
+            {"is_active": True},
+            {"is_active": {"$exists": False}}
+        ]
+    }
 
-    members_count = db.pg_members.count_documents({"pg_id": oid})
+    members_count = 0
+    try:
+        members_count = db.pg_members.count_documents(active_member_filter)
+    except Exception:
+        members_count = 0
 
-    # Lakhpati Didi count (PG members flagged)
+    # Lakhpati Didi count (PG members flagged + active only)
     lakhpati_count = 0
     try:
-        lakhpati_count = db.pg_members.count_documents({"pg_id": oid, "lakh_pati_didi": True})
+        lakhpati_count = db.pg_members.count_documents({
+            "pg_id": oid,
+            "lakh_pati_didi": True,
+            "$or": [
+                {"is_active": True},
+                {"is_active": {"$exists": False}}
+            ]
+        })
     except Exception:
         lakhpati_count = 0
 
@@ -244,6 +266,7 @@ def _pg_metrics(db, pg_id):
 
     loans_count = len(legacy_loans) + len(new_pg_loans) + len(new_mb_loans)
     outstanding = 0.0
+
     # legacy
     for ln in legacy_loans:
         for k in ("outstanding_amount", "outstanding", "balance", "amount"):
@@ -252,6 +275,7 @@ def _pg_metrics(db, pg_id):
                     outstanding += float(ln.get(k) or 0)
                 except Exception:
                     pass
+
     # new lifecycle
     for ln in (new_pg_loans + new_mb_loans):
         try:
@@ -265,7 +289,6 @@ def _pg_metrics(db, pg_id):
         alerts_count = len(compute_pg_alerts(db, str(oid)))
     except Exception:
         alerts_count = 0
-
 
     # Categories: try from PG profile if available, else 0
     pg_doc = db.pgs.find_one({"_id": oid}, {"categories": 1, "commodities": 1, "primary_activities": 1})
@@ -373,6 +396,7 @@ def _pg_metrics(db, pg_id):
         "grants_received_total": _fmt_inr(grants_received_total),
     }
 
+
 @pg_bp.route("/home")
 @login_required
 def pg_home():
@@ -473,10 +497,8 @@ def pg_registration(pg_id):
     # Helpers (Hybrid response)
     # -----------------------------
     def _wants_json():
-        # Mobile: Authorization header present
         if request.headers.get("Authorization"):
             return True
-        # JSON body or explicit accept JSON
         if request.is_json:
             return True
         accept = request.headers.get("Accept", "")
@@ -521,7 +543,6 @@ def pg_registration(pg_id):
             return ""
 
     def _serialize_pg_for_json(pg_doc):
-        # Keep only safe fields for mobile; adjust if you want more fields
         out = {}
         for k, v in (pg_doc or {}).items():
             if k == "_id":
@@ -546,7 +567,7 @@ def pg_registration(pg_id):
         return out
 
     # -----------------------------
-    # Load PG (URL pg_id preferred, fallback session pg_id)
+    # Load PG
     # -----------------------------
     pg_obj_id = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
     pg = db.pgs.find_one({"_id": pg_obj_id})
@@ -557,22 +578,16 @@ def pg_registration(pg_id):
         return redirect(url_for("pg.pg_home"))
 
     # -----------------------------
-    # Role + access (Hybrid)
+    # Role + access
     # -----------------------------
     role = getattr(g, "role", None) or session.get("role")
-    session_pg_id = session.get("pg_id")  # web only
+    session_pg_id = session.get("pg_id")
 
-    # Restrict PG_DATA_ENTRY to their own PG:
-    # - Web: session_pg_id enforced
-    # - Mobile JWT: best-effort enforcement using user_id -> pg mapping if present
     if role == "PG_DATA_ENTRY":
-        # Web enforcement
         if session_pg_id and str(session_pg_id) != str(pg_id):
             return _error("You cannot edit this PG.", 403, redirect_endpoint=url_for("pg.pg_home"))
 
-        # Mobile enforcement (if no session_pg_id)
         if not session_pg_id:
-            # Try mapping via users collection: user.pg_id or user.assigned_pg_id (adjust field names if needed)
             uid = getattr(g, "user_id", None)
             if uid:
                 user_doc = db.users.find_one({"_id": safe_objectid(uid) or uid}) or db.users.find_one({"user_id": uid})
@@ -581,16 +596,13 @@ def pg_registration(pg_id):
                     assigned_pg = user_doc.get("pg_id") or user_doc.get("assigned_pg_id")
                 if assigned_pg and str(assigned_pg) != str(pg_id):
                     return _error("You cannot edit this PG.", 403)
-            # If you have no mapping available, we cannot strictly enforce per-PG for JWT users here.
-            # But roles_required already ensured they are PG_DATA_ENTRY.
 
     # ==========================================================
-    # GET (Web => template, Mobile => JSON)
+    # GET
     # ==========================================================
     if request.method == "GET":
         village = pg.get("Village")
 
-        # Safe members (existing selected members in this PG)
         safe_members = []
         current_pg_member_ids = []
 
@@ -608,7 +620,6 @@ def pg_registration(pg_id):
                     "role": m.get("role"),
                 })
 
-        # ✅ Find members used in OTHER PGs (same village), exclude current PG
         used_in_other_pgs = db.pgs.distinct(
             "members.member_id",
             {
@@ -618,10 +629,8 @@ def pg_registration(pg_id):
             }
         )
 
-        # ✅ Don’t exclude current PG's own members (edit mode)
         used_in_other_pgs = [x for x in used_in_other_pgs if x not in current_pg_member_ids]
 
-        # ✅ Only show SHG members not already assigned elsewhere
         shg_members = list(db.shg_members_master.find(
             {
                 "Village": village,
@@ -629,9 +638,7 @@ def pg_registration(pg_id):
             }
         ))
 
-        # Mobile JSON response
         if _wants_json():
-            # serialize shg_members
             sm = []
             for m in shg_members:
                 sm.append({
@@ -649,7 +656,6 @@ def pg_registration(pg_id):
                 "safe_members": safe_members,
             }), 200
 
-        # Web template response
         return render_template(
             "pg_registration.html",
             pg=pg,
@@ -658,7 +664,7 @@ def pg_registration(pg_id):
         )
 
     # ==========================================================
-    # POST (Web form OR Mobile JSON)
+    # POST
     # ==========================================================
     if request.is_json:
         body = request.get_json(silent=True) or {}
@@ -666,7 +672,7 @@ def pg_registration(pg_id):
         getlist = lambda k: body.get(k, []) if isinstance(body.get(k, []), list) else []
     else:
         getv = lambda k, default=None: request.form.get(k, default)
-        # support member_ids[] from web and member_ids from JSON-like forms
+
         def getlist(k):
             vals = request.form.getlist(k)
             if vals:
@@ -675,9 +681,6 @@ def pg_registration(pg_id):
                 return request.form.getlist(k[:-2])
             return request.form.getlist(k)
 
-    # ===============================
-    # REQUIRED FIELD VALIDATION
-    # ===============================
     required_fields = {
         "PG Type": getv("pg_type"),
         "Sector": getv("sector"),
@@ -699,7 +702,6 @@ def pg_registration(pg_id):
     if not contact_number.isdigit():
         return _error("Contact number must be numeric.", 400)
 
-    # members + office bearers
     member_ids = getlist("member_ids[]") or getlist("member_ids")
     president_id = getv("president_id")
     secretary_id = getv("secretary_id")
@@ -711,7 +713,6 @@ def pg_registration(pg_id):
     if len(member_ids) != len(set(member_ids)):
         return _error("Duplicate members detected.", 400)
 
-    # Convert to ObjectIds safely
     try:
         member_object_ids = [ObjectId(mid) for mid in member_ids]
     except Exception:
@@ -720,7 +721,6 @@ def pg_registration(pg_id):
     if len(member_object_ids) > 40:
         return _error("Maximum 40 members allowed.", 400)
 
-    # ✅ POST SAFETY: block members already assigned to another PG
     conflict_pg = db.pgs.find_one(
         {
             "Village": pg.get("Village"),
@@ -731,12 +731,11 @@ def pg_registration(pg_id):
     )
     if conflict_pg:
         return _error(
-            f"Some selected members are already assigned to another PG "
+            f'Some selected members are already assigned to another PG '
             f'("{conflict_pg.get("name", "Unknown")}"). Please remove them and try again.',
             409
         )
 
-    # Village-level enforced fetch from master
     members_from_db = list(db.shg_members_master.find(
         {
             "_id": {"$in": member_object_ids},
@@ -747,7 +746,6 @@ def pg_registration(pg_id):
     if len(members_from_db) != len(member_object_ids):
         return _error("Some members are invalid or do not belong to this village.", 400)
 
-    # Office bearer validation
     if not president_id or not secretary_id or not cashier_id:
         return _error("Please select President, Secretary and Cashier.", 400)
 
@@ -757,16 +755,23 @@ def pg_registration(pg_id):
     if len({president_id, secretary_id, cashier_id}) != 3:
         return _error("President, Secretary and Cashier must be different members.", 400)
 
-    # Build members array
     members_array = []
+    role_map = {}
+    member_master_by_id = {}
+
     for m in members_from_db:
+        mid_str = str(m["_id"])
+        member_master_by_id[mid_str] = m
+
         role_name = "member"
-        if str(m["_id"]) == str(president_id):
+        if mid_str == str(president_id):
             role_name = "president"
-        elif str(m["_id"]) == str(secretary_id):
+        elif mid_str == str(secretary_id):
             role_name = "secretary"
-        elif str(m["_id"]) == str(cashier_id):
+        elif mid_str == str(cashier_id):
             role_name = "cashier"
+
+        role_map[mid_str] = role_name
 
         members_array.append({
             "member_id": m["_id"],
@@ -776,7 +781,6 @@ def pg_registration(pg_id):
             "role": role_name
         })
 
-    # Prepare update data
     data = {
         "pg_type": getv("pg_type"),
         "sector": getv("sector"),
@@ -802,7 +806,6 @@ def pg_registration(pg_id):
         "updated_at": datetime.utcnow(),
     }
 
-    # Lock handling
     if ensure_pg_locked(pg):
         create_change_request(
             db,
@@ -821,7 +824,6 @@ def pg_registration(pg_id):
             link=url_for("pg.pg_view", pg_id=str(pg["_id"])),
         )
 
-        # Web redirect / Mobile JSON
         if _wants_json():
             return jsonify({
                 "ok": True,
@@ -833,7 +835,143 @@ def pg_registration(pg_id):
         flash("PG is already approved/locked. Changes submitted for approval.", "info")
         return redirect(url_for("pg.pg_view", pg_id=pg_id))
 
-    # Save directly
+    # ==========================================================
+    # MEMBERSHIP LIFECYCLE SYNC
+    # ==========================================================
+    current_user_id = getattr(g, "user_id", None) or session.get("user_id")
+    current_user_id = str(current_user_id) if current_user_id else None
+    now = datetime.utcnow()
+
+    old_member_ids = set()
+    for old_m in (pg.get("members") or []):
+        old_mid = old_m.get("member_id")
+        if old_mid:
+            old_member_ids.add(str(old_mid))
+
+    new_member_ids = set(str(mid) for mid in member_object_ids)
+
+    removed_ids = old_member_ids - new_member_ids
+    retained_ids = old_member_ids & new_member_ids
+    added_ids = new_member_ids - old_member_ids
+
+    # 1) Removed -> inactive
+    if removed_ids:
+        removed_oids = []
+        for rid in removed_ids:
+            try:
+                removed_oids.append(ObjectId(rid))
+            except Exception:
+                pass
+
+        if removed_oids:
+            db.pg_members.update_many(
+                {"pg_id": pg["_id"], "member_id": {"$in": removed_oids}},
+                {
+                    "$set": {
+                        "is_active": False,
+                        "removed_at": now,
+                        "removed_by": current_user_id,
+                        "updated_at": now,
+                    }
+                }
+            )
+
+    # 2) Retained -> active
+    if retained_ids:
+        retained_oids = []
+        for rid in retained_ids:
+            try:
+                retained_oids.append(ObjectId(rid))
+            except Exception:
+                pass
+
+        if retained_oids:
+            db.pg_members.update_many(
+                {"pg_id": pg["_id"], "member_id": {"$in": retained_oids}},
+                {
+                    "$set": {
+                        "is_active": True,
+                        "updated_at": now,
+                    },
+                    "$unset": {
+                        "removed_at": "",
+                        "removed_by": ""
+                    }
+                }
+            )
+
+    # 3) Added / Re-added
+    for mid_str, master in member_master_by_id.items():
+        if mid_str not in added_ids:
+            continue
+
+        mid_obj = master["_id"]
+
+        existing_pm = db.pg_members.find_one(
+            {"pg_id": pg["_id"], "member_id": mid_obj},
+            {"_id": 1, "is_active": 1}
+        )
+
+        if existing_pm:
+            db.pg_members.update_one(
+                {"_id": existing_pm["_id"]},
+                {
+                    "$set": {
+                        "name": master.get("Member Name"),
+                        "shg_name": master.get("SHG Name"),
+                        "shg_code": master.get("SHG Code"),
+                        "role": role_map.get(mid_str, "member"),
+                        "is_active": True,
+                        "reactivated_at": now,
+                        "updated_at": now,
+                    },
+                    "$unset": {
+                        "removed_at": "",
+                        "removed_by": ""
+                    }
+                }
+            )
+            continue
+
+        db.pg_members.insert_one({
+            "pg_id": pg["_id"],
+            "member_id": mid_obj,
+            "name": master.get("Member Name"),
+            "shg_name": master.get("SHG Name"),
+            "shg_code": master.get("SHG Code"),
+            "role": role_map.get(mid_str, "member"),
+            "is_active": True,
+            "created_at": now,
+            "updated_at": now,
+            "reactivated_at": None
+        })
+
+    # 4) Sync selected member basics
+    for mid_str, master in member_master_by_id.items():
+        try:
+            mid_obj = master["_id"]
+        except Exception:
+            continue
+
+        db.pg_members.update_one(
+            {"pg_id": pg["_id"], "member_id": mid_obj},
+            {
+                "$set": {
+                    "name": master.get("Member Name"),
+                    "shg_name": master.get("SHG Name"),
+                    "shg_code": master.get("SHG Code"),
+                    "role": role_map.get(mid_str, "member"),
+                    "is_active": True,
+                    "updated_at": now,
+                },
+                "$unset": {
+                    "removed_at": "",
+                    "removed_by": ""
+                }
+            },
+            upsert=False
+        )
+
     db.pgs.update_one({"_id": pg["_id"]}, {"$set": data})
 
     log_audit(
@@ -936,27 +1074,47 @@ def pg_authorization():
 def pg_members(pg_id):
     db = current_app.mongo_db
 
+    def _wants_json():
+        return bool(
+            request.headers.get("Authorization")
+            or request.is_json
+            or "application/json" in request.headers.get("Accept", "").lower()
+        )
+
+    def _deny(message, status=400):
+        if _wants_json():
+            return jsonify({"ok": False, "error": message}), status
+        flash(message, "danger" if status >= 400 else "info")
+        return redirect(url_for("pg.pg_members", pg_id=pg_id))
+
     try:
         pg_obj_id = (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))
     except Exception:
+        if _wants_json():
+            return jsonify({"ok": False, "error": "Invalid PG ID."}), 400
         flash("Invalid PG ID.", "danger")
         return redirect(url_for("pg.pg_home"))
 
     pg = db.pgs.find_one({"_id": pg_obj_id})
     if not pg:
+        if _wants_json():
+            return jsonify({"ok": False, "error": "PG not found."}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
     # Members selected during PG Registration (stored inside pgs.members)
     selected = pg.get("members") or []
     selected_ids = []
+    selected_id_set = set()
 
     for m in selected:
         mid = m.get("member_id")
         if not mid:
             continue
         try:
-            selected_ids.append(ObjectId(mid) if not isinstance(mid, ObjectId) else mid)
+            mid_obj = ObjectId(mid) if not isinstance(mid, ObjectId) else mid
+            selected_ids.append(mid_obj)
+            selected_id_set.add(str(mid_obj))
         except Exception:
             pass
 
@@ -966,9 +1124,17 @@ def pg_members(pg_id):
         for doc in db.shg_members_master.find({"_id": {"$in": selected_ids}}):
             master_by_id[str(doc["_id"])] = doc
 
-    # Load already-saved PG member documents (pg_members collection)
+    # ------------------------------------------------------------
+    # ✅ Load only current/active PG member docs for display
+    # ------------------------------------------------------------
     existing_by_member = {}
-    for doc in db.pg_members.find({"pg_id": pg_obj_id}):
+    for doc in db.pg_members.find({
+        "pg_id": pg_obj_id,
+        "$or": [
+            {"is_active": True},
+            {"is_active": {"$exists": False}}  # backward compatibility for old rows
+        ]
+    }):
         key = str(doc.get("member_id") or doc.get("_id"))
         existing_by_member[key] = doc
 
@@ -1015,12 +1181,10 @@ def pg_members(pg_id):
                     return v
 
         # 3) Fuzzy match for composite/slash keys
-        # Example: searching spouse should match "father/mother/spouse name"
         for mk, mv in master_doc.items():
             if mv in (None, "", []):
                 continue
             mkn = normalize_key(mk)
-            # spouse/father/mother combos
             if any(normalize_key(x) in mkn for x in keys):
                 return mv
 
@@ -1030,8 +1194,7 @@ def pg_members(pg_id):
     # ✅ INDIVIDUAL SAVE (Row-wise)
     # ============================================================
     if request.method == "POST":
-        # ✅ MOBILE FIX: accept JSON body (app) or form data (web)
-        _is_mobile = bool(request.is_json or request.headers.get("Authorization"))
+        _is_mobile = _wants_json()
         if _is_mobile:
             _body = request.get_json(silent=True) or {}
             _get  = lambda k, default="": (_body.get(k) or default)
@@ -1053,6 +1216,34 @@ def pg_members(pg_id):
             flash("Invalid Member ID.", "danger")
             return redirect(url_for("pg.pg_members", pg_id=pg_id))
 
+        # ------------------------------------------------------------
+        # ✅ Save allowed only if member is still selected in current PG
+        # ------------------------------------------------------------
+        if str(mid_obj) not in selected_id_set:
+            return _deny("This member is no longer active in the current PG selection.", 403)
+
+        existing_doc = db.pg_members.find_one(
+            {
+                "pg_id": pg_obj_id,
+                "member_id": mid_obj,
+                "$or": [
+                    {"is_active": True},
+                    {"is_active": {"$exists": False}}
+                ]
+            }
+        ) or {}
+
+        # Optional extra safety: if a doc exists and is explicitly inactive, block save
+        inactive_doc = db.pg_members.find_one(
+            {
+                "pg_id": pg_obj_id,
+                "member_id": mid_obj,
+                "is_active": False
+            }
+        )
+        if inactive_doc and not existing_doc:
+            return _deny("This member is inactive and cannot be edited until re-added in PG Registration.", 403)
+
         master = master_by_id.get(mid)
 
         # Read single row fields
@@ -1072,16 +1263,12 @@ def pg_members(pg_id):
             except Exception:
                 membership_fee_paid = None
 
-        # Existing doc (to prevent overwriting with empty)
-        existing_doc = db.pg_members.find_one({"pg_id": pg_obj_id, "member_id": mid_obj}) or {}
-
         # Always store master snapshot fields (keeps consistent and future-proof)
         update_set = {
             "pg_id": pg_obj_id,
             "member_id": mid_obj,
 
             "name": pick(master, "Member Name", "Name", "Member_Name"),
-            # ✅ FIX: includes your real key "Father/Mother/Spouse Name"
             "spouse_name": pick(
                 master,
                 "Father/Mother/Spouse Name",
@@ -1095,6 +1282,11 @@ def pg_members(pg_id):
             "category": pick(master, "Category", "Caste Category", "Social Category"),
             "shg_name": pick(master, "SHG Name", "SHG_Name"),
             "shg_code": pick(master, "SHG Code", "SHG_Code"),
+
+            # keep active if being edited in current PG
+            "is_active": True,
+            "removed_at": None,
+            "removed_by": None,
 
             "updated_at": datetime.utcnow(),
         }
@@ -1120,7 +1312,6 @@ def pg_members(pg_id):
 
         if bank_name != "":
             update_set["bank_name"] = bank_name
-        # keep existing if blank
 
         if branch != "":
             update_set["branch"] = branch
@@ -1132,16 +1323,20 @@ def pg_members(pg_id):
             update_set["membership_fee_paid"] = membership_fee_paid
 
         # ✅ Lakhpati Didi flag
-        # Checkbox sends: on/1/true. If absent => False.
         update_set["lakh_pati_didi"] = True if lakh_raw in ("1", "true", "on", "yes") else False
 
         db.pg_members.update_one(
             {"pg_id": pg_obj_id, "member_id": mid_obj},
-            {"$set": update_set, "$setOnInsert": {"created_at": datetime.utcnow()}},
+            {
+                "$set": update_set,
+                "$setOnInsert": {
+                    "created_at": datetime.utcnow(),
+                    "reactivated_at": None
+                }
+            },
             upsert=True
         )
 
-        # ✅ MOBILE FIX: return JSON for app, redirect for web
         if _is_mobile:
             return jsonify({"ok": True, "message": "Member details saved successfully."}), 200
 
@@ -1197,8 +1392,17 @@ def pg_members(pg_id):
             "lakh_pati_didi": True if existing.get("lakh_pati_didi") else False,
         })
 
-    return render_template("pg_members.html", pg=pg, rows=rows)
+    if _wants_json():
+        return jsonify({
+            "ok": True,
+            "pg": {
+                "_id": str(pg["_id"]),
+                "name": pg.get("name"),
+            },
+            "rows": rows
+        }), 200
 
+    return render_template("pg_members.html", pg=pg, rows=rows)
 
 @pg_bp.route("/lakhpati/<pg_id>")
 @login_required
@@ -1206,27 +1410,44 @@ def pg_members(pg_id):
 def pg_lakhpati(pg_id):
     """List members marked as Lakhpati Didi for a PG."""
     db = current_app.mongo_db
+
     # Defensive: links can be generated with pg_id=None if session scope is missing.
     if not pg_id or str(pg_id).lower() == "none":
-        pg_id = session.get("pg_id") or session.get("active_pg_id")
+        pg_id = getattr(g, "pg_id", None) or session.get("pg_id") or session.get("active_pg_id")
 
     if not pg_id or not ObjectId.is_valid(str(pg_id)):
         flash("PG scope not found. Please open a PG first or re-login.", "warning")
         return redirect(url_for("pg.pg_home"))
 
-    pg = db.pgs.find_one({"_id": ObjectId(str(pg_id))})
+    pg_obj_id = ObjectId(str(pg_id))
+    pg = db.pgs.find_one({"_id": pg_obj_id})
     if not pg:
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    # Scope restriction for PG user
-    if session.get("role") == "PG_DATA_ENTRY" and str(session.get("pg_id")) != str(pg_id):
+    # Scope restriction for PG user (hybrid: g first, then session)
+    role = getattr(g, "role", None) or session.get("role")
+    auth_pg_id = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
+
+    if role == "PG_DATA_ENTRY" and auth_pg_id != str(pg_id):
         flash("You cannot access this PG.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    members = list(db.pg_members.find({"pg_id": ObjectId(str(pg_id)), "lakh_pati_didi": True}).sort([("name", 1)]))
-    return render_template("lakhpati_didi.html", pg=pg, members=members)
+    # ✅ Only ACTIVE lakhpati members should be shown
+    members = list(
+        db.pg_members.find(
+            {
+                "pg_id": pg_obj_id,
+                "lakh_pati_didi": True,
+                "$or": [
+                    {"is_active": True},
+                    {"is_active": {"$exists": False}}  # backward compatibility for old rows
+                ]
+            }
+        ).sort([("name", 1)])
+    )
 
+    return render_template("lakhpati_didi.html", pg=pg, members=members)
 
 @pg_bp.route("/export/<pg_id>/summary.csv")
 @login_required
