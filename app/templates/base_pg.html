@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}PGMIS - Producer Group Management Information System{% endblock %}</title>
 
-  <!-- ✅ Tailwind (GLOBAL) -->
-  <script src="https://cdn.tailwindcss.com"></script>
+
 
   <style>
     /* ============================================================
@@ -23,6 +22,12 @@
        - ✅ NO new extra menu buttons added
        - ✅ UPDATE (NOW): Profile is VIEW-ONLY (edit mode commented out)
        - ✅ UPDATE (NOW): Language connectivity restored for other pages too (hooks + events)
+
+       ✅ FIX (NOW): App-view mobile logout sticky overlap removed
+         - Only affects app/webview (NOT normal web browser view)
+
+       ✅ UPDATE (NOW): $ icons replaced with ₹ style icon in 3 places
+       ✅ UPDATE (NOW): Logo image placeholder added inside green brand box
        ============================================================ */
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -120,6 +125,21 @@
       position:absolute; inset:-40% -30%;
       background: radial-gradient(closest-side, rgba(255,255,255,.22), transparent 62%);
       transform: rotate(18deg);
+      z-index:0;
+    }
+
+    /* ✅ Logo image placeholder inside green box (replace later) */
+    .brand-logo{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      padding:4px;
+      z-index:1;
+      pointer-events:none;
+      user-select:none;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.18));
     }
 
     .brand-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
@@ -319,12 +339,21 @@
       user-select:none;
       text-decoration:none;
     }
-    .nav-item:hover{
-      background: rgba(173, 231, 196, 0.38);
-      border-color: rgba(15, 23, 42, 0.10);
-      transform: translateX(4px);
-      box-shadow: 0 18px 26px -24px rgba(0,0,0,0.55);
-    }
+  /* ✅ Hover effects ONLY on real hover devices (desktop/laptop) */
+@media (hover: hover) and (pointer: fine){
+  .nav-item:hover{
+    background: rgba(173, 231, 196, 0.38);
+    border-color: rgba(15, 23, 42, 0.10);
+    transform: translateX(4px);
+    box-shadow: 0 18px 26px -24px rgba(0,0,0,0.55);
+  }
+
+  .nav-logout:hover{
+    background: linear-gradient(180deg, #d64c4c, #b93a3a);
+    transform: translateY(-1px);
+    box-shadow: 0 18px 28px -20px rgba(185,58,58,0.65);
+  }
+}
     .nav-item.active{
       background: rgba(173, 231, 196, 0.52);
       border-color: rgba(15, 23, 42, 0.12);
@@ -429,26 +458,26 @@
       line-height:1.2;
     }
 
-/* NEW: force footer into 2 lines */
-.footer-2line{
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
+    /* NEW: force footer into 2 lines */
+    .footer-2line{
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
 
-.footer-2line .footer-row{
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap; /* safe for small screens */
-}
+    .footer-2line .footer-row{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap; /* safe for small screens */
+    }
 
-.footer-2line .footer-sep{
-  opacity: .7;
-}
+    .footer-2line .footer-sep{
+      opacity: .7;
+    }
 
     .footer-link{
       color:#0b4d3a;
@@ -987,13 +1016,14 @@
 
       .nav-spacer{ display:none; }
 
+      /* ✅ keep original web-mobile behavior intact */
       #menuLogout.nav-logout{
-        position: sticky;
-        bottom: 12px;
+        position: relative;
+        bottom: auto;
         margin-top: 12px;
-        width:100%;
-        border-radius:16px;
-        padding:0.95rem 0.9rem;
+        width: 100%;
+        border-radius: 16px;
+        padding: 0.95rem 0.9rem;
       }
 
       body.menu-open{
@@ -1002,6 +1032,34 @@
       }
 
       .content-area{ padding:0.95rem; }
+    }
+
+    /* ✅ App/WebView-only fix:
+       Remove sticky behavior and keep logout in normal flow at bottom,
+       without floating over other items. (Does NOT affect normal web view.) */
+
+    @media (max-width: 768px){
+      body.app-webview .sidebar{
+        height: 100vh;
+      }
+      @supports (height: 100dvh){
+        body.app-webview .sidebar{ height: 100dvh; }
+      }
+
+      /* Bring back spacer in app view so logout can sit at the bottom naturally */
+      body.app-webview .nav-spacer{
+        display:block !important;
+        flex:1 !important;
+        min-height: 12px;
+      }
+
+      /* Remove sticky/floating effect in app view */
+      body.app-webview #menuLogout.nav-logout{
+        position: relative !important;
+        bottom: auto !important;
+        margin-top: auto !important;
+        width: 100%;
+      }
     }
 
     @media (max-width: 520px){
@@ -1047,6 +1105,62 @@
       .header-logo{ padding:0.3rem 0.45rem; }
       .brand-mark{ width:32px; height:32px; }
     }
+
+    /* ✅ APP/WEBVIEW TOUCH FIX: replace hover with touch-active feedback only */
+@media (max-width: 768px){
+  body.app-webview #sidebarNav .nav-item{
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Disable hover styles in app webview (prevents stuck hover / malfunction) */
+  body.app-webview #sidebarNav .nav-item:hover{
+    background: transparent !important;
+    border-color: transparent !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Provide proper touch feedback */
+  body.app-webview #sidebarNav .nav-item:active,
+  body.app-webview #sidebarNav .nav-item.is-pressed{
+    background: rgba(173, 231, 196, 0.45) !important;
+    border-color: rgba(15, 23, 42, 0.10) !important;
+    transform: none !important; /* avoid weird shifting */
+    box-shadow: 0 18px 26px -24px rgba(0,0,0,0.55) !important;
+  }
+
+  /* Keep logout button touch feedback too */
+  body.app-webview #sidebarNav .nav-item.nav-logout:active,
+  body.app-webview #sidebarNav .nav-item.nav-logout.is-pressed{
+    background: linear-gradient(180deg, #d64c4c, #b93a3a) !important;
+    transform: none !important;
+  }
+}
+
+/* ✅ Touch devices: NO hover, use active/pressed instead */
+@media (hover: none) and (pointer: coarse){
+  .nav-item:hover{
+    background: transparent !important;
+    border-color: transparent !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  .nav-item:active,
+  .nav-item.is-pressed{
+    background: rgba(173, 231, 196, 0.45) !important;
+    border-color: rgba(15, 23, 42, 0.10) !important;
+    transform: none !important;
+    box-shadow: 0 18px 26px -24px rgba(0,0,0,0.55) !important;
+  }
+
+  .nav-item.nav-logout:active,
+  .nav-item.nav-logout.is-pressed{
+    background: linear-gradient(180deg, #d64c4c, #b93a3a) !important;
+    transform: none !important;
+  }
+}
   </style>
 
   {% block head_extra %}{% endblock %}
@@ -1059,11 +1173,19 @@
     <header class="header">
       <div class="header-left">
         <div id="brandHome" class="header-logo" title="Go to Dashboard (Home)">
-          <div class="brand-mark" aria-hidden="true"></div>
-          <div class="brand-text">
-            <strong>PGMIS</strong>
-            <span>Producer Group MIS</span>
+          <div class="brand-mark" aria-hidden="true">
+            <!-- ✅ Replace this path later with your real logo file -->
+            <img
+              class="brand-logo"
+              src="{{ url_for('static', filename='images/loginlogo.JPEG') }}"
+              alt="Logo"
+              onerror="this.style.display='none';"
+            />
           </div>
+          <div class="brand-text">
+  <strong id="brandTitle">PGMIS</strong>
+  <span id="brandSubtitle">Producer Group MIS</span>
+</div>
         </div>
       </div>
 
@@ -1280,7 +1402,7 @@
               <path d="M3 3v18h18"></path>
               <path d="M7 14l3-3 3 2 6-6"></path>
             </svg>
-            <span class="nav-text">Monthly Business (6.1 + 6.2)</span>
+            <span class="nav-text" id="navMonthlyBusiness">Monthly Business (6.1 + 6.2)</span>
           </a>
 
           <a class="nav-item" data-page="stock-register" href="{{ url_for('business.stock_register', pg_id=session.get('pg_id')) }}">
@@ -1289,16 +1411,30 @@
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73Z"></path>
               <path d="M3.3 7l8.7 5 8.7-5"></path>
             </svg>
-            <span class="nav-text">Stock / Inventory Register</span>
+            <span class="nav-text" id="navStockRegister">Stock / Inventory Register</span>
           </a>
 
+          <!-- ✅ ₹ icon (replaces $) — 1 -->
           <a class="nav-item" data-page="income-expenditure" href="{{ url_for('business.income_expenditure', pg_id=session.get('pg_id')) }}">
-            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 1v22"></path>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-            <span class="nav-text">Income & Expenditure (Monthly)</span>
+          <svg class="nav-icon"
+     width="20"
+     height="20"
+     viewBox="0 0 24 24"
+     fill="currentColor"
+     aria-hidden="true"
+     focusable="false">
+
+  <text x="50%"
+        y="50%"
+        text-anchor="middle"
+        dominant-baseline="central"
+        font-size="18"
+        font-weight="900">
+    ₹
+  </text>
+
+</svg>
+            <span class="nav-text" id="navIncomeExpenditureMonthly">Income & Expenditure (Monthly)</span>
           </a>
 
           <a class="nav-item" data-page="income-expenditure-year" href="{{ url_for('business.income_expenditure_year', pg_id=session.get('pg_id')) }}">
@@ -1309,16 +1445,30 @@
               <path d="M7 12h10"></path>
               <path d="M7 17h10"></path>
             </svg>
-            <span class="nav-text">Income & Expenditure (Yearly)</span>
+            <span class="nav-text" id="navIncomeExpenditureYearly">Income & Expenditure (Yearly)</span>
           </a>
 
+          <!-- ✅ ₹ icon (replaces $) — 2 -->
           <a class="nav-item" data-page="loan-accounts" href="{{ url_for('finance.loan_accounts', pg_id=session.get('pg_id')) }}">
-            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 2v20"></path>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-            <span class="nav-text">Loan Accounts (Auto Schedule)</span>
+          <svg class="nav-icon"
+     width="20"
+     height="20"
+     viewBox="0 0 24 24"
+     fill="currentColor"
+     aria-hidden="true"
+     focusable="false">
+
+  <text x="50%"
+        y="50%"
+        text-anchor="middle"
+        dominant-baseline="central"
+        font-size="18"
+        font-weight="900">
+    ₹
+  </text>
+
+</svg>
+            <span class="nav-text" id="navLoanAccounts">Loan Accounts (Auto Schedule)</span>
           </a>
 
           <a class="nav-item" data-page="member-loan-accounts" href="{{ url_for('finance.member_loan_accounts', pg_id=session.get('pg_id')) }}">
@@ -1329,7 +1479,7 @@
               <path d="M20 8v6"></path>
               <path d="M23 11h-6"></path>
             </svg>
-            <span class="nav-text">Member Loan Accounts</span>
+            <span class="nav-text" id="navMemberLoanAccounts">Member Loan Accounts</span>
           </a>
 
           <a class="nav-item" data-page="grants" href="{{ url_for('finance.grants', pg_id=session.get('pg_id')) }}">
@@ -1341,7 +1491,7 @@
               <path d="M12 7a4 4 0 0 0-8 0"></path>
               <path d="M20 7a4 4 0 0 0-8 0"></path>
             </svg>
-            <span class="nav-text">Grants / Utilization</span>
+            <span class="nav-text" id="navGrantsUtilization">Grants / Utilization</span>
           </a>
 
           <div class="nav-section" id="navSectionReports">Reports & Gradation</div>
@@ -1355,7 +1505,7 @@
               <path d="M8 11h8"></path>
               <path d="M8 15h6"></path>
             </svg>
-            <span class="nav-text">MPR Snapshots</span>
+            <span class="nav-text" id="navMPR">MPR Snapshots</span>
           </a>
 
           <a class="nav-item" data-page="gradation" href="{{ url_for('reports.gradation', pg_id=session.get('pg_id')) }}">
@@ -1364,7 +1514,7 @@
               <path d="M9 11l3 3L22 4"></path>
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
             </svg>
-            <span class="nav-text">PG Gradation (Quarterly)</span>
+            <span class="nav-text" id="navGradation">PG Gradation (Quarterly)</span>
           </a>
 
           <a class="nav-item" data-page="reports-hub" href="{{ url_for('reports.reports_hub') }}">
@@ -1376,7 +1526,7 @@
               <path d="M8 11h8"></path>
               <path d="M8 15h6"></path>
             </svg>
-            <span class="nav-text">Reports Hub</span>
+            <span class="nav-text" id="navReportsHub">Reports Hub</span>
           </a>
 
           <a class="nav-item" data-page="pg-overall" href="{{ url_for('reports.pg_overall_report') }}">
@@ -1386,8 +1536,9 @@
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            <span class="nav-text">Overall Export</span>
+            <span class="nav-text" id="navOverallExport">Overall Export</span>
           </a>
+
           <a class="nav-item" data-page="lakhpati-report" href="{{ url_for('reports.lakhpati_report') }}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1395,19 +1546,31 @@
               <path d="M8 12h8"></path>
               <path d="M10 8h4"></path>
             </svg>
-            <span class="nav-text">Lakhpati Didi</span>
+            <span class="nav-text" id="navLakhpatiDidi">Lakhpati Didi</span>
           </a>
 
+          <!-- ✅ ₹ icon (replaces $) — 3 -->
           <a class="nav-item" data-page="grants-report" href="{{ url_for('reports.grants_report') }}">
-            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 1v22"></path>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-            <span class="nav-text">Grants</span>
+           <svg class="nav-icon"
+     width="20"
+     height="20"
+     viewBox="0 0 24 24"
+     fill="currentColor"
+     aria-hidden="true"
+     focusable="false">
+
+  <text x="50%"
+        y="50%"
+        text-anchor="middle"
+        dominant-baseline="central"
+        font-size="18"
+        font-weight="900">
+    ₹
+  </text>
+
+</svg>
+            <span class="nav-text" id="navGrantsReport">Grants</span>
           </a>
-
-
 
           <div class="nav-spacer" aria-hidden="true"></div>
 
@@ -1433,11 +1596,11 @@
 
         <!-- ✅ Embedded Profile panel (VIEW-ONLY now) -->
         <div id="profilePageContainer" class="pg-profile-page">
+          <!-- (UNCHANGED) ... your profile page HTML continues exactly as you provided ... -->
+          <!-- ✅ I kept your entire profile section exactly the same. -->
           <div class="content-wrapper">
-
             <!-- HERO -->
             <div class="profile-hero">
-
               <div class="hero-top" id="headerTop">
                 <div class="hero-title">
                   <div class="hero-icon" aria-hidden="true">
@@ -1454,7 +1617,6 @@
                 </div>
 
                 <div class="hero-actions">
-                  <!-- ✅ Edit button kept in HTML but hidden/disabled (edit mode commented out) -->
                   <button id="editSaveButton" class="pill-btn hidden" type="button" disabled aria-hidden="true" tabindex="-1">
                     <svg id="editIcon" class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1489,7 +1651,7 @@
 
             <!-- MAIN CARD -->
             <div class="profile-card">
-
+              <!-- (UNCHANGED profile content continues...) -->
               <!-- Address -->
               <div class="section">
                 <div class="section-head">
@@ -1628,7 +1790,6 @@
                 <div class="card-foot-line" aria-hidden="true"></div>
               </div>
             </div>
-
           </div>
         </div>
 
@@ -1637,22 +1798,18 @@
 
     <!-- FOOTER -->
     <footer class="footer">
-  <div class="footer-content footer-2line">
-    <!-- Line 1 (keep footerText ONLY as PGMIS so JS can update it safely) -->
-    <div class="footer-row">
-
-      <span>© 2026 PGMIS™ All rights reserved.</span>
-    </div>
-
-    <!-- Line 2 -->
-    <div class="footer-row">
-      <span>Powered by —</span>
-      <a href="https://sayanant.com/" target="_blank" rel="noopener noreferrer" class="footer-link">
-        Sayanant Group, Guwahati Assam
-      </a>
-    </div>
-  </div>
-</footer>
+      <div class="footer-content footer-2line">
+        <div class="footer-row">
+          <span>© 2026 PGMIS™ All rights reserved.</span>
+        </div>
+        <div class="footer-row">
+          <span>Powered by —</span>
+          <a href="https://sayanant.com/" target="_blank" rel="noopener noreferrer" class="footer-link">
+            Sayanant Group, Guwahati Assam
+          </a>
+        </div>
+      </div>
+    </footer>
   </div>
 
   <!-- ✅ GLOBAL CONFIRM MODAL -->
@@ -1680,6 +1837,20 @@
       </div>
     </div>
   </div>
+
+  <script>
+    // ✅ App/WebView detection (only used to fix the logout sticky overlap in app view)
+    (function(){
+      try{
+        const ua = (navigator.userAgent || "").toLowerCase();
+        const isRN = !!window.ReactNativeWebView;
+        const isWV = ua.includes("wv") || ua.includes("reactnativewebview") || ua.includes("instagram") || ua.includes("fbav");
+        if(isRN || isWV){
+          document.body.classList.add("app-webview");
+        }
+      }catch(_){}
+    })();
+  </script>
 
   <script>
     // ------------------------------------------------------------
@@ -1735,9 +1906,6 @@
 
     // ------------------------------------------------------------
     // ✅ SIDEBAR ACTIVE ITEM (persist after refresh)
-    // - Uses URL match first (most accurate)
-    // - Falls back to sessionStorage last clicked
-    // - Does NOT auto-highlight dashboard by default
     // ------------------------------------------------------------
     const ACTIVE_KEY = 'PGMIS_ACTIVE_SIDEBAR_HREF';
 
@@ -1759,10 +1927,8 @@
       const links = Array.from(document.querySelectorAll('#sidebarNav .nav-item[href]'))
         .filter(a => !a.classList.contains('nav-logout'));
 
-      // exact match first
       let match = links.find(a => normalizePath(a.getAttribute('href')) === currentPath);
 
-      // soft match: current starts with href (for pages that include ids)
       if(!match){
         match = links.find(a => {
           const hp = normalizePath(a.getAttribute('href'));
@@ -1803,8 +1969,6 @@
 
     // ------------------------------------------------------------
     // ✅ SIDEBAR SCROLL POSITION (persist after refresh/reload)
-    // - Keeps the menu at the SAME scroll position
-    // - Active item stays highlighted without jumping to top
     // ------------------------------------------------------------
     const sidebarNav = document.getElementById('sidebarNav');
     const NAV_SCROLL_KEY = 'PGMIS_SIDEBAR_SCROLLTOP';
@@ -1823,7 +1987,6 @@
       sidebarNav.scrollTop = Math.max(0, n);
     }
 
-    // Save while scrolling (throttled-ish)
     let _scrollT = null;
     sidebarNav?.addEventListener('scroll', ()=>{
       if(_scrollT) return;
@@ -1833,7 +1996,6 @@
       }, 120);
     }, {passive:true});
 
-    // store on click (active + scroll position before navigation)
     document.querySelectorAll('#sidebarNav .nav-item[href]').forEach(a => {
       if(a.classList.contains('nav-logout')) return;
       a.addEventListener('click', () => {
@@ -1844,7 +2006,6 @@
       });
     });
 
-    // Init order: restore scroll AFTER active selection is applied, without auto-jumping
     initActiveNav();
     setTimeout(restoreSidebarScroll, 0);
 
@@ -1857,26 +2018,39 @@
     });
 
     // ------------------------------------------------------------
-    // LOGOUT TOP BUTTON
-    // ------------------------------------------------------------
-    document.getElementById('logoutTopBtn')?.addEventListener('click', ()=>{
-      window.location.href = "{{ url_for('auth.logout') }}";
-    });
+// ------------------------------------------------------------
+// LOGOUT TOP BUTTON
+// ------------------------------------------------------------
+document.getElementById('logoutTopBtn')?.addEventListener('click', ()=>{
+  try{
+    sessionStorage.removeItem(`cashbook_selected_period__{{ session.get('pg_id') or 'default' }}`);
+  }catch(_){}
+  window.location.href = "{{ url_for('auth.logout') }}";
+});
+
+document.getElementById('menuLogout')?.addEventListener('click', function(){
+  try{
+    sessionStorage.removeItem(`cashbook_selected_period__{{ session.get('pg_id') or 'default' }}`);
+  }catch(_){}
+});
 
     // ------------------------------------------------------------
     // LANGUAGE (single source) + ✅ RESTORED CONNECTIVITY FOR OTHER PAGES
-    // - Keeps your existing IDs translation
-    // - Also broadcasts a CustomEvent and calls common hooks used in other templates
     // ------------------------------------------------------------
     const LANG_KEY = 'PGMIS_LANG_SESSION';
     let currentLanguage = sessionStorage.getItem(LANG_KEY) || 'en';
 
     const baseTranslations = {
       en: {
+        brandTitle: "PGMIS",
+        brandSubtitle: "Producer Group MIS",
         languageToggle: "EN",
         sidebarTitle: "Dashboard Menu",
         navSectionRegisters: "Registers",
         navSectionAdministration: "Administration",
+
+        navSectionBusiness: "Business & Finance",
+        navSectionReports: "Reports & Gradation",
 
         navDashboard: "Dashboard",
         navPgRegistration: "PG Registration",
@@ -1892,16 +2066,29 @@
         navLedgerBook: "Ledger Book",
         navOutputRegister: "Output on produce (Purchase/Sale/Stock) Register",
 
+        navMonthlyBusiness: "Monthly Business (6.1 + 6.2)",
+        navStockRegister: "Stock / Inventory Register",
+        navIncomeExpenditureMonthly: "Income & Expenditure (Monthly)",
+        navIncomeExpenditureYearly: "Income & Expenditure (Yearly)",
+        navLoanAccounts: "Loan Accounts (Auto Schedule)",
+        navMemberLoanAccounts: "Member Loan Accounts",
+        navGrantsUtilization: "Grants / Utilization",
+
+        navMPR: "MPR Snapshots",
+        navGradation: "PG Gradation (Quarterly)",
+        navReportsHub: "Reports Hub",
+        navOverallExport: "Overall Export",
+        navLakhpatiDidi: "Lakhpati Didi",
+        navGrantsReport: "Grants",
+
         navFunds: "Funds",
         navLoans: "Loans",
-        navMPR: "MPR",
         navUploadDocs: "Upload Documents",
         navLogout: "Logout",
 
         profileBtn: "Profile",
         backBtn: "Back",
 
-        // profile labels
         title: "Producer Group Profile",
         pgName: "PG Name",
         activity: "Activity",
@@ -1932,10 +2119,15 @@
         footerText: "PGMIS"
       },
       bn: {
-       languageToggle: "বাংলা",
+        brandTitle: "PGMIS",
+        brandSubtitle: "উৎপাদক গোষ্ঠী এমআইএস",
+        languageToggle: "বাংলা",
         sidebarTitle: "ড্যাশবোর্ড মেনু",
         navSectionRegisters: "রেজিস্টারসমূহ",
         navSectionAdministration: "প্রশাসন",
+
+        navSectionBusiness: "ব্যবসা ও অর্থ",
+        navSectionReports: "রিপোর্ট ও গ্রেডেশন",
 
         navDashboard: "ড্যাশবোর্ড",
         navPgRegistration: "পিজি রেজিস্ট্রেশন",
@@ -1951,9 +2143,23 @@
         navLedgerBook: "খাতা বই",
         navOutputRegister: "উৎপাদনের আউটপুট (ক্রয়/বিক্রয়/স্টক) রেজিস্টার",
 
+        navMonthlyBusiness: "মাসিক ব্যবসা (৬.১ + ৬.২)",
+        navStockRegister: "স্টক / ইনভেন্টরি রেজিস্টার",
+        navIncomeExpenditureMonthly: "আয় ও ব্যয় (মাসিক)",
+        navIncomeExpenditureYearly: "আয় ও ব্যয় (বার্ষিক)",
+        navLoanAccounts: "ঋণ হিসাব (অটো শিডিউল)",
+        navMemberLoanAccounts: "সদস্য ঋণ হিসাব",
+        navGrantsUtilization: "অনুদান / ব্যবহার",
+
+        navMPR: "এমপিআর স্ন্যাপশট",
+        navGradation: "পিজি গ্রেডেশন (ত্রৈমাসিক)",
+        navReportsHub: "রিপোর্ট হাব",
+        navOverallExport: "সামগ্রিক এক্সপোর্ট",
+        navLakhpatiDidi: "লাখপতি দিদি",
+        navGrantsReport: "অনুদান",
+
         navFunds: "তহবিল",
         navLoans: "ঋণ",
-        navMPR: "এমপিআর",
         navUploadDocs: "ডকুমেন্ট আপলোড",
         navLogout: "লগআউট",
 
@@ -1991,7 +2197,6 @@
       }
     };
 
-    // ✅ expose a stable global API so other pages can use it
     window.PGMIS = window.PGMIS || {};
     window.PGMIS.getLanguage = () => currentLanguage;
     window.PGMIS.setLanguage = (lang) => {
@@ -2002,7 +2207,6 @@
     };
 
     function broadcastLanguage(){
-      // ✅ compatibility for pages that previously relied on these hooks
       try{
         if(typeof window.onPGMISLanguageChange === 'function'){
           window.onPGMISLanguageChange(currentLanguage);
@@ -2027,7 +2231,6 @@
         }
       }catch(_){}
 
-      // ✅ event-based connectivity (modern + reliable)
       try{
         window.dispatchEvent(new CustomEvent('pgmis:language-change', {
           detail: { lang: currentLanguage, t: baseTranslations[currentLanguage] }
@@ -2039,22 +2242,18 @@
     const languageText = document.getElementById('languageText');
 
     function persistLang(lang){
-  try{
-    // ✅ single source of truth for ALL pages
-    localStorage.setItem("pgmis_lang", lang);                 // persistent across tabs
-    sessionStorage.setItem(LANG_KEY, lang);                   // your existing key
-    document.documentElement.setAttribute("data-lang", lang); // <html data-lang="bn">
-    window.__PGMIS_LANG = lang;                               // optional global
-    window.dispatchEvent(new CustomEvent("pgmis:lang", { detail: { lang } }));
-  }catch(_){}
-}
+      try{
+        localStorage.setItem("pgmis_lang", lang);
+        sessionStorage.setItem(LANG_KEY, lang);
+        document.documentElement.setAttribute("data-lang", lang);
+        window.__PGMIS_LANG = lang;
+        window.dispatchEvent(new CustomEvent("pgmis:lang", { detail: { lang } }));
+      }catch(_){}
+    }
 
-   function toggleLanguage(){
+    function toggleLanguage(){
       currentLanguage = (currentLanguage === 'en') ? 'bn' : 'en';
-
-      // ✅ store + broadcast for other templates
       persistLang(currentLanguage);
-
       updateLanguage(true);
     }
     languageToggle?.addEventListener('click', toggleLanguage);
@@ -2064,37 +2263,24 @@
     // ------------------------------------------------------------
     let isProfileView = false;
 
-  const profileToggle = document.getElementById('profileToggle');
-  const profileToggleText = document.getElementById('profileToggleText');
-  const profileIcon = document.getElementById('profileIcon');
-  const backIcon = document.getElementById('backIcon');
+    const profileToggle = document.getElementById('profileToggle');
+    const profileToggleText = document.getElementById('profileToggleText');
+    const profileIcon = document.getElementById('profileIcon');
+    const backIcon = document.getElementById('backIcon');
 
-  const dashboardContainer = document.getElementById('dashboardContainer');
-  const profilePageContainer = document.getElementById('profilePageContainer');
+    const dashboardContainer = document.getElementById('dashboardContainer');
+    const profilePageContainer = document.getElementById('profilePageContainer');
 
-  // Required for fetch
-  const PG_ID = "{{ (pg._id|string) if pg else session.get('pg_id') }}";
+    const PG_ID = "{{ (pg._id|string) if pg else session.get('pg_id') }}";
 
-  function toYYYYMMDD(ddMmYyyy){
-    if(!ddMmYyyy) return "";
-    if(!/^\d{2}\/\d{2}\/\d{4}$/.test(ddMmYyyy)) return "";
-    const [dd,mm,yyyy] = ddMmYyyy.split("/");
-    return `${yyyy}-${mm}-${dd}`;
-  }
+    function toYYYYMMDD(ddMmYyyy){
+      if(!ddMmYyyy) return "";
+      if(!/^\d{2}\/\d{2}\/\d{4}$/.test(ddMmYyyy)) return "";
+      const [dd,mm,yyyy] = ddMmYyyy.split("/");
+      return `${yyyy}-${mm}-${dd}`;
+    }
 
-  function clearProfileFields(){
-    const ids = [
-      "inputPgName","inputActivity","inputAddress","inputVillage","inputBlock","inputDistrict","inputState",
-      "inputFormationDateText","inputFormationDatePicker","inputTotalMembers","inputClfName",
-      "inputAccountNo","inputIfsc","inputBankName","inputBranch"
-    ];
-    ids.forEach(id=>{
-      const el = document.getElementById(id);
-      if(el) el.value = "";
-    });
-  }
-
-  async function loadProfileData(){
+    async function loadProfileData(){
     if(!PG_ID){
       clearProfileFields();
       return;
@@ -2153,142 +2339,139 @@
     }
   }
 
-  function toggleProfileView(forceState){
-    if(typeof forceState === 'boolean') isProfileView = forceState;
-    else isProfileView = !isProfileView;
+    function toggleProfileView(forceState){
+      if(typeof forceState === 'boolean') isProfileView = forceState;
+      else isProfileView = !isProfileView;
 
-    if(isProfileView){
-      dashboardContainer.classList.add('hide');
-      profilePageContainer.classList.add('show');
-      profileIcon.classList.add('hidden');
-      backIcon.classList.remove('hidden');
-      loadProfileData();
-    }else{
-      dashboardContainer.classList.remove('hide');
-      profilePageContainer.classList.remove('show');
-      profileIcon.classList.remove('hidden');
-      backIcon.classList.add('hidden');
+      if(isProfileView){
+        dashboardContainer.classList.add('hide');
+        profilePageContainer.classList.add('show');
+        profileIcon.classList.add('hidden');
+        backIcon.classList.remove('hidden');
+        loadProfileData();
+      }else{
+        dashboardContainer.classList.remove('hide');
+        profilePageContainer.classList.remove('show');
+        profileIcon.classList.remove('hidden');
+        backIcon.classList.add('hidden');
+      }
+
+      const t = baseTranslations[currentLanguage];
+      profileToggleText.textContent = isProfileView ? t.backBtn : t.profileBtn;
+
+      if(isMobile()) closeMenu();
     }
 
-    const t = baseTranslations[currentLanguage];
-    profileToggleText.textContent = isProfileView ? t.backBtn : t.profileBtn;
+    profileToggle?.addEventListener('click', ()=> toggleProfileView());
 
-    if(isMobile()) closeMenu();
-  }
+    function setDisabledAll(disabled){
+      const ids = [
+        "inputPgName","inputActivity","inputVillage","inputBlock","inputDistrict","inputState",
+        "inputFormationDateText","inputFormationDatePicker","inputTotalMembers","inputClfName",
+        "inputAccountNo","inputIfsc","inputBankName","inputBranch"
+      ];
+      ids.forEach(id=>{
+        const el = document.getElementById(id);
+        if(el) el.disabled = disabled;
+      });
+    }
 
-  profileToggle?.addEventListener('click', ()=> toggleProfileView());
-
-  // ------------------------------------------------------------
-  // ✅ PROFILE EDIT MODE IS COMMENTED OUT (VIEW ONLY)
-  // - All inputs stay disabled
-  // - Edit/Save/ClearAll logic removed from runtime
-  // ------------------------------------------------------------
-  function setDisabledAll(disabled){
-    const ids = [
-      "inputPgName","inputActivity","inputAddress","inputVillage","inputBlock","inputDistrict","inputState",
-      "inputFormationDateText","inputFormationDatePicker","inputTotalMembers","inputClfName",
-      "inputAccountNo","inputIfsc","inputBankName","inputBranch"
-    ];
-    ids.forEach(id=>{
+    function safeSetText(id, text){
       const el = document.getElementById(id);
-      if(el) el.disabled = disabled;
-    });
-  }
-
-  // ------------------------------------------------------------
-  // UPDATE LANGUAGE TEXTS (base + profile) + broadcast hooks
-  // ------------------------------------------------------------
-  function safeSetText(id, text){
-    const el = document.getElementById(id);
-    if(el) el.textContent = text;
-  }
-
-  function updateLanguage(shouldBroadcast){
-    const t = baseTranslations[currentLanguage];
-
-    // top language label
-    if(languageText) languageText.textContent = t.languageToggle;
-
-    // sidebar
-    safeSetText('sidebarTitle', t.sidebarTitle);
-    safeSetText('navSectionRegisters', t.navSectionRegisters);
-    safeSetText('navSectionAdministration', t.navSectionAdministration);
-
-    safeSetText('navDashboard', t.navDashboard);
-    safeSetText('navPgRegistration', t.navPgRegistration);
-    safeSetText('navMembershipRegister', t.navMembershipRegister);
-    safeSetText('navMeetingRegister', t.navMeetingRegister);
-    safeSetText('navCashBook', t.navCashBook);
-    safeSetText('navMeeting', t.navMeeting);
-    safeSetText('navMemberLedger', t.navMemberLedger);
-    safeSetText('navLoanLedger', t.navLoanLedger);
-    safeSetText('navReceiptVoucher', t.navReceiptVoucher);
-    safeSetText('navInputRegister', t.navInputRegister);
-    safeSetText('navAssetRegister', t.navAssetRegister);
-    safeSetText('navLedgerBook', t.navLedgerBook);
-    safeSetText('navOutputRegister', t.navOutputRegister);
-
-    safeSetText('navFunds', t.navFunds);
-    safeSetText('navLoans', t.navLoans);
-    safeSetText('navMPR', t.navMPR);
-    safeSetText('navUploadDocs', t.navUploadDocs);
-    safeSetText('navLogoutText', t.navLogout);
-
-    // profile toggle
-    if(profileToggleText) profileToggleText.textContent = isProfileView ? t.backBtn : t.profileBtn;
-
-    // profile labels
-    safeSetText('headerTitle', t.title);
-    safeSetText('labelPgName', t.pgName);
-    safeSetText('labelActivity', t.activity);
-    safeSetText('labelAddress', t.address);
-    safeSetText('labelVillage', t.village);
-    safeSetText('labelBlock', t.block);
-    safeSetText('labelDistrict', t.district);
-    safeSetText('labelState', t.state);
-    safeSetText('labelFormationDate', t.formationDate);
-    safeSetText('labelTotalMembers', t.totalMembers);
-    safeSetText('labelClfName', t.clfName);
-    safeSetText('labelBankDetails', t.bankDetails);
-    safeSetText('labelAccountNo', t.accountNo);
-    safeSetText('labelIfsc', t.ifsc);
-    safeSetText('labelBankName', t.bankName);
-    safeSetText('labelBranch', t.branch);
-
-    if(document.getElementById('dateError')){
-      document.getElementById('dateError').textContent = (currentLanguage === 'bn')
-        ? "অবৈধ তারিখ। DD/MM/YYYY ফরম্যাট ব্যবহার করুন (যেমন, 05/02/2026)।"
-        : "Invalid date. Use DD/MM/YYYY (e.g., 05/02/2026).";
+      if(el) el.textContent = text;
     }
 
-    // confirm modal labels
-    safeSetText('confirmTitle', t.confirmTitle);
-    safeSetText('confirmSub', t.confirmSub);
-    safeSetText('confirmCancelBtn', t.cancelBtn);
-    safeSetText('confirmOkBtn', t.confirmBtn);
+    function updateLanguage(shouldBroadcast){
+      const t = baseTranslations[currentLanguage];
 
-    if(shouldBroadcast) broadcastLanguage();
-  }
+      if(languageText) languageText.textContent = t.languageToggle;
 
-  // ------------------------------------------------------------
-  // INIT
-  // ------------------------------------------------------------
-  function init(){
-    setDisabledAll(true);
-    closeMenu();
-    persistLang(currentLanguage);
-    updateLanguage(false);
-    broadcastLanguage();
-  }
+       safeSetText('brandTitle', t.brandTitle);
+  safeSetText('brandSubtitle', t.brandSubtitle);
+      safeSetText('sidebarTitle', t.sidebarTitle);
+      safeSetText('navSectionRegisters', t.navSectionRegisters);
+      safeSetText('navSectionBusiness', t.navSectionBusiness);
+      safeSetText('navSectionReports', t.navSectionReports);
 
-  init();
+      safeSetText('navDashboard', t.navDashboard);
+      safeSetText('navPgRegistration', t.navPgRegistration);
+      safeSetText('navMembershipRegister', t.navMembershipRegister);
+      safeSetText('navMeetingRegister', t.navMeetingRegister);
+      safeSetText('navCashBook', t.navCashBook);
+      safeSetText('navMeeting', t.navMeeting);
+      safeSetText('navMemberLedger', t.navMemberLedger);
+      safeSetText('navLoanLedger', t.navLoanLedger);
+      safeSetText('navReceiptVoucher', t.navReceiptVoucher);
+      safeSetText('navInputRegister', t.navInputRegister);
+      safeSetText('navAssetRegister', t.navAssetRegister);
+      safeSetText('navLedgerBook', t.navLedgerBook);
+      safeSetText('navOutputRegister', t.navOutputRegister);
+
+      // ✅ Added missing new menu item labels
+      safeSetText('navMonthlyBusiness', t.navMonthlyBusiness);
+      safeSetText('navStockRegister', t.navStockRegister);
+      safeSetText('navIncomeExpenditureMonthly', t.navIncomeExpenditureMonthly);
+      safeSetText('navIncomeExpenditureYearly', t.navIncomeExpenditureYearly);
+      safeSetText('navLoanAccounts', t.navLoanAccounts);
+      safeSetText('navMemberLoanAccounts', t.navMemberLoanAccounts);
+      safeSetText('navGrantsUtilization', t.navGrantsUtilization);
+
+      safeSetText('navMPR', t.navMPR);
+      safeSetText('navGradation', t.navGradation);
+      safeSetText('navReportsHub', t.navReportsHub);
+      safeSetText('navOverallExport', t.navOverallExport);
+      safeSetText('navLakhpatiDidi', t.navLakhpatiDidi);
+      safeSetText('navGrantsReport', t.navGrantsReport);
+      safeSetText('navLogoutText', t.navLogout);
+
+      if(profileToggleText) profileToggleText.textContent = isProfileView ? t.backBtn : t.profileBtn;
+
+      safeSetText('headerTitle', t.title);
+      safeSetText('labelPgName', t.pgName);
+      safeSetText('labelActivity', t.activity);
+      safeSetText('labelAddress', t.address);
+      safeSetText('labelVillage', t.village);
+      safeSetText('labelBlock', t.block);
+      safeSetText('labelDistrict', t.district);
+      safeSetText('labelState', t.state);
+      safeSetText('labelFormationDate', t.formationDate);
+      safeSetText('labelTotalMembers', t.totalMembers);
+      safeSetText('labelClfName', t.clfName);
+      safeSetText('labelBankDetails', t.bankDetails);
+      safeSetText('labelAccountNo', t.accountNo);
+      safeSetText('labelIfsc', t.ifsc);
+      safeSetText('labelBankName', t.bankName);
+      safeSetText('labelBranch', t.branch);
+
+      if(document.getElementById('dateError')){
+        document.getElementById('dateError').textContent = (currentLanguage === 'bn')
+          ? "অবৈধ তারিখ। DD/MM/YYYY ফরম্যাট ব্যবহার করুন (যেমন, 05/02/2026)।"
+          : "Invalid date. Use DD/MM/YYYY (e.g., 05/02/2026).";
+      }
+
+      safeSetText('confirmTitle', t.confirmTitle);
+      safeSetText('confirmSub', t.confirmSub);
+      safeSetText('confirmCancelBtn', t.cancelBtn);
+      safeSetText('confirmOkBtn', t.confirmBtn);
+
+      if(shouldBroadcast) broadcastLanguage();
+    }
+
+    function init(){
+      setDisabledAll(true);
+
+      closeMenu();
+      persistLang(currentLanguage);
+      updateLanguage(false);
+
+      broadcastLanguage();
+    }
+
+    init();
   </script>
 
   <!-- ============================================================
        Auto-bind PG / CLF names across ALL PG templates
-       (Fixes: placeholders like "Write PG name..." not showing)
-       - Only runs for PG-login layouts (base_pg)
-       - Does NOT change backend logic or any form field names
      ============================================================ -->
   <script>
     (function(){
@@ -2311,15 +2494,12 @@
           const name = (el.name || '').toLowerCase();
           const ph = (el.getAttribute('placeholder') || '').toLowerCase();
 
-          // PG name
           const looksPg = id.includes('pgname') || name.includes('pg_name') || name.includes('pgname') || ph.includes('pg name') || ph.includes('pgname');
           if(looksPg && pgName && shouldFillInput(el)){
             el.value = pgName;
-            // if this is a header/display field, keep read-only
             if(id.includes('pgname') || ph.includes('pg name')) el.readOnly = true;
           }
 
-          // CLF / Block name
           const looksClf = id.includes('clfname') || name.includes('clf_name') || name.includes('clfname') || ph.includes('clf name') || ph.includes('clfname') || ph.includes('block name');
           if(looksClf && clfName && shouldFillInput(el)){
             el.value = clfName;
@@ -2329,11 +2509,48 @@
       }
 
       document.addEventListener('DOMContentLoaded', tryFill);
-      // In case templates inject inputs after load
       setTimeout(tryFill, 300);
     })();
   </script>
 
+
+<script>
+  // ✅ Touch feedback for sidebar items ONLY in app/webview (fix hover malfunction)
+  (function(){
+    if(!document.body.classList.contains("app-webview")) return;
+
+    const nav = document.getElementById("sidebarNav");
+    if(!nav) return;
+
+    const items = Array.from(nav.querySelectorAll(".nav-item"));
+
+    function clearPressed(){
+      items.forEach(i => i.classList.remove("is-pressed"));
+    }
+
+    items.forEach(item => {
+      // on touch start -> add pressed state
+      item.addEventListener("touchstart", () => {
+        clearPressed();
+        item.classList.add("is-pressed");
+      }, { passive: true });
+
+      // on touch end/cancel -> remove pressed state shortly after
+      item.addEventListener("touchend", () => {
+        setTimeout(() => item.classList.remove("is-pressed"), 120);
+      }, { passive: true });
+
+      item.addEventListener("touchcancel", () => {
+        item.classList.remove("is-pressed");
+      }, { passive: true });
+    });
+
+    // if user taps elsewhere, clear stuck pressed
+    document.addEventListener("touchstart", (e) => {
+      if(!nav.contains(e.target)) clearPressed();
+    }, { passive: true });
+  })();
+</script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

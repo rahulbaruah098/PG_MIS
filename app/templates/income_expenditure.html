@@ -1,89 +1,606 @@
 {% extends "base.html" %}
 {% block content %}
-<h4>Income–Expenditure – {{ pg.name }}</h4>
 
-<form method="POST">
-  <div class="row g-3 mb-3">
-    <div class="col-md-2">
-      <label class="form-label">Year</label>
-      <input type="number" class="form-control" name="year" value="{{ record.year if record else '' }}" required>
+<style>
+  /* ============================================================
+     INCOME–EXPENDITURE — RESKIN (LEDGER BOOK LOOK)
+     ✅ ONLY UI/CSS/UX changed
+     ✅ ALL data contents + field names + POST intact
+     ✅ Back button INSIDE header line (top-left) — ONLY mobile/tablet/app
+     ✅ Scoped under .ie-wrap only (no global body/* rules)
+     ✅ Translation hooks compatible with base navbar toggle + persistence
+     ============================================================ */
+
+  .ie-wrap{
+    width: 100%;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    color: var(--ink);
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .ie-wrap *{ box-sizing:border-box; }
+
+  .ie-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+    position: relative;
+  }
+
+  /* Header */
+  .ie-head{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+    position: relative;
+  }
+  .ie-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: .2px;
+  }
+
+  /* Back (mobile only) — INSIDE header line (top-left) */
+  .ie-back{
+    display:none; /* desktop hidden */
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    transform: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: rgba(11,77,58,.98);
+    user-select: none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    z-index: 5;
+  }
+  .ie-back:hover{
+    transform: translateX(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .ie-back:active{ transform: scale(.98); }
+  .ie-back svg{ width: 18px; height: 18px; display:block; }
+
+  /* Top fields */
+  .ie-topfields{
+    padding: 10px 16px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .ie-field{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .ie-label{
+    font-weight: 900;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .ie-muted{
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(15,23,42,.72);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Form body */
+  .ie-form{
+    padding: 12px 16px 14px;
+    background: rgba(255,255,255,.96);
+  }
+
+  .ie-actions{
+    display:flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    padding-bottom: 12px;
+    border-bottom: 1.5px solid var(--line2);
+    margin-bottom: 12px;
+  }
+  .ie-stack{
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .ie-input{
+    width: 100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(247,250,249,.75);
+    font-weight: 800;
+    font-size: 12px;
+    outline: none;
+    min-width: 0;
+    color: var(--ink);
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .ie-input:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+
+  .ie-grid2{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .ie-block{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.92);
+    overflow: hidden;
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+  }
+  .ie-block-head{
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(247,250,249,.66);
+  }
+  .ie-block-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 13px;
+    letter-spacing: .15px;
+  }
+  .ie-block-body{
+    padding: 12px;
+  }
+
+  .ie-row{
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+    min-width: 0;
+  }
+
+  .ie-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+    text-decoration:none;
+  }
+  .ie-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .ie-btn.ie-primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .ie-btn.ie-primary:hover{ background: rgba(16,185,129,.16); }
+
+  .ie-icon{ width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* Totals (read-only) */
+  .ie-totals{
+    margin-top: 12px;
+    border-top: 1.5px solid var(--line2);
+    padding-top: 12px;
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .ie-kpi{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 999px;
+    background: rgba(255,255,255,.86);
+    font-weight: 950;
+    font-size: 12px;
+  }
+  .ie-kpi b{ font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 720px){
+    .ie-topfields{ grid-template-columns: 1fr; }
+    .ie-grid2{ grid-template-columns: 1fr; }
+    .ie-back{ display:flex; }
+    .ie-title{
+      text-align:left;
+      padding-left: 54px;
+      padding-right: 8px;
+    }
+  }
+</style>
+
+<div class="ie-wrap">
+  <div class="ie-sheet">
+
+    <!-- Header -->
+    <div class="ie-head">
+      <a class="ie-back" href="javascript:history.back()" aria-label="Go Back" id="ieBackAria">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <h2 class="ie-title" id="iePageTitle">Income–Expenditure</h2>
     </div>
-    <div class="col-md-2">
-      <label class="form-label">Month</label>
-      <input type="number" class="form-control" name="month" value="{{ record.month if record else '' }}" min="1" max="12" required>
+
+    <!-- Top fields -->
+    <div class="ie-topfields">
+      <div class="ie-field">
+        <div class="ie-label" id="ieLblProducerGroup">Producer Group</div>
+        <div class="ie-muted">{{ pg.name or pg.pg_name or '—' }}</div>
+      </div>
+
+      <div class="ie-field">
+        <div class="ie-label" id="ieLblPage">Page</div>
+        <div class="ie-muted" id="iePageSub">Income–Expenditure Register</div>
+      </div>
     </div>
+
+    <!-- Form -->
+    <div class="ie-form">
+      <form method="POST">
+
+        <!-- Year / Month (same inputs, same names) -->
+        <div class="ie-actions">
+          <div class="ie-stack" style="min-width:120px;">
+            <label class="ie-label" id="ieLblYear">Year</label>
+            <input type="number" class="ie-input" name="year" value="{{ record.year if record else '' }}" required>
+          </div>
+
+          <div class="ie-stack" style="min-width:96px;">
+            <label class="ie-label" id="ieLblMonth">Month</label>
+            <input type="number" class="ie-input" name="month" value="{{ record.month if record else '' }}" min="1" max="12" required>
+          </div>
+
+          <button class="ie-btn ie-primary" type="submit" id="ieBtnSave">
+            <svg class="ie-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span id="ieBtnSaveText">Save</span>
+          </button>
+        </div>
+
+        <div class="ie-grid2">
+          <!-- Income -->
+          <div class="ie-block">
+            <div class="ie-block-head">
+              <h3 class="ie-block-title" id="ieIncomeTitle">Income</h3>
+            </div>
+            <div class="ie-block-body">
+
+              <div class="ie-row">
+                <label class="ie-label" id="ieLblStartupCostReceived">Start-up / Establishment Cost Received</label>
+                <input type="number" step="0.01" class="ie-input" name="startup_cost_received"
+                       value="{{ record.income.startup_cost_received if record else '' }}">
+              </div>
+
+              <div class="ie-row">
+                <label class="ie-label" id="ieLblMembershipFees">Membership Fees</label>
+                <input type="number" step="0.01" class="ie-input" name="membership_fees"
+                       value="{{ record.income.membership_fees if record else '' }}">
+              </div>
+
+              <div class="ie-row">
+                <label class="ie-label" id="ieLblInterestReceivedFromMembers">Interest Received from PG Members</label>
+                <input type="number" step="0.01" class="ie-input" name="interest_received_from_members"
+                       value="{{ record.income.interest_received_from_members if record else '' }}">
+              </div>
+
+              <div class="ie-row">
+                <label class="ie-label" id="ieLblIncomeSellingProduct">Income from Selling Product</label>
+                <input type="number" step="0.01" class="ie-input" name="income_selling_product"
+                       value="{{ record.income.income_selling_product if record else '' }}">
+              </div>
+
+              <div class="ie-row">
+                <label class="ie-label" id="ieLblIncomeSellingInputToMember">Income from Selling Input to Members</label>
+                <input type="number" step="0.01" class="ie-input" name="income_selling_input_to_member"
+                       value="{{ record.income.income_selling_input_to_member if record else '' }}">
+              </div>
+
+              <div class="ie-row">
+                <label class="ie-label" id="ieLblIncomeSellingInputToOutsider">Income from Selling Input to Outsiders</label>
+                <input type="number" step="0.01" class="ie-input" name="income_selling_input_to_outsider"
+                       value="{{ record.income.income_selling_input_to_outsider if record else '' }}">
+              </div>
+
+              <div class="ie-row" style="margin-bottom:0;">
+                <label class="ie-label" id="ieLblOtherIncome">Other Income</label>
+                <input type="number" step="0.01" class="ie-input" name="other_income"
+                       value="{{ record.income.other_income if record else '' }}">
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Expenditure -->
+          <div class="ie-block">
+            <div class="ie-block-head">
+              <h3 class="ie-block-title" id="ieExpenditureTitle">Expenditure</h3>
+            </div>
+            <div class="ie-block-body">
+
+              <div class="ie-row">
+                <label class="ie-label" id="ieLblEstablishmentCostUtilized">Establishment Cost Utilized</label>
+                <input type="number" step="0.01" class="ie-input" name="establishment_cost_utilized"
+                       value="{{ record.expenditure.establishment_cost_utilized if record else '' }}">
+              </div>
+
+              <div class="ie-row">
+                <label class="ie-label" id="ieLblInputProcurement">Input Procurement</label>
+                <input type="number" step="0.01" class="ie-input" name="input_procurement"
+                       value="{{ record.expenditure.input_procurement if record else '' }}">
+              </div>
+
+              <div class="ie-row">
+                <label class="ie-label" id="ieLblInterestPaidAgainstLoan">Interest Paid Against Loan</label>
+                <input type="number" step="0.01" class="ie-input" name="interest_paid_against_loan"
+                       value="{{ record.expenditure.interest_paid_against_loan if record else '' }}">
+              </div>
+
+              <div class="ie-row">
+                <label class="ie-label" id="ieLblProductProcurement">Product Procurement</label>
+                <input type="number" step="0.01" class="ie-input" name="product_procurement"
+                       value="{{ record.expenditure.product_procurement if record else '' }}">
+              </div>
+
+              <div class="ie-row">
+                <label class="ie-label" id="ieLblRecurringExpenditure">Recurring Expenditure</label>
+                <input type="number" step="0.01" class="ie-input" name="recurring_expenditure"
+                       value="{{ record.expenditure.recurring_expenditure if record else '' }}">
+              </div>
+
+              <div class="ie-row" style="margin-bottom:0;">
+                <label class="ie-label" id="ieLblOtherExpenditure">Other Expenditure</label>
+                <input type="number" step="0.01" class="ie-input" name="other_expenditure"
+                       value="{{ record.expenditure.other_expenditure if record else '' }}">
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {% if record %}
+        <div class="ie-totals">
+          <div class="ie-kpi">
+            <span id="ieKpiTotalIncomeLabel">Total Income:</span>
+            <b>{{ record.total_income }}</b>
+          </div>
+          <div class="ie-kpi">
+            <span id="ieKpiTotalExpenditureLabel">Total Expenditure:</span>
+            <b>{{ record.total_expenditure }}</b>
+          </div>
+          <div class="ie-kpi">
+            <span id="ieKpiExcessLabel">Excess Income over Expenditure:</span>
+            <b>{{ record.excess_income_over_expenditure }}</b>
+          </div>
+        </div>
+        {% endif %}
+
+      </form>
+    </div>
+
   </div>
+</div>
 
-  <div class="row g-3">
-    <div class="col-md-6">
-      <h6>Income</h6>
-      <div class="mb-2">
-        <label class="form-label">Start-up / Establishment Cost Received</label>
-        <input type="number" step="0.01" class="form-control" name="startup_cost_received" value="{{ record.income.startup_cost_received if record else '' }}">
-      </div>
-      <div class="mb-2">
-        <label class="form-label">Membership Fees</label>
-        <input type="number" step="0.01" class="form-control" name="membership_fees" value="{{ record.income.membership_fees if record else '' }}">
-      </div>
-      <div class="mb-2">
-        <label class="form-label">Interest Received from PG Members</label>
-        <input type="number" step="0.01" class="form-control" name="interest_received_from_members" value="{{ record.income.interest_received_from_members if record else '' }}">
-      </div>
-      <div class="mb-2">
-        <label class="form-label">Income from Selling Product</label>
-        <input type="number" step="0.01" class="form-control" name="income_selling_product" value="{{ record.income.income_selling_product if record else '' }}">
-      </div>
-      <div class="mb-2">
-        <label class="form-label">Income from Selling Input to Members</label>
-        <input type="number" step="0.01" class="form-control" name="income_selling_input_to_member" value="{{ record.income.income_selling_input_to_member if record else '' }}">
-      </div>
-      <div class="mb-2">
-        <label class="form-label">Income from Selling Input to Outsiders</label>
-        <input type="number" step="0.01" class="form-control" name="income_selling_input_to_outsider" value="{{ record.income.income_selling_input_to_outsider if record else '' }}">
-      </div>
-      <div class="mb-2">
-        <label class="form-label">Other Income</label>
-        <input type="number" step="0.01" class="form-control" name="other_income" value="{{ record.income.other_income if record else '' }}">
-      </div>
-    </div>
+<script>
+  // ============================================================
+  // INCOME–EXPENDITURE — TRANSLATION CONNECTIVITY (EN/BN)
+  // ✅ No change to data, forms, routes, or backend logic
+  // ✅ Listens to base navbar language toggle broadcasts
+  // ✅ Persists until user manually toggles again (uses same stored keys)
+  // ============================================================
 
-    <div class="col-md-6">
-      <h6>Expenditure</h6>
-      <div class="mb-2">
-        <label class="form-label">Establishment Cost Utilized</label>
-        <input type="number" step="0.01" class="form-control" name="establishment_cost_utilized" value="{{ record.expenditure.establishment_cost_utilized if record else '' }}">
-      </div>
-      <div class="mb-2">
-        <label class="form-label">Input Procurement</label>
-        <input type="number" step="0.01" class="form-control" name="input_procurement" value="{{ record.expenditure.input_procurement if record else '' }}">
-      </div>
-      <div class="mb-2">
-        <label class="form-label">Interest Paid Against Loan</label>
-        <input type="number" step="0.01" class="form-control" name="interest_paid_against_loan" value="{{ record.expenditure.interest_paid_against_loan if record else '' }}">
-      </div>
-      <div class="mb-2">
-        <label class="form-label">Product Procurement</label>
-        <input type="number" step="0.01" class="form-control" name="product_procurement" value="{{ record.expenditure.product_procurement if record else '' }}">
-      </div>
-      <div class="mb-2">
-        <label class="form-label">Recurring Expenditure</label>
-        <input type="number" step="0.01" class="form-control" name="recurring_expenditure" value="{{ record.expenditure.recurring_expenditure if record else '' }}">
-      </div>
-      <div class="mb-2">
-        <label class="form-label">Other Expenditure</label>
-        <input type="number" step="0.01" class="form-control" name="other_expenditure" value="{{ record.expenditure.other_expenditure if record else '' }}">
-      </div>
-    </div>
-  </div>
+  (function(){
+    const IE_T = {
+      en: {
+        docTitle: "Income–Expenditure",
+        backAria: "Go Back",
+        pageTitle: "Income–Expenditure",
+        producerGroup: "Producer Group",
+        page: "Page",
+        pageSub: "Income–Expenditure Register",
+        year: "Year",
+        month: "Month",
+        save: "Save",
 
-  <button class="btn btn-primary mt-3" type="submit">Save</button>
+        incomeTitle: "Income",
+        expenditureTitle: "Expenditure",
 
-  {% if record %}
-  <div class="mt-3">
-    <p><strong>Total Income:</strong> {{ record.total_income }}</p>
-    <p><strong>Total Expenditure:</strong> {{ record.total_expenditure }}</p>
-    <p><strong>Excess Income over Expenditure:</strong> {{ record.excess_income_over_expenditure }}</p>
-  </div>
-  {% endif %}
-</form>
+        startupCostReceived: "Start-up / Establishment Cost Received",
+        membershipFees: "Membership Fees",
+        interestReceivedFromMembers: "Interest Received from PG Members",
+        incomeSellingProduct: "Income from Selling Product",
+        incomeSellingInputToMember: "Income from Selling Input to Members",
+        incomeSellingInputToOutsider: "Income from Selling Input to Outsiders",
+        otherIncome: "Other Income",
+
+        establishmentCostUtilized: "Establishment Cost Utilized",
+        inputProcurement: "Input Procurement",
+        interestPaidAgainstLoan: "Interest Paid Against Loan",
+        productProcurement: "Product Procurement",
+        recurringExpenditure: "Recurring Expenditure",
+        otherExpenditure: "Other Expenditure",
+
+        totalIncome: "Total Income:",
+        totalExpenditure: "Total Expenditure:",
+        excess: "Excess Income over Expenditure:"
+      },
+      bn: {
+        docTitle: "আয়–ব্যয়",
+        backAria: "ফিরে যান",
+        pageTitle: "আয়–ব্যয়",
+        producerGroup: "প্রডিউসার গ্রুপ",
+        page: "পৃষ্ঠা",
+        pageSub: "আয়–ব্যয় রেজিস্টার",
+        year: "বছর",
+        month: "মাস",
+        save: "সংরক্ষণ",
+
+        incomeTitle: "আয়",
+        expenditureTitle: "ব্যয়",
+
+        startupCostReceived: "স্টার্ট-আপ / প্রতিষ্ঠা খরচ প্রাপ্ত",
+        membershipFees: "সদস্যতা ফি",
+        interestReceivedFromMembers: "পিজি সদস্যদের থেকে প্রাপ্ত সুদ",
+        incomeSellingProduct: "পণ্য বিক্রি থেকে আয়",
+        incomeSellingInputToMember: "সদস্যদের কাছে ইনপুট বিক্রি থেকে আয়",
+        incomeSellingInputToOutsider: "বহিরাগতদের কাছে ইনপুট বিক্রি থেকে আয়",
+        otherIncome: "অন্যান্য আয়",
+
+        establishmentCostUtilized: "প্রতিষ্ঠা খরচ ব্যবহৃত",
+        inputProcurement: "ইনপুট ক্রয়",
+        interestPaidAgainstLoan: "ঋণের বিপরীতে পরিশোধিত সুদ",
+        productProcurement: "পণ্য ক্রয়",
+        recurringExpenditure: "পুনরাবৃত্ত ব্যয়",
+        otherExpenditure: "অন্যান্য ব্যয়",
+
+        totalIncome: "মোট আয়:",
+        totalExpenditure: "মোট ব্যয়:",
+        excess: "ব্যয়ের তুলনায় অতিরিক্ত আয়:"
+      }
+    };
+
+    function safeText(id, val){
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    }
+
+    function applyIE(lang){
+      const t = IE_T[lang] || IE_T.en;
+
+      try { document.title = t.docTitle; } catch(_){}
+
+      const back = document.querySelector('.ie-back');
+      if(back) back.setAttribute('aria-label', t.backAria);
+
+      safeText('iePageTitle', t.pageTitle);
+      safeText('ieLblProducerGroup', t.producerGroup);
+      safeText('ieLblPage', t.page);
+      safeText('iePageSub', t.pageSub);
+
+      safeText('ieLblYear', t.year);
+      safeText('ieLblMonth', t.month);
+      safeText('ieBtnSaveText', t.save);
+
+      safeText('ieIncomeTitle', t.incomeTitle);
+      safeText('ieExpenditureTitle', t.expenditureTitle);
+
+      safeText('ieLblStartupCostReceived', t.startupCostReceived);
+      safeText('ieLblMembershipFees', t.membershipFees);
+      safeText('ieLblInterestReceivedFromMembers', t.interestReceivedFromMembers);
+      safeText('ieLblIncomeSellingProduct', t.incomeSellingProduct);
+      safeText('ieLblIncomeSellingInputToMember', t.incomeSellingInputToMember);
+      safeText('ieLblIncomeSellingInputToOutsider', t.incomeSellingInputToOutsider);
+      safeText('ieLblOtherIncome', t.otherIncome);
+
+      safeText('ieLblEstablishmentCostUtilized', t.establishmentCostUtilized);
+      safeText('ieLblInputProcurement', t.inputProcurement);
+      safeText('ieLblInterestPaidAgainstLoan', t.interestPaidAgainstLoan);
+      safeText('ieLblProductProcurement', t.productProcurement);
+      safeText('ieLblRecurringExpenditure', t.recurringExpenditure);
+      safeText('ieLblOtherExpenditure', t.otherExpenditure);
+
+      safeText('ieKpiTotalIncomeLabel', t.totalIncome);
+      safeText('ieKpiTotalExpenditureLabel', t.totalExpenditure);
+      safeText('ieKpiExcessLabel', t.excess);
+    }
+
+    function getStoredLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      try{
+        const l3 = document.documentElement.getAttribute('data-lang');
+        if(l3 === 'en' || l3 === 'bn') return l3;
+      }catch(_){}
+      return 'en';
+    }
+
+    // Base compatibility hook
+    window.updatePageLanguage = function(lang /*, baseT */){
+      if(lang !== 'en' && lang !== 'bn') lang = getStoredLang();
+      applyIE(lang);
+    };
+
+    // Event-based broadcast from base
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyIE(lang);
+    });
+    window.addEventListener('pgmis:lang', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyIE(lang);
+    });
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      applyIE(getStoredLang());
+    });
+  })();
+</script>
+
 {% endblock %}

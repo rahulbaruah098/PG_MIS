@@ -38,23 +38,104 @@
     box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
   }
 
+ .lb-head{
+  padding: 14px 16px 12px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border-bottom: 1.5px solid var(--line2);
+  position: relative;
+}
+
+.lb-title{
+  margin: 0;
+  font-weight: 950;
+  font-size: 18px;
+  text-align: center;
+  letter-spacing: .2px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.lb-back{
+  display:none;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: rgba(11,77,58,.98);
+  user-select: none;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  z-index: 2;
+}
+
+.lb-back:hover{
+  transform: translateX(-1px);
+  box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+  background: rgba(255,255,255,.98);
+}
+
+.lb-back:active{
+  transform: scale(.98);
+}
+
+.lb-back svg{
+  width: 18px;
+  height: 18px;
+  display:block;
+}
+.lb-back:hover{
+  background: rgba(16,185,129,.16);
+  transform: translateY(-1px);
+}
+
+.lb-titlewrap{
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+}
+
+.lb-head-spacer{
+  width: 56px;
+  min-width: 56px;
+  flex: 0 0 56px;
+}
+
+/* show ONLY in app/webview */
+html.is-webview .lb-back,
+body.is-webview .lb-back{
+  display:inline-flex;
+}
+
+@media (max-width: 720px){
+
+    .lb-back{ display:flex; }
+
   .lb-head{
-    padding: 14px 16px 12px;
-    background:
-      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
-      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
-    border-bottom: 1.5px solid var(--line2);
-    position: relative;
+    padding: 14px 14px 12px;
   }
 
   .lb-title{
-    margin: 0;
-    font-weight: 950;
-    font-size: 18px;
-    text-align: center;
-    letter-spacing: .2px;
+    text-align: left;
+    padding-left: 52px;
+    padding-right: 8px;
+    font-size: 16px;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    line-height: 1.25;
   }
-
+}
   /* action buttons */
   .lb-actions-top{
     display:flex;
@@ -675,9 +756,26 @@
 <div class="lb-wrap" id="lbWrap">
   <div class="lb-sheet">
 
-    <div class="lb-head">
-      <h2 class="lb-title" id="lbTitle">Ledger Book</h2>
-    </div>
+   <div class="lb-head">
+<a class="lb-back"
+   href="javascript:void(0)"
+   aria-label="Back"
+   onclick="(window.history.length>1)?window.history.back():window.location.href='{{ url_for('pg.pg_home') }}'">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M19 12H5M5 12l6 6M5 12l6-6"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+  </svg>
+</a>
+
+  <div class="lb-titlewrap">
+    <h2 class="lb-title" id="lbTitle">Ledger Book</h2>
+  </div>
+
+  <div class="lb-head-spacer" aria-hidden="true"></div>
+</div>
 
     <div class="lb-topfields">
       <div class="lb-field">
@@ -933,6 +1031,32 @@
 
   const $ = (id) => document.getElementById(id);
 
+  function detectWebView(){
+  const ua = navigator.userAgent || "";
+  const isReactNativeWV = !!(window.ReactNativeWebView && window.ReactNativeWebView.postMessage);
+  const isFlutterWV = /flutter/i.test(ua);
+  const isAndroidWV = /\bwv\b/.test(ua) || /Version\/[\d.]+ Chrome\/[\d.]+ Mobile Safari\/[\d.]+/.test(ua);
+  const isIOSWV = /iPhone|iPad|iPod/i.test(ua) && (
+    !/Safari/i.test(ua) ||
+    /AppleWebKit(?!.*Safari)/i.test(ua)
+  );
+  const hasWebViewHint =
+    /webview|wv|; wv\)|android.*version\/[\d.]+.*chrome\/[\d.]+.*mobile/i.test(ua);
+
+  return isReactNativeWV || isFlutterWV || isAndroidWV || isIOSWV || hasWebViewHint;
+}
+
+if (detectWebView()) {
+  document.documentElement.classList.add("is-webview");
+  if (document.body) document.body.classList.add("is-webview");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (detectWebView()) {
+    document.documentElement.classList.add("is-webview");
+    document.body.classList.add("is-webview");
+  }
+});
   const T = {
     en: {
       title: "Ledger Book",
@@ -1661,8 +1785,8 @@
         if (cb) cb.checked = !!e._selected;
         allRows.push(row);
       });
-    } else {
-      for (let i=0; i<25; i++) allRows.push(createRow());
+      } else {
+      allRows = [];
     }
 
     rebuildFiltered();
@@ -2032,8 +2156,8 @@
         row.querySelector("[data-lb='credit']").value = e.credit ? String(e.credit) : "";
         allRows.push(row);
       });
-    } else {
-      for (let i=0; i<25; i++) allRows.push(createRow());
+       } else {
+      allRows = [];
     }
 
     rebuildFiltered();
@@ -2212,7 +2336,7 @@
     updateMobileBar();
   });
 
-  for (let i=0; i<25; i++) allRows.push(createRow());
+  allRows = [];
   rebuildFiltered();
 
   // ✅ 1) apply base language FIRST (so initial render matches navbar)

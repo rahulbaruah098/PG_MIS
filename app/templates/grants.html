@@ -1,75 +1,1710 @@
 {% extends "base.html" %}
 {% block title %}Grants & Infrastructure Funds{% endblock %}
 {% block content %}
+
 <style>
-  .wrap{max-width:1200px;margin:0 auto;padding:18px}
-  .hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18)}
-  .hero h1{margin:0;font-weight:950}
-  .card{margin-top:14px;background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
-  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
-  .f{display:flex;flex-direction:column;gap:6px}
-  .f label{font-size:.78rem;color:#059669;font-weight:900}
-  input,select,textarea{background:#f0fdf4;border:1px solid rgba(5,150,105,.22);border-radius:12px;padding:10px 12px;outline:none}
-  textarea{min-height:44px;resize:vertical}
-  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(5,150,105,.28);background:#059669;color:#fff;font-weight:950;cursor:pointer;text-decoration:none}
-  .btn2{background:#ecfdf5;color:#065f46}
-  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px;border-radius:14px;overflow:hidden}
-  th,td{padding:10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-size:.92rem}
-  th{background:#f0fdf4;color:#065f46;font-weight:950}
-  @media(max-width:980px){.grid{grid-template-columns:1fr}}
+  /* ============================================================
+     GRANTS / INFRASTRUCTURE FUNDS — LEDGER LOOK + RESPONSIVE + TRANSLATION
+     ✅ NO route renames / no form field name changes
+     ✅ Delete/Update are POST submissions to existing grant_view endpoint
+     ✅ Search + Pagination are client-side
+     ✅ Back button is MOBILE-ONLY (header)
+     ✅ Scoped under .gif-wrap only
+     ✅ Section-1 is ALWAYS editable + independent
+     ✅ Each row has its own Edit button (next to Delete)
+     ✅ Popups ONLY for per-row Save / Cancel actions
+     ✅ Mobile: horizontal swipe “cards” layout for rows
+     ✅ ✅ FIXED (BEST): Inline editor layout on mobile (no joined headings)
+     ✅ ✅ FIXED (BEST): Mobile actions now STACK (one below another) uniformly
+     ✅ ✅ FIXED (BEST): On mobile edit -> ONLY editor card shows (view cards hidden)
+     ✅ ✅ UPDATED: Added SL No column (web + mobile)
+     ✅ ✅ UPDATED: Editor shows SL No at top (so user knows which row editing)
+     ✅ ✅ UPDATED: After Cancel (and on desktop open/close), returns to the same row position (no jump to top)
+     ✅ ✅ UPDATED: Stores row position in sessionStorage, restores after page reload (Save/Delete) too
+     ✅ ✅ UPDATED: Result pill shows "Current Grants - X"
+     ✅ ✅ UPDATED: "Add Grant" header replaced by "Grant Details" only
+     ✅ ✅ NEW: Clear button near Add button (client-side reset only)
+     ============================================================ */
+
+  .gif-wrap{
+    width:100%;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    max-width: 1200px;
+    margin: 0 auto;
+    color: var(--ink);
+  }
+  .gif-wrap *{ box-sizing:border-box; }
+
+  .gif-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  }
+
+  /* Header */
+  .gif-head{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+  }
+  .gif-head-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+  .gif-leftslot,
+  .gif-rightslot{
+    flex: 0 0 42px;
+    width: 42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .gif-back{
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    display:none; /* desktop hidden */
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color: rgba(11,77,58,.98);
+    user-select:none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .gif-back:hover{
+    transform: translateX(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .gif-back:active{ transform: scale(.98); }
+  .gif-back svg{ width:18px; height:18px; display:block; }
+
+  .gif-title-wrap{
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align:center;
+  }
+  .gif-title{
+    margin:0;
+    font-weight: 950;
+    font-size: clamp(16px, 1.8vw, 20px);
+    letter-spacing: .2px;
+    line-height: 1.15;
+    word-break: normal;
+    overflow-wrap: anywhere;
+  }
+  .gif-sub{
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: rgba(15,23,42,.62);
+    font-weight: 800;
+  }
+
+  /* Top fields strip */
+  .gif-topfields{
+    padding: 10px 16px 14px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .gif-field{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width:0;
+  }
+  .gif-label{
+    font-weight: 900;
+    font-size: 12px;
+    white-space:nowrap;
+    color: var(--ink);
+  }
+  .gif-muted{
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(15,23,42,.72);
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  /* Body & blocks */
+  .gif-body{
+    padding: 12px 16px 16px;
+    background: rgba(255,255,255,.96);
+  }
+  .gif-card{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.92);
+    overflow:hidden;
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+    margin-bottom: 12px;
+  }
+  .gif-card-head{
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(247,250,249,.66);
+  }
+  .gif-card-title{
+    margin:0;
+    font-weight:950;
+    font-size: 13px;
+    letter-spacing:.15px;
+  }
+  .gif-card-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color: rgba(15,23,42,.62);
+    font-weight:750;
+  }
+  .gif-card-body{ padding: 12px; }
+
+  /* Form grid */
+  .gif-grid{
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 10px 14px;
+    align-items:start;
+  }
+  .gif-col-3{ grid-column: span 3; }
+  .gif-col-6{ grid-column: span 6; }
+  .gif-col-12{ grid-column: span 12; }
+
+  .gif-stack{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+  }
+  .gif-stack label{
+    font-weight:900;
+    font-size:12px;
+    color: var(--ink);
+  }
+
+  /* Inputs */
+  .gif-input, .gif-select, .gif-textarea{
+    width:100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: rgba(247,250,249,.75);
+    font-weight:800;
+    font-size:12px;
+    outline:none;
+    color: var(--ink);
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .gif-input:focus, .gif-select:focus, .gif-textarea:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  .gif-textarea{ min-height: 72px; resize: vertical; line-height: 1.35; }
+
+  /* Buttons */
+  .gif-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .gif-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    user-select:none;
+    white-space:nowrap;
+    text-decoration:none;
+  }
+  .gif-btn:hover{
+    transform: translateY(-1px);
+    background:#fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .gif-btn.primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .gif-btn.primary:hover{ background: rgba(16,185,129,.16); }
+
+  .gif-btn.danger{
+    border-color: rgba(220,38,38,.28);
+    background: rgba(220,38,38,.10);
+    color: rgba(153,27,27,1);
+  }
+  .gif-btn.danger:hover{ background: rgba(220,38,38,.14); }
+
+  .gif-btn.ghost{ background: rgba(255,255,255,.6); }
+
+  .gif-btn:disabled{
+    opacity:.55;
+    cursor:not-allowed;
+    transform:none !important;
+    box-shadow:none !important;
+  }
+
+  .gif-toolbar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .gif-toolbar-left,
+  .gif-toolbar-right{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .gif-toolbar-right{ justify-content:flex-end; }
+
+  .gif-search{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width: 260px;
+  }
+  .gif-search input{ width: min(420px, 60vw); }
+
+  .gif-pill{
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.75);
+    font-weight: 900;
+    font-size: 12px;
+    color: rgba(15,23,42,.78);
+  }
+
+  /* Table */
+  .gif-tablewrap{
+    width:100%;
+    overflow-x:auto;
+    border-top: 1px solid var(--line2);
+  }
+  table.gif-table{
+    width:100%;
+    border-collapse: separate;
+    border-spacing:0;
+    min-width: 1060px; /* + SL column */
+  }
+  .gif-table th, .gif-table td{
+    padding: 10px;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    text-align:left;
+    font-size: 12px;
+    white-space:nowrap;
+    vertical-align: top;
+  }
+  .gif-table th{
+    position: sticky;
+    top: 0;
+    background: rgba(240,253,244,.92);
+    color: #065f46;
+    font-weight: 950;
+    z-index: 1;
+  }
+
+  .gif-sl{
+    width: 64px;
+    color: rgba(15,23,42,.72);
+    font-weight: 900;
+  }
+
+  /* Inline editor row */
+  .gif-editor{
+    display:none;
+    padding: 12px;
+    background: rgba(247,250,249,.7);
+    border-top: 1px dashed rgba(15,23,42,.18);
+  }
+  .gif-editor.on{ display:block; }
+
+  .gif-editor-grid{
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 10px 14px;
+  }
+  .gif-editor .gif-col-3{ grid-column: span 3; }
+  .gif-editor .gif-col-6{ grid-column: span 6; }
+  .gif-editor .gif-col-12{ grid-column: span 12; }
+
+  /* ✅ SL line shown inside editor (mobile + desktop) */
+  .gif-edit-sl{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.86);
+    box-shadow: 0 10px 20px -18px rgba(15,23,42,.25);
+    margin-bottom: 10px;
+  }
+  .gif-edit-sl .gif-edit-sl-k{
+    font-weight: 950;
+    font-size: 12px;
+    color: rgba(15,23,42,.74);
+    white-space:nowrap;
+  }
+  .gif-edit-sl .gif-edit-sl-v{
+    font-weight: 950;
+    font-size: 12px;
+    color: #0b4d3a;
+  }
+
+  .gif-row-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:flex-start;
+    flex-wrap:wrap;
+  }
+  .gif-row-actions form{ margin:0; }
+
+  .gif-pager{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+    padding: 12px;
+    border-top: 1px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .gif-pager-left,
+  .gif-pager-right{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  /* ============================================================
+     ✅ MODAL
+     ============================================================ */
+  .gif-modal{
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15,23,42,.34);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 9999;
+    padding: 18px;
+  }
+  .gif-modal.on{ display:flex; }
+  .gif-modal-card{
+    width: min(520px, 94vw);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 22px 60px -40px rgba(15,23,42,.75);
+    border: 1px solid rgba(15,23,42,.16);
+  }
+  .gif-modal-head{
+    padding: 12px 14px;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    background:
+      radial-gradient(circle at 12% 30%, rgba(11,77,58,.18), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.94), rgba(255,255,255,.92));
+    border-bottom: 1px solid rgba(15,23,42,.10);
+  }
+  .gif-modal-dot{
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: #0b4d3a;
+    box-shadow: 0 0 0 5px rgba(16,185,129,.14);
+    flex: 0 0 auto;
+  }
+  .gif-modal-title{
+    margin:0;
+    font-size: 14px;
+    font-weight: 950;
+    letter-spacing: .2px;
+    color: #0b4d3a;
+  }
+  .gif-modal-body{
+    padding: 14px 14px 10px;
+    color: var(--ink);
+  }
+  .gif-modal-msg{
+    margin:0;
+    font-size: 14px;
+    font-weight: 850;
+    letter-spacing: .1px;
+    color: #0f172a;
+    line-height: 1.35;
+  }
+  .gif-modal-sub{
+    margin: 8px 0 0;
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(15,23,42,.70);
+  }
+  .gif-modal-actions{
+    padding: 10px 14px 14px;
+    display:flex;
+    justify-content:flex-end;
+    gap: 10px;
+  }
+  .gif-modal-btn{
+    min-width: 140px;
+    height: 44px;
+    border-radius: 14px;
+    font-weight: 950;
+    font-size: 14px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: #fff;
+    color: #0f172a;
+    cursor:pointer;
+    transition: transform .12s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .gif-modal-btn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .gif-modal-btn.confirm{
+    background: rgba(16,185,129,.16);
+    border-color: rgba(16,185,129,.35);
+    color: #0b4d3a;
+  }
+  .gif-modal-btn.danger{
+    background: rgba(220,38,38,.10);
+    border-color: rgba(220,38,38,.28);
+    color: rgba(153,27,27,1);
+  }
+
+  /* =========================
+     ✅ Mobile Swipe Cards (Table -> horizontal grid cards)
+     ========================= */
+  @media (max-width: 720px){
+    .gif-tablewrap{ overflow: hidden; }
+    table.gif-table{
+      min-width: 0;
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      display:block;
+    }
+    .gif-table thead{ display:none; }
+    .gif-table tbody{
+      display:flex;
+      gap: 12px;
+      overflow-x:auto;
+      padding: 12px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .gif-table tbody::-webkit-scrollbar{ height: 8px; }
+    .gif-table tbody::-webkit-scrollbar-thumb{
+      background: rgba(15,23,42,.18);
+      border-radius: 999px;
+    }
+
+    .gif-table tr.gif-row,
+    .gif-table tr.gif-editor-row{
+      display:block;
+      min-width: 84%;
+      max-width: 84%;
+      scroll-snap-align: start;
+      background: rgba(255,255,255,.96);
+      border: 1px solid rgba(15,23,42,.14);
+      border-radius: 16px;
+      box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+      overflow:hidden;
+    }
+
+    .gif-table tr.gif-row{
+      padding: 10px 12px;
+    }
+
+    .gif-table tr.gif-row td{
+      display:flex;
+      gap: 10px;
+      align-items:flex-start;
+      justify-content:space-between;
+      padding: 8px 0 !important;
+      border-bottom: 1px dashed rgba(15,23,42,.10);
+      white-space: normal;
+    }
+    .gif-table tr.gif-row td:last-child{ border-bottom:none; }
+
+    .gif-table tr.gif-row td::before{
+      content: attr(data-label);
+      font-weight: 950;
+      color: rgba(15,23,42,.72);
+      flex: 0 0 auto;
+      min-width: 110px;
+    }
+
+    /* action row */
+    .gif-table tr.gif-row td[data-label="Action"],
+    .gif-table tr.gif-row td[data-label="অ্যাকশন"]{
+      border-bottom:none;
+      padding-top: 10px !important;
+    }
+
+    /* ✅ FIX: Mobile actions STACK: Open / Edit / Delete (one below another) */
+    .gif-row-actions{
+      width: 100%;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: stretch;
+      justify-content: stretch;
+    }
+    .gif-row-actions > a,
+    .gif-row-actions > button,
+    .gif-row-actions > form{
+      width: 100%;
+      margin: 0;
+    }
+    .gif-row-actions > a.gif-btn,
+    .gif-row-actions > button.gif-btn{
+      width: 100%;
+      min-height: 44px;
+    }
+    .gif-row-actions > form .gif-btn{
+      width: 100%;
+      min-height: 44px;
+    }
+
+    /* editor row: keep as card */
+    .gif-table tr.gif-editor-row td{
+      padding: 0 !important;
+      border-bottom:none !important;
+    }
+
+    /* ✅ Mobile editor fields must STACK full width */
+    .gif-editor-grid{ gap: 10px; }
+    .gif-editor .gif-col-3,
+    .gif-editor .gif-col-6,
+    .gif-editor .gif-col-12{
+      grid-column: span 12 !important;
+    }
+    .gif-editor .gif-stack label{
+      white-space: normal;
+      line-height: 1.2;
+    }
+    .gif-table tr.gif-editor-row{
+      min-width: 92%;
+      max-width: 92%;
+    }
+
+    /* ✅ While editing on mobile: hide list view + toolbar + pager (only editor visible) */
+    .gif-wrap.gif-editing .gif-toolbar,
+    .gif-wrap.gif-editing .gif-pager{
+      display:none !important;
+    }
+    .gif-wrap.gif-editing .gif-table tbody{
+      overflow: hidden !important;
+      scroll-snap-type: none !important;
+    }
+  }
+
+  /* Responsive (existing) */
+  @media (max-width: 980px){
+    .gif-topfields{ grid-template-columns: 1fr; }
+    .gif-col-3, .gif-col-6{ grid-column: span 12; }
+    .gif-search{ min-width: 100%; }
+    .gif-search input{ width: 100%; }
+  }
+  @media (max-width: 720px){
+    .gif-back{ display:flex; }
+  }
+  @media (max-width: 420px){
+    .gif-head{ padding: 12px 12px 10px; }
+    .gif-topfields{ padding: 10px 12px 12px; }
+    .gif-body{ padding: 12px; }
+    .gif-modal-btn{ min-width: 120px; height: 42px; }
+  }
 </style>
 
-<div class="wrap">
-  <div class="hero">
-    <h1>Grants / Infrastructure Funds — {{ pg.pg_name or pg.name }}</h1>
-    <div style="margin-top:.35rem;color:#d1fae5;font-weight:800">Track fund source, release date, utilization, UC status, balance.</div>
-  </div>
+<div class="gif-wrap" id="gifWrap">
+  <div class="gif-sheet">
 
-  <div class="card">
-    <form method="POST" class="grid">
-      <div class="f" style="grid-column:span 3"><label>Category</label>
-        <select name="category">
-          <option>Infrastructure</option><option>Working Capital</option><option>Equipment</option><option>Training</option><option>Other</option>
-        </select>
+    <!-- Header -->
+    <div class="gif-head">
+      <div class="gif-head-row">
+        <div class="gif-leftslot">
+          <a class="gif-back" href="javascript:history.back()" aria-label="Go Back" id="gifBackAria">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                    stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </a>
+        </div>
+
+        <div class="gif-title-wrap">
+          <h2 class="gif-title" id="gifPageTitle" data-pg-name="{{ pg.pg_name or pg.name }}">
+            Grants / Infrastructure Funds — {{ pg.pg_name or pg.name }}
+          </h2>
+          <div class="gif-sub" id="gifPageSub">Track fund source, release date, utilization, UC status, balance.</div>
+        </div>
+
+        <div class="gif-rightslot" aria-hidden="true"></div>
       </div>
-      <div class="f" style="grid-column:span 3"><label>Source</label><input name="source" placeholder="Scheme / Agency"></div>
-      <div class="f" style="grid-column:span 3"><label>Release Date</label><input name="release_date" type="date"></div>
-      <div class="f" style="grid-column:span 3"><label>Amount Received</label><input name="amount_received" type="number" step="0.01"></div>
+    </div>
 
-      <div class="f" style="grid-column:span 3"><label>UC Status</label>
-        <select name="uc_status"><option value="pending">Pending</option><option value="submitted">Submitted</option><option value="approved">Approved</option></select>
+    <!-- Top fields -->
+    <div class="gif-topfields">
+      <div class="gif-field">
+        <div class="gif-label" id="gifLblProducerGroup">Producer Group</div>
+        <div class="gif-muted">{{ pg.pg_name or pg.name or '—' }}</div>
       </div>
-      <div class="f" style="grid-column:span 3"><label>UC Submitted Date</label><input name="uc_submitted_date" type="date"></div>
-      <div class="f" style="grid-column:span 6"><label>Notes</label><textarea name="notes"></textarea></div>
 
-      <div style="grid-column:span 12;display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn" type="submit">Add Grant</button>
-        <a class="btn btn2" href="{{ url_for('pg.pg_home') }}">Back</a>
+      <div class="gif-field">
+        <div class="gif-label" id="gifLblPage">Page</div>
+        <div class="gif-muted" id="gifLblPageValue">Grants & Infrastructure Funds</div>
       </div>
-    </form>
-  </div>
+    </div>
 
-  <div class="card">
-    <div style="font-weight:950;color:#065f46">Existing Grants</div>
-    <table>
-      <thead><tr><th>Category</th><th>Source</th><th>Release</th><th>Received</th><th>Utilized</th><th>Balance</th><th>UC</th><th></th></tr></thead>
-      <tbody>
-      {% for g in grants %}
-        <tr>
-          <td>{{ g.category }}</td>
-          <td>{{ g.source }}</td>
-          <td>{{ g.release_date or '' }}</td>
-          <td>₹{{ "{:,.2f}".format(g.amount_received or 0) }}</td>
-          <td>₹{{ "{:,.2f}".format(g.utilized_amount or 0) }}</td>
-          <td>₹{{ "{:,.2f}".format(g.balance_amount or 0) }}</td>
-          <td>{{ (g.uc_status or 'pending')|upper }}</td>
-          <td><a class="btn btn2" href="{{ url_for('finance.grant_view', grant_id=g._id) }}">Open</a></td>
-        </tr>
-      {% else %}
-        <tr><td colspan="8" style="color:#64748b">No grants yet.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
+    <div class="gif-body">
+
+      <!-- ============================================================
+           ✅ SECTION 1: Grant Details (ALWAYS editable)
+           ============================================================ -->
+      <div class="gif-card">
+        <div class="gif-card-head">
+          <h3 class="gif-card-title" id="gifCreateTitle">Grant Details</h3>
+          <p class="gif-card-sub" id="gifCreateSub" style="display:none;"></p>
+        </div>
+
+        <div class="gif-card-body">
+          <form method="POST" class="gif-grid" id="gifAddGrantForm">
+            <div class="gif-stack gif-col-3">
+              <label id="gifLblCategory">Category</label>
+              <select name="category" class="gif-select" id="gifSelCategory" data-add-field>
+                <option id="gifCatInfrastructure">Infrastructure</option>
+                <option id="gifCatWorkingCapital">Working Capital</option>
+                <option id="gifCatEquipment">Equipment</option>
+                <option id="gifCatTraining">Training</option>
+                <option id="gifCatOther">Other</option>
+              </select>
+            </div>
+
+            <div class="gif-stack gif-col-3">
+              <label id="gifLblSource">Source</label>
+              <input name="source" placeholder="Scheme / Agency" class="gif-input" id="gifPhSource" data-add-field>
+            </div>
+
+            <div class="gif-stack gif-col-3">
+              <label id="gifLblReleaseDate">Release Date</label>
+              <input name="release_date" type="date" class="gif-input" data-add-field>
+            </div>
+
+            <div class="gif-stack gif-col-3">
+              <label id="gifLblAmountReceived">Amount Received</label>
+              <input name="amount_received" type="number" step="0.01" class="gif-input" data-add-field>
+            </div>
+
+            <div class="gif-stack gif-col-3">
+              <label id="gifLblUcStatus">UC Status</label>
+              <select name="uc_status" class="gif-select" data-add-field>
+                <option value="pending" id="gifUcPending">Pending</option>
+                <option value="submitted" id="gifUcSubmitted">Submitted</option>
+                <option value="approved" id="gifUcApproved">Approved</option>
+              </select>
+            </div>
+
+            <div class="gif-stack gif-col-3">
+              <label id="gifLblUcSubmittedDate">UC Submitted Date</label>
+              <input name="uc_submitted_date" type="date" class="gif-input" data-add-field>
+            </div>
+
+            <div class="gif-stack gif-col-6">
+              <label id="gifLblNotes">Notes</label>
+              <textarea name="notes" class="gif-textarea" data-add-field></textarea>
+            </div>
+
+            <div class="gif-col-12 gif-actions">
+              <button class="gif-btn primary" type="submit" id="gifBtnAdd">
+                Add Grant
+              </button>
+
+              <!-- ✅ NEW: Clear button (does NOT submit, only resets form inputs) -->
+              <button class="gif-btn ghost" type="button" id="gifBtnClearAdd">
+                Clear
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           ✅ SECTION 2: Existing Grants (NO global edit mode)
+           ============================================================ -->
+      <div class="gif-card">
+        <div class="gif-card-head">
+          <h3 class="gif-card-title" id="gifExistingTitle">Existing Grants</h3>
+        </div>
+
+        <!-- Toolbar (Search + rows only) -->
+        <div class="gif-toolbar" id="gifToolbar">
+          <div class="gif-toolbar-left">
+            <div class="gif-search">
+              <input class="gif-input" type="text" id="gifSearchInput" placeholder="Search grants...">
+              <button class="gif-btn" type="button" id="gifSearchBtn">Search</button>
+            </div>
+            <span class="gif-pill" id="gifResultCount">Current Grants - 0</span>
+          </div>
+
+          <div class="gif-toolbar-right">
+            <label class="gif-label" id="gifLblPerPage" style="margin:0;">Rows</label>
+            <select class="gif-select" id="gifPerPage" style="width:auto;">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="gif-tablewrap">
+          <table class="gif-table" id="gifTable">
+            <thead>
+              <tr>
+                <th class="gif-sl" id="gifThSl">SL No</th>
+                <th id="gifThCategory">Category</th>
+                <th id="gifThSource">Source</th>
+                <th id="gifThRelease">Release</th>
+                <th id="gifThReceived">Received</th>
+                <th id="gifThUtilized">Utilized</th>
+                <th id="gifThBalance">Balance</th>
+                <th id="gifThUc">UC</th>
+                <th id="gifThAction">Action</th>
+              </tr>
+            </thead>
+
+            <tbody id="gifTbody">
+              {% for g in grants %}
+              <tr class="gif-row"
+                  data-id="{{ g._id }}"
+                  data-sl="{{ loop.index }}"
+                  data-category="{{ g.category }}"
+                  data-source="{{ g.source }}"
+                  data-release="{{ g.release_date or '' }}"
+                  data-received="{{ g.amount_received or 0 }}"
+                  data-uc="{{ g.uc_status or 'pending' }}"
+                  data-ucdate="{{ g.uc_submitted_date or '' }}"
+                  data-notes="{{ g.notes or '' }}">
+
+                <td class="gif-sl" data-label="SL No">{{ loop.index }}</td>
+                <td class="gif-cell-cat" data-label="Category">{{ g.category }}</td>
+                <td class="gif-cell-source" data-label="Source">{{ g.source }}</td>
+                <td class="gif-cell-release" data-label="Release">{{ g.release_date or '' }}</td>
+                <td data-label="Received">₹{{ "{:,.2f}".format(g.amount_received or 0) }}</td>
+                <td data-label="Utilized">₹{{ "{:,.2f}".format(g.utilized_amount or 0) }}</td>
+                <td data-label="Balance">₹{{ "{:,.2f}".format(g.balance_amount or 0) }}</td>
+                <td class="gif-cell-uc" data-label="UC">{{ (g.uc_status or 'pending')|upper }}</td>
+
+                <td data-label="Action">
+                  <div class="gif-row-actions">
+                    <a class="gif-btn" href="{{ url_for('finance.grant_view', grant_id=g._id) }}" data-open-btn>
+                      <span class="gifOpenText">Open</span>
+                    </a>
+
+                    <button class="gif-btn ghost" type="button" data-row-edit="{{ g._id }}">
+                      <span class="gifEditText">Edit</span>
+                    </button>
+
+                    <form method="POST"
+                          action="{{ url_for('finance.grant_view', grant_id=g._id) }}"
+                          data-row-delete-form>
+                      <input type="hidden" name="action" value="delete">
+                      <button class="gif-btn danger" type="submit" data-row-delete>
+                        <span class="gifDelText">Delete</span>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Inline editor row (opened by Edit button) -->
+              <tr class="gif-editor-row" data-editor-for="{{ g._id }}" style="display:none;">
+                <td colspan="9" style="padding:0;">
+                  <div class="gif-editor" id="gifEditor_{{ g._id }}">
+                    <form method="POST" action="{{ url_for('finance.grant_view', grant_id=g._id) }}" data-row-update-form>
+                      <input type="hidden" name="action" value="update">
+
+                      <!-- ✅ SL line inside editor -->
+                      <div class="gif-edit-sl" aria-label="Editing row">
+                        <div class="gif-edit-sl-k" id="gifEditSlK_{{ g._id }}">SL No</div>
+                        <div class="gif-edit-sl-v" id="gifEditSlV_{{ g._id }}">{{ loop.index }}</div>
+                      </div>
+
+                      <div class="gif-editor-grid">
+                        <div class="gif-stack gif-col-3">
+                          <label class="gifEditLblCategory">Category</label>
+                          <select name="category" class="gif-select" data-edit-category>
+                            <option>Infrastructure</option>
+                            <option>Working Capital</option>
+                            <option>Equipment</option>
+                            <option>Training</option>
+                            <option>Other</option>
+                          </select>
+                        </div>
+
+                        <div class="gif-stack gif-col-3">
+                          <label class="gifEditLblSource">Source</label>
+                          <input name="source" class="gif-input" data-edit-source>
+                        </div>
+
+                        <div class="gif-stack gif-col-3">
+                          <label class="gifEditLblRelease">Release Date</label>
+                          <input name="release_date" type="date" class="gif-input" data-edit-release>
+                        </div>
+
+                        <div class="gif-stack gif-col-3">
+                          <label class="gifEditLblReceived">Amount Received</label>
+                          <input name="amount_received" type="number" step="0.01" class="gif-input" data-edit-received>
+                        </div>
+
+                        <div class="gif-stack gif-col-3">
+                          <label class="gifEditLblUc">UC Status</label>
+                          <select name="uc_status" class="gif-select" data-edit-uc>
+                            <option value="pending">Pending</option>
+                            <option value="submitted">Submitted</option>
+                            <option value="approved">Approved</option>
+                          </select>
+                        </div>
+
+                        <div class="gif-stack gif-col-3">
+                          <label class="gifEditLblUcDate">UC Submitted Date</label>
+                          <input name="uc_submitted_date" type="date" class="gif-input" data-edit-ucdate>
+                        </div>
+
+                        <div class="gif-stack gif-col-6">
+                          <label class="gifEditLblNotes">Notes</label>
+                          <textarea name="notes" class="gif-textarea" data-edit-notes></textarea>
+                        </div>
+
+                        <div class="gif-col-12 gif-actions">
+                          <button class="gif-btn primary" type="submit" data-row-save>
+                            <span class="gifSaveText">Save</span>
+                          </button>
+                          <button class="gif-btn" type="button" data-row-cancel>
+                            <span class="gifCancelText">Cancel</span>
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="9" style="color:#64748b;font-size:12px" id="gifNoGrants">No grants yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination controls BELOW table -->
+        <div class="gif-pager" id="gifPager">
+          <div class="gif-pager-left">
+            <span class="gif-pill" id="gifPageInfo">Page 1</span>
+          </div>
+          <div class="gif-pager-right">
+            <button class="gif-btn" type="button" id="gifPrev">Prev</button>
+            <button class="gif-btn" type="button" id="gifNext">Next</button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
   </div>
 </div>
+
+<!-- ✅ Modal (reusable) -->
+<div class="gif-modal" id="gifModal" aria-hidden="true">
+  <div class="gif-modal-card" role="dialog" aria-modal="true" aria-labelledby="gifModalTitle">
+    <div class="gif-modal-head">
+      <div class="gif-modal-dot" aria-hidden="true"></div>
+      <h3 class="gif-modal-title" id="gifModalTitle">Confirm</h3>
+    </div>
+    <div class="gif-modal-body">
+      <p class="gif-modal-msg" id="gifModalMsg">Message</p>
+      <p class="gif-modal-sub" id="gifModalSub" style="display:none;">Sub</p>
+    </div>
+    <div class="gif-modal-actions">
+      <button class="gif-modal-btn" id="gifModalCancel">Cancel</button>
+      <button class="gif-modal-btn confirm" id="gifModalConfirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // GRANTS / INFRA FUNDS — TRANSLATION + SEARCH + PAGINATION
+  // ✅ Add Grant: confirmation on submit
+  // ✅ NO global table edit mode
+  // ✅ Each row: Edit opens inline editor
+  // ✅ Popups ONLY for per-row Save / Cancel
+  // ✅ Delete/Update use POST to existing finance.grant_view (action=delete/update)
+  // ✅ Mobile edit: only editor card shows; list hides until save/cancel
+  // ✅ SL No column added (web + mobile)
+  // ✅ Editor shows SL No line (mobile + desktop)
+  // ✅ Return to same row position after cancel/save/delete (no jump top)
+  // ✅ NEW: Clear button for Add Grant form (client-side reset only)
+  // ============================================================
+
+  (function(){
+    const T = {
+      en: {
+        docTitle: "Grants & Infrastructure Funds",
+        backAria: "Go Back",
+        pageTitlePrefix: "Grants / Infrastructure Funds — ",
+        pageSub: "Track fund source, release date, utilization, UC status, balance.",
+        producerGroup: "Producer Group",
+        page: "Page",
+        pageValue: "Grants & Infrastructure Funds",
+
+        grantDetailsTitle: "Grant Details",
+
+        category: "Category",
+        source: "Source",
+        releaseDate: "Release Date",
+        amountReceived: "Amount Received",
+        ucStatus: "UC Status",
+        ucSubmittedDate: "UC Submitted Date",
+        notes: "Notes",
+
+        catInfrastructure: "Infrastructure",
+        catWorkingCapital: "Working Capital",
+        catEquipment: "Equipment",
+        catTraining: "Training",
+        catOther: "Other",
+
+        ucPending: "Pending",
+        ucSubmitted: "Submitted",
+        ucApproved: "Approved",
+
+        addGrant: "Add Grant",
+        clearAdd: "Clear",
+
+        existingTitle: "Existing Grants",
+        thSl: "SL No",
+        thCategory: "Category",
+        thSource: "Source",
+        thRelease: "Release",
+        thReceived: "Received",
+        thUtilized: "Utilized",
+        thBalance: "Balance",
+        thUc: "UC",
+        thAction: "Action",
+
+        open: "Open",
+        edit: "Edit",
+        delete: "Delete",
+        save: "Save",
+        cancel: "Cancel",
+
+        searchPh: "Search grants...",
+        searchBtn: "Search",
+        rows: "Rows",
+        pageInfo: "Page",
+        noGrants: "No grants yet.",
+
+        currentGrantsPrefix: "Current Grants - ",
+
+        // Popups (row-only)
+        modalSaveTitle: "Confirm Save",
+        modalSaveMsg: "Do you want to save changes for this grant?",
+        modalCancelTitle: "Cancel Editing?",
+        modalCancelMsg: "Do you want to cancel editing? Unsaved changes will be lost.",
+
+        modalDeleteTitle: "Confirm Delete",
+        modalDeleteOneMsg: "Do you want to delete this grant? This cannot be undone.",
+
+        modalAddTitle: "Confirm Add Grant",
+        modalAddMsg: "Do you want to add this grant now?",
+
+        modalCancel: "Cancel",
+        modalConfirm: "Confirm",
+
+        lblAction: "Action",
+        editSlKey: "SL No"
+      },
+      bn: {
+        docTitle: "অনুদান ও অবকাঠামো তহবিল",
+        backAria: "ফিরে যান",
+        pageTitlePrefix: "অনুদান / অবকাঠামো তহবিল — ",
+        pageSub: "তহবিলের উৎস, রিলিজ তারিখ, ব্যবহার, UC অবস্থা ও ব্যালেন্স ট্র্যাক করুন।",
+        producerGroup: "প্রডিউসার গ্রুপ",
+        page: "পৃষ্ঠা",
+        pageValue: "অনুদান ও অবকাঠামো তহবিল",
+
+        grantDetailsTitle: "অনুদানের বিস্তারিত",
+
+        category: "বিভাগ",
+        source: "উৎস",
+        releaseDate: "রিলিজ তারিখ",
+        amountReceived: "প্রাপ্ত অর্থ",
+        ucStatus: "UC অবস্থা",
+        ucSubmittedDate: "UC জমা দেওয়ার তারিখ",
+        notes: "নোট",
+
+        catInfrastructure: "অবকাঠামো",
+        catWorkingCapital: "কার্যকরী মূলধন",
+        catEquipment: "সরঞ্জাম",
+        catTraining: "প্রশিক্ষণ",
+        catOther: "অন্যান্য",
+
+        ucPending: "বাকি",
+        ucSubmitted: "জমা হয়েছে",
+        ucApproved: "অনুমোদিত",
+
+        addGrant: "অনুদান যোগ করুন",
+        clearAdd: "ক্লিয়ার",
+
+        existingTitle: "বিদ্যমান অনুদান",
+        thSl: "ক্রমিক নং",
+        thCategory: "বিভাগ",
+        thSource: "উৎস",
+        thRelease: "রিলিজ",
+        thReceived: "প্রাপ্ত",
+        thUtilized: "ব্যবহৃত",
+        thBalance: "ব্যালেন্স",
+        thUc: "UC",
+        thAction: "অ্যাকশন",
+
+        open: "খুলুন",
+        edit: "এডিট",
+        delete: "ডিলিট",
+        save: "সেভ",
+        cancel: "বাতিল",
+
+        searchPh: "অনুদান খুঁজুন...",
+        searchBtn: "খুঁজুন",
+        rows: "রো",
+        pageInfo: "পৃষ্ঠা",
+        noGrants: "এখনও কোনো অনুদান নেই।",
+
+        currentGrantsPrefix: "বর্তমান অনুদান - ",
+
+        // Popups (row-only)
+        modalSaveTitle: "সেভ নিশ্চিত করুন",
+        modalSaveMsg: "এই অনুদানের পরিবর্তনগুলো সেভ করবেন?",
+        modalCancelTitle: "এডিট বাতিল?",
+        modalCancelMsg: "এডিট বাতিল করলে অসেভ পরিবর্তন হারাবে।",
+
+        modalDeleteTitle: "ডিলিট নিশ্চিত করুন",
+        modalDeleteOneMsg: "এই অনুদানটি ডিলিট করবেন? এটি ফিরিয়ে আনা যাবে না।",
+
+        modalAddTitle: "অনুদান যোগ নিশ্চিত করুন",
+        modalAddMsg: "আপনি কি এখন এই অনুদানটি যোগ করবেন?",
+
+        modalCancel: "ক্যান্সেল",
+        modalConfirm: "কনফার্ম",
+
+        lblAction: "অ্যাকশন",
+        editSlKey: "ক্রমিক নং"
+      }
+    };
+
+    // ---------- Language ----------
+    function safeText(id, val){
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    }
+    function getStoredLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      try{
+        const l3 = document.documentElement.getAttribute('data-lang');
+        if(l3 === 'en' || l3 === 'bn') return l3;
+      }catch(_){}
+      return 'en';
+    }
+
+    function applyLang(lang){
+      const t = T[lang] || T.en;
+
+      try { document.title = t.docTitle; } catch(_){}
+
+      const back = document.querySelector('.gif-back');
+      if(back) back.setAttribute('aria-label', t.backAria);
+
+      const pgName = document.getElementById('gifPageTitle')?.getAttribute('data-pg-name') || '';
+      safeText('gifPageTitle', (t.pageTitlePrefix || "") + pgName);
+
+      safeText('gifPageSub', t.pageSub);
+      safeText('gifLblProducerGroup', t.producerGroup);
+      safeText('gifLblPage', t.page);
+      safeText('gifLblPageValue', t.pageValue);
+
+      // ✅ "Grant Details" only
+      safeText('gifCreateTitle', t.grantDetailsTitle);
+      const sub = document.getElementById('gifCreateSub');
+      if(sub){
+        sub.textContent = "";
+        sub.style.display = "none";
+      }
+
+      safeText('gifLblCategory', t.category);
+      safeText('gifLblSource', t.source);
+      safeText('gifLblReleaseDate', t.releaseDate);
+      safeText('gifLblAmountReceived', t.amountReceived);
+      safeText('gifLblUcStatus', t.ucStatus);
+      safeText('gifLblUcSubmittedDate', t.ucSubmittedDate);
+      safeText('gifLblNotes', t.notes);
+
+      safeText('gifCatInfrastructure', t.catInfrastructure);
+      safeText('gifCatWorkingCapital', t.catWorkingCapital);
+      safeText('gifCatEquipment', t.catEquipment);
+      safeText('gifCatTraining', t.catTraining);
+      safeText('gifCatOther', t.catOther);
+
+      safeText('gifUcPending', t.ucPending);
+      safeText('gifUcSubmitted', t.ucSubmitted);
+      safeText('gifUcApproved', t.ucApproved);
+
+      const addBtn = document.getElementById('gifBtnAdd');
+      if(addBtn) addBtn.textContent = t.addGrant;
+
+      const clrBtn = document.getElementById('gifBtnClearAdd');
+      if(clrBtn) clrBtn.textContent = t.clearAdd;
+
+      safeText('gifExistingTitle', t.existingTitle);
+
+      safeText('gifThSl', t.thSl);
+      safeText('gifThCategory', t.thCategory);
+      safeText('gifThSource', t.thSource);
+      safeText('gifThRelease', t.thRelease);
+      safeText('gifThReceived', t.thReceived);
+      safeText('gifThUtilized', t.thUtilized);
+      safeText('gifThBalance', t.thBalance);
+      safeText('gifThUc', t.thUc);
+      safeText('gifThAction', t.thAction);
+
+      // Update mobile data-labels as well
+      document.querySelectorAll('tr.gif-row td[data-label]').forEach(td=>{
+        const dl = td.getAttribute('data-label');
+        if(!dl) return;
+        const map = {
+          "SL No": t.thSl,
+          "Category": t.thCategory,
+          "Source": t.thSource,
+          "Release": t.thRelease,
+          "Received": t.thReceived,
+          "Utilized": t.thUtilized,
+          "Balance": t.thBalance,
+          "UC": t.thUc,
+          "Action": t.lblAction,
+          "অ্যাকশন": t.lblAction
+        };
+        if(map[dl]) td.setAttribute('data-label', map[dl]);
+      });
+
+      // ✅ Update editor SL key text (all editors)
+      document.querySelectorAll('[id^="gifEditSlK_"]').forEach(el=>{
+        el.textContent = t.editSlKey;
+      });
+
+      document.querySelectorAll('.gifOpenText').forEach(el => el.textContent = t.open);
+      document.querySelectorAll('.gifEditText').forEach(el => el.textContent = t.edit);
+      document.querySelectorAll('.gifDelText').forEach(el => el.textContent = t.delete);
+      document.querySelectorAll('.gifSaveText').forEach(el => el.textContent = t.save);
+      document.querySelectorAll('.gifCancelText').forEach(el => el.textContent = t.cancel);
+
+      const si = document.getElementById('gifSearchInput');
+      if(si) si.placeholder = t.searchPh;
+      safeText('gifSearchBtn', t.searchBtn);
+      safeText('gifLblPerPage', t.rows);
+
+      window.__GIF_T = t;
+      window.__GIF_PAGE_LABEL = (lang === 'bn') ? 'পৃষ্ঠা' : 'Page';
+    }
+
+    window.updatePageLanguage = function(lang){
+      if(lang !== 'en' && lang !== 'bn') lang = getStoredLang();
+      applyLang(lang);
+    };
+
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyLang(lang);
+    });
+    window.addEventListener('pgmis:lang', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyLang(lang);
+    });
+
+    // ---------- Modal ----------
+    const modal = {
+      el: null, title: null, msg: null, sub: null, cancel: null, confirm: null,
+      onConfirm: null, onCancel: null,
+      open({title, msg, sub, confirmText, cancelText, confirmClass}){
+        const t = window.__GIF_T || T.en;
+        this.el.classList.add('on');
+        this.el.setAttribute('aria-hidden','false');
+        this.title.textContent = title || 'Confirm';
+        this.msg.textContent = msg || '';
+        if(sub){
+          this.sub.style.display = '';
+          this.sub.textContent = sub;
+        }else{
+          this.sub.style.display = 'none';
+          this.sub.textContent = '';
+        }
+        this.cancel.textContent = cancelText || t.modalCancel || 'Cancel';
+        this.confirm.textContent = confirmText || t.modalConfirm || 'Confirm';
+        this.confirm.classList.remove('danger');
+        this.confirm.classList.add('confirm');
+        if(confirmClass === 'danger'){
+          this.confirm.classList.remove('confirm');
+          this.confirm.classList.add('danger');
+        }
+      },
+      close(){
+        this.el.classList.remove('on');
+        this.el.setAttribute('aria-hidden','true');
+        this.onConfirm = null;
+        this.onCancel = null;
+      }
+    };
+
+    // ---------- Search + Pagination ----------
+    let currentPage = 1;
+    let perPage = 10;
+    let query = "";
+
+    // ✅ Mobile edit mode (only editor visible)
+    let mobileEditingId = null;
+
+    // ✅ Remember row anchor (works for web + mobile, survives reload)
+    const ANCHOR_KEY = "gif_grants_anchor";
+    function setAnchor(id){
+      try{
+        sessionStorage.setItem(ANCHOR_KEY, JSON.stringify({
+          id: String(id || ""),
+          ts: Date.now()
+        }));
+      }catch(_){}
+    }
+    function getAnchor(){
+      try{
+        const raw = sessionStorage.getItem(ANCHOR_KEY);
+        if(!raw) return null;
+        const data = JSON.parse(raw);
+        if(!data || !data.id) return null;
+        if(data.ts && (Date.now() - data.ts > 10*60*1000)) return null;
+        return String(data.id);
+      }catch(_){ return null; }
+    }
+
+    function isMobile(){
+      return window.matchMedia && window.matchMedia('(max-width: 720px)').matches;
+    }
+
+    function rows(){
+      return Array.from(document.querySelectorAll('#gifTbody tr.gif-row'));
+    }
+    function editorRowFor(id){
+      return document.querySelector(`.gif-editor-row[data-editor-for="${id}"]`);
+    }
+
+    function normalize(s){
+      return (s || "").toString().toLowerCase().trim();
+    }
+
+    function rowMatches(tr, q){
+      if(!q) return true;
+      const hay = [
+        tr.dataset.sl,
+        tr.dataset.category,
+        tr.dataset.source,
+        tr.dataset.release,
+        tr.dataset.uc,
+        tr.dataset.ucdate,
+        tr.dataset.notes
+      ].map(normalize).join(" | ");
+      return hay.includes(q);
+    }
+
+    function visibleRows(){
+      const q = normalize(query);
+      return rows().filter(r => rowMatches(r, q));
+    }
+
+    function exitMobileEditMode(){
+      mobileEditingId = null;
+      const wrap = document.getElementById('gifWrap');
+      if(wrap) wrap.classList.remove('gif-editing');
+    }
+
+    function closeAllEditors(){
+      document.querySelectorAll('.gif-editor-row').forEach(er => er.style.display = 'none');
+      document.querySelectorAll('.gif-editor').forEach(ed => ed.classList.remove('on'));
+      exitMobileEditMode();
+    }
+
+    function scrollToRowId(id){
+      if(!id) return;
+      const tr = document.querySelector(`tr.gif-row[data-id="${id}"]`);
+      if(!tr) return;
+      try{
+        tr.scrollIntoView({behavior:'smooth', block:'center', inline:'nearest'});
+      }catch(_){
+        try{ tr.scrollIntoView(); }catch(__){}
+      }
+    }
+
+    function render(){
+      const all = rows();
+      const vis = visibleRows();
+
+      if(isMobile() && mobileEditingId){
+        all.forEach(r => { r.style.display = "none"; });
+        document.querySelectorAll('.gif-editor-row').forEach(er => er.style.display = 'none');
+
+        const er = editorRowFor(mobileEditingId);
+        if(er) er.style.display = "";
+        const editor = document.getElementById(`gifEditor_${mobileEditingId}`);
+        if(editor) editor.classList.add('on');
+
+        const total = vis.length;
+        const t = window.__GIF_T || T.en;
+        const count = document.getElementById('gifResultCount');
+        if(count) count.textContent = `${t.currentGrantsPrefix}${total}`;
+
+        return;
+      }
+
+      all.forEach(r=>{
+        r.style.display = "none";
+        const er = editorRowFor(r.dataset.id);
+        if(er){ er.style.display = "none"; }
+      });
+
+      const total = vis.length;
+      const maxPage = Math.max(1, Math.ceil(total / perPage));
+      if(currentPage > maxPage) currentPage = maxPage;
+      if(currentPage < 1) currentPage = 1;
+
+      const start = (currentPage - 1) * perPage;
+      const end = start + perPage;
+      const pageRows = vis.slice(start, end);
+
+      pageRows.forEach(r => { r.style.display = ""; });
+
+      const t = window.__GIF_T || T.en;
+      const count = document.getElementById('gifResultCount');
+      if(count) count.textContent = `${t.currentGrantsPrefix}${total}`;
+
+      const pi = document.getElementById('gifPageInfo');
+      if(pi) pi.textContent = `${(window.__GIF_PAGE_LABEL || "Page")} ${currentPage} / ${maxPage}`;
+
+      const prev = document.getElementById('gifPrev');
+      const next = document.getElementById('gifNext');
+      if(prev) prev.disabled = (currentPage <= 1);
+      if(next) next.disabled = (currentPage >= maxPage);
+    }
+
+    function openEditor(tr){
+      const id = tr.dataset.id;
+      const er = editorRowFor(id);
+      if(!er) return;
+
+      setAnchor(id);
+
+      document.querySelectorAll('.gif-editor-row').forEach(x=>{
+        if(x !== er) x.style.display = 'none';
+      });
+      document.querySelectorAll('.gif-editor').forEach(x=>{
+        if(x.id !== `gifEditor_${id}`) x.classList.remove('on');
+      });
+
+      const editor = document.getElementById(`gifEditor_${id}`);
+      if(!editor) return;
+
+      const cat = editor.querySelector('[data-edit-category]');
+      const src = editor.querySelector('[data-edit-source]');
+      const rel = editor.querySelector('[data-edit-release]');
+      const rec = editor.querySelector('[data-edit-received]');
+      const uc  = editor.querySelector('[data-edit-uc]');
+      const ucd = editor.querySelector('[data-edit-ucdate]');
+      const note= editor.querySelector('[data-edit-notes]');
+
+      if(cat) cat.value = (tr.dataset.category || "Infrastructure");
+      if(src) src.value = (tr.dataset.source || "");
+      if(rel) rel.value = (tr.dataset.release || "");
+      if(rec) rec.value = (tr.dataset.received || "");
+      if(uc)  uc.value  = (tr.dataset.uc || "pending");
+      if(ucd) ucd.value = (tr.dataset.ucdate || "");
+      if(note)note.value= (tr.dataset.notes || "");
+
+      if(isMobile()){
+        mobileEditingId = id;
+        const wrap = document.getElementById('gifWrap');
+        if(wrap) wrap.classList.add('gif-editing');
+        render();
+        try{ er.scrollIntoView({behavior:'smooth', block:'start'}); }catch(_){}
+        return;
+      }
+
+      er.style.display = "";
+      editor.classList.add('on');
+      try{ er.scrollIntoView({behavior:'smooth', block:'nearest'}); }catch(_){}
+    }
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      applyLang(getStoredLang());
+
+      // modal init
+      modal.el = document.getElementById('gifModal');
+      modal.title = document.getElementById('gifModalTitle');
+      modal.msg = document.getElementById('gifModalMsg');
+      modal.sub = document.getElementById('gifModalSub');
+      modal.cancel = document.getElementById('gifModalCancel');
+      modal.confirm = document.getElementById('gifModalConfirm');
+
+      modal.cancel.addEventListener('click', ()=>{
+        if(modal.onCancel) try{ modal.onCancel(); }catch(_){}
+        modal.close();
+      });
+      modal.confirm.addEventListener('click', ()=>{
+        if(modal.onConfirm) try{ modal.onConfirm(); }catch(_){}
+        modal.close();
+      });
+      modal.el.addEventListener('click', (e)=>{
+        if(e.target === modal.el){
+          modal.close();
+        }
+      });
+
+      // ✅ Restore anchor after reload (Save/Delete triggers reload)
+      const anchorId = getAnchor();
+      if(anchorId){
+        setTimeout(()=>{
+          render();
+          setTimeout(()=>{ scrollToRowId(anchorId); }, 80);
+        }, 50);
+      }
+
+      // Search
+      const si = document.getElementById('gifSearchInput');
+      const sb = document.getElementById('gifSearchBtn');
+      if(si){
+        si.addEventListener('input', ()=>{
+          query = si.value || "";
+          currentPage = 1;
+          closeAllEditors();
+          render();
+        });
+      }
+      if(sb){
+        sb.addEventListener('click', ()=>{
+          query = (si && si.value) ? si.value : "";
+          currentPage = 1;
+          closeAllEditors();
+          render();
+        });
+      }
+
+      // Per page
+      const pp = document.getElementById('gifPerPage');
+      if(pp){
+        pp.addEventListener('change', ()=>{
+          perPage = parseInt(pp.value || "10", 10) || 10;
+          currentPage = 1;
+          closeAllEditors();
+          render();
+        });
+      }
+
+      // Prev/Next
+      const prev = document.getElementById('gifPrev');
+      const next = document.getElementById('gifNext');
+      if(prev) prev.addEventListener('click', ()=>{ currentPage--; closeAllEditors(); render(); });
+      if(next) next.addEventListener('click', ()=>{ currentPage++; closeAllEditors(); render(); });
+
+      // ✅ Add Grant confirmation (unchanged)
+      const addForm = document.getElementById('gifAddGrantForm');
+      if(addForm){
+        addForm.addEventListener('submit', (ev)=>{
+          ev.preventDefault();
+          ev.stopPropagation();
+
+          const t = window.__GIF_T || T.en;
+          modal.open({
+            title: t.modalAddTitle,
+            msg: t.modalAddMsg,
+            confirmText: t.modalConfirm,
+            cancelText: t.modalCancel,
+            confirmClass: 'confirm'
+          });
+          modal.onConfirm = ()=>{
+            addForm.submit();
+          };
+        });
+      }
+
+      // ✅ NEW: Clear Add Grant form (client-side reset only)
+      const clearBtn = document.getElementById('gifBtnClearAdd');
+      if(addForm && clearBtn){
+        clearBtn.addEventListener('click', ()=>{
+          addForm.reset(); // resets all fields to defaults (selects back to first option)
+          const first = addForm.querySelector('[data-add-field]');
+          if(first) first.focus();
+        });
+      }
+
+      // ✅ Row Edit button opens editor
+      document.addEventListener('click', (ev)=>{
+        const btn = ev.target.closest('[data-row-edit]');
+        if(!btn) return;
+
+        const id = btn.getAttribute('data-row-edit');
+        const tr = document.querySelector(`tr.gif-row[data-id="${id}"]`);
+        if(!tr) return;
+
+        openEditor(tr);
+      });
+
+      // ✅ Row Cancel (inline editor) — POPUP ONLY HERE
+      document.addEventListener('click', (ev)=>{
+        const btn = ev.target.closest('[data-row-cancel]');
+        if(!btn) return;
+
+        const t = window.__GIF_T || T.en;
+        const er = btn.closest('.gif-editor-row');
+        const editorId = er?.getAttribute('data-editor-for') || null;
+
+        modal.open({
+          title: t.modalCancelTitle,
+          msg: t.modalCancelMsg,
+          confirmText: t.modalConfirm,
+          cancelText: t.modalCancel,
+          confirmClass: 'confirm'
+        });
+
+        modal.onConfirm = ()=>{
+          if(er){
+            er.style.display = 'none';
+            const editor = er.querySelector('.gif-editor');
+            if(editor) editor.classList.remove('on');
+          }
+
+          exitMobileEditMode();
+          render();
+
+          if(editorId){
+            setTimeout(()=>{ scrollToRowId(editorId); }, 60);
+          }
+        };
+      });
+
+      // ✅ Row Save (submit) — POPUP ONLY HERE
+      document.addEventListener('submit', (ev)=>{
+        const upForm = ev.target.closest('[data-row-update-form]');
+        if(!upForm) return;
+
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        const er = upForm.closest('.gif-editor-row');
+        const editorId = er?.getAttribute('data-editor-for') || null;
+        if(editorId) setAnchor(editorId);
+
+        const t = window.__GIF_T || T.en;
+        modal.open({
+          title: t.modalSaveTitle,
+          msg: t.modalSaveMsg,
+          confirmText: t.modalConfirm,
+          cancelText: t.modalCancel,
+          confirmClass: 'confirm'
+        });
+
+        modal.onConfirm = ()=>{
+          upForm.submit();
+        };
+      });
+
+      // ✅ Single delete: confirm
+      document.addEventListener('submit', (ev)=>{
+        const delForm = ev.target.closest('[data-row-delete-form]');
+        if(!delForm) return;
+
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        const row = delForm.closest('tr.gif-row');
+        const rowId = row?.getAttribute('data-id') || null;
+        if(rowId) setAnchor(rowId);
+
+        const t = window.__GIF_T || T.en;
+        modal.open({
+          title: t.modalDeleteTitle,
+          msg: t.modalDeleteOneMsg,
+          confirmText: t.modalConfirm,
+          cancelText: t.modalCancel,
+          confirmClass: 'danger'
+        });
+        modal.onConfirm = ()=>{
+          delForm.submit();
+        };
+      });
+
+      render();
+    });
+  })();
+</script>
+
 {% endblock %}

@@ -1,147 +1,874 @@
 {% extends "base.html" %}
 {% block title %}Monthly Business{% endblock %}
 {% block content %}
-<div class="max-w-5xl mx-auto px-4 py-6">
-  <div class="flex flex-wrap items-end justify-between gap-3">
-    <div>
-      <h1 class="text-2xl font-semibold text-slate-900">Monthly Business (Manual 6.1 + 6.2)</h1>
-      <p class="text-slate-600 text-sm mt-1">
-        PG: <span class="font-medium">{{ pg.name or pg.pg_name or '—' }}</span>
-      </p>
+
+<style>
+  /* ============================================================
+     MONTHLY BUSINESS (Manual 6.1 + 6.2) — RESKIN (LEDGER BOOK LOOK)
+     ✅ ONLY UI/CSS/UX changed
+     ✅ ALL data contents + form fields + names kept as-is
+     ✅ Back button INSIDE header line (top-left) — ONLY mobile/tablet/app
+     ✅ Scoped under .mb-wrap only (no global body/* rules)
+     ✅ Fixed mobile overlap in 6.1 / 6.2 fields
+     ✅ Improved mobile responsiveness + cleaner stacked layout
+     ============================================================ */
+
+  .mb-wrap{
+    width: 100%;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    color: var(--ink);
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .mb-wrap *{ box-sizing:border-box; }
+
+  .mb-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+    position: relative;
+  }
+
+  /* Header */
+  .mb-head{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+    position: relative;
+  }
+  .mb-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: .2px;
+    line-height: 1.25;
+    color: var(--ink);
+  }
+
+  /* Back (mobile only) */
+  .mb-back{
+    display:none;
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: rgba(11,77,58,.98);
+    user-select: none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    z-index: 2;
+  }
+  .mb-back:hover{
+    transform: translateX(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .mb-back:active{ transform: scale(.98); }
+  .mb-back svg{ width: 18px; height: 18px; display:block; }
+
+  /* Top fields */
+  .mb-topfields{
+    padding: 12px 16px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .mb-field{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .mb-label{
+    font-weight: 900;
+    font-size: 12px;
+    color: var(--ink);
+    line-height: 1.25;
+  }
+  .mb-muted{
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(15,23,42,.72);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1 1 auto;
+  }
+
+  /* Inputs */
+  .mb-input,
+  .mb-textarea{
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 14px;
+    padding: 10px 12px;
+    background: rgba(247,250,249,.75);
+    font-weight: 800;
+    font-size: 12px;
+    line-height: 1.35;
+    outline: none;
+    color: var(--ink);
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .mb-input:focus,
+  .mb-textarea:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+  .mb-input[readonly]{
+    background: rgba(248,250,252,.88);
+    border-color: rgba(15,23,42,.12);
+  }
+  .mb-textarea{
+    min-height: 110px;
+    resize: vertical;
+  }
+
+  /* Actions bar */
+  .mb-actions-bar{
+    padding: 12px 16px;
+    display:flex;
+    align-items:flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.94);
+    flex-wrap: wrap;
+  }
+  .mb-actions-left{
+    display:flex;
+    align-items:flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .mb-actions-right{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-left:auto;
+  }
+
+  .mb-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+    text-decoration:none;
+    min-height: 42px;
+  }
+  .mb-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .mb-btn:disabled{
+    opacity: .45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .mb-btn.mb-primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .mb-btn.mb-primary:hover{ background: rgba(16,185,129,.16); }
+
+  .mb-icon{ width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* Form sections */
+  .mb-form{
+    padding: 12px 16px 14px;
+    background: rgba(255,255,255,.96);
+  }
+
+  .mb-block{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 16px;
+    background: rgba(255,255,255,.92);
+    overflow: hidden;
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+  }
+  .mb-block + .mb-block{ margin-top: 12px; }
+
+  .mb-block-head{
+    padding: 14px 14px 12px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(247,250,249,.66);
+  }
+  .mb-block-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 13px;
+    letter-spacing: .15px;
+    line-height: 1.35;
+    color: var(--ink);
+    word-break: break-word;
+  }
+  .mb-block-sub{
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: rgba(15,23,42,.62);
+    font-weight: 750;
+    line-height: 1.45;
+  }
+  .mb-block-body{
+    padding: 14px;
+  }
+
+  .mb-grid{
+    display:grid;
+    grid-template-columns: repeat(12, minmax(0,1fr));
+    gap: 12px 14px;
+    align-items: start;
+  }
+  .col-3{ grid-column: span 3; }
+  .col-4{ grid-column: span 4; }
+  .col-6{ grid-column: span 6; }
+  .col-12{ grid-column: span 12; }
+
+  .mb-stack{
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+  }
+  .mb-stack .mb-label{
+    font-size: 12px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* KPI summary pills */
+  .mb-summary{
+    padding: 10px 16px;
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    border-top: 1.5px solid var(--line2);
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(247,250,249,.72);
+  }
+  .mb-kpi{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 999px;
+    background: rgba(255,255,255,.86);
+    font-weight: 950;
+    font-size: 12px;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+    line-height: 1.3;
+  }
+  .mb-kpi b{
+    font-variant-numeric: tabular-nums;
+    word-break: break-word;
+  }
+
+  .mb-foot{
+    padding: 12px 16px 16px;
+    border-top: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.96);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .mb-note{
+    font-size: 12px;
+    color: rgba(15,23,42,.62);
+    font-weight: 750;
+    line-height: 1.45;
+    flex: 1 1 320px;
+    min-width: 0;
+  }
+
+  /* Tablet */
+  @media (max-width: 900px){
+    .mb-wrap{
+      padding: 12px;
+    }
+    .mb-topfields{
+      grid-template-columns: 1fr;
+    }
+    .mb-summary{
+      justify-content: flex-start;
+    }
+  }
+
+  /* Mobile / app */
+  @media (max-width: 720px){
+    .mb-wrap{
+      padding: 10px;
+    }
+
+    .mb-back{ display:flex; }
+
+    .mb-head{
+      padding: 14px 14px 12px;
+    }
+    .mb-title{
+      text-align: left;
+      padding-left: 52px;
+      padding-right: 8px;
+      font-size: 16px;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+    }
+
+    .mb-topfields{
+      padding: 12px 14px;
+      gap: 10px;
+    }
+    .mb-field{
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    .mb-muted{
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+      width: 100%;
+    }
+
+    .mb-actions-bar{
+      padding: 12px 14px;
+    }
+    .mb-actions-left{
+      display:grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      width: 100%;
+      align-items:end;
+    }
+    .mb-actions-left .mb-stack{
+      min-width: 0 !important;
+    }
+    .mb-actions-left .mb-btn{
+      width: 100%;
+      align-self: stretch;
+    }
+
+    .mb-summary{
+      padding: 12px 14px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .mb-kpi{
+      width: 100%;
+      border-radius: 16px;
+      padding: 10px 12px;
+    }
+
+    .mb-form{
+      padding: 12px 14px 14px;
+    }
+    .mb-block{
+      border-radius: 16px;
+    }
+    .mb-block-head{
+      padding: 14px 12px 12px;
+    }
+    .mb-block-body{
+      padding: 12px;
+    }
+
+    .mb-grid{
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .col-3,
+    .col-4,
+    .col-6,
+    .col-12{
+      grid-column: 1 / -1 !important;
+    }
+
+    .mb-stack{
+      min-width: 0;
+    }
+    .mb-stack .mb-label{
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .mb-input,
+    .mb-textarea{
+      font-size: 12px;
+      padding: 11px 12px;
+    }
+
+    .mb-foot{
+      padding: 12px 14px 14px;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .mb-note{
+      flex: none;
+    }
+    .mb-foot .mb-btn{
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 520px){
+    .mb-actions-left{
+      grid-template-columns: 1fr;
+    }
+
+    .mb-title{
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    .mb-block-title{
+      font-size: 12.5px;
+    }
+
+    .mb-kpi{
+      font-size: 11.5px;
+    }
+  }
+</style>
+
+<div class="mb-wrap">
+  <div class="mb-sheet">
+
+    <!-- Header -->
+    <div class="mb-head">
+      <!-- Mobile/tablet back -->
+      <a class="mb-back" href="javascript:history.back()" aria-label="Go Back" id="mbBackAria">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <h2 class="mb-title" id="mbPageTitle">Monthly Business (Manual 6.1 + 6.2)</h2>
     </div>
 
-    <form method="get" class="flex items-end gap-2">
-      <div>
-        <label class="block text-xs text-slate-600 mb-1">Year</label>
-        <input name="year" value="{{ year }}" class="w-28 rounded-xl border border-slate-200 px-3 py-2 bg-white"/>
+    <!-- Top fields -->
+    <div class="mb-topfields">
+      <div class="mb-field">
+        <div class="mb-label" id="mbLblProducerGroup">Producer Group :</div>
+        <div class="mb-muted">{{ pg.name or pg.pg_name or '—' }}</div>
       </div>
-      <div>
-        <label class="block text-xs text-slate-600 mb-1">Month</label>
-        <input name="month" value="{{ month }}" class="w-20 rounded-xl border border-slate-200 px-3 py-2 bg-white"/>
+    </div>
+
+    <!-- Actions bar (Year/Month filter as in your original GET form) -->
+    <div class="mb-actions-bar">
+      <form method="get" class="mb-actions-left">
+        <div class="mb-stack" style="min-width:120px;">
+          <label class="mb-label" id="mbLblYear">Year</label>
+          <input name="year" value="{{ year }}" class="mb-input" />
+        </div>
+
+        <div class="mb-stack" style="min-width:96px;">
+          <label class="mb-label" id="mbLblMonth">Month</label>
+          <input name="month" value="{{ month }}" class="mb-input" />
+        </div>
+
+        <button class="mb-btn" type="submit" id="mbBtnGo">
+          <svg class="mb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 21l-4.3-4.3"></path>
+            <circle cx="11" cy="11" r="7"></circle>
+          </svg>
+          <span id="mbBtnGoText">Go</span>
+        </button>
+      </form>
+
+      <div class="mb-actions-right">
+        <!-- intentionally empty to keep ledger look clean -->
       </div>
-      <button class="rounded-xl px-4 py-2 bg-slate-900 text-white">Go</button>
-    </form>
+    </div>
+
+    <!-- KPI Summary -->
+    <div class="mb-summary" aria-hidden="true">
+      <div class="mb-kpi">
+        <span id="mbKpiTurnoverLabel">Turnover (6.4):</span>
+        <b>₹{{ "%.2f"|format(turnover or 0) }}</b>
+      </div>
+
+      <div class="mb-kpi">
+        <span id="mbKpiMembersInLabel">Members involved (Input):</span>
+        <b>{{ internal.members_input_count or 0 }}</b>
+        <span style="font-weight:900; color:rgba(15,23,42,.55);" id="mbKpiInOf">/ {{ total_members }}</span>
+        <span style="font-weight:900; color:rgba(15,23,42,.55);" id="mbKpiInPct">({{ pct_in }}%)</span>
+      </div>
+
+      <div class="mb-kpi">
+        <span id="mbKpiMembersOutLabel">Members involved (Output):</span>
+        <b>{{ internal.members_output_count or 0 }}</b>
+        <span style="font-weight:900; color:rgba(15,23,42,.55);" id="mbKpiOutOf">/ {{ total_members }}</span>
+        <span style="font-weight:900; color:rgba(15,23,42,.55);" id="mbKpiOutPct">({{ pct_out }}%)</span>
+      </div>
+    </div>
+
+    <!-- Main form (POST) — all fields intact -->
+    <div class="mb-form">
+      <form method="post">
+        <input type="hidden" name="year" value="{{ year }}"/>
+        <input type="hidden" name="month" value="{{ month }}"/>
+
+        <!-- 6.1 -->
+        <div class="mb-block" style="margin-bottom: 12px;">
+          <div class="mb-block-head">
+            <h3 class="mb-block-title" id="mbH61">6.1 Internal / Member Transactions (summary)</h3>
+            <p class="mb-block-sub" id="mbH61Sub">Enter totals for the month. Turnover is auto-calculated.</p>
+          </div>
+
+          <div class="mb-block-body">
+            <div class="mb-grid">
+
+              <div class="mb-stack col-6">
+                <label class="mb-label" id="mbLblInputSoldToMembers">Input sold to members (₹)</label>
+                <input name="input_sold_to_members_value" value="{{ internal.input_sold_to_members_value or '' }}"
+                       class="mb-input" />
+              </div>
+
+              <div class="mb-stack col-6">
+                <label class="mb-label" id="mbLblProductBoughtFromMembers">Product bought from members (₹)</label>
+                <input name="product_bought_from_members_value" value="{{ internal.product_bought_from_members_value or '' }}"
+                       class="mb-input" />
+              </div>
+
+              <div class="mb-stack col-6">
+                <label class="mb-label" id="mbLblOtherInternal">Other internal (₹)</label>
+                <input name="other_internal_value" value="{{ internal.other_internal_value or '' }}"
+                       class="mb-input" />
+              </div>
+
+              <div class="mb-stack col-6">
+                <label class="mb-label" id="mbLblInternalTotal">Internal total (auto)</label>
+                <input value="{{ internal.internal_total or 0 }}" readonly
+                       class="mb-input" />
+              </div>
+
+              <div class="mb-stack col-6">
+                <label class="mb-label" id="mbLblMembersInputCount">Members procuring inputs from PG (count)</label>
+                <input name="members_input_count" value="{{ internal.members_input_count or '' }}"
+                       class="mb-input" />
+              </div>
+
+              <div class="mb-stack col-6">
+                <label class="mb-label" id="mbLblMembersOutputCount">Members selling product to PG (count)</label>
+                <input name="members_output_count" value="{{ internal.members_output_count or '' }}"
+                       class="mb-input" />
+              </div>
+
+              <div class="mb-stack col-12">
+                <label class="mb-label" id="mbLblInternalNotes">Internal notes</label>
+                <textarea name="internal_notes" rows="2" class="mb-textarea">{{ internal.notes or '' }}</textarea>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- 6.2 -->
+        <div class="mb-block">
+          <div class="mb-block-head">
+            <h3 class="mb-block-title" id="mbH62">6.2 Market / Outsider Transactions (summary)</h3>
+          </div>
+
+          <div class="mb-block-body">
+            <div class="mb-grid">
+
+              <div class="mb-stack col-6">
+                <label class="mb-label" id="mbLblInputProcuredFromMarket">Input procured from market (₹)</label>
+                <input name="input_procured_from_market_value" value="{{ market.input_procured_from_market_value or '' }}"
+                       class="mb-input" />
+              </div>
+
+              <div class="mb-stack col-6">
+                <label class="mb-label" id="mbLblInputSoldToOutsiders">Input sold to outsiders (₹)</label>
+                <input name="input_sold_to_outsiders_value" value="{{ market.input_sold_to_outsiders_value or '' }}"
+                       class="mb-input" />
+              </div>
+
+              <div class="mb-stack col-6">
+                <label class="mb-label" id="mbLblProductSoldToMarket">Product sold to market (₹)</label>
+                <input name="product_sold_to_market_value" value="{{ market.product_sold_to_market_value or '' }}"
+                       class="mb-input" />
+              </div>
+
+              <div class="mb-stack col-6">
+                <label class="mb-label" id="mbLblOtherMarket">Other market (₹)</label>
+                <input name="other_market_value" value="{{ market.other_market_value or '' }}"
+                       class="mb-input" />
+              </div>
+
+              <div class="mb-stack col-6">
+                <label class="mb-label" id="mbLblMarketTotal">Market total (auto)</label>
+                <input value="{{ market.market_total or 0 }}" readonly
+                       class="mb-input" />
+              </div>
+
+              <div class="mb-stack col-6">
+                <label class="mb-label" id="mbLblTotalTurnover">Total turnover (auto)</label>
+                <input value="{{ market.total_turnover or turnover or 0 }}" readonly
+                       class="mb-input" />
+              </div>
+
+              <div class="mb-stack col-12">
+                <label class="mb-label" id="mbLblMarketNotes">Market notes</label>
+                <textarea name="market_notes" rows="2" class="mb-textarea">{{ market.notes or '' }}</textarea>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer save -->
+        <div class="mb-foot">
+          <div class="mb-note" id="mbFooterNote">
+            Saving this page will also try to auto-generate the MPR snapshot for the same month.
+          </div>
+
+          <button class="mb-btn mb-primary" type="submit" id="mbBtnSave">
+            <svg class="mb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span id="mbBtnSaveText">Save</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+
   </div>
-
-  <div class="grid md:grid-cols-3 gap-4 mt-6">
-    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div class="text-xs text-slate-500">Turnover (6.4)</div>
-      <div class="text-2xl font-semibold mt-1">₹{{ "%.2f"|format(turnover or 0) }}</div>
-      <div class="text-xs text-slate-500 mt-2">Internal + Market totals</div>
-    </div>
-
-    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div class="text-xs text-slate-500">Members involved (Input)</div>
-      <div class="text-2xl font-semibold mt-1">{{ internal.members_input_count or 0 }} <span class="text-slate-500 text-sm">/ {{ total_members }}</span></div>
-      <div class="text-xs text-slate-500 mt-2">{{ pct_in }}%</div>
-    </div>
-
-    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div class="text-xs text-slate-500">Members involved (Output)</div>
-      <div class="text-2xl font-semibold mt-1">{{ internal.members_output_count or 0 }} <span class="text-slate-500 text-sm">/ {{ total_members }}</span></div>
-      <div class="text-xs text-slate-500 mt-2">{{ pct_out }}%</div>
-    </div>
-  </div>
-
-  <form method="post" class="mt-6 space-y-6">
-    <input type="hidden" name="year" value="{{ year }}"/>
-    <input type="hidden" name="month" value="{{ month }}"/>
-
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 class="text-lg font-semibold text-slate-900">6.1 Internal / Member Transactions (summary)</h2>
-      <p class="text-sm text-slate-600 mt-1">Enter totals for the month. Turnover is auto-calculated.</p>
-
-      <div class="grid md:grid-cols-2 gap-4 mt-4">
-        <div>
-          <label class="block text-sm text-slate-700 mb-1">Input sold to members (₹)</label>
-          <input name="input_sold_to_members_value" value="{{ internal.input_sold_to_members_value or '' }}"
-                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
-        </div>
-        <div>
-          <label class="block text-sm text-slate-700 mb-1">Product bought from members (₹)</label>
-          <input name="product_bought_from_members_value" value="{{ internal.product_bought_from_members_value or '' }}"
-                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
-        </div>
-        <div>
-          <label class="block text-sm text-slate-700 mb-1">Other internal (₹)</label>
-          <input name="other_internal_value" value="{{ internal.other_internal_value or '' }}"
-                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
-        </div>
-        <div>
-          <label class="block text-sm text-slate-700 mb-1">Internal total (auto)</label>
-          <input value="{{ internal.internal_total or 0 }}" readonly
-                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50 text-slate-700" />
-        </div>
-
-        <div>
-          <label class="block text-sm text-slate-700 mb-1">Members procuring inputs from PG (count)</label>
-          <input name="members_input_count" value="{{ internal.members_input_count or '' }}"
-                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
-        </div>
-        <div>
-          <label class="block text-sm text-slate-700 mb-1">Members selling product to PG (count)</label>
-          <input name="members_output_count" value="{{ internal.members_output_count or '' }}"
-                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
-        </div>
-
-        <div class="md:col-span-2">
-          <label class="block text-sm text-slate-700 mb-1">Internal notes</label>
-          <textarea name="internal_notes" rows="2"
-                    class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white">{{ internal.notes or '' }}</textarea>
-        </div>
-      </div>
-    </div>
-
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 class="text-lg font-semibold text-slate-900">6.2 Market / Outsider Transactions (summary)</h2>
-
-      <div class="grid md:grid-cols-2 gap-4 mt-4">
-        <div>
-          <label class="block text-sm text-slate-700 mb-1">Input procured from market (₹)</label>
-          <input name="input_procured_from_market_value" value="{{ market.input_procured_from_market_value or '' }}"
-                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
-        </div>
-        <div>
-          <label class="block text-sm text-slate-700 mb-1">Input sold to outsiders (₹)</label>
-          <input name="input_sold_to_outsiders_value" value="{{ market.input_sold_to_outsiders_value or '' }}"
-                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
-        </div>
-        <div>
-          <label class="block text-sm text-slate-700 mb-1">Product sold to market (₹)</label>
-          <input name="product_sold_to_market_value" value="{{ market.product_sold_to_market_value or '' }}"
-                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
-        </div>
-        <div>
-          <label class="block text-sm text-slate-700 mb-1">Other market (₹)</label>
-          <input name="other_market_value" value="{{ market.other_market_value or '' }}"
-                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white" />
-        </div>
-
-        <div>
-          <label class="block text-sm text-slate-700 mb-1">Market total (auto)</label>
-          <input value="{{ market.market_total or 0 }}" readonly
-                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50 text-slate-700" />
-        </div>
-        <div>
-          <label class="block text-sm text-slate-700 mb-1">Total turnover (auto)</label>
-          <input value="{{ market.total_turnover or turnover or 0 }}" readonly
-                 class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-slate-50 text-slate-700" />
-        </div>
-
-        <div class="md:col-span-2">
-          <label class="block text-sm text-slate-700 mb-1">Market notes</label>
-          <textarea name="market_notes" rows="2"
-                    class="w-full rounded-xl border border-slate-200 px-3 py-2 bg-white">{{ market.notes or '' }}</textarea>
-        </div>
-      </div>
-    </div>
-
-    <div class="flex items-center justify-between">
-      <div class="text-xs text-slate-500">
-        Saving this page will also try to auto-generate the MPR snapshot for the same month.
-      </div>
-      <button class="rounded-xl px-5 py-2.5 bg-emerald-600 text-white font-medium hover:bg-emerald-700">Save</button>
-    </div>
-  </form>
 </div>
+
+<script>
+  // ============================================================
+  // MONTHLY BUSINESS — TRANSLATION CONNECTIVITY (EN/BN)
+  // ✅ No change to data, forms, routes, or backend logic
+  // ✅ Listens to base navbar language toggle broadcasts
+  // ✅ Persists until user manually toggles again
+  // ============================================================
+
+  (function(){
+    const MB_T = {
+      en: {
+        docTitle: "Monthly Business",
+        backAria: "Go Back",
+        pageTitle: "Monthly Business (Manual 6.1 + 6.2)",
+        producerGroup: "Producer Group :",
+        page: "Page",
+        pageSub: "Monthly Business Summary",
+        year: "Year",
+        month: "Month",
+        go: "Go",
+
+        kpiTurnover: "Turnover (6.4):",
+        kpiMembersIn: "Members involved (Input):",
+        kpiMembersOut: "Members involved (Output):",
+
+        h61: "6.1 Internal / Member Transactions (summary)",
+        h61sub: "Enter totals for the month. Turnover is auto-calculated.",
+        lblInputSoldToMembers: "Input sold to members (₹)",
+        lblProductBoughtFromMembers: "Product bought from members (₹)",
+        lblOtherInternal: "Other internal (₹)",
+        lblInternalTotal: "Internal total (auto)",
+        lblMembersInputCount: "Members procuring inputs from PG (count)",
+        lblMembersOutputCount: "Members selling product to PG (count)",
+        lblInternalNotes: "Internal notes",
+
+        h62: "6.2 Market / Outsider Transactions (summary)",
+        lblInputProcuredFromMarket: "Input procured from market (₹)",
+        lblInputSoldToOutsiders: "Input sold to outsiders (₹)",
+        lblProductSoldToMarket: "Product sold to market (₹)",
+        lblOtherMarket: "Other market (₹)",
+        lblMarketTotal: "Market total (auto)",
+        lblTotalTurnover: "Total turnover (auto)",
+        lblMarketNotes: "Market notes",
+
+        footerNote: "Saving this page will also try to auto-generate the MPR snapshot for the same month.",
+        save: "Save"
+      },
+      bn: {
+        docTitle: "মাসিক ব্যবসা",
+        backAria: "ফিরে যান",
+        pageTitle: "মাসিক ব্যবসা (ম্যানুয়াল ৬.১ + ৬.২)",
+        producerGroup: "প্রডিউসার গ্রুপ :",
+        page: "পৃষ্ঠা",
+        pageSub: "মাসিক ব্যবসার সারসংক্ষেপ",
+        year: "বছর",
+        month: "মাস",
+        go: "যান",
+
+        kpiTurnover: "টার্নওভার (৬.৪):",
+        kpiMembersIn: "সদস্য অংশগ্রহণ (ইনপুট):",
+        kpiMembersOut: "সদস্য অংশগ্রহণ (আউটপুট):",
+
+        h61: "৬.১ অভ্যন্তরীণ / সদস্য লেনদেন (সারসংক্ষেপ)",
+        h61sub: "মাসের মোট পরিমাণ লিখুন। টার্নওভার স্বয়ংক্রিয়ভাবে গণনা হবে।",
+        lblInputSoldToMembers: "সদস্যদের কাছে ইনপুট বিক্রি (₹)",
+        lblProductBoughtFromMembers: "সদস্যদের থেকে পণ্য ক্রয় (₹)",
+        lblOtherInternal: "অন্যান্য অভ্যন্তরীণ (₹)",
+        lblInternalTotal: "অভ্যন্তরীণ মোট (অটো)",
+        lblMembersInputCount: "পিজি থেকে ইনপুট নেয় এমন সদস্য (সংখ্যা)",
+        lblMembersOutputCount: "পিজিতে পণ্য দেয় এমন সদস্য (সংখ্যা)",
+        lblInternalNotes: "অভ্যন্তরীণ নোট",
+
+        h62: "৬.২ বাজার / বহিরাগত লেনদেন (সারসংক্ষেপ)",
+        lblInputProcuredFromMarket: "বাজার থেকে ইনপুট সংগ্রহ (₹)",
+        lblInputSoldToOutsiders: "বহিরাগতদের কাছে ইনপুট বিক্রি (₹)",
+        lblProductSoldToMarket: "বাজারে পণ্য বিক্রি (₹)",
+        lblOtherMarket: "অন্যান্য বাজার (₹)",
+        lblMarketTotal: "বাজার মোট (অটো)",
+        lblTotalTurnover: "মোট টার্নওভার (অটো)",
+        lblMarketNotes: "বাজার নোট",
+
+        footerNote: "এই পৃষ্ঠা সেভ করলে একই মাসের জন্য এমপিআর স্ন্যাপশট অটো-জেনারেট করার চেষ্টা করবে।",
+        save: "সংরক্ষণ"
+      }
+    };
+
+    function safeText(id, val){
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    }
+
+    function applyMB(lang){
+      const t = MB_T[lang] || MB_T.en;
+
+      try { document.title = t.docTitle; } catch(_){}
+
+      const back = document.querySelector('.mb-back');
+      if(back) back.setAttribute('aria-label', t.backAria);
+
+      safeText('mbPageTitle', t.pageTitle);
+      safeText('mbLblProducerGroup', t.producerGroup);
+      safeText('mbLblPage', t.page);
+      safeText('mbPageSub', t.pageSub);
+
+      safeText('mbLblYear', t.year);
+      safeText('mbLblMonth', t.month);
+      safeText('mbBtnGoText', t.go);
+
+      safeText('mbKpiTurnoverLabel', t.kpiTurnover);
+      safeText('mbKpiMembersInLabel', t.kpiMembersIn);
+      safeText('mbKpiMembersOutLabel', t.kpiMembersOut);
+
+      safeText('mbH61', t.h61);
+      safeText('mbH61Sub', t.h61sub);
+      safeText('mbLblInputSoldToMembers', t.lblInputSoldToMembers);
+      safeText('mbLblProductBoughtFromMembers', t.lblProductBoughtFromMembers);
+      safeText('mbLblOtherInternal', t.lblOtherInternal);
+      safeText('mbLblInternalTotal', t.lblInternalTotal);
+      safeText('mbLblMembersInputCount', t.lblMembersInputCount);
+      safeText('mbLblMembersOutputCount', t.lblMembersOutputCount);
+      safeText('mbLblInternalNotes', t.lblInternalNotes);
+
+      safeText('mbH62', t.h62);
+      safeText('mbLblInputProcuredFromMarket', t.lblInputProcuredFromMarket);
+      safeText('mbLblInputSoldToOutsiders', t.lblInputSoldToOutsiders);
+      safeText('mbLblProductSoldToMarket', t.lblProductSoldToMarket);
+      safeText('mbLblOtherMarket', t.lblOtherMarket);
+      safeText('mbLblMarketTotal', t.lblMarketTotal);
+      safeText('mbLblTotalTurnover', t.lblTotalTurnover);
+      safeText('mbLblMarketNotes', t.lblMarketNotes);
+
+      safeText('mbFooterNote', t.footerNote);
+      safeText('mbBtnSaveText', t.save);
+    }
+
+    function getStoredLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      try{
+        const l3 = document.documentElement.getAttribute('data-lang');
+        if(l3 === 'en' || l3 === 'bn') return l3;
+      }catch(_){}
+      return 'en';
+    }
+
+    window.updatePageLanguage = function(lang){
+      if(lang !== 'en' && lang !== 'bn') lang = getStoredLang();
+      applyMB(lang);
+    };
+
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyMB(lang);
+    });
+
+    window.addEventListener('pgmis:lang', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyMB(lang);
+    });
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      applyMB(getStoredLang());
+    });
+  })();
+</script>
+
 {% endblock %}

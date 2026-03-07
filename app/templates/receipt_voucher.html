@@ -5,15 +5,13 @@
 <style>
   /* ============================================================
      Receipt voucher (SCOPED) — under .ll-wrap only
-     ✅ Checkbox + Sl No columns (multi-select + serial)
-     ✅ Delete All => delete selected if selected else delete all
-     ✅ Action buttons dock above ACTIVE table (mobile-friendly)
-     ✅ Table section visually distinct
-     ✅ Mobile: swipe row-cards (left/right) + grid fields + KPIs below
-     ✅ Fix: remove PG-only extra blank space after signatures
-     ✅ Better error surfacing for Save failed
-     ✅ NEW: Manual digital signature pad (canvas) side-by-side
-     ✅ FIX: replace browser alert() prompts with in-page popups (no localhost prompts)
+     ✅ Header title centered and resized like reference
+     ✅ App/mobile-only back button added
+     ✅ Swipe text + swipe functionality removed
+     ✅ Empty table on first load (no blank seeded rows)
+     ✅ Active section persists after refresh/reload
+     ✅ Mobile/app section buttons stacked vertically
+     ✅ Existing functionality / logic / backend connectivity preserved
      ============================================================ */
 
   .ll-wrap{
@@ -44,29 +42,63 @@
     box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
   }
 
+  /* ===== Header ===== */
   .ll-head{
-    padding: 14px 16px 12px;
+    padding: 0;
     background:
       radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
-      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+      linear-gradient(135deg, rgba(240,253,244,.92), rgba(255,255,255,.94));
     border-bottom: 1px solid var(--line2);
   }
 
   .ll-head-top{
+    position: relative;
+    min-height: 108px;
+    padding: 18px 18px;
     display:flex;
     align-items:center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
+    justify-content:center;
   }
+
   .ll-title{
     margin: 0;
-    font-weight: 950;
+    font-weight: 850;
     font-size: 18px;
+    line-height: 1.2;
     letter-spacing: .2px;
-    text-align: left;
-    flex: 1 1 auto;
-    min-width: 220px;
+    text-align: center;
+    color: #0f172a;
+  }
+
+  .ll-app-back,
+  .ll-app-back-spacer{
+    display:none;
+  }
+
+  .ll-app-back{
+    border: 1px solid rgba(15,23,42,.12);
+    background: rgba(255,255,255,.88);
+    color: var(--ink);
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow: 0 10px 18px -16px rgba(15,23,42,.32);
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+  }
+  .ll-app-back:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+    background:#fff;
+  }
+  .ll-app-back svg{
+    width: 18px;
+    height: 18px;
+    display:block;
   }
 
   .ll-icon{ width: 14px; height: 14px; flex-shrink: 0; }
@@ -79,10 +111,11 @@
     background: rgba(255,255,255,.92);
     display:flex;
     align-items:center;
-    justify-content: space-between;
+    justify-content:flex-start;
     gap: 10px;
     flex-wrap: wrap;
   }
+
   .ll-seg{
     display:inline-flex;
     gap: 6px;
@@ -94,6 +127,7 @@
     overflow:auto;
     -webkit-overflow-scrolling: touch;
   }
+
   .ll-seg button{
     border:none;
     outline:none;
@@ -111,6 +145,7 @@
     transition: background .2s ease, color .2s ease, transform .15s ease;
   }
   .ll-seg button:hover{ transform: translateY(-1px); }
+
   .ll-seg .ll-badge{
     width: 10px; height: 10px;
     border-radius: 999px;
@@ -128,38 +163,28 @@
     box-shadow: 0 16px 22px -20px rgba(15,23,42,.28);
   }
 
-  .ll-swipehint{
-    font-size: 12px;
-    font-weight: 900;
-    color: rgba(15,23,42,.70);
-    display:flex;
-    align-items:center;
-    gap: 8px;
-    white-space: nowrap;
-  }
-  .ll-swipehint .dot{
-    width: 7px; height: 7px; border-radius: 999px;
-    background: rgba(15,23,42,.35);
-  }
-
-  /* ===== Swipable rail ===== */
+  /* ===== Panels (swipe removed) ===== */
   .ll-rail{
     position: relative;
     width: 100%;
-    overflow: hidden;
+    overflow: visible;
     background: rgba(255,255,255,.92);
   }
   .ll-track{
-    display:flex;
-    width: 200%;
-    transform: translateX(0%);
-    transition: transform .32s ease;
-    will-change: transform;
+    display:block;
+    width:100%;
+    transform:none !important;
+    transition:none !important;
+    will-change:auto;
   }
   .ll-panel{
-    width: 50%;
+    width:100%;
     padding: 0;
     min-height: 100%;
+    display:none;
+  }
+  .ll-panel.is-active{
+    display:block;
   }
   .ll-panel-inner{
     border-top: 1px solid var(--line2);
@@ -640,7 +665,6 @@
     color: rgba(15,23,42,.78);
   }
 
-  /* ✅ UPDATED: preview + manual pad side-by-side */
   .ll-signpreview{
     width: 100%;
     border-radius: 12px;
@@ -709,7 +733,7 @@
     height: 120px;
     display:block;
     background: #fff;
-    touch-action: none; /* important for mobile drawing */
+    touch-action: none;
   }
   .ll-wrap.ll-readonly .ll-pad{
     pointer-events:none;
@@ -914,16 +938,75 @@
   /* ===== Responsive ===== */
   @media (max-width: 880px){
     .ll-topfields{ grid-template-columns: 1fr; }
-    .ll-swipehint{ display:none; }
     .ll-actionbar{ justify-content: center; }
   }
+
   @media (max-width: 720px){
-    .ll-title{ text-align:center; min-width: 0; }
+    .ll-head-top{
+      display:grid;
+      grid-template-columns: 56px 1fr 56px;
+      align-items:center;
+      gap: 8px;
+      min-height: 112px;
+      padding: 18px 16px;
+    }
+    .ll-app-back,
+    .ll-app-back-spacer{
+      display:flex;
+    }
+    .ll-app-back-spacer{
+           width:38px;
+      height:38px;
+    }
+     .ll-title{
+      margin: 0;
+      font-weight: 850;
+      font-size: 16px;
+      line-height: 1.2;
+      letter-spacing: .2px;
+      text-align: center;
+      color: #0f172a;
+    }
+
     .ll-search{ min-width: 100%; }
     .ll-controls-right{ width: 100%; justify-content:flex-start; }
     .ll-summary{ justify-content:flex-start; }
     .ll-sign{ grid-template-columns: 1fr; }
+
+    .ll-tabs{
+      padding: 12px 16px 14px;
+    }
+    .ll-seg{
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      border-radius: 24px;
+      padding: 10px;
+      overflow: visible;
+    }
+    .ll-seg button{
+      width:100%;
+      justify-content:flex-start;
+      padding: 13px 14px;
+      border: 1px solid rgba(15,23,42,.08);
+      background: rgba(255,255,255,.78);
+      border-radius: 16px;
+      font-size: 13px;
+    }
+    .ll-seg button.active{
+      background: #fff;
+      box-shadow: 0 14px 18px -18px rgba(15,23,42,.22);
+    }
   }
+
+  @media (min-width: 721px){
+    .ll-app-back,
+    .ll-app-back-spacer{
+      display:none !important;
+    }
+  }
+
   @media (max-width: 420px){
     .ll-mactions{ justify-content: stretch; }
     .ll-ghost, .ll-solid{ min-width: 100%; }
@@ -988,14 +1071,7 @@
     }
   }
 
-  .ll-rail, .ll-track, .ll-panel { touch-action: pan-y; }
-  @media (max-width: 820px){
-    .ll-rail{ touch-action: pan-y; }
-    .ll-track{ touch-action: pan-y; }
-    .ll-panel{ touch-action: pan-y; }
-  }
-
-  /* ✅ Signature grid stacks on very small screens */
+  /* signature grid stacks on very small screens */
   @media (max-width: 520px){
     .ll-signgrid{ grid-template-columns: 1fr; }
     .ll-pad{ height: 140px; }
@@ -1007,7 +1083,19 @@
   <div class="ll-sheet">
     <div class="ll-head">
       <div class="ll-head-top">
+     <button class="ll-app-back" id="llBackBtn" type="button" aria-label="Go back">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M19 12H5M5 12l6 6M5 12l6-6"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+  </svg>
+</button>
+
         <h2 class="ll-title" id="llTitle">Receipt Voucher</h2>
+
+        <div class="ll-app-back-spacer" aria-hidden="true"></div>
       </div>
     </div>
 
@@ -1022,18 +1110,13 @@
           <span id="llTabMemberText">Group Member Receipt</span>
         </button>
       </div>
-
-      <div class="ll-swipehint" aria-hidden="true">
-        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-        <span id="llSwipeHintText">Swipe to switch</span>
-      </div>
     </div>
 
     <div class="ll-rail" id="llRail">
       <div class="ll-track" id="llTrack">
 
         <!-- PANEL 1 -->
-        <section class="ll-panel" data-panel="pg" aria-label="PG Group Receipt">
+        <section class="ll-panel is-active" id="llPanelPg" data-panel="pg" aria-label="PG Group Receipt">
           <div class="ll-panel-inner">
             <div class="ll-panel-head">
               <div>
@@ -1132,12 +1215,10 @@
               </div>
             </div>
 
-            <!-- signatures -->
             <div class="ll-sign">
               <div class="ll-signbox" data-sign-scope="pg" data-sign-role="member">
                 <div class="ll-signlabel" id="llSignMemberPg">Signature of PG member</div>
 
-                <!-- ✅ Side-by-side: Preview + Manual sign -->
                 <div class="ll-signpreview">
                   <div class="ll-signgrid">
                     <div class="ll-signpane white">
@@ -1161,7 +1242,6 @@
                   <button class="ll-sbtn" type="button" id="llSignReplacePgMember">Replace</button>
                   <button class="ll-sbtn danger" type="button" id="llSignRemovePgMember">Remove</button>
 
-                  <!-- ✅ NEW: manual pad controls -->
                   <button class="ll-sbtn" type="button" id="llPadClearPgMember">Clear</button>
                   <button class="ll-sbtn" type="button" id="llPadUsePgMember">Use</button>
                 </div>
@@ -1203,7 +1283,7 @@
         </section>
 
         <!-- PANEL 2 -->
-        <section class="ll-panel" data-panel="member" aria-label="Group Member Receipt">
+        <section class="ll-panel" id="llPanelMember" data-panel="member" aria-label="Group Member Receipt">
           <div class="ll-panel-inner">
             <div class="ll-panel-head">
               <div>
@@ -1417,7 +1497,7 @@
   </div>
 </div>
 
-<!-- ✅ SAVE CONFIRM MODAL -->
+<!-- SAVE CONFIRM MODAL -->
 <div id="llSaveOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
     <div class="ll-mhead" id="llSaveHead">
@@ -1432,7 +1512,7 @@
   </div>
 </div>
 
-<!-- ✅ CANCEL CONFIRM MODAL -->
+<!-- CANCEL CONFIRM MODAL -->
 <div id="llCancelOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
     <div class="ll-mhead" id="llCancelHead">
@@ -1447,7 +1527,7 @@
   </div>
 </div>
 
-<!-- ✅ EDIT-LOCK MODAL -->
+<!-- EDIT-LOCK MODAL -->
 <div id="llLockOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
     <div class="ll-mhead" id="llLockHead">
@@ -1461,7 +1541,7 @@
   </div>
 </div>
 
-<!-- ✅ DELETE ROW CONFIRM MODAL -->
+<!-- DELETE ROW CONFIRM MODAL -->
 <div id="llDeleteRowOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
     <div class="ll-mhead danger" id="llDeleteRowHead">
@@ -1476,7 +1556,7 @@
   </div>
 </div>
 
-<!-- ✅ DELETE ALL / SELECTED CONFIRM MODAL -->
+<!-- DELETE ALL / SELECTED CONFIRM MODAL -->
 <div id="llDeleteAllOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
     <div class="ll-mhead danger" id="llDeleteAllHead">
@@ -1491,7 +1571,7 @@
   </div>
 </div>
 
-<!-- ✅ CAMERA CAPTURE MODAL -->
+<!-- CAMERA CAPTURE MODAL -->
 <div id="llCamOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal ll-cam">
     <div class="ll-mhead" id="llCamHead">
@@ -1514,7 +1594,7 @@
   </div>
 </div>
 
-<!-- ✅ GENERIC POPUP (replaces browser alert prompts) -->
+<!-- GENERIC POPUP -->
 <div id="llInfoOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
     <div class="ll-mhead" id="llInfoHead">
@@ -1533,35 +1613,26 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
+  const ACTIVE_PANEL_KEY = "receipt_voucher_active_panel";
 
-  /* =========================
-     TRANSLATIONS (extended)
-     ========================= */
   const T = {
     en: {
       title: "Receipt Voucher",
-
       tab_pg: "PG Group Receipt",
       tab_member: "Group Member Receipt",
-      swipeHint: "Swipe to switch",
-
       note_pg: "Use this section for group-level receipts. Add commodity rows below.",
       note_member: "Use this section for individual member receipts. Add commodity rows below.",
-
       pgLabel: "Name of Producers Group",
       dateLabel: "Date of transaction",
       memberLabel: "Name of member",
       codeLabel: "Member code",
       detailsLabel: "Details on commodity procured",
-
       rowsLabel: "Rows",
       searchPH: "Search...",
-
       prev: "Prev",
       next: "Next",
       pageInfo: (a,b)=>`Page ${a} / ${b}`,
       empty: "No rows found.",
-
       hSl: "Sl No",
       hCommodity: "Commodity",
       hGrade: "Grade",
@@ -1569,31 +1640,25 @@
       hVolume: "Volume (Qnt/Ltr.)",
       hValue: "Value (Rupees)",
       hActions: "Actions",
-
       addRow: "+ Add Row",
       deleteAll: "Delete All",
       deleteSelected: "Delete Selected",
       delRow: "Delete",
-
       editButton: "Edit",
       saveButton: "Save",
       cancelButton: "Cancel",
-
       kpiRows: "Visible Rows:",
       kpiVolume: "Total Volume:",
       kpiValue: "Total Value:",
-
       phPg: "Write PG name…",
       phMember: "Write member name…",
       phCode: "Write member code…",
       phDetails: "Write details…",
-
       phCommodity: "Write commodity…",
       phGrade: "Grade…",
       phRate: "0",
       phVolume: "0",
       phValue: "0",
-
       signMember: "Signature of PG member",
       signUdyog: "Signature of Udyog Sakhi",
       signEmpty: "No signature image",
@@ -1601,26 +1666,19 @@
       capture: "Capture",
       replace: "Replace",
       remove: "Remove",
-
-      // ✅ NEW manual signature
       padLabel: "Sign here",
       padClear: "Clear",
       padUse: "Use",
-
-      // modals
       confirmTitle: "Confirm Save",
       confirmMsg: "Do you want to save these changes?",
       confirmYes: "Confirm",
       confirmNo: "Cancel",
-
       cancelTitle: "Discard changes?",
       cancelMsg: "This will revert all unsaved changes.",
       cancelYes: "Discard",
-
       lockTitle: "Action blocked",
       lockMsg: "You are in Edit mode. Please Save or Cancel before leaving this page.",
       lockOk: "OK",
-
       delRowTitle: "Delete this row?",
       delRowMsg: "This row will be removed (you can still Undo by Cancel if not saved).",
       delAllTitle: "Delete all rows?",
@@ -1629,14 +1687,11 @@
       delSelMsg: "Selected rows will be removed (until you Save).",
       delYes: "Delete",
       delAllYes: "Delete All",
-
       camTitle: "Capture Signature",
       camNote: "If camera permission is denied, use Upload instead.",
       camCancel: "Cancel",
       camSnap: "Capture",
       camUse: "Use Photo",
-
-      // ✅ Popup messages
       ok: "OK",
       msgTitleInfo: "Message",
       msgTitleSuccess: "Success",
@@ -1648,30 +1703,22 @@
       msgSavedLocal: "✅ Saved locally (backend not connected)"
     },
     bn: {
-      /* ✅ FIX: correct page title in Bangla */
       title: "রসিদ ভাউচার",
-
       tab_pg: "উৎপাদক দল রসিদ",
       tab_member: "সদস্য রসিদ",
-      swipeHint: "সুইপ করে পরিবর্তন করুন",
-
       note_pg: "এই অংশে দলভিত্তিক রসিদ লিখুন। নিচে পণ্যের সারি যোগ করুন।",
       note_member: "এই অংশে সদস্যভিত্তিক রসিদ লিখুন। নিচে পণ্যের সারি যোগ করুন।",
-
       pgLabel: "উৎপাদক দলের নাম",
       dateLabel: "লেনদেনের তারিখ",
       memberLabel: "সদস্যের নাম",
       codeLabel: "সদস্যের কোড",
       detailsLabel: "ক্রয়কৃত পণ্যের বিবরণ",
-
       rowsLabel: "সারি",
       searchPH: "খুঁজুন...",
-
       prev: "পূর্বে",
       next: "পরের",
       pageInfo: (a,b)=>`পৃষ্ঠা ${a} / ${b}`,
       empty: "কোনো সারি পাওয়া যায়নি।",
-
       hSl: "ক্রমিক",
       hCommodity: "পণ্য",
       hGrade: "শ্রেণী",
@@ -1679,31 +1726,25 @@
       hVolume: "আয়তন (কেজি/লিটার)",
       hValue: "মান (টাকা)",
       hActions: "অ্যাকশন",
-
       addRow: "+ সারি যোগ করুন",
       deleteAll: "সব মুছুন",
       deleteSelected: "নির্বাচিত মুছুন",
       delRow: "মুছুন",
-
       editButton: "সম্পাদনা",
       saveButton: "সংরক্ষণ",
       cancelButton: "বাতিল",
-
       kpiRows: "দেখানো সারি:",
       kpiVolume: "মোট আয়তন:",
       kpiValue: "মোট মান:",
-
       phPg: "উৎপাদক দলের নাম লিখুন…",
       phMember: "সদস্যের নাম লিখুন…",
       phCode: "সদস্য কোড লিখুন…",
       phDetails: "বিবরণ লিখুন…",
-
       phCommodity: "পণ্যের নাম…",
       phGrade: "শ্রেণী…",
       phRate: "০",
       phVolume: "০",
       phValue: "০",
-
       signMember: "সদস্যের স্বাক্ষর",
       signUdyog: "উদ্যোগ সখীর স্বাক্ষর",
       signEmpty: "স্বাক্ষরের ছবি নেই",
@@ -1711,26 +1752,19 @@
       capture: "ক্যাপচার",
       replace: "পরিবর্তন",
       remove: "সরান",
-
-      // ✅ NEW manual signature
       padLabel: "এখানে স্বাক্ষর করুন",
       padClear: "মুছুন",
       padUse: "ব্যবহার করুন",
-
-      // modals
       confirmTitle: "সংরক্ষণ নিশ্চিত করুন",
       confirmMsg: "আপনি কি পরিবর্তনগুলো সংরক্ষণ করতে চান?",
       confirmYes: "নিশ্চিত",
       confirmNo: "বাতিল",
-
       cancelTitle: "পরিবর্তন বাতিল করবেন?",
       cancelMsg: "এতে সব সংরক্ষণ না হওয়া পরিবর্তন ফিরে যাবে।",
       cancelYes: "বাতিল করুন",
-
       lockTitle: "অ্যাকশন বন্ধ করা হয়েছে",
       lockMsg: "আপনি এডিট মোডে আছেন। অনুগ্রহ করে সংরক্ষণ করুন অথবা বাতিল করুন, তারপর পেজ ছাড়ুন।",
       lockOk: "ঠিক আছে",
-
       delRowTitle: "এই সারি মুছবেন?",
       delRowMsg: "এই সারিটি মুছে যাবে (সংরক্ষণ না করলে Cancel দিয়ে আগের অবস্থায় ফিরতে পারবেন)।",
       delAllTitle: "সব সারি মুছবেন?",
@@ -1739,14 +1773,11 @@
       delSelMsg: "নির্বাচিত সারিগুলো মুছে যাবে (Save না করা পর্যন্ত)।",
       delYes: "মুছুন",
       delAllYes: "সব মুছুন",
-
       camTitle: "স্বাক্ষর ক্যাপচার",
       camNote: "ক্যামেরা অনুমতি না পেলে Upload ব্যবহার করুন।",
       camCancel: "বাতিল",
       camSnap: "ক্যাপচার",
       camUse: "ব্যবহার করুন",
-
-      // ✅ Popup messages
       ok: "ঠিক আছে",
       msgTitleInfo: "বার্তা",
       msgTitleSuccess: "সফল",
@@ -1760,16 +1791,9 @@
   };
 
   let lang = "en";
-
-  /* =========================
-     GLOBAL edit state
-     ========================= */
   let isEditing = false;
   let snapshot = null;
 
-  /* =========================
-     SECTION STATES
-     ========================= */
   function makeSectionState(prefix){
     return {
       prefix,
@@ -1783,14 +1807,12 @@
       }
     };
   }
+
   const S = {
     pg: makeSectionState("Pg"),
-    m:  makeSectionState("M")
+    m: makeSectionState("M")
   };
 
-  /* =========================
-     Helpers
-     ========================= */
   function normalizeLang(v){
     if (!v) return null;
     const s = String(v).toLowerCase();
@@ -1800,18 +1822,14 @@
   }
 
   function getInitialLang(){
-    // ✅ FIX: sync with base.html in multiple possible ways, without depending on one name
     const candidates = [
-      // globals some bases set
       window.PGMIS_LANGUAGE,
       window.PGMIS_LANG,
       window.pgmisLang,
       window.pgmis_language,
       window.currentLang,
-      // html attributes some bases set
       document.documentElement.getAttribute("data-lang"),
       document.documentElement.getAttribute("lang"),
-      // localStorage keys commonly used
       (()=>{ try{ return localStorage.getItem("pgmis_lang"); }catch(_){ return null; } })(),
       (()=>{ try{ return localStorage.getItem("pgmis_language"); }catch(_){ return null; } })(),
       (()=>{ try{ return localStorage.getItem("lang"); }catch(_){ return null; } })(),
@@ -1825,14 +1843,31 @@
     return "en";
   }
 
+  function getSavedActivePanel(){
+    try{
+      const v = localStorage.getItem(ACTIVE_PANEL_KEY);
+      return (v === "member") ? "member" : "pg";
+    }catch(_){
+      return "pg";
+    }
+  }
+
+  function saveActivePanel(which){
+    try{
+      localStorage.setItem(ACTIVE_PANEL_KEY, which === "member" ? "member" : "pg");
+    }catch(_){}
+  }
+
   function n2(v){
     const x = parseFloat(String(v || "").replace(/[, ]+/g,""));
     return Number.isFinite(x) ? x : 0;
   }
+
   function fmt(v){
     const x = Number(v || 0);
     return (Math.round(x * 100) / 100).toString();
   }
+
   function rowText(rowEl){
     const parts = [];
     rowEl.querySelectorAll("input[data-ll]").forEach(el=>{
@@ -1842,28 +1877,21 @@
     });
     return parts.join(" ");
   }
+
   function id(prefix, base){ return "ll" + base + prefix; }
 
-  function getCsrfToken(){
-    const meta = document.querySelector('meta[name="csrf-token"], meta[name="csrf_token"], meta[name="X-CSRFToken"], meta[name="X-CSRF-Token"]');
-    return meta ? (meta.getAttribute("content") || "") : "";
-  }
-
-  /* =========================
-     MODALS
-     ========================= */
   function openOverlay(el){
     el.classList.add("ll-show");
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
   }
+
   function closeOverlay(el){
     el.classList.remove("ll-show");
     document.documentElement.style.overflow = "";
     document.body.style.overflow = "";
   }
 
-  /* ✅ Generic popup (replaces browser alert()) */
   function showPopup(kind, title, msg){
     const t = T[lang];
     const head = $("llInfoHead");
@@ -1874,7 +1902,6 @@
     dot.classList.remove("b2","danger");
     okBtn.classList.remove("b2","danger");
 
-    // kind: info | success | warn | error
     if (kind === "error"){
       head.classList.add("danger");
       dot.classList.add("danger");
@@ -1919,6 +1946,7 @@
     setModalSkin(activePanel === "member" ? "member" : "pg");
     openOverlay($("llSaveOverlay"));
   }
+
   function openCancelConfirm(){
     const t = T[lang];
     $("llCancelTitle").textContent = t.cancelTitle;
@@ -1927,6 +1955,7 @@
     $("llCancelYes").textContent = t.cancelYes;
     openOverlay($("llCancelOverlay"));
   }
+
   function openLockModal(){
     const t = T[lang];
     $("llLockTitle").textContent = t.lockTitle;
@@ -1944,9 +1973,6 @@
   $("llLockOk").addEventListener("click", ()=>closeOverlay($("llLockOverlay")));
   $("llLockOverlay").addEventListener("click", (e)=>{ if (e.target === $("llLockOverlay")) closeOverlay($("llLockOverlay")); });
 
-  /* =========================
-     EDIT LOCK
-     ========================= */
   let lockActive = false;
   let lockPushed = false;
   let lockOpen = false;
@@ -2019,9 +2045,6 @@
     e.returnValue = "";
   });
 
-  /* =========================
-     DELETE confirmations
-     ========================= */
   let pendingDelete = { sectionKey:null, rowEl:null };
   let pendingDeleteAll = { sectionKey:null, mode:"all", count:0 };
 
@@ -2087,7 +2110,6 @@
     if (!sectionKey || !rowEl) return;
 
     const st = sectionKey === "pg" ? S.pg : S.m;
-
     const idx = st.allRows.indexOf(rowEl);
     if (idx >= 0) st.allRows.splice(idx, 1);
 
@@ -2138,9 +2160,6 @@
     else doDeleteAll(k);
   });
 
-  /* =========================
-     SECTION: row creation + wiring
-     ========================= */
   function setRowEditable(row, on){
     row.querySelectorAll("input[data-ll]").forEach(el=>{
       const key = el.getAttribute("data-ll");
@@ -2187,7 +2206,7 @@
     }
 
     computeValue();
-    setRowEditable(row, sectionKey === "pg" ? isEditing : isEditing);
+    setRowEditable(row, isEditing);
   }
 
   function createRow(sectionKey){
@@ -2224,9 +2243,6 @@
     syncDeleteAllLabel();
   }
 
-  /* =========================
-     SECTION: filter + pagination
-     ========================= */
   function getFilteredRows(sectionKey){
     const st = sectionKey === "pg" ? S.pg : S.m;
     const q = (st.query || "").trim().toLowerCase();
@@ -2263,7 +2279,6 @@
     $(pageInfoId).textContent = T[lang].pageInfo(st.page, totalPages);
     $(prevId).disabled = (st.page <= 1);
     $(nextId).disabled = (st.page >= totalPages);
-
     $(visibleRowsId).textContent = String(slice.length);
 
     const empty = $(emptyId);
@@ -2297,9 +2312,6 @@
     }
   }
 
-  /* =========================
-     Edit mode UI
-     ========================= */
   function syncDeleteAllLabel(){
     const t = T[lang];
     const key = (activePanel === "pg") ? "pg" : "m";
@@ -2314,15 +2326,11 @@
     $("llEditIcon").classList.toggle("ll-hidden", isEditing);
     $("llSaveIcon").classList.toggle("ll-hidden", !isEditing);
     $("llEditSaveText").textContent = isEditing ? t.saveButton : t.editButton;
-
     $("llCancelBtn").classList.toggle("ll-hidden", !isEditing);
     $("llCancelText").textContent = t.cancelButton;
-
     $("llAddRowTop").disabled = !isEditing;
     $("llDeleteAllTop").disabled = !isEditing;
-
     syncDeleteAllLabel();
-
     $("llActionBar").classList.remove("ll-hidden");
   }
 
@@ -2348,18 +2356,11 @@
     syncDeleteAllLabel();
   }
 
-  /* =========================
-     SIGNATURES (existing + NEW manual pad)
-     ========================= */
   const signMap = {
-    pg_member: { file:"llSignFilePgMember", img:"llSignImgPgMember", empty:"llSignEmptyPgMember", upload:"llSignUploadPgMember", capture:"llSignCapturePgMember", replace:"llSignReplacePgMember", remove:"llSignRemovePgMember", sectionKey:"pg", role:"member",
-      pad:"llPadPgMember", padLabel:"llPadLabelPgMember", padClear:"llPadClearPgMember", padUse:"llPadUsePgMember" },
-    pg_udyog:  { file:"llSignFilePgUdyog",  img:"llSignImgPgUdyog",  empty:"llSignEmptyPgUdyog",  upload:"llSignUploadPgUdyog",  capture:"llSignCapturePgUdyog",  replace:"llSignReplacePgUdyog",  remove:"llSignRemovePgUdyog",  sectionKey:"pg", role:"udyog",
-      pad:"llPadPgUdyog", padLabel:"llPadLabelPgUdyog", padClear:"llPadClearPgUdyog", padUse:"llPadUsePgUdyog" },
-    m_member:  { file:"llSignFileMMember",  img:"llSignImgMMember",  empty:"llSignEmptyMMember",  upload:"llSignUploadMMember",  capture:"llSignCaptureMMember",  replace:"llSignReplaceMMember",  remove:"llSignRemoveMMember",  sectionKey:"m",  role:"member",
-      pad:"llPadMMember", padLabel:"llPadLabelMMember", padClear:"llPadClearMMember", padUse:"llPadUseMMember" },
-    m_udyog:   { file:"llSignFileMUdyog",   img:"llSignImgMUdyog",   empty:"llSignEmptyMUdyog",   upload:"llSignUploadMUdyog",   capture:"llSignCaptureMUdyog",   replace:"llSignReplaceMUdyog",   remove:"llSignRemoveMUdyog",   sectionKey:"m",  role:"udyog",
-      pad:"llPadMUdyog", padLabel:"llPadLabelMUdyog", padClear:"llPadClearMUdyog", padUse:"llPadUseMUdyog" }
+    pg_member: { file:"llSignFilePgMember", img:"llSignImgPgMember", empty:"llSignEmptyPgMember", upload:"llSignUploadPgMember", capture:"llSignCapturePgMember", replace:"llSignReplacePgMember", remove:"llSignRemovePgMember", sectionKey:"pg", role:"member", pad:"llPadPgMember", padLabel:"llPadLabelPgMember", padClear:"llPadClearPgMember", padUse:"llPadUsePgMember" },
+    pg_udyog:  { file:"llSignFilePgUdyog",  img:"llSignImgPgUdyog",  empty:"llSignEmptyPgUdyog",  upload:"llSignUploadPgUdyog",  capture:"llSignCapturePgUdyog",  replace:"llSignReplacePgUdyog",  remove:"llSignRemovePgUdyog",  sectionKey:"pg", role:"udyog", pad:"llPadPgUdyog", padLabel:"llPadLabelPgUdyog", padClear:"llPadClearPgUdyog", padUse:"llPadUsePgUdyog" },
+    m_member:  { file:"llSignFileMMember",  img:"llSignImgMMember",  empty:"llSignEmptyMMember",  upload:"llSignUploadMMember",  capture:"llSignCaptureMMember",  replace:"llSignReplaceMMember",  remove:"llSignRemoveMMember",  sectionKey:"m",  role:"member", pad:"llPadMMember", padLabel:"llPadLabelMMember", padClear:"llPadClearMMember", padUse:"llPadUseMMember" },
+    m_udyog:   { file:"llSignFileMUdyog",   img:"llSignImgMUdyog",   empty:"llSignEmptyMUdyog",   upload:"llSignUploadMUdyog",   capture:"llSignCaptureMUdyog",   replace:"llSignReplaceMUdyog",   remove:"llSignRemoveMUdyog",   sectionKey:"m",  role:"udyog", pad:"llPadMUdyog", padLabel:"llPadLabelMUdyog", padClear:"llPadClearMUdyog", padUse:"llPadUseMUdyog" }
   };
 
   function setSignature(sectionKey, role, dataUrl){
@@ -2367,10 +2368,12 @@
     st.signatures[role] = dataUrl || "";
     renderSignatureUI(sectionKey, role);
   }
+
   function getSignature(sectionKey, role){
     const st = sectionKey === "pg" ? S.pg : S.m;
     return st.signatures[role] || "";
   }
+
   function renderSignatureUI(sectionKey, role){
     const key =
       sectionKey === "pg"
@@ -2402,10 +2405,12 @@
       fr.readAsDataURL(file);
     });
   }
+
   function pickFile(cfg){
     if (!isEditing) return;
     $(cfg.file).click();
   }
+
   async function handleFileInput(cfg){
     const input = $(cfg.file);
     const file = input.files && input.files[0];
@@ -2420,12 +2425,12 @@
       showPopup("error", T[lang].msgTitleError, T[lang].msgCouldNotLoadImage);
     }
   }
+
   function removeSignature(cfg){
     if (!isEditing) return;
     setSignature(cfg.sectionKey, cfg.role, "");
   }
 
-  // Camera capture (unchanged)
   let camStream = null;
   let camTarget = null;
   let camPhotoDataUrl = "";
@@ -2486,6 +2491,7 @@
     closeOverlay($("llCamOverlay"));
     stopCamera();
   });
+
   $("llCamOverlay").addEventListener("click",(e)=>{
     if (e.target === $("llCamOverlay")){
       closeOverlay($("llCamOverlay"));
@@ -2526,24 +2532,18 @@
     });
   }
 
-  /* =========================
-     ✅ NEW: Manual Signature Pads (canvas)
-     ✅ FIX (mobile/tablet): ink detection uses canvas pixel buffer, so "Use" never wrongly says "sign first"
-     ========================= */
   function setupPad(cfg){
     const canvas = $(cfg.pad);
     if (!canvas) return;
 
     const clearBtn = $(cfg.padClear);
     const useBtn = $(cfg.padUse);
-
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
     let drawing = false;
     let last = null;
 
     function isSmallScreen(){
-      // only apply the special detection/clearing fix on mobile/app/tablet
       return window.matchMedia && window.matchMedia("(max-width: 820px)").matches;
     }
 
@@ -2552,8 +2552,6 @@
       const rect = canvas.getBoundingClientRect();
       const w = Math.max(1, Math.floor(rect.width));
       const h = Math.max(1, Math.floor(rect.height));
-
-      // keep what user drew
       const prev = canvas.toDataURL("image/png");
 
       canvas.width = Math.floor(w * dpr);
@@ -2561,9 +2559,7 @@
       canvas.style.width = w + "px";
       canvas.style.height = h + "px";
 
-      // draw in CSS pixel coords
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctx.lineWidth = 2.2;
@@ -2632,7 +2628,6 @@
     }
 
     function clearPad(){
-      // keep web behavior intact; fix mobile/tablet clearing against hi-DPI buffer
       if (!isSmallScreen()){
         const rect = canvas.getBoundingClientRect();
         ctx.clearRect(0,0,rect.width,rect.height);
@@ -2643,12 +2638,10 @@
       ctx.setTransform(1,0,0,1,0,0);
       ctx.clearRect(0,0,canvas.width,canvas.height);
       ctx.restore();
-      // restore transform back to CSS pixels (same as resizeCanvas)
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
     function hasInk(){
-      // ✅ mobile/tablet: must check the full pixel buffer, not CSS pixels
       if (!isSmallScreen()){
         const rect = canvas.getBoundingClientRect();
         const w = Math.max(1, Math.floor(rect.width));
@@ -2660,14 +2653,12 @@
         return false;
       }
 
-      // mobile/tablet fix
       const w = Math.max(1, canvas.width|0);
       const h = Math.max(1, canvas.height|0);
       let img;
       try{
         img = ctx.getImageData(0,0,w,h).data;
       }catch(_){
-        // fallback: assume ink if export isn't empty-ish
         const d = canvas.toDataURL("image/png");
         return !!(d && d.length > 2000);
       }
@@ -2679,8 +2670,6 @@
 
     function usePad(){
       if (!isEditing) return;
-
-      // ✅ fixed on mobile/tablet: hasInk now reliable after clearing + re-signing
       if (!hasInk()){
         showPopup("warn", T[lang].msgTitleWarn, T[lang].msgSignFirst);
         return;
@@ -2688,8 +2677,6 @@
 
       const dataUrl = canvas.toDataURL("image/png");
       setSignature(cfg.sectionKey, cfg.role, dataUrl);
-
-      // auto-clear canvas so old drawing isn't reused accidentally
       clearPad();
     }
 
@@ -2704,9 +2691,6 @@
     Object.values(signMap).forEach(cfg => setupPad(cfg));
   }
 
-  /* =========================
-     Snapshot
-     ========================= */
   function snapSection(sectionKey){
     const p = sectionKey === "pg" ? "Pg" : "M";
     const st = sectionKey === "pg" ? S.pg : S.m;
@@ -2721,13 +2705,19 @@
         member: st.signatures.member || "",
         udyog: st.signatures.udyog || ""
       },
-      entries: st.allRows.map(r => ({
-        commodity: r.querySelector("[data-ll='commodity']").value || "",
-        grade: r.querySelector("[data-ll='grade']").value || "",
-        rate: n2(r.querySelector("[data-ll='rate']").value),
-        volume: n2(r.querySelector("[data-ll='volume']").value),
-        value: n2(r.querySelector("[data-ll='value']").value)
-      }))
+   entries: st.allRows
+  .map(r => ({
+    commodity: r.querySelector("[data-ll='commodity']").value || "",
+    grade: r.querySelector("[data-ll='grade']").value || "",
+    rate: n2(r.querySelector("[data-ll='rate']").value),
+    volume: n2(r.querySelector("[data-ll='volume']").value),
+    value: n2(r.querySelector("[data-ll='value']").value)
+  }))
+  .filter(e => {
+    const commodity = String(e.commodity || "").trim();
+    const grade = String(e.grade || "").trim();
+    return commodity || grade || e.rate || e.volume || e.value;
+  })
     };
   }
 
@@ -2756,26 +2746,26 @@
     st.allRows = [];
     $(bodyId).innerHTML = "";
 
-    const entries = Array.isArray(data.entries) ? data.entries : [];
-    if (entries.length){
-      entries.forEach(e=>{
-        const r = createRow(sectionKey);
-        r.querySelector("[data-ll='commodity']").value = e.commodity || "";
-        r.querySelector("[data-ll='grade']").value = e.grade || "";
-        r.querySelector("[data-ll='rate']").value = e.rate ? String(e.rate) : "";
-        r.querySelector("[data-ll='volume']").value = e.volume ? String(e.volume) : "";
-        r.querySelector("[data-ll='value']").value = e.value ? String(e.value) : "";
-        st.allRows.push(r);
-        $(bodyId).appendChild(r);
-      });
-    } else {
-      for (let i=0; i<25; i++){
-        const r = createRow(sectionKey);
-        st.allRows.push(r);
-        $(bodyId).appendChild(r);
-      }
-    }
+  const entries = (Array.isArray(data.entries) ? data.entries : []).filter(e => {
+  const commodity = String(e?.commodity || "").trim();
+  const grade = String(e?.grade || "").trim();
+  const rate = Number(e?.rate || 0);
+  const volume = Number(e?.volume || 0);
+  const value = Number(e?.value || 0);
 
+  return commodity || grade || rate || volume || value;
+});
+
+entries.forEach(e=>{
+  const r = createRow(sectionKey);
+  r.querySelector("[data-ll='commodity']").value = e.commodity || "";
+  r.querySelector("[data-ll='grade']").value = e.grade || "";
+  r.querySelector("[data-ll='rate']").value = e.rate ? String(e.rate) : "";
+  r.querySelector("[data-ll='volume']").value = e.volume ? String(e.volume) : "";
+  r.querySelector("[data-ll='value']").value = e.value ? String(e.value) : "";
+  st.allRows.push(r);
+  $(bodyId).appendChild(r);
+});
     setAllEditable(isEditing);
     recalcTotalsAndVisibility(sectionKey, true);
     clearSelection(sectionKey);
@@ -2785,7 +2775,7 @@
     if (!snap) return;
     restoreSection("pg", snap.pg || {});
     restoreSection("m", snap.member || {});
-    setActivePanel(snap.active || "pg", true);
+    setActivePanel(snap.active || getSavedActivePanel(), true);
   }
 
   function enterEdit(){
@@ -2809,9 +2799,6 @@
     openSaveConfirm();
   }
 
-  /* =========================
-     SAVE/LOAD
-     ========================= */
   function getPgId(){
     return window.PG_ID || $("llPgNamePg").value || $("llPgNameM").value || "pg_demo";
   }
@@ -2822,11 +2809,10 @@
         pg_section: snapSection("pg"),
         member_section: snapSection("m")
       };
-localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
+      localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
 
       snapshot = takeSnapshot();
       setEditMode(false);
-
       showPopup("success", T[lang].msgTitleSuccess, T[lang].msgSavedLocal);
 
     }catch(err){
@@ -2836,49 +2822,47 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
     }
   }
 
- async function loadReceiptVoucher(){
-  const pg_id = getPgId();
-  try{
-    const res = await fetch(`/pg/receipt-voucher/${encodeURIComponent(pg_id)}`, { method:"GET" });
-    if (!res.ok) return;
-    const data = await res.json().catch(()=>null);
-    if (!data) return;
+  async function loadReceiptVoucher(){
+    const pg_id = getPgId();
+    try{
+      const res = await fetch(`/pg/receipt-voucher/${encodeURIComponent(pg_id)}`, { method:"GET" });
+      if (!res.ok) return;
+      const data = await res.json().catch(()=>null);
+      if (!data) return;
 
-    const pgData = data.pg_section || data.pg || null;
-    const mData  = data.member_section || data.member || null;
+      const pgData = data.pg_section || data.pg || null;
+      const mData  = data.member_section || data.member || null;
 
-    if (pgData) restoreSection("pg", {
-      pg_name: pgData.pg_name || "",
-      txn_date: pgData.txn_date || "",
-      member_name: pgData.member_name || "",
-      member_code: pgData.member_code || "",
-      details: pgData.details || "",
-      signatures: pgData.signatures || { member:"", udyog:"" },
-      entries: pgData.entries || []
-    });
+      if (pgData) restoreSection("pg", {
+        pg_name: pgData.pg_name || "",
+        txn_date: pgData.txn_date || "",
+        member_name: pgData.member_name || "",
+        member_code: pgData.member_code || "",
+        details: pgData.details || "",
+        signatures: pgData.signatures || { member:"", udyog:"" },
+        entries: pgData.entries || []
+      });
 
-    if (mData) restoreSection("m", {
-      pg_name: mData.pg_name || "",
-      txn_date: mData.txn_date || "",
-      member_name: mData.member_name || "",
-      member_code: mData.member_code || "",
-      details: mData.details || "",
-      signatures: mData.signatures || { member:"", udyog:"" },
-      entries: mData.entries || []
-    });
+      if (mData) restoreSection("m", {
+        pg_name: mData.pg_name || "",
+        txn_date: mData.txn_date || "",
+        member_name: mData.member_name || "",
+        member_code: mData.member_code || "",
+        details: mData.details || "",
+        signatures: mData.signatures || { member:"", udyog:"" },
+        entries: mData.entries || []
+      });
 
-    snapshot = takeSnapshot();
-    setEditMode(false);
-  }catch(err){
-    console.warn("Receipt voucher load skipped:", err);
+      snapshot = takeSnapshot();
+      setEditMode(false);
+      setActivePanel(getSavedActivePanel(), true);
+    }catch(err){
+      console.warn("Receipt voucher load skipped:", err);
+      setActivePanel(getSavedActivePanel(), true);
+    }
   }
-}
 
-  /* =========================
-     Tabs + swipe + dock action bar
-     ========================= */
   const track = $("llTrack");
-  const rail = $("llRail");
 
   function dockActionBar(){
     const bar = $("llActionBar");
@@ -2892,13 +2876,15 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
   function setActivePanel(which, skipFocus){
     activePanel = (which === "member") ? "member" : "pg";
 
-    track.style.transform = (activePanel === "pg") ? "translateX(0%)" : "translateX(-50%)";
+    $("llPanelPg").classList.toggle("is-active", activePanel === "pg");
+    $("llPanelMember").classList.toggle("is-active", activePanel === "member");
 
     $("llTabPg").classList.toggle("active", activePanel === "pg");
     $("llTabMember").classList.toggle("active", activePanel === "member");
     $("llTabPg").setAttribute("aria-selected", activePanel === "pg" ? "true" : "false");
     $("llTabMember").setAttribute("aria-selected", activePanel === "member" ? "true" : "false");
 
+    saveActivePanel(activePanel);
     dockActionBar();
     syncDeleteAllLabel();
 
@@ -2921,95 +2907,12 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
     else openDeleteAllConfirm(key, "all", 0);
   });
 
-  // Swipe: ignore inputs
-  let isDown = false;
-  let startX = 0;
-  let startY = 0;
-  let dx = 0;
-  let dragging = false;
-
-  function onDown(e){
-    const target = e.target;
-    if (target && (target.tagName === "INPUT" || target.closest("input") || target.closest("button") || target.closest("canvas"))) return;
-
-    isDown = true;
-    dragging = false;
-    dx = 0;
-
-    const pt = (e.touches && e.touches[0]) ? e.touches[0] : e;
-    startX = pt.clientX;
-    startY = pt.clientY;
-  }
-
-  function onMove(e){
-    if (!isDown) return;
-
-    const pt = (e.touches && e.touches[0]) ? e.touches[0] : e;
-    const cx = pt.clientX;
-    const cy = pt.clientY;
-
-    const moveX = cx - startX;
-    const moveY = cy - startY;
-
-    if (!dragging){
-      if (Math.abs(moveY) > 10 && Math.abs(moveY) > Math.abs(moveX)) {
-        isDown = false;
-        return;
-      }
-      if (Math.abs(moveX) > 12) dragging = true;
-    }
-
-    if (!dragging) return;
-
-    dx = moveX;
-    e.preventDefault();
-
-    const railW = rail.getBoundingClientRect().width || 1;
-    const pct = (dx / railW) * 50;
-    const base = (activePanel === "pg") ? 0 : -50;
-    let next = base + pct;
-    next = Math.max(-50, Math.min(0, next));
-    track.style.transition = "none";
-    track.style.transform = `translateX(${next}%)`;
-  }
-
-  function onUp(){
-    if (!dragging){
-      isDown = false;
-      track.style.transition = "";
-      return;
-    }
-
-    track.style.transition = "";
-    const threshold = 55;
-    if (dx < -threshold) setActivePanel("member");
-    else if (dx > threshold) setActivePanel("pg");
-    else setActivePanel(activePanel);
-
-    isDown = false;
-    dragging = false;
-    dx = 0;
-  }
-
-  rail.addEventListener("mousedown", onDown);
-  rail.addEventListener("mousemove", onMove);
-  window.addEventListener("mouseup", onUp);
-
-  rail.addEventListener("touchstart", onDown, { passive: true });
-  rail.addEventListener("touchmove", onMove, { passive: false });
-  rail.addEventListener("touchend", onUp);
-
-  /* =========================
-     Apply language
-     ========================= */
   function applyLang(){
     const t = T[lang];
 
     $("llTitle").textContent = t.title;
-
     $("llTabPgText").textContent = t.tab_pg;
     $("llTabMemberText").textContent = t.tab_member;
-    $("llSwipeHintText").textContent = t.swipeHint;
 
     $("llPanelTitlePg").textContent = t.tab_pg;
     $("llPanelTitleMember").textContent = t.tab_member;
@@ -3053,14 +2956,12 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
 
     $("llHSlPg").textContent = t.hSl;
     $("llHSlM").textContent = t.hSl;
-
     $("llHCommodityPg").textContent = t.hCommodity;
     $("llHGradePg").textContent = t.hGrade;
     $("llHRatePg").textContent = t.hRate;
     $("llHVolumePg").textContent = t.hVolume;
     $("llHValuePg").textContent = t.hValue;
     $("llHActionsPg").textContent = t.hActions;
-
     $("llHCommodityM").textContent = t.hCommodity;
     $("llHGradeM").textContent = t.hGrade;
     $("llHRateM").textContent = t.hRate;
@@ -3072,13 +2973,10 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
     $("llCancelText").textContent = t.cancelButton;
     $("llEditSaveText").textContent = isEditing ? t.saveButton : t.editButton;
 
-    // ✅ FIX: keep existing markup; set label text robustly without depending on nodeValue position
     const setKpiLabel = (wrapId, label, boldId) => {
       const wrap = $(wrapId);
       const b = $(boldId);
       if (!wrap || !b) return;
-      // ensure the label exists as text before <b>
-      // remove all text nodes, then re-add one consistent label node
       Array.from(wrap.childNodes).forEach(n=>{
         if (n.nodeType === Node.TEXT_NODE) wrap.removeChild(n);
       });
@@ -3105,23 +3003,19 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
     $("llSignCapturePgMember").textContent = t.capture;
     $("llSignReplacePgMember").textContent = t.replace;
     $("llSignRemovePgMember").textContent = t.remove;
-
     $("llSignUploadPgUdyog").textContent = t.upload;
     $("llSignCapturePgUdyog").textContent = t.capture;
     $("llSignReplacePgUdyog").textContent = t.replace;
     $("llSignRemovePgUdyog").textContent = t.remove;
-
     $("llSignUploadMMember").textContent = t.upload;
     $("llSignCaptureMMember").textContent = t.capture;
     $("llSignReplaceMMember").textContent = t.replace;
     $("llSignRemoveMMember").textContent = t.remove;
-
     $("llSignUploadMUdyog").textContent = t.upload;
     $("llSignCaptureMUdyog").textContent = t.capture;
     $("llSignReplaceMUdyog").textContent = t.replace;
     $("llSignRemoveMUdyog").textContent = t.remove;
 
-    // ✅ NEW: pad labels + buttons
     $("llPadLabelPgMember").textContent = t.padLabel;
     $("llPadLabelPgUdyog").textContent = t.padLabel;
     $("llPadLabelMMember").textContent = t.padLabel;
@@ -3175,11 +3069,6 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
     syncDeleteAllLabel();
   }
 
-  /* ==========================================================
-     ✅ FIX: language sync with base.html (multiple hooks)
-     - do NOT change base; just listen to more events + keys
-     - expose multiple setter names without overriding existing base funcs
-     ========================================================== */
   function setLanguageFromOutside(l){
     const n = normalizeLang(l);
     if (!n) return;
@@ -3188,18 +3077,14 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
     applyLang();
   }
 
-  // keep your existing name for backward-compat
   window.saveReceiptVoucherSetLanguage = function(l){
     setLanguageFromOutside(l);
   };
 
-  // ✅ add page-appropriate alias (some bases call a generic page setter)
   window.receiptVoucherSetLanguage = function(l){
     setLanguageFromOutside(l);
   };
 
-  // ✅ optional: if base calls a generic window.setLanguage / window.pgmisSetLanguage,
-  // we DO NOT override if it already exists; we only add helper names if absent.
   if (!window.pgmisPageSetLanguage){
     window.pgmisPageSetLanguage = function(l){ setLanguageFromOutside(l); };
   }
@@ -3207,7 +3092,6 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
     window.pgmisSetLanguageForPage = function(l){ setLanguageFromOutside(l); };
   }
 
-  // ✅ listen to multiple custom events (base might dispatch any of these)
   const langEventHandler = (e)=>{
     const detailLang =
       (e && e.detail && (e.detail.lang || e.detail.language || e.detail.value)) ? (e.detail.lang || e.detail.language || e.detail.value) : null;
@@ -3221,7 +3105,6 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
   window.addEventListener("language-change", langEventHandler);
   window.addEventListener("app-language-change", langEventHandler);
 
-  // ✅ also react if base updates localStorage language keys
   window.addEventListener("storage", (e)=>{
     const k = (e && e.key) ? String(e.key) : "";
     if (!k) return;
@@ -3231,9 +3114,6 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
     }
   });
 
-  /* =========================
-     Wiring controls (per section)
-     ========================= */
   function wireSection(sectionKey){
     const st = sectionKey === "pg" ? S.pg : S.m;
 
@@ -3258,22 +3138,27 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
     });
 
     $(prevId).addEventListener("click", ()=>{
-      if (st.page > 1){ st.page -= 1; recalcTotalsAndVisibility(sectionKey); syncDeleteAllLabel(); }
+      if (st.page > 1){
+        st.page -= 1;
+        recalcTotalsAndVisibility(sectionKey);
+        syncDeleteAllLabel();
+      }
     });
 
     $(nextId).addEventListener("click", ()=>{
       const filtered = getFilteredRows(sectionKey);
       const totalPages = Math.max(1, Math.ceil(filtered.length / st.perPage));
-      if (st.page < totalPages){ st.page += 1; recalcTotalsAndVisibility(sectionKey); syncDeleteAllLabel(); }
+      if (st.page < totalPages){
+        st.page += 1;
+        recalcTotalsAndVisibility(sectionKey);
+        syncDeleteAllLabel();
+      }
     });
   }
 
   wireSection("pg");
   wireSection("m");
 
-  /* =========================
-     Select-all checkboxes (visible rows only)
-     ========================= */
   function wireSelectAll(sectionKey){
     const idSel = sectionKey === "pg" ? "llSelectAllPg" : "llSelectAllM";
     $(idSel).addEventListener("change", (e)=>{
@@ -3289,9 +3174,6 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
   wireSelectAll("pg");
   wireSelectAll("m");
 
-  /* =========================
-     Global buttons
-     ========================= */
   $("llEditSaveBtn").addEventListener("click", ()=>{
     if (!isEditing){
       enterEdit();
@@ -3309,55 +3191,48 @@ localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
 
   $("llCancelYes").addEventListener("click", doCancel);
 
-  /* =========================
-     Boot: create initial rows
-     ========================= */
-  function seed(sectionKey){
-    const st = sectionKey === "pg" ? S.pg : S.m;
-    const bodyId = sectionKey === "pg" ? "llBodyPg" : "llBodyM";
-    for (let i=0; i<25; i++){
-      const r = createRow(sectionKey);
-      st.allRows.push(r);
-      $(bodyId).appendChild(r);
+  $("llBackBtn").addEventListener("click", ()=>{
+    try{
+      if (window.history.length > 1) window.history.back();
+      else window.location.href = "/";
+    }catch(_){
+      window.location.href = "/";
     }
+  });
+
+  function seed(sectionKey){
     recalcTotalsAndVisibility(sectionKey, true);
   }
 
-  // ✅ FIX: initialize language FIRST (so seeded rows get correct placeholders)
   lang = getInitialLang();
+  activePanel = getSavedActivePanel();
 
-  seed("pg");
-  seed("m");
-
-  // signatures init
   wireSignatureButtons();
   renderSignatureUI("pg","member");
   renderSignatureUI("pg","udyog");
   renderSignatureUI("m","member");
   renderSignatureUI("m","udyog");
 
-  setActivePanel("pg", true);
+  setActivePanel(activePanel, true);
   dockActionBar();
-
-  // ✅ NEW: init signature pads
   initPads();
-
   applyLang();
   setEditMode(false);
 
-  // load backend (optional)
-const localData = localStorage.getItem("receipt_voucher_data");
+  const localData = localStorage.getItem("receipt_voucher_data");
   if(localData){
     try{
       const parsed = JSON.parse(localData);
       restoreSection("pg", parsed.pg_section || {});
       restoreSection("m", parsed.member_section || {});
       snapshot = takeSnapshot();
+      setActivePanel(getSavedActivePanel(), true);
     }catch(e){
       console.warn("Local load failed", e);
+      loadReceiptVoucher();
     }
   }else{
-   loadReceiptVoucher();
+    loadReceiptVoucher();
   }
 
 })();

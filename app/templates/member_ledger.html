@@ -6,559 +6,609 @@
 {% block head_extra %}
 <style>
   /* ============================================================
-     MEMBER LEDGER (UPDATED)
-     ✅ ALL localhost confirm() prompts replaced with real popup modals
-        (same visual language as your Ledger Book modals)
-     ✅ Edit-lock warning uses the same real popup (OK only)
-     ✅ NO other data shapes/logic changed
+     MEMBER LEDGER — FULL UPDATED PAGE
+     ✅ Delete buttons fixed in web + app/mobile
+     ✅ Header reorganized for cleaner app/mobile view
+     ✅ Back button icon updated to provided SVG
+     ✅ Action buttons moved below header, above producer info
+     ✅ Active tab persists after refresh
+     ✅ Draft + final data persistence added (server + local fallback)
+     ✅ Existing UI/logic preserved
      ============================================================ */
 
   .member-ledger-page *{ margin:0; padding:0; box-sizing:border-box; }
 
-  /* Theme tokens aligned with your ledger pages */
   .member-ledger-page{
     --ink:#0f172a;
+    --ink-2:#1e293b;
     --muted:#64748b;
-    --line: rgba(15,23,42,.14);
-    --line2: rgba(15,23,42,.08);
+    --line:rgba(15,23,42,.12);
+    --line2:rgba(15,23,42,.08);
     --paper:#ffffff;
-    --soft:#f7faf9;
+    --soft:#f8fafc;
+    --soft2:#f1f5f9;
+    --soft3:#eef2f7;
     --accent:#0b4d3a;
-    --sec1: rgba(16,185,129,.10);
-    --sec1b: rgba(5,150,105,.22);
-    --shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+    --accent-2:#0f5a44;
+    --mint:#dff1ea;
+    --mint-2:#edf8f3;
+    --mint-3:#cfe8de;
+    --ring:rgba(11,77,58,.10);
 
-    --danger:#dc2626;
-    --dangerBg: rgba(220,38,38,.08);
-    --dangerBd: rgba(220,38,38,.22);
+    --danger:#b42318;
+    --dangerBg:rgba(220,38,38,.06);
+    --dangerBd:rgba(220,38,38,.20);
 
-    color: var(--ink);
+    --primary:#0b4d3a;
+    --primaryBg:rgba(11,77,58,.08);
+    --primaryBd:rgba(11,77,58,.18);
+
+    --shadow:0 18px 34px -28px rgba(15,23,42,.22);
+    --shadow-sm:0 10px 24px -24px rgba(15,23,42,.18);
+
+    color:var(--ink);
   }
 
-  /* Page background */
   .member-ledger-page .bg-gradient{
-    min-height: 100%;
-    background:
-      radial-gradient(circle at 12% 10%, rgba(16,185,129,.10), transparent 55%),
-      radial-gradient(circle at 90% 0%, rgba(59,130,246,.08), transparent 55%),
-      linear-gradient(135deg, rgba(240,253,244,.55), rgba(248,250,252,.85));
-    border-radius: 16px;
-    padding: 12px;
+    min-height:100%;
+    background:#edf4f1;
+    border-radius:18px;
+    padding:14px;
   }
 
-  /* Toast */
-  .member-ledger-page .toast-container{
-    position: fixed;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000;
-    display:flex;
-    flex-direction: column;
-    gap: 10px;
-    pointer-events:none;
-  }
-  .member-ledger-page .toast{
-    pointer-events:auto;
-    min-width: 280px;
-    max-width: min(520px, calc(100vw - 24px));
-    background:#fff;
-    border:1px solid rgba(15,23,42,.10);
-    border-radius: 14px;
-    box-shadow: 0 30px 60px -30px rgba(0,0,0,.35);
-    padding: 12px 14px;
-    display:flex;
-    align-items:center;
-    gap: 10px;
-    animation: toastIn .18s ease-out;
-  }
-  @keyframes toastIn{
-    from{ opacity:0; transform: translateY(-6px) scale(.98); }
-    to{ opacity:1; transform: translateY(0) scale(1); }
-  }
-  .member-ledger-page .toast.toast-hide{ animation: toastOut .18s ease-out forwards; }
-  @keyframes toastOut{
-    from{ opacity:1; transform: translateY(0); }
-    to{ opacity:0; transform: translateY(-8px); }
-  }
-  .member-ledger-page .toast-success{ border-left: 4px solid rgba(11,77,58,.90); }
-  .member-ledger-page .toast-warn{ border-left: 4px solid rgba(234,179,8,.95); }
-  .member-ledger-page .toast-danger{ border-left: 4px solid rgba(220,38,38,.95); }
-  .member-ledger-page .toast-icon{ width: 22px; height: 22px; }
-  .member-ledger-page .toast-message{
-    flex:1;
-    color: rgba(15,23,42,.85);
-    font-size: 12.5px;
-    font-weight: 900;
-    line-height: 1.25;
-  }
+  .member-ledger-page .toast-container{ display:none !important; }
 
-  /* Shell */
   .member-ledger-page .ml-wrap{
     width:100%;
-    padding: clamp(12px, 2.2vw, 22px);
+    padding:clamp(12px,2.2vw,22px);
   }
   .member-ledger-page .ml-sheet{
-    background:var(--paper);
-    border:1px solid var(--line);
-    border-radius:16px;
-    overflow:hidden;
-    box-shadow: var(--shadow);
+    background:transparent;
+    border:none;
+    border-radius:18px;
+    overflow:visible;
+    box-shadow:none;
   }
 
   /* Header */
   .member-ledger-page .ml-header{
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    background:
-      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
-      linear-gradient(135deg, rgba(240,253,244,.92), rgba(255,255,255,.92));
-    border-bottom:1px solid var(--line2);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    margin-bottom:14px;
   }
-  .member-ledger-page .header-content{
+
+   .member-ledger-page .header-content{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+    padding:18px 20px;
+    border:1px solid rgba(11,77,58,.10);
+    background:
+      radial-gradient(circle at left top, rgba(11,77,58,.08), transparent 42%),
+      linear-gradient(180deg, #f8fcfa 0%, #f3f8f5 100%);
+    border-radius:24px;
+    box-shadow:0 18px 30px -26px rgba(15,23,42,.18);
+  }
+    .member-ledger-page .header-main{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+    width:100%;
+    min-width:0;
+    position:relative;
+  }
+
+  .member-ledger-page .mobile-back-slot{
+    display:none;
+    flex:0 0 auto;
+  }
+
+  .member-ledger-page .mobile-back-btn{
+    border:none;
+    outline:none;
+    cursor:pointer;
+    width:56px;
+    height:56px;
+    min-width:56px;
+    border-radius:18px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:#ffffff;
+    color:#0f5a44;
+    border:1px solid rgba(15,23,42,.08);
+    box-shadow:0 10px 24px -20px rgba(15,23,42,.22);
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .member-ledger-page .mobile-back-btn:hover{
+    transform:translateY(-1px);
+    background:#ffffff;
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.24);
+  }
+  .member-ledger-page .mobile-back-btn:active{ transform:translateY(0); }
+  .member-ledger-page .mobile-back-btn svg{
+    width:24px;
+    height:24px;
+    display:block;
+  }
+
+   .member-ledger-page .header-copy{
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    flex:1;
+    align-items:center;
+    text-align:center;
+  }
+   .member-ledger-page .header-title{
+    text-align:center;
+    font-size:18px;
+    font-weight:850;
+    letter-spacing:.2px;
+    color:#0f172a;
+    line-height:1.2;
+    margin:0;
+  }
+
+   .member-ledger-page .header-subtitle{
+    display:block;
+    text-align:center;
+    font-size:12.5px;
+    font-weight:800;
+    line-height:1.35;
+    color:#52637c;
+    max-width:700px;
+  }
+
+  /* Unified action panel placed BELOW header */
+  .member-ledger-page .action-panel{
+    margin-bottom:14px;
+    padding:14px;
+    border:1px solid var(--line);
+    border-radius:24px;
+    background:#fff;
+    box-shadow:var(--shadow-sm);
+  }
+
+  .member-ledger-page .actionbar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    width:100%;
+  }
+
+  .member-ledger-page .actionbar .grow-break{
+    flex-basis:100%;
+    height:0;
+    display:none;
+  }
+
+  /* Buttons */
+  .member-ledger-page .btn{
+    border-radius:999px;
+    padding:11px 18px;
+    font-weight:950;
+    font-size:12.8px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease, border-color .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    white-space:nowrap;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    color:var(--ink);
+    box-shadow:none;
+    min-height:44px;
+    line-height:1;
+    flex:0 0 auto;
+  }
+  .member-ledger-page .btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 14px 24px -22px rgba(15,23,42,.25);
+  }
+  .member-ledger-page .btn:active{ transform:translateY(0); }
+  .member-ledger-page .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  .member-ledger-page .btn svg.icon{
+    width:18px;
+    height:18px;
+    flex:0 0 auto;
+    display:block;
+  }
+
+  .member-ledger-page .btn-primary{
+    border-color:var(--primaryBd);
+    background:var(--mint-2);
+    color:var(--primary);
+  }
+  .member-ledger-page .btn-primary:hover{ background:#e5f5ee; }
+
+  .member-ledger-page .btn-danger{
+    border-color:var(--dangerBd);
+    background:var(--dangerBg);
+    color:var(--danger);
+  }
+  .member-ledger-page .btn-danger:hover{
+    background:rgba(220,38,38,.10);
+    box-shadow:0 14px 22px -20px rgba(220,38,38,.22);
+  }
+
+  .member-ledger-page .btn-ghost{
+    border-color:rgba(15,23,42,.12);
+    background:#fff;
+    color:var(--ink);
+  }
+
+  .member-ledger-page .btn-save-wide{
+    min-width:112px;
+  }
+
+  .member-ledger-page .btn-delete-wide{
+    min-width:168px;
+  }
+
+  .member-ledger-page .show-when-editing{ display:none; }
+  .member-ledger-page.is-editing .show-when-editing{ display:inline-flex; }
+  .member-ledger-page.is-editing .hide-when-editing{ display:none !important; }
+
+  .member-ledger-page .content{
+    padding:0;
+    max-width:none;
+    margin:0;
+  }
+
+  .member-ledger-page .card,
+  .member-ledger-page .table-card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:var(--shadow-sm);
+  }
+
+  .member-ledger-page .producer-card{ margin-bottom:14px; }
+
+  .member-ledger-page .card-header-producer{
+    padding:16px 18px;
+    background:linear-gradient(180deg, #f7fcf9, #eef6f1);
+    border-bottom:1px solid var(--line2);
+  }
+  .member-ledger-page .card-header-producer h2{
+    font-size:16px;
+    font-weight:950;
+    letter-spacing:.2px;
+    color:#0f172a;
+    margin:0;
+  }
+
+  .member-ledger-page .card-content-producer{
+    padding:16px 18px 18px;
+    display:grid;
+    grid-template-columns:1.2fr 1fr;
+    gap:12px 16px;
+    background:#fff;
+  }
+
+  .member-ledger-page .input-group-full{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
+
+  .member-ledger-page .label{
+    font-weight:900;
+    font-size:12px;
+    color:var(--ink);
+    margin-bottom:6px;
+    white-space:nowrap;
+  }
+
+  .member-ledger-page .input{
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:14px;
+    padding:12px 14px;
+    background:#fff;
+    font-weight:800;
+    font-size:12.5px;
+    outline:none;
+    color:var(--ink);
+    transition:box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+    min-width:0;
+  }
+  .member-ledger-page .input:focus{
+    border-color:rgba(15,23,42,.24);
+    box-shadow:0 0 0 3px rgba(15,23,42,.06);
+    background:#fff;
+  }
+  .member-ledger-page .input[disabled],
+  .member-ledger-page .input[readonly]{
+    opacity:.72;
+    cursor:not-allowed;
+    background:#f8fafc;
+  }
+
+  .member-ledger-page .select-wrapper{ position:relative; }
+  .member-ledger-page .select{
+    width:100%;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:14px;
+    padding:12px 40px 12px 13px;
+    background:#fff;
+    font-weight:800;
+    font-size:12.5px;
+    outline:none;
+    color:var(--ink);
+    appearance:none;
+    cursor:pointer;
+    transition:box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .member-ledger-page .select:focus{
+    border-color:rgba(15,23,42,.24);
+    box-shadow:0 0 0 3px rgba(15,23,42,.06);
+    background:#fff;
+  }
+  .member-ledger-page .select[disabled]{
+    opacity:.72;
+    cursor:not-allowed;
+    background:#f8fafc;
+  }
+  .member-ledger-page .select-icon{
+    position:absolute;
+    right:12px;
+    top:50%;
+    transform:translateY(-50%);
+    width:18px;
+    height:18px;
+    pointer-events:none;
+    color:rgba(15,23,42,.55);
+  }
+
+  /* Tabs */
+  .member-ledger-page .tabs{
+    margin:12px 0;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:#fff;
+    box-shadow:var(--shadow-sm);
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .member-ledger-page .tabs .seg{
+    display:inline-flex;
+    gap:6px;
+    padding:5px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.10);
+    background:#f8fafc;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    max-width:100%;
+  }
+
+  .member-ledger-page .tab{
+    border:none;
+    outline:none;
+    cursor:pointer;
+    font-weight:950;
+    font-size:12.5px;
+    padding:10px 14px;
+    border-radius:999px;
+    background:transparent;
+    color:rgba(15,23,42,.70);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+    transition:background .2s ease, color .2s ease, transform .15s ease, box-shadow .2s ease, border .2s ease;
+  }
+  .member-ledger-page .tab:hover{ transform:translateY(-1px); }
+  .member-ledger-page .tab .badge{
+    width:10px; height:10px;
+    border-radius:999px;
+    background:rgba(15,23,42,.58);
+    flex-shrink:0;
+  }
+
+  .member-ledger-page .tab.active{
+    background:#fff;
+    color:#b42318;
+    border:1px solid rgba(220,38,38,.22);
+    box-shadow:0 12px 18px -18px rgba(15,23,42,.25);
+  }
+  .member-ledger-page .tab.active .badge{
+    background:#b42318;
+  }
+
+  .member-ledger-page .tab-content{ margin-top:10px; }
+  .member-ledger-page .tab-pane{ display:none; }
+  .member-ledger-page .tab-pane.active{ display:block; }
+
+  .member-ledger-page .tab-header{
+    padding:14px 16px;
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:10px;
     flex-wrap:wrap;
-    padding:14px 16px 12px;
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:#fff;
+    box-shadow:var(--shadow-sm);
+    margin-bottom:12px;
   }
-  .member-ledger-page .header-title{
-    font-size:18px;
+  .member-ledger-page .tab-title{
+    margin:0;
+    font-size:15px;
     font-weight:950;
     letter-spacing:.2px;
     color:var(--ink);
     display:flex;
     align-items:center;
     gap:10px;
-    min-width: 220px;
-    flex: 1 1 auto;
-  }
-  .member-ledger-page .icon{ width:18px; height:18px; }
-  .member-ledger-page .sparkles{ color:#059669; }
-
-  .member-ledger-page .header-right{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    flex-wrap:wrap;
-    justify-content:flex-end;
-  }
-
-  /* Action bar in header */
-  .member-ledger-page .actionbar{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    flex-wrap:wrap;
-    justify-content:flex-end;
-  }
-
-  /* Pills / buttons */
-  .member-ledger-page .btn{
-    border-radius:999px;
-    padding:10px 14px;
-    font-weight:950;
-    font-size:12px;
-    cursor:pointer;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    white-space:nowrap;
-    border:1px solid rgba(15,23,42,.14);
-    background: rgba(247,250,249,.85);
-    color: var(--ink);
-  }
-  .member-ledger-page .btn:hover{
-    transform: translateY(-1px);
-    background:#fff;
-    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
-  }
-  .member-ledger-page .btn:active{ transform: translateY(0); }
-  .member-ledger-page .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
-
-  .member-ledger-page .btn-primary{
-    border:1px solid rgba(16,185,129,.35);
-    background: rgba(16,185,129,.12);
-    color: var(--accent);
-  }
-  .member-ledger-page .btn-primary:hover{ background: rgba(16,185,129,.16); }
-
-  .member-ledger-page .btn-danger{
-    border:1px solid var(--dangerBd);
-    background: var(--dangerBg);
-    color:#991b1b;
-  }
-  .member-ledger-page .btn-danger:hover{
-    background: rgba(220,38,38,.12);
-    box-shadow: 0 14px 22px -20px rgba(220,38,38,.30);
-  }
-
-  .member-ledger-page .btn-ghost{
-    border:1px solid rgba(15,23,42,.12);
-    background: rgba(255,255,255,.72);
-  }
-
-  /* Edit visibility toggles */
-  .member-ledger-page .show-when-editing{ display:none; }
-  .member-ledger-page.is-editing .show-when-editing{ display:inline-flex; }
-  .member-ledger-page.is-editing .hide-when-editing{ display:none !important; }
-
-  /* Content */
-  .member-ledger-page .content{
-    padding: 14px 16px 18px;
-    max-width:none;
-    margin:0;
-  }
-
-  /* Producer card */
-  .member-ledger-page .card{
-    background: #fff;
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    overflow:hidden;
-    box-shadow: 0 18px 26px -26px rgba(15,23,42,.35);
-  }
-  .member-ledger-page .producer-card{ margin-bottom: 14px; }
-
-  .member-ledger-page .card-header-producer{
-    padding: 12px 16px;
-    background:
-      radial-gradient(circle at 18% 25%, rgba(16,185,129,.12), transparent 60%),
-      linear-gradient(to right, rgba(247,250,249,.92), rgba(255,255,255,.92));
-    border-bottom:1px solid rgba(15,23,42,.08);
-  }
-  .member-ledger-page .card-header-producer h2{
-    font-size: 14px;
-    font-weight: 950;
-    letter-spacing: .2px;
-    color: rgba(15,23,42,.78);
-    display:flex;
-    align-items:center;
-    gap:8px;
-    margin:0;
-  }
-
-  .member-ledger-page .card-content-producer{
-    padding: 12px 16px 14px;
-    display:grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 10px 14px;
-    background:
-      radial-gradient(circle at 10% 10%, var(--sec1), transparent 55%),
-      #fff;
-  }
-
-  .member-ledger-page .input-group-full{ display:flex; flex-direction:column; min-width:0; }
-  .member-ledger-page .label{
-    font-weight:900;
-    font-size:12px;
-    color: var(--ink);
-    margin-bottom:6px;
-    white-space:nowrap;
-  }
-
-  .member-ledger-page .input{
-    border: 1px solid rgba(15,23,42,.14);
-    border-radius: 12px;
-    padding: 10px 12px;
-    background: rgba(247,250,249,.75);
-    font-weight: 800;
-    font-size: 12px;
-    outline: none;
-    color: var(--ink);
-    transition: box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
-    min-width:0;
-  }
-  .member-ledger-page .input:focus{
-    border-color: rgba(11,77,58,.40);
-    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
-    background:#fff;
-  }
-  .member-ledger-page .input[disabled],
-  .member-ledger-page .input[readonly]{
-    opacity:.70;
-    cursor:not-allowed;
-  }
-
-  /* Select */
-  .member-ledger-page .select-wrapper{ position:relative; }
-  .member-ledger-page .select{
-    width:100%;
-    border: 1px solid rgba(15,23,42,.14);
-    border-radius: 12px;
-    padding: 10px 40px 10px 12px;
-    background: rgba(247,250,249,.75);
-    font-weight: 800;
-    font-size: 12px;
-    outline:none;
-    color: var(--ink);
-    appearance:none;
-    cursor:pointer;
-    transition: box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
-  }
-  .member-ledger-page .select:focus{
-    border-color: rgba(11,77,58,.40);
-    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
-    background:#fff;
-  }
-  .member-ledger-page .select[disabled]{
-    opacity:.70;
-    cursor:not-allowed;
-  }
-  .member-ledger-page .select-icon{
-    position:absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 18px;
-    height: 18px;
-    pointer-events:none;
-    color: rgba(15,23,42,.55);
-  }
-
-  /* Tabs */
-  .member-ledger-page .tabs{
-    margin: 12px 0 12px;
-    padding: 10px 16px 12px;
-    border: 1px solid rgba(15,23,42,.10);
-    border-radius: 16px;
-    background: rgba(255,255,255,.92);
-    box-shadow: 0 10px 18px -18px rgba(15,23,42,.25);
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-  .member-ledger-page .tabs .seg{
-    display:inline-flex;
-    gap:6px;
-    padding:6px;
-    border-radius:999px;
-    border:1px solid rgba(15,23,42,.12);
-    background: rgba(247,250,249,.72);
-    overflow:auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .member-ledger-page .tab{
-    border:none;
-    outline:none;
-    cursor:pointer;
-    font-weight:950;
-    font-size:12px;
-    padding:10px 12px;
-    border-radius:999px;
-    background: transparent;
-    color: rgba(15,23,42,.70);
-    display:flex;
-    align-items:center;
-    gap:8px;
-    white-space:nowrap;
-    transition: background .2s ease, color .2s ease, transform .15s ease, box-shadow .2s ease, border .2s ease;
-  }
-  .member-ledger-page .tab:hover{ transform: translateY(-1px); }
-  .member-ledger-page .tab .badge{
-    width:10px; height:10px;
-    border-radius:999px;
-    background: rgba(11,77,58,.9);
-    box-shadow: 0 0 0 6px rgba(16,185,129,.12);
-    flex-shrink:0;
-  }
-  .member-ledger-page .tab.active{
-    background:#fff;
-    color:#dc2626;
-    border: 1px solid rgba(220,38,38,.35);
-    box-shadow: 0 16px 22px -20px rgba(15,23,42,.28);
-  }
-
-  .member-ledger-page .tab-content{ margin-top: 10px; }
-  .member-ledger-page .tab-pane{ display:none; }
-  .member-ledger-page .tab-pane.active{ display:block; }
-
-  .member-ledger-page .tab-header{
-    padding: 12px 16px;
-    display:flex;
-    align-items:flex-start;
-    justify-content: space-between;
-    gap:10px;
-    flex-wrap:wrap;
-    border: 1px solid rgba(15,23,42,.12);
-    border-radius: 16px;
-    background:
-      radial-gradient(circle at 10% 10%, var(--sec1), transparent 55%),
-      #fff;
-    box-shadow: 0 18px 26px -26px rgba(15,23,42,.35);
-    margin-bottom: 12px;
-  }
-  .member-ledger-page .tab-title{
-    margin:0;
-    font-size: 14px;
-    font-weight: 950;
-    letter-spacing: .2px;
-    color: var(--ink);
-    display:flex;
-    align-items:center;
-    gap:10px;
   }
   .member-ledger-page .tab-title::before{
     content:"";
-    width:12px; height:12px;
+    width:10px; height:10px;
     border-radius:999px;
-    background: rgba(11,77,58,.90);
-    box-shadow: 0 0 0 7px rgba(16,185,129,.14);
+    background:rgba(11,77,58,.72);
     display:inline-block;
   }
 
-  /* Table */
-  .member-ledger-page .table-card{
-    background:#fff;
-    border:1px solid rgba(15,23,42,.12);
-    border-radius: 16px;
-    box-shadow: 0 18px 26px -26px rgba(15,23,42,.35);
-    overflow:hidden;
-  }
-
+  /* Table controls */
   .member-ledger-page .table-controls{
-    padding: 12px 14px;
+    padding:14px 16px;
     display:flex;
     gap:10px;
     flex-wrap:wrap;
     align-items:center;
-    justify-content: space-between;
-    border-bottom: 1px solid rgba(15,23,42,.08);
-    background:
-      radial-gradient(circle at 14% 30%, rgba(16,185,129,.10), transparent 65%),
-      rgba(255,255,255,.92);
+    justify-content:space-between;
+    border-bottom:1px solid var(--line2);
+    background:#fbfcfe;
   }
 
-  .member-ledger-page .controls-left,
-  .member-ledger-page .controls-right{
+  .member-ledger-page .controls-left{
     display:flex;
     gap:10px;
     flex-wrap:wrap;
     align-items:center;
+    width:100%;
   }
 
   .member-ledger-page .search-wrap{
-    display:flex;
-    align-items:center;
+    display:flex !important;
+    align-items:center !important;
     gap:8px;
-    border:1px solid rgba(15,23,42,.14);
-    background: rgba(247,250,249,.75);
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
     border-radius:999px;
-    padding: 8px 10px;
-    min-width: min(420px, 100%);
+    padding:8px 12px;
+    min-width:min(420px, 100%);
+    width:auto;
+    max-width:100%;
+    flex:1 1 280px;
+    min-height:44px;
+    height:44px;
+    aspect-ratio:auto !important;
+    overflow:hidden;
   }
-  .member-ledger-page .search-wrap svg{ width:18px;height:18px;color: rgba(15,23,42,.55); }
+  .member-ledger-page .search-wrap svg{
+    width:18px;
+    height:18px;
+    color:rgba(15,23,42,.45);
+    flex-shrink:0;
+  }
   .member-ledger-page .search-input{
     border:none;
     outline:none;
-    background: transparent;
-    font-weight: 850;
-    font-size: 12px;
-    color: var(--ink);
-    width: min(340px, 100%);
+    background:transparent;
+    font-weight:850;
+    font-size:12.8px;
+    color:var(--ink);
+    width:100%;
+    min-width:0;
+    height:auto;
+    line-height:1.2;
   }
 
   .member-ledger-page .select-mini{
-    border:1px solid rgba(15,23,42,.14);
-    background: rgba(247,250,249,.75);
-    border-radius: 999px;
-    padding: 8px 12px;
-    font-weight: 900;
-    font-size: 12px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    border-radius:999px;
+    padding:8px 14px;
+    font-weight:900;
+    font-size:12px;
     outline:none;
     cursor:pointer;
-    color: rgba(15,23,42,.80);
+    color:rgba(15,23,42,.82);
+    min-height:44px;
+    max-width:100%;
   }
 
   .member-ledger-page .table-wrap{
     overflow:auto;
-    -webkit-overflow-scrolling: touch;
+    -webkit-overflow-scrolling:touch;
   }
 
   .member-ledger-page table{
     width:100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    min-width: 980px;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:980px;
   }
 
   .member-ledger-page thead th{
-    position: sticky;
-    top: 0;
-    z-index: 2;
+    position:sticky;
+    top:0;
+    z-index:2;
     text-align:left;
-    font-size: 12px;
-    font-weight: 950;
-    color: rgba(15,23,42,.78);
-    background:
-      linear-gradient(to right, rgba(247,250,249,.92), rgba(255,255,255,.92));
-    border-bottom: 1px solid rgba(15,23,42,.10);
-    padding: 10px 10px;
+    font-size:12px;
+    font-weight:950;
+    color:rgba(15,23,42,.76);
+    background:#f8fafc;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    padding:11px 10px;
     white-space:nowrap;
   }
 
   .member-ledger-page tbody td{
-    border-bottom: 1px solid rgba(15,23,42,.08);
-    padding: 10px 10px;
-    vertical-align: top;
+    border-bottom:1px solid rgba(15,23,42,.06);
+    padding:10px;
+    vertical-align:top;
     background:#fff;
   }
-  .member-ledger-page tbody tr:hover td{
-    background: rgba(240,253,244,.35);
-  }
+  .member-ledger-page tbody tr:hover td{ background:#fcfdff; }
 
   .member-ledger-page .cell-center{ text-align:center; }
-  .member-ledger-page .cell-tight{ width: 1%; white-space:nowrap; }
+  .member-ledger-page .cell-tight{ width:1%; white-space:nowrap; }
 
   .member-ledger-page .chk{
-    width: 16px; height: 16px;
-    accent-color: #059669;
+    width:16px; height:16px;
+    accent-color:#0b4d3a;
     cursor:pointer;
   }
   .member-ledger-page .chk[disabled]{ cursor:not-allowed; opacity:.6; }
 
   .member-ledger-page .mini-input{
-    width: 100%;
-    min-width: 120px;
-    border: 1px solid rgba(15,23,42,.14);
-    border-radius: 10px;
-    padding: 8px 10px;
-    background: rgba(247,250,249,.78);
-    font-weight: 850;
-    font-size: 12px;
+    width:100%;
+    min-width:120px;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:10px;
+    padding:9px 10px;
+    background:#fff;
+    font-weight:850;
+    font-size:12px;
     outline:none;
-    color: var(--ink);
-    transition: box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+    color:var(--ink);
+    transition:box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
   }
   .member-ledger-page .mini-input:focus{
-    border-color: rgba(11,77,58,.40);
-    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    border-color:rgba(15,23,42,.24);
+    box-shadow:0 0 0 3px rgba(15,23,42,.05);
     background:#fff;
   }
   .member-ledger-page .mini-input[readonly],
   .member-ledger-page .mini-input[disabled]{
-    opacity:.70;
+    opacity:.76;
     cursor:not-allowed;
+    background:#f8fafc;
   }
 
-  .member-ledger-page .mini-input.calc{
-    background: rgba(16,185,129,.08);
-    border-color: rgba(16,185,129,.22);
-    color: var(--accent);
-    font-weight: 950;
-  }
+  .member-ledger-page .mini-input.calc,
   .member-ledger-page .mini-input.total{
-    background: rgba(16,185,129,.12);
-    border-color: rgba(16,185,129,.30);
-    color: var(--accent);
-    font-weight: 950;
+    background:#f8fafc;
+    border-color:rgba(15,23,42,.10);
+    color:var(--ink);
+    font-weight:950;
   }
 
   .member-ledger-page .row-actions{
@@ -567,17 +617,106 @@
     align-items:center;
     justify-content:flex-end;
   }
+  .member-ledger-page .row-actions .btn{
+    min-width:44px;
+    width:44px;
+    height:44px;
+    padding:0;
+    border-radius:14px;
+  }
 
-  /* Table footer pagination */
+  /* Mobile swipe cards */
+  .member-ledger-page .mobile-cards-wrap{
+    display:none;
+    padding:12px;
+    background:#fff;
+  }
+
+  .member-ledger-page .mobile-cards-rail{
+    display:flex;
+    gap:12px;
+    overflow-x:auto;
+    padding:2px 2px 6px;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+  }
+  .member-ledger-page .mobile-cards-rail::-webkit-scrollbar{
+    height:8px;
+  }
+  .member-ledger-page .mobile-cards-rail::-webkit-scrollbar-thumb{
+    background:rgba(15,23,42,.16);
+    border-radius:999px;
+  }
+
+  .member-ledger-page .ml-card{
+    min-width:min(88vw, 420px);
+    width:min(88vw, 420px);
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:var(--shadow-sm);
+    scroll-snap-align:start;
+    overflow:hidden;
+  }
+  .member-ledger-page .ml-card-head{
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:linear-gradient(180deg, #fafafa, #f8fafc);
+    border-bottom:1px solid var(--line2);
+  }
+  .member-ledger-page .ml-card-sl{
+    font-size:12px;
+    font-weight:950;
+    color:rgba(15,23,42,.70);
+  }
+  .member-ledger-page .ml-card-head-right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .member-ledger-page .ml-card-body{
+    padding:12px 14px 14px;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .member-ledger-page .ml-field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .member-ledger-page .ml-field-label{
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.2px;
+    color:rgba(15,23,42,.66);
+    text-transform:uppercase;
+  }
+  .member-ledger-page .ml-card-actions{
+    display:flex;
+    justify-content:flex-end;
+    padding-top:4px;
+  }
+  .member-ledger-page .ml-card-actions .btn{
+    min-width:44px;
+    width:44px;
+    height:44px;
+    padding:0;
+    border-radius:14px;
+  }
+
   .member-ledger-page .table-footer{
-    padding: 10px 14px;
+    padding:10px 14px;
     display:flex;
     gap:10px;
     flex-wrap:wrap;
     align-items:center;
-    justify-content: space-between;
-    background: rgba(255,255,255,.92);
-    border-top: 1px solid rgba(15,23,42,.08);
+    justify-content:space-between;
+    background:#fff;
+    border-top:1px solid rgba(15,23,42,.08);
   }
   .member-ledger-page .pager{
     display:flex;
@@ -586,244 +725,368 @@
     flex-wrap:wrap;
   }
   .member-ledger-page .pager-meta{
-    font-size: 12px;
-    font-weight: 900;
-    color: rgba(15,23,42,.72);
+    font-size:12px;
+    font-weight:900;
+    color:rgba(15,23,42,.72);
   }
 
-  /* Empty */
-  .member-ledger-page .empty-state{
-    background: #fff;
-    border: 1px dashed rgba(15,23,42,.22);
-    border-radius: 16px;
-    padding: 18px 16px;
-    text-align:center;
-    color: rgba(15,23,42,.70);
-    font-weight: 900;
-    font-size: 12px;
-    box-shadow: 0 18px 26px -26px rgba(15,23,42,.35);
-    margin: 12px 0;
+  .member-ledger-page #no-purchases-text,
+  .member-ledger-page #no-sales-text{
+    padding:10px 2px 0;
+    font-size:12.5px;
+    font-weight:850;
+    color:rgba(15,23,42,.72);
   }
-  .member-ledger-page .empty-state p{ margin:0; }
 
-  /* Hide delete buttons in table controls unless editing */
-  .member-ledger-page .controls-right{ display:none; }
-  .member-ledger-page.is-editing .controls-right{ display:flex; }
-
-  /* ============================
-     ✅ MODALS (Ledger-Book style)
-     ============================ */
+  /* Modals */
   .member-ledger-page .ml-modal-overlay{
-    position: fixed;
-    inset: 0;
+    position:fixed;
+    inset:0;
     display:none;
     align-items:center;
     justify-content:center;
-    z-index: 9999;
-    padding: 18px;
-    background: rgba(15, 23, 42, .28);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    z-index:9999;
+    padding:18px;
+    background:rgba(15,23,42,.28);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
   }
   .member-ledger-page .ml-modal-overlay.ml-show{ display:flex; }
 
   .member-ledger-page .ml-modal{
-    width: 100%;
-    max-width: 520px;
-    background: #ffffff;
-    border-radius: 16px;
-    border: 1px solid rgba(15,23,42,.10);
-    box-shadow: 0 30px 60px -30px rgba(0,0,0,.45);
+    width:100%;
+    max-width:520px;
+    background:#ffffff;
+    border-radius:16px;
+    border:1px solid rgba(15,23,42,.10);
+    box-shadow:0 30px 60px -30px rgba(0,0,0,.45);
     overflow:hidden;
-    transform: translateY(6px);
-    animation: mlModalIn .18s ease-out forwards;
+    transform:translateY(6px);
+    animation:mlModalIn .18s ease-out forwards;
   }
   @keyframes mlModalIn{
-    from{ opacity:0; transform: translateY(10px) scale(.98); }
-    to{ opacity:1; transform: translateY(0) scale(1); }
+    from{ opacity:0; transform:translateY(10px) scale(.98); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
   }
 
   .member-ledger-page .ml-mhead{
-    padding: 14px 16px;
+    padding:14px 16px;
     display:flex;
     align-items:center;
     gap:12px;
-    justify-content: flex-start;
-    background:
-      radial-gradient(circle at 20% 20%, rgba(16,185,129,.12), transparent 55%),
-      linear-gradient(to right, rgba(5,150,105,.10), rgba(16,185,129,.10));
-    border-bottom: 1px solid rgba(15,23,42,.08);
+    justify-content:flex-start;
+    background:linear-gradient(180deg, #fafafa, #f8fafc);
+    border-bottom:1px solid rgba(15,23,42,.08);
   }
   .member-ledger-page .ml-dot{
-    width: 10px; height: 10px;
-    border-radius: 999px;
-    background: rgba(11,77,58,.90);
-    box-shadow: 0 0 0 6px rgba(16,185,129,.12);
-    flex: 0 0 auto;
+    width:10px; height:10px;
+    border-radius:999px;
+    background:rgba(15,23,42,.72);
+    flex:0 0 auto;
   }
   .member-ledger-page .ml-mtitle{
-    font-weight: 950;
-    color:#0b4d3a;
-    font-size: 15px;
+    font-weight:950;
+    color:#0f172a;
+    font-size:15px;
     letter-spacing:.2px;
   }
-  .member-ledger-page .ml-mtitle.danger{ color: rgba(127,29,29,.95); }
+  .member-ledger-page .ml-mtitle.danger{ color:rgba(127,29,29,.95); }
 
   .member-ledger-page .ml-mbody{
-    padding: 14px 16px 6px;
+    padding:14px 16px 6px;
     color:#0f172a;
-    font-size: 14px;
-    font-weight: 850;
+    font-size:14px;
+    font-weight:850;
     line-height:1.35;
   }
 
   .member-ledger-page .ml-mactions{
-    padding: 12px 16px 16px;
+    padding:12px 16px 16px;
     display:flex;
     gap:10px;
     justify-content:flex-end;
-    flex-wrap: wrap;
+    flex-wrap:wrap;
   }
 
   .member-ledger-page .ml-ghost{
-    border: 1px solid rgba(15,23,42,.14);
+    border:1px solid rgba(15,23,42,.14);
     color:#0f172a;
     background:#fff;
-    min-width: 120px;
-    border-radius: 12px;
-    font-size: 13.5px;
-    font-weight: 950;
-    padding: 10px 12px;
+    min-width:120px;
+    border-radius:12px;
+    font-size:13.5px;
+    font-weight:950;
+    padding:10px 12px;
     cursor:pointer;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
   }
   .member-ledger-page .ml-ghost:hover{
-    transform: translateY(-1px);
-    box-shadow: 0 14px 22px -18px rgba(0,0,0,.20);
-    background: rgba(11,77,58,.06);
+    transform:translateY(-1px);
+    box-shadow:0 14px 22px -18px rgba(0,0,0,.20);
+    background:#f8fafc;
   }
 
   .member-ledger-page .ml-solid{
-    border: 1px solid rgba(16,185,129,.35);
-    background: rgba(16,185,129,.12);
-    color:#0b4d3a;
-    min-width: 120px;
-    border-radius: 12px;
-    font-size: 13.5px;
-    font-weight: 950;
-    padding: 10px 12px;
+    border:1px solid rgba(15,23,42,.14);
+    background:#f8fafc;
+    color:#0f172a;
+    min-width:120px;
+    border-radius:12px;
+    font-size:13.5px;
+    font-weight:950;
+    padding:10px 12px;
     cursor:pointer;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
   }
   .member-ledger-page .ml-solid:hover{
-    transform: translateY(-1px);
-    box-shadow: 0 14px 22px -18px rgba(0,0,0,.20);
-    background: rgba(16,185,129,.16);
+    transform:translateY(-1px);
+    box-shadow:0 14px 22px -18px rgba(0,0,0,.20);
+    background:#eef2f7;
   }
 
   .member-ledger-page .ml-solid.ml-danger{
-    border-color: rgba(239,68,68,.35);
-    background: rgba(239,68,68,.10);
-    color: rgba(127,29,29,.95);
+    border-color:rgba(239,68,68,.30);
+    background:rgba(239,68,68,.08);
+    color:rgba(127,29,29,.95);
   }
-  .member-ledger-page .ml-solid.ml-danger:hover{ background: rgba(239,68,68,.14); }
-
-  @media (max-width: 420px){
-    .member-ledger-page .ml-mactions{ justify-content: stretch; }
-    .member-ledger-page .ml-ghost, .member-ledger-page .ml-solid{ min-width: 100%; }
-  }
+  .member-ledger-page .ml-solid.ml-danger:hover{ background:rgba(239,68,68,.12); }
 
   /* Responsive */
-  @media (max-width: 980px){
-    .member-ledger-page .card-content-producer{ grid-template-columns: 1fr; }
-    .member-ledger-page .header-title{ min-width: 0; }
-    .member-ledger-page table{ min-width: 920px; }
+  @media (max-width: 1100px){
+    .member-ledger-page .card-content-producer{
+      grid-template-columns:1fr;
+    }
+    .member-ledger-page table{ min-width:920px; }
+
+    .member-ledger-page .actionbar{
+      gap:10px;
+    }
+    .member-ledger-page .btn-delete-wide{
+      min-width:156px;
+    }
   }
 
-  /* Mobile: keep header buttons in ONE LINE (scroll if needed) */
-  @media (max-width: 720px){
-    .member-ledger-page .bg-gradient{ padding: 10px; }
-    .member-ledger-page .ml-wrap{ padding: 12px; }
+  @media (max-width: 900px){
+    .member-ledger-page .header-content{
+      padding:18px;
+    }
+    .member-ledger-page .header-title{
+      font-size:clamp(22px, 4vw, 30px);
+    }
+  }
 
-    .member-ledger-page .header-right{
-      width:100%;
-      justify-content:flex-start;
+  @media (max-width: 720px){
+    .member-ledger-page .bg-gradient{
+      padding:10px;
+      border-radius:14px;
+      background:#eaf1ee;
+    }
+    .member-ledger-page .ml-wrap{ padding:0; }
+
+    .member-ledger-page .ml-header{
+      margin-bottom:12px;
+    }
+    .member-ledger-page .header-content{
+      padding:14px;
+      border-radius:22px;
+    }
+    .member-ledger-page .header-main{
+      align-items:flex-start;
+      gap:14px;
+    }
+    .member-ledger-page .mobile-back-slot{
+      display:flex;
+      align-self:flex-start;
+    }
+       .member-ledger-page .header-copy{
+      align-items:flex-start;
+      text-align:left;
+      flex:1;
+      min-width:0;
+      padding-top:2px;
+    }
+    .member-ledger-page .header-title{
+      font-size:16px;
+      font-weight:850;
+      text-align:left;
+      line-height:1.15;
+    }
+    .member-ledger-page .header-subtitle{
+      display:block;
+      font-size:12px;
+      text-align:left;
+      line-height:1.35;
+      max-width:none;
+    }
+
+    .member-ledger-page .action-panel{
+      padding:14px;
+      border-radius:20px;
+      margin-bottom:14px;
     }
     .member-ledger-page .actionbar{
-      width:100%;
-      flex-wrap:nowrap;
-      overflow:auto;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 2px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
     }
-    .member-ledger-page .actionbar::-webkit-scrollbar{ height: 6px; }
-    .member-ledger-page .actionbar::-webkit-scrollbar-thumb{ background: rgba(15,23,42,.18); border-radius: 999px; }
+    .member-ledger-page .actionbar .btn{
+      width:100%;
+      min-width:0;
+      min-height:54px;
+      font-size:14px;
+      padding:14px 12px;
+      justify-content:center;
+    }
+    .member-ledger-page .actionbar .btn-delete-wide{
+      min-width:0;
+    }
+    .member-ledger-page .actionbar .grow-break{
+      display:block;
+      grid-column:1 / -1;
+    }
+    .member-ledger-page .actionbar .btn-save-wide{
+      grid-column:1 / -1;
+      width:100%;
+    }
 
-    .member-ledger-page .search-wrap{ min-width: 100%; }
-    .member-ledger-page .controls-left{ width:100%; justify-content: space-between; }
-    .member-ledger-page .table-footer{ gap:12px; }
-    .member-ledger-page .pager{ width:100%; justify-content: space-between; }
+    .member-ledger-page .content{ padding:0; }
+
+    .member-ledger-page .tabs{
+      padding:10px;
+    }
+    .member-ledger-page .tabs .seg{
+      width:100%;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+    }
+    .member-ledger-page .tab{
+      justify-content:center;
+      width:100%;
+    }
+
+    .member-ledger-page .table-controls{
+      padding:16px;
+    }
+    .member-ledger-page .controls-left{
+      flex-direction:column;
+      align-items:stretch;
+      gap:12px;
+    }
+
+    .member-ledger-page .search-wrap{
+      min-width:0 !important;
+      width:100% !important;
+      max-width:100% !important;
+      flex:0 0 100% !important;
+      height:50px !important;
+      min-height:50px !important;
+      border-radius:14px !important;
+      padding:0 14px !important;
+      aspect-ratio:auto !important;
+      transform:none !important;
+    }
+    .member-ledger-page .search-input{
+      font-size:13px;
+      width:100% !important;
+      flex:1 1 auto !important;
+    }
+
+    .member-ledger-page .select-mini{
+      width:auto;
+      min-width:132px;
+      align-self:flex-start;
+      border-radius:999px;
+      padding:12px 16px;
+      min-height:50px;
+      font-size:13px;
+    }
+
+    .member-ledger-page .table-wrap{ display:none; }
+    .member-ledger-page .mobile-cards-wrap{ display:block; }
+
+    .member-ledger-page .table-footer{
+      gap:12px;
+    }
+    .member-ledger-page .pager{
+      width:100%;
+      justify-content:space-between;
+    }
+    .member-ledger-page .pager .btn{
+      min-width:92px;
+    }
+  }
+
+  @media (max-width: 520px){
+    .member-ledger-page .header-content{
+      padding:14px;
+      border-radius:20px;
+    }
+    .member-ledger-page .mobile-back-btn{
+      width:52px;
+      height:52px;
+      min-width:52px;
+      border-radius:16px;
+    }
+    .member-ledger-page .mobile-back-btn svg{
+      width:22px;
+      height:22px;
+    }
+
+    .member-ledger-page .action-panel{
+      padding:12px;
+      border-radius:18px;
+    }
+    .member-ledger-page .actionbar{
+      gap:10px;
+    }
+
+    .member-ledger-page .card-header-producer,
+    .member-ledger-page .card-content-producer,
+    .member-ledger-page .tab-header,
+    .member-ledger-page .table-controls,
+    .member-ledger-page .table-footer{
+      padding-left:14px;
+      padding-right:14px;
+    }
+    .member-ledger-page .ml-mactions{
+      justify-content:stretch;
+    }
+    .member-ledger-page .ml-ghost,
+    .member-ledger-page .ml-solid{
+      min-width:100%;
+    }
+    .member-ledger-page .ml-card{
+      min-width:calc(100vw - 48px);
+      width:calc(100vw - 48px);
+    }
+  }
+
+  @media (max-width: 390px){
+    .member-ledger-page .actionbar{
+      grid-template-columns:1fr;
+    }
+    .member-ledger-page .actionbar .btn,
+    .member-ledger-page .actionbar .btn-save-wide{
+      grid-column:auto;
+    }
+    .member-ledger-page .actionbar .grow-break{
+      display:none;
+    }
+    .member-ledger-page .btn,
+    .member-ledger-page .actionbar .btn{
+      font-size:13.5px;
+    }
+    .member-ledger-page .tab{
+      font-size:12px;
+      padding:10px 10px;
+    }
   }
 </style>
-
-<script>
-  /* ============================================================
-     Backend persistence (MongoDB)
-     - Uses /pg/api/register/member_ledger/<pg_id>
-     - Stores monthly snapshots (year/month from current date)
-  ============================================================ */
-  const ML_PG = (window.PG_ID || "").trim();
-  const ML_STORAGE_KEY = `PGMIS_MEMBER_LEDGER_${ML_PG || "anon"}`;
-
-  function mlPeriodNow(){
-    const d = new Date();
-    return { year: d.getFullYear(), month: d.getMonth()+1 };
-  }
-
-  async function mlLoadFromServer(){
-    if(!ML_PG) return null;
-    const p = mlPeriodNow();
-    const qs = `?year=${encodeURIComponent(p.year)}&month=${encodeURIComponent(p.month)}`;
-    try{
-      const res = await fetch(`/pg/api/register/member_ledger/${encodeURIComponent(ML_PG)}${qs}`, { method:"GET" });
-      if(!res.ok) return null;
-      const doc = await res.json().catch(()=>null);
-      const payload = doc && (doc.data || doc) ? (doc.data || doc) : null;
-      if(payload){
-        localStorage.setItem(ML_STORAGE_KEY, JSON.stringify(payload));
-        return payload;
-      }
-    }catch(_e){}
-    return null;
-  }
-
-  async function mlSaveToServer(payload){
-    if(!ML_PG) return {ok:false, message:"Missing PG context"};
-    const p = mlPeriodNow();
-    const qs = `?year=${encodeURIComponent(p.year)}&month=${encodeURIComponent(p.month)}`;
-    try{
-      const res = await fetch(`/pg/api/register/member_ledger/${encodeURIComponent(ML_PG)}${qs}`, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ data: payload })
-      });
-      const data = await res.json().catch(()=>null);
-      if(!res.ok) return {ok:false, message:(data && (data.message||data.error)) || "Save failed"};
-      return {ok:true, message:(data && data.message) || "Saved"};
-    }catch(_e){
-      return {ok:false, message:"Network error"};
-    }
-  }
-</script>
-
-<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
-
 {% endblock %}
 
 {% block content %}
 <div class="member-ledger-page" id="member-ledger-root">
-  <!-- Toast Container -->
-  <div id="toast-container" class="toast-container"></div>
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
   <div id="app" class="bg-gradient">
     <div class="ml-wrap">
@@ -832,66 +1095,95 @@
         <!-- Header -->
         <div class="ml-header">
           <div class="header-content">
-            <h1 class="header-title">
-              <svg class="icon sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path
-                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                />
-              </svg>
-              <span id="header-title">Member Ledger</span>
-            </h1>
-
-            <!-- ✅ All actions moved here (Top right) -->
-            <div class="header-right">
-              <div class="actionbar" aria-label="Actions">
-                <!-- Read-only mode: ONLY Edit -->
-                <button id="edit-btn" class="btn btn-ghost hide-when-editing" type="button">
-                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            <div class="header-main">
+              <div class="mobile-back-slot">
+                <button id="mobile-back-btn" class="mobile-back-btn" type="button" aria-label="Go back">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"></path>
                   </svg>
-                  <span id="edit-text">Edit</span>
-                </button>
-
-                <!-- Edit mode: Save + Cancel + Add + Delete Selected + Delete All -->
-                <button id="save-btn" class="btn btn-primary show-when-editing" type="button">
-                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-                    <path d="M17 21v-8H7v8M7 3v5h8" />
-                  </svg>
-                  <span id="save-text">Save</span>
-                </button>
-
-                <button id="cancel-btn" class="btn btn-danger show-when-editing" type="button">
-                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12"/>
-                  </svg>
-                  <span id="cancel-text">Cancel</span>
-                </button>
-
-                <button id="add-btn" class="btn btn-primary show-when-editing" type="button" title="Add row to current tab">
-                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 5v14m-7-7h14" />
-                  </svg>
-                  <span id="add-text">Add</span>
-                </button>
-
-                <button id="delete-selected-btn" class="btn btn-danger show-when-editing" type="button" title="Delete selected rows in current tab">
-                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-                    <path d="M10 11v6M14 11v6"/>
-                  </svg>
-                  <span id="delete-selected-text">Delete Selected</span>
-                </button>
-
-                <button id="delete-all-btn" class="btn btn-danger show-when-editing" type="button" title="Delete all rows in current tab">
-                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-                    <path d="M9 10h6M9 14h6"/>
-                  </svg>
-                  <span id="delete-all-text">Delete All</span>
                 </button>
               </div>
+
+              <div class="header-copy">
+                <h1 class="header-title">
+                  <span id="header-title">Member Ledger</span>
+                </h1>
+                <div class="header-subtitle">Producer purchases, sales and member transaction details</div>
+              </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Action panel BELOW header and ABOVE producer info -->
+        <div class="action-panel" aria-label="Actions">
+          <div class="actionbar">
+            <button id="edit-btn" class="btn btn-ghost hide-when-editing" type="button">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              <span id="edit-text">Edit</span>
+            </button>
+
+            <button id="save-btn" class="btn btn-primary btn-save-wide show-when-editing" type="button">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                <path d="M17 21v-8H7v8M7 3v5h8" />
+              </svg>
+              <span id="save-text">Save</span>
+            </button>
+
+            <button id="cancel-btn" class="btn btn-ghost show-when-editing" type="button">
+              <span id="cancel-text">Cancel</span>
+            </button>
+
+            <button id="add-btn" class="btn btn-primary show-when-editing" type="button" title="Add row to current tab">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14m-7-7h14" />
+              </svg>
+              <span id="add-text">Add</span>
+            </button>
+
+            <button id="delete-selected-btn" class="btn btn-danger btn-delete-wide show-when-editing" type="button" title="Delete selected rows in current tab">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+              </svg>
+              <span id="delete-selected-text">Delete Selected</span>
+            </button>
+
+            <button id="delete-all-btn" class="btn btn-danger btn-delete-wide show-when-editing" type="button" title="Delete all rows in current tab">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                <path d="M9 10h6M9 14h6"/>
+              </svg>
+              <span id="delete-all-text">Delete All</span>
+            </button>
+
+            <span class="grow-break show-when-editing"></span>
+
+            <!-- Hidden mobile duplicates kept only for JS compatibility -->
+            <button id="m-edit-btn" class="btn btn-ghost hide-when-editing" type="button" style="display:none;">
+              <span id="m-edit-text">Edit</span>
+            </button>
+            <button id="m-add-btn" class="btn btn-primary show-when-editing" type="button" style="display:none;">
+              <span id="m-add-text">Add</span>
+            </button>
+            <button id="m-cancel-btn" class="btn btn-ghost show-when-editing" type="button" style="display:none;">
+              <span id="m-cancel-text">Cancel</span>
+            </button>
+            <button id="m-delete-selected-btn" class="btn btn-danger show-when-editing" type="button" style="display:none;">
+              <span id="m-delete-selected-text">Delete Selected</span>
+            </button>
+            <button id="m-delete-all-btn" class="btn btn-danger show-when-editing" type="button" style="display:none;">
+              <span id="m-delete-all-text">Delete All</span>
+            </button>
+            <button id="m-save-btn" class="btn btn-primary show-when-editing" type="button" style="display:none;">
+              <span id="m-save-text">Save</span>
+            </button>
           </div>
         </div>
 
@@ -968,25 +1260,6 @@
                       <option value="100">100</option>
                     </select>
                   </div>
-
-                  <!-- (kept) right-side controls, but visible only in edit mode via CSS -->
-                  <div class="controls-right">
-                    <button id="purchases-delete-selected" class="btn btn-danger" type="button">
-                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-                        <path d="M10 11v6M14 11v6"/>
-                      </svg>
-                      <span>Delete Selected</span>
-                    </button>
-
-                    <button id="purchases-delete-all" class="btn btn-danger" type="button">
-                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-                        <path d="M9 10h6M9 14h6"/>
-                      </svg>
-                      <span>Delete All</span>
-                    </button>
-                  </div>
                 </div>
 
                 <div class="table-wrap">
@@ -1014,6 +1287,10 @@
                   </table>
                 </div>
 
+                <div class="mobile-cards-wrap">
+                  <div id="purchases-mobile-cards" class="mobile-cards-rail"></div>
+                </div>
+
                 <div class="table-footer">
                   <div class="pager-meta" id="purchases-meta">0–0 of 0</div>
                   <div class="pager">
@@ -1023,10 +1300,7 @@
                   </div>
                 </div>
               </div>
-
-              <div id="purchases-empty" class="empty-state" style="display:none;">
-                <p id="no-purchases-text">No purchase entries yet. Click "Add" to create one.</p>
-              </div>
+              <p id="no-purchases-text">No purchase entries yet. Click "Add" to create one.</p>
             </div>
 
             <!-- Sales Tab -->
@@ -1052,25 +1326,6 @@
                       <option value="50">50</option>
                       <option value="100">100</option>
                     </select>
-                  </div>
-
-                  <!-- (kept) right-side controls, but visible only in edit mode via CSS -->
-                  <div class="controls-right">
-                    <button id="sales-delete-selected" class="btn btn-danger" type="button">
-                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-                        <path d="M10 11v6M14 11v6"/>
-                      </svg>
-                      <span>Delete Selected</span>
-                    </button>
-
-                    <button id="sales-delete-all" class="btn btn-danger" type="button">
-                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-                        <path d="M9 10h6M9 14h6"/>
-                      </svg>
-                      <span>Delete All</span>
-                    </button>
                   </div>
                 </div>
 
@@ -1098,6 +1353,10 @@
                   </table>
                 </div>
 
+                <div class="mobile-cards-wrap">
+                  <div id="sales-mobile-cards" class="mobile-cards-rail"></div>
+                </div>
+
                 <div class="table-footer">
                   <div class="pager-meta" id="sales-meta">0–0 of 0</div>
                   <div class="pager">
@@ -1107,10 +1366,7 @@
                   </div>
                 </div>
               </div>
-
-              <div id="sales-empty" class="empty-state" style="display:none;">
-                <p id="no-sales-text">No sale entries yet. Click "Add" to create one.</p>
-              </div>
+              <p id="no-sales-text">No sale entries yet. Click "Add" to create one.</p>
             </div>
           </div>
 
@@ -1119,7 +1375,7 @@
     </div><!-- /ml-wrap -->
   </div><!-- /app -->
 
-  <!-- ✅ CONFIRM MODAL (replaces all confirm() prompts) -->
+  <!-- Confirm Modal -->
   <div id="mlConfirmOverlay" class="ml-modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="ml-modal">
       <div class="ml-mhead">
@@ -1134,7 +1390,7 @@
     </div>
   </div>
 
-  <!-- ✅ EDIT-LOCK / WARNING MODAL (OK only) -->
+  <!-- Lock / Warning Modal -->
   <div id="mlLockOverlay" class="ml-modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="ml-modal">
       <div class="ml-mhead">
@@ -1148,7 +1404,6 @@
     </div>
   </div>
 
-  <!-- Preserved source block (unchanged) -->
   <script type="text/plain" id="react-member-ledger-source">
 /* (Your full React code remains here exactly as provided in the prompt.) */
   </script>
@@ -1168,16 +1423,21 @@
     sales: [],
     activeTab: "purchases",
 
-    // ✅ Edit mode only (no lock system)
     editMode: false,
     snapshot: null,
 
-    // ✅ Table UI state (per tab)
     ui: {
       purchases: { search:"", page:1, perPage:25, selected: new Set() },
       sales:     { search:"", page:1, perPage:25, selected: new Set() },
     }
   };
+
+  const MEMBER_LEDGER_TAB_KEY = "member_ledger_active_tab";
+  const MEMBER_LEDGER_STORAGE_PREFIX = "member_ledger:";
+  const MEMBER_LEDGER_DRAFT_DEBOUNCE = 450;
+
+  let memberLedgerDraftTimer = null;
+  let memberLedgerHydrating = false;
 
   // ============================================================
   // Translations
@@ -1194,7 +1454,7 @@
       selectUnit: "Select unit",
       purchases: "Purchases of Input",
       sales: "Sale to PG",
-      add: "Add",
+      add: "Add Row",
       noPurchases: 'No purchase entries yet. Click "Add" to create one.',
       noSales: 'No sale entries yet. Click "Add" to create one.',
       enterProducerName: "Enter producer name",
@@ -1202,6 +1462,7 @@
       enterRemarks: "Enter remarks",
       savedSuccess: "Member ledger saved successfully!",
       deleteSuccess: "Entry deleted",
+      back: "Back",
 
       confirmSavePage: "Do you want to SAVE the Member Ledger?",
       confirmCancel: "Discard changes and exit edit mode?",
@@ -1212,7 +1473,6 @@
       actionBlockedTitle: "Action blocked",
       actionBlockedMsg: "You are in Edit mode. Please Save or Cancel before leaving this page.",
 
-      // modal buttons
       ok: "OK",
       confirm: "Confirm",
       delete: "Delete",
@@ -1221,6 +1481,19 @@
       searchPH: "Search...",
       rowsPerPageAria: "Rows per page",
       actions: "Actions",
+      date: "Date",
+      unit: "Unit",
+      commodity: "Commodity/Item",
+      qty: "Qty",
+      rate: "Rate",
+      amount: "Amount",
+      advance: "Advance",
+      amountDue: "Amount Due",
+      amountPaid: "Amount Paid",
+      finalAmount: "Final Amount",
+      total: "Total",
+      remarks: "Remarks",
+      noRowsFound: "No rows found."
     },
     bn: {
       title: "সদস্য খাতা",
@@ -1233,7 +1506,7 @@
       selectUnit: "একক নির্বাচন করুন",
       purchases: "সামগ্রী ক্রয়",
       sales: "পিজিতে বিক্রয়",
-      add: "যোগ করুন",
+      add: "সারি যোগ করুন",
       noPurchases: 'এখনও কোনো ক্রয় এন্ট্রি নেই। তৈরি করতে "যোগ করুন" এ ক্লিক করুন।',
       noSales: 'এখনও কোনো বিক্রয় এন্ট্রি নেই। তৈরি করতে "যোগ করুন" এ ক্লিক করুন।',
       enterProducerName: "উৎপাদকের নাম লিখুন",
@@ -1241,6 +1514,7 @@
       enterRemarks: "মন্তব্য লিখুন",
       savedSuccess: "সদস্য খাতা সফলভাবে সংরক্ষিত হয়েছে!",
       deleteSuccess: "এন্ট্রি মুছে ফেলা হয়েছে",
+      back: "ফিরুন",
 
       confirmSavePage: "আপনি কি সদস্য খাতা সংরক্ষণ করতে চান?",
       confirmCancel: "পরিবর্তন বাতিল করে এডিট মোড থেকে বের হবেন?",
@@ -1251,7 +1525,6 @@
       actionBlockedTitle: "Action blocked",
       actionBlockedMsg: "আপনি এডিট মোডে আছেন। এই পেজ ছাড়ার আগে Save অথবা Cancel করুন।",
 
-      // modal buttons
       ok: "ঠিক আছে",
       confirm: "নিশ্চিত",
       delete: "মুছুন",
@@ -1260,6 +1533,19 @@
       searchPH: "অনুসন্ধান...",
       rowsPerPageAria: "প্রতি পৃষ্ঠায় সারি",
       actions: "অ্যাকশন",
+      date: "তারিখ",
+      unit: "একক",
+      commodity: "পণ্য/সামগ্রী",
+      qty: "পরিমাণ",
+      rate: "দর",
+      amount: "পরিমাণ",
+      advance: "অগ্রিম",
+      amountDue: "বাকি",
+      amountPaid: "পরিশোধিত",
+      finalAmount: "চূড়ান্ত পরিমাণ",
+      total: "মোট",
+      remarks: "মন্তব্য",
+      noRowsFound: "কোনো সারি পাওয়া যায়নি।"
     },
   };
 
@@ -1268,39 +1554,176 @@
   }
 
   // ============================================================
-  // Toast
+  // Shared persistence helpers
   // ============================================================
-  function showToast(message, type="success") {
-    const container = document.getElementById("toast-container");
-    if (!container) return;
+  function normalizeLedgerId(v){
+    return (v || "")
+      .toString()
+      .trim()
+      .replace(/^\/+|\/+$/g, "")
+      .replace(/[^a-zA-Z0-9_-]+/g, "_")
+      .replace(/_+/g, "_")
+      .slice(0, 120);
+  }
 
-    const toast = document.createElement("div");
-    toast.className = `toast toast-${type}`;
-    const iconPath =
-      type === "danger"
-        ? `<path d="M12 9v4m0 4h.01M10.29 3.86l-7.4 13.1A2 2 0 004.61 20h14.78a2 2 0 001.72-3.04l-7.4-13.1a2 2 0 00-3.42 0z"/>`
-        : type === "warn"
-          ? `<path d="M12 9v4m0 4h.01"/><path d="M10.29 3.86l-7.4 13.1A2 2 0 004.61 20h14.78a2 2 0 001.72-3.04l-7.4-13.1a2 2 0 00-3.42 0z"/>`
-          : `<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>`;
+  function getMemberLedgerId(){
+    const root = document.getElementById("member-ledger-root");
+    const body = document.body;
 
-    toast.innerHTML = `
-      <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        ${iconPath}
-      </svg>
-      <div class="toast-message">${message}</div>
-    `;
-    container.appendChild(toast);
+    const candidates = [
+      window.MEMBER_LEDGER_ID,
+      window.memberLedgerId,
+      window.PG_ID,
+      root && root.getAttribute("data-member-ledger-id"),
+      root && root.getAttribute("data-pg-id"),
+      body && body.getAttribute("data-member-ledger-id"),
+      body && body.getAttribute("data-pg-id"),
+      window.location && window.location.pathname
+    ];
 
-    setTimeout(() => {
-      toast.classList.add("toast-hide");
-      setTimeout(() => {
-        if (toast.parentNode === container) container.removeChild(toast);
-      }, 180);
-    }, 2500);
+    for (const raw of candidates){
+      const normalized = normalizeLedgerId(raw);
+      if (normalized) return normalized;
+    }
+
+    return "member_ledger_default";
+  }
+
+  function memberLedgerStorageKey(){
+    return `${MEMBER_LEDGER_STORAGE_PREFIX}${getMemberLedgerId()}`;
+  }
+
+  function buildPayload(isDraft = true){
+    return {
+      producerName: state.producerName || "",
+      stockingUnit: state.stockingUnit || "",
+      purchases: Array.isArray(state.purchases) ? state.purchases : [],
+      sales: Array.isArray(state.sales) ? state.sales : [],
+      activeTab: state.activeTab || "purchases",
+      isDraft: !!isDraft,
+      savedAt: new Date().toISOString()
+    };
+  }
+
+  function syncFormFieldsFromState(){
+    const pn = document.getElementById("producer-name");
+    if (pn) pn.value = state.producerName || "";
+
+    const su = document.getElementById("stocking-unit");
+    if (su) su.value = state.stockingUnit || "";
+  }
+
+  function hydrateFromData(data){
+    if (!data || typeof data !== "object") return false;
+
+    memberLedgerHydrating = true;
+    try {
+      state.producerName = data.producerName || "";
+      state.stockingUnit = data.stockingUnit || "";
+      state.purchases = Array.isArray(data.purchases) ? data.purchases.map(item => ({...item})) : [];
+      state.sales = Array.isArray(data.sales) ? data.sales.map(item => ({...item})) : [];
+      state.activeTab = (data.activeTab === "sales") ? "sales" : "purchases";
+
+      state.ui.purchases.selected.clear();
+      state.ui.sales.selected.clear();
+      state.ui.purchases.page = 1;
+      state.ui.sales.page = 1;
+
+      syncFormFieldsFromState();
+      switchTab(state.activeTab);
+      renderPurchasesTable();
+      renderSalesTable();
+      updateEditableStates();
+      return true;
+    } finally {
+      memberLedgerHydrating = false;
+    }
+  }
+
+  function persistLocalPayload(payload){
+    try {
+      localStorage.setItem(memberLedgerStorageKey(), JSON.stringify(payload));
+    } catch (_) {}
+  }
+
+  async function persistServerPayload(payload){
+    const ledgerId = encodeURIComponent(getMemberLedgerId());
+    const endpoint = `/pg/member-ledger/${ledgerId}`;
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    let data = null;
+    try { data = await res.json(); } catch (_) {}
+
+    if (!res.ok) {
+      const msg = (data && (data.message || data.error)) || `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+
+    return data;
+  }
+
+  async function persistMemberLedger(payload){
+    persistLocalPayload(payload);
+
+    try {
+      await persistServerPayload(payload);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function loadMemberLedger(){
+    const ledgerId = encodeURIComponent(getMemberLedgerId());
+    const endpoint = `/pg/member-ledger/${ledgerId}`;
+
+    try {
+      const res = await fetch(endpoint, { method: "GET" });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && hydrateFromData(data)) {
+          return true;
+        }
+      }
+    } catch (_) {}
+
+    try {
+      const raw = localStorage.getItem(memberLedgerStorageKey());
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (hydrateFromData(data)) {
+          return true;
+        }
+      }
+    } catch (_) {}
+
+    return false;
+  }
+
+  function scheduleDraftSync(){
+    if (memberLedgerHydrating) return;
+    if (!state.editMode) return;
+
+    if (memberLedgerDraftTimer) clearTimeout(memberLedgerDraftTimer);
+    memberLedgerDraftTimer = setTimeout(() => {
+      persistMemberLedger(buildPayload(true));
+    }, MEMBER_LEDGER_DRAFT_DEBOUNCE);
   }
 
   // ============================================================
-  // ✅ Modal helpers (Ledger-Book style) — replaces all confirm()
+  // Toast disabled intentionally
+  // ============================================================
+  function showToast() {
+    return;
+  }
+
+  // ============================================================
+  // Modal helpers
   // ============================================================
   const mlModal = {
     overlay: null,
@@ -1337,7 +1760,6 @@
     const btnYes = document.getElementById("mlConfirmYes");
 
     if (!overlay || !titleEl || !msgEl || !btnNo || !btnYes) {
-      // fallback only if modal missing
       if (confirm(cfg.message || "Are you sure?")) { if (typeof cfg.onYes === "function") cfg.onYes(); }
       return;
     }
@@ -1399,13 +1821,9 @@
     mlCloseOverlay(overlay);
   }
 
-  // ============================================================
-  // Confirm helper (replaced)
-  // ============================================================
   function askConfirm(message, onYes, opts={}) {
     const danger = !!opts.danger;
 
-    // ✅ Real modal (Ledger-book style)
     openConfirmModal({
       title: opts.title || (danger ? t("actionBlockedTitle") : t("confirm")),
       message,
@@ -1417,34 +1835,30 @@
   }
 
   // ============================================================
-  // ✅ Edit mode guards (block navigation/refresh/back while editing)
+  // Edit mode guards
   // ============================================================
   let guardAttached = false;
 
   function beforeUnloadHandler(e){
-    // Block refresh/reload/close while editing (browser native prompt cannot be styled)
     if (!state.editMode) return;
     e.preventDefault();
-    e.returnValue = ""; // required for Chrome
+    e.returnValue = "";
     return "";
   }
 
   function clickGuardHandler(e){
     if (!state.editMode) return;
 
-    // Don't block clicks inside any open modal
     const inModal = e.target && e.target.closest && e.target.closest(".ml-modal-overlay.ml-show");
     if (inModal) return;
 
     const a = e.target.closest && e.target.closest("a[href]");
     if (!a) return;
 
-    // Allow in-page anchors (#) that don't navigate away
     const href = (a.getAttribute("href") || "").trim();
     if (!href || href === "#" || href.startsWith("#")) return;
     if (href.toLowerCase().startsWith("javascript:")) return;
 
-    // Block all other navigation with warning modal
     e.preventDefault();
     e.stopPropagation();
     openLockModal();
@@ -1452,7 +1866,6 @@
 
   function popStateHandler(){
     if (!state.editMode) return;
-    // Force stay on page while editing
     history.pushState({pgmis_edit_guard: true}, "", location.href);
     openLockModal();
   }
@@ -1461,7 +1874,6 @@
     if (guardAttached) return;
     guardAttached = true;
 
-    // Push a state so back button triggers popstate
     history.pushState({pgmis_edit_guard: true}, "", location.href);
 
     window.addEventListener("beforeunload", beforeUnloadHandler);
@@ -1483,7 +1895,6 @@
     if (root) root.classList.toggle("is-editing", !!on);
   }
 
-  // ✅ NO confirmation on entering edit mode
   function enterEditMode(){
     if (state.editMode) return;
 
@@ -1500,11 +1911,9 @@
     updateEditableStates();
     renderPurchasesTable();
     renderSalesTable();
-    showToast("Edit mode enabled", "success");
   }
 
   function exitEditMode(commit){
-    // commit=true => keep current; commit=false => restore snapshot
     if (!state.editMode) return;
 
     if (!commit && state.snapshot){
@@ -1517,19 +1926,13 @@
     state.snapshot = null;
     state.editMode = false;
 
-    // clear selections
     state.ui.purchases.selected.clear();
     state.ui.sales.selected.clear();
 
     detachGuards();
     setEditingUI(false);
 
-    // reflect inputs
-    const pn = document.getElementById("producer-name");
-    if (pn) pn.value = state.producerName;
-    const su = document.getElementById("stocking-unit");
-    if (su) su.value = state.stockingUnit;
-
+    syncFormFieldsFromState();
     updateEditableStates();
     renderPurchasesTable();
     renderSalesTable();
@@ -1549,7 +1952,6 @@
       stockingUnit.disabled = !canEdit;
     }
 
-    // Gate select-all checkboxes (table header)
     const psa = document.getElementById("purchases-select-all");
     const ssa = document.getElementById("sales-select-all");
     if (psa) psa.disabled = !canEdit;
@@ -1557,7 +1959,7 @@
   }
 
   // ============================================================
-  // Data ops (unchanged core data shapes)
+  // Data ops
   // ============================================================
   function addPurchase() {
     if (!state.editMode) return;
@@ -1576,9 +1978,15 @@
       remarks: "",
       saved: false,
     };
-    state.purchases.unshift(newPurchase);
-    state.ui.purchases.page = 1;
+
+    state.purchases.push(newPurchase);
+
+    const per = state.ui.purchases.perPage || 25;
+    const total = filterRows("purchases", state.purchases).length;
+    state.ui.purchases.page = Math.max(1, Math.ceil(total / per));
+
     renderPurchasesTable();
+    scheduleDraftSync();
   }
 
   function addSale() {
@@ -1597,13 +2005,19 @@
       total: "",
       saved: false,
     };
-    state.sales.unshift(newSale);
-    state.ui.sales.page = 1;
+
+    state.sales.push(newSale);
+
+    const per = state.ui.sales.perPage || 25;
+    const total = filterRows("sales", state.sales).length;
+    state.ui.sales.page = Math.max(1, Math.ceil(total / per));
+
     renderSalesTable();
+    scheduleDraftSync();
   }
 
   // ============================================================
-  // Update funcs (same behavior)
+  // Update funcs
   // ============================================================
   function updatePurchase(id, field, value) {
     const purchase = state.purchases.find((p) => p.id === id);
@@ -1617,6 +2031,8 @@
       purchase.amount = (qty * rate).toFixed(2);
       const amt = document.querySelector(`[data-purchase-id="${id}"] [data-field="amount"]`);
       if (amt) amt.value = purchase.amount;
+      const mobileAmt = document.querySelector(`[data-purchase-mobile-id="${id}"] [data-field="amount"]`);
+      if (mobileAmt) mobileAmt.value = purchase.amount;
     }
 
     if (field === "amount" || field === "advance" || field==="qty" || field==="rate") {
@@ -1625,7 +2041,11 @@
       purchase.amountDue = (amount - advance).toFixed(2);
       const due = document.querySelector(`[data-purchase-id="${id}"] [data-field="amountDue"]`);
       if (due) due.value = purchase.amountDue;
+      const mobileDue = document.querySelector(`[data-purchase-mobile-id="${id}"] [data-field="amountDue"]`);
+      if (mobileDue) mobileDue.value = purchase.amountDue;
     }
+
+    scheduleDraftSync();
   }
 
   function updateSale(id, field, value) {
@@ -1640,6 +2060,8 @@
       sale.amount = (qty * rate).toFixed(2);
       const amt = document.querySelector(`[data-sale-id="${id}"] [data-field="amount"]`);
       if (amt) amt.value = sale.amount;
+      const mobileAmt = document.querySelector(`[data-sale-mobile-id="${id}"] [data-field="amount"]`);
+      if (mobileAmt) mobileAmt.value = sale.amount;
     }
 
     if (field === "amount" || field === "advance" || field === "finalAmount" || field==="qty" || field==="rate") {
@@ -1649,11 +2071,15 @@
       sale.total = (amount + advance + finalAmount).toFixed(2);
       const total = document.querySelector(`[data-sale-id="${id}"] [data-field="total"]`);
       if (total) total.value = sale.total;
+      const mobileTotal = document.querySelector(`[data-sale-mobile-id="${id}"] [data-field="total"]`);
+      if (mobileTotal) mobileTotal.value = sale.total;
     }
+
+    scheduleDraftSync();
   }
 
   // ============================================================
-  // Delete (single / multi / all) - edit-mode only
+  // Delete
   // ============================================================
   function deletePurchase(id) {
     if (!state.editMode) return;
@@ -1661,7 +2087,7 @@
       state.purchases = state.purchases.filter((p) => p.id !== id);
       state.ui.purchases.selected.delete(id);
       renderPurchasesTable();
-      showToast(t("deleteSuccess"), "success");
+      scheduleDraftSync();
     }, {danger:true});
   }
 
@@ -1671,7 +2097,7 @@
       state.sales = state.sales.filter((s) => s.id !== id);
       state.ui.sales.selected.delete(id);
       renderSalesTable();
-      showToast(t("deleteSuccess"), "success");
+      scheduleDraftSync();
     }, {danger:true});
   }
 
@@ -1681,7 +2107,6 @@
     const ui = state.ui[tab];
     const ids = Array.from(ui.selected || []);
     if (ids.length === 0){
-      showToast("No rows selected", "warn");
       return;
     }
 
@@ -1693,7 +2118,7 @@
       }
       ui.selected.clear();
       if (tab === "purchases") renderPurchasesTable(); else renderSalesTable();
-      showToast(t("deleteSuccess"), "success");
+      scheduleDraftSync();
     }, {danger:true});
   }
 
@@ -1710,30 +2135,24 @@
         state.ui.sales.selected.clear();
         renderSalesTable();
       }
-      showToast(t("deleteSuccess"), "success");
+      scheduleDraftSync();
     }, {danger:true});
   }
 
   // ============================================================
-  // Save / Cancel (only ways to exit edit mode)
+  // Save / Cancel
   // ============================================================
   function saveData() {
     if (!state.editMode) return;
 
-    askConfirm(t("confirmSavePage"), () => {
-      const data = {
-        producerName: state.producerName,
-        stockingUnit: state.stockingUnit,
-        purchases: state.purchases,
-        sales: state.sales,
-        savedAt: new Date().toISOString(),
-      };
-      console.log("Saving data:", data);
+    askConfirm(t("confirmSavePage"), async () => {
+      if (memberLedgerDraftTimer) {
+        clearTimeout(memberLedgerDraftTimer);
+        memberLedgerDraftTimer = null;
+      }
 
-      localStorage.setItem(ML_STORAGE_KEY, JSON.stringify(data));
-      mlSaveToServer(data).then(r=>{
-        showToast(r.ok ? t("savedSuccess") : (r.message || t("savedSuccess")), r.ok ? "success" : "danger");
-      });
+      const data = buildPayload(false);
+      await persistMemberLedger(data);
       exitEditMode(true);
     }, {danger:false});
   }
@@ -1743,12 +2162,11 @@
 
     askConfirm(t("confirmCancel"), () => {
       exitEditMode(false);
-      showToast(t("cancel"), "warn");
-    }, {danger:true});
+    }, {danger:false});
   }
 
   // ============================================================
-  // Table helpers: filter + paginate
+  // Table helpers
   // ============================================================
   function normalize(s){ return (s||"").toString().toLowerCase().trim(); }
 
@@ -1789,9 +2207,23 @@
 
   function setEmpty(tab, isEmpty){
     const empty = document.getElementById(tab+"-empty");
-    const card = document.getElementById(tab+"-tbody")?.closest(".table-card");
-    if (empty) empty.style.display = isEmpty ? "block" : "none";
-    if (card) card.style.display = isEmpty ? "none" : "block";
+    if (empty) empty.style.display = "none";
+  }
+
+  function renderNoRowsMessage(colspan){
+    return `
+      <tr>
+        <td colspan="${colspan}" style="
+          text-align:center;
+          padding:18px 12px;
+          font-weight:900;
+          color:rgba(15,23,42,.65);
+          background:#fff;
+        ">
+          ${t("noRowsFound")}
+        </td>
+      </tr>
+    `;
   }
 
   // ============================================================
@@ -1799,6 +2231,7 @@
   // ============================================================
   function renderPurchasesTable(){
     const tbody = document.getElementById("purchases-tbody");
+    const mobileRail = document.getElementById("purchases-mobile-cards");
     if (!tbody) return;
 
     const canEdit = !!state.editMode;
@@ -1807,6 +2240,33 @@
     const pg = paginate("purchases", filtered);
     setMeta("purchases", pg.start, pg.end, pg.total);
     setEmpty("purchases", state.purchases.length === 0);
+
+    if (pg.total === 0){
+      tbody.innerHTML = renderNoRowsMessage(13);
+      if (mobileRail) {
+        mobileRail.innerHTML = `
+          <div class="ml-card" style="min-width:100%;width:100%;">
+            <div class="ml-card-body" style="padding:18px 14px;text-align:center;font-weight:900;color:rgba(15,23,42,.65);">
+              ${t("noRowsFound")}
+            </div>
+          </div>
+        `;
+      }
+
+      const selAll = document.getElementById("purchases-select-all");
+      if (selAll){
+        selAll.checked = false;
+        selAll.indeterminate = false;
+        selAll.disabled = true;
+      }
+
+      const prev = document.getElementById("purchases-prev");
+      const next = document.getElementById("purchases-next");
+      if (prev) prev.disabled = true;
+      if (next) next.disabled = true;
+
+      return;
+    }
 
     tbody.innerHTML = pg.pageRows.map((p, idx) => {
       const sl = pg.start + idx + 1;
@@ -1864,6 +2324,96 @@
       `;
     }).join("");
 
+    if (mobileRail){
+      mobileRail.innerHTML = pg.pageRows.map((p, idx) => {
+        const sl = pg.start + idx + 1;
+        const disabledAttr = canEdit ? "" : "disabled";
+        const roCalc = "readonly";
+        const checked = state.ui.purchases.selected.has(p.id) ? "checked" : "";
+
+        return `
+          <div class="ml-card" data-purchase-mobile-id="${p.id}">
+            <div class="ml-card-head">
+              <div class="ml-card-sl">SL No ${sl}</div>
+              <div class="ml-card-head-right">
+                <input class="chk" type="checkbox" ${checked} ${disabledAttr}
+                  onchange="toggleSelect('purchases','${p.id}', this.checked)">
+              </div>
+            </div>
+
+            <div class="ml-card-body">
+              <div class="ml-field">
+                <div class="ml-field-label">${t("date")}</div>
+                <input class="mini-input" type="date" value="${p.date || ""}" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','date',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("unit")}</div>
+                <input class="mini-input" type="text" value="${(p.unit||"")}" placeholder="Kg/L/Pcs" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','unit',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("commodity")}</div>
+                <input class="mini-input" type="text" value="${(p.commodity||"")}" placeholder="${t("enterCommodity")}" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','commodity',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("qty")}</div>
+                <input class="mini-input" type="number" value="${(p.qty||"")}" placeholder="0" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','qty',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("rate")}</div>
+                <input class="mini-input" type="number" value="${(p.rate||"")}" placeholder="0.00" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','rate',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("amount")}</div>
+                <input class="mini-input calc" data-field="amount" type="number" value="${(p.amount||"")}" placeholder="0.00" ${roCalc}>
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("advance")}</div>
+                <input class="mini-input" type="number" value="${(p.advance||"")}" placeholder="0.00" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','advance',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("amountDue")}</div>
+                <input class="mini-input calc" data-field="amountDue" type="number" value="${(p.amountDue||"")}" placeholder="0.00" ${roCalc}>
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("amountPaid")}</div>
+                <input class="mini-input" type="number" value="${(p.amountPaid||"")}" placeholder="0.00" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','amountPaid',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("remarks")}</div>
+                <input class="mini-input" type="text" value="${(p.remarks||"")}" placeholder="${t("enterRemarks")}" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','remarks',this.value)">
+              </div>
+
+              <div class="ml-card-actions">
+                <button class="btn btn-danger" type="button" ${canEdit ? "" : "disabled"}
+                  onclick="deletePurchase('${p.id}')">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
     const selAll = document.getElementById("purchases-select-all");
     if (selAll){
       const pageIds = pg.pageRows.map(x=>x.id);
@@ -1885,6 +2435,7 @@
   // ============================================================
   function renderSalesTable(){
     const tbody = document.getElementById("sales-tbody");
+    const mobileRail = document.getElementById("sales-mobile-cards");
     if (!tbody) return;
 
     const canEdit = !!state.editMode;
@@ -1893,6 +2444,33 @@
     const pg = paginate("sales", filtered);
     setMeta("sales", pg.start, pg.end, pg.total);
     setEmpty("sales", state.sales.length === 0);
+
+    if (pg.total === 0){
+      tbody.innerHTML = renderNoRowsMessage(12);
+      if (mobileRail){
+        mobileRail.innerHTML = `
+          <div class="ml-card" style="min-width:100%;width:100%;">
+            <div class="ml-card-body" style="padding:18px 14px;text-align:center;font-weight:900;color:rgba(15,23,42,.65);">
+              ${t("noRowsFound")}
+            </div>
+          </div>
+        `;
+      }
+
+      const selAll = document.getElementById("sales-select-all");
+      if (selAll){
+        selAll.checked = false;
+        selAll.indeterminate = false;
+        selAll.disabled = true;
+      }
+
+      const prev = document.getElementById("sales-prev");
+      const next = document.getElementById("sales-next");
+      if (prev) prev.disabled = true;
+      if (next) next.disabled = true;
+
+      return;
+    }
 
     tbody.innerHTML = pg.pageRows.map((s, idx) => {
       const sl = pg.start + idx + 1;
@@ -1947,6 +2525,90 @@
       `;
     }).join("");
 
+    if (mobileRail){
+      mobileRail.innerHTML = pg.pageRows.map((s, idx) => {
+        const sl = pg.start + idx + 1;
+        const disabledAttr = canEdit ? "" : "disabled";
+        const roCalc = "readonly";
+        const checked = state.ui.sales.selected.has(s.id) ? "checked" : "";
+
+        return `
+          <div class="ml-card" data-sale-mobile-id="${s.id}">
+            <div class="ml-card-head">
+              <div class="ml-card-sl">SL No ${sl}</div>
+              <div class="ml-card-head-right">
+                <input class="chk" type="checkbox" ${checked} ${disabledAttr}
+                  onchange="toggleSelect('sales','${s.id}', this.checked)">
+              </div>
+            </div>
+
+            <div class="ml-card-body">
+              <div class="ml-field">
+                <div class="ml-field-label">${t("date")}</div>
+                <input class="mini-input" type="date" value="${s.date || ""}" ${disabledAttr}
+                  oninput="updateSale('${s.id}','date',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("unit")}</div>
+                <input class="mini-input" type="text" value="${(s.unit||"")}" placeholder="Kg/L/Pcs" ${disabledAttr}
+                  oninput="updateSale('${s.id}','unit',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("commodity")}</div>
+                <input class="mini-input" type="text" value="${(s.commodity||"")}" placeholder="${t("enterCommodity")}" ${disabledAttr}
+                  oninput="updateSale('${s.id}','commodity',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("qty")}</div>
+                <input class="mini-input" type="number" value="${(s.qty||"")}" placeholder="0" ${disabledAttr}
+                  oninput="updateSale('${s.id}','qty',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("rate")}</div>
+                <input class="mini-input" type="number" value="${(s.rate||"")}" placeholder="0.00" ${disabledAttr}
+                  oninput="updateSale('${s.id}','rate',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("amount")}</div>
+                <input class="mini-input calc" data-field="amount" type="number" value="${(s.amount||"")}" placeholder="0.00" ${roCalc}>
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("advance")}</div>
+                <input class="mini-input" type="number" value="${(s.advance||"")}" placeholder="0.00" ${disabledAttr}
+                  oninput="updateSale('${s.id}','advance',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("finalAmount")}</div>
+                <input class="mini-input" type="number" value="${(s.finalAmount||"")}" placeholder="0.00" ${disabledAttr}
+                  oninput="updateSale('${s.id}','finalAmount',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("total")}</div>
+                <input class="mini-input total" data-field="total" type="number" value="${(s.total||"")}" placeholder="0.00" ${roCalc}>
+              </div>
+
+              <div class="ml-card-actions">
+                <button class="btn btn-danger" type="button" ${canEdit ? "" : "disabled"}
+                  onclick="deleteSale('${s.id}')">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
     const selAll = document.getElementById("sales-select-all");
     if (selAll){
       const pageIds = pg.pageRows.map(x=>x.id);
@@ -1963,7 +2625,6 @@
     if (next) next.disabled = (state.ui.sales.page >= pg.pages);
   }
 
-  // selection toggle (exposed for inline handlers)
   function toggleSelect(tab, id, checked){
     const ui = state.ui[tab];
     if (!ui) return;
@@ -1976,7 +2637,6 @@
     else renderSalesTable();
   }
 
-  // select-all current page
   function toggleSelectAll(tab, checked){
     if (!state.editMode) return;
 
@@ -1999,6 +2659,7 @@
   // ============================================================
   function switchTab(tab) {
     state.activeTab = tab;
+    try { localStorage.setItem(MEMBER_LEDGER_TAB_KEY, tab); } catch(_) {}
 
     document.querySelectorAll(".member-ledger-page .tab").forEach((btn) => btn.classList.remove("active"));
     const activeBtn = document.querySelector(`.member-ledger-page [data-tab="${tab}"]`);
@@ -2009,24 +2670,52 @@
     if (activePane) activePane.classList.add("active");
   }
 
+  function restoreActiveTab(){
+    let saved = "purchases";
+    try {
+      const val = localStorage.getItem(MEMBER_LEDGER_TAB_KEY);
+      if (val === "purchases" || val === "sales") saved = val;
+    } catch(_) {}
+    state.activeTab = saved;
+    switchTab(saved);
+  }
+
   // ============================================================
-  // ✅ UI text updates (UPDATED to cover all navbar language changes)
+  // UI text updates
   // ============================================================
   function updateUI() {
     const ht = document.getElementById("header-title");
     if (ht) ht.textContent = t("title");
 
     const et = document.getElementById("edit-text");
+    const met = document.getElementById("m-edit-text");
     if (et) et.textContent = t("edit");
+    if (met) met.textContent = t("edit");
 
     const st = document.getElementById("save-text");
+    const mst = document.getElementById("m-save-text");
     if (st) st.textContent = t("save");
+    if (mst) mst.textContent = t("save");
 
     const ct = document.getElementById("cancel-text");
+    const mct = document.getElementById("m-cancel-text");
     if (ct) ct.textContent = t("cancel");
+    if (mct) mct.textContent = t("cancel");
 
     const at = document.getElementById("add-text");
+    const mat = document.getElementById("m-add-text");
     if (at) at.textContent = t("add");
+    if (mat) mat.textContent = t("add");
+
+    const dst = document.getElementById("delete-selected-text");
+    const mdst = document.getElementById("m-delete-selected-text");
+    if (dst) dst.textContent = "Delete Selected";
+    if (mdst) mdst.textContent = "Delete Selected";
+
+    const dat = document.getElementById("delete-all-text");
+    const mdat = document.getElementById("m-delete-all-text");
+    if (dat) dat.textContent = "Delete All";
+    if (mdat) mdat.textContent = "Delete All";
 
     const pit = document.getElementById("producer-info-title");
     if (pit) pit.textContent = t("producerInfo");
@@ -2040,7 +2729,6 @@
     const pn = document.getElementById("producer-name");
     if (pn) pn.placeholder = t("enterProducerName");
 
-    // ✅ translate select placeholder option too
     const su = document.getElementById("stocking-unit");
     if (su && su.options && su.options.length){
       if (su.options[0].value === "") su.options[0].textContent = t("selectUnit");
@@ -2064,17 +2752,31 @@
     const ns = document.getElementById("no-sales-text");
     if (ns) ns.textContent = t("noSales");
 
-    // ✅ Confirm modal buttons must translate too
+    const ps = document.getElementById("purchases-search");
+    const ss = document.getElementById("sales-search");
+    if (ps) ps.placeholder = t("searchPH");
+    if (ss) ss.placeholder = t("searchPH");
+
+    const pp = document.getElementById("purchases-prev");
+    const pnxt = document.getElementById("purchases-next");
+    const sp = document.getElementById("sales-prev");
+    const snxt = document.getElementById("sales-next");
+    if (pp) pp.textContent = t("prev");
+    if (pnxt) pnxt.textContent = t("next");
+    if (sp) sp.textContent = t("prev");
+    if (snxt) snxt.textContent = t("next");
+
+    const mb = document.getElementById("mobile-back-btn");
+    if (mb) mb.setAttribute("aria-label", t("back"));
+
     const cNo = document.getElementById("mlConfirmNo");
     const cYes = document.getElementById("mlConfirmYes");
     if (cNo) cNo.textContent = t("cancel");
     if (cYes) {
-      // keep delete vs confirm depending on current danger state
       const isDanger = cYes.classList.contains("ml-danger");
       cYes.textContent = isDanger ? t("delete") : t("confirm");
     }
 
-    // ✅ lock modal localized
     const lt = document.getElementById("mlLockTitle");
     const lm = document.getElementById("mlLockMsg");
     const lok = document.getElementById("mlLockOk");
@@ -2088,10 +2790,9 @@
   }
 
   // ============================================================
-  // ✅ Sync with base.html global language toggle (FIXED + ROBUST)
+  // Sync language with base
   // ============================================================
   function resolveBaseLang(){
-    // priority order: global var -> localStorage -> html lang -> default
     const g = (window.PGMIS_LANG || "").toString().toLowerCase();
     if (g === "bn" || g === "en") return g;
 
@@ -2107,7 +2808,7 @@
 
   function applyLanguageFromBase(lang) {
     const L = (lang === "bn") ? "bn" : "en";
-    if (state.language === L) return; // avoid double renders
+    if (state.language === L) return;
     state.language = L;
     updateUI();
   }
@@ -2115,13 +2816,24 @@
   // ============================================================
   // DOM bind
   // ============================================================
-  document.addEventListener("DOMContentLoaded", () => {
-    // Buttons
+  document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("edit-btn")?.addEventListener("click", enterEditMode);
-    document.getElementById("save-btn")?.addEventListener("click", saveData);
-    document.getElementById("cancel-btn")?.addEventListener("click", cancelEdits);
+    document.getElementById("m-edit-btn")?.addEventListener("click", enterEditMode);
 
-    // ✅ Confirm modal bindings
+    document.getElementById("save-btn")?.addEventListener("click", saveData);
+    document.getElementById("m-save-btn")?.addEventListener("click", saveData);
+
+    document.getElementById("cancel-btn")?.addEventListener("click", cancelEdits);
+    document.getElementById("m-cancel-btn")?.addEventListener("click", cancelEdits);
+
+    document.getElementById("mobile-back-btn")?.addEventListener("click", () => {
+      if (state.editMode) {
+        openLockModal();
+        return;
+      }
+      window.history.back();
+    });
+
     const confirmOverlay = document.getElementById("mlConfirmOverlay");
     document.getElementById("mlConfirmNo")?.addEventListener("click", () => {
       const onNo = mlModal.onNo;
@@ -2137,12 +2849,10 @@
       if (e.target === confirmOverlay) closeConfirmModal();
     });
 
-    // ✅ Lock modal bindings
     const lockOverlay = document.getElementById("mlLockOverlay");
     document.getElementById("mlLockOk")?.addEventListener("click", closeLockModal);
     lockOverlay?.addEventListener("click", (e)=>{ if (e.target === lockOverlay) closeLockModal(); });
 
-    // ESC closes top-most modal
     window.addEventListener("keydown", (e)=>{
       if (e.key !== "Escape") return;
       const lock = document.getElementById("mlLockOverlay");
@@ -2151,35 +2861,40 @@
       if (conf && conf.classList.contains("ml-show")) { closeConfirmModal(); return; }
     });
 
-    document.getElementById("add-btn")?.addEventListener("click", () => {
+    const addHandler = () => {
       if (!state.editMode) return;
       if (state.activeTab === "purchases") addPurchase();
       else addSale();
-    });
+    };
+    document.getElementById("add-btn")?.addEventListener("click", addHandler);
+    document.getElementById("m-add-btn")?.addEventListener("click", addHandler);
 
-    document.getElementById("delete-selected-btn")?.addEventListener("click", () => {
+    const deleteSelectedHandler = () => {
       if (!state.editMode) return;
       deleteSelected(state.activeTab);
-    });
+    };
+    document.getElementById("delete-selected-btn")?.addEventListener("click", deleteSelectedHandler);
+    document.getElementById("m-delete-selected-btn")?.addEventListener("click", deleteSelectedHandler);
 
-    document.getElementById("delete-all-btn")?.addEventListener("click", () => {
+    const deleteAllHandler = () => {
       if (!state.editMode) return;
       deleteAll(state.activeTab);
-    });
+    };
+    document.getElementById("delete-all-btn")?.addEventListener("click", deleteAllHandler);
+    document.getElementById("m-delete-all-btn")?.addEventListener("click", deleteAllHandler);
 
-    // Producer fields
     document.getElementById("producer-name")?.addEventListener("input", (e) => {
       state.producerName = e.target.value;
+      scheduleDraftSync();
     });
     document.getElementById("stocking-unit")?.addEventListener("change", (e) => {
       state.stockingUnit = e.target.value;
+      scheduleDraftSync();
     });
 
-    // Tabs
     document.getElementById("tab-purchases")?.addEventListener("click", () => switchTab("purchases"));
     document.getElementById("tab-sales")?.addEventListener("click", () => switchTab("sales"));
 
-    // Search + per-page + pagination
     document.getElementById("purchases-search")?.addEventListener("input", (e)=>{
       state.ui.purchases.search = e.target.value || "";
       state.ui.purchases.page = 1;
@@ -2219,7 +2934,6 @@
       renderSalesTable();
     });
 
-    // select-all checkbox
     document.getElementById("purchases-select-all")?.addEventListener("change", (e)=>{
       toggleSelectAll("purchases", e.target.checked);
     });
@@ -2227,38 +2941,32 @@
       toggleSelectAll("sales", e.target.checked);
     });
 
-    // (kept) table control delete buttons (edit-mode only)
-    document.getElementById("purchases-delete-selected")?.addEventListener("click", ()=> deleteSelected("purchases"));
-    document.getElementById("sales-delete-selected")?.addEventListener("click", ()=> deleteSelected("sales"));
-    document.getElementById("purchases-delete-all")?.addEventListener("click", ()=> deleteAll("purchases"));
-    document.getElementById("sales-delete-all")?.addEventListener("click", ()=> deleteAll("sales"));
-
-    // ✅ initial language from base (robust)
     applyLanguageFromBase(resolveBaseLang());
 
-    // ✅ listen to base event (your navbar button should dispatch this)
     window.addEventListener("pgmis-language-change", (e) => {
       const next = (e && e.detail && e.detail.lang) ? e.detail.lang : resolveBaseLang();
       applyLanguageFromBase(next);
     });
 
-    // ✅ allow base to call us directly (some of your pages do this)
     window.onPGMISLanguageChange = (lang) => {
       applyLanguageFromBase(lang);
     };
 
-    // Start in read-only
+    window.addEventListener("storage", (e) => {
+      if (e && e.key && e.key !== memberLedgerStorageKey()) return;
+      if (state.editMode) return;
+      loadMemberLedger();
+    });
+
     setEditingUI(false);
     updateEditableStates();
+    syncFormFieldsFromState();
 
-    // set initial producer inputs from state
-    const pn = document.getElementById("producer-name");
-    if (pn) pn.value = state.producerName;
-    const su = document.getElementById("stocking-unit");
-    if (su) su.value = state.stockingUnit;
-
+    restoreActiveTab();
     renderPurchasesTable();
     renderSalesTable();
+
+    await loadMemberLedger();
     updateUI();
   });
 

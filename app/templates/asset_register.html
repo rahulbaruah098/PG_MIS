@@ -4,58 +4,7 @@
 
 {% block head_extra %}
   <!-- Ionicons (same look as your other pages) -->
-  
-<script>
-  /* ============================================================
-     Backend persistence (MongoDB)
-     - Uses /pg/api/register/asset/<pg_id>
-     - Stores monthly snapshots (year/month from current date)
-  ============================================================ */
-  const AS_PG = (window.PG_ID || "").trim();
-  const AS_STORAGE_KEY = `PGMIS_ASSET_${AS_PG || "anon"}`;
-
-  function asPeriodNow(){
-    const d = new Date();
-    return { year: d.getFullYear(), month: d.getMonth()+1 };
-  }
-
-  async function asLoadFromServer(){
-    if(!AS_PG) return null;
-    const p = asPeriodNow();
-    const qs = `?year=${encodeURIComponent(p.year)}&month=${encodeURIComponent(p.month)}`;
-    try{
-      const res = await fetch(`/pg/api/register/asset/${encodeURIComponent(AS_PG)}${qs}`, { method:"GET" });
-      if(!res.ok) return null;
-      const doc = await res.json().catch(()=>null);
-      const payload = doc && (doc.data || doc) ? (doc.data || doc) : null;
-      if(payload){
-        localStorage.setItem(AS_STORAGE_KEY, JSON.stringify(payload));
-        return payload;
-      }
-    }catch(_e){}
-    return null;
-  }
-
-  async function asSaveToServer(payload){
-    if(!AS_PG) return {ok:false, message:"Missing PG context"};
-    const p = asPeriodNow();
-    const qs = `?year=${encodeURIComponent(p.year)}&month=${encodeURIComponent(p.month)}`;
-    try{
-      const res = await fetch(`/pg/api/register/asset/${encodeURIComponent(AS_PG)}${qs}`, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ data: payload })
-      });
-      const data = await res.json().catch(()=>null);
-      if(!res.ok) return {ok:false, message:(data && (data.message||data.error)) || "Save failed"};
-      return {ok:true, message:(data && data.message) || "Saved"};
-    }catch(_e){
-      return {ok:false, message:"Network error"};
-    }
-  }
-</script>
-
-<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 {% endblock %}
 
@@ -146,8 +95,18 @@
 }
 
 @media (max-width: 900px){
-  .ar-head{ flex-wrap: wrap; }
-  .ar-titleWrap{ text-align:left; width: 100%; order: 3; }
+  .ar-head{
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  .ar-titleWrap{
+    text-align: center;
+    width: auto;
+    order: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 8px;
+  }
 }
 
 /* Buttons (Ledger style) */
@@ -181,8 +140,17 @@
   border-color: rgba(16,185,129,.35);
   background: rgba(16,185,129,.12);
   color:#0b4d3a;
+
+  /* hidden by default like Monthly Business */
+  display: none;
 }
 .ar-btnBack:hover{ background: rgba(16,185,129,.16); }
+
+@media (max-width: 720px){
+  .ar-btn.ar-btnBack{
+    display: inline-flex;
+  }
+}
 
 .ar-primary{
   border-color: rgba(16,185,129,.35);
@@ -722,8 +690,6 @@
   }
 }
 </style>
-<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
-
 
 <div class="ar-wrap ar-i18n is-view" id="arWrap">
   <div class="ar-shell">
@@ -733,10 +699,7 @@
       <div class="ar-head">
         <a class="ar-btn ar-btnBack" href="{{ url_for('pg.pg_home') }}" aria-label="Back">
           <ion-icon name="arrow-back"></ion-icon>
-          <span class="ar-i18n">
-            <span data-lang="en">Back</span>
-            <span data-lang="bn">ফিরে যান</span>
-          </span>
+
         </a>
 
         <div class="ar-titleWrap">
@@ -1552,40 +1515,5 @@
     });
   });
 })();
-
-// AS_AUTO_WIRE: persist Asset Register snapshot to MongoDB
-(function(){
-  const btn = document.getElementById("arSaveBtn");
-  if(!btn) return;
-  btn.addEventListener("click", async ()=>{
-    try{
-      // Try common snapshot shapes used in this page
-      const payload = (typeof snapshotState === "function") ? snapshotState() :
-                      (typeof snapshot === "function") ? snapshot() :
-                      (window.state && typeof window.state === "object") ? window.state :
-                      null;
-      if(!payload){ return; }
-      localStorage.setItem(AS_STORAGE_KEY, JSON.stringify(payload));
-      const r = await asSaveToServer(payload);
-      if(typeof showToast === "function"){
-        showToast(r.ok ? "Saved" : (r.message||"Save failed"), r.ok ? "success" : "danger");
-      }
-    }catch(_e){}
-  });
-
-  (async ()=>{
-    const server = await asLoadFromServer();
-    const payload = server || (()=>{
-      try{ return JSON.parse(localStorage.getItem(AS_STORAGE_KEY)||"null"); }catch(_e){ return null; }
-    })();
-    if(!payload) return;
-    try{
-      if(typeof restoreSnapshot === "function") restoreSnapshot(payload);
-      else if(typeof restoreState === "function") restoreState(payload);
-      else if(typeof hydrate === "function") hydrate(payload);
-    }catch(_e){}
-  })();
-})();
-
 </script>
 {% endblock %}

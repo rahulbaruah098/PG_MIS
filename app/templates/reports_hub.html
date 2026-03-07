@@ -3,107 +3,585 @@
 {% block content %}
 
 <style>
-  .rh-wrap{max-width:1200px;margin:0 auto;padding:18px}
-  .rh-hero{background:linear-gradient(90deg,#0b4d3a,#059669);color:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 14px 22px -12px rgba(0,0,0,.18)}
-  .rh-hero h1{margin:0;font-weight:950;letter-spacing:.2px}
-  .rh-hero .sub{margin-top:.35rem;color:#d1fae5;font-weight:800}
-  .rh-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-top:12px}
-  .rh-card{background:#fff;border:1px solid rgba(15,23,42,.12);border-radius:18px;box-shadow:0 10px 18px -14px rgba(0,0,0,.22);padding:12px}
-  .rh-row{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
-  .rh-row .f{display:flex;flex-direction:column;gap:6px}
-  .rh-row label{font-size:12px;font-weight:900;color:#334155}
-  .rh-row select,.rh-row input{border:1px solid rgba(15,23,42,.18);border-radius:12px;padding:10px 10px;font-weight:800;outline:none}
-  .rh-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-  .rh-btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:10px 14px;font-weight:900;border:1px solid rgba(15,23,42,.16);background:#fff;color:#0f172a;cursor:pointer;text-decoration:none}
-  .rh-btn.primary{background:#0b4d3a;color:#fff;border-color:transparent}
-  .rh-btn:hover{filter:brightness(.98)}
-  .rh-list{display:grid;gap:10px}
-  .rh-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px dashed rgba(15,23,42,.18);border-radius:16px;padding:10px 12px}
-  .rh-item .meta{display:flex;flex-direction:column}
-  .rh-item .meta b{font-weight:950}
-  .rh-item .meta span{color:#64748b;font-weight:800;font-size:12px}
-  @media(max-width:980px){.rh-grid{grid-template-columns:1fr}.rh-row{grid-template-columns:repeat(2,1fr)}}
-  @media(max-width:520px){.rh-row{grid-template-columns:1fr}}
+  /* ============================================================
+     REPORTS HUB — NEW WEB LAYOUT
+     ✅ ONLY UI/CSS/UX changed
+     ✅ NO existing data contents / routes / logic changed
+     ✅ Mobile/app view kept intact
+     ✅ Scoped under .rh-wrap only
+     ============================================================ */
+
+  .rh-wrap{
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,.14);
+    --line2: rgba(15,23,42,.09);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --soft2:#f4f8f6;
+    --accent:#0b4d3a;
+    --accent2:#0f766e;
+    --ring: rgba(11,77,58,.10);
+  }
+  .rh-wrap *{ box-sizing:border-box; }
+
+  .rh-sheet{
+    background:
+      radial-gradient(circle at top left, rgba(11,77,58,.05), transparent 22%),
+      linear-gradient(180deg, #ffffff, #fbfcfc);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 18px 36px -28px rgba(15,23,42,.24);
+    position: relative;
+  }
+
+  /* Header */
+  .rh-head{
+    padding: 18px 20px 16px;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(11,77,58,.08), transparent 36%),
+      linear-gradient(135deg, rgba(240,253,244,.95), rgba(255,255,255,.98));
+    border-bottom: 1px solid var(--line2);
+    position: relative;
+  }
+
+.rh-title-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  max-width: 980px;
+  margin: 0 auto;
+}
+ 
+
+ .rh-titlebox{
+  min-width: 0;
+  text-align: center;
+  width: 100%;
+}
+
+  .rh-title{
+  margin:0;
+  font-weight:950;
+  letter-spacing:-.01em;
+  color: var(--ink);
+  font-size: clamp(18px, 1.2vw + 14px, 22px);
+  line-height:1.12;
+}
+
+.rh-sub{
+  margin-top:6px;
+  font-size:12px;
+  color: rgba(15,23,42,.68);
+  font-weight:800;
+  line-height:1.45;
+}
+
+  /* Back button */
+  .rh-back{
+    display:none;
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: rgba(11,77,58,.98);
+    user-select: none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    z-index: 3;
+  }
+  .rh-back:hover{
+    transform: translateX(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .rh-back:active{ transform: scale(.98); }
+  .rh-back svg{ width:18px; height:18px; display:block; }
+
+  /* Main grid */
+  .rh-grid{
+    display:grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(320px, .9fr);
+    gap: 18px;
+    padding: 18px;
+    background: rgba(255,255,255,.72);
+  }
+
+  .rh-card{
+    background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(252,253,252,.98));
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:20px;
+    box-shadow:0 16px 30px -26px rgba(15,23,42,.18);
+    overflow: hidden;
+  }
+
+.rh-card-head{
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid rgba(11,77,58,.14);
+  background:
+    linear-gradient(180deg, rgba(232,244,238,.92), rgba(243,249,246,.98));
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.55);
+}
+
+.rh-card-title{
+  margin: 0;
+  font-weight: 950;
+  font-size: 18px;
+  letter-spacing: -.01em;
+  color: #0b4d3a;
+  line-height:1.2;
+}
+
+.rh-card-sub{
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: rgba(11,77,58,.78);
+  font-weight: 850;
+  line-height:1.5;
+}
+  .rh-card-body{
+    padding: 18px;
+  }
+
+  /* Form layout */
+  .rh-block{
+    border:1px solid rgba(15,23,42,.08);
+    border-radius:18px;
+    background: linear-gradient(180deg, rgba(247,250,249,.82), rgba(255,255,255,.98));
+    padding:16px;
+  }
+
+  .rh-block + .rh-block{
+    margin-top:14px;
+  }
+
+  .rh-row{
+    display:grid;
+    grid-template-columns: repeat(12, minmax(0,1fr));
+    gap:12px;
+  }
+
+  .rh-field{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+    min-width: 0;
+  }
+
+  .rh-field label{
+    font-size:12px;
+    font-weight:900;
+    color: var(--ink);
+    line-height:1.25;
+  }
+
+  .rh-field.s2{ grid-column: span 2; }
+  .rh-field.s3{ grid-column: span 3; }
+  .rh-field.s4{ grid-column: span 4; }
+
+  .rh-row select,
+  .rh-row input{
+    width: 100%;
+    min-width: 0;
+    height: 46px;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:14px;
+    padding:0 14px;
+    font-weight:800;
+    font-size: 13px;
+    outline:none;
+    background: #fff;
+    color: var(--ink);
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .rh-row input::placeholder{ color:#7b8794; }
+  .rh-row select:focus,
+  .rh-row input:focus{
+    border-color: rgba(11,77,58,.32);
+    box-shadow: 0 0 0 4px var(--ring);
+    background: #fff;
+  }
+
+  .rh-open-cell{
+    display:flex;
+    align-items:flex-end;
+    grid-column: span 3;
+  }
+
+  .rh-actions{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap:12px;
+    margin-top:14px;
+  }
+
+  .rh-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    border-radius:14px;
+    min-height:46px;
+    padding:11px 14px;
+    font-weight:950;
+    font-size: 13px;
+    border:1px solid rgba(15,23,42,.12);
+    background: linear-gradient(180deg, rgba(247,250,249,.88), rgba(255,255,255,.98));
+    color:#0f172a;
+    cursor:pointer;
+    text-decoration:none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+    white-space: nowrap;
+    width:100%;
+  }
+  .rh-btn:hover{
+    transform: translateY(-1px);
+    background:#fff;
+    border-color: rgba(11,77,58,.18);
+    box-shadow:0 14px 20px -18px rgba(15,23,42,.22);
+  }
+  .rh-btn.primary{
+    border-color: rgba(16,185,129,.35);
+    background: linear-gradient(180deg, rgba(220,252,231,.92), rgba(209,250,229,.88));
+    color:#0b4d3a;
+  }
+  .rh-btn.primary:hover{
+    background: linear-gradient(180deg, rgba(209,250,229,.98), rgba(187,247,208,.92));
+  }
+
+  .rh-tip{
+    margin-top:14px;
+    color:#64748b;
+    font-weight:800;
+    font-size:12px;
+    line-height: 1.55;
+    padding:12px 14px;
+    border-radius:14px;
+    border:1px dashed rgba(15,23,42,.12);
+    background: rgba(247,250,249,.74);
+  }
+
+  /* Quick reports */
+  .rh-list{
+    display:grid;
+    gap:12px;
+  }
+
+  .rh-item{
+    display:grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    align-items:center;
+    gap:14px;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:18px;
+    padding:16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,251,250,.98));
+    box-shadow:0 10px 22px -22px rgba(15,23,42,.18);
+  }
+
+  .rh-item .meta{
+    display:flex;
+    flex-direction:column;
+    min-width: 0;
+  }
+  .rh-item .meta b{
+    font-weight:950;
+    color: var(--ink);
+    line-height: 1.3;
+    font-size:16px;
+  }
+  .rh-item .meta span{
+    color:#64748b;
+    font-weight:800;
+    font-size:13px;
+    margin-top: 5px;
+    line-height: 1.45;
+  }
+
+  .rh-item .rh-btn{
+    width:auto;
+    min-width:92px;
+    border-radius:999px;
+    padding-inline:18px;
+  }
+
+  @media (max-width:980px){
+    .rh-grid{
+      grid-template-columns:1fr;
+    }
+
+    .rh-row{
+      grid-template-columns:repeat(6, minmax(0,1fr));
+    }
+
+    .rh-field.s2,
+    .rh-field.s3,
+    .rh-field.s4{
+      grid-column: span 3;
+    }
+
+    .rh-open-cell{
+      grid-column: span 6;
+    }
+  }
+
+  @media (max-width:720px){
+  .rh-back{ display:flex; }
+
+  .rh-title-row{
+    display:flex;
+    justify-content:flex-start;
+    padding-left:54px;
+    padding-right:8px;
+    align-items:flex-start;
+    max-width:none;
+  }
+
+  .rh-titlebox{
+    text-align:left;
+  }
+
+  .rh-title{
+    font-size:17px;
+    line-height: 1.3;
+    letter-spacing:.2px;
+  }
+
+  .rh-sub{
+    font-size:11.5px;
+    line-height:1.45;
+  }
+
+  .rh-row{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .rh-field.s2,
+  .rh-field.s3,
+  .rh-field.s4{
+    grid-column: auto;
+  }
+
+  .rh-open-cell{
+    grid-column: auto;
+  }
+
+  .rh-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:12px;
+  }
+
+  .rh-btn{
+    border-radius:999px;
+    min-height:auto;
+    padding:10px 14px;
+    font-size: 12px;
+    width:auto;
+  }
+
+  .rh-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+
+  .rh-item .rh-btn{
+    width:auto;
+  }
+}
+
+  @media (max-width:560px){
+    .rh-wrap{
+      padding: 10px;
+    }
+
+    .rh-head{
+      padding: 12px 12px 10px;
+    }
+
+    .rh-grid{
+      padding: 10px;
+      gap: 10px;
+    }
+
+    .rh-card-body{
+      padding: 10px;
+    }
+
+    .rh-block{
+      padding:12px;
+    }
+
+    .rh-row{
+      grid-template-columns:1fr;
+    }
+
+    .rh-actions{
+      flex-direction: column;
+    }
+
+    .rh-actions .rh-btn{
+      width: 100%;
+      justify-content: center;
+    }
+
+    .rh-item{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+
+    .rh-item .rh-btn{
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width:380px){
+    .rh-title-row{
+      padding-left:50px;
+    }
+
+    .rh-title{
+      font-size:15px;
+    }
+
+    .rh-sub{
+      font-size:11px;
+    }
+  }
 </style>
 
 <div class="rh-wrap">
-  <div class="rh-hero">
-    <h1>Reports Hub</h1>
-    <div class="sub">Download CSV/ZIP reports with your jurisdiction filters (State/District/Block/GP/Village/PG) + period filters.</div>
-  </div>
+  <div class="rh-sheet">
 
-  <div class="rh-grid">
-    <div class="rh-card">
-      <form id="rhForm" method="get" action="#">
-        <div class="rh-row">
-          <div class="f"><label>State</label><input name="state" value="{{ request.args.get('state','') }}" placeholder="State"/></div>
-          <div class="f"><label>District</label><input name="district" value="{{ request.args.get('district','') }}" placeholder="District"/></div>
-          <div class="f"><label>Block</label><input name="block" value="{{ request.args.get('block','') }}" placeholder="Block"/></div>
-          <div class="f"><label>Gram Panchayat</label><input name="gp" value="{{ request.args.get('gp','') }}" placeholder="GP"/></div>
-          <div class="f"><label>Village</label><input name="village" value="{{ request.args.get('village','') }}" placeholder="Village"/></div>
-          <div class="f"><label>PG Name contains</label><input name="pg_name" value="{{ request.args.get('pg_name','') }}" placeholder="PG name"/></div>
-        </div>
+    <div class="rh-head">
+      <a class="rh-back" href="javascript:history.back()" aria-label="Go Back" id="rhBackAria">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
 
-        <div class="rh-row" style="margin-top:10px">
-          <div class="f"><label>Period</label>
-            <select name="period">
-              {% set p = (request.args.get('period') or '') %}
-              <option value="" {% if not p %}selected{% endif %}>All time</option>
-              <option value="weekly" {% if p=='weekly' %}selected{% endif %}>Weekly</option>
-              <option value="monthly" {% if p=='monthly' %}selected{% endif %}>Monthly</option>
-              <option value="six_monthly" {% if p in ['six_monthly','6_monthly'] %}selected{% endif %}>6 Monthly</option>
-              <option value="yearly" {% if p=='yearly' %}selected{% endif %}>Yearly</option>
-            </select>
-          </div>
-          <div class="f"><label>Group By</label>
-            {% set gb = (request.args.get('group_by') or '') %}
-            <select name="group_by">
-              <option value="" {% if not gb %}selected{% endif %}>None</option>
-              <option value="district" {% if gb=='district' %}selected{% endif %}>District</option>
-              <option value="block" {% if gb=='block' %}selected{% endif %}>Block</option>
-              <option value="gp" {% if gb=='gp' %}selected{% endif %}>Gram Panchayat</option>
-              <option value="village" {% if gb=='village' %}selected{% endif %}>Village</option>
-              <option value="pg" {% if gb=='pg' %}selected{% endif %}>PG</option>
-            </select>
-          </div>
-          <div class="f"><label>Search (q)</label><input name="q" value="{{ request.args.get('q','') }}" placeholder="Name / keyword"/></div>
-          <div class="f"><label>From</label><input type="date" name="from" value="{{ request.args.get('from','') }}"/></div>
-          <div class="f"><label>To</label><input type="date" name="to" value="{{ request.args.get('to','') }}"/></div>
-          <div class="f"><label>&nbsp;</label>
-            <a class="rh-btn primary" id="rhOpenOverall" href="#">Open Overall Export</a>
-          </div>
-        </div>
-
-        <div class="rh-actions">
-          <a class="rh-btn" id="rhLakhpati" href="#">Download Lakhpati CSV</a>
-          <a class="rh-btn" id="rhGrants" href="#">Download Grants CSV</a>
-          <a class="rh-btn" id="rhMembers" href="#">Download Members CSV</a>
-          <a class="rh-btn" id="rhCashbook" href="#">Download Cashbook CSV</a>
-          <a class="rh-btn" id="rhLoans" href="#">Download Loans CSV</a>
-          <a class="rh-btn" id="rhTurnover" href="#">Download Turnover CSV</a>
-          <a class="rh-btn" id="rhOverallZip" href="#">Download Overall ZIP</a>
-        </div>
-
-        <div style="margin-top:8px;color:#64748b;font-weight:800;font-size:12px">Tip: Set Group By for summary tables (district/block/gp/village/pg). If Group By is blank, downloads give row-level data.</div>
-      </form>
-    </div>
-
-    <div class="rh-card">
-      <div class="rh-list">
-        <div class="rh-item">
-          <div class="meta"><b>Lakhpati Didi</b><span>Member-level + grouped summary</span></div>
-          <a class="rh-btn" href="{{ url_for('reports.lakhpati_report') }}">Open</a>
-        </div>
-        <div class="rh-item">
-          <div class="meta"><b>Grants & Utilization</b><span>Grant received + utilization balance</span></div>
-          <a class="rh-btn" href="{{ url_for('reports.grants_report') }}">Open</a>
-        </div>
-        <div class="rh-item">
-          <div class="meta"><b>PG Overall Export</b><span>Everything about selected PGs (ZIP)</span></div>
-          <a class="rh-btn" href="{{ url_for('reports.pg_overall_report') }}">Open</a>
+      <div class="rh-title-row">
+        <div class="rh-titlebox">
+          <h1 class="rh-title" id="rhTitle">Reports Hub</h1>
+          <div class="rh-sub" id="rhSub">Download CSV/ZIP reports with your jurisdiction filters (State/District/Block/GP/Village/PG) + period filters.</div>
         </div>
       </div>
     </div>
+
+    <div class="rh-grid">
+      <div class="rh-card">
+        <div class="rh-card-head">
+          <h3 class="rh-card-title" id="rhFiltersTitle">Report Filters</h3>
+          <div class="rh-card-sub" id="rhFiltersSub">Set jurisdiction and period filters, then open or download the required report.</div>
+        </div>
+
+        <div class="rh-card-body">
+          <form id="rhForm" method="get" action="#">
+            <div class="rh-block">
+              <div class="rh-row">
+                <div class="rh-field s2"><label id="rhLblState">State</label><input name="state" value="{{ request.args.get('state','') }}" placeholder="State" id="rhPhState"/></div>
+                <div class="rh-field s2"><label id="rhLblDistrict">District</label><input name="district" value="{{ request.args.get('district','') }}" placeholder="District" id="rhPhDistrict"/></div>
+                <div class="rh-field s2"><label id="rhLblBlock">Block</label><input name="block" value="{{ request.args.get('block','') }}" placeholder="Block" id="rhPhBlock"/></div>
+                <div class="rh-field s2"><label id="rhLblGp">Gram Panchayat</label><input name="gp" value="{{ request.args.get('gp','') }}" placeholder="GP" id="rhPhGp"/></div>
+                <div class="rh-field s2"><label id="rhLblVillage">Village</label><input name="village" value="{{ request.args.get('village','') }}" placeholder="Village" id="rhPhVillage"/></div>
+                <div class="rh-field s2"><label id="rhLblPgName">PG Name contains</label><input name="pg_name" value="{{ request.args.get('pg_name','') }}" placeholder="PG name" id="rhPhPgName"/></div>
+              </div>
+            </div>
+
+            <div class="rh-block">
+              <div class="rh-row">
+                <div class="rh-field s2"><label id="rhLblPeriod">Period</label>
+                  <select name="period">
+                    {% set p = (request.args.get('period') or '') %}
+                    <option value="" {% if not p %}selected{% endif %} id="rhOptAllTime">All time</option>
+                    <option value="weekly" {% if p=='weekly' %}selected{% endif %} id="rhOptWeekly">Weekly</option>
+                    <option value="monthly" {% if p=='monthly' %}selected{% endif %} id="rhOptMonthly">Monthly</option>
+                    <option value="six_monthly" {% if p in ['six_monthly','6_monthly'] %}selected{% endif %} id="rhOptSixMonthly">6 Monthly</option>
+                    <option value="yearly" {% if p=='yearly' %}selected{% endif %} id="rhOptYearly">Yearly</option>
+                  </select>
+                </div>
+
+                <div class="rh-field s2"><label id="rhLblGroupBy">Group By</label>
+                  {% set gb = (request.args.get('group_by') or '') %}
+                  <select name="group_by">
+                    <option value="" {% if not gb %}selected{% endif %} id="rhOptNone">None</option>
+                    <option value="district" {% if gb=='district' %}selected{% endif %} id="rhOptDistrict">District</option>
+                    <option value="block" {% if gb=='block' %}selected{% endif %} id="rhOptBlock">Block</option>
+                    <option value="gp" {% if gb=='gp' %}selected{% endif %} id="rhOptGp">Gram Panchayat</option>
+                    <option value="village" {% if gb=='village' %}selected{% endif %} id="rhOptVillage">Village</option>
+                    <option value="pg" {% if gb=='pg' %}selected{% endif %} id="rhOptPg">PG</option>
+                  </select>
+                </div>
+
+                <div class="rh-field s2"><label id="rhLblQ">Search (q)</label><input name="q" value="{{ request.args.get('q','') }}" placeholder="Name / keyword" id="rhPhQ"/></div>
+                <div class="rh-field s2"><label id="rhLblFrom">From</label><input type="date" name="from" value="{{ request.args.get('from','') }}"/></div>
+                <div class="rh-field s2"><label id="rhLblTo">To</label><input type="date" name="to" value="{{ request.args.get('to','') }}"/></div>
+                <div class="rh-open-cell"><a class="rh-btn primary" id="rhOpenOverall" href="#">Open Overall Export</a></div>
+              </div>
+            </div>
+
+            <div class="rh-actions">
+              <a class="rh-btn" id="rhLakhpati" href="#">Download Lakhpati CSV</a>
+              <a class="rh-btn" id="rhGrants" href="#">Download Grants CSV</a>
+              <a class="rh-btn" id="rhMembers" href="#">Download Members CSV</a>
+              <a class="rh-btn" id="rhCashbook" href="#">Download Cashbook CSV</a>
+              <a class="rh-btn" id="rhLoans" href="#">Download Loans CSV</a>
+              <a class="rh-btn" id="rhTurnover" href="#">Download Turnover CSV</a>
+              <a class="rh-btn" id="rhOverallZip" href="#">Download Overall ZIP</a>
+            </div>
+
+            <div class="rh-tip" id="rhTip">Tip: Set Group By for summary tables (district/block/gp/village/pg). If Group By is blank, downloads give row-level data.</div>
+          </form>
+        </div>
+      </div>
+
+      <div class="rh-card">
+        <div class="rh-card-head">
+          <h3 class="rh-card-title" id="rhQuickTitle">Quick Reports</h3>
+          <div class="rh-card-sub" id="rhQuickSub">Open commonly used report pages directly.</div>
+        </div>
+
+        <div class="rh-card-body">
+          <div class="rh-list">
+            <div class="rh-item">
+              <div class="meta"><b id="rhItem1Title">Lakhpati Didi</b><span id="rhItem1Sub">Member-level + grouped summary</span></div>
+              <a class="rh-btn" href="{{ url_for('reports.lakhpati_report') }}" id="rhItem1Btn">Open</a>
+            </div>
+            <div class="rh-item">
+              <div class="meta"><b id="rhItem2Title">Grants & Utilization</b><span id="rhItem2Sub">Grant received + utilization balance</span></div>
+              <a class="rh-btn" href="{{ url_for('reports.grants_report') }}" id="rhItem2Btn">Open</a>
+            </div>
+            <div class="rh-item">
+              <div class="meta"><b id="rhItem3Title">PG Overall Export</b><span id="rhItem3Sub">Everything about selected PGs (ZIP)</span></div>
+              <a class="rh-btn" href="{{ url_for('reports.pg_overall_report') }}" id="rhItem3Btn">Open</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -130,6 +608,256 @@
     bind('rhCashbook', '/reports/export/cashbook.csv');
     bind('rhLoans', '/reports/export/loans.csv');
     bind('rhTurnover', '/reports/export/turnover.csv');
+
+    const RH_T = {
+      en: {
+        title: "Reports Hub",
+        backAria: "Go Back",
+        sub: "Download CSV/ZIP reports with your jurisdiction filters (State/District/Block/GP/Village/PG) + period filters.",
+
+        filtersTitle: "Report Filters",
+        filtersSub: "Set jurisdiction and period filters, then open or download the required report.",
+
+        state: "State",
+        district: "District",
+        block: "Block",
+        gp: "Gram Panchayat",
+        village: "Village",
+        pgName: "PG Name contains",
+
+        phState: "State",
+        phDistrict: "District",
+        phBlock: "Block",
+        phGp: "GP",
+        phVillage: "Village",
+        phPgName: "PG name",
+
+        period: "Period",
+        allTime: "All time",
+        weekly: "Weekly",
+        monthly: "Monthly",
+        sixMonthly: "6 Monthly",
+        yearly: "Yearly",
+
+        groupBy: "Group By",
+        none: "None",
+        districtOpt: "District",
+        blockOpt: "Block",
+        gpOpt: "Gram Panchayat",
+        villageOpt: "Village",
+        pgOpt: "PG",
+
+        searchQ: "Search (q)",
+        phQ: "Name / keyword",
+        from: "From",
+        to: "To",
+
+        openOverall: "Open Overall Export",
+        lakhpati: "Download Lakhpati CSV",
+        grants: "Download Grants CSV",
+        members: "Download Members CSV",
+        cashbook: "Download Cashbook CSV",
+        loans: "Download Loans CSV",
+        turnover: "Download Turnover CSV",
+        overallZip: "Download Overall ZIP",
+
+        tip: "Tip: Set Group By for summary tables (district/block/gp/village/pg). If Group By is blank, downloads give row-level data.",
+
+        quickTitle: "Quick Reports",
+        quickSub: "Open commonly used report pages directly.",
+
+        item1Title: "Lakhpati Didi",
+        item1Sub: "Member-level + grouped summary",
+        item2Title: "Grants & Utilization",
+        item2Sub: "Grant received + utilization balance",
+        item3Title: "PG Overall Export",
+        item3Sub: "Everything about selected PGs (ZIP)",
+        open: "Open"
+      },
+      bn: {
+        title: "রিপোর্টস হাব",
+        backAria: "ফিরে যান",
+        sub: "আপনার এখতিয়ারভিত্তিক ফিল্টার (State/District/Block/GP/Village/PG) এবং সময়কাল ফিল্টারসহ CSV/ZIP রিপোর্ট ডাউনলোড করুন।",
+
+        filtersTitle: "রিপোর্ট ফিল্টার",
+        filtersSub: "এখতিয়ার ও সময়কাল নির্বাচন করে প্রয়োজনীয় রিপোর্ট খুলুন বা ডাউনলোড করুন।",
+
+        state: "রাজ্য",
+        district: "জেলা",
+        block: "ব্লক",
+        gp: "গ্রাম পঞ্চায়েত",
+        village: "গ্রাম",
+        pgName: "পিজি নাম রয়েছে",
+
+        phState: "রাজ্য",
+        phDistrict: "জেলা",
+        phBlock: "ব্লক",
+        phGp: "জিপি",
+        phVillage: "গ্রাম",
+        phPgName: "পিজি নাম",
+
+        period: "সময়কাল",
+        allTime: "সর্বসময়",
+        weekly: "সাপ্তাহিক",
+        monthly: "মাসিক",
+        sixMonthly: "৬ মাস অন্তর",
+        yearly: "বার্ষিক",
+
+        groupBy: "গ্রুপ করুন",
+        none: "কোনোটি নয়",
+        districtOpt: "জেলা",
+        blockOpt: "ব্লক",
+        gpOpt: "গ্রাম পঞ্চায়েত",
+        villageOpt: "গ্রাম",
+        pgOpt: "পিজি",
+
+        searchQ: "অনুসন্ধান (q)",
+        phQ: "নাম / কীওয়ার্ড",
+        from: "হতে",
+        to: "পর্যন্ত",
+
+        openOverall: "ওপেন ওভারঅল এক্সপোর্ট",
+        lakhpati: "লাখপতি CSV ডাউনলোড",
+        grants: "গ্রান্টস CSV ডাউনলোড",
+        members: "মেম্বার্স CSV ডাউনলোড",
+        cashbook: "ক্যাশবুক CSV ডাউনলোড",
+        loans: "লোনস CSV ডাউনলোড",
+        turnover: "টার্নওভার CSV ডাউনলোড",
+        overallZip: "ওভারঅল ZIP ডাউনলোড",
+
+        tip: "টিপ: summary table-এর জন্য Group By ব্যবহার করুন (district/block/gp/village/pg)। Group By ফাঁকা থাকলে row-level data ডাউনলোড হবে।",
+
+        quickTitle: "দ্রুত রিপোর্ট",
+        quickSub: "প্রচলিত রিপোর্ট পেজ সরাসরি খুলুন।",
+
+        item1Title: "লাখপতি দিদি",
+        item1Sub: "সদস্যভিত্তিক + গ্রুপড সামারি",
+        item2Title: "গ্রান্টস ও ব্যবহার",
+        item2Sub: "প্রাপ্ত গ্রান্ট + ব্যবহারের ব্যালেন্স",
+        item3Title: "পিজি ওভারঅল এক্সপোর্ট",
+        item3Sub: "নির্বাচিত PG-এর সব তথ্য (ZIP)",
+        open: "খুলুন"
+      }
+    };
+
+    function safeText(id, val){
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    }
+
+    function safePlaceholder(id, val){
+      const el = document.getElementById(id);
+      if(el) el.placeholder = val;
+    }
+
+    function getStoredLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      try{
+        const l3 = document.documentElement.getAttribute('data-lang');
+        if(l3 === 'en' || l3 === 'bn') return l3;
+      }catch(_){}
+      return 'en';
+    }
+
+    function applyRH(lang){
+      const t = RH_T[lang] || RH_T.en;
+
+      try { document.title = t.title; } catch(_){}
+
+      const back = document.querySelector('.rh-back');
+      if(back) back.setAttribute('aria-label', t.backAria);
+
+      safeText('rhTitle', t.title);
+      safeText('rhSub', t.sub);
+
+      safeText('rhFiltersTitle', t.filtersTitle);
+      safeText('rhFiltersSub', t.filtersSub);
+
+      safeText('rhLblState', t.state);
+      safeText('rhLblDistrict', t.district);
+      safeText('rhLblBlock', t.block);
+      safeText('rhLblGp', t.gp);
+      safeText('rhLblVillage', t.village);
+      safeText('rhLblPgName', t.pgName);
+
+      safePlaceholder('rhPhState', t.phState);
+      safePlaceholder('rhPhDistrict', t.phDistrict);
+      safePlaceholder('rhPhBlock', t.phBlock);
+      safePlaceholder('rhPhGp', t.phGp);
+      safePlaceholder('rhPhVillage', t.phVillage);
+      safePlaceholder('rhPhPgName', t.phPgName);
+
+      safeText('rhLblPeriod', t.period);
+      safeText('rhOptAllTime', t.allTime);
+      safeText('rhOptWeekly', t.weekly);
+      safeText('rhOptMonthly', t.monthly);
+      safeText('rhOptSixMonthly', t.sixMonthly);
+      safeText('rhOptYearly', t.yearly);
+
+      safeText('rhLblGroupBy', t.groupBy);
+      safeText('rhOptNone', t.none);
+      safeText('rhOptDistrict', t.districtOpt);
+      safeText('rhOptBlock', t.blockOpt);
+      safeText('rhOptGp', t.gpOpt);
+      safeText('rhOptVillage', t.villageOpt);
+      safeText('rhOptPg', t.pgOpt);
+
+      safeText('rhLblQ', t.searchQ);
+      safePlaceholder('rhPhQ', t.phQ);
+      safeText('rhLblFrom', t.from);
+      safeText('rhLblTo', t.to);
+
+      safeText('rhOpenOverall', t.openOverall);
+      safeText('rhLakhpati', t.lakhpati);
+      safeText('rhGrants', t.grants);
+      safeText('rhMembers', t.members);
+      safeText('rhCashbook', t.cashbook);
+      safeText('rhLoans', t.loans);
+      safeText('rhTurnover', t.turnover);
+      safeText('rhOverallZip', t.overallZip);
+
+      safeText('rhTip', t.tip);
+
+      safeText('rhQuickTitle', t.quickTitle);
+      safeText('rhQuickSub', t.quickSub);
+
+      safeText('rhItem1Title', t.item1Title);
+      safeText('rhItem1Sub', t.item1Sub);
+      safeText('rhItem2Title', t.item2Title);
+      safeText('rhItem2Sub', t.item2Sub);
+      safeText('rhItem3Title', t.item3Title);
+      safeText('rhItem3Sub', t.item3Sub);
+
+      safeText('rhItem1Btn', t.open);
+      safeText('rhItem2Btn', t.open);
+      safeText('rhItem3Btn', t.open);
+    }
+
+    window.updatePageLanguage = function(lang){
+      if(lang !== 'en' && lang !== 'bn') lang = getStoredLang();
+      applyRH(lang);
+    };
+
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyRH(lang);
+    });
+
+    window.addEventListener('pgmis:lang', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyRH(lang);
+    });
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      applyRH(getStoredLang());
+    });
   })();
 </script>
 

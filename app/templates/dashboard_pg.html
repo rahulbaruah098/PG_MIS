@@ -2,18 +2,65 @@
 {% block title %}PGMIS Dashboard - Producer Group Management Information System{% endblock %}
 
 {% block head_extra %}
-  <!-- Tailwind + Chart.js (same as your setup) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- ✅ ALL CSS MERGED HERE (UPDATED: COLORS ONLY to match your other pages) -->
+  <!-- ✅ Removed Tailwind dependency (fixes “sometimes not loading”) -->
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- ✅ Fallback if CDN fails (add chart.umd.min.js into /static/vendor/) -->
+<script>
+  window.__chartReady = new Promise((resolve) => {
+    function done(){ resolve(true); }
+
+    // If CDN loads fine
+    if (window.Chart) return done();
+
+    // Wait a bit for deferred CDN script
+    let waited = 0;
+    const t = setInterval(() => {
+      if (window.Chart) { clearInterval(t); return done(); }
+      waited += 50;
+      if (waited >= 1500) {
+        clearInterval(t);
+
+        // Fallback to local file
+        const s = document.createElement('script');
+        s.src = "{{ url_for('static', filename='vendor/chart.min.js') }}";
+        s.defer = true;
+        s.onload = done;
+        s.onerror = () => resolve(false);
+        document.head.appendChild(s);
+      }
+    }, 50);
+  });
+</script>
+
   <style>
+
+/* ============================================================
+   ✅ SAFE DASHBOARD GATE (Web + App WebView friendly)
+   - Never hides full body (prevents permanent blank)
+   - Hides only dashboard parts until first render
+============================================================ */
+.pg-gate {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+.pg-gate.pg-gate--ready {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* If JS is disabled, never hide content */
+html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
+
     /* ============================================================
-      ✅ COLOR-ONLY UPDATE (MATCHES YOUR SITE THEME)
-      - NO layout changes
-      - NO JS changes (except translation wiring below, required)
-      - NO route/data changes
-      - ONLY adjusted palette + borders + surfaces to match your mint/green pages
+      ✅ TAILWIND-REMOVAL PATCH (PAGE-ONLY)
+      - Keeps SAME UI/LOOK by providing minimal utility CSS used here
+      - NO route/data/logic changes
+      - Fixes app/mobile overlap + modules layout
+      - Fixes header width equal to below section
       ============================================================ */
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,10 +71,9 @@
           sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      color: #0b2a23;               /* ✅ deeper green-ink */
-      background: #f1fbf5;          /* ✅ mint page bg */
+      color: #0b2a23;
+      background: #f1fbf5;
     }
-
     html { scroll-behavior: smooth; }
 
     /* ✅ Cursor rules (as requested) */
@@ -39,7 +85,143 @@
     button, a, [role="button"] { cursor: pointer !important; }
     canvas { cursor: grab !important; }
 
-    .backdrop-blur-sm { backdrop-filter: blur(4px); }
+    /* ============================================================
+      ✅ MINIMAL "TAILWIND-LIKE" UTILITIES USED IN THIS PAGE
+      (Only what this template needs)
+      ============================================================ */
+    .max-w-7xl{ width:100%; max-width:80rem; }
+    .mx-auto{ margin-left:auto; margin-right:auto; }
+    .px-6{ padding-left:24px; padding-right:24px; }
+    .py-6{ padding-top:24px; padding-bottom:24px; }
+    .space-y-6 > * + *{ margin-top:24px; }
+
+    .grid{ display:grid; }
+    .grid-cols-1{ grid-template-columns:repeat(1,minmax(0,1fr)); }  /* ✅ ADD THIS LINE */
+    .grid-cols-2{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+
+@media (min-width: 768px){
+  .md\:grid-cols-3{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+    .flex{ display:flex; }
+    .items-center{ align-items:center; }
+    .items-start{ align-items:flex-start; }
+    .justify-between{ justify-content:space-between; }
+    .justify-end{ justify-content:flex-end; }
+    .gap-2{ gap:8px; }
+    .gap-3{ gap:12px; }
+    .gap-4{ gap:16px; }
+    .gap-5{ gap:20px; }
+    .gap-6{ gap:24px; }
+
+    .rounded-lg{ border-radius:12px; }
+    .rounded-xl{ border-radius:16px; }
+    .rounded-2xl{ border-radius:22px; }
+    .rounded-full{ border-radius:999px; }
+
+    .p-2{ padding:8px; }
+    .p-2\.5{ padding:10px; }
+    .p-3{ padding:12px; }
+    .p-4{ padding:16px; }
+    .p-5{ padding:20px; }
+    .p-6{ padding:24px; }
+
+    .mt-1{ margin-top:4px; }
+    .mt-2{ margin-top:8px; }
+    .mt-5{ margin-top:20px; }
+    .mt-6{ margin-top:24px; }
+    .mb-1{ margin-bottom:4px; }
+    .mb-2{ margin-bottom:8px; }
+    .mb-3{ margin-bottom:12px; }
+    .mb-4{ margin-bottom:16px; }
+    .mb-6{ margin-bottom:24px; }
+
+    .w-full{ width:100%; }
+    .min-w-0{ min-width:0; }
+    .shrink-0{ flex-shrink:0; }
+
+    .text-left{ text-align:left; }
+    .text-right{ text-align:right; }
+    .text-center{ text-align:center; }
+
+    .text-xs{ font-size:12px; line-height:1.25; }
+    .text-sm{ font-size:14px; line-height:1.35; }
+    .text-xl{ font-size:20px; line-height:1.2; }
+    .text-2xl{ font-size:24px; line-height:1.15; }
+    .text-3xl{ font-size:30px; line-height:1.1; }
+
+    .font-medium{ font-weight:500; }
+    .font-semibold{ font-weight:600; }
+    .font-bold{ font-weight:700; }
+    .font-extrabold{ font-weight:800; }
+
+    .uppercase{ text-transform:uppercase; }
+    .tracking-wider{ letter-spacing:.08em; }
+
+    .border{ border-width:1px; border-style:solid; }
+    .overflow-x-auto{ overflow-x:auto; }
+    .overflow-hidden{ overflow:hidden; }
+
+    .hidden{ display:none; }
+    .block{ display:block; }
+
+    /* responsive prefixes */
+    @media (min-width: 768px){
+      .md\:text-3xl{ font-size:30px; line-height:1.1; }
+      .md\:text-\[15px\]{ font-size:15px; line-height:1.4; }
+      .md\:grid-cols-2{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .md\:flex{ display:flex; }
+      .md\:block{ display:block; }
+      .md\:hidden{ display:none; }
+      .md\:items-center{ align-items:center; }
+      .md\:justify-between{ justify-content:space-between; }
+      .md\:flex-row{ flex-direction:row; }
+      .md\:w-auto{ width:auto; }
+    }
+    @media (min-width: 1024px){
+      .lg\:grid-cols-2{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .lg\:grid-cols-4{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
+    /* Tailwind-ish color utilities used in template text */
+    .text-slate-900{ color:#0b2a23; }
+    .text-slate-800{ color:#123a31; }
+    .text-slate-700{ color:#2f5b4f; }
+    .text-slate-600{ color:#4c7468; }
+    .text-slate-500{ color:#5b8376; }
+
+    .text-emerald-700{ color:#047857; }
+    .text-emerald-600{ color:#059669; }
+    .text-teal-700{ color:#0f766e; }
+    .text-green-700{ color:#15803d; }
+    .text-lime-700{ color:#65a30d; }
+    .text-rose-700{ color:#be123c; }
+    .text-amber-700{ color:#b45309; }
+    .text-amber-600{ color:#d97706; }
+    .text-sky-700{ color:#0369a1; }
+
+    /* These appear with slashes in class names -> escape them */
+    .text-slate-700\/90{ color: rgba(47,91,79,0.90); }
+    .bg-slate-50\/90{ background-color: rgba(233,248,240,0.92); }
+    .bg-white\/70{ background-color: rgba(255,255,255,0.70); }
+    .bg-white\/80{ background-color: rgba(255,255,255,0.80); }
+    .bg-white\/85{ background-color: rgba(255,255,255,0.85); }
+    .bg-white\/90{ background-color: rgba(255,255,255,0.90); }
+
+    .bg-emerald-50{ background:#ecfdf5; }
+    .bg-amber-50{ background:#fffbeb; }
+    .bg-sky-50{ background:#f0f9ff; }
+
+    .border-slate-200{ border-color: rgba(191,230,210,0.95) !important; }
+    .border-slate-100{ border-color: rgba(216,239,227,0.95) !important; }
+    .border-emerald-200{ border-color: rgba(167,243,208,0.95); }
+    .border-amber-200{ border-color: rgba(253,230,138,0.95); }
+    .border-sky-200{ border-color: rgba(186,230,253,0.95); }
+
+    /* Shadows + transitions used in page */
+    .shadow-md { box-shadow: 0 6px 14px rgba(6, 95, 70, 0.10); }
+    .shadow-lg { box-shadow: 0 14px 28px rgba(6, 95, 70, 0.12); }
+    .shadow-xl { box-shadow: 0 18px 38px rgba(6, 95, 70, 0.14); }
+    .shadow-2xl { box-shadow: 0 26px 60px rgba(6, 95, 70, 0.18); }
 
     .transition-all { transition: all 0.3s ease; }
     .transition-shadow { transition: box-shadow 0.3s ease; }
@@ -55,27 +237,15 @@
     .group:hover .group-hover\:bg-white\/80 { background-color: rgba(255,255,255,0.86); }
     .group:hover .group-hover\:text-gray-900 { color: rgb(17, 24, 39); }
 
-    /* Refined shadows (slightly greener like your pages) */
-    .shadow-md { box-shadow: 0 6px 14px rgba(6, 95, 70, 0.10); }
-    .shadow-lg { box-shadow: 0 14px 28px rgba(6, 95, 70, 0.12); }
-    .shadow-xl { box-shadow: 0 18px 38px rgba(6, 95, 70, 0.14); }
-    .shadow-2xl { box-shadow: 0 26px 60px rgba(6, 95, 70, 0.18); }
-
-    .hover\:shadow-md:hover { box-shadow: 0 6px 16px rgba(6, 95, 70, 0.14); }
-    .hover\:shadow-lg:hover { box-shadow: 0 14px 30px rgba(6, 95, 70, 0.16); }
-    .hover\:shadow-xl:hover { box-shadow: 0 18px 44px rgba(6, 95, 70, 0.18); }
-    .hover\:shadow-2xl:hover { box-shadow: 0 28px 70px rgba(6, 95, 70, 0.22); }
+    .backdrop-blur-sm { backdrop-filter: blur(4px); }
 
     :root{
       --ink:#0b2a23;
       --muted:#2f5b4f;
       --muted2:#4c7468;
 
-      /* ✅ Your site-like mint/green brand */
-      --brand:#0f766e;     /* teal */
-      --brand2:#15803d;    /* green */
-      --accent:#0f766e;
-      --accent2:#15803d;
+      --brand:#0f766e;
+      --brand2:#15803d;
 
       --paper:#f1fbf5;
       --paper2:#e9f8f0;
@@ -85,27 +255,28 @@
       --ring: rgba(15, 118, 110, 0.22);
     }
 
-    /* Welcome strip under navbar */
-    /* ✅ Welcome strip under navbar (WEB + WEBVIEW safe spacing) */
-    .welcome-strip{
-      width: 100%;
-      max-width: 80rem;              /* ✅ fixes invalid max-width: 7xl */
-      margin: 18px auto 0;
-      padding: 0;                    /* ✅ FIX 1: match main outer breadth (no extra inset) */
-    }
+    /* ============================================================
+      ✅ Welcome strip under navbar (width + alignment fixed)
+      - Fixes web view mismatch: header now equals below section width
+      - Fixes app overlap by forcing predictable spacing
+      ============================================================ */
+   .welcome-strip{
+  width: 100%;
+  max-width: 80rem;      /* same as max-w-7xl */
+  margin: 18px auto 16px;
+  padding: 0;            /* ✅ IMPORTANT: remove padding so card is full width */
+}
 
-    /* ✅ Welcome card styled like your other panels (NO green left line) */
-    .welcome-card{
-      position: relative;
-      border-radius: 22px;
-      background: rgba(255,255,255,0.92);
-      border: 1.5px solid rgba(191,230,210,0.95);
-      box-shadow: 0 22px 60px rgba(6, 95, 70, 0.14);
-      overflow: hidden;
-      backdrop-filter: blur(6px);
-    }
-
-    /* subtle texture like main.max-w-7xl */
+ .welcome-card{
+  width: 100%;           /* ✅ makes it exactly equal to main panel width */
+  position: relative;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.92);
+  border: 1.5px solid rgba(191,230,210,0.95);
+  box-shadow: 0 22px 60px rgba(6, 95, 70, 0.14);
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+}
     .welcome-card::before{
       content:"";
       position:absolute;
@@ -116,21 +287,16 @@
       opacity: 0.07;
       mix-blend-mode: multiply;
     }
-
-    .welcome-inner{
-      position: relative;
-      z-index: 1;
-      padding: 18px 18px;
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap: 14px;
-    }
-
-    /* ✅ HARD FIX: gap between welcome + main (works in webview too) */
-    .welcome-strip{ margin-bottom: 16px; }
-    main.max-w-7xl{ margin-top: 16px; }
-
+   .welcome-inner{
+  position: relative;
+  z-index: 1;
+  padding: 18px 24px;    /* ✅ matches main px-6 */
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
     .welcome-title{ letter-spacing:-0.02em; }
 
     .welcome-pill{
@@ -163,9 +329,8 @@
       box-shadow: 0 22px 60px rgba(6, 95, 70, 0.14);
       overflow: clip;
       backdrop-filter: blur(6px);
+      margin-top: 0; /* ✅ avoid accidental overlap */
     }
-
-    /* subtle texture (kept) */
     main.max-w-7xl::before{
       content:"";
       position:absolute;
@@ -205,40 +370,38 @@
       box-shadow: 0 14px 30px rgba(6,95,70,0.12) !important;
       background: rgba(255,255,255,0.94) !important;
     }
-
     .stat-icon-soft{
       background: rgba(233,248,240,0.95) !important;
       border: 1px solid rgba(15,118,110,0.18) !important;
     }
-
     .human-title{ letter-spacing: -0.01em; }
     .human-subtitle{ color: #2f5b4f !important; }
 
-    /* ✅ Small text tones like your pages */
-    .text-slate-900{ color:#0b2a23 !important; }
-    .text-slate-800{ color:#123a31 !important; }
-    .text-slate-700{ color:#2f5b4f !important; }
-    .text-slate-600{ color:#4c7468 !important; }
-    .text-slate-500{ color:#5b8376 !important; }
-
-    /* ✅ Table header background -> mint */
-    .bg-slate-50\/90{ background-color: rgba(233,248,240,0.92) !important; }
-
-    /* ✅ Borders a bit greener */
-    .border-slate-200{ border-color: rgba(191,230,210,0.95) !important; }
-    .border-slate-100{ border-color: rgba(216,239,227,0.95) !important; }
-
-    /* ✅ Button color stays brand teal */
-    /* (already inline style background:#0f766e) */
-
+    /* ============================================================
+      ✅ FIX 1: APP/MOBILE Modules Overview should be 2x2 grid
+      (No horizontal slider; prevents “meshy/overlap” too)
+      ============================================================ */
+    .modules-grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:16px;
+      margin-top:12px;
+      overflow: visible;
+      padding-bottom: 0;
+    }
+    @media (max-width: 1024px){
+      .modules-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap:10px; }
+    }
+    @media (max-width: 420px){
+      .modules-grid{ gap:9px; }
+    }
 
     /* ============================================================
-      ✅ MOBILE/TABLET ONLY FIXES (NO WEB CHANGES)
-      1) Add visible GAP between Welcome card and Quick Stats section
-      2) Make Welcome card more eye-catching (mobile/tablet only)
+      ✅ MOBILE/TABLET ONLY FIXES
+      - gap between welcome and main
+      - prevent any overlap by using consistent spacing
       ============================================================ */
     @media (max-width: 1024px) {
-      /* Make the first section feel premium */
       .welcome-card{
         background:
           radial-gradient(120% 120% at 10% 0%, rgba(15,118,110,0.16), transparent 55%),
@@ -250,56 +413,42 @@
           0 2px 0 rgba(15,118,110,0.10) inset !important;
       }
       .welcome-card::before{
-        /* soft sheen + texture only for mobile/tablet */
         content:"";
         position:absolute;
         inset:-1px;
         pointer-events:none;
-        background:
-          radial-gradient(rgba(6,95,70,0.10) 0.6px, transparent 0.6px);
+        background: radial-gradient(rgba(6,95,70,0.10) 0.6px, transparent 0.6px);
         background-size: 18px 18px;
         opacity: 0.10;
         mix-blend-mode: multiply;
       }
-
-      /* Make title stronger & clearer on small screens */
       .welcome-card h1{
         letter-spacing: -0.03em !important;
         text-shadow: 0 1px 0 rgba(255,255,255,0.7);
       }
-
-      /* ✅ IMPORTANT: add gap below welcome section (what you asked) */
       .welcome-strip{
-        margin-bottom: 14px !important; /* creates separation from Quick Stats */
+        margin-bottom: 14px !important;
       }
-
-      /* also add a tiny top breathing room for main container */
       main.max-w-7xl{
-        margin-top: 10px !important;
+        margin-top: 0 !important;
       }
     }
 
     /* ============================================================
-      ✅ MOBILE / APP VIEW — previous mobile redesign kept
-      (we only adjusted gaps + welcome card styling above)
+      ✅ MOBILE / APP VIEW — keep your previous mobile rules
+      + ensure consistent paddings now that Tailwind is removed
       ============================================================ */
     @media (max-width: 768px) {
-      /* page paddings tighter */
       main.max-w-7xl{ padding-left: 14px !important; padding-right: 14px !important; }
-      .welcome-strip{ padding: 0 !important; } /* ✅ FIX 1 (mobile): keep equal breadth */
       .welcome-inner{ padding: 16px 14px !important; }
 
-      /* headings scale down slightly for app view */
       .welcome-card h1{ font-size: 20px !important; line-height: 1.15 !important; }
       .welcome-card p{ font-size: 13px !important; }
       .welcome-pill{ display:none !important; }
 
-      /* add a bit more gap on phones */
       .welcome-strip{ margin-bottom: 16px !important; }
 
-      /* ===============================
-         QUICK STATS — compact 2-col grid
-         =============================== */
+      /* QUICK STATS — compact 2-col grid */
       #quickStats{
         display:grid !important;
         grid-template-columns: repeat(2, minmax(0,1fr)) !important;
@@ -314,14 +463,8 @@
         transform: none !important;
         min-width: 0 !important;
       }
-
-      /* make stat cards tighter + cleaner */
-      #quickStats .card-border-soft{
-        border-radius: 18px !important;
-      }
-      #quickStats .p-5{
-        padding: 12px !important;
-      }
+      #quickStats .card-border-soft{ border-radius: 18px !important; }
+      #quickStats .p-5{ padding: 12px !important; }
       #quickStats h3{
         font-size: 11px !important;
         letter-spacing: .08em !important;
@@ -336,65 +479,32 @@
         font-size: 12px !important;
         line-height: 1.2 !important;
       }
-
-      /* icon box smaller */
-      #quickStats .p-3{
-        padding: 10px !important;
-        border-radius: 14px !important;
-      }
-      #quickStats svg{
-        width: 20px !important;
-        height: 20px !important;
-      }
-
-      /* remove hover transforms for app feel */
+      #quickStats .p-3{ padding: 10px !important; border-radius: 14px !important; }
+      #quickStats svg{ width: 20px !important; height: 20px !important; }
       #quickStats .hover\:scale-105:hover,
-      #quickStats .hover\:-translate-y-1:hover{
-        transform: none !important;
-      }
+      #quickStats .hover\:-translate-y-1:hover{ transform: none !important; }
 
-      /* ===============================
-         MODULES OVERVIEW — app-style grid
-         =============================== */
+      /* MODULES OVERVIEW — 2x2 grid in app view (requested) */
       #dashboardOverview .p-6{ padding: 14px !important; }
       #dashboardOverview h2{ font-size: 18px !important; line-height: 1.2 !important; }
       #dashboardOverview p.text-sm{ font-size: 13px !important; }
-
       .modules-grid{
         display:grid !important;
         grid-template-columns: repeat(2, minmax(0,1fr)) !important;
         gap: 10px !important;
         overflow: visible !important;
         padding-bottom: 0 !important;
-        scroll-snap-type: none !important;
       }
-      .modules-grid > *{
-        flex: unset !important;
-        scroll-snap-align: unset !important;
-        min-width: 0 !important;
-      }
-
-      /* module card compact */
       .modules-grid .p-5{ padding: 12px !important; }
       .modules-grid h3{ font-size: 13px !important; margin-bottom: 4px !important; }
       .modules-grid p.text-xs{ font-size: 12px !important; line-height: 1.25 !important; }
-      .modules-grid .text-2xl{
-        font-size: 16px !important;
-        font-weight: 900 !important;
-      }
+      .modules-grid .text-2xl{ font-size: 16px !important; font-weight: 900 !important; }
       .modules-grid .p-2{ padding: 8px !important; border-radius: 12px !important; }
-      .modules-grid svg{
-        width: 18px !important;
-        height: 18px !important;
-      }
+      .modules-grid svg{ width: 18px !important; height: 18px !important; }
       .modules-grid .hover\:scale-105:hover,
-      .modules-grid .hover\:-translate-y-1:hover{
-        transform:none !important;
-      }
+      .modules-grid .hover\:-translate-y-1:hover{ transform:none !important; }
 
-      /* ===============================
-         CHARTS — stack as clean vertical cards
-         =============================== */
+      /* CHARTS — stack */
       .mob-swipe{
         display:grid !important;
         grid-template-columns: 1fr !important;
@@ -404,65 +514,34 @@
         scroll-snap-type: none !important;
         -webkit-overflow-scrolling: auto !important;
       }
-      .mob-swipe > *{
-        flex: unset !important;
-        scroll-snap-align: unset !important;
-      }
-
-      /* charts padding + title sizing */
+      .mob-swipe > *{ flex: unset !important; scroll-snap-align: unset !important; }
       #cashFlowChart .p-6,
       #membershipChart .p-6,
       #loanDistributionChart .p-6,
-      #produceStockChart .p-6{
-        padding: 14px !important;
-      }
+      #produceStockChart .p-6{ padding: 14px !important; }
       #cashFlowChart h2,
       #membershipChart h2,
       #loanDistributionChart h2,
-      #produceStockChart h2{
-        font-size: 16px !important;
-        line-height: 1.2 !important;
-      }
+      #produceStockChart h2{ font-size: 16px !important; line-height: 1.2 !important; }
       #cashFlowChart p.text-sm,
       #membershipChart p.text-sm,
       #loanDistributionChart p.text-sm,
-      #produceStockChart p.text-sm{
-        font-size: 12.5px !important;
-      }
-
-      /* icons in chart headers smaller */
+      #produceStockChart p.text-sm{ font-size: 12.5px !important; }
       #cashFlowChart .p-2\.5,
       #membershipChart .p-2\.5,
       #loanDistributionChart .p-2\.5,
-      #produceStockChart .p-2\.5{
-        padding: 8px !important;
-        border-radius: 12px !important;
-      }
+      #produceStockChart .p-2\.5{ padding: 8px !important; border-radius: 12px !important; }
       #cashFlowChart svg,
       #membershipChart svg,
       #loanDistributionChart svg,
-      #produceStockChart svg{
-        width: 18px !important;
-        height: 18px !important;
-      }
-
-      /* chart heights optimized for phones */
+      #produceStockChart svg{ width: 18px !important; height: 18px !important; }
       .chart-container{ height: 220px !important; }
 
-      /* ===============================
-         RECENT TRANSACTIONS — tighter header/button + summary stack
-         =============================== */
+      /* RECENT TRANSACTIONS */
       #recentTransactions .p-6{ padding: 14px !important; }
       #recentTransactions h2{ font-size: 16px !important; line-height: 1.2 !important; }
       #recentTransactions p.text-sm{ font-size: 12.5px !important; }
-
-      /* View All button: full width but shorter */
-      #recentTransactions button{
-        padding: 10px 14px !important;
-        border-radius: 14px !important;
-      }
-
-      /* summary footer cards: 1-col (no swipe) */
+      #recentTransactions button{ padding: 10px 14px !important; border-radius: 14px !important; }
       #recentTransactions .mob-swipe{
         display:grid !important;
         grid-template-columns: 1fr !important;
@@ -472,52 +551,38 @@
       #recentTransactions .mob-swipe .text-2xl{ font-size: 20px !important; }
     }
 
-    /* Extra small devices */
     @media (max-width: 420px) {
       .welcome-card h1{ font-size: 19px !important; }
       #quickStats{ gap: 9px !important; }
-      .modules-grid{ gap: 9px !important; }
       .chart-container{ height: 210px !important; }
       #dashboardOverview h2{ font-size: 17px !important; }
     }
-  
 
-    /* MODULES SLIDER OVERRIDE */
-    /* Turns the Modules Overview cards into a horizontal slider without changing markup */
-    .modules-grid{
-      display:flex !important;
-      flex-wrap:nowrap !important;
-      gap:14px !important;
-      overflow-x:auto !important;
-      overflow-y:hidden !important;
-      scroll-snap-type:x mandatory;
-      -webkit-overflow-scrolling:touch;
-      padding-bottom:10px;
-      margin-top:12px;
-    }
-    .modules-grid::-webkit-scrollbar{ height:10px; }
-    .modules-grid::-webkit-scrollbar-track{ background:rgba(148,163,184,.25); border-radius:999px; }
-    .modules-grid::-webkit-scrollbar-thumb{ background:rgba(15,23,42,.28); border-radius:999px; }
-    .modules-grid > *{
-      scroll-snap-align:start;
-      flex:0 0 min(86vw, 360px);
-    }
-    @media (min-width: 720px){
-      .modules-grid > *{ flex-basis: min(52vw, 360px); }
-    }
-    @media (min-width: 1024px){
-      .modules-grid > *{ flex-basis: 320px; }
-    }
-    @media (min-width: 1280px){
-      .modules-grid > *{ flex-basis: 340px; }
-    }
-</style>
+
+    /* ================================
+   Desktop: Larger "View All" button
+================================ */
+
+@media (min-width: 1024px) {
+
+  #recentTransactions button{
+      padding: 12px 22px !important;
+      font-size: 16px !important;
+      font-weight: 800 !important;
+      border-radius: 14px !important;
+      min-width: 120px !important;
+      height: 46px !important;
+      box-shadow: 0 10px 22px rgba(6,95,70,.25) !important;
+  }
+
+}
+  </style>
 {% endblock %}
 
 {% block content %}
+ <div id="pgDashboardGate" class="pg-gate">
   <!-- ✅ Welcome Heading under navbar -->
   <section class="welcome-strip">
-    <!-- ✅ FIX 2: apply SAME loading/fade animation class used elsewhere -->
     <div class="welcome-card card-border-soft fade-in">
       <div class="welcome-inner">
         <div>
@@ -527,12 +592,17 @@
              data-bn="ত্রিপুরা পিজি সিস্টেমস">Tripura PG Systems</p>
 
           <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 welcome-title mt-1">
-            <span
-              data-i18n="dash_welcome_pg"
-              data-en="WELCOME PG"
-              data-bn="স্বাগতম পিজি">WELCOME PG</span>
-            {{ (current_user.pg_name if current_user is defined and current_user.pg_name else (current_user.name if current_user is defined and current_user.name else (current_user.username if current_user is defined and current_user.username else "USER"))) }}
-          </h1>
+  <span
+    data-i18n="dash_welcome_pg"
+    data-en="WELCOME PG"
+    data-bn="স্বাগতম পিজি">WELCOME PG</span>
+
+  {{ session.get("name")
+     or session.get("username")
+     or (current_user.name if current_user is defined and current_user.is_authenticated and current_user.name else None)
+     or (current_user.username if current_user is defined and current_user.is_authenticated and current_user.username else None)
+     or "USER" }}
+</h1>
 
           <p class="text-sm md:text-[15px] text-slate-700 mt-2"
              data-i18n="dash_snapshot_line"
@@ -562,51 +632,45 @@
     <div id="dashboardOverview"></div>
 
     <!-- ✅ Charts Section (ALL 4 in SAME GRID) -->
-    <!-- Desktop: same 2-column layout, but single unified grid (not 2 blocks)
-         Mobile: one swipe rail containing all 4 cards -->
     <div class="mob-swipe grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div id="cashFlowChart"></div>
       <div id="membershipChart"></div>
       <div id="loanDistributionChart"></div>
-      <div id="produceStockChart">
-      <!-- ============================================================
-           PG Data Entry Quick Links
-      ============================================================ -->
-      <div class="card" style="margin-top:14px">
-        <div class="card-head" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div>
-            <div style="font-weight:950">PG Data Entry Quick Links</div>
-            <div style="color:rgba(0,0,0,.55);font-size:.92rem">Jump into registers and see saved counts</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <a class="btn" href="{{ url_for('pg.meeting_register', pg_id=pg._id) }}">Meeting Register ({{ metrics.meetings_count }})</a>
-            <a class="btn" href="{{ url_for('pg.meeting_minute_book') }}">Minute Book ({{ metrics.minutes_count }})</a>
-            <a class="btn" href="{{ url_for('pg.member_ledger') }}">Member Ledger ({{ metrics.member_ledger_entries }})</a>
-            <a class="btn" href="{{ url_for('pg.asset_register') }}">Asset Register ({{ metrics.assets_count }})</a>
-            <a class="btn" href="{{ url_for('pg.receipt_voucher') }}">Receipt Voucher ({{ metrics.receipt_vouchers_count }})</a>
-            <a class="btn" href="{{ url_for('pg.input_register') }}">Input ({{ metrics.input_rows_count }})</a>
-            <a class="btn" href="{{ url_for('pg.output_register') }}">Output ({{ metrics.output_rows_count }})</a>
-            <a class="btn" href="{{ url_for('pg.ledger_book') }}">Ledger Book</a>
-          </div>
-        </div>
-      </div>
-
-</div>
+      <div id="produceStockChart"></div>
     </div>
 
     <!-- Recent Transactions -->
     <div id="recentTransactions"></div>
   </main>
+     </div>
 {% endblock %}
 
 {% block scripts %}
   <script>
+
     // ============================================================
-    // ✅ FIXED Language wiring (SYNC with base navbar language toggle)
-    // ✅ Root fix: your page was creating statsData/modulesData ONCE
-    //    so titles stayed in the old language after toggle.
-    // ✅ Now: all text arrays are rebuilt on every render.
-    // ✅ Also: charts are destroyed before re-create (prevents stacking).
+// ✅ Gate helpers (prevents blank flashes on Web + WebView)
+// ============================================================
+function __gateEl(){
+  return document.getElementById('pgDashboardGate');
+}
+
+function __openGate(){
+  const g = __gateEl();
+  if (!g) return;
+  g.classList.add('pg-gate--ready');
+}
+
+function __closeGate(){
+  const g = __gateEl();
+  if (!g) return;
+  g.classList.remove('pg-gate--ready');
+}
+    
+    // ============================================================
+    // ✅ Language wiring (SYNC with base navbar language toggle)
+    // ✅ Arrays rebuilt on every render.
+    // ✅ Charts destroyed before re-create (prevents stacking).
     // ============================================================
 
     const __I18N = {
@@ -627,6 +691,16 @@
       stat_sum_outstanding_loans: { en: "Sum of outstanding loans", bn: "বকেয়া ঋণের মোট যোগফল" },
       stat_from_pg_master: { en: "From PG master data", bn: "পিজি মাস্টার ডেটা থেকে" },
 
+      // ✅ Added missing translations (Lakhpati + new KPIs)
+      stat_lakhpati: { en: "Lakhpati Didi", bn: "লাখপতি দিদি" },
+      stat_lakhpati_change: { en: "Members marked as Lakhpati Didi", bn: "লাখপতি দিদি হিসাবে চিহ্নিত সদস্য" },
+
+      stat_turnover_latest: { en: "Turnover (Latest)", bn: "টার্নওভার (সর্বশেষ)" },
+      stat_profit_latest: { en: "Profit (Latest)", bn: "লাভ (সর্বশেষ)" },
+      stat_loss_latest: { en: "Loss (Latest)", bn: "ক্ষতি (সর্বশেষ)" },
+      stat_grants_received: { en: "Grants Received", bn: "প্রাপ্ত অনুদান" },
+      stat_grants_count_suffix: { en: "grant(s)", bn: "অনুদান" },
+
       // Modules overview
       modules_title: { en: "PGMIS Modules Overview", bn: "PGMIS মডিউল ওভারভিউ" },
       modules_subtitle: { en: "Quick access to registers, books and vouchers", bn: "রেজিস্টার, বই ও ভাউচার দ্রুত অ্যাক্সেস" },
@@ -636,8 +710,17 @@
       mod_membership_register: { en: "Membership Register", bn: "সদস্য নিবন্ধন" },
       mod_membership_desc: { en: "Manage PG members", bn: "পিজি সদস্য পরিচালনা" },
 
+      mod_lakhpati: { en: "Lakhpati Didi", bn: "লাখপতি দিদি" },
+      mod_lakhpati_desc: { en: "View members marked as Lakhpati Didi", bn: "লাখপতি দিদি হিসাবে চিহ্নিত সদস্য দেখুন" },
+
       mod_cash_book: { en: "Cash Book", bn: "ক্যাশ বুক" },
       mod_cash_book_desc: { en: "Receipts / Payments / Balance", bn: "রসিদ / পরিশোধ / ব্যালান্স" },
+
+      mod_grants_util: { en: "Grants & Utilization", bn: "অনুদান ও ব্যবহার" },
+      mod_grants_util_desc: { en: "Add grants and utilization details", bn: "অনুদান ও ব্যবহার সংক্রান্ত তথ্য যোগ করুন" },
+
+      mod_download_csv: { en: "Download CSV", bn: "CSV ডাউনলোড" },
+      mod_download_csv_desc: { en: "Download this PG report as CSV", bn: "এই পিজি রিপোর্ট CSV হিসেবে ডাউনলোড করুন" },
 
       mod_loan_ledger: { en: "Loan Ledger", bn: "ঋণ লেজার" },
       mod_loan_ledger_desc: { en: "PG loan tracking", bn: "পিজি ঋণ ট্র্যাকিং" },
@@ -706,7 +789,6 @@
     };
 
     function __getLang(){
-      // ✅ Match your base keys (and safe fallbacks)
       const a = localStorage.getItem('pgmis_lang');
       const b = localStorage.getItem('lang');
       const c = localStorage.getItem('language');
@@ -742,7 +824,14 @@
       Wallet: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>',
       PackageCheck: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 2 2 4-4"></path><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="M7.5 4.27l9 5.15"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" x2="12" y1="22" y2="12"></line></svg>',
       BookOpen: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>',
-      // ✅ REPLACE ONLY THIS ICON
+
+      /* ✅ Added missing icons used by your cards (no logic change) */
+      BadgeCheck: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"></path><path d="M12 2l1.5 3 3.3.4-2.4 2.3.6 3.3L12 9.8 9 11.3l.6-3.3L7.2 5.4 10.5 5z"></path><path d="M8 21l4-2 4 2"></path></svg>',
+      TrendingDown: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>',
+      Landmark: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="21" y2="22"></line><line x1="6" y1="18" x2="6" y2="11"></line><line x1="10" y1="18" x2="10" y2="11"></line><line x1="14" y1="18" x2="14" y2="11"></line><line x1="18" y1="18" x2="18" y2="11"></line><polygon points="12 2 20 7 4 7"></polygon></svg>',
+      Download: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>',
+
+      // ✅ Receipt icon (kept)
       Receipt: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
         '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path>' +
         '<path d="M7 6h10"></path>' +
@@ -787,38 +876,159 @@
     }
 
     // ============================================================
-    // ✅ FACTORIES (IMPORTANT FIX)
-    // - These rebuild on every render so language changes reflect
+    // ✅ FACTORIES (rebuild each render so language updates reflect)
     // ============================================================
     function getStatsData(){
       return [
         { title: __t('stat_total_members'), value: '{{ (metrics.members_count if metrics is defined else 0) }}', change: __t('stat_from_membership_register'), icon: 'Users', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
-        { title: 'Lakhpati Didi', value: '{{ (metrics.lakhpati_count if metrics is defined and metrics.lakhpati_count is defined else 0) }}', change: 'Members marked as Lakhpati Didi', icon: 'BadgeCheck', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
+        { title: __t('stat_lakhpati'), value: '{{ (metrics.lakhpati_count if metrics is defined and metrics.lakhpati_count is defined else 0) }}', change: __t('stat_lakhpati_change'), icon: 'BadgeCheck', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
         { title: __t('stat_active_loans'), value: '{{ (metrics.loans_count if metrics is defined else 0) }}', change: __t('stat_from_loan_ledger'), icon: 'Wallet', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-teal-700' },
         { title: __t('stat_loan_outstanding'), value: '{{ (metrics.outstanding_loans_amount if metrics is defined else "₹0") }}', change: __t('stat_sum_outstanding_loans'), icon: 'IndianRupee', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-green-700' },
-        { title: 'Turnover (Latest)', value: '{{ (metrics.turnover_latest if metrics is defined and metrics.turnover_latest is defined else "₹0") }}', change: '{{ (metrics.turnover_period if metrics is defined and metrics.turnover_period is defined else "") }}', icon: 'TrendingUp', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
-        { title: 'Profit (Latest)', value: '{{ (metrics.profit_latest if metrics is defined and metrics.profit_latest is defined else "₹0") }}', change: '{{ (metrics.profit_period if metrics is defined and metrics.profit_period is defined else "") }}', icon: 'TrendingUp', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-teal-700' },
-        { title: 'Loss (Latest)', value: '{{ (metrics.loss_latest if metrics is defined and metrics.loss_latest is defined else "₹0") }}', change: '{{ (metrics.profit_period if metrics is defined and metrics.profit_period is defined else "") }}', icon: 'TrendingDown', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-rose-700' },
-        { title: 'Grants Received', value: '{{ (metrics.grants_received_total if metrics is defined and metrics.grants_received_total is defined else "₹0") }}', change: '{{ (metrics.grants_count if metrics is defined and metrics.grants_count is defined else 0) }} grant(s)', icon: 'Landmark', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-lime-700' },
+        { title: __t('stat_turnover_latest'), value: '{{ (metrics.turnover_latest if metrics is defined and metrics.turnover_latest is defined else "₹0") }}', change: '{{ (metrics.turnover_period if metrics is defined and metrics.turnover_period is defined else "") }}', icon: 'TrendingUp', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
+        { title: __t('stat_profit_latest'), value: '{{ (metrics.profit_latest if metrics is defined and metrics.profit_latest is defined else "₹0") }}', change: '{{ (metrics.profit_period if metrics is defined and metrics.profit_period is defined else "") }}', icon: 'TrendingUp', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-teal-700' },
+        { title: __t('stat_loss_latest'), value: '{{ (metrics.loss_latest if metrics is defined and metrics.loss_latest is defined else "₹0") }}', change: '{{ (metrics.profit_period if metrics is defined and metrics.profit_period is defined else "") }}', icon: 'TrendingDown', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-rose-700' },
+        { title: __t('stat_grants_received'), value: '{{ (metrics.grants_received_total if metrics is defined and metrics.grants_received_total is defined else "₹0") }}', change: '{{ (metrics.grants_count if metrics is defined and metrics.grants_count is defined else 0) }} ' + __t('stat_grants_count_suffix'), icon: 'Landmark', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-lime-700' },
         { title: __t('stat_categories'), value: '{{ (metrics.categories_count if metrics is defined else 0) }}', change: __t('stat_from_pg_master'), icon: 'PackageCheck', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-lime-700' },
       ];
     }
 
-    function getModulesData(){
-      return [
-        { title: __t('mod_membership_register'), description: __t('mod_membership_desc'), icon: 'Users', count: '{{ (metrics.members_count if metrics is defined else 0) }}', href: '/pg/members/{{ session.get("pg_id") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
-        { title: 'Lakhpati Didi', description: 'View members marked as Lakhpati Didi', icon: 'BadgeCheck', count: '{{ (metrics.lakhpati_count if metrics is defined and metrics.lakhpati_count is defined else 0) }}', href: '/pg/lakhpati/{{ session.get("pg_id") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
-        { title: __t('mod_cash_book'), description: __t('mod_cash_book_desc'), icon: 'BookOpen', count: '—', href: '{{ url_for("finance.cashbook") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
-        { title: 'Grants & Utilization', description: 'Add grants and utilization details', icon: 'Landmark', count: '{{ (metrics.grants_count if metrics is defined and metrics.grants_count is defined else 0) }}', href: '/finance/grants/{{ session.get("pg_id") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
-        { title: 'Download CSV', description: 'Download this PG report as CSV', icon: 'Download', count: '—', href: '/pg/export/{{ session.get("pg_id") }}/summary.csv', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
-        { title: __t('mod_loan_ledger'), description: __t('mod_loan_ledger_desc'), icon: 'CreditCard', count: '{{ (metrics.loans_count if metrics is defined else 0) }}', href: '/finance/pg-loans/{{ session.get("pg_id") }}', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
-        { title: __t('mod_receipt_voucher'), description: __t('mod_receipt_voucher_desc'), icon: 'Receipt', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
-        { title: __t('mod_input_register'), description: __t('mod_input_register_desc'), icon: 'ShoppingCart', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
-        { title: __t('mod_asset_register'), description: __t('mod_asset_register_desc'), icon: 'Building2', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
-        { title: __t('mod_ledger_book'), description: __t('mod_ledger_book_desc'), icon: 'BookMarked', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
-        { title: __t('mod_output_register'), description: __t('mod_output_register_desc'), icon: 'TrendingUp', count: '—', href: '#', bgColor: 'bg-white/90', iconColor: 'text-emerald-700', hoverBg: 'hover:bg-white', borderColor: 'border-slate-200' },
-      ];
+   function getModulesData(){
+  const PGID = "{{ session.get('pg_id') or session.get('active_pg_id') }}";
+
+  return [
+    {
+      title: __t('mod_membership_register'),
+      description: __t('mod_membership_desc'),
+      icon: 'Users',
+      count: '{{ (metrics.members_count if metrics is defined else 0) }}',
+      href: "{{ url_for('pg.pg_members', pg_id=session.get('pg_id')) }}",
+      bgColor: 'bg-white/90',
+      iconColor: 'text-emerald-700',
+      hoverBg: 'hover:bg-white',
+      borderColor: 'border-slate-200'
+    },
+
+    {
+      title: __t('mod_lakhpati'),
+      description: __t('mod_lakhpati_desc'),
+      icon: 'BadgeCheck',
+      count: '{{ (metrics.lakhpati_count if metrics is defined and metrics.lakhpati_count is defined else 0) }}',
+      href: "{{ url_for('pg.pg_lakhpati', pg_id=session.get('pg_id')) }}",
+      bgColor: 'bg-white/90',
+      iconColor: 'text-emerald-700',
+      hoverBg: 'hover:bg-white',
+      borderColor: 'border-slate-200'
+    },
+
+    {
+      title: __t('mod_cash_book'),
+      description: __t('mod_cash_book_desc'),
+      icon: 'BookOpen',
+      count: '',
+      href: "{{ url_for('finance.cashbook') }}",
+      bgColor: 'bg-white/90',
+      iconColor: 'text-emerald-700',
+      hoverBg: 'hover:bg-white',
+      borderColor: 'border-slate-200'
+    },
+
+    {
+      title: __t('mod_grants_util'),
+      description: __t('mod_grants_util_desc'),
+      icon: 'Landmark',
+      count: '{{ (metrics.grants_count if metrics is defined and metrics.grants_count is defined else 0) }}',
+      href: "{{ url_for('finance.grants', pg_id=(session.get('pg_id') or session.get('active_pg_id'))) }}",
+      bgColor: 'bg-white/90',
+      iconColor: 'text-emerald-700',
+      hoverBg: 'hover:bg-white',
+      borderColor: 'border-slate-200'
+    },
+
+    {
+      title: __t('mod_download_csv'),
+      description: __t('mod_download_csv_desc'),
+      icon: 'Download',
+      count: '',
+      href: "{{ url_for('pg.export_pg_summary_csv', pg_id=session.get('pg_id')) }}",
+      bgColor: 'bg-white/90',
+      iconColor: 'text-emerald-700',
+      hoverBg: 'hover:bg-white',
+      borderColor: 'border-slate-200'
+    },
+
+    {
+      title: __t('mod_loan_ledger'),
+      description: __t('mod_loan_ledger_desc'),
+      icon: 'CreditCard',
+      count: '{{ (metrics.loans_count if metrics is defined else 0) }}',
+    href: "{{ url_for('pg.loan_ledger') }}",
+      bgColor: 'bg-white/90',
+      iconColor: 'text-emerald-700',
+      hoverBg: 'hover:bg-white',
+      borderColor: 'border-slate-200'
+    },
+
+    {
+      title: __t('mod_receipt_voucher'),
+      description: __t('mod_receipt_voucher_desc'),
+      icon: 'Receipt',
+      count: '',
+      href: "{{ url_for('pg.receipt_voucher') }}",
+      bgColor: 'bg-white/90',
+      iconColor: 'text-emerald-700',
+      hoverBg: 'hover:bg-white',
+      borderColor: 'border-slate-200'
+    },
+
+    {
+      title: __t('mod_input_register'),
+      description: __t('mod_input_register_desc'),
+      icon: 'ShoppingCart',
+      count: '',
+      href: "{{ url_for('pg.input_register') }}",
+      bgColor: 'bg-white/90',
+      iconColor: 'text-emerald-700',
+      hoverBg: 'hover:bg-white',
+      borderColor: 'border-slate-200'
+    },
+
+    {
+      title: __t('mod_asset_register'),
+      description: __t('mod_asset_register_desc'),
+      icon: 'Building2',
+      count: '',
+      href: "{{ url_for('pg.asset_register') }}",
+      bgColor: 'bg-white/90',
+      iconColor: 'text-emerald-700',
+      hoverBg: 'hover:bg-white',
+      borderColor: 'border-slate-200'
+    },
+
+    {
+      title: __t('mod_ledger_book'),
+      description: __t('mod_ledger_book_desc'),
+      icon: 'BookMarked',
+      count: '',
+      href: "{{ url_for('pg.ledger_book') }}",
+      bgColor: 'bg-white/90',
+      iconColor: 'text-emerald-700',
+      hoverBg: 'hover:bg-white',
+      borderColor: 'border-slate-200'
+    },
+
+    {
+      title: __t('mod_output_register'),
+      description: __t('mod_output_register_desc'),
+      icon: 'TrendingUp',
+      count: '',
+      href: "{{ url_for('pg.output_register') }}",
+      bgColor: 'bg-white/90',
+      iconColor: 'text-emerald-700',
+      hoverBg: 'hover:bg-white',
+      borderColor: 'border-slate-200'
     }
+  ];
+}
 
     function getCashFlowData(){
       return {
@@ -867,25 +1077,23 @@
       const container = document.getElementById('quickStats');
       const statsData = getStatsData();
 
-      
+      // computeNetBalanceFrom7d: keep layout/data, just derive net balance from the shown 7-day income/expense
+      (function computeNetBalanceFrom7d(){
+        try{
+          const incomeStr = (statsData.income_7d || '').toString();
+          const expenseStr = (statsData.expense_7d || '').toString();
+          const toNum = (s)=>{ const n = parseFloat((s||'').replace(/[^0-9.\-]/g,'')) || 0; return n; };
+          const net = toNum(incomeStr) - toNum(expenseStr);
+          const fmt = (n)=>'₹' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+          statsData.net_balance = fmt(net);
+        }catch(e){}
+      })();
 
-    // computeNetBalanceFrom7d: keep layout/data, just derive net balance from the shown 7-day income/expense
-    (function computeNetBalanceFrom7d(){
-      try{
-        const incomeStr = (statsData.income_7d || '').toString();
-        const expenseStr = (statsData.expense_7d || '').toString();
-        const toNum = (s)=>{ const n = parseFloat((s||'').replace(/[^0-9.\-]/g,'')) || 0; return n; };
-        const net = toNum(incomeStr) - toNum(expenseStr);
-        // Format like ₹4,95,000 (no decimals)
-        const fmt = (n)=>'₹' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        statsData.net_balance = fmt(net);
-      }catch(e){}
-    })();
-container.innerHTML = statsData.map((stat, index) => `
+      container.innerHTML = statsData.map((stat, index) => `
         <div class="${stat.bg} rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 p-5 border ${stat.border} hover:scale-105 hover:-translate-y-1 cursor-pointer group fade-in card-border-soft" style="animation-delay: ${index * 0.1}s">
           <div class="flex items-center justify-between mb-4">
             <div class="p-3 rounded-xl shadow-lg group-hover:shadow-xl transition-shadow ${stat.iconBg}">
-              ${icons[stat.icon]}
+              ${icons[stat.icon] || ''}
             </div>
           </div>
           <h3 class="text-slate-600 text-xs font-semibold mb-2 uppercase tracking-wider">${stat.title}</h3>
@@ -922,7 +1130,7 @@ container.innerHTML = statsData.map((stat, index) => `
               <div class="${module.bgColor} ${module.hoverBg} rounded-xl p-5 transition-all duration-300 cursor-pointer border ${module.borderColor} hover:shadow-lg hover:scale-105 hover:-translate-y-1 group card-border-soft" style="animation-delay: ${index * 0.05}s" onclick="if('${module.href}' && '${module.href}' !== '#'){ window.location.href = '${module.href}'; }">
                 <div class="flex items-start justify-between mb-3">
                   <div class="bg-white/70 p-2 rounded-lg group-hover:bg-white/80 transition-colors border border-slate-100">
-                    <div class="${module.iconColor}">${icons[module.icon]}</div>
+                    <div class="${module.iconColor}">${icons[module.icon] || ''}</div>
                   </div>
                   <span class="text-2xl font-bold text-slate-800 group-hover:text-slate-900 transition-colors">${module.count}</span>
                 </div>
@@ -1176,6 +1384,27 @@ container.innerHTML = statsData.map((stat, index) => `
       });
     }
 
+    async function initChartsAsync(){
+  // show placeholders immediately if charts are empty
+  safeChartsFallback();
+
+  let chartOk = false;
+  try {
+    chartOk = await (window.__chartReady || Promise.resolve(!!window.Chart));
+  } catch(e){
+    chartOk = !!window.Chart;
+  }
+
+  if (!chartOk || !window.Chart) return; // keep placeholders
+
+  try { __destroyCharts(); } catch(e){}
+
+  try { renderCashFlowChart(); } catch(e){ console.warn("cashFlow chart failed", e); }
+  try { renderMembershipChart(); } catch(e){ console.warn("membership chart failed", e); }
+  try { renderLoanDistributionChart(); } catch(e){ console.warn("loanDist chart failed", e); }
+  try { renderProduceStockChart(); } catch(e){ console.warn("produceStock chart failed", e); }
+}
+
     function renderRecentTransactions() {
       const container = document.getElementById('recentTransactions');
 
@@ -1329,49 +1558,92 @@ container.innerHTML = statsData.map((stat, index) => `
         </div>
       `;
     }
+  async function initDashboard() {
+    // Always render non-chart sections first (never blank)
+    try { renderQuickStats(); } catch(e){ console.warn("quickStats failed", e); }
+    try { renderDashboardOverview(); } catch(e){ console.warn("overview failed", e); }
+    try { renderRecentTransactions(); } catch(e){ console.warn("recentTx failed", e); }
 
-    function initDashboard() {
-      // ✅ prevent chart stacking when language toggles
-      __destroyCharts();
+    // Wait for Chart.js CDN OR local fallback
+    let chartOk = false;
+    try {
+      chartOk = await (window.__chartReady || Promise.resolve(!!window.Chart));
+    } catch(e){ chartOk = !!window.Chart; }
 
-      renderQuickStats();
-      renderDashboardOverview();
-      renderCashFlowChart();
-      renderMembershipChart();
-      renderLoanDistributionChart();
-      renderProduceStockChart();
-      renderRecentTransactions();
+    if (!chartOk || !window.Chart) {
+      safeChartsFallback();
+      return;
     }
 
-    function __rerenderForLang(){
-      __applyDomI18n();
-      initDashboard();
-    }
+    // Charts safe render
+    try { __destroyCharts(); } catch(e){}
+    try { renderCashFlowChart(); } catch(e){ console.warn("cashFlow chart failed", e); }
+    try { renderMembershipChart(); } catch(e){ console.warn("membership chart failed", e); }
+    try { renderLoanDistributionChart(); } catch(e){ console.warn("loanDist chart failed", e); }
+    try { renderProduceStockChart(); } catch(e){ console.warn("produceStock chart failed", e); }
+  }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      __applyDomI18n();
-      initDashboard();
+  function safeChartsFallback(){
+    const ids = ["cashFlowChart","membershipChart","loanDistributionChart","produceStockChart"];
+    ids.forEach(id=>{
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.innerHTML.trim()) return;
 
-      // ✅ storage sync
-      window.addEventListener('storage', (e) => {
-        if (['pgmis_lang', 'lang', 'language', 'PGMIS_LANG_SESSION'].includes(e.key)) __rerenderForLang();
-      });
-
-      // ✅ base event sync (your base uses pgmis:language-change / pgmis:lang etc.)
-      window.addEventListener('pgmis:language-change', __rerenderForLang);
-      window.addEventListener('pgmis:lang', __rerenderForLang);
-
-      // keep your previous listeners (harmless)
-      window.addEventListener('languageChanged', __rerenderForLang);
-      window.addEventListener('pgmis:languageChanged', __rerenderForLang);
-      window.addEventListener('pgmis-lang-changed', __rerenderForLang);
-      document.addEventListener('languageChanged', __rerenderForLang);
-      document.addEventListener('pgmis:languageChanged', __rerenderForLang);
-
-      // ✅ If base exposes api, prefer it without breaking
-      if (window.PGMIS && typeof window.PGMIS.getLanguage === 'function') {
-        try { __rerenderForLang(); } catch(e) {}
-      }
+      el.innerHTML = `
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 card-border-soft">
+          <h2 class="text-xl font-bold text-slate-900">Charts</h2>
+          <p class="text-sm text-slate-600 mt-1">Charts are loading…</p>
+        </div>
+      `;
     });
-  </script>
+  }
+
+  async function __rerenderForLang(){
+    __applyDomI18n();
+
+    // re-render non-chart sections immediately
+    try { renderQuickStats(); } catch(e){}
+    try { renderDashboardOverview(); } catch(e){}
+    try { renderRecentTransactions(); } catch(e){}
+
+    // re-render charts async
+    initChartsAsync();
+  }
+  document.addEventListener('DOMContentLoaded', async () => {
+    try { document.documentElement.classList.remove('no-js'); } catch(e){}
+
+    // keep hidden briefly
+    __closeGate();
+
+    // translate static text immediately
+    __applyDomI18n();
+
+    // ✅ Render ONLY the non-chart sections first
+    try { renderQuickStats(); } catch(e){ console.warn("quickStats failed", e); }
+    try { renderDashboardOverview(); } catch(e){ console.warn("overview failed", e); }
+    try { renderRecentTransactions(); } catch(e){ console.warn("recentTx failed", e); }
+
+    // ✅ Open gate NOW (so no blank/half-load)
+    await new Promise(r => requestAnimationFrame(r));
+    __openGate();
+
+    // ✅ Load charts asynchronously (do not block UI)
+    initChartsAsync();
+
+    // listeners unchanged
+    window.addEventListener('storage', (e) => {
+      if (['pgmis_lang', 'lang', 'language', 'PGMIS_LANG_SESSION'].includes(e.key)) __rerenderForLang();
+    });
+
+    window.addEventListener('pgmis:language-change', __rerenderForLang);
+    window.addEventListener('pgmis:lang', __rerenderForLang);
+
+    window.addEventListener('languageChanged', __rerenderForLang);
+    window.addEventListener('pgmis:languageChanged', __rerenderForLang);
+    window.addEventListener('pgmis-lang-changed', __rerenderForLang);
+    document.addEventListener('languageChanged', __rerenderForLang);
+    document.addEventListener('pgmis:languageChanged', __rerenderForLang);
+  });
+</script>
 {% endblock %}

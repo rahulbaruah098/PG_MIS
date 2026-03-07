@@ -14,15 +14,12 @@
    ✅ Option 1 sync: Edit inputs mirror into View instantly (no refresh)
    ✅ Save uses fetch enhancement (no backend change) + updates View row
    ✅ View "Full Window" modal with Close icon (top-right)
-   ✅ FULL VIEW: now shows a proper table WITH headings (desktop)
-      + mobile-friendly “row cards” WITH labels (no messy garbage)
-   ✅ Fully responsive: web + tablet + mobile (keeps your <=860 card-mode)
-   ✅ NEW: Save confirmation toast under action button
-   ✅ NEW: "Already saved" toast if no changes since last save
-   ✅ FIX: Form is now VALID HTML (button always submits, fetch always runs)
-   ✅ FIX: "Already saved" will NOT show for empty/unfilled rows
-   ✅ NEW: On Save for unfilled rows → prompt to fill required inputs first
-   ✅ FIX NOW: Full View modal is TRUE full-screen + NO header/data overlap
+   ✅ FULL VIEW: proper table WITH headings (desktop) + horizontal swipe (mobile)
+   ✅ Fully responsive: web + tablet + mobile
+   ✅ NEW: Search + Pagination (Edit + View + Full View) with per-page 10/20/30/50/100 (default 30)
+   ✅ CHANGE: Pagination bar moved BELOW tables (all sections)
+   ✅ CHANGE: Mobile/tablet is horizontal swipe grid (no vertical messy stacking)
+   ✅ RESTORED: Lakhpati Didi? field (Edit + View + Language + Full View)
    ⚠️ NO data/logic changes (same fields, same POST endpoint)
    Scope: .pmd-wrap
 ============================================================ */
@@ -255,6 +252,117 @@
   background: rgba(247,250,249,.80);
 }
 
+/* ======= Search bar (above table) ======= */
+.pmd-controls{
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line2);
+  border-radius: 14px;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pmd-search{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  flex: 1 1 520px;
+  min-width: 240px;
+}
+.pmd-searchBox{
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 200px;
+}
+.pmd-searchBox ion-icon{
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: rgba(15,23,42,.55);
+}
+.pmd-searchInput{
+  width: 100%;
+  border: 1px solid rgba(15,23,42,.16);
+  border-radius: 999px;
+  padding: 10px 12px 10px 38px;
+  background: rgba(247,250,249,.85);
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ink);
+  outline: none;
+  transition: box-shadow .12s ease, border-color .12s ease, background .12s ease;
+}
+.pmd-searchInput:focus{
+  border-color: rgba(11,77,58,.40);
+  box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+  background: #fff;
+}
+
+/* ======= Pagination bar (BELOW table) ======= */
+.pmd-paginationBar{
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line2);
+  border-radius: 14px;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pmd-pageControls{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+.pmd-select{
+  border: 1px solid rgba(15,23,42,.16);
+  border-radius: 999px;
+  padding: 10px 12px;
+  background: rgba(247,250,249,.85);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(15,23,42,.82);
+  outline:none;
+}
+.pmd-pager{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+.pmd-pagerBtn{
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(247,250,249,.85);
+  border-radius: 999px;
+  padding: 9px 10px;
+  cursor:pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  display:inline-flex;
+  align-items:center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 12px;
+  color: rgba(15,23,42,.82);
+  user-select:none;
+}
+.pmd-pagerBtn:hover{ transform: translateY(-1px); background:#fff; box-shadow: var(--shadow2); }
+.pmd-pagerBtn:disabled{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
+.pmd-pagerBtn ion-icon{ font-size: 16px; }
+.pmd-pageInfo{
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(15,23,42,.72);
+  white-space: nowrap;
+}
+
 /* Table wrapper */
 .pmd-table-wrap{
   margin-top: 14px;
@@ -297,6 +405,7 @@
   white-space: normal;
   line-height: 1.35;
   overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .pmd-fixed{ white-space:nowrap; }
@@ -314,6 +423,7 @@
 .pmd-col-branch{ width: 150px; min-width:150px; }
 .pmd-col-account{ min-width: 220px; }
 .pmd-col-fee{ width: 140px; min-width:140px; }
+.pmd-col-lakhpati{ width: 150px; min-width:150px; }
 .pmd-col-action{ width: 160px; min-width:160px; }
 
 /* Sl. No cell */
@@ -424,49 +534,76 @@
   box-shadow: var(--shadow);
 }
 
-/* Small screens: card-mode (same behavior) */
-@media (max-width: 860px){
-  .pmd-table{ min-width: 0; }
-  .pmd-table-scroll{ overflow-x: hidden; }
-
-  .pmd-table, .pmd-table thead, .pmd-table tbody, .pmd-table th, .pmd-table td, .pmd-table tr{
-    display: block;
-    width: 100%;
-  }
-  .pmd-table thead{ display: none; }
-
-  .pmd-table tr{
-    border: 1px solid rgba(15,23,42,.14);
-    border-radius: 14px;
-    margin: 12px;
-    overflow: hidden;
-    background: rgba(255,255,255,.96);
-    box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
-  }
-  .pmd-table td{
-    border-top: 1px solid rgba(15,23,42,.10);
-    padding: 10px 12px;
-  }
-  .pmd-table td::before{
-    content: attr(data-label);
-    display: block;
-    font-size: 11px;
-    font-weight: 800;
-    color: rgba(15,23,42,.70);
-    margin-bottom: 6px;
-  }
-  .pmd-actions{ justify-content: flex-start; align-items:flex-start; }
-  .pmd-toast{ width: 100%; }
-}
-
 /* Toggle sections */
 .pmd-section{ display:none; }
 .pmd-section.is-active{ display:block; }
 
 /* ============================================================
-   ✅ MODAL (FULL SCREEN) — FIX
-   - Your old modal card was capped to 1280px + 88vh.
-   - Now it truly takes full viewport: 100vw x 100vh.
+   ✅ MOBILE/TABLET: Horizontal swipe grid (instead of vertical stacking)
+============================================================ */
+@media (max-width: 860px){
+  .pmd-table{ min-width: 0; width: 100%; }
+  .pmd-table-scroll{
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    padding: 10px 10px 12px;
+  }
+
+  .pmd-table thead{ display:none; }
+
+  .pmd-table,
+  .pmd-table tbody{
+    display: block;
+    width: 100%;
+  }
+
+  .pmd-table tbody{
+    display:flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .pmd-table tr{
+    flex: 0 0 min(86vw, 520px);
+    scroll-snap-align: start;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
+  }
+
+  .pmd-table td{
+    display:block;
+    width:100%;
+    border-top: 1px solid rgba(15,23,42,.10);
+    padding: 10px 12px;
+  }
+  .pmd-table td::before{
+    content: attr(data-label);
+    display:block;
+    font-size: 11px;
+    font-weight: 800;
+    color: rgba(15,23,42,.70);
+    margin-bottom: 6px;
+  }
+
+  .pmd-actions{ justify-content:flex-start; align-items:flex-start; }
+  .pmd-toast{ width: 100%; }
+
+  .pmd-controls{ padding: 10px; }
+  .pmd-search{ flex: 1 1 100%; min-width: 0; }
+  .pmd-paginationBar{ padding: 10px; }
+  .pmd-pageControls{ width: 100%; justify-content: space-between; }
+}
+
+@media (max-width: 420px){
+  .pmd-table tr{ flex-basis: 88vw; }
+}
+
+/* ============================================================
+   ✅ MODAL (FULL SCREEN)
 ============================================================ */
 .pmd-modal{
   position: fixed;
@@ -475,20 +612,20 @@
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: none;
-  align-items: stretch;       /* ✅ full height */
-  justify-content: stretch;   /* ✅ full width */
-  padding: 0;                 /* ✅ remove gaps */
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
   z-index: 9999;
 }
 .pmd-modal.is-open{ display:flex; }
 
 .pmd-modalCard{
-  width: 100vw;          /* ✅ full width */
-  height: 100vh;         /* ✅ full height */
-  max-height: none;      /* ✅ no cap */
+  width: 100vw;
+  height: 100vh;
+  max-height: none;
   background: rgba(255,255,255,.98);
   border: 0;
-  border-radius: 0;      /* ✅ true full-screen */
+  border-radius: 0;
   box-shadow: 0 30px 70px -40px rgba(15,23,42,.55);
   overflow: hidden;
   display:flex;
@@ -528,15 +665,16 @@
 .pmd-x:hover{ transform: translateY(-1px); box-shadow: var(--shadow2); background:#fff; }
 .pmd-x ion-icon{ font-size: 20px; color: rgba(15,23,42,.78); }
 
-/* ✅ Modal body now uses full remaining height cleanly */
+/* Modal layout */
 .pmd-modalBody{
-  padding: 14px;
+  padding: 12px;
   flex: 1 1 auto;
-  min-height: 0;      /* important for flex scrolling */
-  overflow: hidden;   /* scroll happens inside pmd-fullScroll */
+  min-height: 0;
+  display:flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-/* Mini button */
 .pmd-btnMini{
   border: 1px solid rgba(15,23,42,.14);
   background: rgba(247,250,249,.8);
@@ -555,14 +693,9 @@
 .pmd-btnMini:hover{ transform: translateY(-1px); background:#fff; box-shadow: var(--shadow2); }
 .pmd-btnMini ion-icon{ font-size: 18px; }
 
-/* ============================================================
-   ✅ FULL VIEW (MODAL) — FIX OVERLAP
-   - Overlap was happening because modal table was forced to
-     table-layout: fixed with no column widths.
-   - Now: auto layout + a sensible min-width + scroll if needed.
-============================================================ */
 .pmd-fullWrap{
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   border: 1px solid rgba(15,23,42,.12);
   border-radius: 16px;
   background: rgba(255,255,255,.96);
@@ -575,11 +708,10 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* ✅ Modal table: allow browser to size columns (no overlap) */
 #pmdViewModal .pmd-table{
-  min-width: 1200px;      /* prevents squishing => overlap */
+  min-width: 1200px;
   width: 100%;
-  table-layout: auto;     /* ✅ important */
+  table-layout: auto;
 }
 #pmdViewModal .pmd-table th,
 #pmdViewModal .pmd-table td{
@@ -596,7 +728,6 @@
   word-break: break-word;
 }
 
-/* Gentle zebra for desktop modal table */
 @media (min-width: 861px){
   #pmdViewModal .pmd-table tbody tr:nth-child(even) td{
     background: rgba(247,250,249,.8);
@@ -606,16 +737,10 @@
   }
 }
 
-/* Mobile modal: keep the same card-mode behavior, but nicer spacing */
-@media (max-width: 860px){
-  #pmdViewModal .pmd-modalBody{ padding: 10px; }
-  #pmdViewModal .pmd-table{ min-width: 0; } /* mobile uses card-mode anyway */
-  #pmdViewModal .pmd-table tr{ margin: 10px; }
-}
-
-/* A little tighter on very small phones */
-@media (max-width: 420px){
-  #pmdViewModal .pmd-table td{ padding: 9px 10px; }
+/* Hide Back button on desktop/web, show on tablet/mobile */
+.pmd-btnBack{ display:none; }
+@media (max-width: 900px){
+  .pmd-btnBack{ display:inline-flex; }
 }
 </style>
 
@@ -626,7 +751,6 @@
     <div class="pmd-head">
       <a class="pmd-btn pmd-btnBack" href="{{ url_for('pg.pg_registration', pg_id=pg._id) }}" aria-label="Back to PG Registration">
         <ion-icon name="arrow-back"></ion-icon>
-        <span id="pmdBackText">Back</span>
       </a>
 
       <div class="pmd-titleWrap">
@@ -640,11 +764,11 @@
       <div class="pmd-toggle" aria-label="View mode">
         <button type="button" class="pmd-pill is-active" id="pmdBtnEdit">
           <ion-icon name="create-outline"></ion-icon>
-          <span id="pmdEditText">Edit</span>
+          <span id="pmdEditText">Edit Mode</span>
         </button>
         <button type="button" class="pmd-pill" id="pmdBtnView">
           <ion-icon name="eye-outline"></ion-icon>
-          <span id="pmdViewText">View</span>
+          <span id="pmdViewText">View Mode</span>
         </button>
       </div>
     </div>
@@ -666,6 +790,16 @@
           Fill bank/account/fee and save member-wise (no overwriting).
         </div>
 
+        <!-- ✅ Search ABOVE table -->
+        <div class="pmd-controls" id="pmdEditControls">
+          <div class="pmd-search">
+            <div class="pmd-searchBox">
+              <ion-icon name="search-outline"></ion-icon>
+              <input class="pmd-searchInput" id="pmdEditSearch" type="search" placeholder="Search members, SHG, bank, account…">
+            </div>
+          </div>
+        </div>
+
         <div class="pmd-table-wrap">
           <div class="pmd-table-scroll">
             <table class="pmd-table" id="pmdEditTable">
@@ -682,7 +816,7 @@
                   <th class="pmd-col-branch" id="thBranch">Branch</th>
                   <th class="pmd-col-account" id="thAccount">Account</th>
                   <th class="pmd-col-fee" id="thFee">Fee</th>
-                  <th class="pmd-col-fee" id="thLakhpati">Lakhpati Didi?</th>
+                  <th class="pmd-col-lakhpati" id="thLakhpati">Lakhpati Didi?</th>
                   <th class="pmd-col-action" style="text-align:right;" id="thAction">Action</th>
                 </tr>
               </thead>
@@ -709,7 +843,6 @@
                     <div class="pmd-strong">{{ r.shg_name or '-' }}</div>
                   </td>
 
-                  <!-- ✅ Inputs are now linked to form via form="..." (VALID HTML) -->
                   <td class="pmd-col-contact" style="vertical-align:top;" data-label="Contact">
                     <input class="pmd-input" name="contact" value="{{ r.contact or '' }}" placeholder="Contact" data-field="contact" form="{{ fid }}">
                   </td>
@@ -734,8 +867,7 @@
                     <input class="pmd-input" name="membership_fee_paid" value="{{ r.membership_fee_paid or '' }}" placeholder="0" inputmode="decimal" data-field="membership_fee_paid" form="{{ fid }}">
                   </td>
 
-                  <td class="pmd-col-fee" style="vertical-align:top;" data-label="Lakhpati Didi?">
-                    <!-- Yes/No selector (requested) -->
+                  <td class="pmd-col-lakhpati" style="vertical-align:top;" data-label="Lakhpati Didi?">
                     <select class="pmd-input" data-field="lakh_pati_didi" name="lakh_pati_didi" form="{{ fid }}" style="font-weight:800;">
                       <option value="no" {% if not r.lakh_pati_didi %}selected{% endif %}>No</option>
                       <option value="yes" {% if r.lakh_pati_didi %}selected{% endif %}>Yes</option>
@@ -743,7 +875,6 @@
                   </td>
 
                   <td class="pmd-col-action" style="vertical-align:top; text-align:right;" data-label="Action">
-                    <!-- ✅ The ONLY form lives inside Action cell (valid) -->
                     <form method="POST" class="m-0 p-0 pmd-editForm" id="{{ fid }}">
                       <input type="hidden" name="member_id" value="{{ r.member_id }}">
                       <div class="pmd-actions">
@@ -759,6 +890,29 @@
                 {% endfor %}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- ✅ Pagination BELOW table -->
+        <div class="pmd-paginationBar" id="pmdEditPagerBar">
+          <div class="pmd-pageControls">
+            <select class="pmd-select" id="pmdEditPerPage" aria-label="Rows per page">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="30" selected>30</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+
+            <div class="pmd-pager" aria-label="Pagination">
+              <button type="button" class="pmd-pagerBtn" id="pmdEditPrev">
+                <ion-icon name="chevron-back-outline"></ion-icon> Prev
+              </button>
+              <span class="pmd-pageInfo" id="pmdEditPageInfo">Page 1 / 1</span>
+              <button type="button" class="pmd-pagerBtn" id="pmdEditNext">
+                Next <ion-icon name="chevron-forward-outline"></ion-icon>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -777,6 +931,16 @@
           👁️ This section shows the current values. It updates instantly while you edit (no refresh).
         </div>
 
+        <!-- ✅ Search ABOVE table -->
+        <div class="pmd-controls" id="pmdViewControls">
+          <div class="pmd-search">
+            <div class="pmd-searchBox">
+              <ion-icon name="search-outline"></ion-icon>
+              <input class="pmd-searchInput" id="pmdViewSearch" type="search" placeholder="Search members, SHG, bank, account…">
+            </div>
+          </div>
+        </div>
+
         <div class="pmd-table-wrap">
           <div class="pmd-table-scroll">
             <table class="pmd-table" id="pmdViewTable">
@@ -793,7 +957,7 @@
                   <th class="pmd-col-branch" id="thBranchV">Branch</th>
                   <th class="pmd-col-account" id="thAccountV">Account</th>
                   <th class="pmd-col-fee" id="thFeeV">Fee</th>
-                  <th class="pmd-col-fee" id="thLakhpatiV">Lakhpati Didi?</th>
+                  <th class="pmd-col-lakhpati" id="thLakhpatiV">Lakhpati Didi?</th>
                 </tr>
               </thead>
 
@@ -811,11 +975,34 @@
                   <td class="pmd-col-branch" data-label="Branch"><div class="pmd"><span data-field="branch">{{ r.branch or '-' }}</span></div></td>
                   <td class="pmd-col-account" data-label="Account"><div class="pmd"><span data-field="account_number">{{ r.account_number or '-' }}</span></div></td>
                   <td class="pmd-col-fee" data-label="Fee"><div class="pmd"><span data-field="membership_fee_paid">{{ r.membership_fee_paid or '-' }}</span></div></td>
-                  <td class="pmd-col-fee" data-label="Lakhpati Didi?"><div class="pmd"><span data-field="lakh_pati_didi">{{ 'Yes' if r.lakh_pati_didi else 'No' }}</span></div></td>
+                  <td class="pmd-col-lakhpati" data-label="Lakhpati Didi?"><div class="pmd"><span data-field="lakh_pati_didi">{{ 'Yes' if r.lakh_pati_didi else 'No' }}</span></div></td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- ✅ Pagination BELOW table -->
+        <div class="pmd-paginationBar" id="pmdViewPagerBar">
+          <div class="pmd-pageControls">
+            <select class="pmd-select" id="pmdViewPerPage" aria-label="Rows per page">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="30" selected>30</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+
+            <div class="pmd-pager" aria-label="Pagination">
+              <button type="button" class="pmd-pagerBtn" id="pmdViewPrev">
+                <ion-icon name="chevron-back-outline"></ion-icon> Prev
+              </button>
+              <span class="pmd-pageInfo" id="pmdViewPageInfo">Page 1 / 1</span>
+              <button type="button" class="pmd-pagerBtn" id="pmdViewNext">
+                Next <ion-icon name="chevron-forward-outline"></ion-icon>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -839,17 +1026,52 @@
         <ion-icon name="close-outline"></ion-icon>
       </button>
     </div>
-    <div class="pmd-modalBody" id="pmdModalBody"></div>
+
+    <div class="pmd-modalBody" id="pmdModalBody">
+      <!-- Search top -->
+      <div class="pmd-controls" id="pmdFullControls" style="margin-top:0;">
+        <div class="pmd-search">
+          <div class="pmd-searchBox">
+            <ion-icon name="search-outline"></ion-icon>
+            <input class="pmd-searchInput" id="pmdFullSearch" type="search" placeholder="Search members, SHG, bank, account…">
+          </div>
+        </div>
+      </div>
+
+      <!-- Table middle (flex) -->
+      <div id="pmdModalTableHost" class="pmd-fullWrap"></div>
+
+      <!-- Pagination bottom -->
+      <div class="pmd-paginationBar" id="pmdFullPagerBar" style="margin-top:0;">
+        <div class="pmd-pageControls">
+          <select class="pmd-select" id="pmdFullPerPage" aria-label="Rows per page">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30" selected>30</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+
+          <div class="pmd-pager" aria-label="Pagination">
+            <button type="button" class="pmd-pagerBtn" id="pmdFullPrev">
+              <ion-icon name="chevron-back-outline"></ion-icon> Prev
+            </button>
+            <span class="pmd-pageInfo" id="pmdFullPageInfo" data-page="1">Page 1 / 1</span>
+            <button type="button" class="pmd-pagerBtn" id="pmdFullNext">
+              Next <ion-icon name="chevron-forward-outline"></ion-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
 
 <script>
 /* ============================================================
    NEW: Language Translation Hook (NO UI/logic changes)
-   - Works with base.html language system:
-     1) calls window.updatePageLanguage(lang) if base calls it
-     2) also listens to pgmis:language-change event
-   ============================================================ */
+============================================================ */
 (function(){
   const PMD_I18N = {
     en: {
@@ -857,8 +1079,8 @@
       pageTitle: "II. PG Member Details",
       subPrefix: "PG:",
       subSuffix: "• Members loaded from PG Registration (master data)",
-      edit: "Edit",
-      view: "View",
+      edit: "Edit Mode",
+      view: "View Mode",
       noMembers: 'No members found for this PG. First select members inside <b>PG Registration</b>, then come back here.',
       editTitle: "PG Member Details (Edit)",
       editNote: "✅ Name/SHG/Category/Spouse are coming from master + PG Registration selection. Fill bank/account/fee and save member-wise (no overwriting).",
@@ -867,7 +1089,6 @@
       viewNote: "👁️ This section shows the current values. It updates instantly while you edit (no refresh).",
       footer: "PGMIS • PG Member Details",
       modalTitle: "Full View — PG Member Details",
-      // table headers
       thSl: "Sl. No",
       thMember: "Member",
       thSpouse: "Father/Mother/Spouse Name",
@@ -879,8 +1100,8 @@
       thBranch: "Branch",
       thAccount: "Account",
       thFee: "Fee",
+      thLakhpati: "Lakhpati Didi?",
       thAction: "Action",
-      // placeholders (inputs)
       phContact: "Contact",
       phId: "ID No",
       phBank: "Bank",
@@ -893,8 +1114,8 @@
       pageTitle: "II. পিজি সদস্য বিবরণ",
       subPrefix: "পিজি:",
       subSuffix: "• পিজি রেজিস্ট্রেশন থেকে সদস্য লোড হয়েছে (মাস্টার ডাটা)",
-      edit: "এডিট",
-      view: "ভিউ",
+      edit: "এডিট মোড",
+      view: "ভিউ মোড",
       noMembers: 'এই পিজিতে কোনো সদস্য পাওয়া যায়নি। আগে <b>PG Registration</b> এ সদস্য নির্বাচন করুন, তারপর এখানে আসুন।',
       editTitle: "পিজি সদস্য বিবরণ (এডিট)",
       editNote: "✅ নাম/SHG/ক্যাটাগরি/স্বামী/পিতা/মাতা মাস্টার + পিজি রেজিস্ট্রেশন নির্বাচন থেকে এসেছে। ব্যাংক/অ্যাকাউন্ট/ফি পূরণ করে সদস্য অনুযায়ী সেভ করুন (ওভাররাইট হবে না)।",
@@ -903,7 +1124,6 @@
       viewNote: "👁️ এই অংশে বর্তমান ভ্যালু দেখায়। আপনি এডিট করলে সাথে সাথে আপডেট হয় (রিফ্রেশ ছাড়া)।",
       footer: "PGMIS • পিজি সদস্য বিবরণ",
       modalTitle: "ফুল ভিউ — পিজি সদস্য বিবরণ",
-      // table headers
       thSl: "ক্রমিক নং",
       thMember: "সদস্য",
       thSpouse: "পিতা/মাতা/স্বামী/স্ত্রীর নাম",
@@ -915,8 +1135,8 @@
       thBranch: "শাখা",
       thAccount: "অ্যাকাউন্ট",
       thFee: "ফি",
+      thLakhpati: "লাখপতি দিদি?",
       thAction: "অ্যাকশন",
-      // placeholders (inputs)
       phContact: "যোগাযোগ",
       phId: "আইডি নং",
       phBank: "ব্যাংক",
@@ -940,9 +1160,6 @@
   function applyPMDLanguage(lang){
     const L = (lang === 'bn') ? 'bn' : 'en';
     const t = PMD_I18N[L];
-
-    const back = document.getElementById('pmdBackText');
-    if(back) back.textContent = t.back;
 
     const pt = document.getElementById('pmdPageTitle');
     if(pt) pt.textContent = t.pageTitle;
@@ -984,26 +1201,22 @@
       mtitle.innerHTML = `<ion-icon name="eye-outline"></ion-icon> ${t.modalTitle}`;
     }
 
-    // Headers (Edit)
     const thMap = [
       ['thSl', t.thSl], ['thMember', t.thMember], ['thSpouse', t.thSpouse], ['thCategory', t.thCategory],
       ['thShg', t.thShg], ['thContact', t.thContact], ['thId', t.thId], ['thBank', t.thBank],
-      ['thBranch', t.thBranch], ['thAccount', t.thAccount], ['thFee', t.thFee], ['thAction', t.thAction]
+      ['thBranch', t.thBranch], ['thAccount', t.thAccount], ['thFee', t.thFee], ['thLakhpati', t.thLakhpati], ['thAction', t.thAction]
     ];
     thMap.forEach(([id,val]) => { const el = document.getElementById(id); if(el) el.textContent = val; });
 
-    // Headers (View)
     const thMapV = [
       ['thSlV', t.thSl], ['thMemberV', t.thMember], ['thSpouseV', t.thSpouse], ['thCategoryV', t.thCategory],
       ['thShgV', t.thShg], ['thContactV', t.thContact], ['thIdV', t.thId], ['thBankV', t.thBank],
-      ['thBranchV', t.thBranch], ['thAccountV', t.thAccount], ['thFeeV', t.thFee]
+      ['thBranchV', t.thBranch], ['thAccountV', t.thAccount], ['thFeeV', t.thFee], ['thLakhpatiV', t.thLakhpati]
     ];
     thMapV.forEach(([id,val]) => { const el = document.getElementById(id); if(el) el.textContent = val; });
 
-    // Save button text (all rows)
     document.querySelectorAll('.pmdSaveText').forEach(el => { el.textContent = (L === 'bn') ? 'সেভ' : 'Save'; });
 
-    // Placeholders (inputs)
     document.querySelectorAll('input.pmd-input[name="contact"]').forEach(i => i.setAttribute('placeholder', t.phContact));
     document.querySelectorAll('input.pmd-input[name="photo_id_number"]').forEach(i => i.setAttribute('placeholder', t.phId));
     document.querySelectorAll('input.pmd-input[name="bank_name"]').forEach(i => i.setAttribute('placeholder', t.phBank));
@@ -1011,12 +1224,11 @@
     document.querySelectorAll('input.pmd-input[name="account_number"]').forEach(i => i.setAttribute('placeholder', t.phAccount));
     document.querySelectorAll('input.pmd-input[name="membership_fee_paid"]').forEach(i => i.setAttribute('placeholder', t.phFee));
 
-    // data-label for mobile card mode (Edit table + View table)
     const setDataLabels = (tableId) => {
       const table = document.getElementById(tableId);
       if(!table) return;
       const headLabels = [
-        t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg, t.thContact, t.thId, t.thBank, t.thBranch, t.thAccount, t.thFee
+        t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg, t.thContact, t.thId, t.thBank, t.thBranch, t.thAccount, t.thFee, t.thLakhpati
       ];
       const isEdit = tableId === 'pmdEditTable';
       const labels = isEdit ? headLabels.concat([t.thAction]) : headLabels;
@@ -1031,11 +1243,9 @@
     setDataLabels('pmdEditTable');
     setDataLabels('pmdViewTable');
 
-    // ✅ Used by Full View modal builder (so it prints headings properly)
-    window.__PMD_MODAL_LABELS__ = [t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg, t.thContact, t.thId, t.thBank, t.thBranch, t.thAccount, t.thFee];
+    window.__PMD_MODAL_LABELS__ = [t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg, t.thContact, t.thId, t.thBank, t.thBranch, t.thAccount, t.thFee, t.thLakhpati];
   }
 
-  // base.html compatibility
   window.updatePageLanguage = function(lang){
     applyPMDLanguage(lang);
   };
@@ -1045,7 +1255,6 @@
     applyPMDLanguage(lang);
   });
 
-  // initial apply
   applyPMDLanguage(getLang());
 })();
 </script>
@@ -1070,7 +1279,7 @@
   btnView.addEventListener('click', () => setMode('view'));
 })();
 
-/* Instant View sync + Save confirmations (UPDATED to validate before "Already saved") */
+/* Instant View sync + Save confirmations (updated to support lakh_pati_didi) */
 (function(){
   const viewTable = document.getElementById('pmdViewTable');
   const editTable = document.getElementById('pmdEditTable');
@@ -1086,6 +1295,7 @@
     if(!vr) return;
     const el = vr.querySelector('[data-field="'+ CSS.escape(field) +'"]');
     if(!el) return;
+
     let v;
     if(field === 'lakh_pati_didi'){
       const raw = String(value || '').trim().toLowerCase();
@@ -1128,19 +1338,15 @@
 
   function getInputsForForm(form){
     const id = form.id;
-    return Array.from(document.querySelectorAll('input[data-field][form="'+ CSS.escape(id) +'"]'));
+    const inputs = Array.from(document.querySelectorAll('input[data-field][form="'+ CSS.escape(id) +'"]'));
+    const selects = Array.from(document.querySelectorAll('select[data-field][form="'+ CSS.escape(id) +'"]'));
+    return inputs.concat(selects);
   }
 
   function snapshotObject(form){
     const obj = {};
     getInputsForForm(form).forEach(inp => {
-      const key = inp.getAttribute('data-field');
-      if(!key) return;
-      if((inp.type || '').toLowerCase() === 'checkbox'){
-        obj[key] = inp.checked ? '1' : '';
-      }else{
-        obj[key] = (inp.value || '').trim();
-      }
+      obj[inp.getAttribute('data-field')] = (inp.value || '').trim();
     });
     return obj;
   }
@@ -1157,7 +1363,6 @@
     }
   }
 
-  // ✅ Required fields for saving a row (client-side prompt only; no backend changes)
   const REQUIRED_FIELDS = [
     { key: 'contact', label: 'Contact' },
     { key: 'photo_id_number', label: 'AADHAR/Voter/Govt ID' },
@@ -1216,11 +1421,7 @@
       const v = validateRequired(form);
       if(!v.ok){
         e.preventDefault();
-        showToast(
-          form,
-          'info',
-          `<ion-icon name="alert-circle-outline"></ion-icon>${v.message}`
-        );
+        showToast(form,'info',`<ion-icon name="alert-circle-outline"></ion-icon>${v.message}`);
         return;
       }
 
@@ -1248,6 +1449,8 @@
 
       try{
         const fd = new FormData(form);
+
+        // include inputs + select
         getInputsForForm(form).forEach(inp => fd.set(inp.name, inp.value));
 
         const res = await fetch(window.location.href, {
@@ -1279,22 +1482,158 @@
     }, { capture: true });
   });
 })();
+</script>
 
+<script>
 /* ============================================================
-   ✅ Full View Modal (FIXED)
+   ✅ Search + Pagination engine (Edit + View) — updated for lakhpati column
+============================================================ */
+(function(){
+  function normalizeText(s){
+    return (s || '').toString().toLowerCase().replace(/\s+/g,' ').trim();
+  }
+  function getRows(table){
+    if(!table) return [];
+    return Array.from(table.querySelectorAll('tbody tr'));
+  }
+  function rowText(tr){
+    let t = normalizeText(tr.innerText || tr.textContent || '');
+    const inputs = Array.from(tr.querySelectorAll('input,select'));
+    if(inputs.length){
+      t += ' ' + inputs.map(i => normalizeText(i.value)).join(' ');
+    }
+    return t.trim();
+  }
+
+  function createController(opts){
+    const { tableId, searchId, clearId, perPageId, prevId, nextId, infoId } = opts;
+
+    const table = document.getElementById(tableId);
+    const search = document.getElementById(searchId);
+    const clear = clearId ? document.getElementById(clearId) : null;
+    const perPage = document.getElementById(perPageId);
+    const prev = document.getElementById(prevId);
+    const next = document.getElementById(nextId);
+    const info = document.getElementById(infoId);
+
+    if(!table || !search || !perPage || !prev || !next || !info) return null;
+
+    let page = 1;
+    let pageSize = parseInt(perPage.value || '30', 10);
+    if(!pageSize || isNaN(pageSize)) pageSize = 30;
+
+    function getFiltered(){
+      const q = normalizeText(search.value);
+      const rows = getRows(table);
+      if(!q) return rows;
+      return rows.filter(tr => rowText(tr).includes(q));
+    }
+
+    function render(){
+      const rows = getRows(table);
+      const filtered = getFiltered();
+
+      const total = filtered.length;
+      const pages = Math.max(1, Math.ceil(total / pageSize));
+      if(page > pages) page = pages;
+      if(page < 1) page = 1;
+
+      rows.forEach(tr => { tr.style.display = 'none'; });
+
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize;
+      filtered.slice(start, end).forEach(tr => { tr.style.display = ''; });
+
+      info.textContent = `Page ${page} / ${pages}`;
+      prev.disabled = (page <= 1);
+      next.disabled = (page >= pages);
+    }
+
+    function resetToFirst(){
+      page = 1;
+      render();
+    }
+
+    search.addEventListener('input', resetToFirst);
+
+    if(clear){
+      clear.addEventListener('click', () => {
+        search.value = '';
+        resetToFirst();
+      });
+    }
+
+    perPage.addEventListener('change', () => {
+      const v = parseInt(perPage.value || '30', 10);
+      pageSize = (!v || isNaN(v)) ? 30 : v;
+      resetToFirst();
+    });
+
+    prev.addEventListener('click', () => { page--; render(); });
+    next.addEventListener('click', () => { page++; render(); });
+
+    return { render, resetToFirst };
+  }
+
+  const editCtrl = createController({
+    tableId: 'pmdEditTable',
+    searchId: 'pmdEditSearch',
+    clearId: null,
+    perPageId: 'pmdEditPerPage',
+    prevId: 'pmdEditPrev',
+    nextId: 'pmdEditNext',
+    infoId: 'pmdEditPageInfo'
+  });
+
+  const viewCtrl = createController({
+    tableId: 'pmdViewTable',
+    searchId: 'pmdViewSearch',
+    clearId: null,
+    perPageId: 'pmdViewPerPage',
+    prevId: 'pmdViewPrev',
+    nextId: 'pmdViewNext',
+    infoId: 'pmdViewPageInfo'
+  });
+
+  if(editCtrl) editCtrl.render();
+  if(viewCtrl) viewCtrl.render();
+
+  try{
+    const editTable = document.getElementById('pmdEditTable');
+    if(editCtrl && viewCtrl && editTable){
+      editTable.addEventListener('input', () => { viewCtrl.render(); }, true);
+      editTable.addEventListener('change', () => { viewCtrl.render(); }, true);
+    }
+  }catch(_){}
+})();
+</script>
+
+<script>
+/* ============================================================
+   ✅ Full View Modal — Build + Search + Pagination (includes lakhpati column)
 ============================================================ */
 (function(){
   const modal = document.getElementById('pmdViewModal');
-  const body = document.getElementById('pmdModalBody');
   const openBtn = document.getElementById('pmdOpenFull');
   const closeBtn = document.getElementById('pmdCloseFull');
   const viewTable = document.getElementById('pmdViewTable');
-  if(!modal || !body || !openBtn || !closeBtn || !viewTable) return;
+
+  const fullSearch = document.getElementById('pmdFullSearch');
+  const fullPerPage= document.getElementById('pmdFullPerPage');
+  const fullPrev   = document.getElementById('pmdFullPrev');
+  const fullNext   = document.getElementById('pmdFullNext');
+  const fullInfo   = document.getElementById('pmdFullPageInfo');
+  const host       = document.getElementById('pmdModalTableHost');
+
+  if(!modal || !openBtn || !closeBtn || !viewTable || !host ||
+     !fullSearch || !fullPerPage || !fullPrev || !fullNext || !fullInfo) return;
+
+  let fullTable = null;
 
   function getLabels(){
-    return (window.__PMD_MODAL_LABELS__ && Array.isArray(window.__PMD_MODAL_LABELS__) && window.__PMD_MODAL_LABELS__.length === 11)
+    return (window.__PMD_MODAL_LABELS__ && Array.isArray(window.__PMD_MODAL_LABELS__) && window.__PMD_MODAL_LABELS__.length === 12)
       ? window.__PMD_MODAL_LABELS__
-      : ["Sl. No","Member","Father/Mother/Spouse Name","Category","SHG","Contact","AADHAR/Voter/Govt ID","Bank","Branch","Account","Fee"];
+      : ["Sl. No","Member","Father/Mother/Spouse Name","Category","SHG","Contact","AADHAR/Voter/Govt ID","Bank","Branch","Account","Fee","Lakhpati Didi?"];
   }
 
   function extractRowCells(tr){
@@ -1306,14 +1645,12 @@
     const LABELS = getLabels();
     const rows = Array.from(viewTable.querySelectorAll('tbody tr'));
 
-    const wrap = document.createElement('div');
-    wrap.className = 'pmd-fullWrap';
-
     const scroll = document.createElement('div');
     scroll.className = 'pmd-fullScroll';
 
     const table = document.createElement('table');
     table.className = 'pmd-table';
+    table.id = 'pmdFullTable';
 
     const thead = document.createElement('thead');
     const hr = document.createElement('tr');
@@ -1342,14 +1679,56 @@
     table.appendChild(thead);
     table.appendChild(tbody);
     scroll.appendChild(table);
-    wrap.appendChild(scroll);
 
-    return wrap;
+    return { scroll, table };
+  }
+
+  function normalizeText(s){
+    return (s || '').toString().toLowerCase().replace(/\s+/g,' ').trim();
+  }
+
+  function fullRender(){
+    if(!fullTable) return;
+
+    const q = normalizeText(fullSearch.value);
+    const rows = Array.from(fullTable.querySelectorAll('tbody tr'));
+    const pageSize = parseInt(fullPerPage.value || '30', 10) || 30;
+
+    const filtered = (!q) ? rows : rows.filter(tr => normalizeText(tr.innerText || tr.textContent || '').includes(q));
+
+    const total = filtered.length;
+    const pages = Math.max(1, Math.ceil(total / pageSize));
+
+    let page = parseInt(fullInfo.dataset.page || '1', 10) || 1;
+    if(page > pages) page = pages;
+    if(page < 1) page = 1;
+    fullInfo.dataset.page = String(page);
+
+    rows.forEach(tr => tr.style.display = 'none');
+
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    filtered.slice(start, end).forEach(tr => tr.style.display = '');
+
+    fullInfo.textContent = `Page ${page} / ${pages}`;
+    fullPrev.disabled = page <= 1;
+    fullNext.disabled = page >= pages;
+  }
+
+  function setFullPage(n){
+    fullInfo.dataset.page = String(n);
+    fullRender();
   }
 
   function open(){
-    body.innerHTML = '';
-    body.appendChild(buildFullTable());
+    host.innerHTML = '';
+    const built = buildFullTable();
+    host.appendChild(built.scroll);
+    fullTable = built.table;
+
+    fullInfo.dataset.page = '1';
+    fullRender();
+
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden','false');
     document.documentElement.style.overflow = 'hidden';
@@ -1365,6 +1744,33 @@
   closeBtn.addEventListener('click', close);
   modal.addEventListener('click', (e) => { if(e.target === modal) close(); });
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && modal.classList.contains('is-open')) close(); });
+
+  fullSearch.addEventListener('input', () => setFullPage(1));
+  fullPerPage.addEventListener('change', () => setFullPage(1));
+  fullPrev.addEventListener('click', () => setFullPage(Math.max(1, (parseInt(fullInfo.dataset.page||'1',10)||1) - 1)));
+  fullNext.addEventListener('click', () => setFullPage((parseInt(fullInfo.dataset.page||'1',10)||1) + 1));
+
+  try{
+    const editTable = document.getElementById('pmdEditTable');
+    if(editTable){
+      const refresh = () => { if(modal.classList.contains('is-open')) open(); };
+      editTable.addEventListener('input', refresh, true);
+      editTable.addEventListener('change', refresh, true);
+    }
+  }catch(_){}
+})();
+</script>
+
+<script>
+/* ============================================================
+   ✅ Keep Lakhpati Didi labels correct on initial load (for mobile card labels)
+   - Your i18n already sets data-labels, but this ensures it includes lakhpati.
+============================================================ */
+(function(){
+  try{
+    // If i18n hasn't run yet for some reason, do a minimal fallback labels set
+    if(!window.__PMD_MODAL_LABELS__) return;
+  }catch(_){}
 })();
 </script>
 

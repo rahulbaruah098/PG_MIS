@@ -3,150 +3,1404 @@
 {% block content %}
 
 <style>
-  .po-wrap{max-width:1200px;margin:0 auto;padding:18px}
-  .po-hero{background:linear-gradient(135deg,#0b4d3a,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 16px 30px -18px rgba(0,0,0,.35)}
-  .po-hero h1{margin:0;font-weight:950;letter-spacing:.2px}
-  .po-hero .sub{margin-top:.35rem;opacity:.92;font-weight:700}
-  .po-card{background:#fff;border:1px solid rgba(15,23,42,.12);border-radius:18px;box-shadow:0 14px 26px -18px rgba(15,23,42,.22)}
-  .po-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;margin-top:14px}
-  @media(max-width:980px){.po-grid{grid-template-columns:1fr}}
-  .po-card h3{margin:0;padding:14px 16px;border-bottom:1px solid rgba(15,23,42,.10);font-weight:950;color:#0b4d3a}
-  .po-body{padding:14px 16px}
-  .po-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-  @media(max-width:720px){.po-row{grid-template-columns:1fr}}
-  .po-field label{display:block;font-weight:900;color:#0f172a;font-size:.9rem;margin-bottom:6px}
-  .po-field select,.po-field input{width:100%;padding:10px 12px;border-radius:14px;border:1px solid rgba(15,23,42,.14);background:#f8fafc;font-weight:800;outline:none}
-  .po-field select:focus,.po-field input:focus{border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.18)}
-  .po-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-  .po-btn{border:0;border-radius:999px;padding:10px 14px;font-weight:950;cursor:pointer}
-  .po-btn.primary{background:#0b4d3a;color:#fff}
-  .po-btn.ghost{background:#eef2f7;color:#0f172a}
-  .po-table{width:100%;border-collapse:separate;border-spacing:0}
-  .po-table th,.po-table td{padding:10px 10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-weight:800}
-  .po-table th{font-weight:950;color:#0b4d3a;background:#f8fafc;position:sticky;top:0}
-  .po-small{font-size:.88rem;color:#64748b;font-weight:800}
+  /* ============================================================
+     PG OVERALL EXPORT — UI RESKIN + SCOPE TABLE ENHANCEMENT
+     ✅ ONLY UI/CSS/translation UX changed
+     ✅ NO existing routes / data / backend logic changed
+     ✅ Mobile back button added in same style/position
+     ✅ Title icon removed
+     ✅ App/mobile/tablet: PG scope section converted to swipe cards
+     ✅ Added in PG report section:
+        - SL No
+        - Search bar
+        - Pagination
+        - Rows per page selector (10,25,50,100; default 25)
+        - Empty-state-safe headers still visible
+     ✅ Scoped under .po-wrap only
+     ============================================================ */
+
+  .po-wrap{
+    max-width:1280px;
+    margin:0 auto;
+    padding:clamp(12px,2.1vw,22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.12);
+    --line2:rgba(15,23,42,.08);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --soft2:#f3f8f5;
+    --accent:#0b4d3a;
+    --accent2:#10b981;
+    --ring:rgba(16,185,129,.16);
+  }
+  .po-wrap *{ box-sizing:border-box; }
+
+  .po-shell{
+    background:
+      radial-gradient(circle at top left, rgba(11,77,58,.05), transparent 24%),
+      linear-gradient(180deg, #ffffff, #fbfcfc);
+    border:1px solid var(--line);
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:0 18px 36px -28px rgba(15,23,42,.24);
+    position:relative;
+  }
+
+  /* back button */
+  .po-back{
+    display:none;
+    position:absolute;
+    top:12px;
+    left:12px;
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    box-shadow:0 12px 20px -16px rgba(15,23,42,.38);
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color:rgba(11,77,58,.98);
+    user-select:none;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    z-index:3;
+  }
+  .po-back:hover{
+    transform:translateX(-1px);
+    box-shadow:0 16px 26px -18px rgba(15,23,42,.46);
+    background:rgba(255,255,255,.98);
+  }
+  .po-back:active{ transform:scale(.98); }
+  .po-back svg{ width:18px; height:18px; display:block; }
+
+  /* hero */
+  .po-hero{
+    padding:18px 20px 16px;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(11,77,58,.08), transparent 36%),
+      linear-gradient(135deg, rgba(240,253,244,.95), rgba(255,255,255,.98));
+    border-bottom:1px solid var(--line2);
+    position:relative;
+  }
+
+  .po-hero-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    max-width:920px;
+    margin:0 auto;
+  }
+
+  .po-headbox{
+    min-width:0;
+    text-align:center;
+    width:100%;
+  }
+
+  .po-hero h1{
+    margin:0;
+    font-weight:950;
+    letter-spacing:-.01em;
+    color:var(--ink);
+    font-size:clamp(18px, 1.2vw + 14px, 22px);
+    line-height:1.12;
+  }
+
+  .po-hero .sub{
+    margin-top:6px;
+    color:rgba(15,23,42,.68);
+    font-weight:800;
+    line-height:1.45;
+    font-size:12px;
+  }
+
+  /* layout */
+  .po-main{
+    padding:18px;
+    display:grid;
+    gap:16px;
+  }
+
+  .po-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1.08fr) minmax(320px,.92fr);
+    gap:16px;
+  }
+
+  .po-card{
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(252,253,252,.98));
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:20px;
+    box-shadow:0 16px 30px -26px rgba(15,23,42,.18);
+    overflow:hidden;
+  }
+
+  .po-card h3{
+    margin:0;
+    padding:16px 18px 14px;
+    border-bottom:1px solid var(--line2);
+    font-weight:950;
+    color:var(--ink);
+    font-size:18px;
+    letter-spacing:-.01em;
+    line-height:1.2;
+    background:linear-gradient(180deg, rgba(247,250,249,.9), rgba(255,255,255,.98));
+  }
+
+  .po-body{ padding:18px; }
+
+  .po-section{
+    border:1px solid rgba(15,23,42,.08);
+    border-radius:18px;
+    background:linear-gradient(180deg, rgba(247,250,249,.82), rgba(255,255,255,.98));
+    padding:16px;
+  }
+
+  .po-section + .po-section{ margin-top:14px; }
+
+  .po-row{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:12px;
+    margin-bottom:12px;
+  }
+  .po-row:last-child{ margin-bottom:0; }
+
+  .po-field{ min-width:0; }
+  .po-field label{
+    display:block;
+    font-weight:900;
+    color:var(--ink);
+    font-size:12px;
+    line-height:1.25;
+    margin-bottom:7px;
+  }
+
+  .po-field select,
+  .po-field input{
+    width:100%;
+    min-width:0;
+    height:46px;
+    padding:0 14px;
+    border-radius:14px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    font-weight:800;
+    font-size:13px;
+    outline:none;
+    color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .po-field input::placeholder{ color:#7b8794; }
+  .po-field select:focus,
+  .po-field input:focus{
+    border-color:#10b981;
+    box-shadow:0 0 0 4px var(--ring);
+    background:#fff;
+  }
+
+  .po-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:12px;
+  }
+
+  .po-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:0;
+    border-radius:14px;
+    min-height:46px;
+    padding:11px 16px;
+    font-weight:950;
+    font-size:13px;
+    cursor:pointer;
+    text-decoration:none;
+    transition:transform .15s ease, box-shadow .2s ease, filter .2s ease;
+    white-space:nowrap;
+  }
+  .po-btn:hover{
+    transform:translateY(-1px);
+    filter:brightness(.99);
+  }
+
+  .po-btn.primary{
+    background:#d8efe6;
+    color:#0b4d3a;
+    border:1px solid #9ed9c5;
+    box-shadow:0 10px 18px -16px rgba(11,77,58,.18);
+  }
+
+  .po-btn.primary:hover{
+    background:#e4f5ee;
+    color:#0a4534;
+    border-color:#8fd1bb;
+    box-shadow:0 14px 22px -18px rgba(11,77,58,.22);
+  }
+
+  .po-btn.ghost{
+    background:#eef7f3;
+    color:#0f172a;
+    border:1px solid rgba(15,23,42,.10);
+  }
+
+  .po-btn.page-btn{
+    min-height:38px;
+    padding:8px 12px;
+    border-radius:12px;
+    font-size:12px;
+    font-weight:900;
+    background:#fff;
+    border:1px solid rgba(15,23,42,.12);
+    color:#0f172a;
+    box-shadow:none;
+  }
+  .po-btn.page-btn[disabled]{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+  }
+  .po-btn.page-btn.is-active{
+    background:#d8efe6;
+    color:#0b4d3a;
+    border-color:#9ed9c5;
+  }
+
+  .po-small{
+    font-size:12px;
+    color:#64748b;
+    font-weight:800;
+    line-height:1.55;
+    padding:12px 14px;
+    border-radius:14px;
+    border:1px dashed rgba(15,23,42,.12);
+    background:rgba(247,250,249,.74);
+  }
+
+  .po-divider{
+    border:none;
+    border-top:1px solid rgba(15,23,42,.10);
+    margin:14px 0;
+  }
+
+  /* scope controls */
+  .po-scope-tools{
+    padding:14px 16px;
+    border-bottom:1px solid var(--line2);
+    background:linear-gradient(180deg, rgba(247,250,249,.86), rgba(255,255,255,.96));
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+  }
+
+  .po-scope-tools-left,
+  .po-scope-tools-right{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  .po-search{
+    min-width:min(100%, 320px);
+    width:320px;
+    max-width:100%;
+    position:relative;
+  }
+
+  .po-search input{
+    width:100%;
+    height:42px;
+    padding:0 14px;
+    border-radius:14px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    color:#0f172a;
+    font-size:13px;
+    font-weight:800;
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  .po-search input:focus{
+    border-color:#10b981;
+    box-shadow:0 0 0 4px var(--ring);
+  }
+
+  .po-rows{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+  }
+  .po-rows label{
+    font-size:12px;
+    font-weight:900;
+    color:#0f172a;
+  }
+  .po-rows select{
+    height:40px;
+    min-width:92px;
+    padding:0 12px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    font-size:13px;
+    font-weight:800;
+    color:#0f172a;
+    outline:none;
+  }
+
+  .po-meta{
+    font-size:12px;
+    font-weight:800;
+    color:#64748b;
+  }
+
+  /* table */
+  .po-card.table-card h3{ border-bottom:1px solid var(--line2); }
+
+  .po-table-wrap{
+    padding:0;
+    max-height:420px;
+    overflow:auto;
+    display:block;
+  }
+
+  .po-table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:820px;
+  }
+
+  .po-table th,
+  .po-table td{
+    padding:12px 12px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    text-align:left;
+    font-weight:800;
+    color:#0f172a;
+    background:#fff;
+    vertical-align:top;
+  }
+
+  .po-table th{
+    font-weight:950;
+    color:#0b4d3a;
+    background:#f8fafc;
+    position:sticky;
+    top:0;
+    z-index:1;
+  }
+
+  .po-table tbody tr:hover td{
+    background:#fbfdfc;
+  }
+
+  .po-table .po-empty-row td{
+    color:#64748b;
+    font-weight:800;
+    text-align:center;
+    background:#fcfefd;
+  }
+
+  .po-td-sl{
+    width:72px;
+    min-width:72px;
+    text-align:center !important;
+    font-weight:950 !important;
+  }
+
+  .po-pgname{ font-weight:950; }
+
+  .po-pagination{
+    padding:14px 16px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    border-top:1px solid var(--line2);
+    background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(247,250,249,.78));
+  }
+
+  .po-page-info{
+    font-size:12px;
+    font-weight:800;
+    color:#64748b;
+  }
+
+  .po-page-controls{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  /* mobile swipe cards for scope */
+  .po-swipe-wrap{
+    display:none;
+    padding:12px;
+  }
+
+  .po-swipe-rail{
+    display:flex;
+    gap:12px;
+    overflow-x:auto;
+    padding-bottom:4px;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .po-swipe-rail::-webkit-scrollbar{
+    height:8px;
+  }
+  .po-swipe-rail::-webkit-scrollbar-thumb{
+    background:rgba(15,23,42,.14);
+    border-radius:999px;
+  }
+  .po-swipe-rail::-webkit-scrollbar-track{
+    background:rgba(15,23,42,.05);
+    border-radius:999px;
+  }
+
+  .po-scope-card{
+    min-width:84%;
+    max-width:84%;
+    scroll-snap-align:start;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:18px;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,251,250,.98));
+    box-shadow:0 12px 22px -22px rgba(15,23,42,.18);
+    overflow:hidden;
+  }
+
+  .po-scope-head{
+    padding:14px 14px 12px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    background:linear-gradient(180deg, rgba(247,250,249,.9), rgba(255,255,255,.98));
+  }
+
+  .po-scope-topline{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+
+  .po-scope-name{
+    margin:0;
+    font-size:17px;
+    line-height:1.25;
+    color:var(--ink);
+    font-weight:950;
+    word-break:break-word;
+  }
+
+  .po-sl-badge{
+    flex:0 0 auto;
+    min-width:36px;
+    height:30px;
+    padding:0 10px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid rgba(11,77,58,.10);
+    background:#eaf6f1;
+    color:#0b4d3a;
+    font-size:12px;
+    font-weight:950;
+  }
+
+  .po-scope-body{
+    padding:12px 14px 14px;
+    display:grid;
+    gap:10px;
+  }
+
+  .po-kv{
+    display:grid;
+    grid-template-columns:90px 1fr;
+    gap:10px;
+    align-items:start;
+  }
+
+  .po-kv b{
+    color:#0b4d3a;
+    font-size:12px;
+    line-height:1.3;
+    font-weight:950;
+  }
+
+  .po-kv span{
+    color:#0f172a;
+    font-size:13px;
+    line-height:1.45;
+    font-weight:800;
+    word-break:break-word;
+  }
+
+  .po-empty-mobile-card{
+    min-width:92%;
+    max-width:92%;
+    scroll-snap-align:start;
+    border:1px dashed rgba(15,23,42,.16);
+    border-radius:18px;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,251,250,.98));
+    padding:14px;
+  }
+
+  .po-empty-mobile-card .po-scope-body{
+    padding:0;
+  }
+
+  .po-swipe-hint{
+    margin-top:10px;
+    color:#64748b;
+    font-size:11px;
+    line-height:1.4;
+    font-weight:800;
+    text-align:center;
+  }
+
+  /* responsive */
+  @media (max-width:980px){
+    .po-grid{ grid-template-columns:1fr; }
+  }
+
+  @media (max-width:720px){
+    .po-back{ display:flex; }
+
+    .po-hero-row{
+      justify-content:flex-start;
+      padding-left:54px;
+      padding-right:8px;
+      align-items:flex-start;
+    }
+
+    .po-headbox{
+      text-align:left;
+    }
+
+    .po-hero h1{
+      font-size:17px;
+      line-height:1.3;
+      letter-spacing:.2px;
+    }
+
+    .po-hero .sub{
+      font-size:11.5px;
+      line-height:1.45;
+    }
+
+    .po-row{
+      grid-template-columns:1fr;
+    }
+
+    .po-btn{
+      border-radius:999px;
+      min-height:auto;
+      padding:10px 14px;
+      font-size:12px;
+    }
+
+    .po-scope-tools{
+      padding:12px;
+      display:grid;
+      gap:10px;
+    }
+
+    .po-scope-tools-left,
+    .po-scope-tools-right{
+      width:100%;
+    }
+
+    .po-search{
+      width:100%;
+      min-width:0;
+    }
+
+    .po-rows{
+      width:100%;
+      justify-content:space-between;
+    }
+
+    .po-meta{
+      width:100%;
+    }
+
+    .po-table-wrap{
+      display:none;
+    }
+
+    .po-swipe-wrap{
+      display:block;
+    }
+
+    .po-pagination{
+      padding:12px;
+      display:grid;
+      gap:10px;
+    }
+
+    .po-page-controls{
+      width:100%;
+      justify-content:space-between;
+    }
+
+    .po-btn.page-btn{
+      flex:1 1 auto;
+      justify-content:center;
+    }
+  }
+
+  @media (max-width:560px){
+    .po-wrap{ padding:10px; }
+
+    .po-hero{
+      padding:12px 12px 10px;
+    }
+
+    .po-main{
+      padding:10px;
+      gap:10px;
+    }
+
+    .po-body{
+      padding:10px;
+    }
+
+    .po-section{
+      padding:12px;
+      border-radius:16px;
+    }
+
+    .po-card h3{
+      padding:14px 14px 12px;
+      font-size:16px;
+    }
+
+    .po-actions{
+      flex-direction:column;
+    }
+
+    .po-actions .po-btn{
+      width:100%;
+      justify-content:center;
+    }
+
+    .po-scope-card{
+      min-width:88%;
+      max-width:88%;
+    }
+  }
+
+  @media (max-width:420px){
+    .po-scope-card{
+      min-width:92%;
+      max-width:92%;
+    }
+
+    .po-kv{
+      grid-template-columns:78px 1fr;
+      gap:8px;
+    }
+  }
+
+  @media (max-width:380px){
+    .po-hero-row{ padding-left:50px; }
+
+    .po-hero h1{ font-size:15px; }
+    .po-hero .sub{ font-size:11px; }
+  }
 </style>
 
 <div class="po-wrap">
-  <div class="po-hero">
-    <h1>PG Overall Export</h1>
-    <div class="sub">Download a complete PG snapshot as a ZIP (Members, Cashbook, Ledger, Loans, Meetings, Grants, Utilization).</div>
-  </div>
+  <div class="po-shell">
 
-  <div class="po-grid">
-    <div class="po-card">
-      <h3>Filters (Scope-based)</h3>
-      <div class="po-body">
-        <form method="get" action="{{ url_for('reports.pg_overall_report') }}">
-          <div class="po-row">
-            <div class="po-field">
-              <label>State</label>
-              <select name="state">
-                <option value="">All</option>
-                {% for s in states %}<option value="{{ s }}" {% if filters.State==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
-              </select>
-            </div>
-            <div class="po-field">
-              <label>District</label>
-              <select name="district">
-                <option value="">All</option>
-                {% for s in districts %}<option value="{{ s }}" {% if filters.District==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
-              </select>
-            </div>
-          </div>
-          <div class="po-row">
-            <div class="po-field">
-              <label>Block</label>
-              <select name="block">
-                <option value="">All</option>
-                {% for s in blocks %}<option value="{{ s }}" {% if filters.Block==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
-              </select>
-            </div>
-            <div class="po-field">
-              <label>Gram Panchayat</label>
-              <select name="gp">
-                <option value="">All</option>
-                {% for s in gps %}<option value="{{ s }}" {% if filters['Gram Panchayat']==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
-              </select>
-            </div>
-          </div>
-          <div class="po-row">
-            <div class="po-field">
-              <label>Village</label>
-              <select name="village">
-                <option value="">All</option>
-                {% for s in villages %}<option value="{{ s }}" {% if filters.Village==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
-              </select>
-            </div>
-            <div class="po-field">
-              <label>PG Name (search)</label>
-              <input name="pg_name" value="{{ filters.pg_name }}" placeholder="Type PG name..." />
-            </div>
-          </div>
-          <div class="po-actions">
-            <button class="po-btn primary" type="submit">Apply</button>
-            <a class="po-btn ghost" href="{{ url_for('reports.pg_overall_report') }}">Reset</a>
-          </div>
-        </form>
+    <div class="po-hero">
+      <a class="po-back" href="javascript:history.back()" aria-label="Go Back" id="poBackAria">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
 
-        <hr style="border:none;border-top:1px solid rgba(15,23,42,.10);margin:14px 0" />
-
-        <div class="po-small">Tip: Select a PG from the list and download its full ZIP. If you download without selecting a PG, it will export all PGs in the current filtered scope (may be large).</div>
+      <div class="po-hero-row">
+        <div class="po-headbox">
+          <h1 id="poTitle">PG Overall Export</h1>
+          <div class="sub" id="poSub">Download a complete PG snapshot as a ZIP (Members, Cashbook, Ledger, Loans, Meetings, Grants, Utilization).</div>
+        </div>
       </div>
     </div>
 
-    <div class="po-card">
-      <h3>Download</h3>
-      <div class="po-body">
-        <form method="get" action="{{ url_for('reports.pg_overall_download') }}">
-          <input type="hidden" name="state" value="{{ filters.State }}" />
-          <input type="hidden" name="district" value="{{ filters.District }}" />
-          <input type="hidden" name="block" value="{{ filters.Block }}" />
-          <input type="hidden" name="gp" value="{{ filters['Gram Panchayat'] }}" />
-          <input type="hidden" name="village" value="{{ filters.Village }}" />
-          <input type="hidden" name="pg_name" value="{{ filters.pg_name }}" />
+    <div class="po-main">
+      <div class="po-grid">
+        <div class="po-card">
+          <h3 id="poFiltersTitle">Filters (Scope-based)</h3>
+          <div class="po-body">
+            <form method="get" action="{{ url_for('reports.pg_overall_report') }}">
+              <div class="po-section">
+                <div class="po-row">
+                  <div class="po-field">
+                    <label id="poLblState">State</label>
+                    <select name="state">
+                      <option value="" id="poOptAll1">All</option>
+                      {% for s in states %}<option value="{{ s }}" {% if filters.State==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="po-field">
+                    <label id="poLblDistrict">District</label>
+                    <select name="district">
+                      <option value="" id="poOptAll2">All</option>
+                      {% for s in districts %}<option value="{{ s }}" {% if filters.District==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                    </select>
+                  </div>
+                </div>
 
-          <div class="po-field">
-            <label>Select PG</label>
-            <select name="pg_id">
-              <option value="">(Optional) Export all in filter</option>
+                <div class="po-row">
+                  <div class="po-field">
+                    <label id="poLblBlock">Block</label>
+                    <select name="block">
+                      <option value="" id="poOptAll3">All</option>
+                      {% for s in blocks %}<option value="{{ s }}" {% if filters.Block==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="po-field">
+                    <label id="poLblGp">Gram Panchayat</label>
+                    <select name="gp">
+                      <option value="" id="poOptAll4">All</option>
+                      {% for s in gps %}<option value="{{ s }}" {% if filters['Gram Panchayat']==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                    </select>
+                  </div>
+                </div>
+
+                <div class="po-row">
+                  <div class="po-field">
+                    <label id="poLblVillage">Village</label>
+                    <select name="village">
+                      <option value="" id="poOptAll5">All</option>
+                      {% for s in villages %}<option value="{{ s }}" {% if filters.Village==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div class="po-field">
+                    <label id="poLblPgName">PG Name (search)</label>
+                    <input name="pg_name" value="{{ filters.pg_name }}" placeholder="Type PG name..." id="poPhPgName" />
+                  </div>
+                </div>
+
+                <div class="po-actions">
+                  <button class="po-btn primary" type="submit" id="poApplyBtn">Apply</button>
+                  <a class="po-btn ghost" href="{{ url_for('reports.pg_overall_report') }}" id="poResetBtn">Reset</a>
+                </div>
+              </div>
+
+              <hr class="po-divider" />
+
+              <div class="po-small" id="poTip">Tip: Select a PG from the list and download its full ZIP. If you download without selecting a PG, it will export all PGs in the current filtered scope (may be large).</div>
+            </form>
+          </div>
+        </div>
+
+        <div class="po-card">
+          <h3 id="poDownloadTitle">Download</h3>
+          <div class="po-body">
+            <form method="get" action="{{ url_for('reports.pg_overall_download') }}">
+              <input type="hidden" name="state" value="{{ filters.State }}" />
+              <input type="hidden" name="district" value="{{ filters.District }}" />
+              <input type="hidden" name="block" value="{{ filters.Block }}" />
+              <input type="hidden" name="gp" value="{{ filters['Gram Panchayat'] }}" />
+              <input type="hidden" name="village" value="{{ filters.Village }}" />
+              <input type="hidden" name="pg_name" value="{{ filters.pg_name }}" />
+
+              <div class="po-section">
+                <div class="po-field">
+                  <label id="poLblSelectPg">Select PG</label>
+                  <select name="pg_id">
+                    <option value="" id="poOptExportAll">(Optional) Export all in filter</option>
+                    {% for p in pgs %}
+                      <option value="{{ p._id }}">{{ p.name }} — {{ p.District or '' }} {{ p.Block or '' }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="po-actions" style="margin-top:12px">
+                  <button class="po-btn primary" type="submit" id="poDownloadBtn">Download ZIP</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="po-card table-card" id="poScopeCard">
+        <h3><span id="poScopeTitle">PGs in Scope</span> (<span id="poScopeCount">{{ pgs|length }}</span>)</h3>
+
+        <div class="po-scope-tools">
+          <div class="po-scope-tools-left">
+            <div class="po-search">
+              <input
+                type="text"
+                id="poScopeSearch"
+                placeholder="Search PG / District / Block / GP / Village..."
+                aria-label="Search PGs in scope"
+              />
+            </div>
+          </div>
+
+          <div class="po-scope-tools-right">
+            <div class="po-rows">
+              <label for="poRowsPerPage" id="poRowsPerPageLbl">Rows per page</label>
+              <select id="poRowsPerPage" aria-label="Rows per page">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            <div class="po-meta" id="poScopeMeta">Showing 0 to 0 of 0 entries</div>
+          </div>
+        </div>
+
+        <div class="po-table-wrap">
+          <table class="po-table">
+            <thead>
+              <tr>
+                <th class="po-td-sl" id="poThSl">SL No</th>
+                <th id="poThPg">PG</th>
+                <th id="poThDistrict">District</th>
+                <th id="poThBlock">Block</th>
+                <th id="poThGp">GP</th>
+                <th id="poThVillage">Village</th>
+              </tr>
+            </thead>
+            <tbody id="poScopeTbody">
+              {% if pgs and pgs|length > 0 %}
+                {% for p in pgs %}
+                <tr
+                  class="po-scope-row"
+                  data-name="{{ (p.name or '')|e }}"
+                  data-district="{{ (p.District or '')|e }}"
+                  data-block="{{ (p.Block or '')|e }}"
+                  data-gp="{{ (p['Gram Panchayat'] or '')|e }}"
+                  data-village="{{ (p.Village or '')|e }}"
+                >
+                  <td class="po-td-sl po-sl-cell">{{ loop.index }}</td>
+                  <td class="po-pgname">{{ p.name or '' }}</td>
+                  <td>{{ p.District or '' }}</td>
+                  <td>{{ p.Block or '' }}</td>
+                  <td>{{ p['Gram Panchayat'] or '' }}</td>
+                  <td>{{ p.Village or '' }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr class="po-empty-row" id="poEmptyRow">
+                  <td colspan="6" id="poEmptyText">No PG records found for the current scope.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="po-swipe-wrap">
+          <div class="po-swipe-rail" id="poSwipeRail">
+            {% if pgs and pgs|length > 0 %}
               {% for p in pgs %}
-                <option value="{{ p._id }}">{{ p.name }} — {{ p.District or '' }} {{ p.Block or '' }}</option>
+              <article
+                class="po-scope-card"
+                data-name="{{ (p.name or '')|e }}"
+                data-district="{{ (p.District or '')|e }}"
+                data-block="{{ (p.Block or '')|e }}"
+                data-gp="{{ (p['Gram Panchayat'] or '')|e }}"
+                data-village="{{ (p.Village or '')|e }}"
+              >
+                <div class="po-scope-head">
+                  <div class="po-scope-topline">
+                    <h4 class="po-scope-name">{{ p.name or '' }}</h4>
+                    <span class="po-sl-badge po-sl-badge-num">{{ loop.index }}</span>
+                  </div>
+                </div>
+                <div class="po-scope-body">
+                  <div class="po-kv">
+                    <b class="poMobSlLbl">SL No</b>
+                    <span class="po-sl-mobile">{{ loop.index }}</span>
+                  </div>
+                  <div class="po-kv">
+                    <b class="poMobDistrictLbl">District</b>
+                    <span>{{ p.District or '' }}</span>
+                  </div>
+                  <div class="po-kv">
+                    <b class="poMobBlockLbl">Block</b>
+                    <span>{{ p.Block or '' }}</span>
+                  </div>
+                  <div class="po-kv">
+                    <b class="poMobGpLbl">GP</b>
+                    <span>{{ p['Gram Panchayat'] or '' }}</span>
+                  </div>
+                  <div class="po-kv">
+                    <b class="poMobVillageLbl">Village</b>
+                    <span>{{ p.Village or '' }}</span>
+                  </div>
+                </div>
+              </article>
               {% endfor %}
-            </select>
+            {% else %}
+              <article class="po-empty-mobile-card" id="poEmptyMobileCard">
+                <div class="po-scope-head">
+                  <div class="po-scope-topline">
+                    <h4 class="po-scope-name" id="poEmptyCardTitle">No PG records found</h4>
+                    <span class="po-sl-badge">0</span>
+                  </div>
+                </div>
+                <div class="po-scope-body">
+                  <div class="po-kv">
+                    <b class="poMobSlLbl">SL No</b>
+                    <span>—</span>
+                  </div>
+                  <div class="po-kv">
+                    <b class="poMobDistrictLbl">District</b>
+                    <span>—</span>
+                  </div>
+                  <div class="po-kv">
+                    <b class="poMobBlockLbl">Block</b>
+                    <span>—</span>
+                  </div>
+                  <div class="po-kv">
+                    <b class="poMobGpLbl">GP</b>
+                    <span>—</span>
+                  </div>
+                  <div class="po-kv">
+                    <b class="poMobVillageLbl">Village</b>
+                    <span>—</span>
+                  </div>
+                </div>
+              </article>
+            {% endif %}
           </div>
+          <div class="po-swipe-hint" id="poSwipeHint">Swipe horizontally to view PG cards</div>
+        </div>
 
-          <div class="po-actions" style="margin-top:12px">
-            <button class="po-btn primary" type="submit">Download ZIP</button>
+        <div class="po-pagination">
+          <div class="po-page-info" id="poPageInfo">Page 1 of 1</div>
+          <div class="po-page-controls">
+            <button type="button" class="po-btn page-btn" id="poPrevBtn">Previous</button>
+            <button type="button" class="po-btn page-btn is-active" id="poCurrentPageBtn">1</button>
+            <button type="button" class="po-btn page-btn" id="poNextBtn">Next</button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="po-card" style="margin-top:14px">
-    <h3>PGs in Scope ({{ pgs|length }})</h3>
-    <div class="po-body" style="padding:0;max-height:420px;overflow:auto">
-      <table class="po-table">
-        <thead>
-          <tr>
-            <th>PG</th><th>District</th><th>Block</th><th>GP</th><th>Village</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for p in pgs %}
-          <tr>
-            <td style="font-weight:950">{{ p.name }}</td>
-            <td>{{ p.District or '' }}</td>
-            <td>{{ p.Block or '' }}</td>
-            <td>{{ p['Gram Panchayat'] or '' }}</td>
-            <td>{{ p.Village or '' }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
   </div>
 </div>
+
+<script>
+  (function(){
+    const PO_T = {
+      en: {
+        title: "PG Overall Export",
+        backAria: "Go Back",
+        sub: "Download a complete PG snapshot as a ZIP (Members, Cashbook, Ledger, Loans, Meetings, Grants, Utilization).",
+
+        filtersTitle: "Filters (Scope-based)",
+        state: "State",
+        district: "District",
+        block: "Block",
+        gp: "Gram Panchayat",
+        village: "Village",
+        pgName: "PG Name (search)",
+        all: "All",
+        phPgName: "Type PG name...",
+        apply: "Apply",
+        reset: "Reset",
+        tip: "Tip: Select a PG from the list and download its full ZIP. If you download without selecting a PG, it will export all PGs in the current filtered scope (may be large).",
+
+        downloadTitle: "Download",
+        selectPg: "Select PG",
+        exportAll: "(Optional) Export all in filter",
+        downloadZip: "Download ZIP",
+
+        scopeTitle: "PGs in Scope",
+        thSl: "SL No",
+        thPg: "PG",
+        thDistrict: "District",
+        thBlock: "Block",
+        thGp: "GP",
+        thVillage: "Village",
+
+        searchPlaceholder: "Search PG / District / Block / GP / Village...",
+        rowsPerPage: "Rows per page",
+        scopeMeta: "Showing {start} to {end} of {total} entries",
+        pageInfo: "Page {page} of {pages}",
+        previous: "Previous",
+        next: "Next",
+        emptyText: "No PG records found for the current scope.",
+        emptyCardTitle: "No PG records found",
+        swipeHint: "Swipe horizontally to view PG cards",
+
+        mobSl: "SL No",
+        mobDistrict: "District",
+        mobBlock: "Block",
+        mobGp: "GP",
+        mobVillage: "Village"
+      },
+      bn: {
+        title: "পিজি ওভারঅল এক্সপোর্ট",
+        backAria: "ফিরে যান",
+        sub: "একটি পূর্ণাঙ্গ PG snapshot ZIP আকারে ডাউনলোড করুন (Members, Cashbook, Ledger, Loans, Meetings, Grants, Utilization)।",
+
+        filtersTitle: "ফিল্টার (স্কোপ-ভিত্তিক)",
+        state: "রাজ্য",
+        district: "জেলা",
+        block: "ব্লক",
+        gp: "গ্রাম পঞ্চায়েত",
+        village: "গ্রাম",
+        pgName: "পিজি নাম (অনুসন্ধান)",
+        all: "সব",
+        phPgName: "পিজি নাম লিখুন...",
+        apply: "প্রয়োগ করুন",
+        reset: "রিসেট",
+        tip: "টিপ: তালিকা থেকে একটি PG নির্বাচন করে তার পূর্ণ ZIP ডাউনলোড করুন। PG নির্বাচন না করলে বর্তমান ফিল্টারের আওতাধীন সব PG এক্সপোর্ট হবে (ফাইল বড় হতে পারে)।",
+
+        downloadTitle: "ডাউনলোড",
+        selectPg: "পিজি নির্বাচন করুন",
+        exportAll: "(ঐচ্ছিক) ফিল্টারের সব এক্সপোর্ট করুন",
+        downloadZip: "ZIP ডাউনলোড",
+
+        scopeTitle: "স্কোপের অন্তর্ভুক্ত PGসমূহ",
+        thSl: "ক্রমিক নং",
+        thPg: "পিজি",
+        thDistrict: "জেলা",
+        thBlock: "ব্লক",
+        thGp: "জিপি",
+        thVillage: "গ্রাম",
+
+        searchPlaceholder: "পিজি / জেলা / ব্লক / জিপি / গ্রাম অনুসন্ধান করুন...",
+        rowsPerPage: "প্রতি পৃষ্ঠায় সারি",
+        scopeMeta: "{total} এন্ট্রির মধ্যে {start} থেকে {end} দেখানো হচ্ছে",
+        pageInfo: "পৃষ্ঠা {page} / {pages}",
+        previous: "পূর্ববর্তী",
+        next: "পরবর্তী",
+        emptyText: "বর্তমান স্কোপে কোনো PG রেকর্ড পাওয়া যায়নি।",
+        emptyCardTitle: "কোনো PG রেকর্ড পাওয়া যায়নি",
+        swipeHint: "পিজি কার্ড দেখতে আড়াআড়ি সোয়াইপ করুন",
+
+        mobSl: "ক্রমিক নং",
+        mobDistrict: "জেলা",
+        mobBlock: "ব্লক",
+        mobGp: "জিপি",
+        mobVillage: "গ্রাম"
+      }
+    };
+
+    function safeText(id, val){
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    }
+
+    function safeTextAll(selector, val){
+      document.querySelectorAll(selector).forEach(el => {
+        el.textContent = val;
+      });
+    }
+
+    function safePlaceholder(id, val){
+      const el = document.getElementById(id);
+      if(el) el.placeholder = val;
+    }
+
+    function getStoredLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      try{
+        const l3 = document.documentElement.getAttribute('data-lang');
+        if(l3 === 'en' || l3 === 'bn') return l3;
+      }catch(_){}
+      return 'en';
+    }
+
+    function formatText(template, params){
+      return String(template || '').replace(/\{(\w+)\}/g, function(_, key){
+        return params && params[key] != null ? params[key] : '';
+      });
+    }
+
+    function applyPO(lang){
+      const t = PO_T[lang] || PO_T.en;
+
+      try { document.title = t.title; } catch(_){}
+
+      const back = document.querySelector('.po-back');
+      if(back) back.setAttribute('aria-label', t.backAria);
+
+      safeText('poTitle', t.title);
+      safeText('poSub', t.sub);
+
+      safeText('poFiltersTitle', t.filtersTitle);
+      safeText('poLblState', t.state);
+      safeText('poLblDistrict', t.district);
+      safeText('poLblBlock', t.block);
+      safeText('poLblGp', t.gp);
+      safeText('poLblVillage', t.village);
+      safeText('poLblPgName', t.pgName);
+
+      safeText('poOptAll1', t.all);
+      safeText('poOptAll2', t.all);
+      safeText('poOptAll3', t.all);
+      safeText('poOptAll4', t.all);
+      safeText('poOptAll5', t.all);
+
+      safePlaceholder('poPhPgName', t.phPgName);
+      safeText('poApplyBtn', t.apply);
+      safeText('poResetBtn', t.reset);
+      safeText('poTip', t.tip);
+
+      safeText('poDownloadTitle', t.downloadTitle);
+      safeText('poLblSelectPg', t.selectPg);
+      safeText('poOptExportAll', t.exportAll);
+      safeText('poDownloadBtn', t.downloadZip);
+
+      safeText('poScopeTitle', t.scopeTitle);
+      safeText('poThSl', t.thSl);
+      safeText('poThPg', t.thPg);
+      safeText('poThDistrict', t.thDistrict);
+      safeText('poThBlock', t.thBlock);
+      safeText('poThGp', t.thGp);
+      safeText('poThVillage', t.thVillage);
+
+      safePlaceholder('poScopeSearch', t.searchPlaceholder);
+      safeText('poRowsPerPageLbl', t.rowsPerPage);
+      safeText('poPrevBtn', t.previous);
+      safeText('poNextBtn', t.next);
+
+      safeTextAll('.poMobSlLbl', t.mobSl);
+      safeTextAll('.poMobDistrictLbl', t.mobDistrict);
+      safeTextAll('.poMobBlockLbl', t.mobBlock);
+      safeTextAll('.poMobGpLbl', t.mobGp);
+      safeTextAll('.poMobVillageLbl', t.mobVillage);
+
+      safeText('poSwipeHint', t.swipeHint);
+
+      const emptyRowText = document.getElementById('poEmptyText');
+      if(emptyRowText) emptyRowText.textContent = t.emptyText;
+
+      const emptyCardTitle = document.getElementById('poEmptyCardTitle');
+      if(emptyCardTitle) emptyCardTitle.textContent = t.emptyCardTitle;
+
+      if(window.__poScopeRenderMeta){
+        window.__poScopeRenderMeta();
+      }
+    }
+
+    function initScopeTable(){
+      const tableRows = Array.from(document.querySelectorAll('#poScopeTbody .po-scope-row'));
+      const mobileCards = Array.from(document.querySelectorAll('#poSwipeRail .po-scope-card'));
+      const searchInput = document.getElementById('poScopeSearch');
+      const rowsPerPageSelect = document.getElementById('poRowsPerPage');
+      const scopeMeta = document.getElementById('poScopeMeta');
+      const pageInfo = document.getElementById('poPageInfo');
+      const prevBtn = document.getElementById('poPrevBtn');
+      const nextBtn = document.getElementById('poNextBtn');
+      const currentPageBtn = document.getElementById('poCurrentPageBtn');
+      const countEl = document.getElementById('poScopeCount');
+      const emptyRow = document.getElementById('poEmptyRow');
+      const emptyMobileCard = document.getElementById('poEmptyMobileCard');
+
+      let currentPage = 1;
+      let rowsPerPage = parseInt(rowsPerPageSelect?.value || '25', 10);
+      let filteredIndexes = tableRows.map((_, idx) => idx);
+
+      function getLang(){
+        return getStoredLang();
+      }
+
+      function getT(){
+        return PO_T[getLang()] || PO_T.en;
+      }
+
+      function rowMatches(row, q){
+        const hay = [
+          row.dataset.name || '',
+          row.dataset.district || '',
+          row.dataset.block || '',
+          row.dataset.gp || '',
+          row.dataset.village || ''
+        ].join(' ').toLowerCase();
+        return hay.indexOf(q) !== -1;
+      }
+
+      function cardMatches(card, q){
+        const hay = [
+          card.dataset.name || '',
+          card.dataset.district || '',
+          card.dataset.block || '',
+          card.dataset.gp || '',
+          card.dataset.village || ''
+        ].join(' ').toLowerCase();
+        return hay.indexOf(q) !== -1;
+      }
+
+      function setVisible(el, yes){
+        if(!el) return;
+        el.style.display = yes ? '' : 'none';
+      }
+
+      function renderMeta(total, start, end, pages){
+        const t = getT();
+        if(scopeMeta){
+          scopeMeta.textContent = formatText(t.scopeMeta, {
+            start: total ? start : 0,
+            end: total ? end : 0,
+            total: total
+          });
+        }
+        if(pageInfo){
+          pageInfo.textContent = formatText(t.pageInfo, {
+            page: total ? currentPage : 1,
+            pages: pages || 1
+          });
+        }
+        if(currentPageBtn){
+          currentPageBtn.textContent = total ? String(currentPage) : '1';
+          currentPageBtn.classList.toggle('is-active', true);
+        }
+        if(prevBtn) prevBtn.disabled = currentPage <= 1 || total === 0;
+        if(nextBtn) nextBtn.disabled = total === 0 || currentPage >= pages;
+        if(countEl) countEl.textContent = String(total);
+      }
+
+      function render(){
+        const query = (searchInput?.value || '').trim().toLowerCase();
+        filteredIndexes = tableRows
+          .map((row, idx) => ({ row, idx }))
+          .filter(item => !query || rowMatches(item.row, query))
+          .map(item => item.idx);
+
+        const total = filteredIndexes.length;
+        const pages = Math.max(1, Math.ceil(total / rowsPerPage));
+        if(currentPage > pages) currentPage = pages;
+
+        const startIndex = total ? (currentPage - 1) * rowsPerPage : 0;
+        const endIndexExclusive = total ? Math.min(startIndex + rowsPerPage, total) : 0;
+        const pageIndexes = new Set(filteredIndexes.slice(startIndex, endIndexExclusive));
+
+        tableRows.forEach((row, idx) => {
+          const show = pageIndexes.has(idx);
+          setVisible(row, show);
+
+          if(show){
+            const serial = startIndex + Array.from(pageIndexes).sort((a,b)=>a-b).indexOf(idx) + 1;
+            const sl = row.querySelector('.po-sl-cell');
+            if(sl) sl.textContent = String(serial);
+          }
+        });
+
+        mobileCards.forEach((card, idx) => {
+          const passesSearch = !query || cardMatches(card, query);
+          const show = passesSearch && pageIndexes.has(idx);
+          setVisible(card, show);
+
+          if(show){
+            const serial = startIndex + Array.from(pageIndexes).sort((a,b)=>a-b).indexOf(idx) + 1;
+            const badge = card.querySelector('.po-sl-badge-num');
+            const slText = card.querySelector('.po-sl-mobile');
+            if(badge) badge.textContent = String(serial);
+            if(slText) slText.textContent = String(serial);
+          }
+        });
+
+        if(emptyRow){
+          emptyRow.style.display = total === 0 ? '' : 'none';
+        }
+        if(emptyMobileCard){
+          emptyMobileCard.style.display = total === 0 ? '' : 'none';
+        }
+
+        renderMeta(total, total ? startIndex + 1 : 0, total ? endIndexExclusive : 0, pages);
+      }
+
+      window.__poScopeRenderMeta = function(){
+        render();
+      };
+
+      if(searchInput){
+        searchInput.addEventListener('input', function(){
+          currentPage = 1;
+          render();
+        });
+      }
+
+      if(rowsPerPageSelect){
+        rowsPerPageSelect.addEventListener('change', function(){
+          const next = parseInt(this.value || '25', 10);
+          rowsPerPage = [10,25,50,100].includes(next) ? next : 25;
+          currentPage = 1;
+          render();
+        });
+      }
+
+      if(prevBtn){
+        prevBtn.addEventListener('click', function(){
+          if(currentPage > 1){
+            currentPage -= 1;
+            render();
+          }
+        });
+      }
+
+      if(nextBtn){
+        nextBtn.addEventListener('click', function(){
+          const total = filteredIndexes.length;
+          const pages = Math.max(1, Math.ceil(total / rowsPerPage));
+          if(currentPage < pages){
+            currentPage += 1;
+            render();
+          }
+        });
+      }
+
+      render();
+    }
+
+    window.updatePageLanguage = function(lang){
+      if(lang !== 'en' && lang !== 'bn') lang = getStoredLang();
+      applyPO(lang);
+    };
+
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyPO(lang);
+    });
+
+    window.addEventListener('pgmis:lang', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyPO(lang);
+    });
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      initScopeTable();
+      applyPO(getStoredLang());
+    });
+  })();
+</script>
 
 {% endblock %}

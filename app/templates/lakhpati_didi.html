@@ -1,52 +1,1550 @@
 {% extends "base.html" %}
-{% block title %}Lakhpati Didi – {{ pg.name }}{% endblock %}
-
+{% block title %}Lakhpati Didi Report{% endblock %}
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-    <div>
-      <h4 class="mb-0">Lakhpati Didi Members</h4>
-      <div class="text-muted">PG: <b>{{ pg.name }}</b></div>
-    </div>
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary" href="{{ url_for('pg.pg_view', pg_id=pg._id) if session.get('role') != 'PG_DATA_ENTRY' else url_for('pg.pg_home') }}">Back to Dashboard</a>
-      <a class="btn btn-primary" href="/pg/export/{{ pg._id }}/summary.csv">Download CSV</a>
-    </div>
-  </div>
+<style>
+  /* ============================================================
+     LAKHPATI DIDI REPORT — UI RESKIN + RESULT TOOLS
+     ✅ ONLY UI/CSS/translation UX changed
+     ✅ NO existing routes / data / backend logic changed
+     ✅ Added: SL No, result search, rows-per-page selector, pagination
+     ✅ Default rows-per-page = 25 (10/25/50/100 selectable)
+     ✅ Desktop table headers always visible
+     ✅ Mobile/app empty state now shows all field labels with "-" values
+     ✅ Fully responsive for web/tablet/mobile/app
+     ✅ Scoped under .rp-wrap only
+     ============================================================ */
 
-  <div class="card shadow-sm">
-    <div class="card-body">
-      {% if not members %}
-        <div class="alert alert-info mb-0">No members are marked as Lakhpati Didi for this PG yet.</div>
-      {% else %}
-        <div class="table-responsive">
-          <table class="table table-striped align-middle mb-0">
+  .rp-wrap{
+    max-width:1280px;
+    margin:0 auto;
+    padding:clamp(12px,2.1vw,22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.12);
+    --line2:rgba(15,23,42,.08);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --soft2:#f3f8f5;
+    --accent:#0b4d3a;
+    --mint:#d8efe6;
+    --mint-2:#e4f5ee;
+    --mint-line:#9ed9c5;
+    --ring:rgba(158,217,197,.24);
+  }
+  .rp-wrap *{ box-sizing:border-box; }
+
+  .rp-shell{
+    background:
+      radial-gradient(circle at top left, rgba(11,77,58,.05), transparent 24%),
+      linear-gradient(180deg, #ffffff, #fbfcfc);
+    border:1px solid var(--line);
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:0 18px 36px -28px rgba(15,23,42,.24);
+    position:relative;
+  }
+
+  /* back button */
+  .rp-back{
+    display:none;
+    position:absolute;
+    top:12px;
+    left:12px;
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    box-shadow:0 12px 20px -16px rgba(15,23,42,.38);
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color:rgba(11,77,58,.98);
+    user-select:none;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    z-index:3;
+  }
+  .rp-back:hover{
+    transform:translateX(-1px);
+    box-shadow:0 16px 26px -18px rgba(15,23,42,.46);
+    background:rgba(255,255,255,.98);
+  }
+  .rp-back:active{ transform:scale(.98); }
+  .rp-back svg{ width:18px; height:18px; display:block; }
+
+  /* header */
+  .rp-head{
+    padding:18px 20px 16px;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(11,77,58,.08), transparent 36%),
+      linear-gradient(135deg, rgba(240,253,244,.95), rgba(255,255,255,.98));
+    border-bottom:1px solid var(--line2);
+    position:relative;
+  }
+
+  .rp-head-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:14px;
+    align-items:end;
+    max-width:1180px;
+    margin:0 auto;
+  }
+
+  .rp-headbox{
+    min-width:0;
+    text-align:center;
+  }
+
+  .rp-title{
+    margin:0;
+    font-size:clamp(16px, 1.5vw, 20px);
+    line-height:1.18;
+    font-weight:900;
+    letter-spacing:-.01em;
+    color:var(--ink);
+    text-align:center;
+  }
+
+  .rp-sub{
+    margin-top:6px;
+    color:rgba(15,23,42,.62);
+    font-weight:800;
+    line-height:1.45;
+    font-size:12px;
+    text-align:center;
+  }
+
+  .rp-kpis{
+    display:flex;
+    gap:.7rem;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  .kpi{
+    padding:.82rem .96rem;
+    border-radius:16px;
+    border:1px solid rgba(15,23,42,.10);
+    background:rgba(255,255,255,.78);
+    font-weight:950;
+    color:var(--ink);
+    box-shadow:0 10px 18px -18px rgba(15,23,42,.18);
+    white-space:nowrap;
+  }
+
+  /* main */
+  .rp-main{
+    padding:18px;
+    display:grid;
+    gap:16px;
+  }
+
+  .rp-card{
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(252,253,252,.98));
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:20px;
+    box-shadow:0 16px 30px -26px rgba(15,23,42,.18);
+    overflow:hidden;
+  }
+
+  .rp-card-head{
+    margin:0;
+    padding:16px 18px 14px;
+    border-bottom:1px solid var(--line2);
+    font-weight:950;
+    color:var(--ink);
+    font-size:18px;
+    letter-spacing:-.01em;
+    line-height:1.2;
+    background:linear-gradient(180deg, rgba(247,250,249,.9), rgba(255,255,255,.98));
+  }
+
+  .rp-body{
+    padding:18px;
+  }
+
+  .rp-section{
+    border:1px solid rgba(15,23,42,.08);
+    border-radius:18px;
+    background:linear-gradient(180deg, rgba(247,250,249,.82), rgba(255,255,255,.98));
+    padding:16px;
+  }
+
+  .rp-grid{
+    display:grid;
+    grid-template-columns:repeat(12, minmax(0,1fr));
+    gap:12px;
+  }
+
+  .rp-grid .f{
+    min-width:0;
+    grid-column:span 3;
+  }
+
+  .rp-grid .f.wide{
+    grid-column:span 6;
+  }
+
+  .rp-grid label{
+    display:block;
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:rgba(15,23,42,.55);
+    margin-bottom:7px;
+    line-height:1.25;
+  }
+
+  .rp-grid select,
+  .rp-grid input{
+    width:100%;
+    min-width:0;
+    height:46px;
+    padding:0 14px;
+    border-radius:14px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    font-weight:800;
+    font-size:13px;
+    outline:none;
+    color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .rp-grid input::placeholder{ color:#7b8794; }
+  .rp-grid select:focus,
+  .rp-grid input:focus{
+    border-color:#9ed9c5;
+    box-shadow:0 0 0 4px var(--ring);
+    background:#fff;
+  }
+
+  .rp-actions{
+    display:flex;
+    gap:.7rem;
+    flex-wrap:wrap;
+    margin-top:14px;
+  }
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    min-height:46px;
+    padding:11px 16px;
+    font-weight:950;
+    font-size:13px;
+    cursor:pointer;
+    text-decoration:none;
+    border:1px solid rgba(15,23,42,.10);
+    background:#fff;
+    color:#0f172a;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+    white-space:nowrap;
+  }
+  .btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 14px 22px -18px rgba(15,23,42,.18);
+  }
+
+  .btn.primary{
+    background:#d8efe6;
+    color:#0b4d3a;
+    border-color:#9ed9c5;
+    box-shadow:0 10px 18px -16px rgba(11,77,58,.18);
+  }
+  .btn.primary:hover{
+    background:#e4f5ee;
+    color:#0a4534;
+    border-color:#8fd1bb;
+    box-shadow:0 14px 22px -18px rgba(11,77,58,.22);
+  }
+
+  .btn.dl{
+    background:#eef7f3;
+    color:#0f172a;
+    border-color:rgba(15,23,42,.10);
+  }
+
+  /* result tools */
+  .rp-result-tools{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+    gap:12px;
+    align-items:center;
+    padding:14px 16px;
+    border-bottom:1px solid var(--line2);
+    background:linear-gradient(180deg, rgba(248,250,252,.9), rgba(255,255,255,.98));
+  }
+
+  .rp-searchbox{
+    position:relative;
+    min-width:0;
+  }
+
+  .rp-searchbox input{
+    width:100%;
+    height:44px;
+    border-radius:14px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    padding:0 14px 0 42px;
+    font-size:13px;
+    font-weight:800;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+
+  .rp-searchbox input:focus{
+    border-color:#9ed9c5;
+    box-shadow:0 0 0 4px var(--ring);
+  }
+
+  .rp-searchbox svg{
+    position:absolute;
+    left:14px;
+    top:50%;
+    transform:translateY(-50%);
+    width:16px;
+    height:16px;
+    color:#64748b;
+    pointer-events:none;
+  }
+
+  .rp-rows{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    justify-self:end;
+  }
+
+  .rp-rows label,
+  .rp-meta{
+    font-size:12px;
+    font-weight:900;
+    color:rgba(15,23,42,.62);
+    white-space:nowrap;
+  }
+
+  .rp-rows select{
+    height:40px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    padding:0 12px;
+    font-size:13px;
+    font-weight:900;
+    color:var(--ink);
+    outline:none;
+  }
+
+  .rp-meta{
+    justify-self:end;
+  }
+
+  /* table */
+  .rp-table-card{
+    overflow:hidden;
+  }
+
+  .rp-table-wrap{
+    padding:0;
+    overflow:auto;
+    max-height:520px;
+    display:block;
+  }
+
+  .rp-table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:1120px;
+  }
+
+  .rp-table th,
+  .rp-table td{
+    padding:12px 12px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    font-size:13px;
+    line-height:1.45;
+    text-align:left;
+    font-weight:800;
+    color:#0f172a;
+    background:#fff;
+    vertical-align:top;
+  }
+
+  .rp-table th{
+    position:sticky;
+    top:0;
+    z-index:1;
+    background:rgba(248,250,252,.98);
+    backdrop-filter:blur(8px);
+    font-weight:950;
+    color:#0b4d3a;
+  }
+
+  .rp-table tbody tr:hover td{
+    background:#fbfdfc;
+  }
+
+  .rp-table .rp-sl{
+    width:70px;
+    min-width:70px;
+    text-align:center;
+  }
+
+  .rp-empty{
+    padding:1.1rem;
+    color:rgba(15,23,42,.62);
+    font-weight:800;
+  }
+
+  .rp-empty-inline{
+    padding:14px 16px 18px;
+    color:rgba(15,23,42,.62);
+    font-weight:800;
+  }
+
+  /* mobile swipe cards */
+  .rp-swipe-wrap{
+    display:none;
+    padding:12px;
+  }
+
+  .rp-swipe-rail{
+    display:flex;
+    gap:12px;
+    overflow-x:auto;
+    padding-bottom:4px;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .rp-swipe-rail::-webkit-scrollbar{
+    height:8px;
+  }
+  .rp-swipe-rail::-webkit-scrollbar-thumb{
+    background:rgba(15,23,42,.14);
+    border-radius:999px;
+  }
+  .rp-swipe-rail::-webkit-scrollbar-track{
+    background:rgba(15,23,42,.05);
+    border-radius:999px;
+  }
+
+  .rp-member-card{
+    min-width:88%;
+    max-width:88%;
+    scroll-snap-align:start;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:18px;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,251,250,.98));
+    box-shadow:0 12px 22px -22px rgba(15,23,42,.18);
+    overflow:hidden;
+  }
+
+  .rp-member-head{
+    padding:14px 14px 12px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    background:linear-gradient(180deg, rgba(247,250,249,.9), rgba(255,255,255,.98));
+  }
+
+  .rp-member-sl{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:34px;
+    height:26px;
+    padding:0 10px;
+    border-radius:999px;
+    background:#d8efe6;
+    color:#0b4d3a;
+    font-size:12px;
+    font-weight:950;
+    border:1px solid #9ed9c5;
+    margin-bottom:10px;
+  }
+
+  .rp-member-name{
+    margin:0;
+    font-size:17px;
+    line-height:1.25;
+    color:var(--ink);
+    font-weight:950;
+    word-break:break-word;
+  }
+
+  .rp-member-sub{
+    margin-top:4px;
+    color:#64748b;
+    font-size:12px;
+    line-height:1.4;
+    font-weight:800;
+    word-break:break-word;
+  }
+
+  .rp-member-body{
+    padding:12px 14px 14px;
+    display:grid;
+    gap:10px;
+  }
+
+  .rp-kv{
+    display:grid;
+    grid-template-columns:110px 1fr;
+    gap:10px;
+    align-items:start;
+  }
+
+  .rp-kv b{
+    color:#0b4d3a;
+    font-size:12px;
+    line-height:1.3;
+    font-weight:950;
+  }
+
+  .rp-kv span{
+    color:#0f172a;
+    font-size:13px;
+    line-height:1.45;
+    font-weight:800;
+    word-break:break-word;
+  }
+
+  .rp-empty-structure{
+    min-width:88%;
+    max-width:88%;
+    scroll-snap-align:start;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:18px;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,251,250,.98));
+    box-shadow:0 12px 22px -22px rgba(15,23,42,.18);
+    overflow:hidden;
+    flex:0 0 auto;
+  }
+
+  .rp-empty-structure .rp-member-body{
+    padding:0;
+    gap:0;
+  }
+
+  .rp-empty-structure .rp-kv{
+    grid-template-columns:1fr auto;
+    gap:16px;
+    padding:14px 16px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    align-items:center;
+  }
+
+  .rp-empty-structure .rp-kv:last-child{
+    border-bottom:none;
+  }
+
+  .rp-empty-structure .rp-kv b{
+    font-size:12px;
+    line-height:1.3;
+  }
+
+  .rp-empty-structure .rp-kv span{
+    text-align:right;
+    min-width:24px;
+  }
+
+  .rp-swipe-hint{
+    margin-top:10px;
+    color:#64748b;
+    font-size:11px;
+    line-height:1.4;
+    font-weight:800;
+    text-align:center;
+  }
+
+  /* pagination */
+  .rp-pager{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:14px 16px 16px;
+    border-top:1px solid var(--line2);
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.96));
+    flex-wrap:wrap;
+  }
+
+  .rp-pager-info{
+    color:rgba(15,23,42,.62);
+    font-size:12px;
+    font-weight:900;
+  }
+
+  .rp-pager-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .rp-page-btn{
+    min-width:40px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    color:#0f172a;
+    font-size:13px;
+    font-weight:950;
+    padding:0 12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+  }
+
+  .rp-page-btn:hover:not(:disabled){
+    transform:translateY(-1px);
+    box-shadow:0 12px 18px -18px rgba(15,23,42,.18);
+  }
+
+  .rp-page-btn.active{
+    background:#d8efe6;
+    color:#0b4d3a;
+    border-color:#9ed9c5;
+  }
+
+  .rp-page-btn:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+  }
+
+  .rp-hidden{
+    display:none !important;
+  }
+
+  @media (max-width:1100px){
+    .rp-grid .f{ grid-column:span 4; }
+    .rp-grid .f.wide{ grid-column:span 6; }
+  }
+
+  @media (max-width:980px){
+    .rp-grid{
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+    .rp-grid .f,
+    .rp-grid .f.wide{
+      grid-column:auto;
+    }
+
+    .rp-back{ display:flex; }
+
+    .rp-head{
+      padding:18px 16px 16px;
+    }
+
+    .rp-head-row{
+      grid-template-columns:1fr;
+      gap:12px;
+      padding-left:56px;
+      padding-right:0;
+      align-items:flex-start;
+    }
+
+    .rp-headbox{
+      width:100%;
+      text-align:center;
+    }
+
+    .rp-title{
+      font-size:17px;
+      line-height:1.3;
+      letter-spacing:.2px;
+      text-align:center;
+      word-break:break-word;
+      max-width:100%;
+    }
+
+    .rp-sub{
+      font-size:11.5px;
+      line-height:1.5;
+      text-align:center;
+      max-width:100%;
+      margin-top:8px;
+    }
+
+    .rp-kpis{
+      width:100%;
+      display:flex;
+      justify-content:center;
+      margin-top:2px;
+    }
+
+    .kpi{
+      min-width:0;
+      width:auto;
+      max-width:100%;
+      padding:.82rem 1.2rem;
+      border-radius:18px;
+      text-align:center;
+      margin:0 auto;
+      font-size:15px;
+      line-height:1.2;
+    }
+
+    .rp-grid{
+      grid-template-columns:1fr;
+    }
+
+    .btn{
+      min-height:auto;
+      padding:10px 14px;
+      font-size:12px;
+    }
+
+    .rp-result-tools{
+      grid-template-columns:1fr;
+      align-items:stretch;
+    }
+
+    .rp-rows,
+    .rp-meta{
+      justify-self:stretch;
+    }
+
+    .rp-rows{
+      justify-content:space-between;
+    }
+
+    .rp-table-wrap{
+      display:none;
+    }
+
+    .rp-swipe-wrap{
+      display:block;
+    }
+
+    .rp-pager{
+      flex-direction:column;
+      align-items:stretch;
+    }
+
+    .rp-pager-actions{
+      justify-content:center;
+    }
+
+    .rp-pager-info{
+      text-align:center;
+    }
+  }
+
+  @media (max-width:560px){
+    .rp-wrap{ padding:10px; }
+
+    .rp-main{
+      padding:10px;
+      gap:10px;
+    }
+
+    .rp-body{
+      padding:10px;
+    }
+
+    .rp-section{
+      padding:12px;
+      border-radius:16px;
+    }
+
+    .rp-card-head{
+      padding:14px 14px 12px;
+      font-size:16px;
+    }
+
+    .rp-actions{
+      flex-direction:column;
+    }
+
+    .rp-actions .btn{
+      width:100%;
+      justify-content:center;
+    }
+
+    .rp-member-card,
+    .rp-empty-structure{
+      min-width:92%;
+      max-width:92%;
+    }
+
+    .rp-searchbox input{
+      height:42px;
+    }
+  }
+
+  @media (max-width:420px){
+    .rp-kv{
+      grid-template-columns:92px 1fr;
+      gap:8px;
+    }
+
+    .rp-empty-structure .rp-kv{
+      grid-template-columns:1fr auto;
+      gap:12px;
+      padding:13px 14px;
+    }
+
+    .rp-page-btn{
+      min-width:36px;
+      height:36px;
+      padding:0 10px;
+    }
+  }
+
+  @media (max-width:380px){
+    .rp-head-row{ padding-left:50px; }
+    .rp-title{ font-size:15px; }
+    .rp-sub{ font-size:11px; }
+  }
+</style>
+
+<div class="rp-wrap">
+  <div class="rp-shell">
+
+    <div class="rp-head">
+      <a class="rp-back" href="javascript:history.back()" aria-label="Go Back" id="rpBackAria">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <div class="rp-head-row">
+        <div class="rp-headbox">
+          <div class="rp-title" id="rpTitle">Lakhpati Didi — Report</div>
+          <div class="rp-sub" id="rpSub">Filter by State → District → Block → GP → Village → PG • Search member name • Download CSV</div>
+        </div>
+        <div class="rp-kpis">
+          <div class="kpi"><span id="rpTotalLbl">Total</span>: {{ total }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rp-main">
+      <div class="rp-card">
+        <div class="rp-card-head" id="rpFiltersTitle">Filters</div>
+        <div class="rp-body">
+          <form method="GET">
+            <div class="rp-section">
+              <div class="rp-grid">
+                <div class="f">
+                  <label id="rpLblPeriod">Period</label>
+                  <select name="period">
+                    <option value="" {% if not period %}selected{% endif %} id="rpOptAllPeriod">All</option>
+                    <option value="weekly" {% if period=='weekly' %}selected{% endif %} id="rpOptWeekly">Weekly</option>
+                    <option value="monthly" {% if period=='monthly' %}selected{% endif %} id="rpOptMonthly">Monthly</option>
+                    <option value="6monthly" {% if period=='6monthly' %}selected{% endif %} id="rpOpt6Monthly">6 Monthly</option>
+                    <option value="yearly" {% if period=='yearly' %}selected{% endif %} id="rpOptYearly">Yearly</option>
+                  </select>
+                </div>
+
+                <div class="f">
+                  <label id="rpLblGroupBy">Download Summary By</label>
+                  <select name="group_by">
+                    <option value="" {% if not group_by %}selected{% endif %} id="rpOptDetailCsv">(Detail CSV)</option>
+                    <option value="District" {% if group_by=='District' %}selected{% endif %} id="rpOptDistrict">District</option>
+                    <option value="Block" {% if group_by=='Block' %}selected{% endif %} id="rpOptBlock">Block</option>
+                    <option value="Gram Panchayat" {% if group_by=='Gram Panchayat' %}selected{% endif %} id="rpOptGp">Gram Panchayat</option>
+                    <option value="Village" {% if group_by=='Village' %}selected{% endif %} id="rpOptVillage">Village</option>
+                    <option value="PG" {% if group_by=='PG' %}selected{% endif %} id="rpOptPg">PG</option>
+                  </select>
+                </div>
+
+                <div class="f">
+                  <label id="rpLblState">State</label>
+                  <select name="state">
+                    <option value="" id="rpOptAllState">All</option>
+                    {% for s in states %}<option value="{{ s }}" {% if filters.State==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                  </select>
+                </div>
+
+                <div class="f">
+                  <label id="rpLblDistrict2">District</label>
+                  <select name="district">
+                    <option value="" id="rpOptAllDistrict">All</option>
+                    {% for s in districts %}<option value="{{ s }}" {% if filters.District==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                  </select>
+                </div>
+
+                <div class="f">
+                  <label id="rpLblBlock2">Block</label>
+                  <select name="block">
+                    <option value="" id="rpOptAllBlock">All</option>
+                    {% for s in blocks %}<option value="{{ s }}" {% if filters.Block==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                  </select>
+                </div>
+
+                <div class="f">
+                  <label id="rpLblGp2">Gram Panchayat</label>
+                  <select name="gp">
+                    <option value="" id="rpOptAllGp">All</option>
+                    {% for s in gps %}<option value="{{ s }}" {% if filters['Gram Panchayat']==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                  </select>
+                </div>
+
+                <div class="f">
+                  <label id="rpLblVillage2">Village</label>
+                  <select name="village">
+                    <option value="" id="rpOptAllVillage">All</option>
+                    {% for s in villages %}<option value="{{ s }}" {% if filters.Village==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                  </select>
+                </div>
+
+                <div class="f wide">
+                  <label id="rpLblPgName">PG Name</label>
+                  <input type="text" name="pg_name" value="{{ filters.pg_name }}" placeholder="Search PG name…" id="rpPhPgName" />
+                </div>
+
+                <div class="f wide">
+                  <label id="rpLblMemberSearch">Member Search</label>
+                  <input type="text" name="q" value="{{ q }}" placeholder="Search member name…" id="rpPhMemberSearch" />
+                </div>
+              </div>
+
+              <div class="rp-actions">
+                <button class="btn primary" type="submit" id="rpApplyBtn">Apply Filters</button>
+                <a class="btn dl" id="rpDownloadBtn" href="{{ url_for('reports.export_lakhpati_csv', state=filters.State, district=filters.District, block=filters.Block, gp=filters['Gram Panchayat'], village=filters.Village, pg_name=filters.pg_name, q=q, period=period) }}">Download CSV</a>
+                {% if group_by %}
+                  <a class="btn dl" id="rpDownloadSummaryBtn" href="{{ url_for('reports.export_lakhpati_csv', state=filters.State, district=filters.District, block=filters.Block, gp=filters['Gram Panchayat'], village=filters.Village, pg_name=filters.pg_name, q=q, period=period, mode='summary', group_by=group_by) }}">Download Summary CSV</a>
+                {% endif %}
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="rp-card rp-table-card">
+        <div class="rp-card-head" id="rpResultsTitle">Results</div>
+
+        <div class="rp-result-tools">
+          <div class="rp-searchbox">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm10 2-4.35-4.35"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <input type="text" id="rpResultSearch" placeholder="Search within results…" />
+          </div>
+
+          <div class="rp-rows">
+            <label for="rpPageSize" id="rpRowsLabel">Rows</label>
+            <select id="rpPageSize">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+
+          <div class="rp-meta" id="rpMetaText">Showing 0–0 of 0</div>
+        </div>
+
+        <div class="rp-table-wrap">
+          <table class="rp-table" id="rpResultsTable">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Member Name</th>
-                <th>Spouse/Father</th>
-                <th>Category</th>
-                <th>SHG</th>
-                <th>Contact</th>
+                <th class="rp-sl" id="rpThSl">SL No</th>
+                <th id="rpThMember">Member</th>
+                <th id="rpThRelation">Spouse/Father/Mother</th>
+                <th id="rpThContact">Contact</th>
+                <th id="rpThPg">PG</th>
+                <th id="rpThDistrict">District</th>
+                <th id="rpThBlock">Block</th>
+                <th id="rpThGp">Gram Panchayat</th>
+                <th id="rpThVillage">Village</th>
+                <th id="rpThCreated">Created</th>
               </tr>
             </thead>
-            <tbody>
-              {% for m in members %}
-              <tr>
-                <td>{{ loop.index }}</td>
-                <td>{{ m.name or '' }}</td>
-                <td>{{ m.spouse_name or '' }}</td>
-                <td>{{ m.category or '' }}</td>
-                <td>{{ m.shg_name or '' }}</td>
-                <td>{{ m.contact or '' }}</td>
-              </tr>
-              {% endfor %}
+            <tbody id="rpTableBody">
+              {% if rows %}
+                {% for r in rows %}
+                <tr class="rp-data-row"
+                    data-index="{{ loop.index }}"
+                    data-search="{{ (
+                      (r['Member Name'] or '') ~ ' ' ~
+                      (r['Spouse/Father/Mother'] or '') ~ ' ' ~
+                      (r['Contact'] or '') ~ ' ' ~
+                      (r['PG Name'] or '') ~ ' ' ~
+                      (r['District'] or '') ~ ' ' ~
+                      (r['Block'] or '') ~ ' ' ~
+                      (r['Gram Panchayat'] or '') ~ ' ' ~
+                      (r['Village'] or '') ~ ' ' ~
+                      (r['Created At'] or '')
+                    )|lower }}">
+                  <td class="rp-sl rp-sl-cell"></td>
+                  <td>{{ r['Member Name'] or '—' }}</td>
+                  <td>{{ r['Spouse/Father/Mother'] or '—' }}</td>
+                  <td>{{ r['Contact'] or '—' }}</td>
+                  <td>{{ r['PG Name'] or '—' }}</td>
+                  <td>{{ r['District'] or '—' }}</td>
+                  <td>{{ r['Block'] or '—' }}</td>
+                  <td>{{ r['Gram Panchayat'] or '—' }}</td>
+                  <td>{{ r['Village'] or '—' }}</td>
+                  <td>{{ r['Created At'] or '—' }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr id="rpNoTableDataRow">
+                  <td class="rp-empty" colspan="10" id="rpEmpty">No Lakhpati Didi members found for the selected filters.</td>
+                </tr>
+              {% endif %}
             </tbody>
           </table>
         </div>
-      {% endif %}
+
+        <div class="rp-swipe-wrap">
+          <div class="rp-swipe-rail" id="rpSwipeRail">
+            {% if rows %}
+              {% for r in rows %}
+              <article class="rp-member-card rp-data-card"
+                       data-index="{{ loop.index }}"
+                       data-search="{{ (
+                         (r['Member Name'] or '') ~ ' ' ~
+                         (r['Spouse/Father/Mother'] or '') ~ ' ' ~
+                         (r['Contact'] or '') ~ ' ' ~
+                         (r['PG Name'] or '') ~ ' ' ~
+                         (r['District'] or '') ~ ' ' ~
+                         (r['Block'] or '') ~ ' ' ~
+                         (r['Gram Panchayat'] or '') ~ ' ' ~
+                         (r['Village'] or '') ~ ' ' ~
+                         (r['Created At'] or '')
+                       )|lower }}">
+                <div class="rp-member-head">
+                  <div class="rp-member-sl"><span class="rpMobSlLbl">SL</span> <span class="rp-sl-card-no" style="margin-left:6px;"></span></div>
+                  <h4 class="rp-member-name">{{ r['Member Name'] or '—' }}</h4>
+                  <div class="rp-member-sub">{{ r['PG Name'] or '—' }}</div>
+                </div>
+                <div class="rp-member-body">
+                  <div class="rp-kv">
+                    <b class="rpMobRelationLbl">Spouse/Father/Mother</b>
+                    <span>{{ r['Spouse/Father/Mother'] or '—' }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobContactLbl">Contact</b>
+                    <span>{{ r['Contact'] or '—' }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobDistrictLbl">District</b>
+                    <span>{{ r['District'] or '—' }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobBlockLbl">Block</b>
+                    <span>{{ r['Block'] or '—' }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobGpLbl">Gram Panchayat</b>
+                    <span>{{ r['Gram Panchayat'] or '—' }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobVillageLbl">Village</b>
+                    <span>{{ r['Village'] or '—' }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobCreatedLbl">Created</b>
+                    <span>{{ r['Created At'] or '—' }}</span>
+                  </div>
+                </div>
+              </article>
+              {% endfor %}
+            {% else %}
+              <article class="rp-empty-structure" id="rpEmptyStructureCard">
+                <div class="rp-member-body">
+                  <div class="rp-kv">
+                    <b class="rpMobSlLbl">SL</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b id="rpMobMemberLbl">Member</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobRelationLbl">Spouse/Father/Mother</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobContactLbl">Contact</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b id="rpMobPgLbl">PG</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobDistrictLbl">District</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobBlockLbl">Block</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobGpLbl">Gram Panchayat</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobVillageLbl">Village</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobCreatedLbl">Created</b>
+                    <span>—</span>
+                  </div>
+                </div>
+              </article>
+            {% endif %}
+          </div>
+
+          {% if rows %}
+            <div class="rp-swipe-hint" id="rpSwipeHint">Swipe horizontally to view member cards</div>
+          {% else %}
+            <div class="rp-empty-inline" id="rpEmptyMobile">No Lakhpati Didi members found for the selected filters.</div>
+          {% endif %}
+        </div>
+
+        <div class="rp-pager">
+          <div class="rp-pager-info" id="rpPagerInfo">Page 1 of 1</div>
+          <div class="rp-pager-actions" id="rpPagerActions">
+            <button type="button" class="rp-page-btn" id="rpPrevBtn">Prev</button>
+            <button type="button" class="rp-page-btn active" data-page="1">1</button>
+            <button type="button" class="rp-page-btn" id="rpNextBtn">Next</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+
+<script>
+  (function(){
+    const RP_T = {
+      en: {
+        title: "Lakhpati Didi — Report",
+        backAria: "Go Back",
+        sub: "Filter by State → District → Block → GP → Village → PG • Search member name • Download CSV",
+        total: "Total",
+
+        filtersTitle: "Filters",
+        period: "Period",
+        all: "All",
+        weekly: "Weekly",
+        monthly: "Monthly",
+        sixMonthly: "6 Monthly",
+        yearly: "Yearly",
+
+        groupBy: "Download Summary By",
+        detailCsv: "(Detail CSV)",
+        district: "District",
+        block: "Block",
+        gp: "Gram Panchayat",
+        village: "Village",
+        pg: "PG",
+        state: "State",
+
+        pgName: "PG Name",
+        memberSearch: "Member Search",
+        phPgName: "Search PG name…",
+        phMemberSearch: "Search member name…",
+
+        apply: "Apply Filters",
+        download: "Download CSV",
+        downloadSummary: "Download Summary CSV",
+
+        results: "Results",
+        sl: "SL No",
+        member: "Member",
+        relation: "Spouse/Father/Mother",
+        contact: "Contact",
+        created: "Created",
+        searchResults: "Search within results…",
+        rows: "Rows",
+        showing: "Showing",
+        of: "of",
+        page: "Page",
+        prev: "Prev",
+        next: "Next",
+        empty: "No Lakhpati Didi members found for the selected filters.",
+        swipeHint: "Swipe horizontally to view member cards"
+      },
+      bn: {
+        title: "লাখপতি দিদি — রিপোর্ট",
+        backAria: "ফিরে যান",
+        sub: "State → District → Block → GP → Village → PG অনুযায়ী ফিল্টার করুন • সদস্যের নাম খুঁজুন • CSV ডাউনলোড করুন",
+        total: "মোট",
+
+        filtersTitle: "ফিল্টার",
+        period: "সময়কাল",
+        all: "সব",
+        weekly: "সাপ্তাহিক",
+        monthly: "মাসিক",
+        sixMonthly: "৬ মাস অন্তর",
+        yearly: "বার্ষিক",
+
+        groupBy: "সারসংক্ষেপ ডাউনলোড করুন",
+        detailCsv: "(ডিটেইল CSV)",
+        district: "জেলা",
+        block: "ব্লক",
+        gp: "গ্রাম পঞ্চায়েত",
+        village: "গ্রাম",
+        pg: "পিজি",
+        state: "রাজ্য",
+
+        pgName: "পিজি নাম",
+        memberSearch: "সদস্য অনুসন্ধান",
+        phPgName: "পিজি নাম খুঁজুন…",
+        phMemberSearch: "সদস্যের নাম খুঁজুন…",
+
+        apply: "ফিল্টার প্রয়োগ করুন",
+        download: "CSV ডাউনলোড",
+        downloadSummary: "সারসংক্ষেপ CSV ডাউনলোড",
+
+        results: "ফলাফল",
+        sl: "ক্রমিক",
+        member: "সদস্য",
+        relation: "স্বামী/পিতা/মাতা",
+        contact: "যোগাযোগ",
+        created: "তৈরি হয়েছে",
+        searchResults: "ফলাফলের মধ্যে খুঁজুন…",
+        rows: "সারি",
+        showing: "দেখানো হচ্ছে",
+        of: "মোট",
+        page: "পৃষ্ঠা",
+        prev: "পূর্ববর্তী",
+        next: "পরবর্তী",
+        empty: "নির্বাচিত ফিল্টারের জন্য কোনো লাখপতি দিদি সদস্য পাওয়া যায়নি।",
+        swipeHint: "মেম্বার কার্ড দেখতে আড়াআড়ি সোয়াইপ করুন"
+      }
+    };
+
+    const state = {
+      lang: 'en',
+      currentPage: 1,
+      pageSize: 25,
+      query: '',
+      filteredCount: 0,
+      totalPages: 1
+    };
+
+    function safeText(id, val){
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    }
+
+    function safeTextAll(selector, val){
+      document.querySelectorAll(selector).forEach(el => {
+        el.textContent = val;
+      });
+    }
+
+    function safePlaceholder(id, val){
+      const el = document.getElementById(id);
+      if(el) el.placeholder = val;
+    }
+
+    function getStoredLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      try{
+        const l3 = document.documentElement.getAttribute('data-lang');
+        if(l3 === 'en' || l3 === 'bn') return l3;
+      }catch(_){}
+      return 'en';
+    }
+
+    function getDataRows(){
+      return Array.from(document.querySelectorAll('.rp-data-row'));
+    }
+
+    function getDataCards(){
+      return Array.from(document.querySelectorAll('.rp-data-card'));
+    }
+
+    function getFilteredRows(){
+      const query = (state.query || '').trim().toLowerCase();
+      const rows = getDataRows();
+      if(!query) return rows;
+      return rows.filter(row => (row.dataset.search || '').includes(query));
+    }
+
+    function syncCardNumbers(visibleRows){
+      const cards = getDataCards();
+      cards.forEach(card => {
+        card.classList.add('rp-hidden');
+      });
+
+      visibleRows.forEach((row, idx) => {
+        const rowIndex = row.dataset.index;
+        const card = cards.find(c => c.dataset.index === rowIndex);
+        const slNo = row.querySelector('.rp-sl-cell')?.textContent || String(idx + 1);
+        if(card){
+          card.classList.remove('rp-hidden');
+          const slEl = card.querySelector('.rp-sl-card-no');
+          if(slEl) slEl.textContent = slNo;
+        }
+      });
+    }
+
+    function updateEmptyStates(filteredRows){
+      const tableEmpty = document.getElementById('rpNoTableDataRow');
+      const emptyMobile = document.getElementById('rpEmptyMobile');
+      const emptyStructureCard = document.getElementById('rpEmptyStructureCard');
+      const swipeHint = document.getElementById('rpSwipeHint');
+
+      if(tableEmpty){
+        tableEmpty.style.display = filteredRows.length ? 'none' : '';
+      }
+      if(emptyMobile){
+        emptyMobile.style.display = filteredRows.length ? 'none' : '';
+      }
+      if(emptyStructureCard){
+        emptyStructureCard.style.display = filteredRows.length ? 'none' : '';
+      }
+      if(swipeHint){
+        swipeHint.style.display = filteredRows.length ? '' : 'none';
+      }
+    }
+
+    function renderPagination(filteredRows){
+      state.filteredCount = filteredRows.length;
+      state.totalPages = Math.max(1, Math.ceil(filteredRows.length / state.pageSize));
+      if(state.currentPage > state.totalPages) state.currentPage = state.totalPages;
+      if(state.currentPage < 1) state.currentPage = 1;
+
+      const startIdx = filteredRows.length ? ((state.currentPage - 1) * state.pageSize) : 0;
+      const endIdx = Math.min(startIdx + state.pageSize, filteredRows.length);
+      const pageRows = filteredRows.slice(startIdx, endIdx);
+
+      getDataRows().forEach(row => row.classList.add('rp-hidden'));
+      pageRows.forEach((row, i) => {
+        row.classList.remove('rp-hidden');
+        const slCell = row.querySelector('.rp-sl-cell');
+        if(slCell) slCell.textContent = String(startIdx + i + 1);
+      });
+
+      syncCardNumbers(pageRows);
+      updateMeta(filteredRows.length, startIdx, endIdx);
+      updateEmptyStates(filteredRows);
+      buildPager();
+    }
+
+    function updateMeta(totalCount, startIdx, endIdx){
+      const t = RP_T[state.lang] || RP_T.en;
+      const meta = document.getElementById('rpMetaText');
+      const pagerInfo = document.getElementById('rpPagerInfo');
+
+      const showStart = totalCount ? (startIdx + 1) : 0;
+      const showEnd = totalCount ? endIdx : 0;
+
+      if(meta){
+        meta.textContent = `${t.showing} ${showStart}–${showEnd} ${t.of} ${totalCount}`;
+      }
+      if(pagerInfo){
+        pagerInfo.textContent = `${t.page} ${state.currentPage} ${t.of} ${Math.max(1, state.totalPages)}`;
+      }
+    }
+
+    function buildPager(){
+      const t = RP_T[state.lang] || RP_T.en;
+      const pager = document.getElementById('rpPagerActions');
+      if(!pager) return;
+
+      pager.innerHTML = '';
+
+      const prev = document.createElement('button');
+      prev.type = 'button';
+      prev.className = 'rp-page-btn';
+      prev.id = 'rpPrevBtn';
+      prev.textContent = t.prev;
+      prev.disabled = state.currentPage <= 1;
+      prev.addEventListener('click', function(){
+        if(state.currentPage > 1){
+          state.currentPage -= 1;
+          refreshResults();
+        }
+      });
+      pager.appendChild(prev);
+
+      const total = Math.max(1, state.totalPages);
+      let start = Math.max(1, state.currentPage - 2);
+      let end = Math.min(total, start + 4);
+      start = Math.max(1, end - 4);
+
+      for(let p = start; p <= end; p++){
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'rp-page-btn' + (p === state.currentPage ? ' active' : '');
+        btn.dataset.page = String(p);
+        btn.textContent = String(p);
+        btn.addEventListener('click', function(){
+          state.currentPage = p;
+          refreshResults();
+        });
+        pager.appendChild(btn);
+      }
+
+      const next = document.createElement('button');
+      next.type = 'button';
+      next.className = 'rp-page-btn';
+      next.id = 'rpNextBtn';
+      next.textContent = t.next;
+      next.disabled = state.currentPage >= total;
+      next.addEventListener('click', function(){
+        if(state.currentPage < total){
+          state.currentPage += 1;
+          refreshResults();
+        }
+      });
+      pager.appendChild(next);
+    }
+
+    function refreshResults(){
+      const filteredRows = getFilteredRows();
+      renderPagination(filteredRows);
+    }
+
+    function bindResultControls(){
+      const searchInput = document.getElementById('rpResultSearch');
+      const pageSizeSelect = document.getElementById('rpPageSize');
+
+      if(searchInput){
+        searchInput.addEventListener('input', function(){
+          state.query = this.value || '';
+          state.currentPage = 1;
+          refreshResults();
+        });
+      }
+
+      if(pageSizeSelect){
+        pageSizeSelect.value = String(state.pageSize);
+        pageSizeSelect.addEventListener('change', function(){
+          const val = parseInt(this.value, 10);
+          state.pageSize = [10,25,50,100].includes(val) ? val : 25;
+          state.currentPage = 1;
+          refreshResults();
+        });
+      }
+    }
+
+    function applyRP(lang){
+      state.lang = (lang === 'bn') ? 'bn' : 'en';
+      const t = RP_T[state.lang] || RP_T.en;
+
+      try { document.title = t.title; } catch(_){}
+
+      const back = document.querySelector('.rp-back');
+      if(back) back.setAttribute('aria-label', t.backAria);
+
+      safeText('rpTitle', t.title);
+      safeText('rpSub', t.sub);
+      safeText('rpTotalLbl', t.total);
+
+      safeText('rpFiltersTitle', t.filtersTitle);
+      safeText('rpLblPeriod', t.period);
+      safeText('rpOptAllPeriod', t.all);
+      safeText('rpOptWeekly', t.weekly);
+      safeText('rpOptMonthly', t.monthly);
+      safeText('rpOpt6Monthly', t.sixMonthly);
+      safeText('rpOptYearly', t.yearly);
+
+      safeText('rpLblGroupBy', t.groupBy);
+      safeText('rpOptDetailCsv', t.detailCsv);
+      safeText('rpOptDistrict', t.district);
+      safeText('rpOptBlock', t.block);
+      safeText('rpOptGp', t.gp);
+      safeText('rpOptVillage', t.village);
+      safeText('rpOptPg', t.pg);
+
+      safeText('rpLblState', t.state);
+      safeText('rpLblDistrict2', t.district);
+      safeText('rpLblBlock2', t.block);
+      safeText('rpLblGp2', t.gp);
+      safeText('rpLblVillage2', t.village);
+
+      safeText('rpOptAllState', t.all);
+      safeText('rpOptAllDistrict', t.all);
+      safeText('rpOptAllBlock', t.all);
+      safeText('rpOptAllGp', t.all);
+      safeText('rpOptAllVillage', t.all);
+
+      safeText('rpLblPgName', t.pgName);
+      safeText('rpLblMemberSearch', t.memberSearch);
+      safePlaceholder('rpPhPgName', t.phPgName);
+      safePlaceholder('rpPhMemberSearch', t.phMemberSearch);
+
+      safeText('rpApplyBtn', t.apply);
+      safeText('rpDownloadBtn', t.download);
+      safeText('rpDownloadSummaryBtn', t.downloadSummary);
+
+      safeText('rpResultsTitle', t.results);
+      safeText('rpThSl', t.sl);
+      safeText('rpThMember', t.member);
+      safeText('rpThRelation', t.relation);
+      safeText('rpThContact', t.contact);
+      safeText('rpThPg', t.pg);
+      safeText('rpThDistrict', t.district);
+      safeText('rpThBlock', t.block);
+      safeText('rpThGp', t.gp);
+      safeText('rpThVillage', t.village);
+      safeText('rpThCreated', t.created);
+
+      safeText('rpRowsLabel', t.rows);
+      safePlaceholder('rpResultSearch', t.searchResults);
+
+      safeText('rpEmpty', t.empty);
+      safeText('rpEmptyMobile', t.empty);
+
+      safeTextAll('.rpMobSlLbl', t.sl.replace(' No', '').replace(' নং', ''));
+      safeText('rpMobMemberLbl', t.member);
+      safeTextAll('.rpMobRelationLbl', t.relation);
+      safeTextAll('.rpMobContactLbl', t.contact);
+      safeText('rpMobPgLbl', t.pg);
+      safeTextAll('.rpMobDistrictLbl', t.district);
+      safeTextAll('.rpMobBlockLbl', t.block);
+      safeTextAll('.rpMobGpLbl', t.gp);
+      safeTextAll('.rpMobVillageLbl', t.village);
+      safeTextAll('.rpMobCreatedLbl', t.created);
+
+      safeText('rpSwipeHint', t.swipeHint);
+
+      refreshResults();
+    }
+
+    window.updatePageLanguage = function(lang){
+      if(lang !== 'en' && lang !== 'bn') lang = getStoredLang();
+      applyRP(lang);
+    };
+
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyRP(lang);
+    });
+
+    window.addEventListener('pgmis:lang', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyRP(lang);
+    });
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      bindResultControls();
+      applyRP(getStoredLang());
+    });
+  })();
+</script>
 {% endblock %}
