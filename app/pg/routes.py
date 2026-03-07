@@ -395,15 +395,15 @@ def _pg_metrics(db, pg_id):
         "grants_count": grants_count,
         "grants_received_total": _fmt_inr(grants_received_total),
     }
-
-
+ ## new hybrided code of dashboard
 @pg_bp.route("/home")
 @login_required
 def pg_home():
     db = current_app.mongo_db
+
     # ✅ MOBILE FIX: prefer g (JWT) over session (web)
     pg_id = getattr(g, "pg_id", None) or session.get("pg_id")
-    role  = getattr(g, "role",  None) or session.get("role")
+    role  = getattr(g, "role", None) or session.get("role")
 
     def _wants_json():
         return bool(
@@ -412,10 +412,44 @@ def pg_home():
             or "application/json" in request.headers.get("Accept", "").lower()
         )
 
+    def _serialize_pg(pg_doc):
+        if not pg_doc:
+            return None
+        return {
+            "_id": str(pg_doc.get("_id")) if pg_doc.get("_id") else None,
+            "name": pg_doc.get("name"),
+            "sector": pg_doc.get("sector"),
+            "pg_type": pg_doc.get("pg_type"),
+            "Village": pg_doc.get("Village"),
+            "Block": pg_doc.get("Block"),
+            "District": pg_doc.get("District"),
+            "State": pg_doc.get("State"),
+            "formation_date": pg_doc.get("formation_date"),
+            "total_members": pg_doc.get("total_members", 0),
+        }
+
     if role == "PG_DATA_ENTRY" and pg_id:
-        pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))})
+        oid = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
+        pg_doc = db.pgs.find_one({"_id": oid}) if oid else None
         metrics = _pg_metrics(db, pg_id)
+
+        # ✅ APP / MOBILE JSON RESPONSE
+        if _wants_json():
+            return jsonify({
+                "ok": True,
+                "pg": _serialize_pg(pg_doc),
+                "metrics": metrics
+            }), 200
+
+        # ✅ WEB TEMPLATE RESPONSE
         return render_template("dashboard_pg.html", pg=pg_doc, metrics=metrics)
+
+    # Non-PG users
+    if _wants_json():
+        return jsonify({
+            "ok": False,
+            "error": "PG dashboard is available only for PG_DATA_ENTRY users with a valid PG scope."
+        }), 403
 
     return redirect(url_for("reports.hierarchy_dashboard"))
 
@@ -543,28 +577,23 @@ def pg_registration(pg_id):
             return ""
 
     def _serialize_pg_for_json(pg_doc):
-        out = {}
-        for k, v in (pg_doc or {}).items():
-            if k == "_id":
-                out["_id"] = str(v)
-            elif isinstance(v, ObjectId):
-                out[k] = str(v)
-            elif isinstance(v, datetime):
-                out[k] = v.isoformat()
-            elif k == "members" and isinstance(v, list):
-                members = []
-                for m in v:
-                    members.append({
-                        "member_id": _oid_str(m.get("member_id")),
-                        "member_name": m.get("member_name"),
-                        "shg_name": m.get("shg_name"),
-                        "shg_code": m.get("shg_code"),
-                        "role": m.get("role"),
-                    })
-                out["members"] = members
-            else:
-                out[k] = v
-        return out
+        def convert(value):
+            if isinstance(value, ObjectId):
+                return str(value)
+            if isinstance(value, datetime):
+                return value.isoformat()
+            if isinstance(value, list):
+                return [convert(v) for v in value]
+            if isinstance(value, dict):
+                return {k: convert(v) for k, v in value.items()}
+            try:
+                import json
+                json.dumps(value)
+                return value
+            except Exception:
+                return str(value)
+
+        return convert(pg_doc or {})
 
     # -----------------------------
     # Load PG
@@ -639,22 +668,29 @@ def pg_registration(pg_id):
         ))
 
         if _wants_json():
-            sm = []
-            for m in shg_members:
-                sm.append({
-                    "_id": _oid_str(m.get("_id")),
-                    "Member Name": m.get("Member Name"),
-                    "SHG Name": m.get("SHG Name"),
-                    "SHG Code": m.get("SHG Code"),
-                    "Village": m.get("Village"),
-                })
+            try:
+                sm = []
+                for m in shg_members:
+                    sm.append({
+                        "_id": _oid_str(m.get("_id")),
+                        "Member Name": m.get("Member Name"),
+                        "SHG Name": m.get("SHG Name"),
+                        "SHG Code": m.get("SHG Code"),
+                        "Village": m.get("Village"),
+                    })
 
-            return jsonify({
-                "ok": True,
-                "pg": _serialize_pg_for_json(pg),
-                "shg_members": sm,
-                "safe_members": safe_members,
-            }), 200
+                return jsonify({
+                    "ok": True,
+                    "pg": _serialize_pg_for_json(pg),
+                    "shg_members": sm,
+                    "safe_members": safe_members,
+                }), 200
+            except Exception as e:
+                current_app.logger.exception("Failed to serialize PG registration response")
+                return jsonify({
+                    "ok": False,
+                    "error": f"Failed to load PG registration data: {str(e)}"
+                }), 500
 
         return render_template(
             "pg_registration.html",
@@ -1072,6 +1108,7 @@ def pg_authorization():
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def pg_members(pg_id):
+    print("pg_members HIT | pg_id =", pg_id)
     db = current_app.mongo_db
 
     def _wants_json():
@@ -1406,48 +1443,89 @@ def pg_members(pg_id):
 
 @pg_bp.route("/lakhpati/<pg_id>")
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def pg_lakhpati(pg_id):
-    """List members marked as Lakhpati Didi for a PG."""
+    """List active members marked as Lakhpati Didi for a PG (web + app)."""
     db = current_app.mongo_db
+
+    def _wants_json():
+        return bool(
+            request.headers.get("Authorization")
+            or request.is_json
+            or "application/json" in request.headers.get("Accept", "").lower()
+        )
+
+    def _deny(message, status=400):
+        if _wants_json():
+            return jsonify({"ok": False, "error": message}), status
+        flash(message, "danger" if status >= 400 else "warning")
+        return redirect(url_for("pg.pg_home"))
 
     # Defensive: links can be generated with pg_id=None if session scope is missing.
     if not pg_id or str(pg_id).lower() == "none":
         pg_id = getattr(g, "pg_id", None) or session.get("pg_id") or session.get("active_pg_id")
 
     if not pg_id or not ObjectId.is_valid(str(pg_id)):
-        flash("PG scope not found. Please open a PG first or re-login.", "warning")
-        return redirect(url_for("pg.pg_home"))
+        return _deny("PG scope not found. Please open a PG first or re-login.", 400)
 
     pg_obj_id = ObjectId(str(pg_id))
     pg = db.pgs.find_one({"_id": pg_obj_id})
     if not pg:
-        flash("PG not found.", "danger")
-        return redirect(url_for("pg.pg_home"))
+        return _deny("PG not found.", 404)
 
     # Scope restriction for PG user (hybrid: g first, then session)
     role = getattr(g, "role", None) or session.get("role")
     auth_pg_id = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
 
     if role == "PG_DATA_ENTRY" and auth_pg_id != str(pg_id):
-        flash("You cannot access this PG.", "danger")
-        return redirect(url_for("pg.pg_home"))
+        return _deny("You cannot access this PG.", 403)
 
-    # ✅ Only ACTIVE lakhpati members should be shown
-    members = list(
+    # Only ACTIVE lakhpati members
+    member_docs = list(
         db.pg_members.find(
             {
                 "pg_id": pg_obj_id,
                 "lakh_pati_didi": True,
                 "$or": [
                     {"is_active": True},
-                    {"is_active": {"$exists": False}}  # backward compatibility for old rows
+                    {"is_active": {"$exists": False}}
                 ]
             }
         ).sort([("name", 1)])
     )
 
-    return render_template("lakhpati_didi.html", pg=pg, members=members)
+    if _wants_json():
+        rows = []
+        for m in member_docs:
+            rows.append({
+                "_id": str(m.get("_id")),
+                "pg_id": str(m.get("pg_id")) if m.get("pg_id") else "",
+                "member_id": str(m.get("member_id")) if m.get("member_id") else "",
+                "name": m.get("name", ""),
+                "spouse_name": m.get("spouse_name", ""),
+                "category": m.get("category", ""),
+                "shg_name": m.get("shg_name", ""),
+                "shg_code": m.get("shg_code", ""),
+                "contact": m.get("contact", ""),
+                "photo_id_number": m.get("photo_id_number", ""),
+                "bank_name": m.get("bank_name", ""),
+                "branch": m.get("branch", ""),
+                "account_number": m.get("account_number", ""),
+                "membership_fee_paid": m.get("membership_fee_paid", ""),
+                "lakh_pati_didi": True,
+                "is_active": m.get("is_active", True),
+            })
+
+        return jsonify({
+            "ok": True,
+            "pg": {
+                "_id": str(pg["_id"]),
+                "name": pg.get("name", ""),
+            },
+            "rows": rows,
+        }), 200
+
+    return render_template("lakhpati_didi.html", pg=pg, members=member_docs)
 
 @pg_bp.route("/export/<pg_id>/summary.csv")
 @login_required
