@@ -76,6 +76,169 @@
     z-index:0;
   }
 
+  /* =========================================================
+     SPLASH SCREEN (ADDED)
+     Shows only on:
+     1) first entry in this tab/session
+     2) reload of this same URL
+     ========================================================= */
+  #siteSplash{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition: opacity .85s ease, visibility .85s ease;
+  background: linear-gradient(135deg, #047857 0%, #065f46 46%, #0f766e 100%);
+}
+#siteSplash.is-visible{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+#siteSplash.is-hidden{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+
+  .splash-wave{
+    position:absolute;
+    inset:-6% -10%;
+    width:120%;
+    height:112%;
+    pointer-events:none;
+    will-change:transform;
+  }
+  .splash-wave svg{
+    width:100%;
+    height:100%;
+    display:block;
+  }
+  .splash-wave.bottom.one{ animation:splashWaveLeft 6s ease-in-out infinite alternate; }
+  .splash-wave.bottom.two{ animation:splashWaveRight 7s ease-in-out infinite alternate; }
+  .splash-wave.top.one{ animation:splashWaveRight 8s ease-in-out infinite alternate; }
+  .splash-wave.top.two{ animation:splashWaveLeftSmall 9s ease-in-out infinite alternate; }
+
+  @keyframes splashWaveLeft{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(-10vw); }
+  }
+  @keyframes splashWaveRight{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(8vw); }
+  }
+  @keyframes splashWaveLeftSmall{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(-7vw); }
+  }
+
+  .splash-dots{
+    position:absolute;
+    inset:0;
+    opacity:.055;
+    background-image: radial-gradient(circle, rgba(255,255,255,.95) 1.15px, transparent 1.15px);
+    background-size: 44px 44px;
+    background-position: 22px 22px;
+    pointer-events:none;
+  }
+
+  .splash-content{
+    position:relative;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    text-align:center;
+  }
+
+  .splash-kicker,
+  .splash-title,
+  .splash-powered{
+    opacity:0;
+    transform:translateY(12px);
+    filter:blur(3px);
+    animation-fill-mode:forwards;
+    animation-timing-function:cubic-bezier(.2,.9,.2,1);
+  }
+
+  .splash-kicker{
+    color: rgba(209,250,229,0.95);
+    font-size: clamp(12px, 1.2vw + 8px, 16px);
+    letter-spacing: clamp(3px, .45vw, 6px);
+    font-weight: 300;
+    text-align:center;
+    margin-bottom: 32px;
+    animation-name:splashFadeDown;
+    animation-duration:.8s;
+    animation-delay:.6s;
+  }
+
+  .splash-title{
+    color:#fff;
+    font-size: clamp(54px, 14vw, 92px);
+    font-weight:800;
+    letter-spacing:-1px;
+    line-height:.96;
+    animation-name:splashFadeIn;
+    animation-duration:.9s;
+    animation-delay:1.2s;
+  }
+
+  .splash-powered{
+    margin-top:26px;
+    color: rgba(236,253,245,0.95);
+    font-size: clamp(15px, 1.4vw + 8px, 18px);
+    letter-spacing:.8px;
+    font-weight:300;
+    animation-name:splashFadeUp;
+    animation-duration:.8s;
+    animation-delay:2.4s;
+  }
+  .splash-powered .brand{
+    font-weight:700;
+    color: rgba(167,243,208,1);
+  }
+
+  @keyframes splashFadeDown{
+    from{ opacity:0; transform:translateY(-10px); filter:blur(3px); }
+    to{ opacity:1; transform:translateY(0); filter:blur(0); }
+  }
+  @keyframes splashFadeIn{
+    from{ opacity:0; transform:translateY(6px); filter:blur(3px); }
+    to{ opacity:1; transform:translateY(0); filter:blur(0); }
+  }
+  @keyframes splashFadeUp{
+    from{ opacity:0; transform:translateY(10px); filter:blur(3px); }
+    to{ opacity:1; transform:translateY(0); filter:blur(0); }
+  }
+
+.page-shell{
+  width:100%;
+  height:100%;
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transition: opacity .45s ease, visibility .45s ease;
+}
+
+.page-shell.is-ready{
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+
+body.has-flash .stage{
+  padding-top: calc(var(--bandH) + var(--gapTop) + var(--safeTop) + 96px);
+}
+
   /* bands */
   .top-band,
   .bottom-band{
@@ -203,17 +366,18 @@
   /* ==========================
      ✅ TOP-RIGHT TOAST FLASHES
      ========================== */
-  .flash-wrap{
-    position:fixed;
-    top: calc(var(--bandH) + 12px + var(--safeTop));
-    right: 14px;
-    width: min(380px, calc(100vw - 28px));
-    z-index: 50;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    pointer-events:none; /* only alerts receive clicks */
-  }
+.flash-wrap{
+  position: fixed;
+  top: calc(var(--safeTop) + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 28px));
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
 
   .alert{
     border-radius:16px;
@@ -411,11 +575,18 @@
     .band-svg.is-mobile{ display:block; }
     .card{ width:min(480px, 92vw); padding: 34px 18px 32px; }
     .wrap{ gap:14px; }
-    .flash-wrap{
-      top: calc(var(--bandH) + 10px + var(--safeTop));
-      right: 10px;
-      width: min(360px, calc(100vw - 20px));
-    }
+   .flash-wrap{
+  top: calc(var(--safeTop) + 10px);
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(92vw, 560px);
+}
+body.has-flash .stage{
+  padding-top: calc(var(--bandH) + var(--gapTop) + var(--safeTop) + 88px);
+}
+    .splash-kicker{ margin-bottom:26px; }
+    .splash-powered{ margin-top:22px; }
   }
 
   @media (max-width:420px){
@@ -423,221 +594,269 @@
     .field{ margin: 14px 4px 22px; }
     .input{ height:50px; font-size:14px; }
     .btn{ height:60px; font-size:17px; }
+    .splash-title{ font-size: clamp(48px, 18vw, 80px); }
   }
 
   @media (prefers-reduced-motion: reduce){
     .reveal-text, .reveal-card, .reveal-field, .reveal-footer{ animation:none !important; opacity:1 !important; transform:none !important; filter:none !important; }
     .btn, .powered-link a, .card{ transition:none; }
     .alert{ animation:none; }
+    .splash-wave{ animation:none !important; }
+    .splash-kicker, .splash-title, .splash-powered{
+      animation:none !important;
+      opacity:1 !important;
+      transform:none !important;
+      filter:none !important;
+    }
+    #siteSplash{ transition:none; }
   }
 </style>
 </head>
 
 <body>
-  <!-- TOP SVG BAND -->
-  <div class="top-band" aria-hidden="true">
-    <svg class="band-svg is-desktop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 120" width="100%" height="100%" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stop-color="#d7f1e6"/>
-          <stop offset="1" stop-color="#cfeadd"/>
-        </linearGradient>
-        <pattern id="motif" width="140" height="120" patternUnits="userSpaceOnUse">
-          <g opacity="0.18">
-            <polygon points="70,10 92,32 70,54 48,32" fill="none" stroke="#86cbb3" stroke-width="2"/>
-          </g>
-          <g>
-            <circle cx="14" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
-            <circle cx="126" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
-            <polygon points="34,56 46,68 34,80 22,68" fill="#86cbb3" opacity="0.30"/>
-            <polygon points="70,52 84,66 70,80 56,66" fill="#86cbb3" opacity="0.55"/>
-            <polygon points="106,56 118,68 106,80 94,68" fill="#86cbb3" opacity="0.30"/>
-            <circle cx="52" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
-            <circle cx="88" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
-          </g>
-        </pattern>
-      </defs>
-      <rect x="0" y="0" width="1400" height="120" fill="url(#bg)"/>
-      <g opacity="0.10" fill="#86cbb3">
-        <circle cx="80" cy="22" r="1.4"/><circle cx="220" cy="32" r="1.2"/><circle cx="360" cy="20" r="1.5"/>
-        <circle cx="520" cy="28" r="1.1"/><circle cx="680" cy="18" r="1.4"/><circle cx="860" cy="26" r="1.2"/>
-        <circle cx="1040" cy="20" r="1.5"/><circle cx="1220" cy="32" r="1.2"/><circle cx="1320" cy="24" r="1.3"/>
-      </g>
-      <rect x="0" y="6" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
-      <rect x="0" y="111.4" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
-      <rect x="0" y="0" width="1400" height="120" fill="url(#motif)"/>
-      <rect x="0" y="52" width="1400" height="16" fill="#ffffff" opacity="0.10"/>
-    </svg>
 
-    <svg class="band-svg is-mobile" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 120" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <linearGradient id="bg_m" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stop-color="#d7f1e6"/>
-          <stop offset="1" stop-color="#cfeadd"/>
-        </linearGradient>
-        <pattern id="motif_m" width="140" height="120" patternUnits="userSpaceOnUse">
-          <g opacity="0.18">
-            <polygon points="70,10 92,32 70,54 48,32" fill="none" stroke="#86cbb3" stroke-width="2"/>
-          </g>
-          <g>
-            <circle cx="14" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
-            <circle cx="126" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
-            <polygon points="34,56 46,68 34,80 22,68" fill="#86cbb3" opacity="0.30"/>
-            <polygon points="70,52 84,66 70,80 56,66" fill="#86cbb3" opacity="0.55"/>
-            <polygon points="106,56 118,68 106,80 94,68" fill="#86cbb3" opacity="0.30"/>
-            <circle cx="52" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
-            <circle cx="88" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
-          </g>
-        </pattern>
-      </defs>
-      <rect x="0" y="0" width="1400" height="120" fill="url(#bg_m)"/>
-      <g opacity="0.10" fill="#86cbb3">
-        <circle cx="80" cy="22" r="1.4"/><circle cx="220" cy="32" r="1.2"/><circle cx="360" cy="20" r="1.5"/>
-        <circle cx="520" cy="28" r="1.1"/><circle cx="680" cy="18" r="1.4"/><circle cx="860" cy="26" r="1.2"/>
-        <circle cx="1040" cy="20" r="1.5"/><circle cx="1220" cy="32" r="1.2"/><circle cx="1320" cy="24" r="1.3"/>
-      </g>
-      <rect x="0" y="6" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
-      <rect x="0" y="111.4" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
-      <rect x="0" y="0" width="1400" height="120" fill="url(#motif_m)"/>
-      <rect x="0" y="52" width="1400" height="16" fill="#ffffff" opacity="0.10"/>
-    </svg>
+  <!-- =========================================================
+       SPLASH SCREEN (ADDED)
+       ========================================================= -->
+  <div id="siteSplash" aria-hidden="true">
+    <div class="splash-wave bottom one" aria-hidden="true">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0,55 Q25,45 50,55 T100,55 L100,100 L0,100 Z" fill="white" opacity="0.10"></path>
+      </svg>
+    </div>
+
+    <div class="splash-wave bottom two" aria-hidden="true">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0,55 Q25,45 50,55 T100,55 L100,100 L0,100 Z" fill="white" opacity="0.06"></path>
+      </svg>
+    </div>
+
+    <div class="splash-wave top one" aria-hidden="true">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0,0 L0,45 Q25,55 50,45 T100,45 L100,0 Z" fill="white" opacity="0.10"></path>
+      </svg>
+    </div>
+
+    <div class="splash-wave top two" aria-hidden="true">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path d="M0,0 L0,45 Q25,55 50,45 T100,45 L100,0 Z" fill="white" opacity="0.06"></path>
+      </svg>
+    </div>
+
+    <div class="splash-dots" aria-hidden="true"></div>
+
+    <div class="splash-content">
+      <div class="splash-kicker">TRIPURA&apos;S DIGITAL GATEWAY</div>
+      <div class="splash-title">PG MIS</div>
+      <div class="splash-powered">powered by <span class="brand">Sayanant Group</span></div>
+    </div>
   </div>
 
-  <!-- BOTTOM SVG BAND -->
-  <div class="bottom-band" aria-hidden="true">
-    <svg class="band-svg is-desktop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 120" width="100%" height="100%" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="bg2" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stop-color="#d7f1e6"/>
-          <stop offset="1" stop-color="#cfeadd"/>
-        </linearGradient>
-        <pattern id="motif2" width="140" height="120" patternUnits="userSpaceOnUse">
-          <g opacity="0.18">
-            <polygon points="70,10 92,32 70,54 48,32" fill="none" stroke="#86cbb3" stroke-width="2"/>
-          </g>
-          <g>
-            <circle cx="14" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
-            <circle cx="126" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
-            <polygon points="34,56 46,68 34,80 22,68" fill="#86cbb3" opacity="0.30"/>
-            <polygon points="70,52 84,66 70,80 56,66" fill="#86cbb3" opacity="0.55"/>
-            <polygon points="106,56 118,68 106,80 94,68" fill="#86cbb3" opacity="0.30"/>
-            <circle cx="52" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
-            <circle cx="88" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
-          </g>
-        </pattern>
-      </defs>
-      <rect x="0" y="0" width="1400" height="120" fill="url(#bg2)"/>
-      <g opacity="0.10" fill="#86cbb3">
-        <circle cx="80" cy="22" r="1.4"/><circle cx="220" cy="32" r="1.2"/><circle cx="360" cy="20" r="1.5"/>
-        <circle cx="520" cy="28" r="1.1"/><circle cx="680" cy="18" r="1.4"/><circle cx="860" cy="26" r="1.2"/>
-        <circle cx="1040" cy="20" r="1.5"/><circle cx="1220" cy="32" r="1.2"/><circle cx="1320" cy="24" r="1.3"/>
-      </g>
-      <rect x="0" y="6" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
-      <rect x="0" y="111.4" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
-      <rect x="0" y="0" width="1400" height="120" fill="url(#motif2)"/>
-      <rect x="0" y="52" width="1400" height="16" fill="#ffffff" opacity="0.10"/>
-    </svg>
+  <div class="page-shell">
+    <!-- TOP SVG BAND -->
+    <div class="top-band" aria-hidden="true">
+      <svg class="band-svg is-desktop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 120" width="100%" height="100%" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#d7f1e6"/>
+            <stop offset="1" stop-color="#cfeadd"/>
+          </linearGradient>
+          <pattern id="motif" width="140" height="120" patternUnits="userSpaceOnUse">
+            <g opacity="0.18">
+              <polygon points="70,10 92,32 70,54 48,32" fill="none" stroke="#86cbb3" stroke-width="2"/>
+            </g>
+            <g>
+              <circle cx="14" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
+              <circle cx="126" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
+              <polygon points="34,56 46,68 34,80 22,68" fill="#86cbb3" opacity="0.30"/>
+              <polygon points="70,52 84,66 70,80 56,66" fill="#86cbb3" opacity="0.55"/>
+              <polygon points="106,56 118,68 106,80 94,68" fill="#86cbb3" opacity="0.30"/>
+              <circle cx="52" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
+              <circle cx="88" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
+            </g>
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="1400" height="120" fill="url(#bg)"/>
+        <g opacity="0.10" fill="#86cbb3">
+          <circle cx="80" cy="22" r="1.4"/><circle cx="220" cy="32" r="1.2"/><circle cx="360" cy="20" r="1.5"/>
+          <circle cx="520" cy="28" r="1.1"/><circle cx="680" cy="18" r="1.4"/><circle cx="860" cy="26" r="1.2"/>
+          <circle cx="1040" cy="20" r="1.5"/><circle cx="1220" cy="32" r="1.2"/><circle cx="1320" cy="24" r="1.3"/>
+        </g>
+        <rect x="0" y="6" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
+        <rect x="0" y="111.4" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
+        <rect x="0" y="0" width="1400" height="120" fill="url(#motif)"/>
+        <rect x="0" y="52" width="1400" height="16" fill="#ffffff" opacity="0.10"/>
+      </svg>
 
-    <!-- ✅ FIXED broken xmlns -->
-    <svg class="band-svg is-mobile" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 120" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <linearGradient id="bg2_m" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stop-color="#d7f1e6"/>
-          <stop offset="1" stop-color="#cfeadd"/>
-        </linearGradient>
-        <pattern id="motif2_m" width="140" height="120" patternUnits="userSpaceOnUse">
-          <g opacity="0.18">
-            <polygon points="70,10 92,32 70,54 48,32" fill="none" stroke="#86cbb3" stroke-width="2"/>
-          </g>
-          <g>
-            <circle cx="14" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
-            <circle cx="126" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
-            <polygon points="34,56 46,68 34,80 22,68" fill="#86cbb3" opacity="0.30"/>
-            <polygon points="70,52 84,66 70,80 56,66" fill="#86cbb3" opacity="0.55"/>
-            <polygon points="106,56 118,68 106,80 94,68" fill="#86cbb3" opacity="0.30"/>
-            <circle cx="52" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
-            <circle cx="88" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
-          </g>
-        </pattern>
-      </defs>
-      <rect x="0" y="0" width="1400" height="120" fill="url(#bg2_m)"/>
-      <g opacity="0.10" fill="#86cbb3">
-        <circle cx="80" cy="22" r="1.4"/><circle cx="220" cy="32" r="1.2"/><circle cx="360" cy="20" r="1.5"/>
-        <circle cx="520" cy="28" r="1.1"/><circle cx="680" cy="18" r="1.4"/><circle cx="860" cy="26" r="1.2"/>
-        <circle cx="1040" cy="20" r="1.5"/><circle cx="1220" cy="32" r="1.2"/><circle cx="1320" cy="24" r="1.3"/>
-      </g>
-      <rect x="0" y="6" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
-      <rect x="0" y="111.4" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
-      <rect x="0" y="0" width="1400" height="120" fill="url(#motif2_m)"/>
-      <rect x="0" y="52" width="1400" height="16" fill="#ffffff" opacity="0.10"/>
-    </svg>
-  </div>
+      <svg class="band-svg is-mobile" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 120" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="bg_m" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#d7f1e6"/>
+            <stop offset="1" stop-color="#cfeadd"/>
+          </linearGradient>
+          <pattern id="motif_m" width="140" height="120" patternUnits="userSpaceOnUse">
+            <g opacity="0.18">
+              <polygon points="70,10 92,32 70,54 48,32" fill="none" stroke="#86cbb3" stroke-width="2"/>
+            </g>
+            <g>
+              <circle cx="14" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
+              <circle cx="126" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
+              <polygon points="34,56 46,68 34,80 22,68" fill="#86cbb3" opacity="0.30"/>
+              <polygon points="70,52 84,66 70,80 56,66" fill="#86cbb3" opacity="0.55"/>
+              <polygon points="106,56 118,68 106,80 94,68" fill="#86cbb3" opacity="0.30"/>
+              <circle cx="52" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
+              <circle cx="88" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
+            </g>
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="1400" height="120" fill="url(#bg_m)"/>
+        <g opacity="0.10" fill="#86cbb3">
+          <circle cx="80" cy="22" r="1.4"/><circle cx="220" cy="32" r="1.2"/><circle cx="360" cy="20" r="1.5"/>
+          <circle cx="520" cy="28" r="1.1"/><circle cx="680" cy="18" r="1.4"/><circle cx="860" cy="26" r="1.2"/>
+          <circle cx="1040" cy="20" r="1.5"/><circle cx="1220" cy="32" r="1.2"/><circle cx="1320" cy="24" r="1.3"/>
+        </g>
+        <rect x="0" y="6" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
+        <rect x="0" y="111.4" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
+        <rect x="0" y="0" width="1400" height="120" fill="url(#motif_m)"/>
+        <rect x="0" y="52" width="1400" height="16" fill="#ffffff" opacity="0.10"/>
+      </svg>
+    </div>
 
-  <!-- ✅ Flash Messages moved here so they can be fixed top-right -->
-  <div class="flash-wrap" aria-label="Flash Messages" id="flashWrap">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, msg in messages %}
-          <div class="alert alert-{{ category }}" role="alert" data-alert>
-            <div class="alert-row">
-              <div>{{ msg }}</div>
-              <button type="button" class="btn-close" aria-label="Close"></button>
-            </div>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-  </div>
+    <!-- BOTTOM SVG BAND -->
+    <div class="bottom-band" aria-hidden="true">
+      <svg class="band-svg is-desktop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 120" width="100%" height="100%" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="bg2" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#d7f1e6"/>
+            <stop offset="1" stop-color="#cfeadd"/>
+          </linearGradient>
+          <pattern id="motif2" width="140" height="120" patternUnits="userSpaceOnUse">
+            <g opacity="0.18">
+              <polygon points="70,10 92,32 70,54 48,32" fill="none" stroke="#86cbb3" stroke-width="2"/>
+            </g>
+            <g>
+              <circle cx="14" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
+              <circle cx="126" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
+              <polygon points="34,56 46,68 34,80 22,68" fill="#86cbb3" opacity="0.30"/>
+              <polygon points="70,52 84,66 70,80 56,66" fill="#86cbb3" opacity="0.55"/>
+              <polygon points="106,56 118,68 106,80 94,68" fill="#86cbb3" opacity="0.30"/>
+              <circle cx="52" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
+              <circle cx="88" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
+            </g>
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="1400" height="120" fill="url(#bg2)"/>
+        <g opacity="0.10" fill="#86cbb3">
+          <circle cx="80" cy="22" r="1.4"/><circle cx="220" cy="32" r="1.2"/><circle cx="360" cy="20" r="1.5"/>
+          <circle cx="520" cy="28" r="1.1"/><circle cx="680" cy="18" r="1.4"/><circle cx="860" cy="26" r="1.2"/>
+          <circle cx="1040" cy="20" r="1.5"/><circle cx="1220" cy="32" r="1.2"/><circle cx="1320" cy="24" r="1.3"/>
+        </g>
+        <rect x="0" y="6" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
+        <rect x="0" y="111.4" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
+        <rect x="0" y="0" width="1400" height="120" fill="url(#motif2)"/>
+        <rect x="0" y="52" width="1400" height="16" fill="#ffffff" opacity="0.10"/>
+      </svg>
 
-  <!-- Stage + Fit -->
-  <div class="stage" id="stage">
-    <div class="fit-wrap" id="fitWrap">
-      <main class="wrap" id="wrap">
+      <svg class="band-svg is-mobile" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 120" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="bg2_m" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#d7f1e6"/>
+            <stop offset="1" stop-color="#cfeadd"/>
+          </linearGradient>
+          <pattern id="motif2_m" width="140" height="120" patternUnits="userSpaceOnUse">
+            <g opacity="0.18">
+              <polygon points="70,10 92,32 70,54 48,32" fill="none" stroke="#86cbb3" stroke-width="2"/>
+            </g>
+            <g>
+              <circle cx="14" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
+              <circle cx="126" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
+              <polygon points="34,56 46,68 34,80 22,68" fill="#86cbb3" opacity="0.30"/>
+              <polygon points="70,52 84,66 70,80 56,66" fill="#86cbb3" opacity="0.55"/>
+              <polygon points="106,56 118,68 106,80 94,68" fill="#86cbb3" opacity="0.30"/>
+              <circle cx="52" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
+              <circle cx="88" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
+            </g>
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="1400" height="120" fill="url(#bg2_m)"/>
+        <g opacity="0.10" fill="#86cbb3">
+          <circle cx="80" cy="22" r="1.4"/><circle cx="220" cy="32" r="1.2"/><circle cx="360" cy="20" r="1.5"/>
+          <circle cx="520" cy="28" r="1.1"/><circle cx="680" cy="18" r="1.4"/><circle cx="860" cy="26" r="1.2"/>
+          <circle cx="1040" cy="20" r="1.5"/><circle cx="1220" cy="32" r="1.2"/><circle cx="1320" cy="24" r="1.3"/>
+        </g>
+        <rect x="0" y="6" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
+        <rect x="0" y="111.4" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
+        <rect x="0" y="0" width="1400" height="120" fill="url(#motif2_m)"/>
+        <rect x="0" y="52" width="1400" height="16" fill="#ffffff" opacity="0.10"/>
+      </svg>
+    </div>
 
-        <!-- text reveal -->
-        <header class="header reveal-text d-1" aria-label="Login Header">
-          <h1>PG MIS Login</h1>
-          <div class="subline reveal-text d-2">
-            <span class="as">ত্রিপুরা -</span>
-            <span>Tripura's Digital Gateway</span>
-          </div>
-        </header>
-
-        <!-- slow form reveal + stagger fields -->
-        <section class="card reveal-card d-3" aria-label="Login Card">
-          <form method="POST" autocomplete="on">
-            <div class="field reveal-field d-4">
-              <div class="label">Username</div>
-              <input class="input" type="text" name="username" placeholder="username" required>
-            </div>
-
-            <div class="field reveal-field d-5">
-              <div class="label">Password</div>
-              <div class="pw">
-                <input class="input" type="password" name="password" id="password" placeholder="password" required>
-                <button class="eye-btn" type="button" id="togglePw" aria-label="Show password">
-                  <svg class="eye" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"></path>
-                    <circle cx="12" cy="12" r="2.7"></circle>
-                  </svg>
-                </button>
+    <!-- ✅ Flash Messages moved here so they can be fixed top-right -->
+    <div class="flash-wrap" aria-label="Flash Messages" id="flashWrap">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="alert alert-{{ category }}" role="alert" data-alert>
+              <div class="alert-row">
+                <div>{{ msg }}</div>
+                <button type="button" class="btn-close" aria-label="Close"></button>
               </div>
             </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    </div>
 
-            <button type="submit" class="btn reveal-field d-6">
-              <span>Login</span>
-            </button>
-          </form>
-        </section>
+    <!-- Stage + Fit -->
+    <div class="stage" id="stage">
+      <div class="fit-wrap" id="fitWrap">
+        <main class="wrap" id="wrap">
 
-        <!-- footer reveal -->
-        <div class="powered-link reveal-footer d-6" aria-label="Powered by">
-          <a href="https://sayanant.com/" target="_blank" rel="noopener noreferrer">
-            Powered by <strong>Sayanant Group</strong>
-          </a>
-        </div>
+          <!-- text reveal -->
+          <header class="header reveal-text d-1" aria-label="Login Header">
+            <h1>PG MIS Login</h1>
+            <div class="subline reveal-text d-2">
+              <span class="as">ত্রিপুরা -</span>
+              <span>Tripura's Digital Gateway</span>
+            </div>
+          </header>
 
-      </main>
+          <!-- slow form reveal + stagger fields -->
+          <section class="card reveal-card d-3" aria-label="Login Card">
+            <form method="POST" autocomplete="on">
+              <div class="field reveal-field d-4">
+                <div class="label">Username</div>
+                <input class="input" type="text" name="username" placeholder="username" required>
+              </div>
+
+              <div class="field reveal-field d-5">
+                <div class="label">Password</div>
+                <div class="pw">
+                  <input class="input" type="password" name="password" id="password" placeholder="password" required>
+                  <button class="eye-btn" type="button" id="togglePw" aria-label="Show password">
+                    <svg class="eye" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"></path>
+                      <circle cx="12" cy="12" r="2.7"></circle>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" class="btn reveal-field d-6">
+                <span>Login</span>
+              </button>
+            </form>
+          </section>
+
+          <!-- footer reveal -->
+          <div class="powered-link reveal-footer d-6" aria-label="Powered by">
+            <a href="https://sayanant.com/" target="_blank" rel="noopener noreferrer">
+              Powered by <strong>Sayanant Group</strong>
+            </a>
+          </div>
+
+        </main>
+      </div>
     </div>
   </div>
 
@@ -655,10 +874,15 @@
   }
 
   // helpers
+  const pageShell = document.querySelector('.page-shell');
   const root = document.documentElement;
   const wrap = document.getElementById('wrap');
   const stage = document.getElementById('stage');
   const flashWrap = document.getElementById('flashWrap');
+  const splash = document.getElementById('siteSplash');
+  if (flashWrap && flashWrap.querySelector('[data-alert]')) {
+  document.body.classList.add('has-flash');
+}
 
   function px(n){ return Number(String(n || "0").replace("px","")) || 0; }
 
@@ -685,17 +909,143 @@
     root.style.setProperty('--fit', String(scale));
   }
 
-  window.addEventListener('load', () => { fit(); setTimeout(fit, 120); setTimeout(fit, 420); });
-  window.addEventListener('resize', () => { fit(); setTimeout(fit, 120); });
-
-  // ✅ dismiss flash alerts + auto-dismiss
   function dismissAlert(alertEl){
     if(!alertEl || alertEl.classList.contains('is-leaving')) return;
     alertEl.classList.add('is-leaving');
     setTimeout(() => { alertEl.remove(); fit(); }, 340);
   }
 
-  // click-to-close
+  function initAutoDismiss(){
+    if(!flashWrap) return;
+    const alerts = Array.from(flashWrap.querySelectorAll('[data-alert]'));
+    alerts.forEach((a, idx) => {
+      const delay = 2600 + (idx * 350);
+      setTimeout(() => dismissAlert(a), delay);
+    });
+  }
+
+  function getNavType(){
+    try{
+      const navEntries = performance.getEntriesByType && performance.getEntriesByType('navigation');
+      if(navEntries && navEntries.length && navEntries[0].type){
+        return navEntries[0].type;
+      }
+      if(performance && performance.navigation){
+        if(performance.navigation.type === 1) return 'reload';
+        if(performance.navigation.type === 2) return 'back_forward';
+      }
+    }catch(e){}
+    return 'navigate';
+  }
+
+  function markLogoutIntent(){
+    try{
+      sessionStorage.setItem('pgmis_skip_splash_once', '1');
+    }catch(e){}
+  }
+
+  function shouldShowSplash(){
+    let skipOnce = null;
+    let seen = null;
+
+    try{
+      skipOnce = sessionStorage.getItem('pgmis_skip_splash_once');
+      seen = sessionStorage.getItem('pgmis_intro_seen');
+    }catch(e){}
+
+    const navType = getNavType();
+
+    // ❌ never show after logout redirect
+    if(skipOnce === '1'){
+      try{ sessionStorage.removeItem('pgmis_skip_splash_once'); }catch(e){}
+      return false;
+    }
+
+    // ❌ browser back/forward should not show
+    if(navType === 'back_forward'){
+      return false;
+    }
+
+    // ✅ refresh should show
+    if(navType === 'reload'){
+      return true;
+    }
+
+    // ✅ first fresh entry only
+    if(navType === 'navigate' && !seen){
+      return true;
+    }
+
+    // ❌ internal navigations / later returns
+    return false;
+  }
+
+   function showSplash(){
+    if(!splash) return;
+    splash.classList.remove('is-hidden');
+    splash.classList.add('is-visible');
+  }
+
+  function hideSplash(immediate){
+    if(!splash) return;
+
+    splash.classList.remove('is-visible');
+
+    if(immediate){
+      splash.classList.add('is-hidden');
+      return;
+    }
+
+    splash.classList.add('is-hidden');
+  }
+
+  function showPage(){
+    if(!pageShell) return;
+    pageShell.classList.add('is-ready');
+  }
+
+  function hidePage(){
+    if(!pageShell) return;
+    pageShell.classList.remove('is-ready');
+  }
+
+
+
+function initSplash(){
+  if(!splash) return;
+
+  if(shouldShowSplash()){
+    hidePage();
+    showSplash();
+
+    try{
+      sessionStorage.setItem('pgmis_intro_seen', 'true');
+    }catch(e){}
+
+    setTimeout(() => {
+      hideSplash(false);
+      showPage();
+      fit();
+      setTimeout(fit, 120);
+    }, 4200);
+
+  }else{
+    hideSplash(true);
+    showPage();
+    fit();
+    setTimeout(fit, 120);
+  }
+}
+
+  // ✅ mark logout before browser leaves this page
+  document.addEventListener('click', (e) => {
+    const logoutLink = e.target && e.target.closest && e.target.closest('a[href*="/logout"], a[href*="logout"]');
+    if(logoutLink){
+      markLogoutIntent();
+    }
+  });
+
+  // click-to-close flashes
   document.addEventListener('click', (e) => {
     const closeBtn = e.target && e.target.closest && e.target.closest('.btn-close');
     if(!closeBtn) return;
@@ -703,24 +1053,24 @@
     dismissAlert(alert);
   });
 
-  // auto-dismiss all flashes
-  function initAutoDismiss(){
-    if(!flashWrap) return;
-    const alerts = Array.from(flashWrap.querySelectorAll('[data-alert]'));
-    alerts.forEach((a, idx) => {
-      // slight stagger so multiple messages don't vanish exactly together
-      const delay = 2600 + (idx * 350);
-      setTimeout(() => dismissAlert(a), delay);
-    });
-  }
-
   // if flashes change, re-init + refit
   if(flashWrap){
     const mo = new MutationObserver(() => { initAutoDismiss(); fit(); });
     mo.observe(flashWrap, { childList:true, subtree:true });
   }
 
-  initAutoDismiss();
+  window.addEventListener('load', () => {
+    fit();
+    setTimeout(fit, 120);
+    setTimeout(fit, 420);
+    initAutoDismiss();
+    initSplash();
+  });
+
+  window.addEventListener('resize', () => {
+    fit();
+    setTimeout(fit, 120);
+  });
 })();
 </script>
 </body>
