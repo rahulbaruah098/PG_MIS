@@ -1,43 +1,559 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-  <h4 class="mb-0">BLOCKS</h4>
-  <span class="badge bg-secondary">District scope</span>
-</div>
 
-<div class="card mb-3">
-  <div class="card-body">
-    <form method="post" class="row g-2">
-      <div class="col-md-8">
-        <input class="form-control" name="name" placeholder="CLF name" required>
+<style>
+  /* ============================================================
+     BLOCKS PAGE — UI RESKIN ONLY
+     ✅ Existing form method, field names, loop data, and logic kept intact
+     ✅ Added same back button style/position logic
+     ✅ Fully web responsive + app responsive
+     ✅ Scoped styling only
+     ============================================================ */
+
+  .blk-wrap{
+    width:100%;
+    max-width:1100px;
+    margin:0 auto;
+    padding:clamp(12px,2.2vw,22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.18);
+    --line2:rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f8fafc;
+    --soft2:#f7faf9;
+    --accent:#0b4d3a;
+
+    color:var(--ink);
+    position:relative;
+  }
+  .blk-wrap *{ box-sizing:border-box; }
+
+  .blk-shell{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 18px 34px -26px rgba(15,23,42,.35);
+    position:relative;
+  }
+
+  /* Header */
+  .blk-head{
+    padding:14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom:1.5px solid var(--line2);
+    position:relative;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .blk-head-left{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    min-width:0;
+    flex:1 1 auto;
+  }
+  .blk-title{
+    margin:0;
+    font-weight:950;
+    font-size:18px;
+    letter-spacing:.2px;
+    line-height:1.25;
+    color:var(--ink);
+  }
+  .blk-subtitle{
+    margin:6px 0 0;
+    font-size:12px;
+    font-weight:800;
+    color:rgba(15,23,42,.68);
+    line-height:1.45;
+  }
+
+  /* Back button */
+  .blk-back{
+    display:none;
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    box-shadow:0 12px 20px -16px rgba(15,23,42,.38);
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color:rgba(11,77,58,.98);
+    user-select:none;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    flex:0 0 auto;
+  }
+  .blk-back:hover{
+    transform:translateX(-1px);
+    box-shadow:0 16px 26px -18px rgba(15,23,42,.46);
+    background:rgba(255,255,255,.98);
+  }
+  .blk-back:active{ transform:scale(.98); }
+  .blk-back svg{ width:18px; height:18px; display:block; }
+
+  .blk-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:8px 12px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.78);
+    font-weight:950;
+    font-size:12px;
+    color:rgba(15,23,42,.78);
+    white-space:nowrap;
+  }
+
+  .blk-section{
+    padding:16px;
+    background:rgba(255,255,255,.96);
+  }
+
+  .blk-card{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    background:rgba(255,255,255,.94);
+    overflow:hidden;
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+  }
+  .blk-card + .blk-card{ margin-top:14px; }
+
+  .blk-card-head{
+    padding:14px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(247,250,249,.66);
+  }
+  .blk-card-title{
+    margin:0;
+    font-weight:950;
+    font-size:13px;
+    line-height:1.35;
+    color:var(--ink);
+  }
+  .blk-card-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color:rgba(15,23,42,.62);
+    font-weight:750;
+    line-height:1.45;
+  }
+  .blk-card-body{
+    padding:14px;
+  }
+
+  /* Form */
+  .blk-form{
+    display:grid;
+    grid-template-columns:repeat(12,minmax(0,1fr));
+    gap:14px;
+    align-items:end;
+  }
+  .blk-col-8{ grid-column:span 8; }
+  .blk-col-4{ grid-column:span 4; }
+  .blk-col-12{ grid-column:span 12; }
+
+  .blk-field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+  }
+  .blk-label{
+    margin:0;
+    font-size:12px;
+    font-weight:900;
+    color:var(--ink);
+    line-height:1.25;
+  }
+  .blk-input{
+    width:100%;
+    min-width:0;
+    min-height:44px;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:14px;
+    padding:10px 12px;
+    background:rgba(247,250,249,.78);
+    font-weight:800;
+    font-size:12px;
+    line-height:1.35;
+    outline:none;
+    color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .blk-input:focus{
+    border-color:rgba(11,77,58,.40);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  .blk-btn{
+    border:1px solid rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
+    color:#0b4d3a;
+    border-radius:999px;
+    padding:10px 16px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    min-height:44px;
+    width:100%;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    text-decoration:none;
+    white-space:nowrap;
+  }
+  .blk-btn:hover{
+    transform:translateY(-1px);
+    background:rgba(16,185,129,.16);
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  /* Table */
+  .blk-table-shell{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    overflow:hidden;
+    background:rgba(255,255,255,.92);
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+  }
+  .blk-table-wrap{
+    width:100%;
+    overflow:auto;
+  }
+  table.blk-table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:560px;
+    font-size:13px;
+  }
+  .blk-table thead th{
+    background:rgba(247,250,249,.94);
+    color:var(--ink);
+    text-align:left;
+    padding:12px;
+    font-weight:950;
+    border-bottom:1px solid var(--line2);
+    white-space:nowrap;
+  }
+  .blk-table tbody td{
+    padding:12px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    vertical-align:middle;
+    color:#20372d;
+    background:rgba(255,255,255,.55);
+  }
+  .blk-table tbody tr:hover td{
+    background:rgba(247,250,249,.88);
+  }
+  .blk-sl{
+    width:60px;
+    color:var(--muted);
+    font-weight:900;
+  }
+  .blk-name{
+    font-weight:950;
+    color:#173b2c;
+  }
+
+  /* Mobile cards */
+  .blk-mobile-list{
+    display:none;
+  }
+  .blk-mcard{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    background:rgba(255,255,255,.96);
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+    overflow:hidden;
+  }
+  .blk-mcard + .blk-mcard{ margin-top:12px; }
+  .blk-mcard-head{
+    padding:12px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(247,250,249,.7);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .blk-mcard-title{
+    margin:0;
+    font-weight:950;
+    font-size:13px;
+    color:#173b2c;
+    line-height:1.35;
+  }
+  .blk-mcard-sl{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:34px;
+    height:34px;
+    padding:0 10px;
+    border-radius:999px;
+    font-weight:950;
+    color:#0b4d3a;
+    border:1px solid rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
+    flex:0 0 auto;
+  }
+  .blk-mcard-body{
+    padding:12px;
+    display:grid;
+    gap:10px;
+  }
+  .blk-mrow{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom:1px dashed rgba(15,23,42,.10);
+    padding-bottom:8px;
+  }
+  .blk-mrow:last-child{
+    border-bottom:none;
+    padding-bottom:0;
+  }
+  .blk-mkey{
+    min-width:86px;
+    font-weight:950;
+    color:rgba(15,23,42,.72);
+    font-size:12px;
+  }
+  .blk-mval{
+    flex:1;
+    text-align:right;
+    color:#20372d;
+    font-weight:800;
+    font-size:12px;
+    word-break:break-word;
+  }
+
+  .blk-empty{
+    padding:16px;
+    color:var(--muted);
+    font-weight:900;
+  }
+
+  /* Tablet */
+  @media (max-width: 900px){
+    .blk-wrap{
+      padding:12px;
+    }
+    .blk-form{
+      grid-template-columns:repeat(6,minmax(0,1fr));
+    }
+    .blk-col-8{ grid-column:span 6; }
+    .blk-col-4{ grid-column:span 6; }
+    .blk-col-12{ grid-column:span 6; }
+  }
+
+  /* Mobile / app */
+  @media (max-width: 720px){
+    .blk-wrap{
+      padding:10px;
+    }
+    .blk-back{ display:inline-flex; }
+
+    .blk-head{
+      padding:14px 14px 12px;
+    }
+    .blk-head-left{
+      width:100%;
+    }
+    .blk-title{
+      font-size:16px;
+      line-height:1.3;
+      min-height:38px;
+      display:flex;
+      align-items:center;
+    }
+    .blk-subtitle{
+      font-size:12px;
+    }
+
+    .blk-section{
+      padding:14px;
+    }
+    .blk-card-head,
+    .blk-card-body{
+      padding:12px;
+    }
+
+    .blk-form{
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    .blk-col-8,
+    .blk-col-4,
+    .blk-col-12{
+      grid-column:1 / -1 !important;
+    }
+
+    .blk-table-shell{
+      display:none;
+    }
+    .blk-mobile-list{
+      display:block;
+    }
+  }
+
+  @media (max-width: 460px){
+    .blk-title{
+      font-size:15px;
+      line-height:1.3;
+    }
+    .blk-card-title{
+      font-size:12.5px;
+    }
+    .blk-head{
+      gap:10px;
+    }
+    .blk-badge{
+      width:100%;
+      justify-content:center;
+    }
+    .blk-mrow{
+      flex-direction:column;
+      align-items:flex-start;
+      gap:4px;
+    }
+    .blk-mval{
+      text-align:left;
+      width:100%;
+    }
+  }
+</style>
+
+<div class="blk-wrap">
+  <div class="blk-shell">
+
+    <div class="blk-head">
+      <div class="blk-head-left">
+        <a class="blk-back" href="javascript:history.back()" aria-label="Go Back">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+          </svg>
+        </a>
+
+        <div>
+          <h2 class="blk-title">BLOCKS</h2>
+          <div class="blk-subtitle">Add and view blocks within your district scope.</div>
+        </div>
       </div>
-      <div class="col-md-4">
-        <button class="btn btn-primary w-100" type="submit">Add Block</button>
+
+      <div class="blk-badge">District scope</div>
+    </div>
+
+    <div class="blk-section">
+
+      <!-- Form Card -->
+      <div class="blk-card">
+        <div class="blk-card-head">
+          <h3 class="blk-card-title">Add Block</h3>
+          <p class="blk-card-sub">Create a new block/CLF entry under the current district scope.</p>
+        </div>
+
+        <div class="blk-card-body">
+          <form method="post" class="blk-form">
+            <div class="blk-col-8 blk-field">
+              <label class="blk-label">Block Name</label>
+              <input class="blk-input" name="name" placeholder="CLF name" required>
+            </div>
+            <div class="blk-col-4 blk-field" style="justify-content:end;">
+              <button class="blk-btn" type="submit">Add Block</button>
+            </div>
+          </form>
+        </div>
       </div>
-    </form>
+
+      <!-- List Card -->
+      <div class="blk-card">
+        <div class="blk-card-head">
+          <h3 class="blk-card-title">Block List</h3>
+          <p class="blk-card-sub">All blocks currently available under this district scope.</p>
+        </div>
+
+        <div class="blk-card-body">
+          <!-- Desktop / tablet table -->
+          <div class="blk-table-shell">
+            <div class="blk-table-wrap">
+              <table class="blk-table">
+                <thead>
+                  <tr>
+                    <th style="width:60px;">#</th>
+                    <th>Block Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for b in blocks %}
+                    <tr>
+                      <td class="blk-sl">{{ loop.index }}</td>
+                      <td class="blk-name">{{ b.name }}</td>
+                    </tr>
+                  {% else %}
+                    <tr>
+                      <td colspan="2" class="blk-empty">No blocks yet.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Mobile / app cards -->
+          <div class="blk-mobile-list">
+            {% for b in blocks %}
+              <div class="blk-mcard">
+                <div class="blk-mcard-head">
+                  <h4 class="blk-mcard-title">{{ b.name }}</h4>
+                  <div class="blk-mcard-sl">{{ loop.index }}</div>
+                </div>
+                <div class="blk-mcard-body">
+                  <div class="blk-mrow">
+                    <div class="blk-mkey">SL No</div>
+                    <div class="blk-mval">{{ loop.index }}</div>
+                  </div>
+                  <div class="blk-mrow">
+                    <div class="blk-mkey">Block Name</div>
+                    <div class="blk-mval">{{ b.name }}</div>
+                  </div>
+                </div>
+              </div>
+            {% else %}
+              <div class="blk-mcard">
+                <div class="blk-mcard-body">
+                  <div class="blk-empty" style="padding:0;">No blocks yet.</div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
 
-<div class="card">
-  <div class="card-body p-0">
-    <table class="table table-striped mb-0">
-      <thead>
-        <tr>
-          <th style="width: 60px;">#</th>
-          <th>Block Name</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for b in blocks %}
-          <tr>
-            <td>{{ loop.index }}</td>
-            <td>{{ b.name }}</td>
-          </tr>
-        {% else %}
-          <tr><td colspan="2" class="text-muted p-3">No blocks yet.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
 {% endblock %}

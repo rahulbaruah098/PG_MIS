@@ -1,42 +1,514 @@
 {% extends "base.html" %}
 {% block content %}
-<h4>Districts</h4>
-<form method="POST" class="mb-3">
-  <div class="row g-2">
-    <div class="col-md-4">
-      <label class="form-label">State</label>
-      <select class="form-select" name="state_id" required>
-        {% for s in states %}
-        <option value="{{ s._id }}">{{ s.name }}</option>
-        {% endfor %}
-      </select>
+
+<style>
+  /* ============================================================
+     DISTRICTS PAGE — UI RESKIN ONLY
+     ✅ Existing form method, field names, loop data, and logic kept intact
+     ✅ Added same back button style/position logic
+     ✅ Fully web responsive + app responsive
+     ✅ Scoped styling only
+     ============================================================ */
+
+  .dist-wrap{
+    width:100%;
+    max-width:1100px;
+    margin:0 auto;
+    padding:clamp(12px,2.2vw,22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.18);
+    --line2:rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f8fafc;
+    --soft2:#f7faf9;
+    --accent:#0b4d3a;
+
+    color:var(--ink);
+    position:relative;
+  }
+  .dist-wrap *{ box-sizing:border-box; }
+
+  .dist-shell{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 18px 34px -26px rgba(15,23,42,.35);
+    position:relative;
+  }
+
+  /* Header */
+  .dist-head{
+    padding:14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom:1.5px solid var(--line2);
+    position:relative;
+  }
+  .dist-title{
+    margin:0;
+    font-weight:950;
+    font-size:18px;
+    text-align:center;
+    letter-spacing:.2px;
+    line-height:1.25;
+    color:var(--ink);
+  }
+  .dist-subtitle{
+    margin:6px 0 0;
+    text-align:center;
+    font-size:12px;
+    font-weight:800;
+    color:rgba(15,23,42,.68);
+  }
+
+  /* Back button */
+  .dist-back{
+    display:none;
+    position:absolute;
+    top:12px;
+    left:12px;
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    box-shadow:0 12px 20px -16px rgba(15,23,42,.38);
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color:rgba(11,77,58,.98);
+    user-select:none;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    z-index:2;
+  }
+  .dist-back:hover{
+    transform:translateX(-1px);
+    box-shadow:0 16px 26px -18px rgba(15,23,42,.46);
+    background:rgba(255,255,255,.98);
+  }
+  .dist-back:active{ transform:scale(.98); }
+  .dist-back svg{ width:18px; height:18px; display:block; }
+
+  .dist-section{
+    padding:16px;
+    background:rgba(255,255,255,.96);
+  }
+
+  .dist-card{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    background:rgba(255,255,255,.94);
+    overflow:hidden;
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+  }
+  .dist-card + .dist-card{ margin-top:14px; }
+
+  .dist-card-head{
+    padding:14px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(247,250,249,.66);
+  }
+  .dist-card-title{
+    margin:0;
+    font-weight:950;
+    font-size:13px;
+    line-height:1.35;
+    color:var(--ink);
+  }
+  .dist-card-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color:rgba(15,23,42,.62);
+    font-weight:750;
+    line-height:1.45;
+  }
+  .dist-card-body{
+    padding:14px;
+  }
+
+  /* Form */
+  .dist-form{
+    display:grid;
+    grid-template-columns:repeat(12,minmax(0,1fr));
+    gap:14px;
+    align-items:end;
+  }
+  .dist-col-4{ grid-column:span 4; }
+  .dist-col-12{ grid-column:span 12; }
+
+  .dist-field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+  }
+  .dist-label{
+    margin:0;
+    font-size:12px;
+    font-weight:900;
+    color:var(--ink);
+    line-height:1.25;
+  }
+  .dist-input,
+  .dist-select{
+    width:100%;
+    min-width:0;
+    min-height:44px;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:14px;
+    padding:10px 12px;
+    background:rgba(247,250,249,.78);
+    font-weight:800;
+    font-size:12px;
+    line-height:1.35;
+    outline:none;
+    color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .dist-input:focus,
+  .dist-select:focus{
+    border-color:rgba(11,77,58,.40);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  .dist-btn{
+    border:1px solid rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
+    color:#0b4d3a;
+    border-radius:999px;
+    padding:10px 16px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    text-decoration:none;
+    white-space:nowrap;
+  }
+  .dist-btn:hover{
+    transform:translateY(-1px);
+    background:rgba(16,185,129,.16);
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  /* Table */
+  .dist-table-shell{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    overflow:hidden;
+    background:rgba(255,255,255,.92);
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+  }
+  .dist-table-wrap{
+    width:100%;
+    overflow:auto;
+  }
+  table.dist-table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:640px;
+    font-size:13px;
+  }
+  .dist-table thead th{
+    background:rgba(247,250,249,.94);
+    color:var(--ink);
+    text-align:left;
+    padding:12px;
+    font-weight:950;
+    border-bottom:1px solid var(--line2);
+    white-space:nowrap;
+  }
+  .dist-table tbody td{
+    padding:12px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    vertical-align:middle;
+    color:#20372d;
+    background:rgba(255,255,255,.55);
+  }
+  .dist-table tbody tr:hover td{
+    background:rgba(247,250,249,.88);
+  }
+  .dist-name{
+    font-weight:950;
+    color:#173b2c;
+  }
+  .dist-state{
+    color:var(--muted);
+    font-weight:800;
+  }
+
+  /* Mobile cards */
+  .dist-mobile-list{
+    display:none;
+  }
+
+  .dist-empty{
+    padding:16px;
+    color:var(--muted);
+    font-weight:900;
+  }
+
+  /* Tablet */
+  @media (max-width: 900px){
+    .dist-wrap{
+      padding:12px;
+    }
+    .dist-form{
+      grid-template-columns:repeat(6,minmax(0,1fr));
+    }
+    .dist-col-4{ grid-column:span 3; }
+    .dist-col-12{ grid-column:span 6; }
+  }
+
+  /* Mobile / app */
+  @media (max-width: 720px){
+    .dist-wrap{
+      padding:10px;
+    }
+    .dist-back{ display:flex; }
+
+    .dist-head{
+      padding:14px 14px 12px;
+    }
+    .dist-title{
+      text-align:left;
+      padding-left:52px;
+      padding-right:8px;
+      font-size:16px;
+      min-height:38px;
+      display:flex;
+      align-items:center;
+    }
+    .dist-subtitle{
+      text-align:left;
+      padding-left:52px;
+      padding-right:8px;
+    }
+
+    .dist-section{
+      padding:14px;
+    }
+    .dist-card-head,
+    .dist-card-body{
+      padding:12px;
+    }
+
+    .dist-form{
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    .dist-col-4,
+    .dist-col-12{
+      grid-column:1 / -1 !important;
+    }
+
+    .dist-table-shell{
+      display:none;
+    }
+
+    .dist-mobile-list{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .dist-mcard{
+      border:1px solid rgba(15,23,42,.14);
+      border-radius:16px;
+      background:rgba(255,255,255,.96);
+      box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+      overflow:hidden;
+    }
+    .dist-mcard-head{
+      padding:12px;
+      border-bottom:1px solid var(--line2);
+      background:rgba(247,250,249,.7);
+    }
+    .dist-mcard-title{
+      margin:0;
+      font-weight:950;
+      font-size:13px;
+      color:#173b2c;
+      line-height:1.35;
+    }
+    .dist-mcard-body{
+      padding:12px;
+      display:grid;
+      gap:10px;
+    }
+    .dist-mrow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom:1px dashed rgba(15,23,42,.10);
+      padding-bottom:8px;
+    }
+    .dist-mrow:last-child{
+      border-bottom:none;
+      padding-bottom:0;
+    }
+    .dist-mkey{
+      min-width:86px;
+      font-weight:950;
+      color:rgba(15,23,42,.72);
+      font-size:12px;
+    }
+    .dist-mval{
+      flex:1;
+      text-align:right;
+      color:#20372d;
+      font-weight:800;
+      font-size:12px;
+      word-break:break-word;
+    }
+  }
+
+  @media (max-width: 460px){
+    .dist-title{
+      font-size:15px;
+      line-height:1.3;
+    }
+    .dist-card-title{
+      font-size:12.5px;
+    }
+  }
+</style>
+
+<div class="dist-wrap">
+  <div class="dist-shell">
+
+    <div class="dist-head">
+      <a class="dist-back" href="javascript:history.back()" aria-label="Go Back">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <h2 class="dist-title">Districts</h2>
+      <div class="dist-subtitle">Add and view district master data</div>
     </div>
-    <div class="col-md-4">
-      <label class="form-label">District Name</label>
-      <input type="text" class="form-control" name="name" required>
+
+    <div class="dist-section">
+
+      <!-- Form Card -->
+      <div class="dist-card">
+        <div class="dist-card-head">
+          <h3 class="dist-card-title">Add District</h3>
+          <p class="dist-card-sub">Select the state and enter the district name to add a new district.</p>
+        </div>
+
+        <div class="dist-card-body">
+          <form method="POST" class="dist-form">
+            <div class="dist-col-4 dist-field">
+              <label class="dist-label">State</label>
+              <select class="dist-select" name="state_id" required>
+                {% for s in states %}
+                <option value="{{ s._id }}">{{ s.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="dist-col-4 dist-field">
+              <label class="dist-label">District Name</label>
+              <input type="text" class="dist-input" name="name" required>
+            </div>
+
+            <div class="dist-col-4 dist-field" style="justify-content:end;">
+              <button class="dist-btn" type="submit">Add District</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Table Card -->
+      <div class="dist-card">
+        <div class="dist-card-head">
+          <h3 class="dist-card-title">District List</h3>
+          <p class="dist-card-sub">All available districts and their mapped states.</p>
+        </div>
+
+        <div class="dist-card-body">
+          <!-- Desktop / tablet table -->
+          <div class="dist-table-shell">
+            <div class="dist-table-wrap">
+              <table class="dist-table">
+                <thead>
+                  <tr>
+                    <th>District</th>
+                    <th>State</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for d in districts %}
+                  <tr>
+                    <td class="dist-name">{{ d.name }}</td>
+                    <td class="dist-state">
+                      {% for s in states if s._id == d.state_id %}
+                        {{ s.name }}
+                      {% endfor %}
+                    </td>
+                  </tr>
+                  {% else %}
+                  <tr>
+                    <td colspan="2" class="dist-empty">No districts available.</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Mobile / app cards -->
+          <div class="dist-mobile-list">
+            {% for d in districts %}
+            <div class="dist-mcard">
+              <div class="dist-mcard-head">
+                <h4 class="dist-mcard-title">{{ d.name }}</h4>
+              </div>
+              <div class="dist-mcard-body">
+                <div class="dist-mrow">
+                  <div class="dist-mkey">District</div>
+                  <div class="dist-mval">{{ d.name }}</div>
+                </div>
+                <div class="dist-mrow">
+                  <div class="dist-mkey">State</div>
+                  <div class="dist-mval">
+                    {% for s in states if s._id == d.state_id %}
+                      {{ s.name }}
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <div class="dist-mcard">
+              <div class="dist-mcard-body">
+                <div class="dist-empty" style="padding:0;">No districts available.</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+        </div>
+      </div>
+
     </div>
   </div>
-  <button class="btn btn-primary mt-2" type="submit">Add District</button>
-</form>
+</div>
 
-<table class="table table-sm table-bordered">
-  <thead>
-    <tr>
-      <th>District</th>
-      <th>State</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for d in districts %}
-    <tr>
-      <td>{{ d.name }}</td>
-      <td>
-        {% for s in states if s._id == d.state_id %}
-          {{ s.name }}
-        {% endfor %}
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
 {% endblock %}

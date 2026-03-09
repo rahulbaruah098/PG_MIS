@@ -1,31 +1,335 @@
 {% extends "base.html" %}
 {% block content %}
-<h4>Create CLF Official</h4>
 
-<div class="card">
-  <div class="card-body">
-    <form method="post" class="row g-3">
-      <div class="col-md-4">
-        <label class="form-label">Username</label>
-        <input name="username" class="form-control" required>
+<style>
+  /* ============================================================
+     CREATE CLF OFFICIAL PAGE — UI RESKIN ONLY
+     ✅ Existing form method, field names, loop data, and logic kept intact
+     ✅ Added same back button style/position logic
+     ✅ Fully web responsive + app responsive
+     ✅ Scoped styling only
+     ============================================================ */
+
+  .cco-wrap{
+    width:100%;
+    max-width:1100px;
+    margin:0 auto;
+    padding:clamp(12px,2.2vw,22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.18);
+    --line2:rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f8fafc;
+    --soft2:#f7faf9;
+    --accent:#0b4d3a;
+
+    color:var(--ink);
+    position:relative;
+  }
+  .cco-wrap *{ box-sizing:border-box; }
+
+  .cco-shell{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 18px 34px -26px rgba(15,23,42,.35);
+    position:relative;
+  }
+
+  /* Header */
+  .cco-head{
+    padding:14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom:1.5px solid var(--line2);
+    position:relative;
+  }
+  .cco-title{
+    margin:0;
+    font-weight:950;
+    font-size:18px;
+    text-align:center;
+    letter-spacing:.2px;
+    line-height:1.25;
+    color:var(--ink);
+  }
+  .cco-subtitle{
+    margin:6px 0 0;
+    text-align:center;
+    font-size:12px;
+    font-weight:800;
+    color:rgba(15,23,42,.68);
+  }
+
+  /* Back button */
+  .cco-back{
+    display:none;
+    position:absolute;
+    top:12px;
+    left:12px;
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    box-shadow:0 12px 20px -16px rgba(15,23,42,.38);
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color:rgba(11,77,58,.98);
+    user-select:none;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    z-index:2;
+  }
+  .cco-back:hover{
+    transform:translateX(-1px);
+    box-shadow:0 16px 26px -18px rgba(15,23,42,.46);
+    background:rgba(255,255,255,.98);
+  }
+  .cco-back:active{ transform:scale(.98); }
+  .cco-back svg{ width:18px; height:18px; display:block; }
+
+  .cco-section{
+    padding:16px;
+    background:rgba(255,255,255,.96);
+  }
+
+  .cco-card{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    background:rgba(255,255,255,.94);
+    overflow:hidden;
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+  }
+
+  .cco-card-head{
+    padding:14px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(247,250,249,.66);
+  }
+  .cco-card-title{
+    margin:0;
+    font-weight:950;
+    font-size:13px;
+    line-height:1.35;
+    color:var(--ink);
+  }
+  .cco-card-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color:rgba(15,23,42,.62);
+    font-weight:750;
+    line-height:1.45;
+  }
+  .cco-card-body{
+    padding:14px;
+  }
+
+  /* Form */
+  .cco-form{
+    display:grid;
+    grid-template-columns:repeat(12,minmax(0,1fr));
+    gap:14px;
+    align-items:end;
+  }
+  .cco-col-4{ grid-column:span 4; }
+  .cco-col-12{ grid-column:span 12; }
+
+  .cco-field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+  }
+  .cco-label{
+    margin:0;
+    font-size:12px;
+    font-weight:900;
+    color:var(--ink);
+    line-height:1.25;
+  }
+  .cco-input,
+  .cco-select{
+    width:100%;
+    min-width:0;
+    min-height:44px;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:14px;
+    padding:10px 12px;
+    background:rgba(247,250,249,.78);
+    font-weight:800;
+    font-size:12px;
+    line-height:1.35;
+    outline:none;
+    color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .cco-input:focus,
+  .cco-select:focus{
+    border-color:rgba(11,77,58,.40);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  .cco-help{
+    margin:2px 0 0;
+    font-size:12px;
+    line-height:1.45;
+    font-weight:700;
+    color:var(--muted);
+  }
+
+  .cco-btn{
+    border:1px solid rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
+    color:#0b4d3a;
+    border-radius:999px;
+    padding:10px 16px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    text-decoration:none;
+    white-space:nowrap;
+  }
+  .cco-btn:hover{
+    transform:translateY(-1px);
+    background:rgba(16,185,129,.16);
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  /* Tablet */
+  @media (max-width: 900px){
+    .cco-wrap{
+      padding:12px;
+    }
+    .cco-form{
+      grid-template-columns:repeat(6,minmax(0,1fr));
+    }
+    .cco-col-4{ grid-column:span 3; }
+    .cco-col-12{ grid-column:span 6; }
+  }
+
+  /* Mobile / app */
+  @media (max-width: 720px){
+    .cco-wrap{
+      padding:10px;
+    }
+    .cco-back{ display:flex; }
+
+    .cco-head{
+      padding:14px 14px 12px;
+    }
+    .cco-title{
+      text-align:left;
+      padding-left:52px;
+      padding-right:8px;
+      font-size:16px;
+      min-height:38px;
+      display:flex;
+      align-items:center;
+    }
+    .cco-subtitle{
+      text-align:left;
+      padding-left:52px;
+      padding-right:8px;
+    }
+
+    .cco-section{
+      padding:14px;
+    }
+    .cco-card-head,
+    .cco-card-body{
+      padding:12px;
+    }
+
+    .cco-form{
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    .cco-col-4,
+    .cco-col-12{
+      grid-column:1 / -1 !important;
+    }
+  }
+
+  @media (max-width: 460px){
+    .cco-title{
+      font-size:15px;
+      line-height:1.3;
+    }
+    .cco-card-title{
+      font-size:12.5px;
+    }
+  }
+</style>
+
+<div class="cco-wrap">
+  <div class="cco-shell">
+
+    <div class="cco-head">
+      <a class="cco-back" href="javascript:history.back()" aria-label="Go Back">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <h2 class="cco-title">Create CLF Official</h2>
+      <div class="cco-subtitle">Create a CLF official account and assign it to an existing CLF</div>
+    </div>
+
+    <div class="cco-section">
+      <div class="cco-card">
+        <div class="cco-card-head">
+          <h3 class="cco-card-title">CLF Official Details</h3>
+          <p class="cco-card-sub">Enter the login details and map the official to a CLF available in Master Data.</p>
+        </div>
+
+        <div class="cco-card-body">
+          <form method="post" class="cco-form">
+            <div class="cco-col-4 cco-field">
+              <label class="cco-label">Username</label>
+              <input name="username" class="cco-input" required>
+            </div>
+
+            <div class="cco-col-4 cco-field">
+              <label class="cco-label">Password</label>
+              <input name="password" type="password" class="cco-input" required>
+            </div>
+
+            <div class="cco-col-4 cco-field">
+              <label class="cco-label">CLF</label>
+              <select name="clf_id" class="cco-select" required>
+                {% for c in clfs %}
+                  <option value="{{ c._id|string }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+              <div class="cco-help">CLF must exist in Master Data.</div>
+            </div>
+
+            <div class="cco-col-12 cco-field" style="justify-content:end;">
+              <button class="cco-btn" type="submit">Create CLF Official</button>
+            </div>
+          </form>
+        </div>
       </div>
-      <div class="col-md-4">
-        <label class="form-label">Password</label>
-        <input name="password" type="password" class="form-control" required>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">CLF</label>
-        <select name="clf_id" class="form-select" required>
-          {% for c in clfs %}
-            <option value="{{ c._id|string }}">{{ c.name }}</option>
-          {% endfor %}
-        </select>
-        <div class="form-text">CLF must exist in Master Data.</div>
-      </div>
-      <div class="col-12">
-        <button class="btn btn-primary" type="submit">Create CLF Official</button>
-      </div>
-    </form>
+    </div>
+
   </div>
 </div>
+
 {% endblock %}

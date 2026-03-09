@@ -3,10 +3,13 @@
 {% block content %}
 <style>
   /* ============================================================
-     LAKHPATI DIDI REPORT — UI RESKIN
+     LAKHPATI DIDI REPORT — UI RESKIN + RESULT TOOLS
      ✅ ONLY UI/CSS/translation UX changed
      ✅ NO existing routes / data / backend logic changed
-     ✅ Mobile back button added in same style/position
+     ✅ Added: SL No, result search, rows-per-page selector, pagination
+     ✅ Default rows-per-page = 25 (10/25/50/100 selectable)
+     ✅ Desktop table headers always visible
+     ✅ Mobile/app empty state now shows all field labels with "-" values
      ✅ Fully responsive for web/tablet/mobile/app
      ✅ Scoped under .rp-wrap only
      ============================================================ */
@@ -91,29 +94,30 @@
     margin:0 auto;
   }
 
-.rp-headbox{
-  min-width:0;
-  text-align:center;
-}
+  .rp-headbox{
+    min-width:0;
+    text-align:center;
+  }
 
-.rp-title{
-  margin:0;
-  font-size:clamp(16px, 1.5vw, 20px);
-  line-height:1.18;
-  font-weight:900;
-  letter-spacing:-.01em;
-  color:var(--ink);
-  text-align:center;
-}
+  .rp-title{
+    margin:0;
+    font-size:clamp(16px, 1.5vw, 20px);
+    line-height:1.18;
+    font-weight:900;
+    letter-spacing:-.01em;
+    color:var(--ink);
+    text-align:center;
+  }
 
-.rp-sub{
-  margin-top:6px;
-  color:rgba(15,23,42,.62);
-  font-weight:800;
-  line-height:1.45;
-  font-size:12px;
-  text-align:center;
-}
+  .rp-sub{
+    margin-top:6px;
+    color:rgba(15,23,42,.62);
+    font-weight:800;
+    line-height:1.45;
+    font-size:12px;
+    text-align:center;
+  }
+
   .rp-kpis{
     display:flex;
     gap:.7rem;
@@ -267,6 +271,83 @@
     border-color:rgba(15,23,42,.10);
   }
 
+  /* result tools */
+  .rp-result-tools{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+    gap:12px;
+    align-items:center;
+    padding:14px 16px;
+    border-bottom:1px solid var(--line2);
+    background:linear-gradient(180deg, rgba(248,250,252,.9), rgba(255,255,255,.98));
+  }
+
+  .rp-searchbox{
+    position:relative;
+    min-width:0;
+  }
+
+  .rp-searchbox input{
+    width:100%;
+    height:44px;
+    border-radius:14px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    padding:0 14px 0 42px;
+    font-size:13px;
+    font-weight:800;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+
+  .rp-searchbox input:focus{
+    border-color:#9ed9c5;
+    box-shadow:0 0 0 4px var(--ring);
+  }
+
+  .rp-searchbox svg{
+    position:absolute;
+    left:14px;
+    top:50%;
+    transform:translateY(-50%);
+    width:16px;
+    height:16px;
+    color:#64748b;
+    pointer-events:none;
+  }
+
+  .rp-rows{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    justify-self:end;
+  }
+
+  .rp-rows label,
+  .rp-meta{
+    font-size:12px;
+    font-weight:900;
+    color:rgba(15,23,42,.62);
+    white-space:nowrap;
+  }
+
+  .rp-rows select{
+    height:40px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    padding:0 12px;
+    font-size:13px;
+    font-weight:900;
+    color:var(--ink);
+    outline:none;
+  }
+
+  .rp-meta{
+    justify-self:end;
+  }
+
   /* table */
   .rp-table-card{
     overflow:hidden;
@@ -283,7 +364,7 @@
     width:100%;
     border-collapse:separate;
     border-spacing:0;
-    min-width:1040px;
+    min-width:1120px;
   }
 
   .rp-table th,
@@ -313,8 +394,20 @@
     background:#fbfdfc;
   }
 
+  .rp-table .rp-sl{
+    width:70px;
+    min-width:70px;
+    text-align:center;
+  }
+
   .rp-empty{
     padding:1.1rem;
+    color:rgba(15,23,42,.62);
+    font-weight:800;
+  }
+
+  .rp-empty-inline{
+    padding:14px 16px 18px;
     color:rgba(15,23,42,.62);
     font-weight:800;
   }
@@ -363,6 +456,22 @@
     background:linear-gradient(180deg, rgba(247,250,249,.9), rgba(255,255,255,.98));
   }
 
+  .rp-member-sl{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:34px;
+    height:26px;
+    padding:0 10px;
+    border-radius:999px;
+    background:#d8efe6;
+    color:#0b4d3a;
+    font-size:12px;
+    font-weight:950;
+    border:1px solid #9ed9c5;
+    margin-bottom:10px;
+  }
+
   .rp-member-name{
     margin:0;
     font-size:17px;
@@ -409,6 +518,45 @@
     word-break:break-word;
   }
 
+  .rp-empty-structure{
+    min-width:88%;
+    max-width:88%;
+    scroll-snap-align:start;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:18px;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,251,250,.98));
+    box-shadow:0 12px 22px -22px rgba(15,23,42,.18);
+    overflow:hidden;
+    flex:0 0 auto;
+  }
+
+  .rp-empty-structure .rp-member-body{
+    padding:0;
+    gap:0;
+  }
+
+  .rp-empty-structure .rp-kv{
+    grid-template-columns:1fr auto;
+    gap:16px;
+    padding:14px 16px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    align-items:center;
+  }
+
+  .rp-empty-structure .rp-kv:last-child{
+    border-bottom:none;
+  }
+
+  .rp-empty-structure .rp-kv b{
+    font-size:12px;
+    line-height:1.3;
+  }
+
+  .rp-empty-structure .rp-kv span{
+    text-align:right;
+    min-width:24px;
+  }
+
   .rp-swipe-hint{
     margin-top:10px;
     color:#64748b;
@@ -418,93 +566,180 @@
     text-align:center;
   }
 
+  /* pagination */
+  .rp-pager{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:14px 16px 16px;
+    border-top:1px solid var(--line2);
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.96));
+    flex-wrap:wrap;
+  }
+
+  .rp-pager-info{
+    color:rgba(15,23,42,.62);
+    font-size:12px;
+    font-weight:900;
+  }
+
+  .rp-pager-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .rp-page-btn{
+    min-width:40px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    color:#0f172a;
+    font-size:13px;
+    font-weight:950;
+    padding:0 12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+  }
+
+  .rp-page-btn:hover:not(:disabled){
+    transform:translateY(-1px);
+    box-shadow:0 12px 18px -18px rgba(15,23,42,.18);
+  }
+
+  .rp-page-btn.active{
+    background:#d8efe6;
+    color:#0b4d3a;
+    border-color:#9ed9c5;
+  }
+
+  .rp-page-btn:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+  }
+
+  .rp-hidden{
+    display:none !important;
+  }
+
   @media (max-width:1100px){
     .rp-grid .f{ grid-column:span 4; }
     .rp-grid .f.wide{ grid-column:span 6; }
   }
 
- @media (max-width:980px){
-  .rp-grid{
-    grid-template-columns:repeat(2, minmax(0,1fr));
-  }
-  .rp-grid .f,
-  .rp-grid .f.wide{
-    grid-column:auto;
+  @media (max-width:980px){
+    .rp-grid{
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+    .rp-grid .f,
+    .rp-grid .f.wide{
+      grid-column:auto;
+    }
+
+    .rp-back{ display:flex; }
+
+    .rp-head{
+      padding:18px 16px 16px;
+    }
+
+    .rp-head-row{
+      grid-template-columns:1fr;
+      gap:12px;
+      padding-left:56px;
+      padding-right:0;
+      align-items:flex-start;
+    }
+
+    .rp-headbox{
+      width:100%;
+      text-align:center;
+    }
+
+    .rp-title{
+      font-size:17px;
+      line-height:1.3;
+      letter-spacing:.2px;
+      text-align:center;
+      word-break:break-word;
+      max-width:100%;
+    }
+
+    .rp-sub{
+      font-size:11.5px;
+      line-height:1.5;
+      text-align:center;
+      max-width:100%;
+      margin-top:8px;
+    }
+
+    .rp-kpis{
+      width:100%;
+      display:flex;
+      justify-content:center;
+      margin-top:2px;
+    }
+
+    .kpi{
+      min-width:0;
+      width:auto;
+      max-width:100%;
+      padding:.82rem 1.2rem;
+      border-radius:18px;
+      text-align:center;
+      margin:0 auto;
+      font-size:15px;
+      line-height:1.2;
+    }
+
+    .rp-grid{
+      grid-template-columns:1fr;
+    }
+
+    .btn{
+      min-height:auto;
+      padding:10px 14px;
+      font-size:12px;
+    }
+
+    .rp-result-tools{
+      grid-template-columns:1fr;
+      align-items:stretch;
+    }
+
+    .rp-rows,
+    .rp-meta{
+      justify-self:stretch;
+    }
+
+    .rp-rows{
+      justify-content:space-between;
+    }
+
+    .rp-table-wrap{
+      display:none;
+    }
+
+    .rp-swipe-wrap{
+      display:block;
+    }
+
+    .rp-pager{
+      flex-direction:column;
+      align-items:stretch;
+    }
+
+    .rp-pager-actions{
+      justify-content:center;
+    }
+
+    .rp-pager-info{
+      text-align:center;
+    }
   }
 
-  .rp-back{ display:flex; }
-
-  .rp-head{
-    padding:18px 16px 16px;
-  }
-
-  .rp-head-row{
-    grid-template-columns:1fr;
-    gap:12px;
-    padding-left:56px;   /* keep space for back button */
-    padding-right:0;
-    align-items:flex-start;
-  }
-
-  .rp-headbox{
-    width:100%;
-    text-align:center;
-  }
-
-  .rp-title{
-    font-size:17px;
-    line-height:1.3;
-    letter-spacing:.2px;
-    text-align:center;
-    word-break:break-word;
-    max-width:100%;
-  }
-
-  .rp-sub{
-    font-size:11.5px;
-    line-height:1.5;
-    text-align:center;
-    max-width:100%;
-    margin-top:8px;
-  }
-
-  .rp-kpis{
-    width:100%;
-    display:flex;
-    justify-content:center;
-    margin-top:2px;
-  }
-
-  .kpi{
-    min-width:0;
-    width:auto;
-    max-width:100%;
-    padding:.82rem 1.2rem;
-    border-radius:18px;
-    text-align:center;
-    margin:0 auto;
-    font-size:15px;
-    line-height:1.2;
-  }
-
-  .rp-grid{
-    grid-template-columns:1fr;
-  }
-
-  .btn{
-    min-height:auto;
-    padding:10px 14px;
-    font-size:12px;
-  }
-
-  .rp-table-wrap{
-    display:none;
-  }
-
-  .rp-swipe-wrap{
-    display:block;
-  }
-}
   @media (max-width:560px){
     .rp-wrap{ padding:10px; }
 
@@ -536,9 +771,14 @@
       justify-content:center;
     }
 
-    .rp-member-card{
+    .rp-member-card,
+    .rp-empty-structure{
       min-width:92%;
       max-width:92%;
+    }
+
+    .rp-searchbox input{
+      height:42px;
     }
   }
 
@@ -547,13 +787,25 @@
       grid-template-columns:92px 1fr;
       gap:8px;
     }
+
+    .rp-empty-structure .rp-kv{
+      grid-template-columns:1fr auto;
+      gap:12px;
+      padding:13px 14px;
+    }
+
+    .rp-page-btn{
+      min-width:36px;
+      height:36px;
+      padding:0 10px;
+    }
   }
 
- @media (max-width:380px){
-  .rp-head-row{ padding-left:50px; }
-  .rp-title{ font-size:15px; }
-  .rp-sub{ font-size:11px; }
-}
+  @media (max-width:380px){
+    .rp-head-row{ padding-left:50px; }
+    .rp-title{ font-size:15px; }
+    .rp-sub{ font-size:11px; }
+  }
 </style>
 
 <div class="rp-wrap">
@@ -677,89 +929,197 @@
       <div class="rp-card rp-table-card">
         <div class="rp-card-head" id="rpResultsTitle">Results</div>
 
+        <div class="rp-result-tools">
+          <div class="rp-searchbox">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm10 2-4.35-4.35"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <input type="text" id="rpResultSearch" placeholder="Search within results…" />
+          </div>
+
+          <div class="rp-rows">
+            <label for="rpPageSize" id="rpRowsLabel">Rows</label>
+            <select id="rpPageSize">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+
+          <div class="rp-meta" id="rpMetaText">Showing 0–0 of 0</div>
+        </div>
+
         <div class="rp-table-wrap">
-          <table class="rp-table">
+          <table class="rp-table" id="rpResultsTable">
             <thead>
               <tr>
+                <th class="rp-sl" id="rpThSl">SL No</th>
                 <th id="rpThMember">Member</th>
                 <th id="rpThRelation">Spouse/Father/Mother</th>
                 <th id="rpThContact">Contact</th>
                 <th id="rpThPg">PG</th>
                 <th id="rpThDistrict">District</th>
                 <th id="rpThBlock">Block</th>
-                <th id="rpThGp">GP</th>
+                <th id="rpThGp">Gram Panchayat</th>
                 <th id="rpThVillage">Village</th>
                 <th id="rpThCreated">Created</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="rpTableBody">
               {% if rows %}
                 {% for r in rows %}
-                <tr>
-                  <td>{{ r['Member Name'] }}</td>
-                  <td>{{ r['Spouse/Father/Mother'] }}</td>
-                  <td>{{ r['Contact'] }}</td>
-                  <td>{{ r['PG Name'] }}</td>
-                  <td>{{ r['District'] }}</td>
-                  <td>{{ r['Block'] }}</td>
-                  <td>{{ r['Gram Panchayat'] }}</td>
-                  <td>{{ r['Village'] }}</td>
-                  <td>{{ r['Created At'] }}</td>
+                <tr class="rp-data-row"
+                    data-index="{{ loop.index }}"
+                    data-search="{{ (
+                      (r['Member Name'] or '') ~ ' ' ~
+                      (r['Spouse/Father/Mother'] or '') ~ ' ' ~
+                      (r['Contact'] or '') ~ ' ' ~
+                      (r['PG Name'] or '') ~ ' ' ~
+                      (r['District'] or '') ~ ' ' ~
+                      (r['Block'] or '') ~ ' ' ~
+                      (r['Gram Panchayat'] or '') ~ ' ' ~
+                      (r['Village'] or '') ~ ' ' ~
+                      (r['Created At'] or '')
+                    )|lower }}">
+                  <td class="rp-sl rp-sl-cell"></td>
+                  <td>{{ r['Member Name'] or '—' }}</td>
+                  <td>{{ r['Spouse/Father/Mother'] or '—' }}</td>
+                  <td>{{ r['Contact'] or '—' }}</td>
+                  <td>{{ r['PG Name'] or '—' }}</td>
+                  <td>{{ r['District'] or '—' }}</td>
+                  <td>{{ r['Block'] or '—' }}</td>
+                  <td>{{ r['Gram Panchayat'] or '—' }}</td>
+                  <td>{{ r['Village'] or '—' }}</td>
+                  <td>{{ r['Created At'] or '—' }}</td>
                 </tr>
                 {% endfor %}
               {% else %}
-                <tr><td colspan="9" class="rp-empty" id="rpEmpty">No Lakhpati Didi members found for the selected filters.</td></tr>
+                <tr id="rpNoTableDataRow">
+                  <td class="rp-empty" colspan="10" id="rpEmpty">No Lakhpati Didi members found for the selected filters.</td>
+                </tr>
               {% endif %}
             </tbody>
           </table>
         </div>
 
         <div class="rp-swipe-wrap">
-          {% if rows %}
-            <div class="rp-swipe-rail">
+          <div class="rp-swipe-rail" id="rpSwipeRail">
+            {% if rows %}
               {% for r in rows %}
-              <article class="rp-member-card">
+              <article class="rp-member-card rp-data-card"
+                       data-index="{{ loop.index }}"
+                       data-search="{{ (
+                         (r['Member Name'] or '') ~ ' ' ~
+                         (r['Spouse/Father/Mother'] or '') ~ ' ' ~
+                         (r['Contact'] or '') ~ ' ' ~
+                         (r['PG Name'] or '') ~ ' ' ~
+                         (r['District'] or '') ~ ' ' ~
+                         (r['Block'] or '') ~ ' ' ~
+                         (r['Gram Panchayat'] or '') ~ ' ' ~
+                         (r['Village'] or '') ~ ' ' ~
+                         (r['Created At'] or '')
+                       )|lower }}">
                 <div class="rp-member-head">
-                  <h4 class="rp-member-name">{{ r['Member Name'] }}</h4>
-                  <div class="rp-member-sub">{{ r['PG Name'] }}</div>
+                  <div class="rp-member-sl"><span class="rpMobSlLbl">SL</span> <span class="rp-sl-card-no" style="margin-left:6px;"></span></div>
+                  <h4 class="rp-member-name">{{ r['Member Name'] or '—' }}</h4>
+                  <div class="rp-member-sub">{{ r['PG Name'] or '—' }}</div>
                 </div>
                 <div class="rp-member-body">
                   <div class="rp-kv">
                     <b class="rpMobRelationLbl">Spouse/Father/Mother</b>
-                    <span>{{ r['Spouse/Father/Mother'] }}</span>
+                    <span>{{ r['Spouse/Father/Mother'] or '—' }}</span>
                   </div>
                   <div class="rp-kv">
                     <b class="rpMobContactLbl">Contact</b>
-                    <span>{{ r['Contact'] }}</span>
+                    <span>{{ r['Contact'] or '—' }}</span>
                   </div>
                   <div class="rp-kv">
                     <b class="rpMobDistrictLbl">District</b>
-                    <span>{{ r['District'] }}</span>
+                    <span>{{ r['District'] or '—' }}</span>
                   </div>
                   <div class="rp-kv">
                     <b class="rpMobBlockLbl">Block</b>
-                    <span>{{ r['Block'] }}</span>
+                    <span>{{ r['Block'] or '—' }}</span>
                   </div>
                   <div class="rp-kv">
-                    <b class="rpMobGpLbl">GP</b>
-                    <span>{{ r['Gram Panchayat'] }}</span>
+                    <b class="rpMobGpLbl">Gram Panchayat</b>
+                    <span>{{ r['Gram Panchayat'] or '—' }}</span>
                   </div>
                   <div class="rp-kv">
                     <b class="rpMobVillageLbl">Village</b>
-                    <span>{{ r['Village'] }}</span>
+                    <span>{{ r['Village'] or '—' }}</span>
                   </div>
                   <div class="rp-kv">
                     <b class="rpMobCreatedLbl">Created</b>
-                    <span>{{ r['Created At'] }}</span>
+                    <span>{{ r['Created At'] or '—' }}</span>
                   </div>
                 </div>
               </article>
               {% endfor %}
-            </div>
+            {% else %}
+              <article class="rp-empty-structure" id="rpEmptyStructureCard">
+                <div class="rp-member-body">
+                  <div class="rp-kv">
+                    <b class="rpMobSlLbl">SL</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b id="rpMobMemberLbl">Member</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobRelationLbl">Spouse/Father/Mother</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobContactLbl">Contact</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b id="rpMobPgLbl">PG</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobDistrictLbl">District</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobBlockLbl">Block</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobGpLbl">Gram Panchayat</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobVillageLbl">Village</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobCreatedLbl">Created</b>
+                    <span>—</span>
+                  </div>
+                </div>
+              </article>
+            {% endif %}
+          </div>
+
+          {% if rows %}
             <div class="rp-swipe-hint" id="rpSwipeHint">Swipe horizontally to view member cards</div>
           {% else %}
-            <div class="rp-empty" id="rpEmptyMobile">No Lakhpati Didi members found for the selected filters.</div>
+            <div class="rp-empty-inline" id="rpEmptyMobile">No Lakhpati Didi members found for the selected filters.</div>
           {% endif %}
+        </div>
+
+        <div class="rp-pager">
+          <div class="rp-pager-info" id="rpPagerInfo">Page 1 of 1</div>
+          <div class="rp-pager-actions" id="rpPagerActions">
+            <button type="button" class="rp-page-btn" id="rpPrevBtn">Prev</button>
+            <button type="button" class="rp-page-btn active" data-page="1">1</button>
+            <button type="button" class="rp-page-btn" id="rpNextBtn">Next</button>
+          </div>
         </div>
       </div>
     </div>
@@ -802,10 +1162,18 @@
         downloadSummary: "Download Summary CSV",
 
         results: "Results",
+        sl: "SL No",
         member: "Member",
         relation: "Spouse/Father/Mother",
         contact: "Contact",
         created: "Created",
+        searchResults: "Search within results…",
+        rows: "Rows",
+        showing: "Showing",
+        of: "of",
+        page: "Page",
+        prev: "Prev",
+        next: "Next",
         empty: "No Lakhpati Didi members found for the selected filters.",
         swipeHint: "Swipe horizontally to view member cards"
       },
@@ -842,13 +1210,30 @@
         downloadSummary: "সারসংক্ষেপ CSV ডাউনলোড",
 
         results: "ফলাফল",
+        sl: "ক্রমিক",
         member: "সদস্য",
         relation: "স্বামী/পিতা/মাতা",
         contact: "যোগাযোগ",
         created: "তৈরি হয়েছে",
+        searchResults: "ফলাফলের মধ্যে খুঁজুন…",
+        rows: "সারি",
+        showing: "দেখানো হচ্ছে",
+        of: "মোট",
+        page: "পৃষ্ঠা",
+        prev: "পূর্ববর্তী",
+        next: "পরবর্তী",
         empty: "নির্বাচিত ফিল্টারের জন্য কোনো লাখপতি দিদি সদস্য পাওয়া যায়নি।",
         swipeHint: "মেম্বার কার্ড দেখতে আড়াআড়ি সোয়াইপ করুন"
       }
+    };
+
+    const state = {
+      lang: 'en',
+      currentPage: 1,
+      pageSize: 25,
+      query: '',
+      filteredCount: 0,
+      totalPages: 1
     };
 
     function safeText(id, val){
@@ -883,8 +1268,183 @@
       return 'en';
     }
 
+    function getDataRows(){
+      return Array.from(document.querySelectorAll('.rp-data-row'));
+    }
+
+    function getDataCards(){
+      return Array.from(document.querySelectorAll('.rp-data-card'));
+    }
+
+    function getFilteredRows(){
+      const query = (state.query || '').trim().toLowerCase();
+      const rows = getDataRows();
+      if(!query) return rows;
+      return rows.filter(row => (row.dataset.search || '').includes(query));
+    }
+
+    function syncCardNumbers(visibleRows){
+      const cards = getDataCards();
+      cards.forEach(card => {
+        card.classList.add('rp-hidden');
+      });
+
+      visibleRows.forEach((row, idx) => {
+        const rowIndex = row.dataset.index;
+        const card = cards.find(c => c.dataset.index === rowIndex);
+        const slNo = row.querySelector('.rp-sl-cell')?.textContent || String(idx + 1);
+        if(card){
+          card.classList.remove('rp-hidden');
+          const slEl = card.querySelector('.rp-sl-card-no');
+          if(slEl) slEl.textContent = slNo;
+        }
+      });
+    }
+
+    function updateEmptyStates(filteredRows){
+      const tableEmpty = document.getElementById('rpNoTableDataRow');
+      const emptyMobile = document.getElementById('rpEmptyMobile');
+      const emptyStructureCard = document.getElementById('rpEmptyStructureCard');
+      const swipeHint = document.getElementById('rpSwipeHint');
+
+      if(tableEmpty){
+        tableEmpty.style.display = filteredRows.length ? 'none' : '';
+      }
+      if(emptyMobile){
+        emptyMobile.style.display = filteredRows.length ? 'none' : '';
+      }
+      if(emptyStructureCard){
+        emptyStructureCard.style.display = filteredRows.length ? 'none' : '';
+      }
+      if(swipeHint){
+        swipeHint.style.display = filteredRows.length ? '' : 'none';
+      }
+    }
+
+    function renderPagination(filteredRows){
+      state.filteredCount = filteredRows.length;
+      state.totalPages = Math.max(1, Math.ceil(filteredRows.length / state.pageSize));
+      if(state.currentPage > state.totalPages) state.currentPage = state.totalPages;
+      if(state.currentPage < 1) state.currentPage = 1;
+
+      const startIdx = filteredRows.length ? ((state.currentPage - 1) * state.pageSize) : 0;
+      const endIdx = Math.min(startIdx + state.pageSize, filteredRows.length);
+      const pageRows = filteredRows.slice(startIdx, endIdx);
+
+      getDataRows().forEach(row => row.classList.add('rp-hidden'));
+      pageRows.forEach((row, i) => {
+        row.classList.remove('rp-hidden');
+        const slCell = row.querySelector('.rp-sl-cell');
+        if(slCell) slCell.textContent = String(startIdx + i + 1);
+      });
+
+      syncCardNumbers(pageRows);
+      updateMeta(filteredRows.length, startIdx, endIdx);
+      updateEmptyStates(filteredRows);
+      buildPager();
+    }
+
+    function updateMeta(totalCount, startIdx, endIdx){
+      const t = RP_T[state.lang] || RP_T.en;
+      const meta = document.getElementById('rpMetaText');
+      const pagerInfo = document.getElementById('rpPagerInfo');
+
+      const showStart = totalCount ? (startIdx + 1) : 0;
+      const showEnd = totalCount ? endIdx : 0;
+
+      if(meta){
+        meta.textContent = `${t.showing} ${showStart}–${showEnd} ${t.of} ${totalCount}`;
+      }
+      if(pagerInfo){
+        pagerInfo.textContent = `${t.page} ${state.currentPage} ${t.of} ${Math.max(1, state.totalPages)}`;
+      }
+    }
+
+    function buildPager(){
+      const t = RP_T[state.lang] || RP_T.en;
+      const pager = document.getElementById('rpPagerActions');
+      if(!pager) return;
+
+      pager.innerHTML = '';
+
+      const prev = document.createElement('button');
+      prev.type = 'button';
+      prev.className = 'rp-page-btn';
+      prev.id = 'rpPrevBtn';
+      prev.textContent = t.prev;
+      prev.disabled = state.currentPage <= 1;
+      prev.addEventListener('click', function(){
+        if(state.currentPage > 1){
+          state.currentPage -= 1;
+          refreshResults();
+        }
+      });
+      pager.appendChild(prev);
+
+      const total = Math.max(1, state.totalPages);
+      let start = Math.max(1, state.currentPage - 2);
+      let end = Math.min(total, start + 4);
+      start = Math.max(1, end - 4);
+
+      for(let p = start; p <= end; p++){
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'rp-page-btn' + (p === state.currentPage ? ' active' : '');
+        btn.dataset.page = String(p);
+        btn.textContent = String(p);
+        btn.addEventListener('click', function(){
+          state.currentPage = p;
+          refreshResults();
+        });
+        pager.appendChild(btn);
+      }
+
+      const next = document.createElement('button');
+      next.type = 'button';
+      next.className = 'rp-page-btn';
+      next.id = 'rpNextBtn';
+      next.textContent = t.next;
+      next.disabled = state.currentPage >= total;
+      next.addEventListener('click', function(){
+        if(state.currentPage < total){
+          state.currentPage += 1;
+          refreshResults();
+        }
+      });
+      pager.appendChild(next);
+    }
+
+    function refreshResults(){
+      const filteredRows = getFilteredRows();
+      renderPagination(filteredRows);
+    }
+
+    function bindResultControls(){
+      const searchInput = document.getElementById('rpResultSearch');
+      const pageSizeSelect = document.getElementById('rpPageSize');
+
+      if(searchInput){
+        searchInput.addEventListener('input', function(){
+          state.query = this.value || '';
+          state.currentPage = 1;
+          refreshResults();
+        });
+      }
+
+      if(pageSizeSelect){
+        pageSizeSelect.value = String(state.pageSize);
+        pageSizeSelect.addEventListener('change', function(){
+          const val = parseInt(this.value, 10);
+          state.pageSize = [10,25,50,100].includes(val) ? val : 25;
+          state.currentPage = 1;
+          refreshResults();
+        });
+      }
+    }
+
     function applyRP(lang){
-      const t = RP_T[lang] || RP_T.en;
+      state.lang = (lang === 'bn') ? 'bn' : 'en';
+      const t = RP_T[state.lang] || RP_T.en;
 
       try { document.title = t.title; } catch(_){}
 
@@ -933,6 +1493,7 @@
       safeText('rpDownloadSummaryBtn', t.downloadSummary);
 
       safeText('rpResultsTitle', t.results);
+      safeText('rpThSl', t.sl);
       safeText('rpThMember', t.member);
       safeText('rpThRelation', t.relation);
       safeText('rpThContact', t.contact);
@@ -943,11 +1504,17 @@
       safeText('rpThVillage', t.village);
       safeText('rpThCreated', t.created);
 
+      safeText('rpRowsLabel', t.rows);
+      safePlaceholder('rpResultSearch', t.searchResults);
+
       safeText('rpEmpty', t.empty);
       safeText('rpEmptyMobile', t.empty);
 
+      safeTextAll('.rpMobSlLbl', t.sl.replace(' No', '').replace(' নং', ''));
+      safeText('rpMobMemberLbl', t.member);
       safeTextAll('.rpMobRelationLbl', t.relation);
       safeTextAll('.rpMobContactLbl', t.contact);
+      safeText('rpMobPgLbl', t.pg);
       safeTextAll('.rpMobDistrictLbl', t.district);
       safeTextAll('.rpMobBlockLbl', t.block);
       safeTextAll('.rpMobGpLbl', t.gp);
@@ -955,6 +1522,8 @@
       safeTextAll('.rpMobCreatedLbl', t.created);
 
       safeText('rpSwipeHint', t.swipeHint);
+
+      refreshResults();
     }
 
     window.updatePageLanguage = function(lang){
@@ -973,6 +1542,7 @@
     });
 
     document.addEventListener('DOMContentLoaded', ()=>{
+      bindResultControls();
       applyRP(getStoredLang());
     });
   })();
