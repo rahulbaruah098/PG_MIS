@@ -2195,51 +2195,160 @@ def pg_profile_data(pg_id):
 # NEW: MEETING & GOVERNANCE TRACKING
 # - Meeting register, attendance, resolutions
 # ============================================================
-
-@pg_bp.route("/meetings/<pg_id>", methods=["GET","POST"])
+# commited by atlanta 
+@pg_bp.route("/meetings/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def meeting_register(pg_id):
     db = current_app.mongo_db
-    pg = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))})
-    if not pg:
-        flash("PG not found.", "danger")
+
+    def _wants_json():
+        return bool(
+            request.headers.get("Authorization")
+            or request.is_json
+            or "application/json" in request.headers.get("Accept", "").lower()
+        )
+
+    def _deny(message, status=400):
+        if _wants_json():
+            return jsonify({"ok": False, "error": message}), status
+        flash(message, "danger" if status >= 400 else "warning")
         return redirect(url_for("pg.pg_home"))
 
-    members = list(db.pg_members.find({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name":1, "member_name":1}).limit(500))
+    # Prefer mobile JWT scope first, then session
+    auth_pg_id = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
+    role = getattr(g, "role", None) or session.get("role")
+
+    if not pg_id or str(pg_id).lower() == "none":
+        pg_id = auth_pg_id
+
+    pg_obj_id = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
+    if not pg_obj_id:
+        return _deny("Invalid PG ID.", 400)
+
+    pg = db.pgs.find_one({"_id": pg_obj_id})
+    if not pg:
+        return _deny("PG not found.", 404)
+
+    # Scope restriction for PG user
+    if role == "PG_DATA_ENTRY" and auth_pg_id and auth_pg_id != str(pg_obj_id):
+        return _deny("You cannot access this PG.", 403)
+
+    # Only active members for attendance list
+    member_docs = list(
+        db.pg_members.find(
+            {
+                "pg_id": pg_obj_id,
+                "$or": [
+                    {"is_active": True},
+                    {"is_active": {"$exists": False}}
+                ]
+            },
+            {"name": 1, "member_name": 1}
+        ).sort([("name", 1)]).limit(500)
+    )
 
     if request.method == "POST":
-        meeting_date = request.form.get("meeting_date")
-        agenda = request.form.get("agenda") or ""
-        resolution = request.form.get("resolution") or ""
+        if _wants_json():
+            body = request.get_json(silent=True) or {}
+            meeting_date = (body.get("meeting_date") or "").strip()
+            meeting_type = (body.get("meeting_type") or "general").strip().lower()
+            agenda = (body.get("agenda") or "").strip()
+            resolution = (body.get("resolution") or "").strip()
+            att = body.get("attendance_ids", [])
+            if not isinstance(att, list):
+                att = []
+        else:
+            meeting_date = (request.form.get("meeting_date") or "").strip()
+            meeting_type = (request.form.get("meeting_type") or "general").strip().lower()
+            agenda = (request.form.get("agenda") or "").strip()
+            resolution = (request.form.get("resolution") or "").strip()
+            att = request.form.getlist("attendance")
 
-        # attendance ids
-        att = request.form.getlist("attendance")
+        if not meeting_date:
+            return _deny("Meeting date is required.", 400)
+
         att_ids = []
         for mid in att:
-            if ObjectId.is_valid(mid):
-                att_ids.append(ObjectId(mid))
+            mid_str = str(mid).strip()
+            if not mid_str:
+                continue
+            if ObjectId.is_valid(mid_str):
+                att_ids.append(ObjectId(mid_str))
             else:
-                att_ids.append(mid)
+                att_ids.append(mid_str)
 
         doc = {
-            "pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))),
+            "pg_id": pg_obj_id,
             "meeting_date": meeting_date,
-            "meeting_type": request.form.get("meeting_type") or "General",
+            "meeting_type": meeting_type,
             "agenda": agenda,
-            "attendance": att_ids,
+            "attendance": att_ids,          # stored field
             "attendance_count": len(att_ids),
             "resolution": resolution,
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
         }
-        db.pg_meetings.insert_one(doc)
+
+        result = db.pg_meetings.insert_one(doc)
+
+        if _wants_json():
+            return jsonify({
+                "ok": True,
+                "message": "Meeting saved successfully.",
+                "meeting": {
+                    "_id": str(result.inserted_id),
+                    "meeting_date": meeting_date,
+                    "meeting_type": meeting_type,
+                    "agenda": agenda,
+                    "resolution": resolution,
+                    "attendance_ids": [str(x) for x in att_ids],
+                    "attendance_count": len(att_ids),
+                }
+            }), 200
+
         flash("Meeting saved.", "success")
         return redirect(url_for("pg.meeting_register", pg_id=pg_id))
 
-    meetings = list(db.pg_meetings.find({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}).sort([("meeting_date", -1)]).limit(200))
-    return render_template("meeting_register.html", pg=pg, members=members, meetings=meetings)
+    meetings = list(
+        db.pg_meetings.find({"pg_id": pg_obj_id}).sort([("meeting_date", -1), ("created_at", -1)])
+    )
+
+    if _wants_json():
+        return jsonify({
+            "ok": True,
+            "pg": {
+                "_id": str(pg["_id"]),
+                "name": pg.get("name", "")
+            },
+            "members": [
+                {
+                    "_id": str(m.get("_id")),
+                    "name": m.get("name") or m.get("member_name") or "Member"
+                }
+                for m in member_docs
+            ],
+            "meetings": [
+                {
+                    "_id": str(mt.get("_id")),
+                    "meeting_date": mt.get("meeting_date", ""),
+                    "meeting_type": (mt.get("meeting_type") or "general").lower(),
+                    "agenda": mt.get("agenda", ""),
+                    "resolution": mt.get("resolution", ""),
+                    "attendance_ids": [str(x) for x in (mt.get("attendance") or [])],
+                    "attendance_count": int(mt.get("attendance_count") or len(mt.get("attendance") or [])),
+                }
+                for mt in meetings
+            ]
+        }), 200
+
+    return render_template(
+        "meeting_register.html",
+        pg=pg,
+        members=member_docs,
+        meetings=meetings
+    )
 
 
 # === CORE ENGINE INTEGRATION ACTIVE ===
