@@ -1201,13 +1201,21 @@ def workflow_status(pg_id, year, month, module):
 
 
 @reports_bp.route("/clf/console")
-@roles_required("CLF_MANAGER","CLF_ADMIN")
+@roles_required("CLF_MANAGER","CLF_ADMIN","BLOCK_ADMIN","DISTRICT_ADMIN","ADMIN","SUPER_ADMIN")
 def clf_console():
-    from datetime import datetime, timedelta
+
+    from datetime import datetime
+    from bson import ObjectId
+
     db = current_app.mongo_db
+
+    role = session.get("role")
     clf_id = session.get("clf_id")
+    block_id = session.get("block_id")
+
     year = request.args.get("year")
     month = request.args.get("month")
+
     try:
         now = datetime.utcnow()
         year = int(year) if year else now.year
@@ -1216,22 +1224,50 @@ def clf_console():
         now = datetime.utcnow()
         year, month = now.year, now.month
 
-    pgs_q = {"clf_id": ObjectId(clf_id)} if clf_id else {}
+    # =========================
+    # Resolve PG scope
+    # =========================
+    if clf_id:
+        pgs_q = {"clf_id": ObjectId(clf_id)}
+
+    elif block_id:
+        pgs_q = {"block_id": ObjectId(block_id)}
+
+    else:
+        pgs_q = {}
+
     pgs = list(db.pgs.find(pgs_q, {"name": 1}).sort("name", 1))
+
     modules = ["mpr", "business", "loans", "stock", "finance"]
+
     rows = []
+
     for pg in pgs:
+
         pg_id = str(pg["_id"])
+
         for module in modules:
-            sub = db.submissions.find_one({"pg_id": pg_id, "year": year, "month": month, "module": module}) or {}
+
+            sub = db.submissions.find_one({
+                "pg_id": pg_id,
+                "year": year,
+                "month": month,
+                "module": module
+            }) or {}
+
             rows.append({
                 "pg_id": pg_id,
                 "pg_name": pg.get("name","(PG)"),
                 "module": module,
                 "status": sub.get("status","—")
             })
-    return render_template("clf_console.html", rows=rows, year=year, month=month)
 
+    return render_template(
+        "clf_console.html",
+        rows=rows,
+        year=year,
+        month=month
+    )
 
 
 # === CORE ENGINE INTEGRATION ACTIVE ===

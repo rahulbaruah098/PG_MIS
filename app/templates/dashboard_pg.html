@@ -579,6 +579,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
   </style>
 {% endblock %}
 
+{% set PGID = (pg['_id']|string if pg and pg['_id'] else (session.get('pg_id') or session.get('active_pg_id'))) %}
 {% block content %}
  <div id="pgDashboardGate" class="pg-gate">
   <!-- ✅ Welcome Heading under navbar -->
@@ -893,7 +894,7 @@ function __closeGate(){
     }
 
    function getModulesData(){
-  const PGID = "{{ session.get('pg_id') or session.get('active_pg_id') }}";
+  
 
   return [
     {
@@ -901,7 +902,7 @@ function __closeGate(){
       description: __t('mod_membership_desc'),
       icon: 'Users',
       count: '{{ (metrics.members_count if metrics is defined else 0) }}',
-      href: "{{ url_for('pg.pg_members', pg_id=session.get('pg_id')) }}",
+      href:  "{{ url_for('pg.pg_members', pg_id=PGID) }}",
       bgColor: 'bg-white/90',
       iconColor: 'text-emerald-700',
       hoverBg: 'hover:bg-white',
@@ -913,7 +914,7 @@ function __closeGate(){
       description: __t('mod_lakhpati_desc'),
       icon: 'BadgeCheck',
       count: '{{ (metrics.lakhpati_count if metrics is defined and metrics.lakhpati_count is defined else 0) }}',
-      href: "{{ url_for('pg.pg_lakhpati', pg_id=session.get('pg_id')) }}",
+      href: "{{ url_for('pg.pg_lakhpati', pg_id=PGID) }}",
       bgColor: 'bg-white/90',
       iconColor: 'text-emerald-700',
       hoverBg: 'hover:bg-white',
@@ -937,7 +938,7 @@ function __closeGate(){
       description: __t('mod_grants_util_desc'),
       icon: 'Landmark',
       count: '{{ (metrics.grants_count if metrics is defined and metrics.grants_count is defined else 0) }}',
-      href: "{{ url_for('finance.grants', pg_id=(session.get('pg_id') or session.get('active_pg_id'))) }}",
+      href: "{{ url_for('finance.grants', pg_id=PGID) }}",
       bgColor: 'bg-white/90',
       iconColor: 'text-emerald-700',
       hoverBg: 'hover:bg-white',
@@ -949,7 +950,7 @@ function __closeGate(){
       description: __t('mod_download_csv_desc'),
       icon: 'Download',
       count: '',
-      href: "{{ url_for('pg.export_pg_summary_csv', pg_id=session.get('pg_id')) }}",
+      href: "{{ url_for('pg.export_pg_summary_csv', pg_id=PGID) }}",
       bgColor: 'bg-white/90',
       iconColor: 'text-emerald-700',
       hoverBg: 'hover:bg-white',
@@ -961,7 +962,7 @@ function __closeGate(){
       description: __t('mod_loan_ledger_desc'),
       icon: 'CreditCard',
       count: '{{ (metrics.loans_count if metrics is defined else 0) }}',
-    href: "{{ url_for('pg.loan_ledger') }}",
+      href: "{{ url_for('pg.loan_ledger') }}",
       bgColor: 'bg-white/90',
       iconColor: 'text-emerald-700',
       hoverBg: 'hover:bg-white',

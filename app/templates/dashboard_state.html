@@ -2,262 +2,1080 @@
 {% block title %}State Dashboard{% endblock %}
 
 {% block head_extra %}
-  <!-- Tailwind + Chart.js (scoped dashboard UI) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- ✅ Removed Tailwind dependency (matches PG dashboard approach) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- ✅ Fallback if CDN fails -->
+  <script>
+    window.__stateChartReady = new Promise((resolve) => {
+      function done(){ resolve(true); }
+
+      if (window.Chart) return done();
+
+      let waited = 0;
+      const t = setInterval(() => {
+        if (window.Chart) { clearInterval(t); return done(); }
+        waited += 50;
+        if (waited >= 1500) {
+          clearInterval(t);
+
+          const s = document.createElement('script');
+          s.src = "{{ url_for('static', filename='vendor/chart.min.js') }}";
+          s.defer = true;
+          s.onload = done;
+          s.onerror = () => resolve(false);
+          document.head.appendChild(s);
+        }
+      }, 50);
+    });
+  </script>
+
   <style>
-    /* =========================
-       UNIFIED LANDING DASHBOARD (SCOPED)
-       - Reuses the modern chart-card language from dashboard_pg.html
-       - Safe: does not touch global/base styles
-       ========================= */
-    .sdx{ padding: clamp(12px, 2.2vw, 22px); }
-    .sdx .cardx{ border:1px solid rgba(148,163,184,.55); border-radius:18px; background:rgba(255,255,255,.85); box-shadow: 0 18px 50px rgba(2,6,23,.08); }
-    .sdx .cardx .hdr{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 16px; border-bottom:1px solid rgba(226,232,240,.8); }
-    .sdx .cardx .bd{ padding:16px; }
-    .sdx .kpi{ border-radius:18px; border:1px solid rgba(226,232,240,.9); background:rgba(255,255,255,.90); box-shadow: 0 12px 30px rgba(2,6,23,.06); }
-    .sdx .kpi .t{ color:#475569; font-weight:700; font-size:12px; letter-spacing:.04em; text-transform:uppercase; }
-    .sdx .kpi .v{ color:#0f172a; font-weight:900; font-size:28px; line-height:1.1; margin-top:6px; }
-    .sdx .kpi .s{ color:#64748b; font-size:12px; margin-top:6px; }
-    .sdx .chip{ display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(203,213,225,.8); background:rgba(255,255,255,.8); padding:8px 12px; border-radius:999px; font-weight:800; color:#0f172a; }
-    .sdx .muted{ color:#64748b; }
-    .sdx .gridA{ display:grid; grid-template-columns: 2.3fr 1.2fr; gap:14px; }
-    @media (max-width: 1100px){ .sdx .gridA{ grid-template-columns: 1fr; } }
-    .sdx .gridK{ display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap:12px; }
-    @media (max-width: 1200px){ .sdx .gridK{ grid-template-columns: repeat(3, minmax(0,1fr)); } }
-    @media (max-width: 640px){ .sdx .gridK{ grid-template-columns: repeat(2, minmax(0,1fr)); } }
-    .sdx .chartBox{ height: 340px; }
-    @media (max-width: 640px){ .sdx .chartBox{ height: 280px; } }
-    .sdx .btnlink{
-      display:inline-flex; align-items:center; justify-content:center;
-      border-radius:12px; padding:10px 12px;
-      font-weight:900;
-      border:1px solid rgba(148,163,184,.55);
-      background: rgba(255,255,255,.75);
+    /* ============================================================
+       ✅ STATE DASHBOARD — PG DASHBOARD MATCHED UI LANGUAGE
+       - ONLY design updated
+       - ALL routes / Jinja data / chart logic preserved
+       - No backend/data/URL changes
+       ============================================================ */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      color: #0b2a23;
+      background: #f1fbf5;
     }
-    .sdx .btnlink.primary{ background: rgba(37,99,235,.10); border-color: rgba(37,99,235,.35); color:#1d4ed8; }
-    .sdx .btnlink:hover{ transform: translateY(-1px); box-shadow: 0 14px 30px rgba(2,6,23,.10); }
+
+    :root{
+      --ink:#0b2a23;
+      --muted:#2f5b4f;
+      --muted2:#4c7468;
+
+      --brand:#0f766e;
+      --brand2:#15803d;
+
+      --paper:#f1fbf5;
+      --paper2:#e9f8f0;
+      --card:#ffffff;
+      --line:#d8efe3;
+      --line2:#bfe6d2;
+      --ring: rgba(15, 118, 110, 0.22);
+    }
+
+    /* ============================================================
+       ✅ SAFE GATE
+       ============================================================ */
+    .sd-gate{
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .sd-gate.sd-gate--ready{
+      opacity: 1;
+      transform: translateY(0);
+    }
+    html.no-js .sd-gate{ opacity:1 !important; transform:none !important; }
+
+    /* ============================================================
+       ✅ Minimal utility classes used in this page
+       ============================================================ */
+    .max-w-7xl{ width:100%; max-width:80rem; }
+    .mx-auto{ margin-left:auto; margin-right:auto; }
+    .px-6{ padding-left:24px; padding-right:24px; }
+    .py-6{ padding-top:24px; padding-bottom:24px; }
+    .space-y-6 > * + *{ margin-top:24px; }
+
+    .grid{ display:grid; }
+    .grid-cols-1{ grid-template-columns:repeat(1,minmax(0,1fr)); }
+    .grid-cols-2{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .grid-cols-3{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+
+    .flex{ display:flex; }
+    .items-center{ align-items:center; }
+    .items-start{ align-items:flex-start; }
+    .items-end{ align-items:flex-end; }
+    .justify-between{ justify-content:space-between; }
+    .justify-end{ justify-content:flex-end; }
+    .flex-col{ flex-direction:column; }
+    .flex-wrap{ flex-wrap:wrap; }
+    .gap-2{ gap:8px; }
+    .gap-3{ gap:12px; }
+    .gap-4{ gap:16px; }
+    .gap-5{ gap:20px; }
+    .gap-6{ gap:24px; }
+
+    .rounded-lg{ border-radius:12px; }
+    .rounded-xl{ border-radius:16px; }
+    .rounded-2xl{ border-radius:22px; }
+    .rounded-full{ border-radius:999px; }
+
+    .p-2{ padding:8px; }
+    .p-2\.5{ padding:10px; }
+    .p-3{ padding:12px; }
+    .p-4{ padding:16px; }
+    .p-5{ padding:20px; }
+    .p-6{ padding:24px; }
+
+    .mt-1{ margin-top:4px; }
+    .mt-2{ margin-top:8px; }
+    .mt-4{ margin-top:16px; }
+    .mt-5{ margin-top:20px; }
+    .mt-6{ margin-top:24px; }
+    .mb-1{ margin-bottom:4px; }
+    .mb-2{ margin-bottom:8px; }
+    .mb-3{ margin-bottom:12px; }
+    .mb-4{ margin-bottom:16px; }
+    .mb-6{ margin-bottom:24px; }
+
+    .w-full{ width:100%; }
+    .min-w-0{ min-width:0; }
+    .shrink-0{ flex-shrink:0; }
+
+    .text-left{ text-align:left; }
+    .text-right{ text-align:right; }
+    .text-center{ text-align:center; }
+
+    .text-xs{ font-size:12px; line-height:1.25; }
+    .text-sm{ font-size:14px; line-height:1.35; }
+    .text-xl{ font-size:20px; line-height:1.2; }
+    .text-2xl{ font-size:24px; line-height:1.15; }
+    .text-3xl{ font-size:30px; line-height:1.1; }
+    .text-4xl{ font-size:36px; line-height:1.05; }
+
+    .font-medium{ font-weight:500; }
+    .font-semibold{ font-weight:600; }
+    .font-bold{ font-weight:700; }
+    .font-extrabold{ font-weight:800; }
+    .font-black{ font-weight:900; }
+
+    .uppercase{ text-transform:uppercase; }
+    .tracking-wider{ letter-spacing:.08em; }
+    .tracking-widest{ letter-spacing:.16em; }
+
+    .border{ border-width:1px; border-style:solid; }
+    .overflow-hidden{ overflow:hidden; }
+    .hidden{ display:none; }
+    .block{ display:block; }
+
+    @media (min-width:768px){
+      .md\:text-4xl{ font-size:36px; line-height:1.05; }
+      .md\:text-\[15px\]{ font-size:15px; line-height:1.4; }
+      .md\:grid-cols-2{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .md\:flex{ display:flex; }
+      .md\:block{ display:block; }
+      .md\:hidden{ display:none; }
+      .md\:items-center{ align-items:center; }
+      .md\:items-end{ align-items:flex-end; }
+      .md\:justify-between{ justify-content:space-between; }
+      .md\:flex-row{ flex-direction:row; }
+      .md\:w-auto{ width:auto; }
+    }
+    @media (min-width:1024px){
+      .lg\:grid-cols-2{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .lg\:grid-cols-3{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    .text-slate-900{ color:#0b2a23; }
+    .text-slate-800{ color:#123a31; }
+    .text-slate-700{ color:#2f5b4f; }
+    .text-slate-600{ color:#4c7468; }
+    .text-slate-500{ color:#5b8376; }
+
+    .text-emerald-700{ color:#047857; }
+    .text-emerald-600{ color:#059669; }
+    .text-teal-700{ color:#0f766e; }
+    .text-green-700{ color:#15803d; }
+    .text-lime-700{ color:#65a30d; }
+    .text-sky-700{ color:#0369a1; }
+
+    .text-slate-700\/90{ color: rgba(47,91,79,0.90); }
+    .bg-slate-50\/90{ background-color: rgba(233,248,240,0.92); }
+    .bg-white\/70{ background-color: rgba(255,255,255,0.70); }
+    .bg-white\/80{ background-color: rgba(255,255,255,0.80); }
+    .bg-white\/85{ background-color: rgba(255,255,255,0.85); }
+    .bg-white\/90{ background-color: rgba(255,255,255,0.90); }
+
+    .border-slate-200{ border-color: rgba(191,230,210,0.95) !important; }
+    .border-slate-100{ border-color: rgba(216,239,227,0.95) !important; }
+    .border-emerald-200{ border-color: rgba(167,243,208,0.95); }
+    .border-sky-200{ border-color: rgba(186,230,253,0.95); }
+
+    .shadow-md { box-shadow: 0 6px 14px rgba(6, 95, 70, 0.10); }
+    .shadow-lg { box-shadow: 0 14px 28px rgba(6, 95, 70, 0.12); }
+    .shadow-xl { box-shadow: 0 18px 38px rgba(6, 95, 70, 0.14); }
+    .shadow-2xl { box-shadow: 0 26px 60px rgba(6, 95, 70, 0.18); }
+
+    .transition-all { transition: all 0.3s ease; }
+    .transition-shadow { transition: box-shadow 0.3s ease; }
+    .transition-colors { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
+
+    .hover\:scale-105:hover { transform: scale(1.05); }
+    .hover\:-translate-y-1:hover { transform: translateY(-0.25rem); }
+    .hover\:-translate-y-0\.5:hover { transform: translateY(-0.125rem); }
+
+    .backdrop-blur-sm { backdrop-filter: blur(4px); }
+
+    /* ============================================================
+       ✅ Shared skin from PG dashboard
+       ============================================================ */
+    .card-border-soft{
+      border: 1.5px solid rgba(191,230,210,0.95) !important;
+      box-shadow: 0 14px 30px rgba(6,95,70,0.12) !important;
+      background: rgba(255,255,255,0.94) !important;
+    }
+    .stat-icon-soft{
+      background: rgba(233,248,240,0.95) !important;
+      border: 1px solid rgba(15,118,110,0.18) !important;
+    }
+    .human-title{ letter-spacing: -0.01em; }
+    .human-subtitle{ color: #2f5b4f !important; }
+
+    /* ============================================================
+       ✅ Header / welcome strip
+       ============================================================ */
+    .state-welcome-strip{
+      width: 100%;
+      max-width: 80rem;
+      margin: 18px auto 16px;
+      padding: 0;
+    }
+
+    .state-welcome-card{
+      width: 100%;
+      position: relative;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.92);
+      border: 1.5px solid rgba(191,230,210,0.95);
+      box-shadow: 0 22px 60px rgba(6, 95, 70, 0.14);
+      overflow: hidden;
+      backdrop-filter: blur(6px);
+    }
+    .state-welcome-card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      pointer-events:none;
+      background-image: radial-gradient(rgba(6,95,70,0.08) 0.6px, transparent 0.6px);
+      background-size: 18px 18px;
+      opacity: 0.07;
+      mix-blend-mode: multiply;
+    }
+    .state-welcome-inner{
+      position: relative;
+      z-index: 1;
+      padding: 18px 24px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+
+    .welcome-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(233,248,240,0.95);
+      border: 1px solid rgba(15,118,110,0.20);
+      color: #0b2a23;
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .welcome-dot{
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(21,128,61,0.95);
+      box-shadow: 0 0 0 4px rgba(21,128,61,0.12);
+    }
+
+    /* ============================================================
+       ✅ Main panel
+       ============================================================ */
+    .state-main{
+      position: relative;
+      border-radius: 22px;
+      padding-top: 22px;
+      padding-bottom: 24px;
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(15,118,110,0.18);
+      box-shadow: 0 22px 60px rgba(6, 95, 70, 0.14);
+      overflow: clip;
+      backdrop-filter: blur(6px);
+      margin-top: 0;
+    }
+    .state-main::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      pointer-events:none;
+      background-image: radial-gradient(rgba(6,95,70,0.08) 0.6px, transparent 0.6px);
+      background-size: 18px 18px;
+      opacity: 0.07;
+      mix-blend-mode: multiply;
+    }
+
+    .state-main > *{
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ============================================================
+       ✅ Dashboard-specific blocks
+       ============================================================ */
+    .sdx{ width:100%; }
+
+    .state-topbar{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      margin-bottom:16px;
+    }
+    @media (min-width:768px){
+      .state-topbar{
+        flex-direction:row;
+        align-items:flex-end;
+        justify-content:space-between;
+      }
+    }
+
+    .state-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .btnlink{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:14px;
+      padding:10px 14px;
+      font-weight:900;
+      border:1px solid rgba(191,230,210,0.95);
+      background: rgba(255,255,255,0.88);
+      color:#0b2a23;
+      text-decoration:none;
+      box-shadow: 0 10px 22px rgba(6,95,70,.10);
+      transition: all .25s ease;
+    }
+    .btnlink.primary{
+      background: rgba(15,118,110,.10);
+      border-color: rgba(15,118,110,.25);
+      color:#0f766e;
+    }
+    .btnlink:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(6,95,70,.16);
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid rgba(191,230,210,0.95);
+      background:rgba(255,255,255,.85);
+      padding:8px 12px;
+      border-radius:999px;
+      font-weight:800;
+      color:#0b2a23;
+      font-size:12px;
+      white-space:nowrap;
+      flex-shrink:0;
+    }
+
+    .muted{ color:#4c7468; }
+
+    .gridK{
+      display:grid;
+      grid-template-columns: repeat(6, minmax(0,1fr));
+      gap:12px;
+      margin-bottom:16px;
+    }
+    @media (max-width:1200px){
+      .gridK{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+    }
+    @media (max-width:640px){
+      .gridK{ grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+    }
+
+    .kpi{
+      border-radius:18px;
+      border:1.5px solid rgba(191,230,210,0.95);
+      background:rgba(255,255,255,.90);
+      box-shadow: 0 12px 30px rgba(6,95,70,.08);
+      transition: all .25s ease;
+      min-width:0;
+    }
+    .kpi:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 18px 38px rgba(6,95,70,.12);
+    }
+    .kpi .t{
+      color:#4c7468;
+      font-weight:800;
+      font-size:12px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .kpi .v{
+      color:#0b2a23;
+      font-weight:900;
+      font-size:28px;
+      line-height:1.1;
+      margin-top:6px;
+      word-break:break-word;
+    }
+    .kpi .s{
+      color:#5b8376;
+      font-size:12px;
+      margin-top:6px;
+      line-height:1.35;
+    }
+
+    .gridA{
+      display:grid;
+      grid-template-columns: 2.3fr 1.2fr;
+      gap:14px;
+    }
+    @media (max-width:1100px){
+      .gridA{ grid-template-columns:1fr; }
+    }
+
+    .geo-grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap:16px;
+      margin-top:16px;
+    }
+    @media (max-width:1024px){
+      .geo-grid{ grid-template-columns:1fr; }
+    }
+
+    .cardx{
+      position: relative;
+      overflow:hidden;
+      border-radius:22px;
+      border:1.5px solid rgba(191,230,210,0.95);
+      background:rgba(255,255,255,.90);
+      box-shadow: 0 18px 38px rgba(6,95,70,.12);
+      backdrop-filter: blur(4px);
+      min-width:0;
+    }
+    .cardx::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      pointer-events:none;
+      background-image: radial-gradient(rgba(6,95,70,0.08) 0.6px, transparent 0.6px);
+      background-size: 18px 18px;
+      opacity: 0.05;
+      mix-blend-mode: multiply;
+    }
+    .cardx > *{
+      position:relative;
+      z-index:1;
+    }
+
+    .cardx .hdr{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:16px 18px;
+      border-bottom:1px solid rgba(216,239,227,.95);
+      min-width:0;
+    }
+    .cardx .hdr > div:first-child{
+      min-width:0;
+      flex:1 1 auto;
+    }
+    .cardx .bd{
+      padding:18px;
+    }
+
+    .chartBox{
+      position: relative;
+      width: 100%;
+      height: 340px;
+      min-height: 220px;
+    }
+    @media (max-width:640px){
+      .chartBox{ height:280px; min-height:200px; }
+    }
+
+    .chartBox canvas{
+      display:block;
+      width:100% !important;
+      height:100% !important;
+      max-width:100%;
+    }
+
+    .state-chart-fallback{
+      width:100%;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #e9f8f0; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(21,128,61,0.55); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(15,118,110,0.75); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.55s cubic-bezier(.2,.8,.2,1); }
+
+    /* ============================================================
+       ✅ Mobile / tablet tuning
+       ============================================================ */
+    @media (max-width:1024px){
+      .state-welcome-card{
+        background:
+          radial-gradient(120% 120% at 10% 0%, rgba(15,118,110,0.16), transparent 55%),
+          radial-gradient(120% 120% at 100% 10%, rgba(21,128,61,0.12), transparent 55%),
+          rgba(255,255,255,0.94) !important;
+        border: 1px solid rgba(15,118,110,0.30) !important;
+        box-shadow:
+          0 26px 70px rgba(6,95,70,0.18),
+          0 2px 0 rgba(15,118,110,0.10) inset !important;
+      }
+      .state-welcome-strip{ margin-bottom:14px !important; }
+    }
+
+    @media (max-width:768px){
+      .state-main{ padding-left:14px !important; padding-right:14px !important; }
+      .state-welcome-inner{ padding:16px 14px !important; }
+
+      .state-welcome-card h1{ font-size:20px !important; line-height:1.15 !important; }
+      .state-welcome-card p{ font-size:13px !important; }
+      .welcome-pill{ display:none !important; }
+
+      .btnlink{
+        width:100%;
+        justify-content:center;
+        padding:11px 14px;
+      }
+
+      .state-actions{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:10px;
+        width:100%;
+      }
+
+      .kpi{ border-radius:18px !important; }
+      .kpi .v{ font-size:22px !important; }
+      .kpi .t{ font-size:11px !important; }
+      .kpi .s{ font-size:12px !important; }
+
+      .cardx .hdr{
+        padding:14px !important;
+        align-items:flex-start !important;
+      }
+      .cardx .bd{ padding:14px !important; }
+
+      .cardx h2,
+      .cardx .text-xl{ font-size:16px !important; }
+      .chartBox{ height:240px !important; min-height:220px !important; }
+    }
+
+    @media (max-width:420px){
+      .state-welcome-card h1{ font-size:19px !important; }
+      .gridK{ gap:9px !important; }
+      .chartBox{ height:220px !important; min-height:200px !important; }
+      .cardx .hdr{
+        flex-direction:row !important;
+        gap:8px !important;
+      }
+      .cardx .hdr .text-sm{ font-size:15px !important; line-height:1.2 !important; }
+      .cardx .hdr .text-xs{ font-size:12px !important; }
+      .chip{
+        font-size:11px !important;
+        padding:7px 10px !important;
+      }
+    }
   </style>
 {% endblock %}
 
 {% block content %}
-<div class="sdx">
-  <!-- Header -->
-  <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-4">
-    <div>
-      <div class="text-xs font-extrabold tracking-widest text-slate-600 uppercase">
-        Unified Landing Dashboard · {{ scope_label }}
-      </div>
-      <div class="text-3xl md:text-4xl font-black text-slate-900 mt-1">State Dashboard</div>
-      <div class="muted mt-1 text-sm">
-        Reports include <b>all PGs inside your jurisdiction</b> (Super Admin: all states; State Admin: your state; District Admin: your district).
-      </div>
-    </div>
-
-    <div class="flex gap-2 flex-wrap">
-      <a class="btnlink primary" href="{{ url_for('reports.hierarchy_dashboard') }}">Hierarchy Dashboard</a>
-      <a class="btnlink" href="{{ url_for('master_data.manage_pgs') }}">PG Management</a>
-      <a class="btnlink" href="{{ url_for('master_data.shg_browser') }}">SHG Master Browser</a>
-      <a class="btnlink" href="{{ url_for('reports.export_scope_csv') }}">Download CSV</a>
-    </div>
-  </div>
-
-  <!-- KPIs -->
-  <div class="gridK mb-4">
-    <div class="kpi p-4">
-      <div class="t">States</div>
-      <div class="v">{{ states_total or 0 }}</div>
-      <div class="s">In scope</div>
-    </div>
-    <div class="kpi p-4">
-      <div class="t">Districts</div>
-      <div class="v">{{ districts_total or 0 }}</div>
-      <div class="s">In scope</div>
-    </div>
-    <div class="kpi p-4">
-      <div class="t">Blocks</div>
-      <div class="v">{{ blocks_total or 0 }}</div>
-      <div class="s">In scope</div>
-    </div>
-    <div class="kpi p-4">
-      <div class="t">Total PGs</div>
-      <div class="v">{{ pg_count or 0 }}</div>
-      <div class="s">All PGs (scope)</div>
-    </div>
-    <div class="kpi p-4">
-      <div class="t">Total Members</div>
-      <div class="v">{{ member_count or 0 }}</div>
-      <div class="s">Membership register</div>
-    </div>
-    <div class="kpi p-4">
-      <div class="t">Turnover (Latest)</div>
-      <div class="v">{{ total_turnover or 0 }}</div>
-      <div class="s">{% if turnover_period %}Period: {{ turnover_period }}{% else %}From Monthly Business{% endif %}</div>
-    </div>
-
-    <div class="kpi p-4">
-      <div class="t">Profit (Total)</div>
-      <div class="v">{{ total_profit or 0 }}</div>
-      <div class="s">Income–Expenditure (cumulative)</div>
-    </div>
-
-    <div class="kpi p-4">
-      <div class="t">Loss (Total)</div>
-      <div class="v">{{ total_loss or 0 }}</div>
-      <div class="s">Income–Expenditure (cumulative)</div>
-    </div>
-
-    <div class="kpi p-4">
-      <div class="t">PGs with Grants</div>
-      <div class="v">{{ pgs_with_grants or 0 }}</div>
-      <div class="s">At least 1 grant received</div>
-    </div>
-
-    <div class="kpi p-4">
-      <div class="t">Grants Received (Total)</div>
-      <div class="v">{{ grants_total or 0 }}</div>
-      <div class="s">All PGs (scope)</div>
-    </div>
-
-    <div class="kpi p-4">
-      <div class="t">Lakhpati Didi (Members)</div>
-      <div class="v">{{ lakhpati_total or 0 }}</div>
-      <div class="s">Members marked across PGs</div>
-    </div>
-  </div>
-
-  <!-- Charts Row -->
-  <div class="gridA">
-    <div class="cardx">
-      <div class="hdr">
+{% set role = session.get('role') %}
+<div id="stateDashboardGate" class="sd-gate">
+  <!-- ✅ Welcome heading under navbar -->
+  <section class="state-welcome-strip">
+    <div class="state-welcome-card card-border-soft fade-in">
+      <div class="state-welcome-inner">
         <div>
-          <div class="text-sm font-extrabold text-slate-900">Turnover Trend (Last 12 Months)</div>
-          <div class="text-xs muted">{% if turnover_period %}Latest period: {{ turnover_period }}{% else %}No turnover data found yet{% endif %}</div>
-        </div>
-        <span class="chip">CHART</span>
-      </div>
-      <div class="bd">
-        <div class="chartBox">
-          <canvas id="turnoverTrend"></canvas>
-        </div>
-      </div>
-    </div>
+          <p class="text-xs font-semibold text-slate-700/90 tracking-wider uppercase">
+            Unified Landing Dashboard · {{ scope_label }}
+          </p>
 
-    <div class="cardx">
-      <div class="hdr">
-        <div>
-          <div class="text-sm font-extrabold text-slate-900">SHG Master (LokOS)</div>
-          <div class="text-xs muted">Total: {{ shg_total or 0 }} · Active: {{ shg_active or 0 }}</div>
-        </div>
-        <span class="chip">Top districts</span>
-      </div>
-      <div class="bd">
-        <div class="chartBox" style="height:340px;">
-          <canvas id="shgTopDistricts"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
+          <h1 class="text-3xl md:text-4xl font-black text-slate-900 mt-1 human-title">
+            {% if role == "SUPER_ADMIN" %}
+                Super Admin Dashboard
+            {% else %}
+                State Dashboard
+            {% endif %}
+          </h1>
 
-  <!-- Geo Charts -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-    <div class="cardx">
-      <div class="hdr">
-        <div>
-          <div class="text-sm font-extrabold text-slate-900">PGs by State</div>
-          <div class="text-xs muted">Top 10 states in scope</div>
+          <p class="text-sm md:text-[15px] text-slate-700 mt-2">
+            Reports include <b>all PGs inside your jurisdiction</b> (Super Admin: all states; State Admin: your state; District Admin: your district).
+          </p>
         </div>
-        <span class="chip">Bars</span>
-      </div>
-      <div class="bd">
-        <div class="chartBox" style="height:300px;"><canvas id="pgByState"></canvas></div>
-      </div>
-    </div>
 
-    <div class="cardx">
-      <div class="hdr">
-        <div>
-          <div class="text-sm font-extrabold text-slate-900">PGs by District</div>
-          <div class="text-xs muted">Top 10 districts in scope</div>
+        <div class="welcome-pill">
+          <span class="welcome-dot"></span>
+          <span>Dashboard • Live View</span>
         </div>
-        <span class="chip">Bars</span>
-      </div>
-      <div class="bd">
-        <div class="chartBox" style="height:300px;"><canvas id="pgByDistrict"></canvas></div>
       </div>
     </div>
+  </section>
 
-    <div class="cardx">
-      <div class="hdr">
-        <div>
-          <div class="text-sm font-extrabold text-slate-900">PGs by Block</div>
-          <div class="text-xs muted">Top 10 blocks in scope</div>
+  <main class="state-main max-w-7xl mx-auto px-6 py-6 space-y-6">
+    <div class="sdx">
+      <!-- Header Actions -->
+      <div class="state-topbar">
+        <div></div>
+        <div class="state-actions">
+          <a class="btnlink primary" href="{{ url_for('reports.hierarchy_dashboard') }}">Hierarchy Dashboard</a>
+          <a class="btnlink" href="{{ url_for('master_data.manage_pgs') }}">PG Management</a>
+          <a class="btnlink" href="{{ url_for('master_data.shg_browser') }}">SHG Master Browser</a>
+          <a class="btnlink" href="{{ url_for('reports.export_scope_csv') }}">Download CSV</a>
         </div>
-        <span class="chip">Bars</span>
       </div>
-      <div class="bd">
-        <div class="chartBox" style="height:300px;"><canvas id="pgByBlock"></canvas></div>
+
+      <!-- KPIs -->
+      <div class="gridK">
+        <div class="kpi p-4 fade-in">
+          <div class="t">States</div>
+          <div class="v">{{ states_total or 0 }}</div>
+          <div class="s">In scope</div>
+        </div>
+
+        <div class="kpi p-4 fade-in">
+          <div class="t">Districts</div>
+          <div class="v">{{ districts_total or 0 }}</div>
+          <div class="s">In scope</div>
+        </div>
+
+        <div class="kpi p-4 fade-in">
+          <div class="t">Blocks</div>
+          <div class="v">{{ blocks_total or 0 }}</div>
+          <div class="s">In scope</div>
+        </div>
+
+        <div class="kpi p-4 fade-in">
+          <div class="t">Total PGs</div>
+          <div class="v">{{ pg_count or 0 }}</div>
+          <div class="s">All PGs (scope)</div>
+        </div>
+
+        <div class="kpi p-4 fade-in">
+          <div class="t">Total Members</div>
+          <div class="v">{{ member_count or 0 }}</div>
+          <div class="s">Membership register</div>
+        </div>
+
+        <div class="kpi p-4 fade-in">
+          <div class="t">Turnover (Latest)</div>
+          <div class="v">{{ total_turnover or 0 }}</div>
+          <div class="s">{% if turnover_period %}Period: {{ turnover_period }}{% else %}From Monthly Business{% endif %}</div>
+        </div>
+
+        <div class="kpi p-4 fade-in">
+          <div class="t">Profit (Total)</div>
+          <div class="v">{{ total_profit or 0 }}</div>
+          <div class="s">Income–Expenditure (cumulative)</div>
+        </div>
+
+        <div class="kpi p-4 fade-in">
+          <div class="t">Loss (Total)</div>
+          <div class="v">{{ total_loss or 0 }}</div>
+          <div class="s">Income–Expenditure (cumulative)</div>
+        </div>
+
+        <div class="kpi p-4 fade-in">
+          <div class="t">PGs with Grants</div>
+          <div class="v">{{ pgs_with_grants or 0 }}</div>
+          <div class="s">At least 1 grant received</div>
+        </div>
+
+        <div class="kpi p-4 fade-in">
+          <div class="t">Grants Received (Total)</div>
+          <div class="v">{{ grants_total or 0 }}</div>
+          <div class="s">All PGs (scope)</div>
+        </div>
+
+        <div class="kpi p-4 fade-in">
+          <div class="t">Lakhpati Didi (Members)</div>
+          <div class="v">{{ lakhpati_total or 0 }}</div>
+          <div class="s">Members marked across PGs</div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="gridA">
+        <div class="cardx card-border-soft fade-in">
+          <div class="hdr">
+            <div>
+              <div class="text-sm font-extrabold text-slate-900">Turnover Trend (Last 12 Months)</div>
+              <div class="text-xs muted">{% if turnover_period %}Latest period: {{ turnover_period }}{% else %}No turnover data found yet{% endif %}</div>
+            </div>
+            <span class="chip">CHART</span>
+          </div>
+          <div class="bd">
+            <div class="chartBox" id="turnoverTrendBox">
+              <canvas id="turnoverTrend"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="cardx card-border-soft fade-in">
+          <div class="hdr">
+            <div>
+              <div class="text-sm font-extrabold text-slate-900">SHG Master (LokOS)</div>
+              <div class="text-xs muted">Total: {{ shg_total or 0 }} · Active: {{ shg_active or 0 }}</div>
+            </div>
+            <span class="chip">Top districts</span>
+          </div>
+          <div class="bd">
+            <div class="chartBox" id="shgTopDistrictsBox" style="height:340px;">
+              <canvas id="shgTopDistricts"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Geo Charts -->
+      <div class="geo-grid">
+        <div class="cardx card-border-soft fade-in">
+          <div class="hdr">
+            <div>
+              <div class="text-sm font-extrabold text-slate-900">PGs by State</div>
+              <div class="text-xs muted">Top 10 states in scope</div>
+            </div>
+            <span class="chip">Bars</span>
+          </div>
+          <div class="bd">
+            <div class="chartBox" id="pgByStateBox" style="height:300px;">
+              <canvas id="pgByState"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="cardx card-border-soft fade-in">
+          <div class="hdr">
+            <div>
+              <div class="text-sm font-extrabold text-slate-900">PGs by District</div>
+              <div class="text-xs muted">Top 10 districts in scope</div>
+            </div>
+            <span class="chip">Bars</span>
+          </div>
+          <div class="bd">
+            <div class="chartBox" id="pgByDistrictBox" style="height:300px;">
+              <canvas id="pgByDistrict"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="cardx card-border-soft fade-in">
+          <div class="hdr">
+            <div>
+              <div class="text-sm font-extrabold text-slate-900">PGs by Block</div>
+              <div class="text-xs muted">Top 10 blocks in scope</div>
+            </div>
+            <span class="chip">Bars</span>
+          </div>
+          <div class="bd">
+            <div class="chartBox" id="pgByBlockBox" style="height:300px;">
+              <canvas id="pgByBlock"></canvas>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </main>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-(function(){
-  const charts = {{ charts|tojson }};
-  const shgTop = {{ shg_top_districts|tojson }};
-
-  function makeBar(id, labels, values, horizontal=false){
-    const el = document.getElementById(id);
-    if(!el) return;
-    const ctx = el.getContext('2d');
-    new Chart(ctx, {
-      type: 'bar',
-      data: { labels, datasets: [{ label: 'Count', data: values }] },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        indexAxis: horizontal ? 'y' : 'x',
-        plugins: { legend: { display:false } },
-        scales: {
-          x: { ticks: { maxRotation: 45, minRotation: 0 }, grid: { display: false } },
-          y: { beginAtZero: true, grid: { color: 'rgba(226,232,240,.9)' } }
-        }
-      }
-    });
+  // ============================================================
+  // ✅ Gate helpers
+  // ============================================================
+  function __stateGateEl(){
+    return document.getElementById('stateDashboardGate');
   }
 
-  function makeLine(id, labels, values){
-    const el = document.getElementById(id);
-    if(!el) return;
-    const ctx = el.getContext('2d');
-    new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'Turnover', data: values, tension: 0.35, fill: true }] },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display:false } },
-        scales: {
-          x: { grid: { display:false } },
-          y: { beginAtZero: true, grid: { color: 'rgba(226,232,240,.9)' } }
-        }
-      }
-    });
+  function __openStateGate(){
+    const g = __stateGateEl();
+    if (!g) return;
+    g.classList.add('sd-gate--ready');
   }
 
-  // Turnover trend
-  makeLine('turnoverTrend', (charts.turnover_ts && charts.turnover_ts.labels) || [], (charts.turnover_ts && charts.turnover_ts.values) || []);
+  function __closeStateGate(){
+    const g = __stateGateEl();
+    if (!g) return;
+    g.classList.remove('sd-gate--ready');
+  }
 
-  // PG geo charts
-  makeBar('pgByState', (charts.pg_by_state && charts.pg_by_state.labels) || [], (charts.pg_by_state && charts.pg_by_state.values) || [], true);
-  makeBar('pgByDistrict', (charts.pg_by_district && charts.pg_by_district.labels) || [], (charts.pg_by_district && charts.pg_by_district.values) || [], true);
-  makeBar('pgByBlock', (charts.pg_by_block && charts.pg_by_block.labels) || [], (charts.pg_by_block && charts.pg_by_block.values) || [], true);
+  (function(){
+    const charts = {{ charts|tojson }};
+    const shgTop = {{ shg_top_districts|tojson }};
+    const __stateCharts = [];
 
-  // SHG Top districts
-  const shgLabels = (shgTop || []).map(x => x._id || 'Unknown');
-  const shgValues = (shgTop || []).map(x => x.count || 0);
-  makeBar('shgTopDistricts', shgLabels, shgValues, true);
-})();
+    function destroyStateCharts(){
+      try{
+        __stateCharts.forEach(ch => {
+          try { ch.destroy(); } catch(e){}
+        });
+        __stateCharts.length = 0;
+      }catch(e){}
+    }
+
+    function makeBar(id, labels, values, horizontal=false){
+      const el = document.getElementById(id);
+      if(!el || !window.Chart) return;
+      const ctx = el.getContext('2d');
+
+      const yScaleKey = horizontal ? 'x' : 'y';
+      const xScaleKey = horizontal ? 'y' : 'x';
+
+      const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels || [],
+          datasets: [{
+            label: 'Count',
+            data: values || [],
+            backgroundColor: 'rgba(15, 118, 110, 0.78)',
+            borderColor: 'rgba(15, 118, 110, 1)',
+            borderWidth: 1.5,
+            borderRadius: 10,
+            borderSkipped: false,
+            maxBarThickness: horizontal ? 28 : 44,
+            categoryPercentage: 0.7,
+            barPercentage: 0.9
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: horizontal ? 'y' : 'x',
+          animation: false,
+          plugins: {
+            legend: { display:false },
+            tooltip: {
+              backgroundColor: '#ffffff',
+              titleColor: '#000',
+              bodyColor: '#000',
+              borderColor: 'rgba(15,118,110,0.55)',
+              borderWidth: 2,
+              padding: 12,
+              cornerRadius: 12,
+            }
+          },
+          scales: {
+            [xScaleKey]: {
+              ticks: {
+                maxRotation: horizontal ? 0 : 45,
+                minRotation: 0,
+                autoSkip: false,
+                color: '#2f5b4f',
+                font: { size: 12, weight: 600 }
+              },
+              grid: { display: false, drawBorder: false }
+            },
+            [yScaleKey]: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0,
+                color: '#2f5b4f',
+                font: { size: 12, weight: 600 }
+              },
+              grid: { color: 'rgba(226,232,240,.9)', drawBorder: false }
+            }
+          }
+        }
+      });
+
+      __stateCharts.push(chart);
+      return chart;
+    }
+
+    function makeLine(id, labels, values){
+      const el = document.getElementById(id);
+      if(!el || !window.Chart) return;
+      const ctx = el.getContext('2d');
+
+      const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels || [],
+          datasets: [{
+            label: 'Turnover',
+            data: values || [],
+            tension: 0.35,
+            fill: true,
+            borderColor: '#0f766e',
+            backgroundColor: 'rgba(15, 118, 110, 0.12)',
+            borderWidth: 3,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#0f766e',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: {
+            legend: { display:false },
+            tooltip: {
+              backgroundColor: '#ffffff',
+              titleColor: '#000',
+              bodyColor: '#000',
+              borderColor: 'rgba(15,118,110,0.55)',
+              borderWidth: 2,
+              padding: 12,
+              cornerRadius: 12,
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: '#2f5b4f',
+                font: { size: 12, weight: 600 }
+              },
+              grid: { display:false, drawBorder:false }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0,
+                color: '#2f5b4f',
+                font: { size: 12, weight: 600 }
+              },
+              grid: { color: 'rgba(226,232,240,.9)', drawBorder:false }
+            }
+          }
+        }
+      });
+
+      __stateCharts.push(chart);
+      return chart;
+    }
+
+    function safeStateChartsFallback(){
+      const mapping = {
+        turnoverTrendBox: 'Turnover Trend (Last 12 Months)',
+        shgTopDistrictsBox: 'SHG Master (LokOS)',
+        pgByStateBox: 'PGs by State',
+        pgByDistrictBox: 'PGs by District',
+        pgByBlockBox: 'PGs by Block'
+      };
+
+      Object.keys(mapping).forEach(boxId => {
+        const box = document.getElementById(boxId);
+        if (!box) return;
+
+        if (box.querySelector('.state-chart-fallback')) return;
+        if (box.querySelector('canvas')) return;
+
+        box.innerHTML = `
+          <div class="state-chart-fallback bg-white/85 rounded-xl p-4 border border-slate-200 card-border-soft"
+               style="height:100%; display:flex; flex-direction:column; justify-content:center; align-items:flex-start;">
+            <h3 class="text-sm font-extrabold text-slate-900">${mapping[boxId]}</h3>
+            <p class="text-sm text-slate-600 mt-1">Charts are loading…</p>
+          </div>
+        `;
+      });
+    }
+
+    function ensureChartCanvas(boxId, canvasId){
+      const box = document.getElementById(boxId);
+      if (!box) return null;
+
+      let canvas = document.getElementById(canvasId);
+      if (canvas && canvas.closest('.chartBox') === box) return canvas;
+
+      box.innerHTML = '<canvas id="' + canvasId + '"></canvas>';
+      return document.getElementById(canvasId);
+    }
+
+    async function initStateCharts(){
+      let chartOk = false;
+      try {
+        chartOk = await (window.__stateChartReady || Promise.resolve(!!window.Chart));
+      } catch(e){
+        chartOk = !!window.Chart;
+      }
+
+      if (!chartOk || !window.Chart) {
+        safeStateChartsFallback();
+        return;
+      }
+
+      destroyStateCharts();
+
+      ensureChartCanvas('turnoverTrendBox', 'turnoverTrend');
+      ensureChartCanvas('shgTopDistrictsBox', 'shgTopDistricts');
+      ensureChartCanvas('pgByStateBox', 'pgByState');
+      ensureChartCanvas('pgByDistrictBox', 'pgByDistrict');
+      ensureChartCanvas('pgByBlockBox', 'pgByBlock');
+
+      makeLine(
+        'turnoverTrend',
+        (charts.turnover_ts && charts.turnover_ts.labels) || [],
+        (charts.turnover_ts && charts.turnover_ts.values) || []
+      );
+
+      makeBar(
+        'pgByState',
+        (charts.pg_by_state && charts.pg_by_state.labels) || [],
+        (charts.pg_by_state && charts.pg_by_state.values) || [],
+        true
+      );
+
+      makeBar(
+        'pgByDistrict',
+        (charts.pg_by_district && charts.pg_by_district.labels) || [],
+        (charts.pg_by_district && charts.pg_by_district.values) || [],
+        true
+      );
+
+      makeBar(
+        'pgByBlock',
+        (charts.pg_by_block && charts.pg_by_block.labels) || [],
+        (charts.pg_by_block && charts.pg_by_block.values) || [],
+        true
+      );
+
+      const shgLabels = (shgTop || []).map(x => x._id || 'Unknown');
+      const shgValues = (shgTop || []).map(x => x.count || 0);
+      makeBar('shgTopDistricts', shgLabels, shgValues, true);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function(){
+      try { document.documentElement.classList.remove('no-js'); } catch(e){}
+      __closeStateGate();
+
+      await new Promise(r => requestAnimationFrame(r));
+      __openStateGate();
+
+      initStateCharts();
+    });
+  })();
 </script>
 {% endblock %}
