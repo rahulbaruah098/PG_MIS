@@ -9,6 +9,7 @@ from . import pg_bp
 from ..rbac import login_required, roles_required
 from ..services.workflow import ensure_pg_locked, create_change_request, add_notification, save_uploaded_document
 from ..services.audit import log_audit
+from flask import g
 
 
 def _fmt_inr(amount):
@@ -2057,11 +2058,9 @@ def api_receipt_voucher(pg_id):
     }, user=_current_user_dict())
     return jsonify({"ok": True, "message": "Saved successfully"})
 
-
-# ---------- Generic Register Store (Input/Output/Asset/Meeting Minutes/Member Ledger) ----------
 @pg_bp.route("/api/register/<name>/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg', pg_id_param="pg_id")
 def api_generic_register(name, pg_id):
     db = current_app.mongo_db
@@ -2076,27 +2075,58 @@ def api_generic_register(name, pg_id):
         "member_ledger": "pg_member_ledgers",
     }
     if name not in allowed:
-        abort(404)
+        return jsonify({"ok": False, "error": f"Invalid register name: {name}"}), 404
 
     coll = allowed[name]
 
     if request.method == "GET":
-        doc = db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))), "year": year, "month": month}) if (year and month) else db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, sort=[("updated_at", -1)])
+        doc = (
+            db[coll].find_one(
+                {
+                    "pg_id": (safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))),
+                    "year": year,
+                    "month": month,
+                }
+            )
+            if (year and month)
+            else db[coll].find_one(
+                {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get("pg_id")))},
+                sort=[("updated_at", -1)],
+            )
+        )
+
         if not doc:
             return jsonify({"data": {}, "year": year, "month": month})
+
         doc["_id"] = str(doc["_id"])
         doc["pg_id"] = str(doc["pg_id"])
         return jsonify(doc)
 
-    if session.get("role") != "PG_DATA_ENTRY":
-        abort(403)
+    role = getattr(g, "role", None) or session.get("role")
+    print("DEBUG resolved role:", role)
+
+    if role != "PG_DATA_ENTRY":
+        return jsonify({"ok": False, "error": f"Forbidden for role: {role}"}), 403
 
     payload = request.get_json(silent=True) or {}
-    _upsert_pg_period_doc(db, collection=coll, pg_id=pg_id, year=year, month=month, payload={
-        "data": payload.get("data", payload),
-    }, user=_current_user_dict())
-    return jsonify({"ok": True, "message": "Saved successfully"})
+    print("DEBUG payload:", payload)
 
+    try:
+        _upsert_pg_period_doc(
+            db,
+            collection=coll,
+            pg_id=pg_id,
+            year=year,
+            month=month,
+            payload={
+                "data": payload.get("data", payload),
+            },
+            user=_current_user_dict(),
+        )
+        return jsonify({"ok": True, "message": "Saved successfully"})
+    except Exception as e:
+        current_app.logger.exception("api_generic_register save failed")
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @pg_bp.route("/profile/<pg_id>/data", methods=["GET"])
 @login_required
