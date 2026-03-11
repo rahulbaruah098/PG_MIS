@@ -593,17 +593,13 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
              data-bn="ত্রিপুরা পিজি সিস্টেমস">Tripura PG Systems</p>
 
           <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 welcome-title mt-1">
-  <span
-    data-i18n="dash_welcome_pg"
-    data-en="WELCOME PG"
-    data-bn="স্বাগতম পিজি">WELCOME PG</span>
+            <span
+              data-i18n="dash_welcome_pg"
+              data-en="WELCOME "
+              data-bn="স্বাগতম পিজি">WELCOME</span>
 
-  {{ session.get("name")
-     or session.get("username")
-     or (current_user.name if current_user is defined and current_user.is_authenticated and current_user.name else None)
-     or (current_user.username if current_user is defined and current_user.is_authenticated and current_user.username else None)
-     or "USER" }}
-</h1>
+            {{ pg.name if pg and pg.name else "USER" }}
+          </h1>
 
           <p class="text-sm md:text-[15px] text-slate-700 mt-2"
              data-i18n="dash_snapshot_line"
@@ -677,7 +673,7 @@ function __closeGate(){
     const __I18N = {
       // Welcome
       dash_tripura_pg_systems: { en: "Tripura PG Systems", bn: "ত্রিপুরা পিজি সিস্টেমস" },
-      dash_welcome_pg: { en: "WELCOME PG", bn: "স্বাগতম পিজি" },
+      dash_welcome_pg: { en: "WELCOME", bn: "স্বাগতম" },
       dash_snapshot_line: { en: "Here’s a quick snapshot of your registers, books and key trends.", bn: "আপনার রেজিস্টার, বই এবং গুরুত্বপূর্ণ ট্রেন্ডগুলোর একটি দ্রুত সারাংশ দেখুন।" },
       dash_live_view: { en: "Dashboard • Live View", bn: "ড্যাশবোর্ড • লাইভ ভিউ" },
 

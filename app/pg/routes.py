@@ -402,7 +402,6 @@ def _pg_metrics(db, pg_id):
 def pg_home():
     db = current_app.mongo_db
 
-    # ✅ MOBILE FIX: prefer g (JWT) over session (web)
     pg_id = getattr(g, "pg_id", None) or session.get("pg_id")
     role  = getattr(g, "role", None) or session.get("role")
 
@@ -429,23 +428,35 @@ def pg_home():
             "total_members": pg_doc.get("total_members", 0),
         }
 
+    def _get_display_name():
+        return (
+            getattr(g, "name", None)
+            or session.get("name")
+            or session.get("username")
+            or "USER"
+        )
+
     if role == "PG_DATA_ENTRY" and pg_id:
         oid = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
         pg_doc = db.pgs.find_one({"_id": oid}) if oid else None
         metrics = _pg_metrics(db, pg_id)
+        display_name = _get_display_name()
 
-        # ✅ APP / MOBILE JSON RESPONSE
         if _wants_json():
             return jsonify({
                 "ok": True,
                 "pg": _serialize_pg(pg_doc),
-                "metrics": metrics
+                "metrics": metrics,
+                "user_name": display_name
             }), 200
 
-        # ✅ WEB TEMPLATE RESPONSE
-        return render_template("dashboard_pg.html", pg=pg_doc, metrics=metrics)
+        return render_template(
+            "dashboard_pg.html",
+            pg=pg_doc,
+            metrics=metrics,
+            user_name=display_name
+        )
 
-    # Non-PG users
     if _wants_json():
         return jsonify({
             "ok": False,
@@ -453,7 +464,6 @@ def pg_home():
         }), 403
 
     return redirect(url_for("reports.hierarchy_dashboard"))
-
 
 
 @pg_bp.route("/profile")
@@ -2003,6 +2013,12 @@ def api_loan_ledger(loan_id):
         doc["_id"] = str(doc["_id"])
         doc["pg_id"] = str(doc["pg_id"])
         return jsonify(doc)
+
+        print("DEBUG SESSION:", dict(session))
+        print("DEBUG ROLE:", repr(session.get("role")))
+        print("DEBUG PG_ID:", repr(session.get("pg_id")))
+        print("DEBUG COOKIES:", request.cookies)
+        print("DEBUG AUTH HEADER:", request.headers.get("Authorization"))
 
     if session.get("role") != "PG_DATA_ENTRY":
         abort(403)
