@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}PGMIS – Cadre Dashboard{% endblock %}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f4faf7;color:#10231d}
+    a{text-decoration:none;color:inherit}
+    .app{min-height:100vh;display:flex;flex-direction:column}
+    .header{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:16px 22px;background:rgba(231,246,240,.92);backdrop-filter:blur(10px);border-bottom:1px solid #d7ece2}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:900;font-size:34px;color:#0b4d3a}
+    .pill{font-size:13px;padding:6px 12px;border-radius:999px;background:#dceee6;border:1px solid #bddfd1}
+    .top-actions{display:flex;gap:10px}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 16px;border-radius:999px;border:1px solid #cfe3da;background:#fff;font-weight:800;color:#0b4d3a}
+    .btn.danger{border-color:#efb5b5;color:#c43131;background:#fff7f7}
+    .shell{display:grid;grid-template-columns:270px 1fr;min-height:calc(100vh - 73px)}
+    .sidebar{background:#fff;border-right:1px solid #dcece5;padding:18px}
+    .side-title{font-size:14px;font-weight:900;color:#0f766e;letter-spacing:.08em;text-transform:uppercase}
+    .side-sub{margin-top:10px;font-size:14px;color:#45665c}
+    .nav{margin-top:18px;display:flex;flex-direction:column;gap:10px}
+    .nav a{padding:14px 14px;border-radius:14px;border:1px solid #e1efe8;background:#f9fcfa;font-weight:800}
+    .nav a.active,.nav a:hover{background:#eaf7f0;border-color:#bfe4d2}
+    .content{padding:26px}
+    @media (max-width:900px){.shell{grid-template-columns:1fr}.sidebar{border-right:0;border-bottom:1px solid #dcece5}}
+  </style>
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand">PG MIS <span class="pill">CADRE_CC</span></div>
+    <div class="top-actions">
+      <a class="btn" href="{{ url_for('reports.cadre_dashboard') }}">Assigned PGs</a>
+      <a class="btn" href="{{ url_for('auth.cadre_profile') }}">Profile</a>
+      <a class="btn danger" href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+  </header>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="side-title">Cadre Dashboard</div>
+      <div class="side-sub">Open one of your assigned PGs to start data entry in the exact PG workspace.</div>
+      <nav class="nav">
+        <a class="active" href="{{ url_for('reports.cadre_dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('auth.cadre_profile') }}">Profile</a>
+        {% for _pgid in session.get('assigned_pg_ids', []) %}
+          <a href="{{ url_for('pg.set_active_pg', pg_id=_pgid, next=url_for('pg.pg_home')) }}">Open Assigned PG</a>
+        {% endfor %}
+      </nav>
+    </aside>
+    <main class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div style="display:grid;gap:10px;margin-bottom:14px;">
+            {% for category, message in messages %}
+              <div style="padding:12px 14px;border-radius:12px;background:#fff;border:1px solid #dcece5;font-weight:700;">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+</body>
+</html>

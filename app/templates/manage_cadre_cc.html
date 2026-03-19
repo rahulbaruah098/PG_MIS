@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Manage Cadre (CC){% endblock %}
+{% block content %}
+<style>
+.mc-wrap{display:grid;gap:18px}
+.mc-hero,.mc-card{background:#fff;border:1px solid #d9ebe2;border-radius:24px;box-shadow:0 16px 30px -26px rgba(15,23,42,.22)}
+.mc-hero{padding:24px;background:linear-gradient(135deg, rgba(234,247,240,.92), rgba(255,255,255,.96))}
+.mc-hero h1{font-size:34px;font-weight:950;color:#0f172a}
+.mc-hero p{margin-top:8px;color:#526d64;font-weight:700}
+.mc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.mc-card{padding:20px}
+.mc-title{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.mc-name{font-size:22px;font-weight:950}
+.mc-badge{display:inline-flex;padding:7px 11px;border-radius:999px;background:#f3fbf7;border:1px solid #cce4d8;font-weight:900;color:#205243}
+.mc-badge.pending{background:#fff8ea;border-color:#f2d79a;color:#8a5d00}
+.mc-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.mc-field{padding:12px;border-radius:16px;background:#f8fcfa;border:1px solid #e4f0ea}
+.mc-field b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#60756d;margin-bottom:5px}
+.mc-pgs{border:1px solid #d7e9e0;border-radius:18px;padding:12px;max-height:220px;overflow:auto;background:#fbfffd}
+.mc-pg-item{display:flex;gap:10px;align-items:flex-start;padding:8px 2px;border-bottom:1px solid #edf5f1}
+.mc-pg-item:last-child{border-bottom:0}
+.mc-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.mc-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 15px;border-radius:999px;border:1px solid #bfe4d2;background:#eaf7f0;color:#0b4d3a;font-weight:900}
+.mc-btn.secondary{background:#fff;border-color:#d7e9e0;color:#334155}
+.mc-doc{display:inline-flex;margin-top:8px;padding:10px 14px;border-radius:999px;border:1px solid #d7e9e0;background:#fff;color:#0b4d3a;font-weight:900}.mc-reason{width:100%;min-height:90px;border:1px solid #d7e9e0;border-radius:14px;padding:12px 14px;font:inherit;background:#fff}.mc-panel{margin-bottom:18px}.mc-section-title{font-size:24px;font-weight:950;color:#0f172a;margin-bottom:6px}.mc-section-sub{color:#60756d;font-weight:700;margin-bottom:14px}.mc-validation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}@media (max-width:860px){.mc-grid,.mc-fields,.mc-validation-grid{grid-template-columns:1fr}.mc-hero h1{font-size:28px}}
+</style>
+<div class="mc-wrap">
+  <section class="mc-hero">
+    <h1>Manage Cadre (CC)</h1>
+    <p>Create new Cadre accounts, approve self-registered Cadre users, assign more PGs from your block, and validate CC profile submissions.</p>
+    <div class="mc-actions" style="margin-top:14px;">
+      <a class="mc-btn" href="{{ url_for('auth.create_cadre_cc') }}">Create Cadre (CC)</a>
+      <a class="mc-btn secondary" href="#validation-section">Validation</a>
+    </div>
+  </section>
+
+  <section class="mc-card mc-panel" id="validation-section">
+    <div class="mc-section-title">Validation</div>
+    <div class="mc-section-sub">Every profile submitted by a CC from their own account appears here for Block Admin approval. Block-created Cadre details do not require validation unless the CC later submits profile changes.</div>
+    {% if validations %}
+    <div class="mc-validation-grid">
+      {% for cadre in validations %}
+      {% set draft = cadre.pending_profile or {} %}
+      <div class="mc-card">
+        <div class="mc-title">
+          <div>
+            <div class="mc-name">{{ draft.full_name or cadre.full_name or cadre.username }}</div>
+            <div style="color:#60756d;font-weight:700">@{{ cadre.username }}</div>
+          </div>
+          <span class="mc-badge pending">PROFILE PENDING</span>
+        </div>
+        <div class="mc-fields">
+          <div class="mc-field"><b>Email</b>{{ draft.email or '-' }}</div>
+          <div class="mc-field"><b>Phone</b>{{ draft.phone or '-' }}</div>
+          <div class="mc-field"><b>Bank</b>{{ draft.bank_name or '-' }}</div>
+          <div class="mc-field"><b>Account Number</b>{{ draft.account_number or '-' }}</div>
+          <div class="mc-field"><b>Account Holder</b>{{ draft.account_name or '-' }}</div>
+          <div class="mc-field"><b>IFSC</b>{{ draft.ifsc_code or '-' }}</div>
+          <div class="mc-field" style="grid-column:1/-1"><b>Branch Name</b>{{ draft.branch_name or '-' }}</div>
+        </div>
+        {% if draft.aadhaar_card %}
+          <a class="mc-doc" href="{{ url_for('auth.view_cadre_document', user_id=cadre._id, mode='pending') }}" target="_blank">View Uploaded Aadhaar</a>
+        {% endif %}
+        <div class="mc-actions">
+          <form method="post" action="{{ url_for('auth.approve_cadre_profile', user_id=cadre._id) }}">
+            <button class="mc-btn" type="submit">Approve Profile</button>
+          </form>
+        </div>
+        <form method="post" action="{{ url_for('auth.reject_cadre_profile', user_id=cadre._id) }}">
+          <textarea class="mc-reason" name="reason" placeholder="Mention the reason for rejecting this profile submission..." required></textarea>
+          <div class="mc-actions">
+            <button class="mc-btn secondary" type="submit">Reject Profile</button>
+          </div>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <div class="mc-field"><b>Status</b>No CC profile submissions are waiting for validation right now.</div>
+    {% endif %}
+  </section>
+
+  <section class="mc-grid">
+    {% for cadre in cadres %}
+    <div class="mc-card">
+      <div class="mc-title">
+        <div>
+          <div class="mc-name">{{ cadre.full_name or cadre.username }}</div>
+          <div style="color:#60756d;font-weight:700">@{{ cadre.username }}</div>
+        </div>
+        <span class="mc-badge {% if (cadre.status or 'active') != 'active' %}pending{% endif %}">{{ (cadre.status or 'active')|upper }}</span>
+      </div>
+
+      <div class="mc-fields">
+        <div class="mc-field"><b>Email</b>{{ cadre.email or '-' }}</div>
+        <div class="mc-field"><b>Phone</b>{{ cadre.phone or '-' }}</div>
+        <div class="mc-field"><b>Profile Validation</b>{{ (cadre.profile_validation_status or 'approved')|upper }}</div>
+        <div class="mc-field"><b>Bank</b>{{ cadre.bank_name or '-' }}</div>
+        <div class="mc-field"><b>IFSC</b>{{ cadre.ifsc_code or '-' }}</div>
+      </div>
+
+      {% if cadre.aadhaar_card %}
+        <div style="margin-bottom:12px;color:#60756d;font-weight:700;">Aadhaar uploaded.</div>
+        <a class="mc-doc" href="{{ url_for('auth.view_cadre_document', user_id=cadre._id) }}" target="_blank">View Current Aadhaar</a>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('auth.assign_cadre_pgs', user_id=cadre._id) }}">
+        <div style="font-weight:900;margin-bottom:8px;color:#28473f;">Assign / Update PGs</div>
+        <div class="mc-pgs">
+          {% for pg in pgs %}
+          <label class="mc-pg-item">
+            <input type="checkbox" name="assigned_pg_ids" value="{{ pg._id }}" {% if pg._id in (cadre.assigned_pg_ids or []) %}checked{% endif %}>
+            <span>
+              <strong>{{ pg.name or pg.pg_name or 'Unnamed PG' }}</strong><br>
+              <span style="color:#60756d">{{ pg.sector or '' }}</span>
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+        <div class="mc-actions">
+          <button class="mc-btn" type="submit">Save PG Assignment</button>
+          {% if (cadre.status or 'active') != 'active' %}
+          <button class="mc-btn secondary" type="submit" formaction="{{ url_for('auth.approve_cadre_cc', user_id=cadre._id) }}">Approve Cadre</button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+    {% else %}
+    <div class="mc-card"><strong>No Cadre accounts found yet.</strong></div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

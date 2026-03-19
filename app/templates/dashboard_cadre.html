@@ -1,0 +1,76 @@
+{% extends "base_cadre.html" %}
+{% block title %}Cadre Dashboard{% endblock %}
+{% block content %}
+<style>
+.cd-wrap{display:grid;gap:18px}
+.cd-hero,.cd-card{background:#fff;border:1px solid #d9ebe2;border-radius:22px;box-shadow:0 16px 30px -26px rgba(15,23,42,.25)}
+.cd-hero{padding:24px;background:linear-gradient(135deg, rgba(234,247,240,.9), rgba(255,255,255,.95))}
+.cd-title{font-size:clamp(28px,3vw,42px);font-weight:950;letter-spacing:.2px;color:#0f172a}
+.cd-sub{margin-top:8px;color:#45665c;font-weight:700}
+.cd-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.cd-kpi{padding:18px}
+.cd-kpi-label{font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#5d6f68}
+.cd-kpi-value{font-size:42px;font-weight:950;line-height:1;margin-top:10px}
+.cd-card{padding:20px}
+.cd-head{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.cd-head h3{font-size:22px;font-weight:900}
+.cd-head p{color:#557168;font-weight:700}
+.cd-table{width:100%;border-collapse:collapse}
+.cd-table th,.cd-table td{padding:14px 12px;border-top:1px solid #ebf4ef;text-align:left}
+.cd-table th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#60756d}
+.cd-open{display:inline-flex;padding:10px 14px;border-radius:999px;background:#eaf7f0;border:1px solid #bfe4d2;color:#0b4d3a;font-weight:900}
+.cd-empty{padding:24px;border-radius:16px;background:#f8fcfa;border:1px dashed #cfe3da;color:#557168;font-weight:800}
+@media (max-width:720px){.cd-kpis{grid-template-columns:1fr}.cd-table thead{display:none}.cd-table,.cd-table tbody,.cd-table tr,.cd-table td{display:block;width:100%}.cd-table tr{padding:12px 0;border-top:1px solid #ebf4ef}.cd-table td{border:0;padding:8px 0}}
+</style>
+<div class="cd-wrap">
+  <section class="cd-hero">
+    <div class="cd-title">Cadre Dashboard</div>
+    <div class="cd-sub">Only your assigned PGs are listed here. Click a PG to open the exact PG dashboard and continue PG-level data entry.</div>
+  </section>
+
+  <section class="cd-kpis">
+    <div class="cd-card cd-kpi">
+      <div class="cd-kpi-label">Assigned PGs</div>
+      <div class="cd-kpi-value">{{ assigned_pg_count }}</div>
+    </div>
+    <div class="cd-card cd-kpi">
+      <div class="cd-kpi-label">Role</div>
+      <div class="cd-kpi-value" style="font-size:26px;">CADRE_CC</div>
+    </div>
+  </section>
+
+  <section class="cd-card">
+    <div class="cd-head">
+      <div>
+        <h3>Assigned PG List</h3>
+        <p>Select a PG below to open the same dashboard that a PG login sees.</p>
+      </div>
+    </div>
+
+    {% if pgs %}
+    <table class="cd-table">
+      <thead>
+        <tr>
+          <th>PG Name</th>
+          <th>Sector</th>
+          <th>Block</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pg in pgs %}
+        <tr>
+          <td>{{ pg.name or '-' }}</td>
+          <td>{{ pg.sector or '-' }}</td>
+          <td>{{ pg.Block or pg.block_name or '-' }}</td>
+          <td><a class="cd-open" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('pg.pg_home')) }}">Open PG Dashboard</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="cd-empty">No PGs are currently assigned to this Cadre account.</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -267,7 +267,7 @@ def loan_accounts(pg_id):
         return redirect(url_for("pg.pg_home"))
 
     # PG can view loans, but only CLF/Block authorities can create/update.
-    if request.method == "POST" and session.get("role") == "PG_DATA_ENTRY":
+    if request.method == "POST" and session.get("role") in ("PG_DATA_ENTRY", "CADRE_CC"):
         flash("Loans can only be created/edited by CLF/Block authorities.", "warning")
         return redirect(request.path)
 
@@ -332,7 +332,7 @@ def loan_account_view(loan_id):
     pg = db.pgs.find_one({"_id": loan.get("pg_id")})
 
     # PG can view loans, but only CLF/Block authorities can create/update.
-    if request.method == "POST" and session.get("role") == "PG_DATA_ENTRY":
+    if request.method == "POST" and session.get("role") in ("PG_DATA_ENTRY", "CADRE_CC"):
         flash("Loan repayments/updates can only be entered by CLF/Block authorities.", "warning")
         return redirect(request.path)
 
@@ -409,7 +409,7 @@ def member_loan_accounts(pg_id):
     )
 
     # PG can view loans, but only CLF/Block authorities can create/update.
-    if request.method == "POST" and session.get("role") == "PG_DATA_ENTRY":
+    if request.method == "POST" and session.get("role") in ("PG_DATA_ENTRY", "CADRE_CC"):
         flash("Member loans can only be created/edited by CLF/Block authorities.", "warning")
         return redirect(request.path)
 
@@ -467,7 +467,7 @@ def member_loan_view(loan_id):
         member = None
 
     # PG can view loans, but only CLF/Block authorities can create/update.
-    if request.method == "POST" and session.get("role") == "PG_DATA_ENTRY":
+    if request.method == "POST" and session.get("role") in ("PG_DATA_ENTRY", "CADRE_CC"):
         flash("Member loan repayments/updates can only be entered by CLF/Block authorities.", "warning")
         return redirect(request.path)
 

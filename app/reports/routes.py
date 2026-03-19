@@ -97,7 +97,7 @@ def _apply_period(match: dict, field: str, period_filters: dict):
 def _pgs_in_scope(db, base_match: dict, filters: dict):
     match_pg = _pg_match_with_filters(db, base_match, filters)
     role = session.get("role")
-    if role == "PG_DATA_ENTRY" and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
+    if role in ("PG_DATA_ENTRY", "CADRE_CC") and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
         match_pg["_id"] = ObjectId(session.get("pg_id"))
     pgs = list(db.pgs.find(match_pg, {"name": 1, "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1}))
     pg_by_id = {p["_id"]: p for p in pgs}
@@ -542,7 +542,7 @@ def _turnover_timeseries(db, *, match_pg=None, months=12):
 
 @reports_bp.route("/state_dashboard")
 @login_required
-@roles_required("SUPER_ADMIN", "ADMIN", "DISTRICT_ADMIN", "BLOCK_ADMIN")
+@roles_required("SUPER_ADMIN", "ADMIN", "DISTRICT_ADMIN", "BLOCK_ADMIN", "CADRE_CC")
 def state_dashboard():
     db = current_app.mongo_db
     role = session.get("role")
@@ -591,6 +591,16 @@ def state_dashboard():
             states_total = db.states.count_documents({})
             districts_total = db.districts.count_documents({})
             blocks_total = db.blocks.count_documents({})
+
+    # Cadre count within jurisdiction
+    cadre_match = {"role": "CADRE_CC"}
+    if pg_match.get("state_id"):
+        cadre_match["state_id"] = pg_match["state_id"]
+    if pg_match.get("district_id"):
+        cadre_match["district_id"] = pg_match["district_id"]
+    if pg_match.get("block_id"):
+        cadre_match["block_id"] = pg_match["block_id"]
+    cadre_count = db.users.count_documents(cadre_match)
 
     # SHG master counts (LokOS imported) scoped by user's jurisdiction (string geo)
     shg_q = _shg_filter_from_session(db, session)
@@ -688,6 +698,7 @@ def state_dashboard():
         states_total=states_total,
         districts_total=districts_total,
         blocks_total=blocks_total,
+        cadre_count=cadre_count,
         shg_total=shg_total,
         shg_active=shg_active,
         shg_top_districts=top_districts,
@@ -706,7 +717,11 @@ def hierarchy_dashboard():
     clf_id = session.get("clf_id")
 
     query = {}
-    if clf_id:
+    assigned_pg_ids = session.get("assigned_pg_ids") or []
+    if role == "CADRE_CC":
+        cadre_pg_oids = [ObjectId(x) for x in assigned_pg_ids if ObjectId.is_valid(str(x))]
+        query["_id"] = {"$in": cadre_pg_oids or [ObjectId("000000000000000000000000")]}
+    elif clf_id:
         query["clf_id"] = ObjectId(clf_id)
     elif block_id:
         query["block_id"] = ObjectId(block_id)
@@ -716,6 +731,17 @@ def hierarchy_dashboard():
         query["state_id"] = ObjectId(state_id)
 
     pgs = list(db.pgs.find(query).sort([("created_at", -1)]).limit(200))
+    if role == "CADRE_CC":
+        cadre_count = 1
+    else:
+        cadre_match = {"role": "CADRE_CC"}
+        if block_id:
+            cadre_match["block_id"] = ObjectId(block_id)
+        elif district_id:
+            cadre_match["district_id"] = ObjectId(district_id)
+        elif state_id:
+            cadre_match["state_id"] = ObjectId(state_id)
+        cadre_count = db.users.count_documents(cadre_match)
     pg_ids = [pg["_id"] for pg in pgs]
     pg_count = len(pg_ids)
     member_count = db.pg_members.count_documents({"pg_id": {"$in": pg_ids}}) if pg_ids else 0
@@ -787,12 +813,31 @@ def hierarchy_dashboard():
         grants_total=grants_total,
         pgs_with_grants=pgs_with_grants,
         lakhpati_total=lakhpati_total,
+        cadre_count=cadre_count,
         pgs=pgs,
         shg_total=shg_total,
         shg_active=shg_active,
         shg_top=shg_top,
     )
 
+
+
+
+@reports_bp.route("/cadre_dashboard")
+@login_required
+@roles_required("CADRE_CC")
+def cadre_dashboard():
+    db = current_app.mongo_db
+    assigned_pg_ids = session.get("assigned_pg_ids") or []
+    assigned_oids = [ObjectId(x) for x in assigned_pg_ids if ObjectId.is_valid(str(x))]
+    pgs = []
+    if assigned_oids:
+        pgs = list(db.pgs.find({"_id": {"$in": assigned_oids}}).sort([("name", 1)]))
+    # clear active context on landing so dashboard remains PG-list only until a PG is opened
+    session.pop("active_pg_id", None)
+    session.pop("active_pg_name", None)
+    session.pop("pg_id", None)
+    return render_template("dashboard_cadre.html", pgs=pgs, assigned_pg_count=len(pgs))
 
 @reports_bp.route("/export/scope.csv")
 @login_required
@@ -1093,7 +1138,7 @@ def gradation(pg_id):
     quarter = int(request.values.get("quarter") or ((datetime.utcnow().month-1)//3 + 1))
 
     # PG can view gradation, but only CLF+ and above can compute/save
-    if request.method == "POST" and session.get("role") == "PG_DATA_ENTRY":
+    if request.method == "POST" and session.get("role") in ("PG_DATA_ENTRY", "CADRE_CC"):
         flash("Gradation can only be submitted by CLF/Block authorities.", "warning")
         return redirect(url_for("reports.gradation", pg_id=pg_id, year=year, quarter=quarter))
 
@@ -1425,7 +1470,7 @@ def lakhpati_report():
 
     # PG user: lock to their PG
     role = session.get("role")
-    if role == "PG_DATA_ENTRY" and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
+    if role in ("PG_DATA_ENTRY", "CADRE_CC") and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
         match_pg["_id"] = ObjectId(session.get("pg_id"))
 
     pgs = list(db.pgs.find(match_pg, {"name": 1, "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1}).sort([("name", 1)]))
@@ -1501,7 +1546,7 @@ def export_lakhpati_csv():
 
     match_pg = _pg_match_with_filters(db, base_match, filters)
     role = session.get("role")
-    if role == "PG_DATA_ENTRY" and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
+    if role in ("PG_DATA_ENTRY", "CADRE_CC") and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
         match_pg["_id"] = ObjectId(session.get("pg_id"))
 
     pgs = list(db.pgs.find(match_pg, {"name": 1, "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1}))
@@ -1598,7 +1643,7 @@ def grants_report():
 
     match_pg = _pg_match_with_filters(db, base_match, filters)
     role = session.get("role")
-    if role == "PG_DATA_ENTRY" and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
+    if role in ("PG_DATA_ENTRY", "CADRE_CC") and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
         match_pg["_id"] = ObjectId(session.get("pg_id"))
 
     pgs = list(db.pgs.find(match_pg, {"name": 1, "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1}))
@@ -1689,7 +1734,7 @@ def export_grants_csv():
 
     match_pg = _pg_match_with_filters(db, base_match, filters)
     role = session.get("role")
-    if role == "PG_DATA_ENTRY" and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
+    if role in ("PG_DATA_ENTRY", "CADRE_CC") and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
         match_pg["_id"] = ObjectId(session.get("pg_id"))
 
     pgs = list(db.pgs.find(match_pg, {"name": 1, "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1}))
@@ -1783,7 +1828,7 @@ def pg_overall_report():
 
     # PG user: lock to their PG
     role = session.get("role")
-    if role == "PG_DATA_ENTRY":
+    if role in ("PG_DATA_ENTRY", "CADRE_CC"):
         sid = _safe_oid(session.get("pg_id") or session.get("active_pg_id"))
         if sid:
             match_pg["_id"] = ObjectId(sid)
@@ -1853,7 +1898,7 @@ def pg_overall_download():
 
     match_pg = _pg_match_with_filters(db, base_match, filters)
     role = session.get("role")
-    if role == "PG_DATA_ENTRY":
+    if role in ("PG_DATA_ENTRY", "CADRE_CC"):
         sid = _safe_oid(session.get("pg_id") or session.get("active_pg_id"))
         if sid:
             match_pg["_id"] = ObjectId(sid)

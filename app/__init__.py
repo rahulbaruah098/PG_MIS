@@ -59,7 +59,7 @@ def create_app():
         try:
             role = session.get("role")
             pg_id = session.get("pg_id")
-            if role == "PG_DATA_ENTRY" and pg_id and ObjectId.is_valid(pg_id):
+            if role in ("PG_DATA_ENTRY", "CADRE_CC") and pg_id and ObjectId.is_valid(pg_id):
                 pg = app.mongo_db.pgs.find_one({"_id": ObjectId(pg_id)}) or {}
                 clf = None
                 try:

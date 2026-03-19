@@ -21,6 +21,7 @@ def _authenticate_request():
         g.block_id = session.get("block_id")
         g.district_id = session.get("district_id")
         g.state_id = session.get("state_id")
+        g.assigned_pg_ids = session.get("assigned_pg_ids") or []
         return True
 
     # -----------------------------
@@ -45,6 +46,7 @@ def _authenticate_request():
             g.block_id = payload.get("block_id")
             g.district_id = payload.get("district_id")
             g.state_id = payload.get("state_id")
+            g.assigned_pg_ids = payload.get("assigned_pg_ids") or []
             return True
 
         except jwt.ExpiredSignatureError:
@@ -81,8 +83,11 @@ def roles_required(*allowed_roles):
                 return redirect(url_for("auth.login"))
 
             role = getattr(g, "role", None)
+            effective_allowed = set(allowed_roles)
+            if role == "CADRE_CC" and "PG_DATA_ENTRY" in effective_allowed:
+                effective_allowed.add("CADRE_CC")
 
-            if role not in allowed_roles:
+            if role not in effective_allowed:
                 if request.is_json or request.headers.get("Authorization"):
                     return jsonify({"error": "Forbidden"}), 403
                 abort(403)

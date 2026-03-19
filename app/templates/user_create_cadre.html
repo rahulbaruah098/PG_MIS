@@ -1,0 +1,183 @@
+{% extends "base.html" if form_mode in ['create','register'] else "base_cadre.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% set u = user_doc or {} %}
+<style>
+  .cc-shell{max-width:1100px;margin:0 auto}
+  .cc-card{background:#fff;border:1px solid #d9ebe2;border-radius:24px;box-shadow:0 16px 30px -26px rgba(15,23,42,.22);overflow:hidden}
+  .cc-head{padding:24px 28px;background:linear-gradient(135deg, rgba(234,247,240,.95), rgba(255,255,255,.96));border-bottom:1px solid #dcece5}
+  .cc-head h1{font-size:34px;font-weight:950;color:#0f172a;margin:0}
+  .cc-head p{margin-top:8px;color:#4d6d63;font-weight:700}
+  .cc-body{padding:26px 28px}
+  .cc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+  .cc-field{display:grid;gap:8px}
+  .cc-field.full{grid-column:1/-1}
+  .cc-label{font-size:13px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#5a736a}
+  .cc-input,.cc-select{width:100%;border:1px solid #d7e9e0;border-radius:16px;padding:14px 15px;font-size:15px;background:#fbfffd}
+  .cc-upload{padding:14px;border:1px dashed #b8d9cb;border-radius:16px;background:#f8fcfa}
+  .cc-pg-box{border:1px solid #d7e9e0;border-radius:18px;padding:14px;background:#fbfffd;max-height:290px;overflow:auto}
+  .cc-pg-item{display:flex;gap:10px;align-items:flex-start;padding:10px 4px;border-bottom:1px solid #edf5f1}
+  .cc-pg-item:last-child{border-bottom:0}
+  .cc-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+  .cc-btn{display:inline-flex;align-items:center;justify-content:center;padding:13px 18px;border-radius:999px;border:1px solid #bfe4d2;background:#eaf7f0;color:#0b4d3a;font-weight:900}
+  .cc-btn.secondary{background:#fff;border-color:#d7e9e0;color:#334155}
+  .cc-chip{display:inline-flex;align-items:center;padding:8px 12px;border-radius:999px;background:#f3fbf7;border:1px solid #cfe5da;font-weight:800;color:#215345}
+  .cc-note{font-size:13px;color:#5c736b;font-weight:700}
+  .cc-assigned{display:flex;flex-wrap:wrap;gap:10px}
+  @media (max-width:860px){.cc-grid{grid-template-columns:1fr}.cc-head h1{font-size:28px}.cc-body{padding:18px}}
+</style>
+
+<div class="cc-shell">
+  <div class="cc-card">
+    <div class="cc-head">
+      <div class="cc-chip">
+        {% if form_mode == 'register' %}Public Cadre Registration{% elif form_mode == 'profile' %}Cadre Profile{% else %}Block Admin Action{% endif %}
+      </div>
+      <h1>{{ title }}</h1>
+      <p>
+        {% if form_mode == 'register' %}
+          Submit Cadre registration with Aadhaar and bank details. Your Block Admin will approve the account.
+        {% elif form_mode == 'profile' %}
+          Update your Cadre profile and banking details. Your assigned PGs are shown below.
+        {% else %}
+          Create a Cadre account, capture registration details, and assign PGs from the same block.
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="cc-body">
+      {% if form_mode == 'profile' %}
+      <div class="cc-status {% if profile_status == 'pending' %}pending{% elif profile_status == 'rejected' %}rejected{% else %}approved{% endif %}">
+        {% if profile_status == 'pending' %}
+          Your latest profile submission is pending Block Admin validation.
+        {% elif profile_status == 'rejected' %}
+          Your last profile submission was rejected. Please update the form again and resubmit.
+          {% if profile_reason %}<div class="cc-note" style="margin-top:8px;color:#8a2b2b;">Reason: {{ profile_reason }}</div>{% endif %}
+        {% else %}
+          Your current profile is approved. Any new changes you submit will go to the Block Admin for validation.
+        {% endif %}
+      </div>
+      {% if pending_profile %}
+      <div class="cc-note" style="margin:12px 0 18px;">A newer profile draft is waiting for validation. Current approved data remains active until approval.</div>
+      {% endif %}
+      {% endif %}
+      <form method="post" enctype="multipart/form-data" class="cc-grid">
+        <div class="cc-field">
+          <label class="cc-label">Cadre Name</label>
+          <input class="cc-input" type="text" name="full_name" value="{{ request.form.get('full_name', u.full_name or '') }}" required>
+        </div>
+        <div class="cc-field">
+          <label class="cc-label">Username</label>
+          <input class="cc-input" type="text" name="username" value="{{ request.form.get('username', u.username or '') }}" {% if form_mode == 'profile' %}readonly{% endif %} required>
+        </div>
+        {% if form_mode != 'profile' %}
+        <div class="cc-field">
+          <label class="cc-label">Password</label>
+          <input class="cc-input" type="password" name="password" required>
+        </div>
+        {% endif %}
+        <div class="cc-field">
+          <label class="cc-label">Email</label>
+          <input class="cc-input" type="email" name="email" value="{{ request.form.get('email', u.email or '') }}">
+        </div>
+        <div class="cc-field">
+          <label class="cc-label">Phone</label>
+          <input class="cc-input" type="text" name="phone" value="{{ request.form.get('phone', u.phone or '') }}">
+        </div>
+        <div class="cc-field {% if form_mode == 'profile' %}full{% endif %}">
+          <label class="cc-label">Aadhaar Card Upload</label>
+          <div class="cc-upload">
+            <input type="file" name="aadhaar_card" accept="image/*,.pdf">
+            {% if u.aadhaar_card %}
+              <div class="cc-note" style="margin-top:10px;">Existing file: {{ u.aadhaar_card }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if form_mode == 'register' %}
+        <div class="cc-field full">
+          <label class="cc-label">Block</label>
+          <select class="cc-select" name="block_id" onchange="this.form.submit()" required>
+            <option value="">Select Block</option>
+            {% for block in blocks %}
+            <option value="{{ block._id }}" {% if (request.form.get('block_id') or selected_block|string) == block._id|string %}selected{% endif %}>
+              {{ block.name or block.Block or 'Unnamed Block' }}
+            </option>
+            {% endfor %}
+          </select>
+          <div class="cc-note">Select your block first to load PG options.</div>
+        </div>
+        {% endif %}
+
+        <div class="cc-field">
+          <label class="cc-label">Bank Name</label>
+          <input class="cc-input" type="text" name="bank_name" value="{{ request.form.get('bank_name', u.bank_name or '') }}">
+        </div>
+        <div class="cc-field">
+          <label class="cc-label">Account Number</label>
+          <input class="cc-input" type="text" name="account_number" value="{{ request.form.get('account_number', u.account_number or '') }}">
+        </div>
+        <div class="cc-field">
+          <label class="cc-label">Account Holder Name</label>
+          <input class="cc-input" type="text" name="account_name" value="{{ request.form.get('account_name', u.account_name or '') }}">
+        </div>
+        <div class="cc-field">
+          <label class="cc-label">IFSC Code</label>
+          <input class="cc-input" type="text" name="ifsc_code" value="{{ request.form.get('ifsc_code', u.ifsc_code or '') }}">
+        </div>
+        <div class="cc-field full">
+          <label class="cc-label">Branch Name</label>
+          <input class="cc-input" type="text" name="branch_name" value="{{ request.form.get('branch_name', u.branch_name or '') }}">
+        </div>
+
+        {% if form_mode != 'profile' %}
+        <div class="cc-field full">
+          <label class="cc-label">Assign PGs</label>
+          <div class="cc-pg-box">
+            {% for pg in pgs %}
+            {% set checked = (pg._id in (u.assigned_pg_ids or [])) or (pg._id|string in request.form.getlist('assigned_pg_ids')) %}
+            <label class="cc-pg-item">
+              <input type="checkbox" name="assigned_pg_ids" value="{{ pg._id }}" {% if checked %}checked{% endif %}>
+              <span>
+                <strong>{{ pg.name or pg.pg_name or pg['PG Name'] or 'Unnamed PG' }}</strong><br>
+                <span class="cc-note">{{ pg.sector or pg.Sector or '' }}</span>
+              </span>
+            </label>
+            {% else %}
+            <div class="cc-note">No PGs available for the selected block.</div>
+            {% endfor %}
+          </div>
+          {% if pending_approval %}<div class="cc-note">You may leave PG assignment blank. The Block Admin can assign PGs after approval.</div>{% endif %}
+        </div>
+        {% else %}
+        <div class="cc-field full">
+          <label class="cc-label">Assigned PGs</label>
+          <div class="cc-assigned">
+            {% for pg in pgs %}
+              <span class="cc-chip">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</span>
+            {% else %}
+              <span class="cc-note">No PGs assigned yet.</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="cc-field full">
+          <div class="cc-actions">
+            <button class="cc-btn" type="submit">
+              {% if form_mode == 'register' %}Submit Registration{% elif form_mode == 'profile' %}Submit Profile for Approval{% else %}Create Cadre Account{% endif %}
+            </button>
+            {% if form_mode == 'create' %}
+              <a class="cc-btn secondary" href="{{ url_for('auth.manage_cadre_cc') }}">Manage Cadre Accounts</a>
+            {% elif form_mode == 'register' %}
+              <a class="cc-btn secondary" href="{{ url_for('auth.login') }}">Back to Login</a>
+            {% else %}
+              <a class="cc-btn secondary" href="{{ url_for('reports.cadre_dashboard') }}">Back to Dashboard</a>
+            {% endif %}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

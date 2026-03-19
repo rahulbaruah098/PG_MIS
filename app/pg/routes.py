@@ -436,7 +436,7 @@ def pg_home():
             or "USER"
         )
 
-    if role == "PG_DATA_ENTRY" and pg_id:
+    if role in ("PG_DATA_ENTRY", "CADRE_CC") and pg_id:
         oid = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
         pg_doc = db.pgs.find_one({"_id": oid}) if oid else None
         metrics = _pg_metrics(db, pg_id)
@@ -460,7 +460,7 @@ def pg_home():
     if _wants_json():
         return jsonify({
             "ok": False,
-            "error": "PG dashboard is available only for PG_DATA_ENTRY users with a valid PG scope."
+            "error": "PG dashboard is available only for PG/Cadre users with a valid PG scope."
         }), 403
 
     return redirect(url_for("reports.hierarchy_dashboard"))
@@ -504,8 +504,9 @@ def pg_view(pg_id):
         flash("PG not found.", "danger")
         return redirect(url_for("reports.hierarchy_dashboard"))
 
-    if role == "PG_DATA_ENTRY":
-        if session.get("pg_id") != pg_id:
+    if role in ("PG_DATA_ENTRY", "CADRE_CC"):
+        allowed_pg_ids = _assigned_pg_ids_for_session() if role == "CADRE_CC" else {str(session.get("pg_id") or "")}
+        if str(pg_id) not in allowed_pg_ids:
             flash("You cannot access this PG.", "danger")
             return redirect(url_for("pg.pg_home"))
         metrics = _pg_metrics(db, pg_id)
@@ -623,9 +624,14 @@ def pg_registration(pg_id):
     role = getattr(g, "role", None) or session.get("role")
     session_pg_id = session.get("pg_id")
 
-    if role == "PG_DATA_ENTRY":
+    if role in ("PG_DATA_ENTRY", "CADRE_CC"):
         if session_pg_id and str(session_pg_id) != str(pg_id):
             return _error("You cannot edit this PG.", 403, redirect_endpoint=url_for("pg.pg_home"))
+
+        if role == "CADRE_CC":
+            allowed_pg_ids = _assigned_pg_ids_for_session()
+            if str(pg_id) not in allowed_pg_ids:
+                return _error("You cannot edit this PG.", 403)
 
         if not session_pg_id:
             uid = getattr(g, "user_id", None)
@@ -1728,7 +1734,7 @@ def pg_upload_document(pg_id):
 
 @pg_bp.route('/registers/meeting-minutes')
 @login_required
-@roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
+@roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def meeting_minute_book():
     # ✅ MOBILE FIX: use g.pg_id (JWT) with session fallback
     pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
@@ -1739,7 +1745,7 @@ def meeting_minute_book():
 
 @pg_bp.route('/registers/member-ledger')
 @login_required
-@roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
+@roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def member_ledger():
     pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
     if request.headers.get("Authorization") or request.is_json:
@@ -1748,7 +1754,7 @@ def member_ledger():
 
 @pg_bp.route('/registers/loan-ledger')
 @login_required
-@roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
+@roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def loan_ledger():
     pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
     if request.headers.get("Authorization") or request.is_json:
@@ -1757,7 +1763,7 @@ def loan_ledger():
 
 @pg_bp.route('/registers/receipt-voucher')
 @login_required
-@roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
+@roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def receipt_voucher():
     pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
     if request.headers.get("Authorization") or request.is_json:
@@ -1766,7 +1772,7 @@ def receipt_voucher():
 
 @pg_bp.route('/registers/input')
 @login_required
-@roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
+@roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def input_register():
     pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
     if request.headers.get("Authorization") or request.is_json:
@@ -1775,7 +1781,7 @@ def input_register():
 
 @pg_bp.route('/registers/asset')
 @login_required
-@roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
+@roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def asset_register():
     pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
     if request.headers.get("Authorization") or request.is_json:
@@ -1784,7 +1790,7 @@ def asset_register():
 
 @pg_bp.route('/registers/ledger-book')
 @login_required
-@roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
+@roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def ledger_book():
     pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
     if request.headers.get("Authorization") or request.is_json:
@@ -1793,7 +1799,7 @@ def ledger_book():
 
 @pg_bp.route('/registers/output')
 @login_required
-@roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
+@roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def output_register():
     pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
     if request.headers.get("Authorization") or request.is_json:
@@ -1801,6 +1807,10 @@ def output_register():
     return render_template('output_register.html', pg_id=pg_id)
 
 
+
+def _assigned_pg_ids_for_session():
+    vals = session.get("assigned_pg_ids") or getattr(g, "assigned_pg_ids", None) or []
+    return {str(x) for x in vals}
 
 # ----------------------------
 # PG Registers — DATA APIs (MongoDB + Audit)
@@ -1842,6 +1852,9 @@ def _enforce_pg_scope(pg_doc):
     # PG user can only see own PG
     if role == "PG_DATA_ENTRY":
         if str(pg_doc.get("_id")) != pg_id_s:
+            abort(403)
+    if role == "CADRE_CC":
+        if str(pg_doc.get("_id")) not in _assigned_pg_ids_for_session():
             abort(403)
 
     # Hierarchy scoping for other roles
@@ -2407,7 +2420,7 @@ def meeting_register(pg_id):
 
 @pg_bp.route('/set_active/<pg_id>')
 @login_required
-@roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
+@roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def set_active_pg(pg_id):
     """Set the active PG context in session (for CLF/BLOCK sidebar actions)."""
     db = current_app.mongo_db
@@ -2423,8 +2436,12 @@ def set_active_pg(pg_id):
         flash('You cannot access this PG.', 'danger')
         return redirect(url_for('pg.pg_home'))
 
+    if role == 'CADRE_CC' and str(pg_id) not in _assigned_pg_ids_for_session():
+        flash('This PG is not assigned to your Cadre account.', 'danger')
+        return redirect(url_for('reports.hierarchy_dashboard'))
+
     # Scope checks for other roles (same as pg_dashboard)
-    if role != 'PG_DATA_ENTRY':
+    if role not in ('PG_DATA_ENTRY', 'CADRE_CC'):
         if session.get('clf_id') and str(pg_doc.get('clf_id')) != session.get('clf_id'):
             flash('This PG is not under your CLF.', 'danger')
             return redirect(url_for('reports.hierarchy_dashboard'))
@@ -2440,6 +2457,8 @@ def set_active_pg(pg_id):
 
     session['active_pg_id'] = pg_id
     session['active_pg_name'] = pg_doc.get('name') or pg_doc.get('pg_name') or pg_doc.get('PG Name') or pg_id
+    if role == 'CADRE_CC':
+        session['pg_id'] = pg_id
 
     nxt = request.args.get('next')
     if nxt:
@@ -2449,9 +2468,11 @@ def set_active_pg(pg_id):
 
 @pg_bp.route('/clear_active')
 @login_required
-@roles_required('PG_DATA_ENTRY','CLF_MANAGER','CLF_ADMIN','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
+@roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def clear_active_pg():
     session.pop('active_pg_id', None)
     session.pop('active_pg_name', None)
+    if session.get('role') == 'CADRE_CC':
+        session.pop('pg_id', None)
     flash('Active PG cleared.', 'info')
     return redirect(url_for('reports.hierarchy_dashboard'))
