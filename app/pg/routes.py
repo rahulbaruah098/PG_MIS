@@ -28,7 +28,7 @@ ARDD_UNIT_OPTIONS = {
     "Goatery": ["GPU", "GFU"],
     "Piggery": ["PPU", "PFU"],
 }
-FISHERY_ACTIVITY_OPTIONS = ["Nursery", "Polu-culture", "Poli Culture high value"]
+FISHERY_ACTIVITY_OPTIONS = ["Nursery", "Poli-culture", "Poli Culture high value"]
 
 
 def _normalize_pg_sector(value):
