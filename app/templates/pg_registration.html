@@ -694,7 +694,12 @@
 
         <div class="pgr-field col-4">
           <label class="pgr-label" id="lblSector">Sector</label>
-          <input type="text" class="pgr-input" name="sector" value="{{ pg.sector or '' }}">
+          <select class="pgr-select" name="sector" required>
+            <option value="" disabled {% if not pg.sector %}selected{% endif %}>Select Sector</option>
+            {% for sector in (sector_options or ['Agri', 'ARDD', 'Fishery']) %}
+              <option value="{{ sector }}" {% if (pg.sector or '') == sector %}selected{% endif %}>{{ sector }}</option>
+            {% endfor %}
+          </select>
         </div>
 
         <div class="pgr-field col-4">

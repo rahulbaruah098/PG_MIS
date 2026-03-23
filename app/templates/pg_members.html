@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
+{% set sector = (current_sector or (pg.sector or "")) %}
 
 {% block head_extra %}
   <!-- Ionicons (same look as Meeting Minutes Book) -->
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
 {% endblock %}
 
 <style>
@@ -417,6 +419,8 @@
 .pmd-col-spouse{ min-width: 210px; }
 .pmd-col-cat{ width: 110px; min-width:110px; }
 .pmd-col-shg{ min-width: 200px; }
+.pmd-col-sector-a{ min-width: 180px; }
+.pmd-col-sector-b{ min-width: 170px; }
 .pmd-col-contact{ min-width: 170px; }
 .pmd-col-id{ min-width: 190px; }
 .pmd-col-bank{ width: 150px; min-width:150px; }
@@ -810,6 +814,15 @@
                   <th class="pmd-col-spouse" id="thSpouse">Father/Mother/Spouse Name</th>
                   <th class="pmd-col-cat" id="thCategory">Category</th>
                   <th class="pmd-col-shg" id="thShg">SHG</th>
+                  {% if sector == 'Agri' %}
+                    <th class="pmd-col-sector-a" id="thCrop">Crop</th>
+                    <th class="pmd-col-sector-b" id="thFfs">FFS Module</th>
+                  {% elif sector == 'ARDD' %}
+                    <th class="pmd-col-sector-a" id="thArddType">Activity</th>
+                    <th class="pmd-col-sector-b" id="thArddUnit">Unit</th>
+                  {% elif sector == 'Fishery' %}
+                    <th class="pmd-col-sector-a" id="thFisheryType">Fishery Activity</th>
+                  {% endif %}
                   <th class="pmd-col-contact" id="thContact">Contact</th>
                   <th class="pmd-col-id" id="thId">AADHAR/Voter/Govt ID</th>
                   <th class="pmd-col-bank" id="thBank">Bank</th>
@@ -842,6 +855,48 @@
                   <td class="pmd-col-shg" data-label="SHG">
                     <div class="pmd-strong">{{ r.shg_name or '-' }}</div>
                   </td>
+
+                  {% if sector == 'Agri' %}
+                  <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Crop">
+                    <select class="pmd-input" name="agri_crop" data-field="agri_crop" form="{{ fid }}">
+                      <option value="">Select Crop</option>
+                      {% for opt in agri_crops %}
+                        <option value="{{ opt }}" {% if r.agri_crop == opt %}selected{% endif %}>{{ opt }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                  <td class="pmd-col-sector-b" style="vertical-align:top;" data-label="FFS Module">
+                    <select class="pmd-input" name="agri_ffs_module" data-field="agri_ffs_module" form="{{ fid }}">
+                      <option value="">Select FFS Module</option>
+                      {% for opt in agri_ffs_modules %}
+                        <option value="{{ opt }}" {% if r.agri_ffs_module == opt %}selected{% endif %}>{{ opt }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                  {% elif sector == 'ARDD' %}
+                  <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Activity">
+                    <select class="pmd-input js-ardd-activity" name="ardd_activity" data-field="ardd_activity" data-row-form="{{ fid }}" form="{{ fid }}">
+                      <option value="">Select Activity</option>
+                      {% for opt in ardd_activities %}
+                        <option value="{{ opt }}" {% if r.ardd_activity == opt %}selected{% endif %}>{{ opt }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                  <td class="pmd-col-sector-b" style="vertical-align:top;" data-label="Unit">
+                    <select class="pmd-input js-ardd-unit" name="ardd_unit" data-field="ardd_unit" data-row-form="{{ fid }}" data-selected="{{ r.ardd_unit or '' }}" form="{{ fid }}">
+                      <option value="">Select Unit</option>
+                    </select>
+                  </td>
+                  {% elif sector == 'Fishery' %}
+                  <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Fishery Activity">
+                    <select class="pmd-input" name="fishery_activity" data-field="fishery_activity" form="{{ fid }}">
+                      <option value="">Select Fishery Activity</option>
+                      {% for opt in fishery_activities %}
+                        <option value="{{ opt }}" {% if r.fishery_activity == opt %}selected{% endif %}>{{ opt }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                  {% endif %}
 
                   <td class="pmd-col-contact" style="vertical-align:top;" data-label="Contact">
                     <input class="pmd-input" name="contact" value="{{ r.contact or '' }}" placeholder="Contact" data-field="contact" form="{{ fid }}">
@@ -951,6 +1006,15 @@
                   <th class="pmd-col-spouse" id="thSpouseV">Father/Mother/Spouse Name</th>
                   <th class="pmd-col-cat" id="thCategoryV">Category</th>
                   <th class="pmd-col-shg" id="thShgV">SHG</th>
+                  {% if sector == 'Agri' %}
+                    <th class="pmd-col-sector-a" id="thCropV">Crop</th>
+                    <th class="pmd-col-sector-b" id="thFfsV">FFS Module</th>
+                  {% elif sector == 'ARDD' %}
+                    <th class="pmd-col-sector-a" id="thArddTypeV">Activity</th>
+                    <th class="pmd-col-sector-b" id="thArddUnitV">Unit</th>
+                  {% elif sector == 'Fishery' %}
+                    <th class="pmd-col-sector-a" id="thFisheryTypeV">Fishery Activity</th>
+                  {% endif %}
                   <th class="pmd-col-contact" id="thContactV">Contact</th>
                   <th class="pmd-col-id" id="thIdV">AADHAR/Voter/Govt ID</th>
                   <th class="pmd-col-bank" id="thBankV">Bank</th>
@@ -969,6 +1033,15 @@
                   <td class="pmd-col-spouse" data-label="Father/Mother/Spouse Name"><div class="pmd">{{ r.spouse_name or '-' }}</div></td>
                   <td class="pmd-col-cat" data-label="Category"><div class="pmd-strong">{{ r.category or '-' }}</div></td>
                   <td class="pmd-col-shg" data-label="SHG"><div class="pmd-strong">{{ r.shg_name or '-' }}</div></td>
+                  {% if sector == 'Agri' %}
+                    <td class="pmd-col-sector-a" data-label="Crop"><div class="pmd"><span data-field="agri_crop">{{ r.agri_crop or '-' }}</span></div></td>
+                    <td class="pmd-col-sector-b" data-label="FFS Module"><div class="pmd"><span data-field="agri_ffs_module">{{ r.agri_ffs_module or '-' }}</span></div></td>
+                  {% elif sector == 'ARDD' %}
+                    <td class="pmd-col-sector-a" data-label="Activity"><div class="pmd"><span data-field="ardd_activity">{{ r.ardd_activity or '-' }}</span></div></td>
+                    <td class="pmd-col-sector-b" data-label="Unit"><div class="pmd"><span data-field="ardd_unit">{{ r.ardd_unit or '-' }}</span></div></td>
+                  {% elif sector == 'Fishery' %}
+                    <td class="pmd-col-sector-a" data-label="Fishery Activity"><div class="pmd"><span data-field="fishery_activity">{{ r.fishery_activity or '-' }}</span></div></td>
+                  {% endif %}
                   <td class="pmd-col-contact" data-label="Contact"><div class="pmd"><span data-field="contact">{{ r.contact or '-' }}</span></div></td>
                   <td class="pmd-col-id" data-label="AADHAR/Voter/Govt ID"><div class="pmd"><span data-field="photo_id_number">{{ r.photo_id_number or '-' }}</span></div></td>
                   <td class="pmd-col-bank" data-label="Bank"><div class="pmd"><span data-field="bank_name">{{ r.bank_name or '-' }}</span></div></td>
@@ -1094,6 +1167,11 @@
       thSpouse: "Father/Mother/Spouse Name",
       thCategory: "Category",
       thShg: "SHG",
+      thCrop: "Crop",
+      thFfs: "FFS Module",
+      thArddType: "Activity",
+      thArddUnit: "Unit",
+      thFisheryType: "Fishery Activity",
       thContact: "Contact",
       thId: "AADHAR/Voter/Govt ID",
       thBank: "Bank",
@@ -1107,7 +1185,12 @@
       phBank: "Bank",
       phBranch: "Branch",
       phAccount: "Account",
-      phFee: "0"
+      phFee: "0",
+      phSelectCrop: "Select Crop",
+      phSelectFfs: "Select FFS Module",
+      phSelectArddType: "Select Activity",
+      phSelectArddUnit: "Select Unit",
+      phSelectFisheryType: "Select Fishery Activity"
     },
     bn: {
       back: "পেছনে",
@@ -1129,6 +1212,11 @@
       thSpouse: "পিতা/মাতা/স্বামী/স্ত্রীর নাম",
       thCategory: "ক্যাটাগরি",
       thShg: "SHG",
+      thCrop: "ফসল",
+      thFfs: "এফএফএস মডিউল",
+      thArddType: "কার্যক্রম",
+      thArddUnit: "ইউনিট",
+      thFisheryType: "মৎস্য কার্যক্রম",
       thContact: "যোগাযোগ",
       thId: "আধার/ভোটার/সরকারি আইডি",
       thBank: "ব্যাংক",
@@ -1142,7 +1230,12 @@
       phBank: "ব্যাংক",
       phBranch: "শাখা",
       phAccount: "অ্যাকাউন্ট",
-      phFee: "০"
+      phFee: "০",
+      phSelectCrop: "ফসল নির্বাচন করুন",
+      phSelectFfs: "FFS Module নির্বাচন করুন",
+      phSelectArddType: "কার্যক্রম নির্বাচন করুন",
+      phSelectArddUnit: "ইউনিট নির্বাচন করুন",
+      phSelectFisheryType: "মৎস্য কার্যক্রম নির্বাচন করুন"
     }
   };
 
@@ -1203,14 +1296,18 @@
 
     const thMap = [
       ['thSl', t.thSl], ['thMember', t.thMember], ['thSpouse', t.thSpouse], ['thCategory', t.thCategory],
-      ['thShg', t.thShg], ['thContact', t.thContact], ['thId', t.thId], ['thBank', t.thBank],
+      ['thShg', t.thShg],
+      {% if sector == 'Agri' %}['thCrop', t.thCrop], ['thFfs', t.thFfs],{% elif sector == 'ARDD' %}['thArddType', t.thArddType], ['thArddUnit', t.thArddUnit],{% elif sector == 'Fishery' %}['thFisheryType', t.thFisheryType],{% endif %}
+      ['thContact', t.thContact], ['thId', t.thId], ['thBank', t.thBank],
       ['thBranch', t.thBranch], ['thAccount', t.thAccount], ['thFee', t.thFee], ['thLakhpati', t.thLakhpati], ['thAction', t.thAction]
     ];
     thMap.forEach(([id,val]) => { const el = document.getElementById(id); if(el) el.textContent = val; });
 
     const thMapV = [
       ['thSlV', t.thSl], ['thMemberV', t.thMember], ['thSpouseV', t.thSpouse], ['thCategoryV', t.thCategory],
-      ['thShgV', t.thShg], ['thContactV', t.thContact], ['thIdV', t.thId], ['thBankV', t.thBank],
+      ['thShgV', t.thShg],
+      {% if sector == 'Agri' %}['thCropV', t.thCrop], ['thFfsV', t.thFfs],{% elif sector == 'ARDD' %}['thArddTypeV', t.thArddType], ['thArddUnitV', t.thArddUnit],{% elif sector == 'Fishery' %}['thFisheryTypeV', t.thFisheryType],{% endif %}
+      ['thContactV', t.thContact], ['thIdV', t.thId], ['thBankV', t.thBank],
       ['thBranchV', t.thBranch], ['thAccountV', t.thAccount], ['thFeeV', t.thFee], ['thLakhpatiV', t.thLakhpati]
     ];
     thMapV.forEach(([id,val]) => { const el = document.getElementById(id); if(el) el.textContent = val; });
@@ -1223,12 +1320,19 @@
     document.querySelectorAll('input.pmd-input[name="branch"]').forEach(i => i.setAttribute('placeholder', t.phBranch));
     document.querySelectorAll('input.pmd-input[name="account_number"]').forEach(i => i.setAttribute('placeholder', t.phAccount));
     document.querySelectorAll('input.pmd-input[name="membership_fee_paid"]').forEach(i => i.setAttribute('placeholder', t.phFee));
+    document.querySelectorAll('select.pmd-input[name="agri_crop"] option:first-child').forEach(i => i.textContent = t.phSelectCrop);
+    document.querySelectorAll('select.pmd-input[name="agri_ffs_module"] option:first-child').forEach(i => i.textContent = t.phSelectFfs);
+    document.querySelectorAll('select.pmd-input[name="ardd_activity"] option:first-child').forEach(i => i.textContent = t.phSelectArddType);
+    document.querySelectorAll('select.pmd-input[name="ardd_unit"] option:first-child').forEach(i => i.textContent = t.phSelectArddUnit);
+    document.querySelectorAll('select.pmd-input[name="fishery_activity"] option:first-child').forEach(i => i.textContent = t.phSelectFisheryType);
 
     const setDataLabels = (tableId) => {
       const table = document.getElementById(tableId);
       if(!table) return;
       const headLabels = [
-        t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg, t.thContact, t.thId, t.thBank, t.thBranch, t.thAccount, t.thFee, t.thLakhpati
+        t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg,
+        {% if sector == 'Agri' %}t.thCrop, t.thFfs,{% elif sector == 'ARDD' %}t.thArddType, t.thArddUnit,{% elif sector == 'Fishery' %}t.thFisheryType,{% endif %}
+        t.thContact, t.thId, t.thBank, t.thBranch, t.thAccount, t.thFee, t.thLakhpati
       ];
       const isEdit = tableId === 'pmdEditTable';
       const labels = isEdit ? headLabels.concat([t.thAction]) : headLabels;
@@ -1243,7 +1347,7 @@
     setDataLabels('pmdEditTable');
     setDataLabels('pmdViewTable');
 
-    window.__PMD_MODAL_LABELS__ = [t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg, t.thContact, t.thId, t.thBank, t.thBranch, t.thAccount, t.thFee, t.thLakhpati];
+    window.__PMD_MODAL_LABELS__ = [t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg, {% if sector == 'Agri' %}t.thCrop, t.thFfs, {% elif sector == 'ARDD' %}t.thArddType, t.thArddUnit, {% elif sector == 'Fishery' %}t.thFisheryType, {% endif %} t.thContact, t.thId, t.thBank, t.thBranch, t.thAccount, t.thFee, t.thLakhpati];
   }
 
   window.updatePageLanguage = function(lang){
@@ -1369,7 +1473,8 @@
     { key: 'bank_name', label: 'Bank' },
     { key: 'branch', label: 'Branch' },
     { key: 'account_number', label: 'Account' },
-    { key: 'membership_fee_paid', label: 'Fee' }
+    { key: 'membership_fee_paid', label: 'Fee' },
+    {% if sector == 'Agri' %}{ key: 'agri_crop', label: 'Crop' }, { key: 'agri_ffs_module', label: 'FFS Module' }{% elif sector == 'ARDD' %}{ key: 'ardd_activity', label: 'Activity' }, { key: 'ardd_unit', label: 'Unit' }{% elif sector == 'Fishery' %}{ key: 'fishery_activity', label: 'Fishery Activity' }{% endif %}
   ];
 
   function validateRequired(form){
@@ -1631,7 +1736,7 @@
   let fullTable = null;
 
   function getLabels(){
-    return (window.__PMD_MODAL_LABELS__ && Array.isArray(window.__PMD_MODAL_LABELS__) && window.__PMD_MODAL_LABELS__.length === 12)
+    return (window.__PMD_MODAL_LABELS__ && Array.isArray(window.__PMD_MODAL_LABELS__) && window.__PMD_MODAL_LABELS__.length)
       ? window.__PMD_MODAL_LABELS__
       : ["Sl. No","Member","Father/Mother/Spouse Name","Category","SHG","Contact","AADHAR/Voter/Govt ID","Bank","Branch","Account","Fee","Lakhpati Didi?"];
   }
@@ -1771,6 +1876,33 @@
     // If i18n hasn't run yet for some reason, do a minimal fallback labels set
     if(!window.__PMD_MODAL_LABELS__) return;
   }catch(_){}
+})();
+</script>
+
+
+<script>
+(function(){
+  const unitMap = {{ (ardd_unit_options or {})|tojson }};
+  function syncRow(formId){
+    const activity = document.querySelector('.js-ardd-activity[data-row-form="' + CSS.escape(formId) + '"]');
+    const unit = document.querySelector('.js-ardd-unit[data-row-form="' + CSS.escape(formId) + '"]');
+    if(!activity || !unit) return;
+    const prev = unit.value || unit.getAttribute('data-selected') || '';
+    const opts = unitMap[activity.value] || [];
+    unit.innerHTML = '<option value="">Select Unit</option>' + opts.map(v => '<option value="' + v.replace(/"/g,'&quot;') + '">' + v + '</option>').join('');
+    unit.value = opts.includes(prev) ? prev : '';
+    unit.dispatchEvent(new Event('change', { bubbles:true }));
+  }
+  document.querySelectorAll('.js-ardd-activity').forEach(activity => {
+    const formId = activity.getAttribute('data-row-form');
+    const unit = document.querySelector('.js-ardd-unit[data-row-form="' + CSS.escape(formId) + '"]');
+    if(unit) {
+      unit.setAttribute('data-selected', unit.dataset.selected || '');
+      unit.addEventListener('change', () => unit.setAttribute('data-selected', unit.value || ''));
+    }
+    activity.addEventListener('change', () => syncRow(formId));
+    syncRow(formId);
+  });
 })();
 </script>
 

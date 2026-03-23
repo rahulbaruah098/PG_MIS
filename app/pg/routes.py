@@ -12,6 +12,36 @@ from ..services.audit import log_audit
 from flask import g
 
 
+PG_SECTOR_OPTIONS = ["Agri", "ARDD", "Fishery"]
+AGRI_CROP_OPTIONS = [
+    "Arhar", "Ash gourd", "Bhindi", "Bitter gourd", "Black gram",
+    "Black pepper", "Bottle gourd", "Brinjal", "Chilli", "Cocumber",
+    "Colocasia", "Cowpea", "Foxtail Millet", "Ginger", "Lab lab beans",
+    "Maize", "Pineapple", "Potato", "Pumpkin", "Radish", "Mustard",
+    "Ridge gourd", "Sesamum", "Turmeric", "Water Melon",
+]
+AGRI_FFS_MODULE_OPTIONS = [
+    "FFS Module 1", "FFS Module 2", "FFS Module 3", "FFS Module 4", "FFS Module 5"
+]
+ARDD_ACTIVITY_OPTIONS = ["Goatery", "Piggery"]
+ARDD_UNIT_OPTIONS = {
+    "Goatery": ["GPU", "GFU"],
+    "Piggery": ["PPU", "PFU"],
+}
+FISHERY_ACTIVITY_OPTIONS = ["Nursery", "Polu-culture", "Poli Culture high value"]
+
+
+def _normalize_pg_sector(value):
+    raw = str(value or '').strip().lower()
+    mapping = {
+        'agri': 'Agri',
+        'ardd': 'ARDD',
+        'arrd': 'ARDD',
+        'fishery': 'Fishery',
+    }
+    return mapping.get(raw, str(value or '').strip())
+
+
 def _fmt_inr(amount):
     try:
         amt = float(amount or 0)
@@ -728,7 +758,8 @@ def pg_registration(pg_id):
             "pg_registration.html",
             pg=pg,
             shg_members=shg_members,
-            safe_members=safe_members
+            safe_members=safe_members,
+            sector_options=PG_SECTOR_OPTIONS
         )
 
     # ==========================================================
@@ -765,6 +796,10 @@ def pg_registration(pg_id):
     for field_name, value in required_fields.items():
         if not value or str(value).strip() == "":
             return _error(f"{field_name} is required.", 400)
+
+    normalized_sector = _normalize_pg_sector(getv("sector"))
+    if normalized_sector not in PG_SECTOR_OPTIONS:
+        return _error("Sector must be one of: Agri, ARDD, Fishery.", 400)
 
     contact_number = str(getv("contact_number", "")).strip()
     if not contact_number.isdigit():
@@ -851,7 +886,7 @@ def pg_registration(pg_id):
 
     data = {
         "pg_type": getv("pg_type"),
-        "sector": getv("sector"),
+        "sector": normalized_sector,
         "formation_date": getv("formation_date"),
         "office_bearers": {
             "president_id": ObjectId(president_id),
@@ -1314,6 +1349,26 @@ def pg_members(pg_id):
             return _deny("This member is inactive and cannot be edited until re-added in PG Registration.", 403)
 
         master = master_by_id.get(mid)
+        current_sector = _normalize_pg_sector(pg.get("sector"))
+        agri_crop = _get("agri_crop", "").strip()
+        agri_ffs_module = _get("agri_ffs_module", "").strip()
+        ardd_activity = _get("ardd_activity", "").strip()
+        ardd_unit = _get("ardd_unit", "").strip()
+        fishery_activity = _get("fishery_activity", "").strip()
+
+        if current_sector == "Agri":
+            if agri_crop not in AGRI_CROP_OPTIONS:
+                return _deny("Please select a valid Agri crop.", 400)
+            if agri_ffs_module not in AGRI_FFS_MODULE_OPTIONS:
+                return _deny("Please select a valid FFS Module.", 400)
+        elif current_sector == "ARDD":
+            if ardd_activity not in ARDD_ACTIVITY_OPTIONS:
+                return _deny("Please select a valid ARDD activity.", 400)
+            if ardd_unit not in ARDD_UNIT_OPTIONS.get(ardd_activity, []):
+                return _deny("Please select a valid ARDD unit.", 400)
+        elif current_sector == "Fishery":
+            if fishery_activity not in FISHERY_ACTIVITY_OPTIONS:
+                return _deny("Please select a valid Fishery activity.", 400)
 
         # Read single row fields
         contact            = _get("contact",            "").strip()
@@ -1394,6 +1449,12 @@ def pg_members(pg_id):
         # ✅ Lakhpati Didi flag
         update_set["lakh_pati_didi"] = True if lakh_raw in ("1", "true", "on", "yes") else False
 
+        update_set["agri_crop"] = agri_crop if current_sector == "Agri" else ""
+        update_set["agri_ffs_module"] = agri_ffs_module if current_sector == "Agri" else ""
+        update_set["ardd_activity"] = ardd_activity if current_sector == "ARDD" else ""
+        update_set["ardd_unit"] = ardd_unit if current_sector == "ARDD" else ""
+        update_set["fishery_activity"] = fishery_activity if current_sector == "Fishery" else ""
+
         db.pg_members.update_one(
             {"pg_id": pg_obj_id, "member_id": mid_obj},
             {
@@ -1459,6 +1520,11 @@ def pg_members(pg_id):
             "account_number": existing.get("account_number") or "",
             "membership_fee_paid": existing.get("membership_fee_paid") if existing.get("membership_fee_paid") is not None else "",
             "lakh_pati_didi": True if existing.get("lakh_pati_didi") else False,
+            "agri_crop": existing.get("agri_crop") or "",
+            "agri_ffs_module": existing.get("agri_ffs_module") or "",
+            "ardd_activity": existing.get("ardd_activity") or "",
+            "ardd_unit": existing.get("ardd_unit") or "",
+            "fishery_activity": existing.get("fishery_activity") or "",
         })
 
     if _wants_json():
@@ -1467,11 +1533,30 @@ def pg_members(pg_id):
             "pg": {
                 "_id": str(pg["_id"]),
                 "name": pg.get("name"),
+                "sector": _normalize_pg_sector(pg.get("sector")),
+            },
+            "sector_meta": {
+                "sectors": PG_SECTOR_OPTIONS,
+                "agri_crops": AGRI_CROP_OPTIONS,
+                "agri_ffs_modules": AGRI_FFS_MODULE_OPTIONS,
+                "ardd_activities": ARDD_ACTIVITY_OPTIONS,
+                "ardd_units": ARDD_UNIT_OPTIONS,
+                "fishery_activities": FISHERY_ACTIVITY_OPTIONS,
             },
             "rows": rows
         }), 200
 
-    return render_template("pg_members.html", pg=pg, rows=rows)
+    return render_template(
+        "pg_members.html",
+        pg=pg,
+        rows=rows,
+        current_sector=_normalize_pg_sector(pg.get("sector")),
+        agri_crops=AGRI_CROP_OPTIONS,
+        agri_ffs_modules=AGRI_FFS_MODULE_OPTIONS,
+        ardd_activities=ARDD_ACTIVITY_OPTIONS,
+        ardd_unit_options=ARDD_UNIT_OPTIONS,
+        fishery_activities=FISHERY_ACTIVITY_OPTIONS,
+    )
 
 @pg_bp.route("/lakhpati/<pg_id>")
 @login_required
