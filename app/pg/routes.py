@@ -405,6 +405,21 @@ def pg_home():
     pg_id = getattr(g, "pg_id", None) or session.get("pg_id")
     role  = getattr(g, "role", None) or session.get("role")
 
+    role = getattr(g, "role", None) or session.get("role")
+
+    # Mobile app can request a PG explicitly
+    requested_pg_id = (
+        request.args.get("pg_id")
+        or request.args.get("pgId")
+        or request.headers.get("X-PG-ID")
+    )
+    
+    # Only allow CADRE_CC to override PG via mobile request
+    if role == "CADRE_CC" and requested_pg_id:
+        allowed_pg_ids = _assigned_pg_ids_for_session()
+        if str(requested_pg_id) in allowed_pg_ids:
+            pg_id = str(requested_pg_id)
+
     def _wants_json():
         return bool(
             request.headers.get("Authorization")

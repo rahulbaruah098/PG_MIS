@@ -1,51 +1,95 @@
 from services.audit_engine import AuditLogger
-from flask import render_template, request, redirect, url_for, flash, current_app, session
+from flask import render_template, request, redirect, url_for, flash, current_app, session, jsonify
 from app.services.guards import require_unlocked_period
 from bson import ObjectId
+from bson.errors import InvalidId
 from datetime import datetime
 
 from . import business_bp
 from ..rbac import login_required, roles_required
 
+#changes made by atlanta
 @business_bp.route("/income_expenditure/<pg_id>", methods=["GET", "POST"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def income_expenditure(pg_id):
     db = current_app.mongo_db
-    pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
+
+    def wants_json():
+        accept = (request.headers.get("Accept") or "").lower()
+        content_type = (request.content_type or "").lower()
+        return (
+            request.is_json
+            or "application/json" in accept
+            or "application/json" in content_type
+            or request.args.get("format") == "json"
+        )
+
+    def fval(src, key, default=0.0):
+        try:
+            return float(src.get(key, default) or default)
+        except Exception:
+            return float(default)
+
+    def ival(src, key, default=0):
+        try:
+            return int(src.get(key, default) or default)
+        except Exception:
+            return int(default)
+
+    try:
+        pg_obj_id = ObjectId(pg_id)
+    except InvalidId:
+        if wants_json():
+            return jsonify({"success": False, "message": "Invalid PG ID."}), 400
+        flash("Invalid PG ID.", "danger")
+        return redirect(url_for("pg.pg_home"))
+
+    pg = db.pgs.find_one({"_id": pg_obj_id})
     if not pg:
+        if wants_json():
+            return jsonify({"success": False, "message": "PG not found."}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
+    now = datetime.utcnow()
+
     if request.method == "POST":
-        year = int(request.form.get("year"))
-        month = int(request.form.get("month"))
+        if request.is_json:
+            src = request.get_json(silent=True) or {}
+            year = ival(src, "year", now.year)
+            month = ival(src, "month", now.month)
+        else:
+            src = request.form
+            year = ival(src, "year", now.year)
+            month = ival(src, "month", now.month)
 
         income = {
-            "startup_cost_received": float(request.form.get("startup_cost_received") or 0),
-            "membership_fees": float(request.form.get("membership_fees") or 0),
-            "interest_received_from_members": float(request.form.get("interest_received_from_members") or 0),
-            "income_selling_product": float(request.form.get("income_selling_product") or 0),
-            "income_selling_input_to_member": float(request.form.get("income_selling_input_to_member") or 0),
-            "income_selling_input_to_outsider": float(request.form.get("income_selling_input_to_outsider") or 0),
-            "other_income": float(request.form.get("other_income") or 0),
-        }
-        expenditure = {
-            "establishment_cost_utilized": float(request.form.get("establishment_cost_utilized") or 0),
-            "input_procurement": float(request.form.get("input_procurement") or 0),
-            "interest_paid_against_loan": float(request.form.get("interest_paid_against_loan") or 0),
-            "product_procurement": float(request.form.get("product_procurement") or 0),
-            "recurring_expenditure": float(request.form.get("recurring_expenditure") or 0),
-            "other_expenditure": float(request.form.get("other_expenditure") or 0),
+            "startup_cost_received": fval(src, "startup_cost_received"),
+            "membership_fees": fval(src, "membership_fees"),
+            "interest_received_from_members": fval(src, "interest_received_from_members"),
+            "income_selling_product": fval(src, "income_selling_product"),
+            "income_selling_input_to_member": fval(src, "income_selling_input_to_member"),
+            "income_selling_input_to_outsider": fval(src, "income_selling_input_to_outsider"),
+            "other_income": fval(src, "other_income"),
         }
 
-        total_income = sum(income.values())
-        total_expenditure = sum(expenditure.values())
-        excess_income = total_income - total_expenditure
+        expenditure = {
+            "establishment_cost_utilized": fval(src, "establishment_cost_utilized"),
+            "input_procurement": fval(src, "input_procurement"),
+            "interest_paid_against_loan": fval(src, "interest_paid_against_loan"),
+            "product_procurement": fval(src, "product_procurement"),
+            "recurring_expenditure": fval(src, "recurring_expenditure"),
+            "other_expenditure": fval(src, "other_expenditure"),
+        }
+
+        total_income = round(sum(income.values()), 2)
+        total_expenditure = round(sum(expenditure.values()), 2)
+        excess_income = round(total_income - total_expenditure, 2)
 
         doc = {
-            "pg_id": ObjectId(pg_id),
+            "pg_id": pg_obj_id,
             "year": year,
             "month": month,
             "income": income,
@@ -57,16 +101,95 @@ def income_expenditure(pg_id):
         }
 
         db.pg_income_expenditure.update_one(
-            {"pg_id": ObjectId(pg_id), "year": year, "month": month},
+            {"pg_id": pg_obj_id, "year": year, "month": month},
             {"$set": doc},
             upsert=True,
         )
+
+        saved = db.pg_income_expenditure.find_one(
+            {"pg_id": pg_obj_id, "year": year, "month": month}
+        )
+
+        if wants_json():
+            return jsonify({
+                "success": True,
+                "message": "Income–Expenditure saved successfully.",
+                "pg": {
+                    "id": str(pg["_id"]),
+                    "name": pg.get("pg_name") or pg.get("name") or "Producer Group",
+                },
+                "record": {
+                    "id": str(saved.get("_id", "")) if saved else "",
+                    "year": saved.get("year") if saved else None,
+                    "month": saved.get("month") if saved else None,
+                    "income": saved.get("income", {}) if saved else {},
+                    "expenditure": saved.get("expenditure", {}) if saved else {},
+                    "total_income": saved.get("total_income", 0) if saved else 0,
+                    "total_expenditure": saved.get("total_expenditure", 0) if saved else 0,
+                    "excess_income_over_expenditure": saved.get("excess_income_over_expenditure", 0) if saved else 0,
+                    "updated_at": saved.get("updated_at").isoformat() if saved and saved.get("updated_at") else None,
+                }
+            }), 200
+
         flash("Income–Expenditure saved.", "success")
         return redirect(url_for("business.income_expenditure", pg_id=pg_id))
 
-    record = db.pg_income_expenditure.find_one({"pg_id": ObjectId(pg_id)}, sort=[("year", -1), ("month", -1)])
-    return render_template("income_expenditure.html", pg=pg, record=record)
+    year = request.args.get("year")
+    month = request.args.get("month")
 
+    query = {"pg_id": pg_obj_id}
+
+    if year is not None and str(year).strip() != "":
+        try:
+            query["year"] = int(year)
+        except Exception:
+            if wants_json():
+                return jsonify({"success": False, "message": "Invalid year."}), 400
+            flash("Invalid year.", "danger")
+            return redirect(url_for("business.income_expenditure", pg_id=pg_id))
+
+    if month is not None and str(month).strip() != "":
+        try:
+            query["month"] = int(month)
+        except Exception:
+            if wants_json():
+                return jsonify({"success": False, "message": "Invalid month."}), 400
+            flash("Invalid month.", "danger")
+            return redirect(url_for("business.income_expenditure", pg_id=pg_id))
+
+    if "year" in query and "month" in query:
+        record = db.pg_income_expenditure.find_one(query)
+    else:
+        record = db.pg_income_expenditure.find_one(
+            {"pg_id": pg_obj_id},
+            sort=[("year", -1), ("month", -1)]
+        )
+
+    if wants_json():
+        return jsonify({
+            "success": True,
+            "pg": {
+                "id": str(pg["_id"]),
+                "name": pg.get("pg_name") or pg.get("name") or "Producer Group",
+            },
+            "filters": {
+                "year": int(year) if year not in (None, "") else None,
+                "month": int(month) if month not in (None, "") else None,
+            },
+            "record": {
+                "id": str(record.get("_id", "")) if record else "",
+                "year": record.get("year") if record else None,
+                "month": record.get("month") if record else None,
+                "income": record.get("income", {}) if record else {},
+                "expenditure": record.get("expenditure", {}) if record else {},
+                "total_income": record.get("total_income", 0) if record else 0,
+                "total_expenditure": record.get("total_expenditure", 0) if record else 0,
+                "excess_income_over_expenditure": record.get("excess_income_over_expenditure", 0) if record else 0,
+                "updated_at": record.get("updated_at").isoformat() if record and record.get("updated_at") else None,
+            } if record else None
+        }), 200
+
+    return render_template("income_expenditure.html", pg=pg, record=record)
 
 # ============================================================
 # NEW: STOCK / INVENTORY TRACKING
@@ -74,76 +197,253 @@ def income_expenditure(pg_id):
 # - Movement ledger (purchase/sale/adjustment)
 # ============================================================
 
-@business_bp.route("/stock_register/<pg_id>", methods=["GET","POST"])
+# changes made by atlanta
+@business_bp.route("/stock_register/<pg_id>", methods=["GET", "POST"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def stock_register(pg_id):
     db = current_app.mongo_db
-    pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
+
+    def wants_json():
+        accept = (request.headers.get("Accept") or "").lower()
+        content_type = (request.content_type or "").lower()
+        return (
+            request.is_json
+            or "application/json" in accept
+            or "application/json" in content_type
+            or request.args.get("format") == "json"
+        )
+
+    def fval(src, key, default=0.0):
+        try:
+            return float(src.get(key, default) or default)
+        except Exception:
+            return float(default)
+
+    def ival(src, key, default=0):
+        try:
+            return int(src.get(key, default) or default)
+        except Exception:
+            return int(default)
+
+    def serialize_monthly(doc):
+        return {
+            "id": str(doc.get("_id", "")),
+            "year": int(doc.get("year") or 0),
+            "month": int(doc.get("month") or 0),
+            "commodity": doc.get("commodity") or "",
+            "opening_qty": float(doc.get("opening_qty") or 0),
+            "opening_value": float(doc.get("opening_value") or 0),
+            "closing_qty": float(doc.get("closing_qty") or 0),
+            "closing_value": float(doc.get("closing_value") or 0),
+            "valuation_method": doc.get("valuation_method") or "avg",
+            "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
+        }
+
+    def serialize_movement(doc):
+        return {
+            "id": str(doc.get("_id", "")),
+            "commodity": doc.get("commodity") or "",
+            "movement_type": doc.get("movement_type") or "purchase",
+            "qty": float(doc.get("qty") or 0),
+            "rate": float(doc.get("rate") or 0),
+            "amount": float(doc.get("amount") or 0),
+            "remarks": doc.get("remarks") or "",
+            "ts": doc.get("ts").isoformat() if doc.get("ts") else None,
+            "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
+        }
+
+    try:
+        pg_obj_id = ObjectId(pg_id)
+    except InvalidId:
+        if wants_json():
+            return jsonify({"success": False, "message": "Invalid PG ID."}), 400
+        flash("Invalid PG ID.", "danger")
+        return redirect(url_for("pg.pg_home"))
+
+    pg = db.pgs.find_one({"_id": pg_obj_id})
     if not pg:
+        if wants_json():
+            return jsonify({"success": False, "message": "PG not found."}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
+    def build_payload(year=None, month=None):
+        monthly_query = {"pg_id": pg_obj_id}
+        if year is not None:
+            monthly_query["year"] = int(year)
+        if month is not None:
+            monthly_query["month"] = int(month)
+
+        records = list(
+            db.pg_stocks_monthly.find(monthly_query)
+            .sort([("year", -1), ("month", -1), ("updated_at", -1)])
+            .limit(200)
+        )
+
+        movements = list(
+            db.pg_stock_movements.find({"pg_id": pg_obj_id})
+            .sort([("ts", -1)])
+            .limit(100)
+        )
+
+        return {
+            "success": True,
+            "pg": {
+                "id": str(pg["_id"]),
+                "name": pg.get("pg_name") or pg.get("name") or "Producer Group",
+            },
+            "filters": {
+                "year": int(year) if year is not None else None,
+                "month": int(month) if month is not None else None,
+            },
+            "monthly_records": [serialize_monthly(r) for r in records],
+            "movements": [serialize_movement(m) for m in movements],
+        }
+
     if request.method == "POST":
-        year = int(request.form.get("year") or datetime.utcnow().year)
-        month = int(request.form.get("month") or datetime.utcnow().month)
-        commodity = (request.form.get("commodity") or "").strip()
-        opening_qty = float(request.form.get("opening_qty") or 0)
-        opening_value = float(request.form.get("opening_value") or 0)
-        closing_qty = float(request.form.get("closing_qty") or 0)
-        closing_value = float(request.form.get("closing_value") or 0)
-        valuation_method = request.form.get("valuation_method") or "avg"
+        src = request.get_json(silent=True) or {} if request.is_json else request.form
+
+        year = ival(src, "year", datetime.utcnow().year)
+        month = ival(src, "month", datetime.utcnow().month)
+        commodity = (src.get("commodity") or "").strip()
+
+        if not commodity:
+            if wants_json():
+                return jsonify({"success": False, "message": "Commodity is required."}), 400
+            flash("Commodity is required.", "danger")
+            return redirect(url_for("business.stock_register", pg_id=pg_id))
 
         doc = {
-            "pg_id": ObjectId(pg_id),
+            "pg_id": pg_obj_id,
             "year": year,
             "month": month,
             "commodity": commodity,
-            "opening_qty": opening_qty,
-            "opening_value": opening_value,
-            "closing_qty": closing_qty,
-            "closing_value": closing_value,
-            "valuation_method": valuation_method,
+            "opening_qty": fval(src, "opening_qty"),
+            "opening_value": fval(src, "opening_value"),
+            "closing_qty": fval(src, "closing_qty"),
+            "closing_value": fval(src, "closing_value"),
+            "valuation_method": (src.get("valuation_method") or "avg").strip().lower(),
             "updated_at": datetime.utcnow(),
         }
+
         db.pg_stocks_monthly.update_one(
-            {"pg_id": ObjectId(pg_id), "year": year, "month": month, "commodity": commodity},
+            {"pg_id": pg_obj_id, "year": year, "month": month, "commodity": commodity},
             {"$set": doc},
-            upsert=True
+            upsert=True,
         )
+
+        if wants_json():
+            payload = build_payload(year, month)
+            payload["message"] = "Stock monthly saved successfully."
+            return jsonify(payload), 200
+
         flash("Stock monthly saved.", "success")
         return redirect(url_for("business.stock_register", pg_id=pg_id))
 
-    records = list(db.pg_stocks_monthly.find({"pg_id": ObjectId(pg_id)}).sort([("year", -1), ("month", -1)]).limit(200))
-    movements = list(db.pg_stock_movements.find({"pg_id": ObjectId(pg_id)}).sort([("ts", -1)]).limit(100))
+    year = request.args.get("year")
+    month = request.args.get("month")
+
+    if wants_json():
+        return jsonify(build_payload(year, month)), 200
+
+    records = list(
+        db.pg_stocks_monthly.find({"pg_id": pg_obj_id})
+        .sort([("year", -1), ("month", -1)])
+        .limit(200)
+    )
+    movements = list(
+        db.pg_stock_movements.find({"pg_id": pg_obj_id})
+        .sort([("ts", -1)])
+        .limit(100)
+    )
     return render_template("stock_register.html", pg=pg, records=records, movements=movements)
 
+# changes made by atlanta
 @business_bp.route("/stock_movement/<pg_id>", methods=["POST"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def stock_movement(pg_id):
     db = current_app.mongo_db
-    pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
+
+    def wants_json():
+        accept = (request.headers.get("Accept") or "").lower()
+        content_type = (request.content_type or "").lower()
+        return (
+            request.is_json
+            or "application/json" in accept
+            or "application/json" in content_type
+            or request.args.get("format") == "json"
+        )
+
+    def fval(src, key, default=0.0):
+        try:
+            return float(src.get(key, default) or default)
+        except Exception:
+            return float(default)
+
+    try:
+        pg_obj_id = ObjectId(pg_id)
+    except InvalidId:
+        if wants_json():
+            return jsonify({"success": False, "message": "Invalid PG ID."}), 400
+        flash("Invalid PG ID.", "danger")
+        return redirect(url_for("pg.pg_home"))
+
+    pg = db.pgs.find_one({"_id": pg_obj_id})
     if not pg:
+        if wants_json():
+            return jsonify({"success": False, "message": "PG not found."}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
+    src = request.get_json(silent=True) or {} if request.is_json else request.form
+
+    commodity = (src.get("commodity") or "").strip()
+    if not commodity:
+        if wants_json():
+            return jsonify({"success": False, "message": "Commodity is required."}), 400
+        flash("Commodity is required.", "danger")
+        return redirect(url_for("business.stock_register", pg_id=pg_id))
+
+    qty = fval(src, "qty")
+    rate = fval(src, "rate")
+
     doc = {
-        "pg_id": ObjectId(pg_id),
+        "pg_id": pg_obj_id,
         "ts": datetime.utcnow(),
-        "commodity": (request.form.get("commodity") or "").strip(),
-        "movement_type": request.form.get("movement_type") or "purchase",
-        "qty": float(request.form.get("qty") or 0),
-        "rate": float(request.form.get("rate") or 0),
-        "amount": float(request.form.get("qty") or 0) * float(request.form.get("rate") or 0),
-        "remarks": request.form.get("remarks") or "",
-        "created_at": datetime.utcnow()
+        "commodity": commodity,
+        "movement_type": (src.get("movement_type") or "purchase").strip().lower(),
+        "qty": qty,
+        "rate": rate,
+        "amount": qty * rate,
+        "remarks": src.get("remarks") or "",
+        "created_at": datetime.utcnow(),
     }
+
     db.pg_stock_movements.insert_one(doc)
+
+    if wants_json():
+        return jsonify({
+            "success": True,
+            "message": "Stock movement added successfully.",
+            "movement": {
+                "id": str(doc.get("_id", "")),
+                "commodity": doc["commodity"],
+                "movement_type": doc["movement_type"],
+                "qty": doc["qty"],
+                "rate": doc["rate"],
+                "amount": doc["amount"],
+                "remarks": doc["remarks"],
+                "ts": doc["ts"].isoformat(),
+            }
+        }), 200
+
     flash("Stock movement added.", "success")
     return redirect(url_for("business.stock_register", pg_id=pg_id))
+
 
 
 # ============================================================
@@ -203,44 +503,123 @@ def business_plan(pg_id):
 
 from services.kpi_engine import KPIEngine
 
-@business_bp.route("/monthly_business/<pg_id>", methods=["GET","POST"])
+# changes made by atlanta
+@business_bp.route("/monthly_business/<pg_id>", methods=["GET", "POST"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def monthly_business(pg_id):
     db = current_app.mongo_db
+
+    def wants_json():
+        accept = (request.headers.get("Accept") or "").lower()
+        content_type = (request.content_type or "").lower()
+        return (
+            request.is_json
+            or "application/json" in accept
+            or "application/json" in content_type
+            or request.args.get("format") == "json"
+        )
+
+    def fval(src, key, default=0.0):
+        try:
+            return float(src.get(key, default) or default)
+        except Exception:
+            return float(default)
+
+    def ival(src, key, default=0):
+        try:
+            return int(src.get(key, default) or default)
+        except Exception:
+            return int(default)
+
+    def make_payload(pg, year, month, internal_doc, market_doc):
+        turnover = KPIEngine.calculate_turnover(
+            float(internal_doc.get("internal_total") or 0),
+            float(market_doc.get("market_total") or market_doc.get("total_turnover") or 0)
+        )
+
+        total_members = db.pg_members.count_documents({"pg_id": ObjectId(pg_id)})
+        pct_in = KPIEngine.calculate_member_percentage(
+            int(internal_doc.get("members_input_count") or 0),
+            int(total_members or 0)
+        )
+        pct_out = KPIEngine.calculate_member_percentage(
+            int(internal_doc.get("members_output_count") or 0),
+            int(total_members or 0)
+        )
+
+        return {
+            "success": True,
+            "pg": {
+                "id": str(pg["_id"]),
+                "name": pg.get("name") or pg.get("pg_name") or "Producer Group",
+            },
+            "year": year,
+            "month": month,
+            "internal": {
+                "input_sold_to_members_value": float(internal_doc.get("input_sold_to_members_value") or 0),
+                "product_bought_from_members_value": float(internal_doc.get("product_bought_from_members_value") or 0),
+                "other_internal_value": float(internal_doc.get("other_internal_value") or 0),
+                "members_input_count": int(internal_doc.get("members_input_count") or 0),
+                "members_output_count": int(internal_doc.get("members_output_count") or 0),
+                "notes": internal_doc.get("notes") or "",
+                "internal_total": float(internal_doc.get("internal_total") or 0),
+            },
+            "market": {
+                "input_procured_from_market_value": float(market_doc.get("input_procured_from_market_value") or 0),
+                "input_sold_to_outsiders_value": float(market_doc.get("input_sold_to_outsiders_value") or 0),
+                "product_sold_to_market_value": float(market_doc.get("product_sold_to_market_value") or 0),
+                "other_market_value": float(market_doc.get("other_market_value") or 0),
+                "notes": market_doc.get("notes") or "",
+                "market_total": float(market_doc.get("market_total") or 0),
+                "total_turnover": float(turnover or 0),
+            },
+            "summary": {
+                "turnover": float(turnover or 0),
+                "total_members": int(total_members or 0),
+                "pct_in": float(pct_in or 0),
+                "pct_out": float(pct_out or 0),
+            },
+        }
+
     pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
     if not pg:
+        if wants_json():
+            return jsonify({"success": False, "message": "PG not found."}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    # default period = current month
     now = datetime.utcnow()
-    year = int(request.args.get("year") or request.form.get("year") or now.year)
-    month = int(request.args.get("month") or request.form.get("month") or now.month)
 
     if request.method == "POST":
-        # ---- 6.1 internal/member ----
+        if request.is_json:
+            src = request.get_json(silent=True) or {}
+            year = ival(src, "year", now.year)
+            month = ival(src, "month", now.month)
+        else:
+            src = request.form
+            year = int(request.args.get("year") or request.form.get("year") or now.year)
+            month = int(request.args.get("month") or request.form.get("month") or now.month)
+
         internal = {
             "pg_id": ObjectId(pg_id),
             "year": year,
             "month": month,
-
-            # Value totals (₹)
-            "input_sold_to_members_value": float(request.form.get("input_sold_to_members_value") or 0),
-            "product_bought_from_members_value": float(request.form.get("product_bought_from_members_value") or 0),
-            "other_internal_value": float(request.form.get("other_internal_value") or 0),
-
-            # Member involvement (counts)
-            "members_input_count": int(request.form.get("members_input_count") or 0),
-            "members_output_count": int(request.form.get("members_output_count") or 0),
-
-            # Optional notes
-            "notes": request.form.get("internal_notes") or "",
+            "input_sold_to_members_value": fval(src, "input_sold_to_members_value"),
+            "product_bought_from_members_value": fval(src, "product_bought_from_members_value"),
+            "other_internal_value": fval(src, "other_internal_value"),
+            "members_input_count": ival(src, "members_input_count"),
+            "members_output_count": ival(src, "members_output_count"),
+            "notes": (src.get("internal_notes") or "").strip(),
             "updated_at": datetime.utcnow(),
         }
-        internal_total = float(internal["input_sold_to_members_value"]) + float(internal["product_bought_from_members_value"]) + float(internal["other_internal_value"])
-        internal["internal_total"] = round(internal_total, 2)
+        internal["internal_total"] = round(
+            internal["input_sold_to_members_value"]
+            + internal["product_bought_from_members_value"]
+            + internal["other_internal_value"],
+            2,
+        )
 
         db.pg_business_monthly.update_one(
             {"pg_id": ObjectId(pg_id), "year": year, "month": month},
@@ -248,25 +627,27 @@ def monthly_business(pg_id):
             upsert=True,
         )
 
-        # ---- 6.2 market/outsider ----
         market = {
             "pg_id": ObjectId(pg_id),
             "year": year,
             "month": month,
-
-            "input_procured_from_market_value": float(request.form.get("input_procured_from_market_value") or 0),
-            "input_sold_to_outsiders_value": float(request.form.get("input_sold_to_outsiders_value") or 0),
-            "product_sold_to_market_value": float(request.form.get("product_sold_to_market_value") or 0),
-            "other_market_value": float(request.form.get("other_market_value") or 0),
-
-            "notes": request.form.get("market_notes") or "",
+            "input_procured_from_market_value": fval(src, "input_procured_from_market_value"),
+            "input_sold_to_outsiders_value": fval(src, "input_sold_to_outsiders_value"),
+            "product_sold_to_market_value": fval(src, "product_sold_to_market_value"),
+            "other_market_value": fval(src, "other_market_value"),
+            "notes": (src.get("market_notes") or "").strip(),
             "updated_at": datetime.utcnow(),
         }
-        market_total = float(market["input_procured_from_market_value"]) + float(market["input_sold_to_outsiders_value"]) + float(market["product_sold_to_market_value"]) + float(market["other_market_value"])
-        market["market_total"] = round(market_total, 2)
-
-        total_turnover = KPIEngine.calculate_turnover(internal["internal_total"], market["market_total"])
-        market["total_turnover"] = total_turnover
+        market["market_total"] = round(
+            market["input_procured_from_market_value"]
+            + market["input_sold_to_outsiders_value"]
+            + market["product_sold_to_market_value"]
+            + market["other_market_value"],
+            2,
+        )
+        market["total_turnover"] = KPIEngine.calculate_turnover(
+            internal["internal_total"], market["market_total"]
+        )
 
         db.pg_market_transactions.update_one(
             {"pg_id": ObjectId(pg_id), "year": year, "month": month},
@@ -274,26 +655,58 @@ def monthly_business(pg_id):
             upsert=True,
         )
 
-        flash("Monthly business (6.1 + 6.2) saved. Turnover auto-calculated.", "success")
-
-        # Best-effort: auto-generate MPR snapshot for this month
         try:
             from app.services.workflow import generate_mpr_snapshot
-            user = {"user_id": session.get("user_id"), "username": session.get("username"), "role": session.get("role")}
+            user = {
+                "user_id": session.get("user_id"),
+                "username": session.get("username"),
+                "role": session.get("role"),
+            }
             generate_mpr_snapshot(db, level="pg", ref_id=str(pg_id), year=year, month=month, user=user)
         except Exception:
             pass
 
+        internal_doc = db.pg_business_monthly.find_one(
+            {"pg_id": ObjectId(pg_id), "year": year, "month": month}
+        ) or {}
+        market_doc = db.pg_market_transactions.find_one(
+            {"pg_id": ObjectId(pg_id), "year": year, "month": month}
+        ) or {}
+
+        if wants_json():
+            payload = make_payload(pg, year, month, internal_doc, market_doc)
+            payload["message"] = "Monthly business saved successfully."
+            return jsonify(payload), 200
+
+        flash("Monthly business (6.1 + 6.2) saved. Turnover auto-calculated.", "success")
         return redirect(url_for("business.monthly_business", pg_id=pg_id, year=year, month=month))
 
-    internal_doc = db.pg_business_monthly.find_one({"pg_id": ObjectId(pg_id), "year": year, "month": month}) or {}
-    market_doc = db.pg_market_transactions.find_one({"pg_id": ObjectId(pg_id), "year": year, "month": month}) or {}
-    turnover = KPIEngine.calculate_turnover(float(internal_doc.get("internal_total") or 0), float(market_doc.get("market_total") or market_doc.get("total_turnover") or 0))
+    year = int(request.args.get("year") or now.year)
+    month = int(request.args.get("month") or now.month)
 
-    # helpful derived % for view
+    internal_doc = db.pg_business_monthly.find_one(
+        {"pg_id": ObjectId(pg_id), "year": year, "month": month}
+    ) or {}
+    market_doc = db.pg_market_transactions.find_one(
+        {"pg_id": ObjectId(pg_id), "year": year, "month": month}
+    ) or {}
+
+    if wants_json():
+        return jsonify(make_payload(pg, year, month, internal_doc, market_doc)), 200
+
+    turnover = KPIEngine.calculate_turnover(
+        float(internal_doc.get("internal_total") or 0),
+        float(market_doc.get("market_total") or market_doc.get("total_turnover") or 0)
+    )
     total_members = db.pg_members.count_documents({"pg_id": ObjectId(pg_id)})
-    pct_in = KPIEngine.calculate_member_percentage(int(internal_doc.get("members_input_count") or 0), int(total_members or 0))
-    pct_out = KPIEngine.calculate_member_percentage(int(internal_doc.get("members_output_count") or 0), int(total_members or 0))
+    pct_in = KPIEngine.calculate_member_percentage(
+        int(internal_doc.get("members_input_count") or 0),
+        int(total_members or 0)
+    )
+    pct_out = KPIEngine.calculate_member_percentage(
+        int(internal_doc.get("members_output_count") or 0),
+        int(total_members or 0)
+    )
 
     return render_template(
         "business_monthly.html",
@@ -309,28 +722,67 @@ def monthly_business(pg_id):
     )
 
 
-
 # ============================================================
 # NEW: YEARLY INCOME & EXPENDITURE STATEMENT (Manual: Year-end P&L)
 # - Aggregates monthly pg_income_expenditure docs for a FY/Year
 # ============================================================
 
+# changes made by atlanta
 @business_bp.route("/income_expenditure_year/<pg_id>", methods=["GET"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def income_expenditure_year(pg_id):
     db = current_app.mongo_db
-    pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
+
+    def wants_json():
+        accept = (request.headers.get("Accept") or "").lower()
+        content_type = (request.content_type or "").lower()
+        requested_with = (request.headers.get("X-Requested-With") or "").lower()
+        return (
+            request.is_json
+            or "application/json" in accept
+            or "application/json" in content_type
+            or request.args.get("format") == "json"
+            or requested_with == "xmlhttprequest"
+        )
+
+    def serialize_month(doc):
+        return {
+            "id": str(doc.get("_id", "")),
+            "year": int(doc.get("year") or 0),
+            "month": int(doc.get("month") or 0),
+            "income": doc.get("income", {}) or {},
+            "expenditure": doc.get("expenditure", {}) or {},
+            "total_income": float(doc.get("total_income") or 0),
+            "total_expenditure": float(doc.get("total_expenditure") or 0),
+            "excess_income_over_expenditure": float(doc.get("excess_income_over_expenditure") or 0),
+            "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
+        }
+
+    try:
+        pg_obj_id = ObjectId(pg_id)
+    except InvalidId:
+        if wants_json():
+            return jsonify({"success": False, "message": "Invalid PG ID."}), 400
+        flash("Invalid PG ID.", "danger")
+        return redirect(url_for("pg.pg_home"))
+
+    pg = db.pgs.find_one({"_id": pg_obj_id})
     if not pg:
+        if wants_json():
+            return jsonify({"success": False, "message": "PG not found."}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
     now = datetime.utcnow()
     year = int(request.args.get("year") or now.year)
 
-    rows = list(db.pg_income_expenditure.find({"pg_id": ObjectId(pg_id), "year": year}).sort([("month", 1)]))
+    rows = list(
+        db.pg_income_expenditure.find(
+            {"pg_id": pg_obj_id, "year": year}
+        ).sort([("month", 1)])
+    )
 
-    # Aggregate totals across months
     total_income = 0.0
     total_expenditure = 0.0
     by_head_income = {}
@@ -339,20 +791,24 @@ def income_expenditure_year(pg_id):
     for r in rows:
         inc = r.get("income") or {}
         exp = r.get("expenditure") or {}
+
         for k, v in inc.items():
             try:
                 by_head_income[k] = by_head_income.get(k, 0.0) + float(v or 0)
             except Exception:
                 pass
+
         for k, v in exp.items():
             try:
                 by_head_exp[k] = by_head_exp.get(k, 0.0) + float(v or 0)
             except Exception:
                 pass
+
         try:
             total_income += float(r.get("total_income") or sum(float(x or 0) for x in inc.values()))
         except Exception:
             pass
+
         try:
             total_expenditure += float(r.get("total_expenditure") or sum(float(x or 0) for x in exp.values()))
         except Exception:
@@ -361,6 +817,22 @@ def income_expenditure_year(pg_id):
     total_income = round(total_income, 2)
     total_expenditure = round(total_expenditure, 2)
     surplus = round(total_income - total_expenditure, 2)
+
+    if wants_json():
+        return jsonify({
+            "success": True,
+            "pg": {
+                "id": str(pg["_id"]),
+                "name": pg.get("name") or pg.get("pg_name") or "Producer Group",
+            },
+            "year": year,
+            "months": [serialize_month(r) for r in rows],
+            "by_head_income": by_head_income,
+            "by_head_expenditure": by_head_exp,
+            "total_income": total_income,
+            "total_expenditure": total_expenditure,
+            "surplus": surplus,
+        }), 200
 
     return render_template(
         "income_expenditure_year.html",

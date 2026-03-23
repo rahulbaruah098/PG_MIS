@@ -591,19 +591,200 @@ def register_cadre_cc():
 
     return render_template("user_create_cadre.html", pgs=pgs, title="Cadre (CC) Registration", form_mode="register", pending_approval=True, blocks=blocks, selected_block=selected_block)
 
-
+# changes by atlanta
 @auth_bp.route("/cadre/profile", methods=["GET", "POST"])
-@login_required
-@roles_required("CADRE_CC")
 def cadre_profile():
     db = current_app.mongo_db
+
+    def wants_json():
+        accept = request.headers.get("Accept", "") or ""
+        return (
+            request.is_json
+            or "application/json" in accept
+            or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        )
+
+    def auth_from_bearer():
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return None, ("Missing token", 401)
+
+        token = auth_header.split(" ", 1)[1].strip()
+        if not token:
+            return None, ("Missing token", 401)
+
+        try:
+            payload = jwt.decode(
+                token,
+                current_app.config["JWT_SECRET_KEY"],
+                algorithms=["HS256"],
+            )
+            return payload, None
+        except jwt.ExpiredSignatureError:
+            return None, ("Token expired", 401)
+        except jwt.InvalidTokenError:
+            return None, ("Invalid token", 401)
+
+    # ---------------------------------------------------------
+    # MOBILE / API FLOW (JWT + JSON)
+    # ---------------------------------------------------------
+    if wants_json():
+        payload, auth_error = auth_from_bearer()
+        if auth_error:
+            msg, code = auth_error
+            return jsonify({"ok": False, "error": msg}), code
+
+        if payload.get("role") != "CADRE_CC":
+            return jsonify({"ok": False, "error": "Only CADRE_CC can access this endpoint"}), 403
+
+        user_id = payload.get("user_id")
+        if not user_id or not ObjectId.is_valid(user_id):
+            return jsonify({"ok": False, "error": "Invalid user"}), 401
+
+        user = db.users.find_one({"_id": ObjectId(user_id), "role": "CADRE_CC"})
+        if not user:
+            return jsonify({"ok": False, "error": "Cadre user not found"}), 404
+
+        assigned_pg_ids = user.get("assigned_pg_ids") or []
+        pgs = list(
+            db.pgs.find(
+                {"_id": {"$in": assigned_pg_ids}},
+                {"name": 1, "pg_name": 1}
+            ).sort("name", 1)
+        ) if assigned_pg_ids else []
+
+        pending_profile = user.get("pending_profile") or {}
+        effective_profile = _seed_current_profile_fields(user)
+        if pending_profile:
+            effective_profile.update({k: v for k, v in pending_profile.items() if v not in (None, "")})
+
+        profile_data = {
+            "id": str(user["_id"]),
+            "username": user.get("username", ""),
+            "role": user.get("role", ""),
+            "full_name": effective_profile.get("full_name", ""),
+            "email": effective_profile.get("email", ""),
+            "phone": effective_profile.get("phone", ""),
+            "bank_name": effective_profile.get("bank_name", ""),
+            "account_number": effective_profile.get("account_number", ""),
+            "account_name": effective_profile.get("account_name", ""),
+            "ifsc_code": effective_profile.get("ifsc_code", ""),
+            "branch_name": effective_profile.get("branch_name", ""),
+            "aadhaar_card": effective_profile.get("aadhaar_card"),
+            "assigned_pg_ids": [str(x) for x in assigned_pg_ids],
+            "assigned_pgs": [
+                {
+                    "_id": str(pg["_id"]),
+                    "name": pg.get("name") or pg.get("pg_name") or "Unnamed PG",
+                }
+                for pg in pgs
+            ],
+            "status": user.get("status", "active"),
+            "profile_status": user.get("profile_validation_status") or "approved",
+            "profile_reason": user.get("profile_validation_reason") or "",
+            "pending_profile": bool(user.get("pending_profile")),
+        }
+
+        if request.method == "GET":
+            return jsonify({"ok": True, "profile": profile_data}), 200
+
+        # POST multipart/json for mobile profile submission
+        if request.content_type and "multipart/form-data" in request.content_type:
+            incoming_form = request.form
+            incoming_files = request.files
+        else:
+            json_body = request.get_json(silent=True) or {}
+            incoming_form = json_body
+            incoming_files = {}
+
+        profile_payload = _serialize_profile_from_form(
+            incoming_form,
+            incoming_files,
+            keep_existing_aadhaar=user.get("aadhaar_card"),
+        )
+
+        db.users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {
+                "pending_profile": _profile_summary_doc(profile_payload),
+                "profile_validation_status": "pending",
+                "profile_validation_reason": "",
+                "profile_submitted_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+            }}
+        )
+
+        refreshed = db.users.find_one({"_id": user["_id"], "role": "CADRE_CC"})
+        refreshed_pending = refreshed.get("pending_profile") or {}
+        refreshed_effective = _seed_current_profile_fields(refreshed)
+        if refreshed_pending:
+            refreshed_effective.update({k: v for k, v in refreshed_pending.items() if v not in (None, "")})
+
+        refreshed_pgs = list(
+            db.pgs.find(
+                {"_id": {"$in": refreshed.get("assigned_pg_ids") or []}},
+                {"name": 1, "pg_name": 1}
+            ).sort("name", 1)
+        ) if refreshed.get("assigned_pg_ids") else []
+
+        return jsonify({
+            "ok": True,
+            "message": "Profile submitted for approval",
+            "profile": {
+                "id": str(refreshed["_id"]),
+                "username": refreshed.get("username", ""),
+                "role": refreshed.get("role", ""),
+                "full_name": refreshed_effective.get("full_name", ""),
+                "email": refreshed_effective.get("email", ""),
+                "phone": refreshed_effective.get("phone", ""),
+                "bank_name": refreshed_effective.get("bank_name", ""),
+                "account_number": refreshed_effective.get("account_number", ""),
+                "account_name": refreshed_effective.get("account_name", ""),
+                "ifsc_code": refreshed_effective.get("ifsc_code", ""),
+                "branch_name": refreshed_effective.get("branch_name", ""),
+                "aadhaar_card": refreshed_effective.get("aadhaar_card"),
+                "assigned_pg_ids": [str(x) for x in (refreshed.get("assigned_pg_ids") or [])],
+                "assigned_pgs": [
+                    {
+                        "_id": str(pg["_id"]),
+                        "name": pg.get("name") or pg.get("pg_name") or "Unnamed PG",
+                    }
+                    for pg in refreshed_pgs
+                ],
+                "status": refreshed.get("status", "active"),
+                "profile_status": refreshed.get("profile_validation_status") or "pending",
+                "profile_reason": refreshed.get("profile_validation_reason") or "",
+                "pending_profile": bool(refreshed.get("pending_profile")),
+            }
+        }), 200
+
+    # ---------------------------------------------------------
+    # WEB FLOW (existing behavior preserved)
+    # ---------------------------------------------------------
+    if "user_id" not in session:
+        flash("Please log in first.", "warning")
+        return redirect(url_for("auth.login"))
+
+    if session.get("role") != "CADRE_CC":
+        abort(403)
+
     user_id = session.get("user_id")
-    user = db.users.find_one({"_id": ObjectId(user_id)})
+    if not user_id or not ObjectId.is_valid(user_id):
+        abort(401)
+
+    user = db.users.find_one({"_id": ObjectId(user_id), "role": "CADRE_CC"})
+    if not user:
+        abort(404)
+
     assigned_pg_ids = user.get("assigned_pg_ids") or []
     pgs = list(db.pgs.find({"_id": {"$in": assigned_pg_ids}}).sort("name", 1)) if assigned_pg_ids else []
 
     if request.method == "POST":
-        profile_payload = _serialize_profile_from_form(request.form, request.files, keep_existing_aadhaar=user.get("aadhaar_card"))
+        profile_payload = _serialize_profile_from_form(
+            request.form,
+            request.files,
+            keep_existing_aadhaar=user.get("aadhaar_card"),
+        )
         db.users.update_one(
             {"_id": user["_id"]},
             {"$set": {
@@ -621,6 +802,7 @@ def cadre_profile():
     user_view = dict(user)
     if pending_profile:
         user_view.update({k: v for k, v in pending_profile.items() if v not in (None, "")})
+
     return render_template(
         "user_create_cadre.html",
         pgs=pgs,
@@ -739,14 +921,64 @@ def reject_cadre_profile(user_id):
     flash("Cadre profile validation rejected.", "warning")
     return redirect(url_for("auth.manage_cadre_cc"))
 
-
+# changes by atlanta
 @auth_bp.route("/cadre/document/<user_id>")
-@login_required
 def view_cadre_document(user_id):
     db = current_app.mongo_db
 
+    def wants_mobile_auth():
+        auth_header = request.headers.get("Authorization", "")
+        return auth_header.startswith("Bearer ")
+
     if not ObjectId.is_valid(user_id):
         return abort(404, description="Invalid user id")
+
+    # ---------------------------------------------------------
+    # MOBILE / JWT FLOW
+    # ---------------------------------------------------------
+    if wants_mobile_auth():
+        auth_header = request.headers.get("Authorization", "")
+        token = auth_header.split(" ", 1)[1].strip()
+
+        try:
+            payload = jwt.decode(
+                token,
+                current_app.config["JWT_SECRET_KEY"],
+                algorithms=["HS256"],
+            )
+        except jwt.ExpiredSignatureError:
+            return jsonify({"ok": False, "error": "Token expired"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"ok": False, "error": "Invalid token"}), 401
+
+        token_user_id = payload.get("user_id")
+        token_role = payload.get("role")
+
+        if not token_user_id:
+            return jsonify({"ok": False, "error": "Invalid user"}), 401
+
+        # Mobile security:
+        # CADRE_CC can only view own document
+        if token_role == "CADRE_CC" and str(token_user_id) != str(user_id):
+            return jsonify({"ok": False, "error": "Forbidden"}), 403
+
+        # Allow admin-type roles in mobile too if needed
+        allowed_roles = {
+            "CADRE_CC",
+            "ADMIN",
+            "SUPER_ADMIN",
+            "BLOCK_ADMIN",
+        }
+        if token_role not in allowed_roles:
+            return jsonify({"ok": False, "error": "Forbidden"}), 403
+
+    # ---------------------------------------------------------
+    # WEB / SESSION FLOW
+    # Keep old behavior unchanged
+    # ---------------------------------------------------------
+    else:
+        if "user_id" not in session:
+            return abort(401)
 
     user = db.users.find_one({"_id": ObjectId(user_id)})
     if not user:
@@ -768,6 +1000,77 @@ def view_cadre_document(user_id):
 
     return send_file(path)
 
+
+#changes by atlanta
+@auth_bp.route("/cadre/assigned-pgs", methods=["GET"])
+def mobile_cadre_assigned_pgs():
+    """
+    Mobile API:
+    Returns assigned PGs for logged-in CADRE_CC user using JWT from Authorization header.
+    """
+    db = current_app.mongo_db
+
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return jsonify({"error": "Missing token"}), 401
+
+    token = auth_header.split(" ", 1)[1].strip()
+    if not token:
+        return jsonify({"error": "Missing token"}), 401
+
+    try:
+        payload = jwt.decode(
+            token,
+            current_app.config["JWT_SECRET_KEY"],
+            algorithms=["HS256"],
+        )
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Token expired"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401
+
+    if payload.get("role") != "CADRE_CC":
+        return jsonify({"error": "Only CADRE_CC can access this endpoint"}), 403
+
+    user_id = payload.get("user_id")
+    if not user_id or not ObjectId.is_valid(user_id):
+        return jsonify({"error": "Invalid user"}), 401
+
+    user = db.users.find_one({"_id": ObjectId(user_id), "role": "CADRE_CC"})
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    assigned_pg_ids = user.get("assigned_pg_ids") or []
+    pgs = list(
+        db.pgs.find(
+            {"_id": {"$in": assigned_pg_ids}},
+            {
+                "name": 1,
+                "pg_name": 1,
+                "sector": 1,
+                "Block": 1,
+                "block_name": 1,
+                "District": 1,
+                "Village": 1,
+            },
+        ).sort("name", 1)
+    ) if assigned_pg_ids else []
+
+    out = []
+    for pg in pgs:
+        out.append({
+            "_id": str(pg["_id"]),
+            "name": pg.get("name") or pg.get("pg_name") or "Unnamed PG",
+            "sector": pg.get("sector") or "",
+            "Block": pg.get("Block") or pg.get("block_name") or "",
+            "District": pg.get("District") or "",
+            "Village": pg.get("Village") or "",
+        })
+
+    return jsonify({
+        "assigned_pg_count": len(out),
+        "pgs": out,
+    }), 200
 
 @auth_bp.route("/users/create/clf", methods=["GET", "POST"])
 @roles_required("BLOCK_ADMIN", "CLF_MANAGER")
