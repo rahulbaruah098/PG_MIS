@@ -71,15 +71,85 @@ def _geo_names_from_session(db, sess):
 
     return state_name, district_name, block_name
 
-
+# changes by atlanta
 @reports_bp.route("/hub", methods=["GET"])
 @login_required
-@roles_required("PG_DATA_ENTRY","CLF_MANAGER","CLF_ADMIN","BLOCK_ADMIN","DISTRICT_ADMIN","ADMIN","SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY","CLF_MANAGER","CLF_ADMIN","BLOCK_ADMIN","DISTRICT_ADMIN","ADMIN","SUPER_ADMIN","CADRE_CC")
 def reports_hub():
     """Unified download hub for reports (CSV/ZIP).
 
     Keeps existing report pages intact; this is an additional navigation entry.
     """
+    wants_json = (
+        request.args.get("format") == "json"
+        or request.args.get("mobile") == "1"
+        or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or "application/json" in (request.headers.get("Accept") or "")
+    )
+
+    if wants_json:
+        return jsonify({
+            "success": True,
+            "title": "Reports Hub",
+            "subtitle": "Download CSV/ZIP reports with your jurisdiction filters (State/District/Block/GP/Village/PG) + period filters.",
+            "filters": {
+                "state": request.args.get("state", ""),
+                "district": request.args.get("district", ""),
+                "block": request.args.get("block", ""),
+                "gp": request.args.get("gp", ""),
+                "village": request.args.get("village", ""),
+                "pg_name": request.args.get("pg_name", ""),
+                "period": request.args.get("period", ""),
+                "group_by": request.args.get("group_by", ""),
+                "q": request.args.get("q", ""),
+                "from": request.args.get("from", ""),
+                "to": request.args.get("to", ""),
+            },
+            "period_options": [
+                {"label": "All time", "value": ""},
+                {"label": "Weekly", "value": "weekly"},
+                {"label": "Monthly", "value": "monthly"},
+                {"label": "6 Monthly", "value": "six_monthly"},
+                {"label": "Yearly", "value": "yearly"},
+            ],
+            "group_by_options": [
+                {"label": "None", "value": ""},
+                {"label": "District", "value": "district"},
+                {"label": "Block", "value": "block"},
+                {"label": "Gram Panchayat", "value": "gp"},
+                {"label": "Village", "value": "village"},
+                {"label": "PG", "value": "pg"},
+            ],
+            "actions": {
+                "open_overall": "/reports/pg-overall",
+                "overall_zip": "/reports/pg-overall/download",
+                "lakhpati_csv": "/reports/export/lakhpati.csv",
+                "grants_csv": "/reports/export/grants.csv",
+                "members_csv": "/reports/export/members.csv",
+                "cashbook_csv": "/reports/export/cashbook.csv",
+                "loans_csv": "/reports/export/loans.csv",
+                "turnover_csv": "/reports/export/turnover.csv",
+            },
+            "quick_reports": [
+                {
+                    "title": "Lakhpati Didi",
+                    "subtitle": "Member-level + grouped summary",
+                    "path": "/reports/lakhpati",
+                },
+                {
+                    "title": "Grants & Utilization",
+                    "subtitle": "Grant received + utilization balance",
+                    "path": "/reports/grants",
+                },
+                {
+                    "title": "PG Overall Export",
+                    "subtitle": "Everything about selected PGs (ZIP)",
+                    "path": "/reports/pg-overall",
+                },
+            ],
+            "tip": "Tip: Set Group By for summary tables (district/block/gp/village/pg). If Group By is blank, downloads give row-level data.",
+        })
+
     return render_template("reports_hub.html")
 
 
@@ -956,11 +1026,75 @@ def export_scope_csv():
         headers={"Content-Disposition": "attachment; filename=pg_scope_report.csv"},
     )
 
+#changes by atlanta
 @reports_bp.route("/pg_mpr/<pg_id>")
 @login_required
 def pg_mpr(pg_id):
+    from flask import request, jsonify
+
     db = current_app.mongo_db
-    snapshots = list(db.mpr_snapshots.find({"level": "pg", "ref_id": pg_id}).sort([("year", -1), ("month", -1)]))
+
+    snapshots = list(
+        db.mpr_snapshots.find(
+            {"level": "pg", "ref_id": pg_id}
+        ).sort([("year", -1), ("month", -1)])
+    )
+
+    def _safe_num(v):
+        try:
+            if v is None or v == "":
+                return 0
+            return float(v)
+        except Exception:
+            return 0
+
+    normalized = []
+    for i, row in enumerate(snapshots, start=1):
+        normalized.append({
+            "_id": str(row.get("_id")),
+            "sl_no": i,
+            "pg_id": pg_id,
+            "year": row.get("year") or "",
+            "month": row.get("month") or "",
+            "turnover": _safe_num(
+                row.get("turnover")
+                or row.get("total_turnover")
+                or row.get("business_turnover")
+                or 0
+            ),
+            "input": _safe_num(
+                row.get("input")
+                or row.get("input_cost")
+                or row.get("total_input")
+                or 0
+            ),
+            "output": _safe_num(
+                row.get("output")
+                or row.get("output_value")
+                or row.get("total_output")
+                or 0
+            ),
+            "raw": {
+                k: (str(v) if hasattr(v, "__class__") and v.__class__.__name__ == "ObjectId" else v)
+                for k, v in row.items()
+            }
+        })
+
+    wants_json = (
+        request.args.get("format") == "json"
+        or request.args.get("mobile") == "1"
+        or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or "application/json" in (request.headers.get("Accept") or "")
+    )
+
+    if wants_json:
+        return jsonify({
+            "success": True,
+            "pg_id": pg_id,
+            "count": len(normalized),
+            "snapshots": normalized
+        })
+
     return render_template("pg_mpr.html", snapshots=snapshots)
 
 
@@ -1123,39 +1257,119 @@ def _compute_gradation(db, pg_id: str, year: int, quarter: int):
         "metrics": {"meetings": meet_q, "overdue": overdue, "outstanding": outstanding, "turnover": turnover}
     }
 
-@reports_bp.route("/gradation/<pg_id>", methods=["GET","POST"])
+@reports_bp.route("/gradation/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN", "CADRE_CC")
 @require_unlocked_period(scope='pg')
 def gradation(pg_id):
+    from flask import jsonify
+
     db = current_app.mongo_db
+
+    wants_json = (
+        request.args.get("format") == "json"
+        or request.args.get("mobile") == "1"
+        or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or "application/json" in (request.headers.get("Accept") or "")
+    )
+
+    if not ObjectId.is_valid(pg_id):
+        if wants_json:
+            return jsonify({"success": False, "message": "Invalid PG id"}), 400
+        flash("Invalid PG id.", "danger")
+        return redirect(url_for("pg.pg_home"))
+
     pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
     if not pg:
+        if wants_json:
+            return jsonify({"success": False, "message": "PG not found"}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
     year = int(request.values.get("year") or datetime.utcnow().year)
-    quarter = int(request.values.get("quarter") or ((datetime.utcnow().month-1)//3 + 1))
+    quarter = int(request.values.get("quarter") or ((datetime.utcnow().month - 1) // 3 + 1))
 
-    # PG can view gradation, but only CLF+ and above can compute/save
     if request.method == "POST" and session.get("role") in ("PG_DATA_ENTRY", "CADRE_CC"):
+        if wants_json:
+            return jsonify({
+                "success": False,
+                "message": "Gradation can only be submitted by CLF/Block authorities."
+            }), 403
         flash("Gradation can only be submitted by CLF/Block authorities.", "warning")
         return redirect(url_for("reports.gradation", pg_id=pg_id, year=year, quarter=quarter))
 
     if request.method == "POST":
         snap = _compute_gradation(db, pg_id, year, quarter)
-        snap.update({"pg_id": ObjectId(pg_id), "updated_at": datetime.utcnow(), "created_at": datetime.utcnow()})
+        snap.update({
+            "pg_id": ObjectId(pg_id),
+            "updated_at": datetime.utcnow(),
+            "created_at": datetime.utcnow()
+        })
+
         db.pg_gradation_snapshots.update_one(
             {"pg_id": ObjectId(pg_id), "year": year, "quarter": quarter},
             {"$set": snap},
             upsert=True
         )
+
+        if wants_json:
+            return jsonify({
+                "success": True,
+                "message": "Gradation computed and saved.",
+                "pg_id": pg_id,
+                "pg_name": pg.get("name") or "",
+                "year": year,
+                "quarter": quarter,
+                "snapshot": {
+                    "year": snap.get("year"),
+                    "quarter": snap.get("quarter"),
+                    "score": snap.get("score"),
+                    "grade": snap.get("grade"),
+                    "breakdown": snap.get("breakdown", {}),
+                    "metrics": snap.get("metrics", {}),
+                    "updated_at": snap.get("updated_at").isoformat() if snap.get("updated_at") else None,
+                }
+            })
+
         flash("Gradation computed and saved.", "success")
         return redirect(url_for("reports.gradation", pg_id=pg_id, year=year, quarter=quarter))
 
-    snap = db.pg_gradation_snapshots.find_one({"pg_id": ObjectId(pg_id), "year": year, "quarter": quarter})
+    snap = db.pg_gradation_snapshots.find_one({
+        "pg_id": ObjectId(pg_id),
+        "year": year,
+        "quarter": quarter
+    })
     computed = _compute_gradation(db, pg_id, year, quarter)
-    return render_template("gradation.html", pg=pg, snap=snap, computed=computed, year=year, quarter=quarter)
+    src = snap or computed
+
+    if wants_json:
+        return jsonify({
+            "success": True,
+            "pg_id": pg_id,
+            "pg_name": pg.get("name") or "",
+            "year": year,
+            "quarter": quarter,
+            "has_saved_snapshot": bool(snap),
+            "can_compute": session.get("role") not in ("PG_DATA_ENTRY", "CADRE_CC"),
+            "snapshot": {
+                "year": src.get("year"),
+                "quarter": src.get("quarter"),
+                "score": src.get("score"),
+                "grade": src.get("grade"),
+                "breakdown": src.get("breakdown", {}),
+                "metrics": src.get("metrics", {}),
+                "updated_at": snap.get("updated_at").isoformat() if snap and snap.get("updated_at") else None,
+            }
+        })
+
+    return render_template(
+        "gradation.html",
+        pg=pg,
+        snap=snap,
+        computed=computed,
+        year=year,
+        quarter=quarter
+    )
 
 
 # ============================================================
@@ -1445,6 +1659,7 @@ def _pg_match_with_filters(db, base_match, filters):
         q["name"] = {"$regex": re.escape(pg_name), "$options": "i"}
     return q
 
+#changes by atlanta
 @reports_bp.route("/lakhpati-didi", methods=["GET"])
 @login_required
 @roles_required("PG_DATA_ENTRY","CLF_MANAGER","CLF_ADMIN","BLOCK_ADMIN","DISTRICT_ADMIN","ADMIN","SUPER_ADMIN")
@@ -1452,7 +1667,6 @@ def lakhpati_report():
     db = current_app.mongo_db
     base_match = _pg_match_from_session(session)
 
-    # filters
     filters = {
         "State": request.args.get("state") or "",
         "District": request.args.get("district") or "",
@@ -1464,20 +1678,22 @@ def lakhpati_report():
     search_q = (request.args.get("q") or "").strip()
     period = (request.args.get("period") or "").strip()
     group_by = (request.args.get("group_by") or "").strip()
-    group_by = (request.args.get("group_by") or "").strip()
 
     match_pg = _pg_match_with_filters(db, base_match, filters)
 
-    # PG user: lock to their PG
     role = session.get("role")
     if role in ("PG_DATA_ENTRY", "CADRE_CC") and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
         match_pg["_id"] = ObjectId(session.get("pg_id"))
 
-    pgs = list(db.pgs.find(match_pg, {"name": 1, "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1}).sort([("name", 1)]))
+    pgs = list(
+        db.pgs.find(
+            match_pg,
+            {"name": 1, "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1}
+        ).sort([("name", 1)])
+    )
     pg_by_id = {p["_id"]: p for p in pgs}
     pg_ids = list(pg_by_id.keys())
 
-    # Date filter
     start, end = _period_range(period)
     member_match = {"pg_id": {"$in": pg_ids}, "lakh_pati_didi": True} if pg_ids else {"pg_id": {"$in": []}, "lakh_pati_didi": True}
     if start and end:
@@ -1488,32 +1704,99 @@ def lakhpati_report():
     members = list(db.pg_members.find(member_match).sort([("created_at", -1)]).limit(2000))
 
     rows = []
-    for m in members:
+    for idx, m in enumerate(members, start=1):
         pg = pg_by_id.get(m.get("pg_id")) or {}
         rows.append({
-            "Member Name": m.get("name") or "",
-            "Spouse/Father/Mother": m.get("spouse_name") or "",
-            "Contact": m.get("contact") or m.get("phone") or "",
-            "PG Name": pg.get("name") or "",
-            "State": pg.get("State") or "",
-            "District": pg.get("District") or "",
-            "Block": pg.get("Block") or "",
-            "Gram Panchayat": pg.get("Gram Panchayat") or "",
-            "Village": pg.get("Village") or "",
-            "Created At": (m.get("created_at").strftime("%Y-%m-%d") if m.get("created_at") else ""),
+            "_id": str(m.get("_id")),
+            "sl_no": idx,
+            "member_name": m.get("name") or "",
+            "spouse_father_mother": m.get("spouse_name") or "",
+            "contact": m.get("contact") or m.get("phone") or "",
+            "pg_name": pg.get("name") or "",
+            "state": pg.get("State") or "",
+            "district": pg.get("District") or "",
+            "block": pg.get("Block") or "",
+            "gp": pg.get("Gram Panchayat") or "",
+            "village": pg.get("Village") or "",
+            "created_at": (m.get("created_at").strftime("%Y-%m-%d") if m.get("created_at") else ""),
         })
 
-    # Dropdown sources (within jurisdiction + current filters up to that level)
     dd_match = dict(base_match or {})
     states = _distinct_pg_values(db, dd_match, "State")
-    districts = _distinct_pg_values(db, {**dd_match, **({"State": filters["State"]} if filters["State"] else {})}, "District")
-    blocks = _distinct_pg_values(db, {**dd_match, **({k:v for k,v in {"State": filters["State"], "District": filters["District"]}.items() if v})}, "Block")
-    gps = _distinct_pg_values(db, {**dd_match, **({k:v for k,v in {"State": filters["State"], "District": filters["District"], "Block": filters["Block"]}.items() if v})}, "Gram Panchayat")
-    villages = _distinct_pg_values(db, {**dd_match, **({k:v for k,v in {"State": filters["State"], "District": filters["District"], "Block": filters["Block"], "Gram Panchayat": filters["Gram Panchayat"]}.items() if v})}, "Village")
+    districts = _distinct_pg_values(
+        db,
+        {**dd_match, **({"State": filters["State"]} if filters["State"] else {})},
+        "District"
+    )
+    blocks = _distinct_pg_values(
+        db,
+        {**dd_match, **({k: v for k, v in {"State": filters["State"], "District": filters["District"]}.items() if v})},
+        "Block"
+    )
+    gps = _distinct_pg_values(
+        db,
+        {**dd_match, **({k: v for k, v in {"State": filters["State"], "District": filters["District"], "Block": filters["Block"]}.items() if v})},
+        "Gram Panchayat"
+    )
+    villages = _distinct_pg_values(
+        db,
+        {**dd_match, **({k: v for k, v in {"State": filters["State"], "District": filters["District"], "Block": filters["Block"], "Gram Panchayat": filters["Gram Panchayat"]}.items() if v})},
+        "Village"
+    )
+
+    wants_json = (
+        request.args.get("format") == "json"
+        or request.args.get("mobile") == "1"
+        or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or "application/json" in (request.headers.get("Accept") or "")
+    )
+
+    if wants_json:
+        return jsonify({
+            "success": True,
+            "title": "Lakhpati Didi — Report",
+            "subtitle": "Filter by State → District → Block → GP → Village → PG • Search member name • Download CSV",
+            "filters": {
+                "state": filters["State"],
+                "district": filters["District"],
+                "block": filters["Block"],
+                "gp": filters["Gram Panchayat"],
+                "village": filters["Village"],
+                "pg_name": filters["pg_name"],
+                "q": search_q,
+                "period": period,
+                "group_by": group_by,
+            },
+            "dropdowns": {
+                "states": states,
+                "districts": districts,
+                "blocks": blocks,
+                "gps": gps,
+                "villages": villages,
+            },
+            "rows": rows,
+            "total": len(rows),
+            "download_path": "/reports/export/lakhpati.csv",
+        })
+
+    web_rows = []
+    for r in rows:
+        web_rows.append({
+            "Member Name": r["member_name"],
+            "Spouse/Father/Mother": r["spouse_father_mother"],
+            "Contact": r["contact"],
+            "PG Name": r["pg_name"],
+            "State": r["state"],
+            "District": r["district"],
+            "Block": r["block"],
+            "Gram Panchayat": r["gp"],
+            "Village": r["village"],
+            "Created At": r["created_at"],
+        })
 
     return render_template(
         "reports_lakhpati.html",
-        rows=rows,
+        rows=web_rows,
         filters=filters,
         q=search_q,
         period=period,
@@ -1522,7 +1805,7 @@ def lakhpati_report():
         blocks=blocks,
         gps=gps,
         villages=villages,
-        total=len(rows),
+        total=len(web_rows),
         group_by=group_by,
     )
 
@@ -1622,6 +1905,8 @@ def export_lakhpati_csv():
 # ============================================================
 # Grants — Report + CSV Export (all roles)
 # ============================================================
+
+#changes by atlanta
 @reports_bp.route("/grants", methods=["GET"])
 @login_required
 @roles_required("PG_DATA_ENTRY","CLF_MANAGER","CLF_ADMIN","BLOCK_ADMIN","DISTRICT_ADMIN","ADMIN","SUPER_ADMIN")
@@ -1699,6 +1984,62 @@ def grants_report():
     gps = _distinct_pg_values(db, {**dd_match, **({k:v for k,v in {"State": filters["State"], "District": filters["District"], "Block": filters["Block"]}.items() if v})}, "Gram Panchayat")
     villages = _distinct_pg_values(db, {**dd_match, **({k:v for k,v in {"State": filters["State"], "District": filters["District"], "Block": filters["Block"], "Gram Panchayat": filters["Gram Panchayat"]}.items() if v})}, "Village")
 
+    wants_json = (
+        request.args.get("format") == "json"
+        or request.args.get("mobile") == "1"
+        or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or "application/json" in (request.headers.get("Accept") or "")
+    )
+
+    total_count = len(rows)
+    total_received = round(total_received, 2)
+    total_utilized = round(total_utilized, 2)
+    total_balance = round(total_received - total_utilized, 2)
+
+    if wants_json:
+        return jsonify({
+            "success": True,
+            "title": "Grants & Utilization Report",
+            "subtitle": "Filter by State, District, Block, GP, Village and PG. Download detailed or summary CSV directly in the mobile app.",
+            "filters": {
+                "state": filters["State"],
+                "district": filters["District"],
+                "block": filters["Block"],
+                "gp": filters["Gram Panchayat"],
+                "village": filters["Village"],
+                "pg_name": filters["pg_name"],
+                "period": period,
+                "group_by": group_by,
+            },
+            "dropdowns": {
+                "states": states,
+                "districts": districts,
+                "blocks": blocks,
+                "gps": gps,
+                "villages": villages,
+            },
+            "totals": {
+                "rows": total_count,
+                "received": total_received,
+                "utilized": total_utilized,
+                "balance": total_balance,
+            },
+            "rows": rows,
+            "download_path": "/reports/export/grants.csv",
+            "download_url": url_for(
+                "reports.export_grants_csv",
+                state=filters["State"],
+                district=filters["District"],
+                block=filters["Block"],
+                gp=filters["Gram Panchayat"],
+                village=filters["Village"],
+                pg_name=filters["pg_name"],
+                period=period,
+                group_by=group_by,
+                _external=True,
+            ),
+        })
+
     return render_template(
         "reports_grants.html",
         rows=rows,
@@ -1709,10 +2050,10 @@ def grants_report():
         blocks=blocks,
         gps=gps,
         villages=villages,
-        total=len(rows),
-        total_received=round(total_received, 2),
-        total_utilized=round(total_utilized, 2),
-        total_balance=round(total_received - total_utilized, 2),
+        total=total_count,
+        total_received=total_received,
+        total_utilized=total_utilized,
+        total_balance=total_balance,
         group_by=group_by,
     )
 
@@ -1805,16 +2146,14 @@ def _safe_oid(v):
     v = str(v) if v is not None else ""
     return v if ObjectId.is_valid(v) else None
 
-
+# changes by atlanta
 @reports_bp.route("/pg-overall", methods=["GET"])
 @login_required
-@roles_required("PG_DATA_ENTRY","CLF_MANAGER","CLF_ADMIN","BLOCK_ADMIN","DISTRICT_ADMIN","ADMIN","SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY","CLF_MANAGER","CLF_ADMIN","BLOCK_ADMIN","DISTRICT_ADMIN","ADMIN","SUPER_ADMIN","CADRE_CC")
 def pg_overall_report():
-    """UI page to download a full PG snapshot (multiple CSVs inside a ZIP)."""
     db = current_app.mongo_db
     base_match = _pg_match_from_session(session)
 
-    # filters
     filters = {
         "State": request.args.get("state") or "",
         "District": request.args.get("district") or "",
@@ -1826,21 +2165,84 @@ def pg_overall_report():
 
     match_pg = _pg_match_with_filters(db, base_match, filters)
 
-    # PG user: lock to their PG
     role = session.get("role")
     if role in ("PG_DATA_ENTRY", "CADRE_CC"):
         sid = _safe_oid(session.get("pg_id") or session.get("active_pg_id"))
         if sid:
             match_pg["_id"] = ObjectId(sid)
 
-    pgs = list(db.pgs.find(match_pg, {"name": 1, "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1}).sort([("name", 1)]).limit(5000))
+    pgs = list(
+        db.pgs.find(
+            match_pg,
+            {"name": 1, "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1}
+        ).sort([("name", 1)]).limit(5000)
+    )
 
     dd_match = dict(base_match or {})
     states = _distinct_pg_values(db, dd_match, "State")
-    districts = _distinct_pg_values(db, {**dd_match, **({"State": filters["State"]} if filters["State"] else {})}, "District")
-    blocks = _distinct_pg_values(db, {**dd_match, **({k: v for k, v in {"State": filters["State"], "District": filters["District"]}.items() if v})}, "Block")
-    gps = _distinct_pg_values(db, {**dd_match, **({k: v for k, v in {"State": filters["State"], "District": filters["District"], "Block": filters["Block"]}.items() if v})}, "Gram Panchayat")
-    villages = _distinct_pg_values(db, {**dd_match, **({k: v for k, v in {"State": filters["State"], "District": filters["District"], "Block": filters["Block"], "Gram Panchayat": filters["Gram Panchayat"]}.items() if v})}, "Village")
+    districts = _distinct_pg_values(
+        db,
+        {**dd_match, **({"State": filters["State"]} if filters["State"] else {})},
+        "District"
+    )
+    blocks = _distinct_pg_values(
+        db,
+        {**dd_match, **({k: v for k, v in {"State": filters["State"], "District": filters["District"]}.items() if v})},
+        "Block"
+    )
+    gps = _distinct_pg_values(
+        db,
+        {**dd_match, **({k: v for k, v in {"State": filters["State"], "District": filters["District"], "Block": filters["Block"]}.items() if v})},
+        "Gram Panchayat"
+    )
+    villages = _distinct_pg_values(
+        db,
+        {**dd_match, **({k: v for k, v in {"State": filters["State"], "District": filters["District"], "Block": filters["Block"], "Gram Panchayat": filters["Gram Panchayat"]}.items() if v})},
+        "Village"
+    )
+
+    wants_json = (
+        request.args.get("format") == "json"
+        or request.args.get("mobile") == "1"
+        or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or "application/json" in (request.headers.get("Accept") or "")
+    )
+
+    if wants_json:
+        return jsonify({
+            "success": True,
+            "title": "PG Overall Export",
+            "subtitle": "Download a complete PG snapshot as a ZIP (Members, Cashbook, Ledger, Loans, Meetings, Grants, Utilization).",
+            "filters": {
+                "state": filters["State"],
+                "district": filters["District"],
+                "block": filters["Block"],
+                "gp": filters["Gram Panchayat"],
+                "village": filters["Village"],
+                "pg_name": filters["pg_name"],
+            },
+            "dropdowns": {
+                "states": states,
+                "districts": districts,
+                "blocks": blocks,
+                "gps": gps,
+                "villages": villages,
+            },
+            "pgs": [
+                {
+                    "_id": str(p.get("_id")),
+                    "name": p.get("name") or "",
+                    "state": p.get("State") or "",
+                    "district": p.get("District") or "",
+                    "block": p.get("Block") or "",
+                    "gp": p.get("Gram Panchayat") or "",
+                    "village": p.get("Village") or "",
+                }
+                for p in pgs
+            ],
+            "download_path": "/reports/pg-overall/download",
+            "tip": "Tip: Select a PG from the list and download its full ZIP. If you download without selecting a PG, it will export all PGs in the current filtered scope (may be large).",
+        })
 
     return render_template(
         "reports_pg_overall.html",
@@ -1852,7 +2254,6 @@ def pg_overall_report():
         gps=gps,
         villages=villages,
     )
-
 
 def _write_csv_rows(writer, fieldnames, docs):
     import json
@@ -1868,7 +2269,7 @@ def _write_csv_rows(writer, fieldnames, docs):
             row.append(v if v is not None else "")
         writer.writerow(row)
 
-
+#changes by atlanta
 @reports_bp.route("/pg-overall/download", methods=["GET"])
 @login_required
 @roles_required("PG_DATA_ENTRY","CLF_MANAGER","CLF_ADMIN","BLOCK_ADMIN","DISTRICT_ADMIN","ADMIN","SUPER_ADMIN")
@@ -1910,6 +2311,42 @@ def pg_overall_download():
     if not pgs:
         flash("No PG found for export in your scope.", "warning")
         return redirect(url_for("reports.pg_overall_report"))
+    
+    wants_json = (
+        request.args.get("format") == "json"
+        or request.args.get("mobile") == "1"
+        or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or "application/json" in (request.headers.get("Accept") or "")
+    )
+
+    if not pgs:
+        if wants_json:
+            return jsonify({
+                "success": False,
+                "message": "No PG found for export in your scope."
+            }), 404
+
+        flash("No PG found for export in your scope.", "warning")
+        return redirect(url_for("reports.pg_overall_report"))
+
+    if wants_json:
+        return jsonify({
+            "success": True,
+            "message": "PG Overall export is ready to download.",
+            "download_url": url_for(
+                "reports.pg_overall_download",
+                state=request.args.get("state", ""),
+                district=request.args.get("district", ""),
+                block=request.args.get("block", ""),
+                gp=request.args.get("gp", ""),
+                village=request.args.get("village", ""),
+                pg_name=request.args.get("pg_name", ""),
+                pg_id=request.args.get("pg_id", ""),
+            ),
+            "selected_pg_id": request.args.get("pg_id", ""),
+            "pg_count": len(pgs),
+            "pg_names": [p.get("name") or "" for p in pgs[:50]],
+        })
 
     mem = io.BytesIO()
     with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_DEFLATED) as z:
