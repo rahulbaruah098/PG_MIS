@@ -2,6 +2,7 @@
 {% block title %}Ledger Book{% endblock %}
 
 {% block content %}
+<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
 <style>
   /* ============================================================
      LEDGER BOOK (SCOPED) — under .lb-wrap only
@@ -2044,7 +2045,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function getPgId(){
-    return window.PG_ID || $("lbPgName").value || "pg_demo";
+    return (window.PG_ID || "{{ pg_id|default('') }}" || "").trim();
   }
 
   function storageKey(pg_id){
@@ -2101,6 +2102,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+
+  async function hydrateLedgerPgName(){
+    const pgId = getPgId();
+    if(!pgId) return;
+    try{
+      const res = await fetch(`/pg/profile/${encodeURIComponent(pgId)}/data`, { headers:{ "Accept":"application/json" } });
+      if(!res.ok) return;
+      const data = await res.json().catch(()=>null);
+      if(data && data.data){
+        if(data.data.pg_name) $("lbPgName").value = data.data.pg_name;
+        if(data.data.clf_name) $("lbClfName").value = data.data.clf_name;
+      }
+    }catch(_e){}
+  }
+
   async function loadLedger(){
     const pg_id = getPgId();
 
@@ -2133,6 +2149,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
     }catch(_){}
+
+    await hydrateLedgerPgName();
   }
 
   function hydrateFromData(data){
@@ -2347,6 +2365,7 @@ document.addEventListener("DOMContentLoaded", () => {
   recalcLedger();
 
   setEditMode(false);
+  hydrateLedgerPgName();
   loadLedger();
 
   // ✅ 2) one more sync after load in case base sets lang late

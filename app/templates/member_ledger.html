@@ -1085,6 +1085,7 @@
 {% endblock %}
 
 {% block content %}
+<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
 <div class="member-ledger-page" id="member-ledger-root">
   <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
@@ -1196,6 +1197,11 @@
             </div>
 
             <div class="card-content-producer">
+              <div class="input-group-full">
+                <label id="pg-name-label" class="label">Name of Producer Group</label>
+                <input type="text" id="pg-name" class="input" value="{{ current_pg_name }}" readonly />
+              </div>
+
               <div class="input-group-full">
                 <label id="producer-name-label" class="label">Name of the Producer</label>
                 <input type="text" id="producer-name" class="input" placeholder="Enter producer name" />
@@ -1595,6 +1601,7 @@
 
   function buildPayload(isDraft = true){
     return {
+      pgName: (document.getElementById("pg-name")?.value || "{{ current_pg_name }}" || ""),
       producerName: state.producerName || "",
       stockingUnit: state.stockingUnit || "",
       purchases: Array.isArray(state.purchases) ? state.purchases : [],
@@ -1648,12 +1655,12 @@
 
   async function persistServerPayload(payload){
     const ledgerId = encodeURIComponent(getMemberLedgerId());
-    const endpoint = `/pg/member-ledger/${ledgerId}`;
+    const endpoint = `/pg/api/register/member_ledger/${encodeURIComponent(window.PG_ID || "")}`;
 
     const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ data: payload })
     });
 
     let data = null;
@@ -1680,13 +1687,13 @@
 
   async function loadMemberLedger(){
     const ledgerId = encodeURIComponent(getMemberLedgerId());
-    const endpoint = `/pg/member-ledger/${ledgerId}`;
+    const endpoint = `/pg/api/register/member_ledger/${encodeURIComponent(window.PG_ID || "")}`;
 
     try {
       const res = await fetch(endpoint, { method: "GET" });
       if (res.ok) {
         const data = await res.json().catch(() => null);
-        if (data && hydrateFromData(data)) {
+        if (data && hydrateFromData(data.data || data)) {
           return true;
         }
       }
@@ -1703,6 +1710,19 @@
     } catch (_) {}
 
     return false;
+  }
+
+  
+  async function loadCurrentPgName(){
+    const pgNameEl = document.getElementById("pg-name");
+    const pgId = (window.PG_ID || "").trim();
+    if (!pgNameEl || !pgId) return;
+    if (pgNameEl.value && pgNameEl.value.trim()) return;
+    try {
+      const res = await fetch(`/pg/profile/${encodeURIComponent(pgId)}/data`, { headers: { "Accept": "application/json" } });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data && data.data && data.data.pg_name) pgNameEl.value = data.data.pg_name;
+    } catch (_) {}
   }
 
   function scheduleDraftSync(){
@@ -2955,6 +2975,7 @@
     window.addEventListener("storage", (e) => {
       if (e && e.key && e.key !== memberLedgerStorageKey()) return;
       if (state.editMode) return;
+      loadCurrentPgName();
       loadMemberLedger();
     });
 
@@ -2966,6 +2987,7 @@
     renderPurchasesTable();
     renderSalesTable();
 
+    await loadCurrentPgName();
     await loadMemberLedger();
     updateUI();
   });

@@ -2038,7 +2038,8 @@ def api_cashbook(pg_id):
     if request.method == "GET":
         doc = db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))), "year": year, "month": month}) if (year and month) else db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, sort=[("updated_at", -1)])
         if not doc:
-            return jsonify({"receipts": [], "payments": [], "year": year, "month": month})
+            pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
+            return jsonify({"receipts": [], "payments": [], "pg_name": pg_doc.get("name", ""), "year": year, "month": month})
         doc["_id"] = str(doc["_id"])
         doc["pg_id"] = str(doc["pg_id"])
         return jsonify(doc)
@@ -2086,7 +2087,8 @@ def api_ledger_book(pg_id):
     if request.method == "GET":
         doc = db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))), "year": year, "month": month}) if (year and month) else db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, sort=[("updated_at", -1)])
         if not doc:
-            return jsonify({"entries": [], "year": year, "month": month})
+            pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
+            return jsonify({"entries": [], "pg_name": pg_doc.get("name", ""), "year": year, "month": month})
         doc["_id"] = str(doc["_id"])
         doc["pg_id"] = str(doc["pg_id"])
         return jsonify(doc)
@@ -2121,25 +2123,26 @@ def api_loan_ledger(loan_id):
 
     if request.method == "GET":
         doc = db[coll].find_one(q) or db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))), "loan_id": str(loan_id)}, sort=[("updated_at", -1)])
+        pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
+        current_pg_name = pg_doc.get("name", "")
         if not doc:
-            return jsonify({"loan_id": str(loan_id), "entries": [], "year": year, "month": month})
+            return jsonify({"loan_id": str(loan_id), "entries": [], "pg_name": current_pg_name, "year": year, "month": month})
         doc["_id"] = str(doc["_id"])
         doc["pg_id"] = str(doc["pg_id"])
+        doc["pg_name"] = current_pg_name
         return jsonify(doc)
 
-        print("DEBUG SESSION:", dict(session))
-        print("DEBUG ROLE:", repr(session.get("role")))
-        print("DEBUG PG_ID:", repr(session.get("pg_id")))
-        print("DEBUG COOKIES:", request.cookies)
-        print("DEBUG AUTH HEADER:", request.headers.get("Authorization"))
-
-    if session.get("role") != "PG_DATA_ENTRY":
+    role = getattr(g, "role", None) or session.get("role")
+    if role != "PG_DATA_ENTRY":
         abort(403)
 
     payload = request.get_json(silent=True) or {}
+    pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
+    current_pg_name = pg_doc.get("name", "")
     before = db[coll].find_one(q)
     now = datetime.utcnow()
     doc = dict(payload)
+    doc["pg_name"] = current_pg_name
     doc.update({
         "pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))),
         "loan_id": str(loan_id),
@@ -2170,19 +2173,34 @@ def api_receipt_voucher(pg_id):
 
     if request.method == "GET":
         doc = db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))), "year": year, "month": month}) if (year and month) else db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, sort=[("updated_at", -1)])
+        pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
+        current_pg_name = pg_doc.get("name", "")
         if not doc:
-            return jsonify({"pg_section": {}, "member_section": {}, "year": year, "month": month})
+            return jsonify({"pg_section": {"pg_name": current_pg_name}, "member_section": {"pg_name": current_pg_name}, "year": year, "month": month})
         doc["_id"] = str(doc["_id"])
         doc["pg_id"] = str(doc["pg_id"])
+        if not isinstance(doc.get("pg_section"), dict):
+            doc["pg_section"] = {}
+        if not isinstance(doc.get("member_section"), dict):
+            doc["member_section"] = {}
+        doc["pg_section"]["pg_name"] = current_pg_name
+        doc["member_section"]["pg_name"] = current_pg_name
         return jsonify(doc)
 
-    if session.get("role") != "PG_DATA_ENTRY":
+    role = getattr(g, "role", None) or session.get("role")
+    if role != "PG_DATA_ENTRY":
         abort(403)
 
     payload = request.get_json(silent=True) or {}
+    pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
+    current_pg_name = pg_doc.get("name", "")
+    pg_section = dict(payload.get("pg_section", {}) or {})
+    member_section = dict(payload.get("member_section", {}) or {})
+    pg_section["pg_name"] = current_pg_name
+    member_section["pg_name"] = current_pg_name
     _upsert_pg_period_doc(db, collection=coll, pg_id=pg_id, year=year, month=month, payload={
-        "pg_section": payload.get("pg_section", {}),
-        "member_section": payload.get("member_section", {}),
+        "pg_section": pg_section,
+        "member_section": member_section,
         "meta": payload.get("meta", {}),
     }, user=_current_user_dict())
     return jsonify({"ok": True, "message": "Saved successfully"})
@@ -2225,7 +2243,8 @@ def api_generic_register(name, pg_id):
         )
 
         if not doc:
-            return jsonify({"data": {}, "year": year, "month": month})
+            pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get("pg_id")))}, {"name": 1}) or {}
+            return jsonify({"data": {"pg_name": pg_doc.get("name", "")}, "year": year, "month": month})
 
         doc["_id"] = str(doc["_id"])
         doc["pg_id"] = str(doc["pg_id"])
@@ -2256,6 +2275,85 @@ def api_generic_register(name, pg_id):
     except Exception as e:
         current_app.logger.exception("api_generic_register save failed")
         return jsonify({"ok": False, "error": str(e)}), 500
+
+@pg_bp.route("/api/members/<pg_id>", methods=["GET"])
+@login_required
+@roles_required("PG_DATA_ENTRY", "CADRE_CC", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+def pg_members_api(pg_id):
+    db = current_app.mongo_db
+    oid = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
+    if not oid:
+        return jsonify({"ok": False, "error": "Invalid PG ID"}), 400
+
+    pg = db.pgs.find_one({"_id": oid}, {"name": 1})
+    if not pg:
+        return jsonify({"ok": False, "error": "PG not found"}), 404
+
+    members = list(
+        db.pg_members.find(
+            {
+                "pg_id": oid,
+                "$or": [{"is_active": True}, {"is_active": {"$exists": False}}],
+            },
+            {"name": 1, "member_name": 1, "member_code": 1, "code": 1, "spouse_name": 1, "member_id": 1},
+        ).sort([("name", 1), ("member_name", 1)]).limit(2000)
+    )
+
+    master_ids = []
+    for m in members:
+        mid = m.get("member_id")
+        if isinstance(mid, ObjectId):
+            master_ids.append(mid)
+        elif mid and ObjectId.is_valid(str(mid)):
+            master_ids.append(ObjectId(str(mid)))
+
+    master_by_id = {}
+    if master_ids:
+        for doc in db.shg_members_master.find(
+            {"_id": {"$in": master_ids}},
+            {
+                "Member Name": 1,
+                "Name": 1,
+                "Member_Code": 1,
+                "Member Code": 1,
+                "SHG Member Code": 1,
+                "Code": 1,
+                "Father/Mother/Spouse Name": 1,
+                "Spouse Name": 1,
+                "Husband Name": 1,
+                "Father Name": 1,
+                "Mother Name": 1,
+            },
+        ):
+            master_by_id[str(doc["_id"])] = doc
+
+    def _pick(doc, *keys):
+        if not doc:
+            return ""
+        for key in keys:
+            val = doc.get(key)
+            if val not in (None, "", []):
+                return str(val).strip()
+        return ""
+
+    rows = []
+    for m in members:
+        mid = m.get("member_id")
+        mid_str = str(mid) if mid else ""
+        master = master_by_id.get(mid_str, {})
+        rows.append({
+            "_id": str(m.get("_id")),
+            "name": ((m.get("name") or m.get("member_name") or _pick(master, "Member Name", "Name") or "Member").strip()),
+            "member_code": ((m.get("member_code") or m.get("code") or _pick(master, "Member_Code", "Member Code", "SHG Member Code", "Code")).strip()),
+            "spouse_name": ((m.get("spouse_name") or _pick(master, "Father/Mother/Spouse Name", "Spouse Name", "Husband Name", "Father Name", "Mother Name")).strip()),
+        })
+
+    return jsonify({
+        "ok": True,
+        "pg": {"_id": str(pg["_id"]), "name": pg.get("name", "")},
+        "members": rows,
+    }), 200
+
 
 @pg_bp.route("/profile/<pg_id>/data", methods=["GET"])
 @login_required

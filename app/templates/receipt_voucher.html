@@ -2,6 +2,7 @@
 {% block title %}Receipt voucher{% endblock %}
 
 {% block content %}
+<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
 <style>
   /* ============================================================
      Receipt voucher (SCOPED) — under .ll-wrap only
@@ -1143,12 +1144,12 @@
 
               <div class="ll-field">
                 <div class="ll-label" id="llMemberLabelPg">Name of member</div>
-                <input class="ll-input" id="llMemberNamePg" type="text" placeholder="Write member name…" />
+                <select class="ll-input" id="llMemberNamePg"><option value="">Select member</option></select>
               </div>
 
               <div class="ll-field">
                 <div class="ll-label" id="llCodeLabelPg">Member code</div>
-                <input class="ll-input" id="llMemberCodePg" type="text" placeholder="Write member code…" />
+                <select class="ll-input" id="llMemberCodePg"><option value="">Select member code</option></select>
               </div>
 
               <div class="ll-field" style="grid-column: 1 / -1;">
@@ -1310,12 +1311,12 @@
 
               <div class="ll-field">
                 <div class="ll-label" id="llMemberLabelM">Name of member</div>
-                <input class="ll-input" id="llMemberNameM" type="text" placeholder="Write member name…" />
+                <select class="ll-input" id="llMemberNameM"><option value="">Select member</option></select>
               </div>
 
               <div class="ll-field">
                 <div class="ll-label" id="llCodeLabelM">Member code</div>
-                <input class="ll-input" id="llMemberCodeM" type="text" placeholder="Write member code…" />
+                <select class="ll-input" id="llMemberCodeM"><option value="">Select member code</option></select>
               </div>
 
               <div class="ll-field" style="grid-column: 1 / -1;">
@@ -1613,7 +1614,8 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
-  const ACTIVE_PANEL_KEY = "receipt_voucher_active_panel";
+  const ACTIVE_PANEL_KEY = `receipt_voucher_active_panel:${(window.PG_ID || "").trim() || "anon"}`;
+  const RECEIPT_VOUCHER_STORAGE_KEY = `receipt_voucher_data:${(window.PG_ID || "").trim() || "anon"}`;
 
   const T = {
     en: {
@@ -1651,8 +1653,8 @@
       kpiVolume: "Total Volume:",
       kpiValue: "Total Value:",
       phPg: "Write PG name…",
-      phMember: "Write member name…",
-      phCode: "Write member code…",
+      phMember: "Select member",
+      phCode: "Select member code",
       phDetails: "Write details…",
       phCommodity: "Write commodity…",
       phGrade: "Grade…",
@@ -1737,8 +1739,8 @@
       kpiVolume: "মোট আয়তন:",
       kpiValue: "মোট মান:",
       phPg: "উৎপাদক দলের নাম লিখুন…",
-      phMember: "সদস্যের নাম লিখুন…",
-      phCode: "সদস্য কোড লিখুন…",
+      phMember: "সদস্য নির্বাচন করুন",
+      phCode: "সদস্য কোড নির্বাচন করুন",
       phDetails: "বিবরণ লিখুন…",
       phCommodity: "পণ্যের নাম…",
       phGrade: "শ্রেণী…",
@@ -2736,6 +2738,8 @@
     $(id(p,"TxnDate")).value = data.txn_date || "";
     $(id(p,"MemberName")).value = data.member_name || "";
     $(id(p,"MemberCode")).value = data.member_code || "";
+    populateReceiptMemberDropdowns(sectionKey, data.member_name || "", data.member_code || "");
+    syncReceiptMemberPair(sectionKey, data.member_name ? "name" : "code");
     $(id(p,"Details")).value = data.details || "";
 
     st.signatures.member = (data.signatures && data.signatures.member) ? data.signatures.member : "";
@@ -2800,26 +2804,65 @@ entries.forEach(e=>{
   }
 
   function getPgId(){
-    return window.PG_ID || $("llPgNamePg").value || $("llPgNameM").value || "pg_demo";
+    return (window.PG_ID || "").trim();
   }
+  function applyCurrentPgNameToVoucherFields(){
+    const current = String($("llPgNamePg")?.value || $("llPgNameM")?.value || "").trim();
+    if (!current) return;
+    if ($("llPgNamePg")) $("llPgNamePg").value = current;
+    if ($("llPgNameM")) $("llPgNameM").value = current;
+  }
+
 
   async function saveReceiptVoucher(){
     try{
+      const pg_id = getPgId();
+      applyCurrentPgNameToVoucherFields();
       const payload = {
         pg_section: snapSection("pg"),
         member_section: snapSection("m")
       };
-      localStorage.setItem("receipt_voucher_data", JSON.stringify(payload));
+      localStorage.setItem(RECEIPT_VOUCHER_STORAGE_KEY, JSON.stringify(payload));
+
+      if (!pg_id) throw new Error("Missing PG context");
+
+      const res = await fetch(`/pg/receipt-voucher/${encodeURIComponent(pg_id)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error((data && (data.error || data.message)) || `HTTP ${res.status}`);
+      }
 
       snapshot = takeSnapshot();
       setEditMode(false);
-      showPopup("success", T[lang].msgTitleSuccess, T[lang].msgSavedLocal);
+      showPopup("success", T[lang].msgTitleSuccess, (data && data.message) || T[lang].msgSavedLocal);
 
     }catch(err){
       console.error(err);
       const msg = "Save failed: " + (err && err.message ? err.message : err);
       showPopup("error", T[lang].msgTitleError, msg);
     }
+  }
+
+
+  async function hydrateCurrentPgName(){
+    const pgId = getPgId();
+    if(!pgId) return;
+    try{
+      const res = await fetch(`/pg/profile/${encodeURIComponent(pgId)}/data`, { headers:{ "Accept":"application/json" } });
+      if(!res.ok) return;
+      const data = await res.json().catch(()=>null);
+      const pgName = data && data.data ? (data.data.pg_name || "") : "";
+      if(!pgName) return;
+      const pgEl = $("llPgNamePg");
+      const memberEl = $("llPgNameM");
+      if(pgEl) pgEl.value = pgName;
+      if(memberEl) memberEl.value = pgName;
+      applyCurrentPgNameToVoucherFields();
+    }catch(_e){}
   }
 
   async function loadReceiptVoucher(){
@@ -2853,12 +2896,101 @@ entries.forEach(e=>{
         entries: mData.entries || []
       });
 
+      hydrateCurrentPgName();
+      applyCurrentPgNameToVoucherFields();
       snapshot = takeSnapshot();
       setEditMode(false);
       setActivePanel(getSavedActivePanel(), true);
     }catch(err){
       console.warn("Receipt voucher load skipped:", err);
       setActivePanel(getSavedActivePanel(), true);
+    }
+  }
+
+
+  let receiptMembers = [];
+
+  function escapeHtml(str){
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function getMemberSelectIds(sectionKey){
+    return sectionKey === "pg"
+      ? { name: "llMemberNamePg", code: "llMemberCodePg" }
+      : { name: "llMemberNameM", code: "llMemberCodeM" };
+  }
+
+  function populateReceiptMemberDropdowns(sectionKey, currentName = "", currentCode = ""){
+    const ids = getMemberSelectIds(sectionKey);
+    const nameEl = $(ids.name);
+    const codeEl = $(ids.code);
+    if (!nameEl || !codeEl) return;
+
+    const nameOptions = ['<option value="">' + escapeHtml(T[lang].phMember || "Select member") + '</option>']
+      .concat(receiptMembers.map(m => `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}${m.member_code ? " (" + escapeHtml(m.member_code) + ")" : ""}</option>`));
+    const codeOptions = ['<option value="">' + escapeHtml(T[lang].phCode || "Select member code") + '</option>']
+      .concat(receiptMembers.map(m => `<option value="${escapeHtml(m.member_code)}">${escapeHtml(m.member_code || m.name)}</option>`));
+
+    nameEl.innerHTML = nameOptions.join("");
+    codeEl.innerHTML = codeOptions.join("");
+
+    if (currentName) nameEl.value = currentName;
+    if (currentCode) codeEl.value = currentCode;
+  }
+
+  function syncReceiptMemberPair(sectionKey, source){
+    const ids = getMemberSelectIds(sectionKey);
+    const nameEl = $(ids.name);
+    const codeEl = $(ids.code);
+    if (!nameEl || !codeEl) return;
+
+    if (source === "name"){
+      const selectedName = String(nameEl.value || "").trim();
+      if (!selectedName){
+        codeEl.value = "";
+        return;
+      }
+      const found = receiptMembers.find(m => m.name === selectedName);
+      if (found){
+        codeEl.value = found.member_code || "";
+      }
+      return;
+    }
+
+    const selectedCode = String(codeEl.value || "").trim();
+    if (!selectedCode){
+      nameEl.value = "";
+      return;
+    }
+    const found = receiptMembers.find(m => m.member_code === selectedCode) || receiptMembers.find(m => m.name === selectedCode);
+    if (found){
+      nameEl.value = found.name || "";
+    }
+  }
+
+  async function loadReceiptMembers(){
+    const pgId = getPgId();
+    if (!pgId) return;
+    try{
+      const res = await fetch(`/pg/api/members/${encodeURIComponent(pgId)}`, { headers:{ "Accept":"application/json" } });
+      const data = await res.json().catch(()=>null);
+      if (!res.ok || !data || !Array.isArray(data.members)) return;
+      receiptMembers = data.members.map(m => ({
+        id: String(m._id || ""),
+        name: String(m.name || "").trim(),
+        member_code: String(m.member_code || "").trim()
+      })).filter(m => m.name || m.member_code);
+
+      populateReceiptMemberDropdowns("pg", $("llMemberNamePg")?.value || "", $("llMemberCodePg")?.value || "");
+      populateReceiptMemberDropdowns("m", $("llMemberNameM")?.value || "", $("llMemberCodeM")?.value || "");
+      syncReceiptMemberPair("pg", $("llMemberNamePg")?.value ? "name" : "code");
+      syncReceiptMemberPair("m", $("llMemberNameM")?.value ? "name" : "code");
+    }catch(err){
+      console.warn("Receipt member list load skipped:", err);
     }
   }
 
@@ -2926,8 +3058,7 @@ entries.forEach(e=>{
     $("llDetailsLabelPg").textContent = t.detailsLabel;
 
     $("llPgNamePg").placeholder = t.phPg;
-    $("llMemberNamePg").placeholder = t.phMember;
-    $("llMemberCodePg").placeholder = t.phCode;
+    populateReceiptMemberDropdowns("pg", $("llMemberNamePg").value || "", $("llMemberCodePg").value || "");
     $("llDetailsPg").placeholder = t.phDetails;
 
     $("llPgLabelM").textContent = t.pgLabel;
@@ -2937,8 +3068,7 @@ entries.forEach(e=>{
     $("llDetailsLabelM").textContent = t.detailsLabel;
 
     $("llPgNameM").placeholder = t.phPg;
-    $("llMemberNameM").placeholder = t.phMember;
-    $("llMemberCodeM").placeholder = t.phCode;
+    populateReceiptMemberDropdowns("m", $("llMemberNameM").value || "", $("llMemberCodeM").value || "");
     $("llDetailsM").placeholder = t.phDetails;
 
     $("llRowsLabelPg").textContent = t.rowsLabel;
@@ -3173,6 +3303,14 @@ entries.forEach(e=>{
   }
   wireSelectAll("pg");
   wireSelectAll("m");
+  [["pg","name"],["pg","code"],["m","name"],["m","code"]].forEach(([sectionKey, source]) => {
+    const ids = getMemberSelectIds(sectionKey);
+    const el = $(source === "name" ? ids.name : ids.code);
+    if (el){
+      el.addEventListener("change", ()=>syncReceiptMemberPair(sectionKey, source));
+    }
+  });
+
 
   $("llEditSaveBtn").addEventListener("click", ()=>{
     if (!isEditing){
@@ -3219,12 +3357,15 @@ entries.forEach(e=>{
   applyLang();
   setEditMode(false);
 
-  const localData = localStorage.getItem("receipt_voucher_data");
+  loadReceiptMembers();
+
+  const localData = localStorage.getItem(RECEIPT_VOUCHER_STORAGE_KEY);
   if(localData){
     try{
       const parsed = JSON.parse(localData);
       restoreSection("pg", parsed.pg_section || {});
       restoreSection("m", parsed.member_section || {});
+      loadReceiptMembers();
       snapshot = takeSnapshot();
       setActivePanel(getSavedActivePanel(), true);
     }catch(e){
@@ -3232,6 +3373,7 @@ entries.forEach(e=>{
       loadReceiptVoucher();
     }
   }else{
+    hydrateCurrentPgName();
     loadReceiptVoucher();
   }
 

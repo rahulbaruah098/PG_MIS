@@ -9,6 +9,7 @@
 {% endblock %}
 
 {% block content %}
+<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
 <style>
 /* ============================================================
    ASSET REGISTER — SCOPED under .ar-wrap
@@ -781,7 +782,7 @@
 
             <div class="ar-inputLine">
               <input
-                class="ar-input"
+                class="ar-input ar-input-highlight"
                 name="pg_name_display"
                 id="arPgName"
                 value="{{ pg.name if pg is defined and pg and pg.name else (session.get('pg_name') or '') }}"
@@ -1190,7 +1191,83 @@
 
   if(!wrap || !form || !tbody || !editBtn || !saveBtn || !addBtn || !delSelBtn || !delAllBtn || !cancelBtn) return;
 
-  let isEditing = false;
+
+  function getPgId(){
+    return (window.PG_ID || "{{ pg_id or '' }}" || "").trim();
+  }
+
+  function buildRowsPayload(){
+    return Array.from(tbody.querySelectorAll('tr')).map((tr) => ({
+      asset_name: tr.querySelector('input[name="asset_name[]"]')?.value || "",
+      quantity: tr.querySelector('input[name="quantity[]"]')?.value || "",
+      purchase_date: tr.querySelector('input[name="purchase_date[]"]')?.value || "",
+      asset_no: tr.querySelector('input[name="asset_no[]"]')?.value || "",
+      asset_value: tr.querySelector('input[name="asset_value[]"]')?.value || "",
+      remarks: tr.querySelector('input[name="remarks[]"]')?.value || "",
+    }));
+  }
+
+  function restoreRows(rows){
+    tbody.innerHTML = '';
+    (Array.isArray(rows) ? rows : []).forEach((row) => {
+      newRow();
+      const tr = tbody.lastElementChild;
+      if (!tr) return;
+      tr.querySelector('input[name="asset_name[]"]').value = row.asset_name || row.name || "";
+      tr.querySelector('input[name="quantity[]"]').value = row.quantity || row.qty || "";
+      tr.querySelector('input[name="purchase_date[]"]').value = row.purchase_date || row.date || "";
+      tr.querySelector('input[name="asset_no[]"]').value = row.asset_no || "";
+      tr.querySelector('input[name="asset_value[]"]').value = row.asset_value || row.value || "";
+      tr.querySelector('input[name="remarks[]"]').value = row.remarks || "";
+    });
+    ensureAtLeastOneRow();
+    renumber();
+  }
+
+
+  async function hydrateAssetPgName(){
+    const pgId = getPgId();
+    if (!pgId || !pgName) return;
+    if (pgName.value && pgName.value.trim()) return;
+    try{
+      const res = await fetch(`/pg/profile/${encodeURIComponent(pgId)}/data`, { headers:{ "Accept":"application/json" } });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data && data.data && data.data.pg_name) pgName.value = data.data.pg_name;
+    }catch(_e){}
+  }
+
+  async function loadAssetRegister(){
+    const pgId = getPgId();
+    if (!pgId) return;
+    try{
+      const res = await fetch(`/pg/api/register/asset/${encodeURIComponent(pgId)}`, { method:'GET' });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data) {
+        const payload = data.data || data;
+        if (pgName && payload.pg_name) pgName.value = payload.pg_name;
+        restoreRows(payload.rows || []);
+        return;
+      }
+    }catch(_){}
+    await hydrateAssetPgName();
+    ensureAtLeastOneRow();
+  }
+
+  async function saveAssetRegister(){
+    const pgId = getPgId();
+    if (!pgId) throw new Error('Missing PG context');
+    const payload = { data: { pg_name: pgName ? (pgName.value || '{{ current_pg_name }}') : '{{ current_pg_name }}', rows: buildRowsPayload() } };
+    const res = await fetch(`/pg/api/register/asset/${encodeURIComponent(pgId)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((data && (data.error || data.message)) || `HTTP ${res.status}`);
+    return data;
+  }
+
+    let isEditing = false;
   let navLockOn = false;
 
   function modalLock(){
@@ -1391,6 +1468,8 @@
 
   /* Default mode */
   setToolbarMode(false);
+  hydrateAssetPgName();
+  loadAssetRegister();
 
   editBtn.addEventListener('click', () => enterEdit());
 
@@ -1489,9 +1568,23 @@
       msgBn: 'পরিবর্তন সেভ করবেন?',
       okTextEn: 'OK',
       okTextBn: 'ঠিক আছে',
-      onOk: () => {
-        disableNavLock();
-        form.submit();
+      onOk: async () => {
+        try{
+          await saveAssetRegister();
+          disableNavLock();
+          isEditing = false;
+          setToolbarMode(false);
+        }catch(err){
+          modalConfirm({
+            titleEn: 'Save failed',
+            titleBn: 'সেভ ব্যর্থ',
+            msgEn: err && err.message ? err.message : 'Unable to save asset register.',
+            msgBn: err && err.message ? err.message : 'Asset register সেভ করা যায়নি।',
+            okTextEn: 'OK',
+            okTextBn: 'ঠিক আছে',
+            cancelHidden: true
+          });
+        }
       },
       onCancel: () => {}
     });

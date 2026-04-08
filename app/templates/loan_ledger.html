@@ -2,6 +2,7 @@
 {% block title %}Loan Ledger{% endblock %}
 
 {% block content %}
+<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
 <style>
   /* ============================================================
      LOAN LEDGER (SCOPED) — under .ll-wrap only
@@ -714,13 +715,20 @@
 
     <div class="ll-topfields">
       <div class="ll-field">
-        <div class="ll-label" id="llMemberLabel">Name of Member</div>
-        <input class="ll-input" id="llMemberName" type="text" placeholder="Write member name…" />
+        <div class="ll-label" id="llPgNameLabel">Name of Producer Group</div>
+        <input class="ll-input" id="llPgName" type="text" value="{{ current_pg_name }}" readonly />
       </div>
 
       <div class="ll-field">
-        <div class="ll-label" id="llSpouseLabel">Spouse</div>
-        <input class="ll-input" id="llSpouseName" type="text" placeholder="Write spouse name…" />
+        <div class="ll-label" id="llMemberLabel">Name of Member</div>
+        <select class="ll-input" id="llMemberName">
+          <option value="">Select member</option>
+        </select>
+      </div>
+
+      <div class="ll-field">
+        <div class="ll-label" id="llSpouseLabel">Father/Mother/Spouse</div>
+        <input class="ll-input" id="llSpouseName" type="text" placeholder="Father/Mother/Spouse name will appear automatically" readonly />
       </div>
 
       <div class="ll-field">
@@ -953,7 +961,7 @@
       title: "Loan Ledger",
 
       memberLabel: "Name of Member",
-      spouseLabel: "Spouse",
+      spouseLabel: "Father/Mother/Spouse",
       loanAmountLabel: "Loan Amount",
       loanTenureLabel: "Loan Tenure",
       installmentLabel: "No. of Installment",
@@ -1028,7 +1036,7 @@
       title: "ঋণ এর খাতা",
 
       memberLabel: "সদস্যের নাম",
-      spouseLabel: "স্বামী/স্ত্রীর নাম",
+      spouseLabel: "পিতা/মাতা/স্বামী/স্ত্রীর নাম",
       loanAmountLabel: "ঋণের পরিমাণ",
       loanTenureLabel: "ঋণের সময়সীমা",
       installmentLabel: "কিস্তির সংখ্যা",
@@ -1572,6 +1580,7 @@
 
   function takeSnapshot(){
     return {
+      pg_name: $("llPgName").value || "{{ current_pg_name }}" || "",
       member_name: $("llMemberName").value || "",
       spouse_name: $("llSpouseName").value || "",
       loan_amount: $("llLoanAmount").value || "",
@@ -1762,7 +1771,7 @@
       </div>
 
       <div class="ll-cell" data-llcell="date_disb" data-label="${t.hDateDisb}">
-        <input class="ll-in" data-ll="date_disb" placeholder="${t.phDate}" />
+        <input class="ll-in" data-ll="date_disb" type="date" placeholder="${t.phDate}" />
       </div>
 
       <div class="ll-cell" data-llcell="pr_due" data-label="${t.hPrDue}">
@@ -1794,7 +1803,7 @@
       </div>
 
       <div class="ll-cell" data-llcell="next_date" data-label="${t.hNext}">
-        <input class="ll-in" data-ll="next_date" placeholder="${t.phNext}" />
+        <input class="ll-in" data-ll="next_date" type="date" placeholder="${t.phNext}" />
       </div>
 
       <div class="ll-cell" data-llcell="action" data-label="${t.hAction}">
@@ -1896,15 +1905,58 @@
   });
 
   function getLoanId(){
-    return window.LOAN_ID || ($("llMemberName").value || "loan_demo");
+    return window.LOAN_ID || window.PG_ID || ($("llMemberName").value || "loan_demo");
   }
 
   function storageKey(loan_id){
     return `loan_ledger:${loan_id}`;
   }
 
+
+  let llMembers = [];
+
+  async function loadPgMembers(){
+    const pgId = (window.PG_ID || "").trim();
+    const memberSelect = $("llMemberName");
+    if (!pgId || !memberSelect) return;
+    const currentValue = memberSelect.value || "";
+    try{
+      const res = await fetch(`/pg/api/members/${encodeURIComponent(pgId)}`, { headers:{ "Accept":"application/json" } });
+      const data = await res.json().catch(()=>null);
+      if (!res.ok || !data || !Array.isArray(data.members)) return;
+      llMembers = data.members.map(m => ({
+        id: String(m._id || ""),
+        name: String(m.name || "").trim(),
+        spouse_name: String(m.spouse_name || "").trim(),
+        member_code: String(m.member_code || "").trim()
+      }));
+      memberSelect.innerHTML = '<option value="">Select member</option>' + llMembers.map(m => {
+        const safeName = m.name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        return `<option value="${safeName}">${safeName}</option>`;
+      }).join('');
+      if (currentValue) memberSelect.value = currentValue;
+      syncSpouseFromSelectedMember(false);
+    }catch(_e){}
+  }
+
+  function syncSpouseFromSelectedMember(force = false){
+    const memberSelect = $("llMemberName");
+    const spouseInput = $("llSpouseName");
+    if (!memberSelect || !spouseInput) return;
+    const selectedName = String(memberSelect.value || "").trim();
+    if (!selectedName){
+      if (force) spouseInput.value = "";
+      return;
+    }
+    const found = llMembers.find(m => m.name === selectedName);
+    if (found && (force || !String(spouseInput.value || "").trim())){
+      spouseInput.value = found.spouse_name || "";
+    }
+  }
+
   function buildPayload(){
     return {
+      pg_name: $("llPgName").value || "{{ current_pg_name }}" || "",
       member_name: $("llMemberName").value || "",
       spouse_name: $("llSpouseName").value || "",
       loan_amount: $("llLoanAmount").value || "",
@@ -1957,6 +2009,18 @@
     }
   }
 
+
+  async function loadCurrentPgName(){
+    const pgId = (window.PG_ID || "").trim();
+    const pgEl = $("llPgName");
+    if (!pgId || !pgEl || (pgEl.value || "").trim()) return;
+    try{
+      const res = await fetch(`/pg/profile/${encodeURIComponent(pgId)}/data`, { headers:{ "Accept":"application/json" } });
+      const data = await res.json().catch(()=>null);
+      if (res.ok && data && data.data && data.data.pg_name) pgEl.value = data.data.pg_name;
+    }catch(_){}
+  }
+
   async function loadLoanLedger(){
     const loan_id = getLoanId();
 
@@ -1989,7 +2053,9 @@
   }
 
   function hydrateFromData(data){
+    if (data.pg_name) $("llPgName").value = data.pg_name;
     if (data.member_name) $("llMemberName").value = data.member_name;
+    syncSpouseFromSelectedMember(false);
     if (data.spouse_name) $("llSpouseName").value = data.spouse_name;
     if (data.loan_amount) $("llLoanAmount").value = data.loan_amount;
     if (data.loan_tenure) $("llLoanTenure").value = data.loan_tenure;
@@ -2180,7 +2246,12 @@
   recalcLoan();
 
   setEditMode(false);
-  loadLoanLedger();
+  const memberSelect = $("llMemberName");
+  if (memberSelect){
+    memberSelect.addEventListener("change", ()=>syncSpouseFromSelectedMember(true));
+  }
+  loadCurrentPgName();
+  loadPgMembers().then(()=>loadLoanLedger());
 
   setTimeout(()=>{
     const l = readLangFromBase();

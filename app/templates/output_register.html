@@ -812,6 +812,7 @@
 {% endblock %}
 
 {% block content %}
+<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
 <div class="opr-wrap">
   <div class="opr-shell">
     <div class="opr-sheet">
@@ -1018,7 +1019,7 @@
      ✅ Translation EN <-> BN follows base navbar toggle (localStorage / html attrs / base events)
      ============================================================ */
 
-  const STORAGE_KEY = "pgmis_output_register_v3_billno_swipe";
+  const STORAGE_KEY = `pgmis_output_register_v3_billno_swipe:${(window.PG_ID || "").trim() || "anon"}`;
 
   /* ===========================
      ✅ i18n (EN / BN)

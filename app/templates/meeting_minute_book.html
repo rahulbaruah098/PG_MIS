@@ -1993,7 +1993,8 @@
       let deliberations = [{ id: "1", content: "" }];
       let decisions = [{ id: "1", content: "" }];
 
-      let members = [{ id: "1", name: "", signature: null }];
+      let members = [{ id: "1", name: "", member_id: "", member_code: "", signature: null }];
+      let memberDirectory = [];
 
       const ui = {
         minutesSearch: "",
@@ -2093,7 +2094,7 @@
         agendaItems = normalize(agendaItems, "agenda");
         deliberations = normalize(deliberations, "delib");
         decisions = normalize(decisions, "dec");
-        members = normalize(members, "member");
+        members = normalize(members, "member").map(m => ({ ...m, member_id: m.member_id || "", member_code: m.member_code || "" }));
       }
 
       function clampUiPages(){
@@ -2960,6 +2961,23 @@ mobileField.style.maxWidth = "100%";
         });
       }
 
+
+      async function loadPgMembers(){
+        const pgId = (window.PG_ID || "").trim();
+        if (!pgId) return;
+        try{
+          const res = await fetch(`/pg/api/members/${encodeURIComponent(pgId)}`, { method:"GET", headers:{ "Accept":"application/json" } });
+          const data = await res.json().catch(()=>null);
+          if (res.ok && data && Array.isArray(data.members)) {
+            memberDirectory = data.members.map(m => ({
+              id: m._id || "",
+              name: m.name || "",
+              member_code: m.member_code || ""
+            }));
+          }
+        }catch(_){ memberDirectory = []; }
+      }
+
       function renderMembers(){
         const t = translations[language] || translations.en;
         const tableBody = $("mmbMembersTableBody");
@@ -2986,16 +3004,33 @@ mobileField.style.maxWidth = "100%";
             tr.appendChild(tdSl);
 
             const tdName = document.createElement("td");
-            const nameInput = document.createElement("input");
-            nameInput.type = "text";
-            nameInput.className = "mmb-nameInput";
-            nameInput.placeholder = t.enterMemberName;
-            nameInput.value = m.name || "";
-            nameInput.addEventListener("input", (e) => {
-              const val = e.target.value;
-              members = members.map(x => x.id === m.id ? ({...x, name: val}) : x);
+            const nameSelect = document.createElement("select");
+            nameSelect.className = "mmb-nameInput";
+            const emptyOpt = document.createElement("option");
+            emptyOpt.value = "";
+            emptyOpt.textContent = t.enterMemberName;
+            nameSelect.appendChild(emptyOpt);
+            memberDirectory.forEach((opt) => {
+              const el = document.createElement("option");
+              el.value = opt.id || opt.name || "";
+              el.textContent = opt.member_code ? `${opt.name} (${opt.member_code})` : opt.name;
+              el.dataset.name = opt.name || "";
+              el.dataset.code = opt.member_code || "";
+              nameSelect.appendChild(el);
             });
-            tdName.appendChild(nameInput);
+            nameSelect.value = m.member_id || "";
+            if (!nameSelect.value && m.name) {
+              const matched = memberDirectory.find(x => (x.name || "") === m.name);
+              if (matched) nameSelect.value = matched.id || "";
+            }
+            nameSelect.addEventListener("change", (e) => {
+              const opt = e.target.selectedOptions && e.target.selectedOptions[0];
+              const memberId = e.target.value || "";
+              const memberName = opt ? (opt.dataset.name || opt.textContent || "") : "";
+              const memberCode = opt ? (opt.dataset.code || "") : "";
+              members = members.map(x => x.id === m.id ? ({...x, member_id: memberId, name: memberName, member_code: memberCode}) : x);
+            });
+            tdName.appendChild(nameSelect);
             tr.appendChild(tdName);
 
             const tdSig = document.createElement("td");
@@ -3108,14 +3143,11 @@ cardBody.className = "mmb-mobileCardBody";
 
 const nameBlock = document.createElement("div");
 nameBlock.innerHTML = `<p class="mmb-mobileLabel">${escapeHtml(t.nameOfMember)}</p>`;
-const mobileName = document.createElement("input");
-mobileName.type = "text";
-mobileName.className = "mmb-nameInput";
-mobileName.placeholder = t.enterMemberName;
-mobileName.value = m.name || "";
-mobileName.addEventListener("input", (e) => {
-  nameInput.value = e.target.value;
-  nameInput.dispatchEvent(new Event("input", { bubbles:true }));
+const mobileName = nameSelect.cloneNode(true);
+mobileName.value = nameSelect.value || "";
+mobileName.addEventListener("change", (e) => {
+  nameSelect.value = e.target.value;
+  nameSelect.dispatchEvent(new Event("change", { bubbles:true }));
 });
 nameBlock.appendChild(mobileName);
 cardBody.appendChild(nameBlock);
@@ -3287,12 +3319,12 @@ function getSavedActiveTab(){
           agendaItems = (mins.agendaItems || []).map(c => ({ id: uid(), content: (c||"") }));
           deliberations = (mins.deliberations || []).map(c => ({ id: uid(), content: (c||"") }));
           decisions = (mins.decisions || []).map(c => ({ id: uid(), content: (c||"") }));
-          members = (payload.members || []).map(m => ({ id: m.id || uid(), name: m.name || "", signature: m.signature || null }));
+          members = (payload.members || []).map(m => ({ id: m.id || uid(), name: m.name || "", member_id: m.member_id || "", member_code: m.member_code || "", signature: m.signature || null }));
 
           if(!agendaItems.length) agendaItems = [{ id: uid(), content: "" }];
           if(!deliberations.length) deliberations = [{ id: uid(), content: "" }];
           if(!decisions.length) decisions = [{ id: uid(), content: "" }];
-          if(!members.length) members = [{ id: uid(), name: "", signature: null }];
+          if(!members.length) members = [{ id: uid(), name: "", member_id: "", member_code: "", signature: null }];
 
           ensureUniqueRowIds();
           clampUiPages();
@@ -3400,7 +3432,7 @@ function getSavedActiveTab(){
         };
 
         $("mmbAddMember").onclick = () => {
-          members = [...members, { id: uid(), name:"", signature:null }];
+          members = [...members, { id: uid(), name:"", member_id:"", member_code:"", signature:null }];
           afterRowMutation("members");
         };
 
@@ -3453,6 +3485,7 @@ function getSavedActiveTab(){
         wireEvents();
 
         (async ()=>{
+          await loadPgMembers();
           const server = await mmbLoadFromServer();
           if(server){ mmbRestorePayload(server); return; }
           try{

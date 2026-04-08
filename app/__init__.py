@@ -51,16 +51,15 @@ def create_app():
     # ---- PG/CLF context for PG login (auto-prefill in templates) ----
     @app.context_processor
     def _inject_pg_context():
-        """Provide current PG + CLF info for templates.
-
-        Requirement:
-        - In PG login, every template should show pre-filled PG name and CLF name.
-        """
+        """Provide current PG + CLF info for templates."""
         try:
-            role = session.get("role")
-            pg_id = session.get("pg_id")
-            if role in ("PG_DATA_ENTRY", "CADRE_CC") and pg_id and ObjectId.is_valid(pg_id):
-                pg = app.mongo_db.pgs.find_one({"_id": ObjectId(pg_id)}) or {}
+            pg_id = (
+                session.get("pg_id")
+                or session.get("active_pg_id")
+                or session.get("selected_pg_id")
+            )
+            if pg_id and ObjectId.is_valid(str(pg_id)):
+                pg = app.mongo_db.pgs.find_one({"_id": ObjectId(str(pg_id))}) or {}
                 clf = None
                 try:
                     clf_id = pg.get("clf_id")
@@ -71,13 +70,18 @@ def create_app():
 
                 return {
                     "current_pg": pg,
-                    "current_pg_name": pg.get("name") or "",
+                    "current_pg_name": pg.get("name") or session.get("pg_name") or "",
                     "current_clf": clf,
                     "current_clf_name": (clf or {}).get("name") if clf else "",
                 }
         except Exception:
             pass
-        return {"current_pg": None, "current_pg_name": "", "current_clf": None, "current_clf_name": ""}
+        return {
+            "current_pg": None,
+            "current_pg_name": session.get("pg_name") or "",
+            "current_clf": None,
+            "current_clf_name": "",
+        }
 
     return app
 
