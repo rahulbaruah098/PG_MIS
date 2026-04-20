@@ -2,132 +2,1442 @@
 {% block title %}Manage Cadre (CC){% endblock %}
 {% block content %}
 <style>
-.mc-wrap{display:grid;gap:18px}
-.mc-hero,.mc-card{background:#fff;border:1px solid #d9ebe2;border-radius:24px;box-shadow:0 16px 30px -26px rgba(15,23,42,.22)}
-.mc-hero{padding:24px;background:linear-gradient(135deg, rgba(234,247,240,.92), rgba(255,255,255,.96))}
-.mc-hero h1{font-size:34px;font-weight:950;color:#0f172a}
-.mc-hero p{margin-top:8px;color:#526d64;font-weight:700}
-.mc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-.mc-card{padding:20px}
-.mc-title{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
-.mc-name{font-size:22px;font-weight:950}
-.mc-badge{display:inline-flex;padding:7px 11px;border-radius:999px;background:#f3fbf7;border:1px solid #cce4d8;font-weight:900;color:#205243}
-.mc-badge.pending{background:#fff8ea;border-color:#f2d79a;color:#8a5d00}
-.mc-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:14px}
-.mc-field{padding:12px;border-radius:16px;background:#f8fcfa;border:1px solid #e4f0ea}
-.mc-field b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#60756d;margin-bottom:5px}
-.mc-pgs{border:1px solid #d7e9e0;border-radius:18px;padding:12px;max-height:220px;overflow:auto;background:#fbfffd}
-.mc-pg-item{display:flex;gap:10px;align-items:flex-start;padding:8px 2px;border-bottom:1px solid #edf5f1}
-.mc-pg-item:last-child{border-bottom:0}
-.mc-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-.mc-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 15px;border-radius:999px;border:1px solid #bfe4d2;background:#eaf7f0;color:#0b4d3a;font-weight:900}
-.mc-btn.secondary{background:#fff;border-color:#d7e9e0;color:#334155}
-.mc-doc{display:inline-flex;margin-top:8px;padding:10px 14px;border-radius:999px;border:1px solid #d7e9e0;background:#fff;color:#0b4d3a;font-weight:900}.mc-reason{width:100%;min-height:90px;border:1px solid #d7e9e0;border-radius:14px;padding:12px 14px;font:inherit;background:#fff}.mc-panel{margin-bottom:18px}.mc-section-title{font-size:24px;font-weight:950;color:#0f172a;margin-bottom:6px}.mc-section-sub{color:#60756d;font-weight:700;margin-bottom:14px}.mc-validation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}@media (max-width:860px){.mc-grid,.mc-fields,.mc-validation-grid{grid-template-columns:1fr}.mc-hero h1{font-size:28px}}
+  /* ============================================================
+     MANAGE CADRE — PG PAGE VISUAL LANGUAGE
+     ✅ Only requested UI updates added
+     ✅ Existing routes, forms, JS logic, backend variables kept
+     ✅ Validation section updated as requested
+     ============================================================ */
+
+  .mc-wrap{
+    width:100%;
+    max-width:1100px;
+    margin:0 auto;
+    padding:clamp(12px,2.2vw,22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.18);
+    --line2:rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+    --accent-soft:rgba(16,185,129,.12);
+    --warn-bg:#fff8ea;
+    --warn-line:#f2d79a;
+    --warn-text:#8a5d00;
+    --danger-bg:#fff5f4;
+    --danger-line:#f3c3be;
+    --danger-text:#b42318;
+
+    color:var(--ink);
+    position:relative;
+  }
+
+  .mc-wrap *{ box-sizing:border-box; }
+
+  .mc-sheet{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 18px 34px -26px rgba(15,23,42,.35);
+    position:relative;
+  }
+
+  .mc-hero{
+    padding:14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom:1.5px solid var(--line2);
+    position:relative;
+  }
+
+  .mc-hero-bar{
+    display:block;
+  }
+
+  .mc-mobile-back{
+    display:none;
+    width:56px;
+    height:56px;
+    flex:0 0 56px;
+    align-items:center;
+    justify-content:center;
+    border-radius:18px;
+    border:1px solid rgba(15,23,42,.12);
+    background:rgba(255,255,255,.92);
+    color:#0b4d3a;
+    text-decoration:none;
+    box-shadow:0 10px 18px -18px rgba(15,23,42,.25);
+  }
+
+  .mc-mobile-back svg{
+  width:22px;
+  height:22px;
+  display:block;
+  color:#0b4d3a;
+}
+
+  .mc-hero-copy{
+    min-width:0;
+  }
+
+  .mc-hero h1{
+    margin:0;
+    font-weight:950;
+    font-size:18px;
+    text-align:center;
+    letter-spacing:.2px;
+    line-height:1.25;
+    color:var(--ink);
+  }
+
+  .mc-hero p{
+    margin:6px 0 0;
+    text-align:center;
+    font-size:12px;
+    font-weight:800;
+    color:rgba(15,23,42,.68);
+    max-width:none;
+  }
+
+  .mc-hero-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:center;
+    margin-top:14px;
+  }
+
+  .mc-section{
+    padding:12px 16px 14px;
+    background:rgba(255,255,255,.96);
+  }
+
+  .mc-block{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    background:rgba(255,255,255,.92);
+    overflow:hidden;
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+  }
+
+  .mc-block + .mc-block{
+    margin-top:12px;
+  }
+
+  .mc-block-head{
+    padding:14px 14px 12px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(247,250,249,.66);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .mc-section-title{
+    margin:0;
+    font-weight:950;
+    font-size:13px;
+    letter-spacing:.15px;
+    line-height:1.35;
+    color:var(--ink);
+    word-break:break-word;
+  }
+
+  .mc-section-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color:rgba(15,23,42,.62);
+    font-weight:750;
+    line-height:1.45;
+  }
+
+  .mc-block-body{
+    padding:14px;
+  }
+
+  .mc-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:14px;
+  }
+
+  .mc-approve-row{
+    margin-top:20px;
+    margin-bottom:18px;
+  }
+
+  .mc-btn{
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.8);
+    color:var(--ink);
+    border-radius:999px;
+    padding:10px 14px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    user-select:none;
+    white-space:nowrap;
+    text-decoration:none !important;
+    min-height:42px;
+  }
+
+  .mc-btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  .mc-btn:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+
+  .mc-btn.secondary{
+    background:rgba(255,255,255,.86);
+    border-color:rgba(15,23,42,.14);
+    color:var(--ink);
+  }
+
+  .mc-btn.primary{
+    border-color:rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+
+  .mc-btn.primary:hover{
+    background:rgba(16,185,129,.16);
+  }
+
+  .mc-btn.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-line);
+    color:var(--warn-text);
+  }
+
+  .mc-btn.danger{
+    background:var(--danger-bg);
+    border-color:var(--danger-line);
+    color:var(--danger-text);
+  }
+
+  .mc-kpi-row{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:12px;
+    margin-bottom:18px;
+  }
+
+  .mc-kpi{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    background:rgba(247,250,249,.72);
+    padding:14px;
+    box-shadow:0 10px 18px -18px rgba(15,23,42,.25);
+  }
+
+  .mc-kpi b{
+    display:block;
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:rgba(15,23,42,.68);
+    margin-bottom:6px;
+  }
+
+  .mc-kpi span{
+    display:block;
+    font-size:26px;
+    font-weight:950;
+    color:var(--ink);
+    line-height:1;
+  }
+
+  .mc-toolbar{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:12px;
+    margin-top:14px;
+  }
+
+  .mc-toolbar-left,.mc-toolbar-right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .mc-toolbar-right{
+    justify-content:flex-end;
+  }
+
+  .mc-search-wrap{
+    position:relative;
+    min-width:320px;
+    flex:1 1 460px;
+  }
+
+  .mc-search-icon{
+    position:absolute;
+    left:14px;
+    top:50%;
+    transform:translateY(-50%);
+    color:var(--muted);
+    pointer-events:none;
+  }
+
+  .mc-search{
+    width:100%;
+    height:46px;
+    padding:0 14px 0 44px;
+    border-radius:14px;
+    border:1px solid rgba(15,23,42,.16);
+    background:rgba(247,250,249,.75);
+    color:var(--ink);
+    font-size:12px;
+    font-weight:800;
+    line-height:1.35;
+    outline:none;
+    min-height:44px;
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+
+  .mc-search:focus{
+    border-color:rgba(11,77,58,.40);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  .mc-search::placeholder{
+    color:rgba(15,23,42,.62);
+    font-weight:800;
+  }
+
+  .mc-page-size-wrap{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.86);
+    box-shadow:0 10px 18px -18px rgba(15,23,42,.25);
+  }
+
+  .mc-page-size-wrap label{
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--ink);
+  }
+
+  .mc-page-size{
+    min-width:78px;
+    height:34px;
+    padding:0 10px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.16);
+    background:rgba(247,250,249,.75);
+    color:var(--ink);
+    font-size:12px;
+    font-weight:900;
+    outline:none;
+  }
+
+  .mc-page-size:focus{
+    border-color:rgba(11,77,58,.40);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  .mc-summary{
+    font-size:12px;
+    font-weight:900;
+    color:rgba(15,23,42,.70);
+    margin-top:10px;
+    margin-bottom:18px;
+    line-height:1.45;
+    padding-left:2px;
+  }
+
+  .mc-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:18px;
+  }
+
+  .mc-validation-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:18px;
+  }
+
+  .mc-card{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    background:rgba(255,255,255,.92);
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+    overflow:hidden;
+    padding:20px;
+  }
+
+  .mc-title{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+
+  .mc-name{
+    font-size:18px;
+    font-weight:950;
+    line-height:1.25;
+    color:var(--ink);
+    word-break:break-word;
+  }
+
+  .mc-userline{
+    margin-top:4px;
+    color:rgba(15,23,42,.62);
+    font-weight:800;
+    font-size:12px;
+    word-break:break-word;
+  }
+
+  .mc-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 10px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.86);
+    box-shadow:0 10px 18px -18px rgba(15,23,42,.25);
+    font-weight:950;
+    font-size:12px;
+    color:var(--ink);
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+
+  .mc-badge.pending{
+    background:var(--warn-bg);
+    border-color:var(--warn-line);
+    color:var(--warn-text);
+  }
+
+  .mc-badge.approved{
+    background:rgba(240,253,244,.9);
+    border-color:rgba(16,185,129,.25);
+    color:#0b4d3a;
+  }
+
+  .mc-fields{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+    margin-bottom:14px;
+    align-items:stretch;
+  }
+
+  .mc-fields > .mc-field{
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+  }
+
+  .mc-field{
+    padding:12px;
+    border-radius:14px;
+    background:rgba(247,250,249,.75);
+    border:1px solid rgba(15,23,42,.12);
+    min-width:0;
+    width:100%;
+    overflow:hidden;
+    word-break:break-word;
+    overflow-wrap:anywhere;
+    box-shadow:0 10px 18px -18px rgba(15,23,42,.20);
+  }
+
+  .mc-field b{
+    display:block;
+    font-size:12px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:rgba(15,23,42,.68);
+    margin-bottom:5px;
+    line-height:1.28;
+  }
+
+  .mc-field.changed{
+    background:#fffaf0;
+    border-color:#f2d79a;
+    box-shadow:inset 0 0 0 1px rgba(242,215,154,.35);
+  }
+
+  .mc-field.changed b{
+    color:#8a5d00;
+  }
+
+  .mc-compare{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+    margin-bottom:14px;
+    align-items:start;
+  }
+
+  .mc-compare-box{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    background:rgba(255,255,255,.92);
+    padding:14px;
+    min-width:0;
+    width:100%;
+    overflow:hidden;
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.24);
+  }
+
+  .mc-compare-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+  }
+
+  .mc-compare-title{
+    font-size:12px;
+    font-weight:950;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink);
+  }
+
+  .mc-compare-title.pending{
+    color:#8a5d00;
+  }
+
+  .mc-change-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid var(--warn-line);
+    background:var(--warn-bg);
+    color:var(--warn-text);
+    font-size:11px;
+    font-weight:900;
+  }
+
+  .mc-doc{
+    display:inline-flex;
+    margin-top:8px;
+    padding:10px 14px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.86);
+    color:var(--ink);
+    font-weight:950;
+    font-size:12px;
+    text-decoration:none !important;
+  }
+
+  .mc-doc:hover{
+    background:#fff;
+  }
+
+  .mc-reason{
+    width:100%;
+    min-height:100px;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:14px;
+    padding:12px 14px;
+    font:inherit;
+    background:rgba(247,250,249,.75);
+    resize:vertical;
+    outline:none;
+  }
+
+  .mc-reason:focus{
+    border-color:#d1a75f;
+    box-shadow:0 0 0 3px rgba(242,215,154,.22);
+    background:#fff;
+  }
+
+  .mc-pg-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+
+  .mc-pg-title{
+    font-weight:950;
+    font-size:12px;
+    color:var(--ink);
+  }
+
+  .mc-pg-selected{
+    padding:7px 10px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.86);
+    font-size:12px;
+    font-weight:900;
+    color:rgba(15,23,42,.78);
+  }
+
+  .mc-pg-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+
+  .mc-pg-search-wrap{
+    position:relative;
+    flex:1 1 260px;
+    min-width:220px;
+  }
+
+  .mc-pg-search{
+    width:100%;
+    height:42px;
+    padding:0 12px 0 40px;
+    border-radius:14px;
+    border:1px solid rgba(15,23,42,.16);
+    background:rgba(247,250,249,.75);
+    font:inherit;
+    font-size:12px;
+    font-weight:800;
+    outline:none;
+  }
+
+  .mc-pg-search:focus{
+    border-color:rgba(11,77,58,.40);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  .mc-pg-search-icon{
+    position:absolute;
+    left:13px;
+    top:50%;
+    transform:translateY(-50%);
+    color:rgba(15,23,42,.55);
+    pointer-events:none;
+  }
+
+  .mc-pgs{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    padding:12px;
+    max-height:260px;
+    overflow:auto;
+    background:rgba(255,255,255,.92);
+  }
+
+  .mc-pg-item{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    padding:10px 2px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+  }
+
+  .mc-pg-item:last-child{
+    border-bottom:0;
+  }
+
+  .mc-pg-item input{
+    margin-top:3px;
+    flex:0 0 auto;
+  }
+
+  .mc-pg-text{
+    min-width:0;
+    word-break:break-word;
+  }
+
+  .mc-pg-text strong{
+    display:block;
+    color:var(--ink);
+    font-size:12px;
+    font-weight:950;
+  }
+
+  .mc-pg-meta{
+    display:block;
+    color:rgba(15,23,42,.62);
+    font-size:12px;
+    font-weight:800;
+    margin-top:2px;
+  }
+
+  .mc-empty{
+    padding:18px;
+    border-radius:16px;
+    border:1px dashed rgba(15,23,42,.16);
+    background:rgba(247,250,249,.75);
+    color:rgba(15,23,42,.62);
+    font-weight:900;
+    font-size:12px;
+    text-align:center;
+  }
+
+  .mc-hidden{
+    display:none !important;
+  }
+
+  .mc-pagination{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:14px;
+  }
+
+  .mc-page-btn{
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.8);
+    color:var(--ink);
+    border-radius:999px;
+    padding:10px 14px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:42px;
+  }
+
+  .mc-page-btn:hover:not(:disabled){
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  .mc-page-btn:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+  }
+
+  .mc-page-indicator{
+    min-height:42px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:10px 16px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.86);
+    color:var(--ink);
+    font-size:12px;
+    font-weight:950;
+  }
+
+  @media (max-width:1024px){
+    .mc-grid,.mc-kpi-row{
+      grid-template-columns:1fr;
+    }
+
+    .mc-compare{
+      grid-template-columns:1fr;
+    }
+  }
+
+  @media (max-width:860px){
+    .mc-wrap{
+      padding:12px;
+    }
+
+    .mc-title{
+      align-items:flex-start;
+    }
+  }
+
+  @media (max-width:768px){
+    .mc-wrap{
+      padding:10px;
+    }
+
+    .mc-hero,
+    .mc-card,
+    .mc-block,
+    .mc-compare-box,
+    .mc-pgs{
+      border-radius:16px;
+    }
+
+    .mc-hero{
+      padding:16px;
+    }
+
+    .mc-hero-bar{
+      display:flex;
+      align-items:flex-start;
+      gap:14px;
+    }
+
+    .mc-mobile-back{
+      display:flex;
+    }
+
+    .mc-hero h1{
+      font-size:16px;
+      text-align:left;
+    }
+
+    .mc-hero p{
+      text-align:left;
+      font-size:12px;
+    }
+
+    .mc-summary{
+      margin-top:12px;
+      margin-bottom:16px;
+    }
+
+    .mc-card{
+      padding:16px;
+    }
+
+    .mc-section{
+      padding:12px 14px 14px;
+    }
+
+    .mc-section-title{
+      font-size:13px;
+    }
+
+    .mc-name{
+      font-size:16px;
+    }
+
+   .mc-toolbar{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+
+.mc-toolbar-left,
+.mc-toolbar-right,
+.mc-pg-toolbar{
+  width:100%;
+}
+
+.mc-toolbar-left{
+  min-width:0;
+}
+
+.mc-toolbar-right{
+  justify-content:stretch;
+}
+
+.mc-search-wrap,
+.mc-pg-search-wrap{
+  min-width:0;
+  width:100%;
+  flex:1 1 100%;
+}
+
+.mc-search{
+  width:100%;
+  min-width:0;
+  padding:0 14px 0 46px;
+  font-size:14px;
+}
+
+.mc-search::placeholder{
+  font-size:14px;
+}
+
+.mc-page-size-wrap{
+  width:100%;
+  justify-content:space-between;
+  padding:10px 12px;
+}
+
+.mc-page-size{
+  min-width:110px;
+  width:auto;
+  flex:0 0 auto;
+}
+
+    .mc-validation-grid{
+      display:flex;
+      gap:14px;
+      overflow-x:auto;
+      overflow-y:hidden;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch;
+      padding-bottom:6px;
+    }
+
+    .mc-validation-grid::-webkit-scrollbar{
+      height:8px;
+    }
+
+    .mc-validation-grid::-webkit-scrollbar-thumb{
+      background:rgba(15,23,42,.18);
+      border-radius:999px;
+    }
+
+    .mc-validation-grid .mc-validation-card{
+      min-width:92%;
+      max-width:92%;
+      flex:0 0 92%;
+      scroll-snap-align:start;
+    }
+
+    .mc-pagination{
+      justify-content:center;
+      margin-top:16px;
+    }
+    .mc-grid{
+  display:flex;
+  gap:14px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:6px;
+}
+
+.mc-grid::-webkit-scrollbar{
+  height:8px;
+}
+
+.mc-grid::-webkit-scrollbar-thumb{
+  background:rgba(15,23,42,.18);
+  border-radius:999px;
+}
+
+.mc-grid .mc-cadre-card{
+  min-width:92%;
+  max-width:92%;
+  flex:0 0 92%;
+  scroll-snap-align:start;
+}
+
+#mcCadrePagination{
+  justify-content:center;
+  margin-top:16px;
+}
+  }
+
+  @media (max-width:520px){
+    .mc-btn,.mc-page-btn,.mc-page-indicator{
+      width:100%;
+    }
+
+    .mc-actions{
+      width:100%;
+    }
+
+    .mc-actions > *{
+      width:100%;
+    }
+
+    .mc-doc{
+      width:100%;
+      justify-content:center;
+    }
+
+    .mc-badge{
+      width:100%;
+      justify-content:center;
+    }
+
+    .mc-validation-grid .mc-validation-card{
+      min-width:96%;
+      max-width:96%;
+      flex:0 0 96%;
+    }
+    .mc-grid .mc-cadre-card{
+  min-width:96%;
+  max-width:96%;
+  flex:0 0 96%;
+}
+  }
 </style>
+
 <div class="mc-wrap">
-  <section class="mc-hero">
-    <h1>Manage Cadre (CC)</h1>
-    <p>Create new Cadre accounts, approve self-registered Cadre users, assign more PGs from your block, and validate CC profile submissions.</p>
-    <div class="mc-actions" style="margin-top:14px;">
-      <a class="mc-btn" href="{{ url_for('auth.create_cadre_cc') }}">Create Cadre (CC)</a>
-      <a class="mc-btn secondary" href="#validation-section">Validation</a>
-    </div>
-  </section>
+  <div class="mc-sheet">
 
-  <section class="mc-card mc-panel" id="validation-section">
-    <div class="mc-section-title">Validation</div>
-    <div class="mc-section-sub">Every profile submitted by a CC from their own account appears here for Block Admin approval. Block-created Cadre details do not require validation unless the CC later submits profile changes.</div>
-    {% if validations %}
-    <div class="mc-validation-grid">
-      {% for cadre in validations %}
-      {% set draft = cadre.pending_profile or {} %}
-      <div class="mc-card">
-        <div class="mc-title">
+    <section class="mc-hero">
+      <div class="mc-hero-bar">
+        <a class="mc-mobile-back" href="javascript:history.back()" aria-label="Go Back">
+         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <path d="M19 12H8" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"></path>
+  <path d="M12 8L8 12L12 16" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+        </a>
+        <div class="mc-hero-copy">
+          <h1>Manage Cadre (CC)</h1>
+          <p>Create new Cadre accounts, approve self-registered Cadre users, assign more PGs from your block, and validate CC profile submissions.</p>
+        </div>
+      </div>
+
+      <div class="mc-hero-actions">
+        <a class="mc-btn primary" href="{{ url_for('auth.create_cadre_cc') }}">Create Cadre (CC)</a>
+        <a class="mc-btn secondary" href="#validation-section">Validation</a>
+      </div>
+    </section>
+
+    <section class="mc-section" id="validation-section">
+      <div class="mc-block">
+        <div class="mc-block-head">
           <div>
-            <div class="mc-name">{{ draft.full_name or cadre.full_name or cadre.username }}</div>
-            <div style="color:#60756d;font-weight:700">@{{ cadre.username }}</div>
+            <h3 class="mc-section-title">VALIDATION</h3>
+            <p class="mc-section-sub">Every profile submitted by a CC from their own account appears here for Block Admin approval. Block-created Cadre details do not require validation unless the CC later submits profile changes.</p>
           </div>
-          <span class="mc-badge pending">PROFILE PENDING</span>
         </div>
-        <div class="mc-fields">
-          <div class="mc-field"><b>Email</b>{{ draft.email or '-' }}</div>
-          <div class="mc-field"><b>Phone</b>{{ draft.phone or '-' }}</div>
-          <div class="mc-field"><b>Bank</b>{{ draft.bank_name or '-' }}</div>
-          <div class="mc-field"><b>Account Number</b>{{ draft.account_number or '-' }}</div>
-          <div class="mc-field"><b>Account Holder</b>{{ draft.account_name or '-' }}</div>
-          <div class="mc-field"><b>IFSC</b>{{ draft.ifsc_code or '-' }}</div>
-          <div class="mc-field" style="grid-column:1/-1"><b>Branch Name</b>{{ draft.branch_name or '-' }}</div>
-        </div>
-        {% if draft.aadhaar_card %}
-          <a class="mc-doc" href="{{ url_for('auth.view_cadre_document', user_id=cadre._id, mode='pending') }}" target="_blank">View Uploaded Aadhaar</a>
-        {% endif %}
-        <div class="mc-actions">
-          <form method="post" action="{{ url_for('auth.approve_cadre_profile', user_id=cadre._id) }}">
-            <button class="mc-btn" type="submit">Approve Profile</button>
-          </form>
-        </div>
-        <form method="post" action="{{ url_for('auth.reject_cadre_profile', user_id=cadre._id) }}">
-          <textarea class="mc-reason" name="reason" placeholder="Mention the reason for rejecting this profile submission..." required></textarea>
-          <div class="mc-actions">
-            <button class="mc-btn secondary" type="submit">Reject Profile</button>
+
+        <div class="mc-block-body">
+          <div class="mc-kpi-row">
+            <div class="mc-kpi">
+              <b>Total Pending</b>
+              <span>{{ validations|length }}</span>
+            </div>
+            <div class="mc-kpi">
+              <b>Total Cadres</b>
+              <span>{{ cadres|length }}</span>
+            </div>
+            <div class="mc-kpi">
+              <b>Active Cadres</b>
+              <span>{{ cadres|selectattr('status', 'equalto', 'active')|list|length if cadres else 0 }}</span>
+            </div>
           </div>
-        </form>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-      <div class="mc-field"><b>Status</b>No CC profile submissions are waiting for validation right now.</div>
-    {% endif %}
-  </section>
 
-  <section class="mc-grid">
-    {% for cadre in cadres %}
-    <div class="mc-card">
-      <div class="mc-title">
-        <div>
-          <div class="mc-name">{{ cadre.full_name or cadre.username }}</div>
-          <div style="color:#60756d;font-weight:700">@{{ cadre.username }}</div>
-        </div>
-        <span class="mc-badge {% if (cadre.status or 'active') != 'active' %}pending{% endif %}">{{ (cadre.status or 'active')|upper }}</span>
-      </div>
+          <div class="mc-toolbar">
+            <div class="mc-toolbar-left">
+              <div class="mc-search-wrap">
+                <span class="mc-search-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                  </svg>
+                </span>
+                <input id="mcValidationSearch" class="mc-search" type="text" placeholder="Search pending validations">
+              </div>
+            </div>
+            <div class="mc-toolbar-right">
+              <div class="mc-page-size-wrap">
+                <label for="mcValidationPageSize">Show</label>
+                <select id="mcValidationPageSize" class="mc-page-size">
+                  <option value="10" selected>10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </div>
 
-      <div class="mc-fields">
-        <div class="mc-field"><b>Email</b>{{ cadre.email or '-' }}</div>
-        <div class="mc-field"><b>Phone</b>{{ cadre.phone or '-' }}</div>
-        <div class="mc-field"><b>Profile Validation</b>{{ (cadre.profile_validation_status or 'approved')|upper }}</div>
-        <div class="mc-field"><b>Bank</b>{{ cadre.bank_name or '-' }}</div>
-        <div class="mc-field"><b>IFSC</b>{{ cadre.ifsc_code or '-' }}</div>
-      </div>
+          <div class="mc-summary" id="mcValidationSummary">Showing pending validations</div>
 
-      {% if cadre.aadhaar_card %}
-        <div style="margin-bottom:12px;color:#60756d;font-weight:700;">Aadhaar uploaded.</div>
-        <a class="mc-doc" href="{{ url_for('auth.view_cadre_document', user_id=cadre._id) }}" target="_blank">View Current Aadhaar</a>
-      {% endif %}
+          {% if validations %}
+          <div class="mc-validation-grid" id="mcValidationGrid">
+            {% for cadre in validations %}
+            {% set draft = cadre.pending_profile or {} %}
+            {% set current_full_name = cadre.full_name or cadre.username or '-' %}
+            {% set pending_full_name = draft.full_name or current_full_name %}
+            {% set current_email = cadre.email or '-' %}
+            {% set pending_email = draft.email or current_email %}
+            {% set current_phone = cadre.phone or '-' %}
+            {% set pending_phone = draft.phone or current_phone %}
+            {% set current_bank = cadre.bank_name or '-' %}
+            {% set pending_bank = draft.bank_name or current_bank %}
+            {% set current_acc_no = cadre.account_number or '-' %}
+            {% set pending_acc_no = draft.account_number or current_acc_no %}
+            {% set current_acc_name = cadre.account_name or '-' %}
+            {% set pending_acc_name = draft.account_name or current_acc_name %}
+            {% set current_ifsc = cadre.ifsc_code or '-' %}
+            {% set pending_ifsc = draft.ifsc_code or current_ifsc %}
+            {% set current_branch = cadre.branch_name or '-' %}
+            {% set pending_branch = draft.branch_name or current_branch %}
+            <div
+              class="mc-card mc-validation-card"
+              data-search="{{ (pending_full_name ~ ' ' ~ cadre.username ~ ' ' ~ pending_email ~ ' ' ~ pending_phone)|lower }}"
+            >
+              <div class="mc-title">
+                <div>
+                  <div class="mc-name">{{ pending_full_name }}</div>
+                  <div class="mc-userline">@{{ cadre.username }}</div>
+                </div>
+                <span class="mc-badge pending">PROFILE PENDING</span>
+              </div>
 
-      <form method="post" action="{{ url_for('auth.assign_cadre_pgs', user_id=cadre._id) }}">
-        <div style="font-weight:900;margin-bottom:8px;color:#28473f;">Assign / Update PGs</div>
-        <div class="mc-pgs">
-          {% for pg in pgs %}
-          <label class="mc-pg-item">
-            <input type="checkbox" name="assigned_pg_ids" value="{{ pg._id }}" {% if pg._id in (cadre.assigned_pg_ids or []) %}checked{% endif %}>
-            <span>
-              <strong>{{ pg.name or pg.pg_name or 'Unnamed PG' }}</strong><br>
-              <span style="color:#60756d">{{ pg.sector or '' }}</span>
-            </span>
-          </label>
-          {% endfor %}
-        </div>
-        <div class="mc-actions">
-          <button class="mc-btn" type="submit">Save PG Assignment</button>
-          {% if (cadre.status or 'active') != 'active' %}
-          <button class="mc-btn secondary" type="submit" formaction="{{ url_for('auth.approve_cadre_cc', user_id=cadre._id) }}">Approve Cadre</button>
+              <div class="mc-compare">
+                <div class="mc-compare-box">
+                  <div class="mc-compare-head">
+                    <div class="mc-compare-title">Current Profile</div>
+                  </div>
+                  <div class="mc-fields">
+                    <div class="mc-field"><b>Full Name</b>{{ current_full_name }}</div>
+                    <div class="mc-field"><b>Email</b>{{ current_email }}</div>
+                    <div class="mc-field"><b>Phone</b>{{ current_phone }}</div>
+                    <div class="mc-field"><b>Bank</b>{{ current_bank }}</div>
+                    <div class="mc-field"><b>Account Number</b>{{ current_acc_no }}</div>
+                    <div class="mc-field"><b>Account Holder</b>{{ current_acc_name }}</div>
+                    <div class="mc-field"><b>IFSC</b>{{ current_ifsc }}</div>
+                    <div class="mc-field"><b>Branch Name</b>{{ current_branch }}</div>
+                  </div>
+                </div>
+
+                <div class="mc-compare-box">
+                  <div class="mc-compare-head">
+                    <div class="mc-compare-title pending">Submitted Update</div>
+                    <span class="mc-change-pill">Review Carefully</span>
+                  </div>
+                  <div class="mc-fields">
+                    <div class="mc-field {% if pending_full_name != current_full_name %}changed{% endif %}"><b>Full Name</b>{{ pending_full_name }}</div>
+                    <div class="mc-field {% if pending_email != current_email %}changed{% endif %}"><b>Email</b>{{ pending_email }}</div>
+                    <div class="mc-field {% if pending_phone != current_phone %}changed{% endif %}"><b>Phone</b>{{ pending_phone }}</div>
+                    <div class="mc-field {% if pending_bank != current_bank %}changed{% endif %}"><b>Bank</b>{{ pending_bank }}</div>
+                    <div class="mc-field {% if pending_acc_no != current_acc_no %}changed{% endif %}"><b>Account Number</b>{{ pending_acc_no }}</div>
+                    <div class="mc-field {% if pending_acc_name != current_acc_name %}changed{% endif %}"><b>Account Holder</b>{{ pending_acc_name }}</div>
+                    <div class="mc-field {% if pending_ifsc != current_ifsc %}changed{% endif %}"><b>IFSC</b>{{ pending_ifsc }}</div>
+                    <div class="mc-field {% if pending_branch != current_branch %}changed{% endif %}"><b>Branch Name</b>{{ pending_branch }}</div>
+                  </div>
+                </div>
+              </div>
+
+              {% if draft.aadhaar_card %}
+                <a class="mc-doc" href="{{ url_for('auth.view_cadre_document', user_id=cadre._id, mode='pending') }}" target="_blank">View Uploaded Aadhaar</a>
+              {% endif %}
+
+              <div class="mc-actions mc-approve-row">
+                <form method="post" action="{{ url_for('auth.approve_cadre_profile', user_id=cadre._id) }}">
+                  <button class="mc-btn primary" type="submit">Approve Profile</button>
+                </form>
+              </div>
+
+              <form method="post" action="{{ url_for('auth.reject_cadre_profile', user_id=cadre._id) }}">
+                <textarea class="mc-reason" name="reason" placeholder="Mention the reason for rejecting this profile submission..." required></textarea>
+                <div class="mc-actions">
+                  <button class="mc-btn danger" type="submit">Reject Profile</button>
+                </div>
+              </form>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="mc-pagination" id="mcValidationPagination">
+            <button type="button" class="mc-page-btn" id="mcValidationPrev">Previous</button>
+            <div class="mc-page-indicator" id="mcValidationIndicator">Page 1</div>
+            <button type="button" class="mc-page-btn" id="mcValidationNext">Next</button>
+          </div>
+
+          <div class="mc-empty mc-hidden" id="mcValidationEmpty">No pending validation matches your search.</div>
+          {% else %}
+            <div class="mc-field"><b>Status</b>No CC profile submissions are waiting for validation right now.</div>
           {% endif %}
         </div>
-      </form>
-    </div>
-    {% else %}
-    <div class="mc-card"><strong>No Cadre accounts found yet.</strong></div>
-    {% endfor %}
-  </section>
+      </div>
+    </section>
+
+    <section class="mc-section">
+      <div class="mc-block">
+        <div class="mc-block-head">
+          <div>
+            <h3 class="mc-section-title">CADRE LISTING</h3>
+            <p class="mc-section-sub">Search, review and manage existing Cadre accounts. You can update PG assignment and approve newly pending Cadre accounts from here.</p>
+          </div>
+        </div>
+
+        <div class="mc-block-body">
+          <div class="mc-toolbar">
+            <div class="mc-toolbar-left">
+              <div class="mc-search-wrap">
+                <span class="mc-search-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.35-4.35"></path>
+                  </svg>
+                </span>
+                <input id="mcCadreSearch" class="mc-search" type="text" placeholder="Search cadres">
+              </div>
+            </div>
+            <div class="mc-toolbar-right">
+              <div class="mc-page-size-wrap">
+                <label for="mcCadrePageSize">Show</label>
+                <select id="mcCadrePageSize" class="mc-page-size">
+                  <option value="10">10</option>
+                  <option value="25" selected>25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="mc-summary" id="mcCadreSummary">Showing cadre list</div>
+
+          <section class="mc-grid" id="mcCadreGrid">
+            {% for cadre in cadres %}
+            <div
+              class="mc-card mc-cadre-card"
+              data-search="{{ ((cadre.full_name or '') ~ ' ' ~ cadre.username ~ ' ' ~ (cadre.email or '') ~ ' ' ~ (cadre.phone or ''))|lower }}"
+            >
+              <div class="mc-title">
+                <div>
+                  <div class="mc-name">{{ cadre.full_name or cadre.username }}</div>
+                  <div class="mc-userline">@{{ cadre.username }}</div>
+                </div>
+                <span class="mc-badge {% if (cadre.status or 'active') != 'active' %}pending{% else %}approved{% endif %}">
+                  {{ (cadre.status or 'active')|upper }}
+                </span>
+              </div>
+
+              <div class="mc-fields">
+                <div class="mc-field"><b>Email</b>{{ cadre.email or '-' }}</div>
+                <div class="mc-field"><b>Phone</b>{{ cadre.phone or '-' }}</div>
+                <div class="mc-field"><b>Profile Validation</b>{{ (cadre.profile_validation_status or 'approved')|upper }}</div>
+                <div class="mc-field"><b>Bank</b>{{ cadre.bank_name or '-' }}</div>
+                <div class="mc-field"><b>IFSC</b>{{ cadre.ifsc_code or '-' }}</div>
+              </div>
+
+              {% if cadre.aadhaar_card %}
+                <div style="margin-bottom:12px;color:rgba(15,23,42,.62);font-weight:800;font-size:12px;">Aadhaar uploaded.</div>
+                <a class="mc-doc" href="{{ url_for('auth.view_cadre_document', user_id=cadre._id) }}" target="_blank">View Current Aadhaar</a>
+              {% endif %}
+
+              <form method="post" action="{{ url_for('auth.assign_cadre_pgs', user_id=cadre._id) }}" class="mc-assign-form">
+                <div class="mc-pg-head">
+                  <div class="mc-pg-title">Assign / Update PGs</div>
+                  <div class="mc-pg-selected"><span class="mc-selected-count">0</span> selected</div>
+                </div>
+
+                <div class="mc-pg-toolbar">
+                  <div class="mc-pg-search-wrap">
+                    <span class="mc-pg-search-icon" aria-hidden="true">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                           stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                      </svg>
+                    </span>
+                    <input type="text" class="mc-pg-search" placeholder="Search PGs inside this cadre">
+                  </div>
+                </div>
+
+                <div class="mc-pgs">
+                  {% for pg in pgs %}
+                  <label class="mc-pg-item" data-pg-search="{{ ((pg.name or pg.pg_name or '') ~ ' ' ~ (pg.sector or ''))|lower }}">
+                    <input type="checkbox" name="assigned_pg_ids" value="{{ pg._id }}" {% if pg._id in (cadre.assigned_pg_ids or []) %}checked{% endif %}>
+                    <span class="mc-pg-text">
+                      <strong>{{ pg.name or pg.pg_name or 'Unnamed PG' }}</strong>
+                      <span class="mc-pg-meta">{{ pg.sector or '' }}</span>
+                    </span>
+                  </label>
+                  {% endfor %}
+                </div>
+
+                <div class="mc-actions" style="margin-top:14px;">
+                  <button class="mc-btn primary" type="submit">Save PG Assignment</button>
+                  {% if (cadre.status or 'active') != 'active' %}
+                  <button class="mc-btn warn" type="submit" formaction="{{ url_for('auth.approve_cadre_cc', user_id=cadre._id) }}">Approve Cadre</button>
+                  {% endif %}
+                </div>
+              </form>
+            </div>
+            {% else %}
+            <div class="mc-card"><strong>No Cadre accounts found yet.</strong></div>
+            {% endfor %}
+          </section>
+
+          <div class="mc-pagination" id="mcCadrePagination">
+            <button type="button" class="mc-page-btn" id="mcCadrePrev">Previous</button>
+            <div class="mc-page-indicator" id="mcCadreIndicator">Page 1</div>
+            <button type="button" class="mc-page-btn" id="mcCadreNext">Next</button>
+          </div>
+
+          <div class="mc-empty mc-hidden" id="mcCadreEmpty">No cadre matches your search.</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  function setupPagination(options) {
+    var searchInput = document.getElementById(options.searchId);
+    var pageSizeSelect = document.getElementById(options.pageSizeId);
+    var prevBtn = document.getElementById(options.prevId);
+    var nextBtn = document.getElementById(options.nextId);
+    var indicator = document.getElementById(options.indicatorId);
+    var summary = document.getElementById(options.summaryId);
+    var emptyBox = document.getElementById(options.emptyId);
+    var pagination = document.getElementById(options.paginationId);
+    var cards = Array.prototype.slice.call(document.querySelectorAll(options.cardSelector));
+
+    if (!cards.length) return;
+
+    var currentQuery = '';
+    var currentPage = 1;
+    var pageSize = parseInt(pageSizeSelect ? pageSizeSelect.value : '25', 10) || 25;
+
+    function getFilteredCards() {
+      var q = (currentQuery || '').trim().toLowerCase();
+      if (!q) return cards;
+      return cards.filter(function(card) {
+        return (card.getAttribute('data-search') || '').indexOf(q) !== -1;
+      });
+    }
+
+    function render() {
+      var filtered = getFilteredCards();
+      var total = filtered.length;
+      var totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      var start = (currentPage - 1) * pageSize;
+      var end = start + pageSize;
+
+      cards.forEach(function(card) {
+        card.classList.add('mc-hidden');
+      });
+
+      filtered.slice(start, end).forEach(function(card) {
+        card.classList.remove('mc-hidden');
+      });
+
+      var shownFrom = total === 0 ? 0 : start + 1;
+      var shownTo = Math.min(end, total);
+
+      summary.textContent = total === 0
+        ? 'No results found'
+        : 'Showing ' + shownFrom + '–' + shownTo + ' of ' + total + ' results';
+
+      if (emptyBox) emptyBox.classList.toggle('mc-hidden', total !== 0);
+      if (pagination) pagination.classList.toggle('mc-hidden', total === 0);
+
+      if (indicator) indicator.textContent = 'Page ' + currentPage + ' of ' + totalPages;
+      if (prevBtn) prevBtn.disabled = currentPage <= 1;
+      if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        currentQuery = this.value || '';
+        currentPage = 1;
+        render();
+      });
+    }
+
+    if (pageSizeSelect) {
+      pageSizeSelect.addEventListener('change', function() {
+        pageSize = parseInt(this.value, 10) || 25;
+        currentPage = 1;
+        render();
+      });
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function() {
+        currentPage -= 1;
+        render();
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function() {
+        currentPage += 1;
+        render();
+      });
+    }
+
+    render();
+  }
+
+  setupPagination({
+    searchId: 'mcValidationSearch',
+    pageSizeId: 'mcValidationPageSize',
+    prevId: 'mcValidationPrev',
+    nextId: 'mcValidationNext',
+    indicatorId: 'mcValidationIndicator',
+    summaryId: 'mcValidationSummary',
+    emptyId: 'mcValidationEmpty',
+    paginationId: 'mcValidationPagination',
+    cardSelector: '.mc-validation-card'
+  });
+
+  setupPagination({
+    searchId: 'mcCadreSearch',
+    pageSizeId: 'mcCadrePageSize',
+    prevId: 'mcCadrePrev',
+    nextId: 'mcCadreNext',
+    indicatorId: 'mcCadreIndicator',
+    summaryId: 'mcCadreSummary',
+    emptyId: 'mcCadreEmpty',
+    paginationId: 'mcCadrePagination',
+    cardSelector: '.mc-cadre-card'
+  });
+
+  document.querySelectorAll('.mc-assign-form').forEach(function(form) {
+    var search = form.querySelector('.mc-pg-search');
+    var rows = Array.prototype.slice.call(form.querySelectorAll('.mc-pg-item'));
+    var countBox = form.querySelector('.mc-selected-count');
+
+    function updateCount() {
+      var checked = form.querySelectorAll('input[name="assigned_pg_ids"]:checked').length;
+      if (countBox) countBox.textContent = checked;
+    }
+
+    function filterRows() {
+      var q = ((search && search.value) || '').trim().toLowerCase();
+      rows.forEach(function(row) {
+        var text = row.getAttribute('data-pg-search') || '';
+        row.classList.toggle('mc-hidden', q && text.indexOf(q) === -1);
+      });
+    }
+
+    if (search) {
+      search.addEventListener('input', filterRows);
+    }
+
+    form.querySelectorAll('input[name="assigned_pg_ids"]').forEach(function(cb) {
+      cb.addEventListener('change', updateCount);
+    });
+
+    updateCount();
+  });
+});
+</script>
 {% endblock %}

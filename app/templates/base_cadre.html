@@ -4,64 +4,938 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}PGMIS – Cadre Dashboard{% endblock %}</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f4faf7;color:#10231d}
-    a{text-decoration:none;color:inherit}
-    .app{min-height:100vh;display:flex;flex-direction:column}
-    .header{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:16px 22px;background:rgba(231,246,240,.92);backdrop-filter:blur(10px);border-bottom:1px solid #d7ece2}
-    .brand{display:flex;align-items:center;gap:12px;font-weight:900;font-size:34px;color:#0b4d3a}
-    .pill{font-size:13px;padding:6px 12px;border-radius:999px;background:#dceee6;border:1px solid #bddfd1}
-    .top-actions{display:flex;gap:10px}
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 16px;border-radius:999px;border:1px solid #cfe3da;background:#fff;font-weight:800;color:#0b4d3a}
-    .btn.danger{border-color:#efb5b5;color:#c43131;background:#fff7f7}
-    .shell{display:grid;grid-template-columns:270px 1fr;min-height:calc(100vh - 73px)}
-    .sidebar{background:#fff;border-right:1px solid #dcece5;padding:18px}
-    .side-title{font-size:14px;font-weight:900;color:#0f766e;letter-spacing:.08em;text-transform:uppercase}
-    .side-sub{margin-top:10px;font-size:14px;color:#45665c}
-    .nav{margin-top:18px;display:flex;flex-direction:column;gap:10px}
-    .nav a{padding:14px 14px;border-radius:14px;border:1px solid #e1efe8;background:#f9fcfa;font-weight:800}
-    .nav a.active,.nav a:hover{background:#eaf7f0;border-color:#bfe4d2}
-    .content{padding:26px}
-    @media (max-width:900px){.shell{grid-template-columns:1fr}.sidebar{border-right:0;border-bottom:1px solid #dcece5}}
-  </style>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body{
+    width:100%;
+    overflow-x:hidden;
+  }
+
+  body{
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: #eef6f2;
+    color: #0f172a;
+    min-height: 100vh;
+  }
+
+  a{
+    color:inherit;
+    text-decoration:none !important;
+  }
+
+  a:hover,
+  a:focus,
+  a:active,
+  a:visited{
+    text-decoration:none !important;
+  }
+
+  .sr-only{
+    position:absolute !important;
+    width:1px;height:1px;
+    padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0,0,0,0);
+    white-space:nowrap;border:0;
+  }
+
+  .app{
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+    width:100%;
+  }
+
+  /* =========================================================
+     HEADER / NAVBAR
+     ========================================================= */
+  .header{
+    background: linear-gradient(180deg, rgba(231, 246, 240, 0.92), rgba(222, 241, 234, 0.92));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    height:72px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 1.25rem;
+
+    border-bottom:1px solid rgba(0,0,0,0.18);
+    box-shadow:0 12px 24px -18px rgba(15, 23, 42, 0.35);
+
+    position:sticky;
+    top:0;
+    z-index:100;
+    width:100%;
+    gap:0.9rem;
+    min-width:0;
+  }
+
+  .header-left{
+    display:flex;
+    align-items:center;
+    gap:0.9rem;
+    min-width:0;
+    flex:1;
+  }
+
+  .header-logo{
+    display:inline-flex;
+    align-items:center;
+    gap:0.75rem;
+    font-weight:950;
+    letter-spacing:0.2px;
+    color:#0b4d3a;
+    line-height:1;
+    white-space:nowrap;
+    user-select:none;
+    padding:0.35rem 0.55rem;
+    border-radius:12px;
+    transition: transform 0.15s ease, background-color 0.2s ease;
+    min-width:0;
+  }
+
+  .header-logo:hover{
+    background: rgba(16, 185, 129, 0.10);
+    transform: translateY(-1px);
+  }
+
+  .brand-mark{
+    width:34px;height:34px;
+    border-radius:10px;
+    background: linear-gradient(135deg, rgba(11,77,58,1), rgba(16,185,129,0.95));
+    box-shadow: 0 14px 22px -16px rgba(11, 77, 58, 0.7);
+    position:relative;
+    overflow:hidden;
+    flex:0 0 auto;
+  }
+
+  .brand-mark:before{
+    content:"";
+    position:absolute;
+    inset:-40% -30%;
+    background: radial-gradient(closest-side, rgba(255,255,255,.22), transparent 62%);
+    transform: rotate(18deg);
+    z-index:0;
+  }
+
+  .brand-text{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    min-width:0;
+  }
+
+  .brand-text strong{
+    font-size:1.02rem;
+    font-weight:950;
+    letter-spacing:0.3px;
+    line-height:1.05;
+  }
+
+  .brand-text span{
+    font-size:0.78rem;
+    font-weight:800;
+    color: rgba(11,77,58,0.65);
+    line-height:1.05;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:26vw;
+  }
+
+  .header-controls{
+    display:flex;
+    align-items:center;
+    gap:0.65rem;
+    flex-wrap:nowrap;
+    justify-content:flex-end;
+    min-width:0;
+    flex:0 0 auto;
+  }
+
+  .control-button{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:0.5rem;
+    background: rgba(255,255,255,0.55);
+    border: 1px solid rgba(0,0,0,0.14);
+    color:#0b4d3a;
+    padding:0.58rem 0.95rem;
+    border-radius:9999px;
+    cursor:pointer;
+    transition: transform 0.15s ease, background-color 0.2s ease, box-shadow .2s ease;
+    font-size:0.9rem;
+    font-weight:900;
+    white-space:nowrap;
+    user-select:none;
+     min-width:42px;
+    text-decoration:none !important;
+    flex:0 0 auto;
+  }
+
+  .control-button:hover{
+    background: rgba(255,255,255,0.75);
+    transform: translateY(-1px);
+    box-shadow: 0 18px 24px -22px rgba(15,23,42,0.55);
+  }
+
+  .icon-small{
+    width:1rem;
+    height:1rem;
+    flex:0 0 auto;
+  }
+
+  .logout-top{
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.30);
+    color: #b91c1c;
+    padding-left:0.7rem;
+    padding-right:0.7rem;
+  }
+
+  .logout-top:hover{
+    background: rgba(239, 68, 68, 0.16);
+    box-shadow: 0 18px 24px -22px rgba(239, 68, 68, 0.55);
+  }
+
+  .menu-button{
+    display:none;
+    width:42px;height:42px;
+    border-radius:9999px;
+    border:1px solid rgba(11, 77, 58, 0.14);
+    background: rgba(11, 77, 58, 0.08);
+    cursor:pointer;
+    align-items:center;
+    justify-content:center;
+    transition: transform 0.15s ease, background-color 0.2s ease, box-shadow .2s ease;
+    user-select:none;
+    flex:0 0 auto;
+  }
+
+  .menu-button:hover{
+    background: rgba(11, 77, 58, 0.12);
+    transform: translateY(-1px);
+    box-shadow: 0 18px 24px -22px rgba(15,23,42,0.55);
+  }
+
+  .menu-button svg{
+    width:18px;
+    height:18px;
+    color:#0b4d3a;
+  }
+
+  /* =========================================================
+     MAIN WRAPPER
+     ========================================================= */
+ .shell{
+  display:flex;
+  flex:1;
+  position:relative;
+  width:100%;
+
+  align-items:stretch;   /* IMPORTANT */
+}
+  /* =========================================================
+     SIDEBAR
+     ========================================================= */
+ .sidebar{
+  width:290px;
+  background:#fff;
+  border-right: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 12px 0 24px -22px rgba(15, 23, 42, 0.18);
+
+  display:flex;
+  flex-direction:column;
+
+  position:relative;        /* IMPORTANT CHANGE */
+  top:0;                    /* remove sticky offset */
+  height:auto;              /* IMPORTANT */
+  min-height:100%;          /* stretch with content */
+
+  flex-shrink:0;
+}
+.sidebar-title{
+  font-size:0.95rem;
+  font-weight:1000;
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+  color:#0b4d3a;
+  line-height:1;
+  margin:0;
+  text-shadow:
+    0.5px 0 rgba(0,0,0,0.55),
+    -0.5px 0 rgba(0,0,0,0.55),
+    0 0.5px rgba(0,0,0,0.55),
+    0 -0.5px rgba(0,0,0,0.55);
+}
+  .sidebar-header{
+    padding:1.15rem 1rem;
+    background: rgba(255,255,255,0.22);
+    border: 1px solid rgba(0,0,0,0.28);
+    border-left:0;
+    border-right:0;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.10);
+  }
+
+  .sidebar-head-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:.6rem;
+  }
+
+
+  .sidebar-toggle{
+    width:40px;
+    height:40px;
+    border-radius:12px;
+    border:1px solid rgba(0,0,0,0.18);
+    background: rgba(255,255,255,0.45);
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    transition: transform .15s ease, background-color .2s ease, box-shadow .2s ease;
+    flex:0 0 auto;
+  }
+
+  .sidebar-toggle:hover{
+    background: rgba(255,255,255,0.70);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 20px -18px rgba(15,23,42,0.35);
+  }
+
+  .sidebar-toggle-ic{
+    width:18px;
+    height:18px;
+    color:#0f172a;
+  }
+
+  .nav,
+  .sidebar-nav{
+    flex:1;
+    padding:1rem 0.95rem 1rem;
+    display:flex;
+    flex-direction:column;
+    gap:0.4rem;
+    min-height:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .nav-section{
+    margin:0.85rem 0.2rem 0.25rem;
+    font-size:0.72rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    font-weight:950;
+    color: rgba(15, 23, 42, 0.58);
+    user-select:none;
+  }
+
+  .nav a,
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:0.75rem;
+    padding:0.85rem 0.9rem;
+    border-radius:0.95rem;
+    cursor:pointer;
+    transition: transform 0.18s ease, background-color 0.2s ease, box-shadow .2s ease, border-color .2s ease;
+    font-size:0.95rem;
+    font-weight:850;
+    line-height:1.35;
+    background:transparent;
+    border:1px solid transparent;
+    color:#0b4d3a;
+    user-select:none;
+    text-decoration:none !important;
+  }
+
+  @media (hover: hover) and (pointer: fine){
+    .nav a:hover,
+    .nav-item:hover{
+      background: rgba(173, 231, 196, 0.38);
+      border-color: rgba(15, 23, 42, 0.10);
+      transform: translateX(4px);
+      box-shadow: 0 18px 26px -24px rgba(0,0,0,0.55);
+    }
+
+    .nav-logout:hover{
+      background: linear-gradient(180deg, #d64c4c, #b93a3a);
+      transform: translateY(-1px);
+      box-shadow: 0 18px 28px -20px rgba(185,58,58,0.65);
+    }
+  }
+
+  .nav a.active,
+  .nav-item.active{
+    background: rgba(173, 231, 196, 0.52) !important;
+    border-color: rgba(15, 23, 42, 0.12) !important;
+    box-shadow: 0 18px 26px -24px rgba(0,0,0,0.55) !important;
+  }
+
+  .nav a.active .nav-icon,
+  .nav-item.active .nav-icon{
+    color:#0f172a;
+  }
+
+  .nav a svg,
+  .nav-icon{
+    width:1.25rem;
+    height:1.25rem;
+    color:#0f172a;
+    flex-shrink:0;
+    flex:0 0 auto;
+    filter:
+      drop-shadow(0 0 0.4px rgba(255,255,255,0.85))
+      drop-shadow(0 0 0.6px rgba(255,255,255,0.65));
+  }
+
+  .nav a:hover .nav-icon,
+  .nav-item:hover .nav-icon,
+  .nav a.active .nav-icon,
+  .nav-item.active .nav-icon{
+    filter:
+      drop-shadow(0 0 0.6px rgba(255,255,255,0.92))
+      drop-shadow(0 0 1px rgba(255,255,255,0.75));
+  }
+
+  .nav-text{
+    white-space:normal;
+    word-break:break-word;
+  }
+
+  .nav-spacer{
+    flex:1;
+    min-height:12px;
+  }
+
+  .nav-logout{
+    margin-top:auto;
+    background: linear-gradient(180deg, #e05656, #c84343) !important;
+    border: 1px solid rgba(255,255,255,0.28) !important;
+    color:#fff !important;
+    justify-content:center;
+    gap:0.6rem;
+    transform:none;
+    box-shadow: 0 14px 24px -18px rgba(200,67,67,0.55);
+    width:100%;
+  }
+
+  .nav-logout .nav-icon,
+  .nav-logout svg{
+    color:#fff !important;
+  }
+
+  .sidebar.collapsed{
+    width:88px;
+  }
+
+  .sidebar.collapsed .sidebar-title,
+  .sidebar.collapsed .side-title,
+  .sidebar.collapsed .nav-text,
+  .sidebar.collapsed .nav-section,
+  .sidebar.collapsed .side-sub{
+    display:none;
+  }
+
+  .sidebar.collapsed .nav a,
+  .sidebar.collapsed .nav-item{
+    justify-content:center;
+    padding:0.85rem 0.75rem;
+  }
+
+  .sidebar.collapsed .nav-icon{
+    margin:0;
+  }
+
+  .sidebar.collapsed .nav-logout{
+    padding:0.9rem 0.75rem;
+  }
+
+  .sidebar.collapsed .sidebar-toggle-ic{
+    transform: rotate(180deg);
+  }
+
+  /* =========================================================
+     CONTENT
+     ========================================================= */
+  .content{
+    flex:1;
+    padding:1.35rem;
+    overflow:auto;
+    background:#eef6f2;
+    min-width:0;
+     min-height:100vh;
+  }
+
+  .content-inner{
+    max-width:1400px;
+    margin:0 auto;
+    width:100%;
+  }
+
+  .flash-wrap{
+    display:grid;
+    gap:10px;
+    margin-bottom:14px;
+  }
+
+  .flash-msg{
+    padding:12px 14px;
+    border-radius:12px;
+    background:#fff;
+    border:1px solid #dcece5;
+    font-weight:700;
+  }
+
+  /* =========================================================
+     FOOTER
+     ========================================================= */
+  .footer{
+    background: linear-gradient(180deg, rgba(222, 241, 234, 0.92), rgba(231, 246, 240, 0.92));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding:0.95rem 1.25rem;
+    text-align:center;
+    color: rgba(15,23,42,0.70);
+    border-top: 1px solid rgba(0,0,0,0.18);
+    box-shadow: 0 -12px 24px -18px rgba(15, 23, 42, 0.28);
+  }
+
+  .footer-content{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:0.5rem;
+    font-size:0.92rem;
+    font-weight:850;
+    flex-wrap:wrap;
+    line-height:1.2;
+  }
+
+  .footer-2line{
+    flex-direction:column;
+    gap:6px;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+  }
+
+  .footer-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+
+  .footer-sep{
+    opacity:.7;
+  }
+
+  .footer-link{
+    color:#0b4d3a;
+    text-decoration:none !important;
+    transition: opacity .2s ease, transform .15s ease;
+    font-weight:900;
+  }
+
+  .footer-link:hover{
+    opacity:0.95;
+    transform: translateY(-1px);
+    text-decoration:none !important;
+  }
+
+  /* =========================================================
+     OVERLAY
+     ========================================================= */
+  #menuOverlay{
+    position:fixed;
+    inset:0;
+    background: rgba(15, 23, 42, 0.25);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index:89;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .25s ease;
+  }
+
+  #menuOverlay.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+
+@media (max-width: 1024px){
+  .sidebar{ width:260px; }
+  .content{ padding:1.05rem; }
+}
+
+@media (max-width: 860px){
+  .brand-text span{ max-width:18vw; }
+  .control-button{ padding:0.55rem 0.85rem; }
+}
+
+@media (max-width: 768px){
+  .header{
+    padding:0 0.9rem;
+    height:64px;
+    position:sticky;
+  }
+
+  .menu-button{
+    display:inline-flex;
+  }
+
+  .header-left{
+    justify-content:center;
+  }
+
+  .menu-button{
+    position:absolute;
+    left:0.55rem;
+    top:50%;
+    transform:translateY(-50%);
+    border:none;
+    background:transparent;
+    border-radius:0;
+    box-shadow:none;
+  }
+
+  .menu-button:hover{
+    background:transparent;
+    transform:translateY(-50%);
+    box-shadow:none;
+  }
+
+  .shell{
+    min-height:calc(100vh - 64px);
+  }
+
+  .sidebar{
+    position:fixed;
+    left:-340px;
+    right:auto;
+    top:0;
+    height:100vh;
+    width:min(340px, 88vw);
+    z-index:90;
+    transition:left 0.35s ease;
+    box-shadow:18px 0 40px rgba(0,0,0,0.18);
+    border-right:1px solid rgba(0,0,0,0.12);
+    border-left:none;
+    overflow:hidden;
+  }
+
+  .sidebar.open{
+    left:0;
+  }
+
+  .sidebar-header{
+    padding:1.05rem 0.95rem;
+    background:rgba(255,255,255,0.55);
+  }
+
+  .sidebar-nav{
+    padding:1.05rem 0.95rem 1rem;
+    gap:0.55rem;
+  }
+
+  .nav-spacer{
+    display:none;
+  }
+
+  .nav-logout{
+    position:relative;
+    bottom:auto;
+    margin-top:12px;
+    width:100%;
+    border-radius:16px;
+    padding:0.95rem 0.9rem;
+  }
+
+  body.menu-open{
+    overflow:hidden;
+    touch-action:none;
+  }
+
+  .content{
+    padding:0.95rem;
+  }
+}
+
+@media (max-width: 520px){
+  .brand-text span{ display:none; }
+  .control-button span{ display:none; }
+  .control-button{ padding:0.55rem 0.65rem; }
+  .header-controls{ gap:0.45rem; }
+}
+
+@media (max-width: 420px){
+  .sidebar{ width:min(320px, 92vw); }
+  .nav-item{ padding:0.78rem 0.85rem; }
+  .menu-button{ left:0.45rem; }
+}
+
+@media (max-width: 360px){
+  .header{ gap:0.55rem; }
+  .header-logo{ padding:0.3rem 0.45rem; }
+  .brand-mark{ width:32px; height:32px; }
+}
+
+  
+</style>
   {% block head_extra %}{% endblock %}
 </head>
 <body>
 <div class="app">
-  <header class="header">
-    <div class="brand">PG MIS <span class="pill">CADRE_CC</span></div>
-    <div class="top-actions">
-      <a class="btn" href="{{ url_for('reports.cadre_dashboard') }}">Assigned PGs</a>
-      <a class="btn" href="{{ url_for('auth.cadre_profile') }}">Profile</a>
-      <a class="btn danger" href="{{ url_for('auth.logout') }}">Logout</a>
+<header class="header">
+  <div class="header-left">
+    <button id="menuButton" class="menu-button" type="button" aria-label="Open dashboard menu" title="Menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="4" y1="6" x2="20" y2="6"></line>
+        <line x1="4" y1="12" x2="20" y2="12"></line>
+        <line x1="4" y1="18" x2="20" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="header-logo">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand-text">
+        <strong>PGMIS</strong>
+        <span>Cadre Workspace</span>
+      </div>
     </div>
-  </header>
+  </div>
+
+  <div class="header-controls">
+    <a class="control-button" href="{{ url_for('reports.cadre_dashboard') }}" title="Assigned PGs">
+  <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 16V8a2 2 0 0 0-1-1.73L13 2.27a2 2 0 0 0-2 0L4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73z"></path>
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+  </svg>
+  <span>Assigned PGs</span>
+</a>
+
+    <a class="control-button" href="{{ url_for('auth.cadre_profile') }}">
+      <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+      <span>Profile</span>
+    </a>
+
+    <a class="control-button logout-top" href="{{ url_for('auth.logout') }}" title="Logout" aria-label="Logout">
+      <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16 17 21 12 16 7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+      <span class="sr-only">Logout</span>
+    </a>
+  </div>
+</header>
+
+<div id="menuOverlay" aria-hidden="true"></div>
+
   <div class="shell">
-    <aside class="sidebar">
-      <div class="side-title">Cadre Dashboard</div>
-      <div class="side-sub">Open one of your assigned PGs to start data entry in the exact PG workspace.</div>
-      <nav class="nav">
-        <a class="active" href="{{ url_for('reports.cadre_dashboard') }}">Dashboard</a>
-        <a href="{{ url_for('auth.cadre_profile') }}">Profile</a>
-        {% for _pgid in session.get('assigned_pg_ids', []) %}
-          <a href="{{ url_for('pg.set_active_pg', pg_id=_pgid, next=url_for('pg.pg_home')) }}">Open Assigned PG</a>
-        {% endfor %}
-      </nav>
-    </aside>
+  <aside class="sidebar" id="sidebar">
+<div class="sidebar-header">
+  <div class="sidebar-head-row">
+    <div class="sidebar-title">Dashboard Menu</div>
+
+    <button id="sidebarToggle" class="sidebar-toggle" type="button" title="Collapse sidebar" aria-label="Collapse sidebar">
+      <svg class="sidebar-toggle-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
+  </div>
+</div>
+
+  <nav class="nav sidebar-nav" id="sidebarNav">
+  <a class="nav-item" data-nav="dashboard" href="{{ url_for('reports.cadre_dashboard') }}">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 12l9-9 9 9"></path>
+      <path d="M9 21V9h6v12"></path>
+    </svg>
+    <span class="nav-text">Dashboard</span>
+  </a>
+
+  <a class="nav-item" data-nav="profile" href="{{ url_for('auth.cadre_profile') }}">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+      <circle cx="12" cy="7" r="4"></circle>
+    </svg>
+    <span class="nav-text">Profile</span>
+  </a>
+
+<div class="nav-section">Assigned PGs</div>
+
+<a class="nav-item" data-nav="assigned-pgs" href="{{ url_for('reports.cadre_assigned_pgs') }}">
+  <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 16V8a2 2 0 0 0-1-1.73L13 2.27a2 2 0 0 0-2 0L4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73z"></path>
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+  </svg>
+  <span class="nav-text">Assigned PGs</span>
+</a>
+
+
+  <div class="nav-spacer"></div>
+
+  <a class="nav-item nav-logout" data-nav="logout" href="{{ url_for('auth.logout') }}">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+      <polyline points="16 17 21 12 16 7"></polyline>
+      <line x1="21" y1="12" x2="9" y2="12"></line>
+    </svg>
+    <span class="nav-text">Logout</span>
+  </a>
+</nav>
+</aside>
+
     <main class="content">
-      {% with messages = get_flashed_messages(with_categories=true) %}
+      <div class="content-inner">
+        {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-          <div style="display:grid;gap:10px;margin-bottom:14px;">
+          <div class="flash-wrap">
             {% for category, message in messages %}
-              <div style="padding:12px 14px;border-radius:12px;background:#fff;border:1px solid #dcece5;font-weight:700;">{{ message }}</div>
+              <div class="flash-msg">{{ message }}</div>
             {% endfor %}
           </div>
         {% endif %}
       {% endwith %}
-      {% block content %}{% endblock %}
+         {% block content %}{% endblock %}
+      </div>
     </main>
   </div>
+
+<footer class="footer">
+  <div class="footer-content footer-2line">
+
+    <div class="footer-row">
+      <span>© 2026 PGMIS™ All rights reserved.</span>
+    </div>
+
+    <div class="footer-row">
+      <span>Powered by —</span>
+      <a href="https://sayanant.com/"
+         target="_blank"
+         rel="noopener noreferrer"
+         class="footer-link">
+        Sayanant Group, Guwahati Assam
+      </a>
+    </div>
+
+  </div>
+</footer>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var currentPath = window.location.pathname.replace(/\/+$/, '') || '/';
+  var navLinks = document.querySelectorAll('#sidebarNav a[data-nav]');
+
+  navLinks.forEach(function(link) {
+    var linkPath = new URL(link.href, window.location.origin).pathname.replace(/\/+$/, '') || '/';
+    link.classList.remove('active');
+
+    if (link.dataset.nav === 'logout') return;
+
+    if (currentPath === linkPath) {
+      link.classList.add('active');
+    }
+  });
+});
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var sidebar = document.querySelector('.sidebar');
+  var toggle = document.getElementById('sidebarToggle');
+
+  if (toggle && sidebar) {
+    toggle.addEventListener('click', function () {
+      sidebar.classList.toggle('collapsed');
+    });
+  }
+});
+</script>
+
+
+<script>
+  (function(){
+    try{
+      const ua = (navigator.userAgent || "").toLowerCase();
+      const isRN = !!window.ReactNativeWebView;
+      const isWV = ua.includes("wv") || ua.includes("reactnativewebview") || ua.includes("instagram") || ua.includes("fbav");
+      if(isRN || isWV){
+        document.body.classList.add("app-webview");
+      }
+    }catch(_){}
+  })();
+</script>
+
+<script>
+  const sidebar = document.getElementById('sidebar');
+  const menuButton = document.getElementById('menuButton');
+  const menuOverlay = document.getElementById('menuOverlay');
+
+  function isMobile(){
+    return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+  }
+
+  function openMenu(){
+    if(!isMobile()) return;
+    sidebar.classList.add('open');
+    menuOverlay.classList.add('show');
+    menuOverlay.setAttribute('aria-hidden','false');
+    document.body.classList.add('menu-open');
+  }
+
+  function closeMenu(){
+    sidebar.classList.remove('open');
+    menuOverlay.classList.remove('show');
+    menuOverlay.setAttribute('aria-hidden','true');
+    document.body.classList.remove('menu-open');
+  }
+
+  function toggleMenu(){
+    if(!isMobile()) return;
+    sidebar.classList.contains('open') ? closeMenu() : openMenu();
+  }
+
+  menuButton?.addEventListener('click', toggleMenu);
+  menuOverlay?.addEventListener('click', closeMenu);
+
+  window.addEventListener('resize', function(){
+    if(!isMobile()) closeMenu();
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(isMobile() && e.key === 'Escape') closeMenu();
+  });
+</script>
 </body>
 </html>

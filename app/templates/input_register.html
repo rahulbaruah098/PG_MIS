@@ -558,10 +558,28 @@
       scroll-snap-align: start;
     }
   }
+
+
   @media (max-width: 520px){
     .input-register-page .grid{ grid-template-columns: 1fr; }
   }
+/* ===== FORCE DESKTOP TABLE ONLY DURING MOBILE/APP PRINT ===== */
+body.force-desktop-print .input-register-page .table-wrap{
+  display:block !important;
+}
 
+body.force-desktop-print .input-register-page .mobileList{
+  display:none !important;
+}
+
+body.force-desktop-print .input-register-page .table-shell{
+  overflow:visible !important;
+}
+
+body.force-desktop-print .input-register-page table.input-register{
+  width:1750px !important;
+  min-width:1750px !important;
+}
   /* Footer */
   .input-register-page .foot{
     padding: 12px 16px;
@@ -667,16 +685,138 @@
     justify-content: flex-end;
   }
 
-  @media print{
-    .input-register-page .actions,
-    .input-register-page .tabs,
-    .input-register-page .confirm,
-    .input-register-page .toast{ display:none !important; }
-    .input-register-page .sheet{ box-shadow:none; }
-    .input-register-page .table-wrap{ overflow: visible; display:block !important; }
-    table.input-register th{ position: static !important; }
-    .input-register-page .mobileList{ display:none !important; }
+
+/* ===== SAME-TAB FULL PAGE PRINT PREVIEW ===== */
+.print-preview-page{
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  background: #eef3f1;
+  display: none;
+  flex-direction: column;
+}
+
+.print-preview-page.show{
+  display: flex;
+}
+
+.print-preview-page-head{
+  flex: 0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 18px;
+  background:#ffffff;
+  border-bottom:1px solid rgba(15,23,42,.12);
+}
+
+.print-preview-page-title{
+  font-size:16px;
+  font-weight:900;
+  color:#0f172a;
+}
+
+.print-preview-page-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.print-preview-page-body{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.print-preview-page-paper-wrap{
+  min-width: max-content;
+  width: 100%;
+  display:flex;
+  justify-content:center;
+}
+
+.print-preview-paper{
+  width: 1400px;
+  min-width: 1400px;
+  background:#ffffff;
+  border:1px solid #cbd5e1;
+  box-shadow:none;
+  padding:16px;
+  display:block;
+}
+
+#printPreviewContent{
+  width:100%;
+  min-width:0;
+}
+
+.print-preview-paper table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+
+.print-preview-paper th,
+.print-preview-paper td{
+  min-width:0;
+  border:1px solid #94a3b8;
+  padding:6px 8px;
+  font-size:11px;
+  color:#111827;
+  word-break:break-word;
+  overflow-wrap:break-word;
+  white-space:normal;
+  vertical-align:top;
+  text-align:center;
+}
+
+.print-preview-paper thead tr.group th{
+  background:#e2e8f0;
+}
+
+.print-preview-paper thead tr:not(.group) th{
+  background:#f8fafc;
+}
+
+@media (max-width: 860px){
+  .print-preview-page-head{
+    padding:12px;
+    flex-direction:column;
+    align-items:stretch;
   }
+
+  .print-preview-page-actions{
+    width:100%;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:10px;
+  }
+
+  .print-preview-page-actions .btn{
+    width:100%;
+    justify-content:center;
+  }
+
+  .print-preview-page-body{
+    padding:10px;
+  }
+
+  .print-preview-page-paper-wrap{
+    justify-content:flex-start;
+  }
+
+ .print-preview-paper{
+  min-width: 1400px;
+  width: 1400px;
+  padding:12px;
+}
+}
+
+
 </style>
 {% endblock %}
 
@@ -779,6 +919,11 @@
 
       <!-- Table -->
       <div class="table-shell">
+        <div class="print-cover" id="printCover">
+  
+ 
+ 
+</div>
         <div class="table-top">
           <div class="muted" id="sectionHint">Showing: All columns</div>
         </div>
@@ -874,6 +1019,30 @@
     </div>
   </div>
 
+
+<div class="print-preview-page" id="printPreviewModal">
+  <div class="print-preview-page-head">
+    <div class="print-preview-page-title" id="printPreviewTitle">Print Preview</div>
+    <div class="print-preview-page-actions">
+      <button type="button" class="btn muted" id="closePrintPreviewBtn">
+        <ion-icon name="arrow-back"></ion-icon>
+        <span>Back</span>
+      </button>
+      <button type="button" class="btn primary" id="confirmPrintBtn">
+        <ion-icon name="print"></ion-icon>
+        <span>Proceed to Print</span>
+      </button>
+    </div>
+  </div>
+
+ <div class="print-preview-page-body">
+  <div class="print-preview-page-paper-wrap">
+    <div class="print-preview-paper">
+      <div id="printPreviewContent"></div>
+    </div>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -920,6 +1089,16 @@
 
     groupRow: document.getElementById("groupRow"),
     tfoot: document.getElementById("regTfoot"),
+        desktopTableWrap: document.getElementById("desktopTableWrap"),
+    regTable: document.getElementById("regTable"),
+    printCover: document.getElementById("printCover"),
+    printSectionTitle: document.getElementById("printSectionTitle"),
+    printPreviewModal: document.getElementById("printPreviewModal"),
+    printPreviewTitle: document.getElementById("printPreviewTitle"),
+    printPreviewContent: document.getElementById("printPreviewContent"),
+    closePrintPreviewBtn: document.getElementById("closePrintPreviewBtn"),
+    confirmPrintBtn: document.getElementById("confirmPrintBtn"),
+   
   };
 
   /* ---------------- Language (controlled by GLOBAL navbar translation) ---------------- */
@@ -1480,6 +1659,12 @@
   /* ---------------- Edit Mode ---------------- */
   let editMode = false;
   let beforeEditSnapshot = null;
+  let inputPrintPreviewOpen = false;
+  let mobilePrintRestore = {
+  active: false,
+  tableWrapDisplay: "",
+  mobileListDisplay: ""
+};
 
   function applyEditModeUI(){
     els.inputName.readOnly = !editMode;
@@ -1510,6 +1695,37 @@
 
     syncMobileReadonly();
   }
+
+
+function enableMobileDesktopPrintView(){
+  mobilePrintRestore.active = true;
+  mobilePrintRestore.tableWrapDisplay = els.desktopTableWrap ? els.desktopTableWrap.style.display : "";
+  mobilePrintRestore.mobileListDisplay = els.mobileList ? els.mobileList.style.display : "";
+
+  document.body.classList.add("force-desktop-print");
+
+  if(els.desktopTableWrap){
+    els.desktopTableWrap.style.display = "block";
+  }
+
+  if(els.mobileList){
+    els.mobileList.style.display = "none";
+  }
+}
+
+function disableMobileDesktopPrintView(){
+  document.body.classList.remove("force-desktop-print");
+
+  if(els.desktopTableWrap){
+    els.desktopTableWrap.style.display = mobilePrintRestore.tableWrapDisplay;
+  }
+
+  if(els.mobileList){
+    els.mobileList.style.display = mobilePrintRestore.mobileListDisplay;
+  }
+
+  mobilePrintRestore.active = false;
+}
 
   function syncMobileReadonly(){
     els.mobileList.querySelectorAll(".cardRow").forEach(card=>{
@@ -1629,6 +1845,366 @@
     renderMobile();
   }
 
+
+    /* ---------------- Print / Preview ---------------- */
+  let printMode = false;
+
+  function getActiveSectionLabel(){
+    const t = T[lang];
+    if(activeTab === "purchase") return t.tabPurchase;
+    if(activeTab === "sale") return t.tabSale;
+    if(activeTab === "stock") return t.tabStock;
+    return t.tabAll;
+  }
+
+  function formatPrintValue(value){
+    if(value === null || value === undefined) return "";
+    const str = String(value).trim();
+    return str;
+  }
+
+ function cloneTableForPrint(){
+  const cloned = els.regTable.cloneNode(true);
+
+  // Remove checkbox column from header
+  const groupRow = cloned.querySelector("thead tr.group");
+  if(groupRow && groupRow.cells.length){
+    groupRow.cells[0].remove();
+  }
+
+  // Remove checkbox column from body
+  cloned.querySelectorAll("tbody tr").forEach(tr=>{
+    if(tr.cells.length){
+      tr.cells[0].remove();
+    }
+  });
+
+  // Replace inputs with text
+  cloned.querySelectorAll("input").forEach(inp=>{
+    const value = formatPrintValue(inp.value);
+    const span = document.createElement("span");
+    span.textContent = value;
+    span.style.display = "block";
+    span.style.width = "100%";
+    span.style.whiteSpace = "pre-wrap";
+    span.style.wordBreak = "normal";
+    span.style.overflowWrap = "break-word";
+    span.style.lineHeight = "1.35";
+    inp.replaceWith(span);
+  });
+
+  // Fix footer structure for cloned table (because checkbox column was removed)
+  const tfoot = cloned.querySelector("tfoot");
+  if(tfoot){
+    tfoot.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align:left; font-weight:950;">${document.getElementById("t_totals")?.textContent || "TOTALS"}</td>
+        <td class="num">${formatPrintValue(els.totPurchase.value)}</td>
+        <td></td>
+        <td colspan="5"></td>
+        <td class="num">${formatPrintValue(els.totSale.value)}</td>
+        <td></td>
+        <td colspan="2"></td>
+        <td class="num">${formatPrintValue(els.totStock.value)}</td>
+      </tr>
+    `;
+  }
+
+  return cloned;
+}
+
+  function applyPrintColumnsToClone(table, tab){
+    const show = {
+      all:      new Set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]),
+      purchase: new Set([1,2,3,4,5,6,7]),
+      sale:     new Set([8,9,10,11,12,13,14]),
+      stock:    new Set([15,16,17]),
+    }[tab];
+
+    const headRows = table.tHead ? [...table.tHead.rows] : [];
+    const bodyRows = table.tBodies[0] ? [...table.tBodies[0].rows] : [];
+    const footRows = table.tFoot ? [...table.tFoot.rows] : [];
+
+    if(headRows[0]){
+      const cells = [...headRows[0].cells];
+      const purchase = cells[0];
+      const sale = cells[1];
+      const stock = cells[2];
+
+      if(tab === "purchase"){
+        if(sale) sale.style.display = "none";
+        if(stock) stock.style.display = "none";
+        if(purchase) purchase.colSpan = 7;
+      }else if(tab === "sale"){
+        if(purchase) purchase.style.display = "none";
+        if(stock) stock.style.display = "none";
+        if(sale) sale.colSpan = 7;
+      }else if(tab === "stock"){
+        if(purchase) purchase.style.display = "none";
+        if(sale) sale.style.display = "none";
+        if(stock) stock.colSpan = 3;
+      }
+    }
+
+    if(headRows[1]){
+      [...headRows[1].cells].forEach((cell, idx)=>{
+        const logicalCol = idx + 1;
+        cell.style.display = show.has(logicalCol) ? "" : "none";
+      });
+    }
+
+    bodyRows.forEach(tr=>{
+      [...tr.cells].forEach((cell, idx)=>{
+        const logicalCol = idx + 1;
+        cell.style.display = show.has(logicalCol) ? "" : "none";
+      });
+    });
+
+    if(table.tFoot){
+      table.tFoot.style.display = (tab === "all") ? "" : "none";
+    }
+  }
+
+  function setPrintMeta(){
+    const sectionText = `Section: ${getActiveSectionLabel()}`;
+    if(els.printSectionTitle) els.printSectionTitle.textContent = sectionText;
+    if(els.printPreviewTitle){
+      els.printPreviewTitle.textContent = `${lang === "bn" ? "প্রিন্ট প্রিভিউ" : "Print Preview"} — ${getActiveSectionLabel()}`;
+    }
+  }
+
+  function buildPrintPreviewContent(){
+    const wrap = document.createElement("div");
+
+    const cover = document.createElement("div");
+    cover.className = "print-cover";
+    cover.style.display = "block";
+    cover.innerHTML = `
+    `;
+    wrap.appendChild(cover);
+
+    const meta = document.createElement("div");
+    meta.className = "top-grid";
+    meta.style.margin = "0 0 10px";
+
+   meta.innerHTML = `
+  <div class="field" style="border:1px solid #cbd5e1; background:#fff; border-radius:0; box-shadow:none;">
+    <label style="font-weight:700; color:#000;">${lang === "bn" ? "সামগ্রীর নাম" : "Name of Input"}</label>
+    <div style="font-weight:600; font-size:12px; color:#000; line-height:1.4;">${formatPrintValue(els.inputName.value)}</div>
+  </div>
+  <div class="field" style="border:1px solid #cbd5e1; background:#fff; border-radius:0; box-shadow:none;">
+    <label style="font-weight:700; color:#000;">${lang === "bn" ? "স্টকের পরিমাপ" : "Unit of Stocking"}</label>
+    <div style="font-weight:600; font-size:12px; color:#000; line-height:1.4;">${formatPrintValue(els.unit.value)}</div>
+  </div>
+`;
+    wrap.appendChild(meta);
+
+    const table = cloneTableForPrint();
+    applyPrintColumnsToClone(table, activeTab);
+    wrap.appendChild(table);
+
+    return wrap.innerHTML;
+  }
+
+  function enablePrintMode(){
+    printMode = true;
+    document.querySelector(".input-register-page")?.classList.add("print-mode");
+    setPrintMeta();
+  }
+
+  function clearPrintMode(){
+    printMode = false;
+    document.querySelector(".input-register-page")?.classList.remove("print-mode");
+  }
+
+function openPrintPreview(){
+  setPrintMeta();
+
+  const html = buildPrintPreviewContent();
+  els.printPreviewContent.innerHTML = html;
+
+  els.printPreviewModal.classList.add("show");
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.overflow = "hidden";
+
+  if(!inputPrintPreviewOpen){
+    inputPrintPreviewOpen = true;
+    history.pushState({ inputPrintPreview: true }, "", window.location.href);
+  }
+
+  requestAnimationFrame(()=>{
+    const wrap = document.querySelector(".print-preview-page-body");
+    if(wrap) wrap.scrollTop = 0;
+  });
+}
+
+function closePrintPreview(fromHistory = false){
+  els.printPreviewModal.classList.remove("show");
+  els.printPreviewContent.innerHTML = "";
+  document.documentElement.style.overflow = "";
+  document.body.style.overflow = "";
+  inputPrintPreviewOpen = false;
+
+  if(!fromHistory){
+    const st = history.state || {};
+    if(st.inputPrintPreview){
+      history.back();
+    }
+  }
+}
+
+function printCurrentSection(){
+  if(editMode){
+    toast(lang === "bn" ? "প্রিন্টের আগে সেভ বা বাতিল করুন" : "Please Save or Cancel before printing");
+    return;
+  }
+
+  // if mobile/app view is active, ensure the preview still uses print table HTML
+  openPrintPreview();
+}
+function doActualPrint(){
+  const printHTML = buildPrintPreviewContent();
+
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.left = "-10000px";
+  iframe.style.top = "0";
+  iframe.style.width = "1400px";
+  iframe.style.height = "1200px";
+  iframe.style.border = "0";
+  iframe.style.opacity = "0.01";
+  iframe.style.pointerEvents = "none";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+
+  doc.open();
+  doc.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title></title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <style>
+        @page{
+          size:A4 landscape;
+          margin:10mm;
+        }
+
+        html, body{
+          margin:0;
+          padding:0;
+          background:#fff;
+          color:#000;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size:12px;
+        }
+
+        .print-root{
+          width:100%;
+        }
+
+        .print-cover{
+          margin:0 0 12px;
+          border:1px solid #94a3b8;
+          padding:10px 12px;
+          border-radius:0;
+        }
+
+        .print-title{
+          font-size:16px;
+          font-weight:700;
+          color:#000;
+          text-align:center;
+          margin:0 0 3px;
+        }
+
+        .print-section{
+          margin-top:6px;
+          text-align:center;
+          font-size:11px;
+          font-weight:600;
+          color:#000;
+        }
+
+        .top-grid{
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:10px;
+          margin:0 0 10px;
+        }
+
+        .field{
+          border:1px solid #cbd5e1;
+          background:#fff;
+          padding:8px 10px;
+          border-radius:0;
+          box-shadow:none;
+        }
+
+        .field label{
+          display:block;
+          font-size:11px;
+          font-weight:700;
+          color:#000;
+          margin-bottom:5px;
+        }
+
+        table{
+          width:100%;
+          border-collapse:collapse;
+          table-layout:fixed;
+          font-size:11px;
+        }
+
+        th, td{
+          border:1px solid #94a3b8;
+          padding:6px 8px;
+          font-size:11px;
+          color:#000;
+          text-align:center;
+          vertical-align:top;
+          word-break:break-word;
+          overflow-wrap:break-word;
+          white-space:normal;
+        }
+
+        thead tr.group th{
+          background:#f1f5f9;
+          font-weight:700;
+        }
+
+        thead tr:not(.group) th{
+          background:#fff;
+          font-weight:700;
+        }
+
+        tfoot td{
+          font-weight:700;
+          background:#fff;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-root">${printHTML}</div>
+    </body>
+    </html>
+  `);
+  doc.close();
+
+  closePrintPreview();
+
+  iframe.onload = function(){
+    setTimeout(()=>{
+      try{
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } finally {
+        setTimeout(()=> iframe.remove(), 1500);
+      }
+    }, 900);
+  };
+}
   /* ---------------- Row Builder ---------------- */
   function makeCellInput(cls, placeholder, type="text", readonly=false){
     const td = document.createElement("td");
@@ -2215,20 +2791,36 @@
   els.deleteAllBtn.addEventListener("click", deleteAllRows);
 
   els.exportCsvBtn.addEventListener("click", exportCSV);
-  els.printBtn.addEventListener("click", ()=> window.print());
+  els.printBtn.addEventListener("click", ()=>{
+  printCurrentSection();
+});
+
+  els.closePrintPreviewBtn.addEventListener("click", closePrintPreview);
+  els.confirmPrintBtn.addEventListener("click", doActualPrint);
+
+  els.printPreviewModal.addEventListener("click", (e)=>{
+    if(e.target === els.printPreviewModal) closePrintPreview();
+  });
 
   // Tabs
-  function setTab(tab){
+   function setTab(tab){
     activeTab = tab;
     persistTab();
     setTabsUI();
+    clearPrintMode();
     const t = T[lang];
-    toast(tab==="all" ? t.toastAll : tab==="purchase" ? t.toastPurchase : tab==="sale" ? t.toastSale : t.toastStock);
+    toast(
+      tab === "all" ? t.toastAll :
+      tab === "purchase" ? t.toastPurchase :
+      tab === "sale" ? t.toastSale :
+      t.toastStock
+    );
   }
   els.tabAll.addEventListener("click", ()=> setTab("all"));
   els.tabPurchase.addEventListener("click", ()=> setTab("purchase"));
   els.tabSale.addEventListener("click", ()=> setTab("sale"));
   els.tabStock.addEventListener("click", ()=> setTab("stock"));
+
 
   // Table input: recompute (edit mode only)
   els.tbody.addEventListener("input", (e)=>{
@@ -2291,6 +2883,13 @@
     // ✅ if somehow page restored with editMode true, ensure lock
     if(editMode) enablePageLock(); else disablePageLock();
   }
+
+
+window.addEventListener("popstate", ()=>{
+  if(inputPrintPreviewOpen){
+    closePrintPreview(true);
+  }
+});
 
   init();
 })();

@@ -1,0 +1,642 @@
+{% extends "base_cadre.html" %}
+{% block title %}Assigned PGs{% endblock %}
+
+{% block content %}
+<style>
+  .cd-page{
+    display:grid;
+    gap:24px;
+  }
+
+  .cd-main{
+    width:100%;
+    max-width:80rem;
+    margin:0 auto;
+    position:relative;
+    border-radius:22px;
+    padding:24px;
+    background:rgba(255,255,255,0.92);
+    border:1px solid rgba(15,118,110,0.18);
+    box-shadow:0 22px 60px rgba(6,95,70,0.14);
+    overflow:hidden;
+    backdrop-filter:blur(6px);
+  }
+
+  .cd-main::before{
+    content:"";
+    position:absolute;
+    inset:-2px;
+    pointer-events:none;
+    background-image:radial-gradient(rgba(6,95,70,0.08) 0.6px, transparent 0.6px);
+    background-size:18px 18px;
+    opacity:.07;
+    mix-blend-mode:multiply;
+  }
+
+  .cd-main > *{
+    position:relative;
+    z-index:1;
+  }
+
+  .cd-section-card{
+    background:rgba(255,255,255,0.94);
+    border:1.5px solid rgba(191,230,210,0.95);
+    box-shadow:0 14px 30px rgba(6,95,70,0.12);
+    border-radius:22px;
+    padding:20px;
+  }
+
+  .cd-section-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+  }
+
+  .cd-section-head h3{
+    font-size:22px;
+    line-height:1.2;
+    font-weight:900;
+    color:#0b2a23;
+  }
+
+  .cd-section-head p{
+    margin-top:6px;
+    color:#4c7468;
+    font-weight:700;
+    font-size:14px;
+  }
+
+  .cd-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    background:rgba(233,248,240,0.95);
+    border:1px solid rgba(15,118,110,0.20);
+    color:#0b2a23;
+    font-size:12px;
+    font-weight:800;
+    white-space:nowrap;
+  }
+
+  .cd-pg-tools{
+    display:grid;
+    gap:14px;
+    margin-top:8px;
+  }
+
+  .cd-pg-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .cd-pg-search-wrap{
+    position:relative;
+    flex:1 1 340px;
+    min-width:260px;
+  }
+
+  .cd-pg-search-icon{
+    position:absolute;
+    left:14px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#5d6f68;
+    pointer-events:none;
+  }
+
+  .cd-pg-search{
+    width:100%;
+    height:46px;
+    padding:0 14px 0 44px;
+    border-radius:999px;
+    border:1px solid #cfe3da;
+    background:#fff;
+    color:#0b2a23;
+    font-size:14px;
+    font-weight:700;
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+
+  .cd-pg-search:focus{
+    border-color:#8ed3b7;
+    box-shadow:0 0 0 4px rgba(15,118,110,.12);
+  }
+
+  .cd-pg-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .cd-page-size-wrap{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 10px;
+    border-radius:999px;
+    background:rgba(233,248,240,0.95);
+    border:1px solid rgba(15,118,110,0.20);
+  }
+
+  .cd-page-size-label{
+    font-size:12px;
+    font-weight:900;
+    color:#0b2a23;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+  }
+
+  .cd-page-size-select{
+    min-width:78px;
+    height:34px;
+    padding:0 10px;
+    border-radius:999px;
+    border:1px solid #bfe4d2;
+    background:#fff;
+    color:#0b2a23;
+    font-size:13px;
+    font-weight:800;
+    outline:none;
+    cursor:pointer;
+  }
+
+  .cd-toggle-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:44px;
+    padding:10px 16px;
+    border-radius:999px;
+    border:1px solid #bfe4d2;
+    background:#eaf7f0;
+    color:#0b4d3a;
+    font-weight:900;
+    font-size:14px;
+    cursor:pointer;
+    transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+
+  .cd-toggle-btn:hover{
+    background:#ddf3e6;
+    transform:translateY(-1px);
+    box-shadow:0 14px 24px -20px rgba(6,95,70,.35);
+  }
+
+  .cd-toggle-btn svg{
+    transition:transform .2s ease;
+  }
+
+  .cd-toggle-btn.is-open svg{
+    transform:rotate(180deg);
+  }
+
+  .cd-pg-summary{
+    font-size:13px;
+    line-height:1.35;
+    color:#4c7468;
+    font-weight:800;
+  }
+
+  .cd-pg-panel{
+    display:none;
+    gap:12px;
+  }
+
+  .cd-pg-panel.is-open{
+    display:grid;
+  }
+
+  .cd-pg-list{
+    display:grid;
+    gap:12px;
+  }
+
+  .cd-pg-row{
+    display:grid;
+    grid-template-columns:minmax(0, 2fr) minmax(140px, 1fr) minmax(140px, 1fr) auto;
+    gap:12px;
+    align-items:center;
+    padding:14px 16px;
+    border-radius:18px;
+    background:rgba(255,255,255,0.92);
+    border:1.5px solid rgba(191,230,210,0.95);
+    box-shadow:0 10px 24px rgba(6,95,70,0.08);
+  }
+
+  .cd-pg-row-name{
+    font-size:16px;
+    font-weight:900;
+    line-height:1.2;
+    color:#0b2a23;
+    word-break:break-word;
+  }
+
+  .cd-pg-row-sub{
+    margin-top:4px;
+    font-size:12px;
+    color:#60756d;
+    font-weight:800;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+  }
+
+  .cd-pg-col-label{
+    font-size:11px;
+    color:#60756d;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+
+  .cd-pg-col-value{
+    font-size:14px;
+    color:#0b2a23;
+    font-weight:800;
+    word-break:break-word;
+  }
+
+  .cd-pg-open{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:42px;
+    padding:10px 14px;
+    border-radius:999px;
+    background:#eaf7f0;
+    border:1px solid #bfe4d2;
+    color:#0b4d3a;
+    font-weight:900;
+    text-decoration:none !important;
+    white-space:nowrap;
+    transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+
+  .cd-pg-open:hover{
+    background:#ddf3e6;
+    transform:translateY(-1px);
+    box-shadow:0 14px 24px -20px rgba(6,95,70,.35);
+  }
+
+  .cd-pagination{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:6px;
+  }
+
+  .cd-page-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:42px;
+    padding:10px 16px;
+    border-radius:999px;
+    border:1px solid #bfe4d2;
+    background:#eaf7f0;
+    color:#0b4d3a;
+    font-weight:900;
+    font-size:14px;
+    cursor:pointer;
+  }
+
+  .cd-page-btn:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+  }
+
+  .cd-page-indicator{
+    min-height:42px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:10px 16px;
+    border-radius:999px;
+    background:#f8fcfa;
+    border:1px solid #dcece5;
+    color:#0b2a23;
+    font-size:14px;
+    font-weight:900;
+  }
+
+  .cd-pg-empty,
+  .cd-empty{
+    padding:18px;
+    border-radius:16px;
+    background:#f8fcfa;
+    border:1px dashed #cfe3da;
+    color:#557168;
+    font-weight:800;
+    text-align:center;
+  }
+
+  .cd-hidden{
+    display:none !important;
+  }
+
+  @media (max-width:768px){
+    .cd-main{ padding:14px; }
+
+    .cd-pg-panel{ gap:14px; }
+
+    .cd-pg-list{
+      display:flex !important;
+      gap:12px;
+      overflow-x:auto;
+      overflow-y:hidden;
+      padding:2px 2px 8px;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    .cd-pg-row{
+      min-width:85vw;
+      max-width:85vw;
+      flex:0 0 85vw;
+      scroll-snap-align:start;
+      grid-template-columns:1fr !important;
+      gap:10px;
+      align-items:flex-start;
+      padding:14px;
+      border-radius:18px;
+    }
+
+    .cd-pg-open{ width:100%; }
+
+    .cd-pagination{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+    }
+
+    .cd-page-btn,
+    .cd-page-indicator{
+      width:100%;
+    }
+  }
+
+  @media (max-width:520px){
+    .cd-pg-search-wrap{
+      min-width:100%;
+      flex-basis:100%;
+    }
+
+    .cd-pg-actions{
+      width:100%;
+    }
+
+    .cd-page-size-wrap{
+      width:100%;
+      justify-content:space-between;
+    }
+
+    .cd-toggle-btn{
+      width:100%;
+    }
+
+    .cd-pg-row{
+      min-width:88vw;
+      max-width:88vw;
+      flex:0 0 88vw;
+      padding:12px;
+      border-radius:16px;
+    }
+  }
+</style>
+
+<div class="cd-page">
+  <section class="cd-main">
+    <div class="cd-section-card">
+      <div class="cd-section-head">
+        <div>
+          <h3>Assigned PG List</h3>
+          <p>Select a PG below to open the same dashboard and workspace that the PG login sees.</p>
+        </div>
+        <div class="cd-chip">{{ assigned_pg_count }} linked PGs</div>
+      </div>
+
+      {% if pgs %}
+      <div class="cd-pg-tools">
+        <div class="cd-pg-toolbar">
+          <div class="cd-pg-search-wrap">
+            <span class="cd-pg-search-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+            </span>
+            <input
+              type="text"
+              id="cdPgSearch"
+              class="cd-pg-search"
+              placeholder="Search by PG name, sector or block"
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="cd-pg-actions">
+            <div class="cd-page-size-wrap">
+              <label for="cdPgPageSize" class="cd-page-size-label">Show</label>
+              <select id="cdPgPageSize" class="cd-page-size-select">
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="250">250</option>
+              </select>
+            </div>
+
+            <button type="button" id="cdPgToggle" class="cd-toggle-btn is-open" aria-expanded="true">
+              <span>Hide Assigned PG List</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="cd-pg-summary" id="cdPgSummary">
+          Showing assigned PG list
+        </div>
+
+        <div class="cd-pg-panel is-open" id="cdPgPanel">
+          <div class="cd-pg-list" id="cdPgList">
+            {% for pg in pgs %}
+              <article
+                class="cd-pg-row"
+                data-pg-name="{{ (pg.name or '')|lower }}"
+                data-pg-sector="{{ (pg.sector or '')|lower }}"
+                data-pg-block="{{ (pg.Block or pg.block_name or '')|lower }}"
+              >
+                <div class="cd-pg-row-main">
+                  <div class="cd-pg-row-name">{{ pg.name or '-' }}</div>
+                  <div class="cd-pg-row-sub">Assigned PG</div>
+                </div>
+
+                <div class="cd-pg-col">
+                  <div class="cd-pg-col-label">Sector</div>
+                  <div class="cd-pg-col-value">{{ pg.sector or '-' }}</div>
+                </div>
+
+                <div class="cd-pg-col">
+                  <div class="cd-pg-col-label">Block</div>
+                  <div class="cd-pg-col-value">{{ pg.Block or pg.block_name or '-' }}</div>
+                </div>
+
+                <a class="cd-pg-open" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('pg.pg_home')) }}">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M5 12h14"></path>
+                    <path d="m12 5 7 7-7 7"></path>
+                  </svg>
+                  Open PG
+                </a>
+              </article>
+            {% endfor %}
+          </div>
+
+          <div class="cd-pagination" id="cdPagination">
+            <button type="button" class="cd-page-btn" id="cdPrevPage">Previous</button>
+            <div class="cd-page-indicator" id="cdPageIndicator">Page 1</div>
+            <button type="button" class="cd-page-btn" id="cdNextPage">Next</button>
+          </div>
+
+          <div id="cdPgNoResult" class="cd-pg-empty cd-hidden">No matching PG found.</div>
+        </div>
+      </div>
+      {% else %}
+        <div class="cd-empty">No PGs are currently assigned to this Cadre account.</div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var searchInput = document.getElementById('cdPgSearch');
+  var toggleBtn = document.getElementById('cdPgToggle');
+  var panel = document.getElementById('cdPgPanel');
+  var summary = document.getElementById('cdPgSummary');
+  var noResult = document.getElementById('cdPgNoResult');
+
+  var pageSizeSelect = document.getElementById('cdPgPageSize');
+  var prevBtn = document.getElementById('cdPrevPage');
+  var nextBtn = document.getElementById('cdNextPage');
+  var pageIndicator = document.getElementById('cdPageIndicator');
+  var pagination = document.getElementById('cdPagination');
+
+  if (!panel) return;
+
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#cdPgList .cd-pg-row'));
+  var currentQuery = '';
+  var currentPage = 1;
+  var pageSize = 25;
+
+  function getFilteredRows() {
+    var q = currentQuery.trim().toLowerCase();
+    if (!q) return rows;
+
+    return rows.filter(function (row) {
+      var name = row.getAttribute('data-pg-name') || '';
+      var sector = row.getAttribute('data-pg-sector') || '';
+      var block = row.getAttribute('data-pg-block') || '';
+      return name.indexOf(q) !== -1 || sector.indexOf(q) !== -1 || block.indexOf(q) !== -1;
+    });
+  }
+
+  function renderRows() {
+    var filtered = getFilteredRows();
+    var total = filtered.length;
+    var totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    var start = (currentPage - 1) * pageSize;
+    var end = start + pageSize;
+
+    rows.forEach(function (row) {
+      row.classList.add('cd-hidden');
+    });
+
+    filtered.slice(start, end).forEach(function (row) {
+      row.classList.remove('cd-hidden');
+    });
+
+    var shownFrom = total === 0 ? 0 : start + 1;
+    var shownTo = Math.min(end, total);
+
+    if (currentQuery.trim()) {
+      summary.textContent = 'Showing ' + shownFrom + '–' + shownTo + ' of ' + total + ' matching PGs';
+    } else {
+      summary.textContent = 'Showing ' + shownFrom + '–' + shownTo + ' of ' + rows.length + ' assigned PGs';
+    }
+
+    noResult.classList.toggle('cd-hidden', total !== 0);
+    pagination.classList.toggle('cd-hidden', total === 0);
+
+    pageIndicator.textContent = 'Page ' + currentPage + ' of ' + totalPages;
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= totalPages;
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      currentQuery = this.value || '';
+      currentPage = 1;
+      renderRows();
+    });
+  }
+
+  if (pageSizeSelect) {
+    pageSizeSelect.addEventListener('change', function () {
+      pageSize = parseInt(this.value, 10) || 25;
+      currentPage = 1;
+      renderRows();
+    });
+  }
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', function () {
+      currentPage -= 1;
+      renderRows();
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', function () {
+      currentPage += 1;
+      renderRows();
+    });
+  }
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', function () {
+      var isOpen = panel.classList.toggle('is-open');
+      toggleBtn.classList.toggle('is-open', isOpen);
+      toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      toggleBtn.querySelector('span').textContent = isOpen
+        ? 'Hide Assigned PG List'
+        : 'Show Assigned PG List';
+    });
+  }
+
+  renderRows();
+});
+</script>
+{% endblock %}

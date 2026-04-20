@@ -1,76 +1,1104 @@
 {% extends "base_cadre.html" %}
 {% block title %}Cadre Dashboard{% endblock %}
+
 {% block content %}
 <style>
-.cd-wrap{display:grid;gap:18px}
-.cd-hero,.cd-card{background:#fff;border:1px solid #d9ebe2;border-radius:22px;box-shadow:0 16px 30px -26px rgba(15,23,42,.25)}
-.cd-hero{padding:24px;background:linear-gradient(135deg, rgba(234,247,240,.9), rgba(255,255,255,.95))}
-.cd-title{font-size:clamp(28px,3vw,42px);font-weight:950;letter-spacing:.2px;color:#0f172a}
-.cd-sub{margin-top:8px;color:#45665c;font-weight:700}
-.cd-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.cd-kpi{padding:18px}
-.cd-kpi-label{font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#5d6f68}
-.cd-kpi-value{font-size:42px;font-weight:950;line-height:1;margin-top:10px}
-.cd-card{padding:20px}
-.cd-head{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
-.cd-head h3{font-size:22px;font-weight:900}
-.cd-head p{color:#557168;font-weight:700}
-.cd-table{width:100%;border-collapse:collapse}
-.cd-table th,.cd-table td{padding:14px 12px;border-top:1px solid #ebf4ef;text-align:left}
-.cd-table th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#60756d}
-.cd-open{display:inline-flex;padding:10px 14px;border-radius:999px;background:#eaf7f0;border:1px solid #bfe4d2;color:#0b4d3a;font-weight:900}
-.cd-empty{padding:24px;border-radius:16px;background:#f8fcfa;border:1px dashed #cfe3da;color:#557168;font-weight:800}
-@media (max-width:720px){.cd-kpis{grid-template-columns:1fr}.cd-table thead{display:none}.cd-table,.cd-table tbody,.cd-table tr,.cd-table td{display:block;width:100%}.cd-table tr{padding:12px 0;border-top:1px solid #ebf4ef}.cd-table td{border:0;padding:8px 0}}
+  .cd-page{
+    display:grid;
+    gap:24px;
+  }
+
+  /* ===== Welcome strip (PG dashboard style) ===== */
+  .cd-welcome-strip{
+    width:100%;
+    max-width:80rem;
+    margin:0 auto;
+  }
+
+  .cd-welcome-card{
+    width:100%;
+    position:relative;
+    border-radius:22px;
+    background:rgba(255,255,255,0.92);
+    border:1.5px solid rgba(191,230,210,0.95);
+    box-shadow:0 22px 60px rgba(6,95,70,0.14);
+    overflow:hidden;
+    backdrop-filter:blur(6px);
+  }
+
+  .cd-welcome-card::before{
+    content:"";
+    position:absolute;
+    inset:-2px;
+    pointer-events:none;
+    background-image:radial-gradient(rgba(6,95,70,0.08) 0.6px, transparent 0.6px);
+    background-size:18px 18px;
+    opacity:.07;
+    mix-blend-mode:multiply;
+  }
+
+  .cd-welcome-inner{
+    position:relative;
+    z-index:1;
+    padding:18px 24px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+
+  .cd-kicker{
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#2f5b4f;
+  }
+
+  .cd-title{
+    margin-top:4px;
+    font-size:clamp(24px, 3vw, 34px);
+    line-height:1.1;
+    font-weight:900;
+    color:#0b2a23;
+    letter-spacing:-0.02em;
+  }
+
+  .cd-welcome-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 10px;
+    border-radius:999px;
+    background:rgba(233,248,240,0.95);
+    border:1px solid rgba(15,118,110,0.20);
+    color:#0b2a23;
+    font-weight:700;
+    font-size:12px;
+    white-space:nowrap;
+  }
+
+  .cd-welcome-dot{
+    width:10px;
+    height:10px;
+    border-radius:999px;
+    background:rgba(21,128,61,0.95);
+    box-shadow:0 0 0 4px rgba(21,128,61,0.12);
+  }
+
+  /* ===== Main white panel (PG dashboard style) ===== */
+  .cd-main{
+    width:100%;
+    max-width:80rem;
+    margin:0 auto;
+    position:relative;
+    border-radius:22px;
+    padding:24px;
+    background:rgba(255,255,255,0.92);
+    border:1px solid rgba(15,118,110,0.18);
+    box-shadow:0 22px 60px rgba(6,95,70,0.14);
+    overflow:hidden;
+    backdrop-filter:blur(6px);
+  }
+
+  .cd-main::before{
+    content:"";
+    position:absolute;
+    inset:-2px;
+    pointer-events:none;
+    background-image:radial-gradient(rgba(6,95,70,0.08) 0.6px, transparent 0.6px);
+    background-size:18px 18px;
+    opacity:.07;
+    mix-blend-mode:multiply;
+  }
+
+  .cd-main > *{
+    position:relative;
+    z-index:1;
+  }
+
+  /* ===== KPI cards ===== */
+  .cd-kpis{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:16px;
+    margin-bottom:24px;
+  }
+
+  .cd-kpi{
+    background:rgba(255,255,255,0.94);
+    border:1.5px solid rgba(191,230,210,0.95);
+    box-shadow:0 14px 30px rgba(6,95,70,0.12);
+    border-radius:22px;
+    padding:20px;
+    transition:transform .25s ease, box-shadow .25s ease;
+  }
+
+  .cd-kpi:hover{
+    transform:translateY(-3px);
+    box-shadow:0 18px 34px rgba(6,95,70,0.16);
+  }
+
+  .cd-kpi-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+  }
+
+  .cd-kpi-label{
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:#5d6f68;
+  }
+
+  .cd-kpi-icon{
+    width:46px;
+    height:46px;
+    border-radius:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(233,248,240,0.95);
+    border:1px solid rgba(15,118,110,0.18);
+    color:#0f766e;
+    flex-shrink:0;
+  }
+
+  .cd-kpi-value{
+    font-size:clamp(24px, 4vw, 40px);
+    line-height:1;
+    font-weight:900;
+    color:#0b2a23;
+  }
+
+  .cd-kpi-sub{
+    margin-top:8px;
+    font-size:13px;
+    line-height:1.35;
+    color:#4c7468;
+    font-weight:700;
+  }
+
+  /* ===== Assigned PG section ===== */
+  .cd-section-card{
+    background:rgba(255,255,255,0.94);
+    border:1.5px solid rgba(191,230,210,0.95);
+    box-shadow:0 14px 30px rgba(6,95,70,0.12);
+    border-radius:22px;
+    padding:20px;
+  }
+
+  .cd-section-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+  }
+
+  .cd-section-head h3{
+    font-size:22px;
+    line-height:1.2;
+    font-weight:900;
+    color:#0b2a23;
+  }
+
+  .cd-section-head p{
+    margin-top:6px;
+    color:#4c7468;
+    font-weight:700;
+    font-size:14px;
+  }
+
+  .cd-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    background:rgba(233,248,240,0.95);
+    border:1px solid rgba(15,118,110,0.20);
+    color:#0b2a23;
+    font-size:12px;
+    font-weight:800;
+    white-space:nowrap;
+  }
+
+  /* ===== PG cards grid ===== */
+  .cd-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:16px;
+  }
+
+  .cd-pg-card{
+    background:rgba(255,255,255,0.92);
+    border:1.5px solid rgba(191,230,210,0.95);
+    box-shadow:0 14px 30px rgba(6,95,70,0.10);
+    border-radius:20px;
+    padding:18px;
+    transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+
+  .cd-pg-card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 18px 34px rgba(6,95,70,0.16);
+    border-color:rgba(15,118,110,0.28);
+  }
+
+  .cd-pg-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+  }
+
+  .cd-pg-icon{
+    width:46px;
+    height:46px;
+    border-radius:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(233,248,240,0.95);
+    border:1px solid rgba(15,118,110,0.18);
+    color:#0f766e;
+    flex-shrink:0;
+  }
+
+  .cd-pg-name{
+    font-size:18px;
+    font-weight:900;
+    line-height:1.2;
+    color:#0b2a23;
+    margin-bottom:4px;
+    word-break:break-word;
+  }
+
+  .cd-pg-meta{
+    display:grid;
+    gap:8px;
+    margin-bottom:16px;
+  }
+
+  .cd-meta-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 12px;
+    border-radius:14px;
+    background:#f8fcfa;
+    border:1px solid #e1efe8;
+  }
+
+  .cd-meta-label{
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#60756d;
+    flex-shrink:0;
+  }
+
+  .cd-meta-value{
+    font-size:14px;
+    line-height:1.35;
+    color:#0b2a23;
+    font-weight:800;
+    text-align:right;
+    word-break:break-word;
+  }
+
+  .cd-open{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    width:100%;
+    padding:12px 16px;
+    border-radius:999px;
+    background:#eaf7f0;
+    border:1px solid #bfe4d2;
+    color:#0b4d3a;
+    font-weight:900;
+    text-decoration:none !important;
+    transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+
+  .cd-open:hover{
+    background:#ddf3e6;
+    transform:translateY(-1px);
+    box-shadow:0 14px 24px -20px rgba(6,95,70,.35);
+  }
+
+  .cd-empty{
+    padding:24px;
+    border-radius:18px;
+    background:#f8fcfa;
+    border:1px dashed #cfe3da;
+    color:#557168;
+    font-weight:800;
+    text-align:center;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width:1024px){
+    .cd-main{ padding:20px; }
+  }
+
+  @media (max-width:768px){
+    .cd-welcome-inner{ padding:16px 14px; }
+    .cd-main{ padding:14px; }
+    .cd-kpis{ gap:12px; margin-bottom:18px; }
+    .cd-grid{ grid-template-columns:1fr; gap:12px; }
+    .cd-section-head h3{ font-size:18px; }
+  }
+
+  @media (max-width:520px){
+    .cd-welcome-pill{ display:none; }
+    .cd-kpis{ grid-template-columns:1fr; }
+    .cd-kpi{ padding:14px; border-radius:18px; }
+    .cd-kpi-icon,
+    .cd-pg-icon{ width:40px; height:40px; border-radius:14px; }
+    .cd-pg-card{ padding:14px; border-radius:18px; }
+    .cd-pg-name{ font-size:16px; }
+    .cd-meta-row{
+      flex-direction:column;
+      align-items:flex-start;
+      gap:4px;
+    }
+    .cd-meta-value{
+      text-align:left;
+    }
+  }
+
+
+  
+  /* ===== Assigned PG explorer ===== */
+  .cd-pg-tools{
+    display:grid;
+    gap:14px;
+    margin-top:8px;
+  }
+
+  .cd-pg-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .cd-pg-search-wrap{
+    position:relative;
+    flex:1 1 340px;
+    min-width:260px;
+  }
+
+  .cd-pg-search-icon{
+    position:absolute;
+    left:14px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#5d6f68;
+    pointer-events:none;
+  }
+
+  .cd-pg-search{
+    width:100%;
+    height:46px;
+    padding:0 14px 0 44px;
+    border-radius:999px;
+    border:1px solid #cfe3da;
+    background:#fff;
+    color:#0b2a23;
+    font-size:14px;
+    font-weight:700;
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+
+  .cd-pg-search:focus{
+    border-color:#8ed3b7;
+    box-shadow:0 0 0 4px rgba(15,118,110,.12);
+    background:#fff;
+  }
+
+  .cd-pg-search::placeholder{
+    color:#6f857d;
+    font-weight:700;
+  }
+
+  .cd-pg-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .cd-toggle-btn,
+  .cd-load-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:44px;
+    padding:10px 16px;
+    border-radius:999px;
+    border:1px solid #bfe4d2;
+    background:#eaf7f0;
+    color:#0b4d3a;
+    font-weight:900;
+    font-size:14px;
+    text-decoration:none !important;
+    cursor:pointer;
+    transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+
+  .cd-toggle-btn:hover,
+  .cd-load-btn:hover{
+    background:#ddf3e6;
+    transform:translateY(-1px);
+    box-shadow:0 14px 24px -20px rgba(6,95,70,.35);
+  }
+
+  .cd-toggle-btn svg{
+    transition:transform .2s ease;
+  }
+
+  .cd-toggle-btn.is-open svg{
+    transform:rotate(180deg);
+  }
+
+  .cd-pg-summary{
+    font-size:13px;
+    line-height:1.35;
+    color:#4c7468;
+    font-weight:800;
+  }
+
+  .cd-pg-panel{
+    display:none;
+    gap:12px;
+  }
+
+  .cd-pg-panel.is-open{
+    display:grid;
+  }
+
+  .cd-pg-list{
+    display:grid;
+    gap:12px;
+  }
+
+  .cd-pg-row{
+    display:grid;
+    grid-template-columns:minmax(0, 2fr) minmax(140px, 1fr) minmax(140px, 1fr) auto;
+    gap:12px;
+    align-items:center;
+    padding:14px 16px;
+    border-radius:18px;
+    background:rgba(255,255,255,0.92);
+    border:1.5px solid rgba(191,230,210,0.95);
+    box-shadow:0 10px 24px rgba(6,95,70,0.08);
+  }
+
+  .cd-pg-row-main{
+    min-width:0;
+  }
+
+  .cd-pg-row-name{
+    font-size:16px;
+    font-weight:900;
+    line-height:1.2;
+    color:#0b2a23;
+    word-break:break-word;
+  }
+
+  .cd-pg-row-sub{
+    margin-top:4px;
+    font-size:12px;
+    color:#60756d;
+    font-weight:800;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+  }
+
+  .cd-pg-col{
+    min-width:0;
+  }
+
+  .cd-pg-col-label{
+    font-size:11px;
+    color:#60756d;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin-bottom:4px;
+  }
+
+  .cd-pg-col-value{
+    font-size:14px;
+    color:#0b2a23;
+    font-weight:800;
+    word-break:break-word;
+  }
+
+  .cd-pg-open{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:42px;
+    padding:10px 14px;
+    border-radius:999px;
+    background:#eaf7f0;
+    border:1px solid #bfe4d2;
+    color:#0b4d3a;
+    font-weight:900;
+    text-decoration:none !important;
+    white-space:nowrap;
+    transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease;
+  }
+
+  .cd-pg-open:hover{
+    background:#ddf3e6;
+    transform:translateY(-1px);
+    box-shadow:0 14px 24px -20px rgba(6,95,70,.35);
+  }
+
+  .cd-pg-empty{
+    padding:18px;
+    border-radius:16px;
+    background:#f8fcfa;
+    border:1px dashed #cfe3da;
+    color:#557168;
+    font-weight:800;
+    text-align:center;
+  }
+
+  .cd-hidden{
+    display:none !important;
+  }
+
+@media (max-width:900px){
+  .cd-pg-open{
+    width:100%;
+  }
+}
+
+  @media (max-width:520px){
+    .cd-pg-search-wrap{
+      min-width:100%;
+      flex-basis:100%;
+    }
+
+    .cd-pg-actions{
+      width:100%;
+    }
+
+    .cd-toggle-btn,
+    .cd-load-btn{
+      width:100%;
+    }
+
+    .cd-pg-row{
+      padding:12px;
+      border-radius:16px;
+    }
+
+    .cd-pg-row-name{
+      font-size:15px;
+    }
+  }
+
+
+.cd-page-size-wrap{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(233,248,240,0.95);
+  border:1px solid rgba(15,118,110,0.20);
+}
+
+.cd-page-size-label{
+  font-size:12px;
+  font-weight:900;
+  color:#0b2a23;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+
+.cd-page-size-select{
+  min-width:78px;
+  height:34px;
+  padding:0 10px;
+  border-radius:999px;
+  border:1px solid #bfe4d2;
+  background:#fff;
+  color:#0b2a23;
+  font-size:13px;
+  font-weight:800;
+  outline:none;
+  cursor:pointer;
+}
+
+.cd-page-size-select:focus{
+  border-color:#8ed3b7;
+  box-shadow:0 0 0 4px rgba(15,118,110,.12);
+}
+
+.cd-pagination{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:6px;
+}
+
+.cd-page-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:42px;
+  padding:10px 16px;
+  border-radius:999px;
+  border:1px solid #bfe4d2;
+  background:#eaf7f0;
+  color:#0b4d3a;
+  font-weight:900;
+  font-size:14px;
+  cursor:pointer;
+  transition:transform .2s ease, box-shadow .2s ease, background-color .2s ease, opacity .2s ease;
+}
+
+.cd-page-btn:hover:not(:disabled){
+  background:#ddf3e6;
+  transform:translateY(-1px);
+  box-shadow:0 14px 24px -20px rgba(6,95,70,.35);
+}
+
+.cd-page-btn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+.cd-page-indicator{
+  min-height:42px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px 16px;
+  border-radius:999px;
+  background:#f8fcfa;
+  border:1px solid #dcece5;
+  color:#0b2a23;
+  font-size:14px;
+  font-weight:900;
+}
+
+@media (max-width:520px){
+  .cd-page-size-wrap{
+    width:100%;
+    justify-content:space-between;
+  }
+
+  .cd-page-size-select{
+    min-width:96px;
+  }
+
+  .cd-pagination{
+    width:100%;
+  }
+
+  .cd-page-btn,
+  .cd-page-indicator{
+    width:100%;
+  }
+}
+
+.cd-user-name{
+  display:inline-block;
+  color:#0f766e;
+}
+
+
+/* ===== Mobile horizontal swipe for Assigned PG list ===== */
+@media (max-width: 768px){
+  .cd-pg-panel{
+    gap:14px;
+  }
+
+  .cd-pg-list{
+    display:flex !important;
+    gap:12px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding:2px 2px 8px;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .cd-pg-list::-webkit-scrollbar{
+    height:8px;
+  }
+
+  .cd-pg-list::-webkit-scrollbar-track{
+    background:#e9f5ef;
+    border-radius:999px;
+  }
+
+  .cd-pg-list::-webkit-scrollbar-thumb{
+    background:#b9dbc9;
+    border-radius:999px;
+  }
+
+  .cd-pg-row{
+    min-width:85vw;
+    max-width:85vw;
+    flex:0 0 85vw;
+    scroll-snap-align:start;
+    grid-template-columns:1fr !important;
+    gap:10px;
+    align-items:flex-start;
+    padding:14px;
+    border-radius:18px;
+  }
+
+  .cd-pg-row-main,
+  .cd-pg-col{
+    width:100%;
+  }
+
+  .cd-pg-open{
+    width:100%;
+    min-height:44px;
+  }
+
+  .cd-pagination{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .cd-page-btn,
+  .cd-page-indicator{
+    width:100%;
+  }
+}
+
+@media (max-width: 520px){
+  .cd-pg-list{
+    gap:10px;
+    padding-bottom:6px;
+  }
+
+  .cd-pg-row{
+    min-width:88vw;
+    max-width:88vw;
+    flex:0 0 88vw;
+    padding:12px;
+    border-radius:16px;
+  }
+
+  .cd-pg-row-name{
+    font-size:15px;
+  }
+}
 </style>
-<div class="cd-wrap">
-  <section class="cd-hero">
-    <div class="cd-title">Cadre Dashboard</div>
-    <div class="cd-sub">Only your assigned PGs are listed here. Click a PG to open the exact PG dashboard and continue PG-level data entry.</div>
+
+<div class="cd-page">
+  <section class="cd-welcome-strip">
+    <div class="cd-welcome-card">
+      <div class="cd-welcome-inner">
+        <div>
+          <p class="cd-kicker">Tripura PG Systems</p>
+  <h1 class="cd-title">
+  WELCOME
+  <span class="cd-user-name">
+    {{ session.get('cadre_name') or session.get('name') or session.get('full_name') or session.get('username') or session.get('email') or 'CADRE' }}
+  </span>
+</h1>
+        
+        </div>
+
+        <div class="cd-welcome-pill">
+          <span class="cd-welcome-dot"></span>
+          <span>Cadre Dashboard • Live View</span>
+        </div>
+      </div>
+    </div>
   </section>
 
-  <section class="cd-kpis">
-    <div class="cd-card cd-kpi">
-      <div class="cd-kpi-label">Assigned PGs</div>
-      <div class="cd-kpi-value">{{ assigned_pg_count }}</div>
-    </div>
-    <div class="cd-card cd-kpi">
-      <div class="cd-kpi-label">Role</div>
-      <div class="cd-kpi-value" style="font-size:26px;">CADRE_CC</div>
-    </div>
-  </section>
+  <section class="cd-main">
+    <div class="cd-kpis">
+      <div class="cd-kpi">
+        <div class="cd-kpi-top">
+          <div class="cd-kpi-label">Assigned PGs</div>
+          <div class="cd-kpi-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73L13 2.27a2 2 0 0 0-2 0L4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+          </div>
+        </div>
+        <div class="cd-kpi-value">{{ assigned_pg_count }}</div>
+        <div class="cd-kpi-sub">PGs linked to this cadre account</div>
+      </div>
 
-  <section class="cd-card">
-    <div class="cd-head">
-      <div>
-        <h3>Assigned PG List</h3>
-        <p>Select a PG below to open the same dashboard that a PG login sees.</p>
+      <div class="cd-kpi">
+        <div class="cd-kpi-top">
+          <div class="cd-kpi-label">Role</div>
+          <div class="cd-kpi-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+        </div>
+        <div class="cd-kpi-value" style="font-size:28px;">CADRE_CC</div>
+        <div class="cd-kpi-sub">Cadre-level login and PG access view</div>
       </div>
     </div>
 
+    <div class="cd-section-card">
+      <div class="cd-section-head">
+        <div>
+          <h3>Assigned PG List</h3>
+          <p>Select a PG below to open the same dashboard and workspace that the PG login sees.</p>
+        </div>
+        <div class="cd-chip">{{ assigned_pg_count }} linked PGs</div>
+      </div>
+
     {% if pgs %}
-    <table class="cd-table">
-      <thead>
-        <tr>
-          <th>PG Name</th>
-          <th>Sector</th>
-          <th>Block</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
+  <div class="cd-pg-tools">
+    <div class="cd-pg-toolbar">
+      <div class="cd-pg-search-wrap">
+        <span class="cd-pg-search-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+        </span>
+        <input
+          type="text"
+          id="cdPgSearch"
+          class="cd-pg-search"
+          placeholder="Search by PG name, sector or block"
+          autocomplete="off"
+        >
+      </div>
+
+     <div class="cd-pg-actions">
+  <div class="cd-page-size-wrap">
+    <label for="cdPgPageSize" class="cd-page-size-label">Show</label>
+    <select id="cdPgPageSize" class="cd-page-size-select">
+      <option value="25" selected>25</option>
+      <option value="50">50</option>
+      <option value="100">100</option>
+      <option value="250">250</option>
+    </select>
+  </div>
+
+ <button type="button" id="cdPgToggle" class="cd-toggle-btn" aria-expanded="false">
+  <span>Show Assigned PG List</span>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </button>
+</div>
+    </div>
+
+    <div class="cd-pg-summary" id="cdPgSummary">
+      Showing assigned PG list
+    </div>
+
+    <div class="cd-pg-panel" id="cdPgPanel">
+      <div class="cd-pg-list" id="cdPgList">
         {% for pg in pgs %}
-        <tr>
-          <td>{{ pg.name or '-' }}</td>
-          <td>{{ pg.sector or '-' }}</td>
-          <td>{{ pg.Block or pg.block_name or '-' }}</td>
-          <td><a class="cd-open" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('pg.pg_home')) }}">Open PG Dashboard</a></td>
-        </tr>
+          <article
+            class="cd-pg-row"
+            data-pg-name="{{ (pg.name or '')|lower }}"
+            data-pg-sector="{{ (pg.sector or '')|lower }}"
+            data-pg-block="{{ (pg.Block or pg.block_name or '')|lower }}"
+          >
+            <div class="cd-pg-row-main">
+              <div class="cd-pg-row-name">{{ pg.name or '-' }}</div>
+              <div class="cd-pg-row-sub">Assigned PG</div>
+            </div>
+
+            <div class="cd-pg-col">
+              <div class="cd-pg-col-label">Sector</div>
+              <div class="cd-pg-col-value">{{ pg.sector or '-' }}</div>
+            </div>
+
+            <div class="cd-pg-col">
+              <div class="cd-pg-col-label">Block</div>
+              <div class="cd-pg-col-value">{{ pg.Block or pg.block_name or '-' }}</div>
+            </div>
+
+            <a class="cd-pg-open" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('pg.pg_home')) }}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14"></path>
+                <path d="m12 5 7 7-7 7"></path>
+              </svg>
+              Open PG
+            </a>
+          </article>
         {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <div class="cd-empty">No PGs are currently assigned to this Cadre account.</div>
-    {% endif %}
+      </div>
+
+   <div class="cd-pagination" id="cdPagination">
+  <button type="button" class="cd-page-btn" id="cdPrevPage">Previous</button>
+  <div class="cd-page-indicator" id="cdPageIndicator">Page 1</div>
+  <button type="button" class="cd-page-btn" id="cdNextPage">Next</button>
+</div>
+      <div id="cdPgNoResult" class="cd-pg-empty cd-hidden">No matching PG found.</div>
+    </div>
+  </div>
+{% else %}
+  <div class="cd-empty">No PGs are currently assigned to this Cadre account.</div>
+{% endif %}
+    </div>
   </section>
 </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var searchInput = document.getElementById('cdPgSearch');
+  var toggleBtn = document.getElementById('cdPgToggle');
+  var panel = document.getElementById('cdPgPanel');
+  var summary = document.getElementById('cdPgSummary');
+  var noResult = document.getElementById('cdPgNoResult');
+
+  var pageSizeSelect = document.getElementById('cdPgPageSize');
+  var prevBtn = document.getElementById('cdPrevPage');
+  var nextBtn = document.getElementById('cdNextPage');
+  var pageIndicator = document.getElementById('cdPageIndicator');
+  var pagination = document.getElementById('cdPagination');
+
+  if (!panel) return;
+
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#cdPgList .cd-pg-row'));
+  var currentQuery = '';
+  var currentPage = 1;
+  var pageSize = 25;
+
+  function getFilteredRows() {
+    var q = currentQuery.trim().toLowerCase();
+    if (!q) return rows;
+
+    return rows.filter(function (row) {
+      var name = row.getAttribute('data-pg-name') || '';
+      var sector = row.getAttribute('data-pg-sector') || '';
+      var block = row.getAttribute('data-pg-block') || '';
+      return name.indexOf(q) !== -1 || sector.indexOf(q) !== -1 || block.indexOf(q) !== -1;
+    });
+  }
+
+  function renderRows() {
+    var filtered = getFilteredRows();
+    var total = filtered.length;
+    var totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    var start = (currentPage - 1) * pageSize;
+    var end = start + pageSize;
+
+    rows.forEach(function (row) {
+      row.classList.add('cd-hidden');
+    });
+
+    filtered.slice(start, end).forEach(function (row) {
+      row.classList.remove('cd-hidden');
+    });
+
+    var shownFrom = total === 0 ? 0 : start + 1;
+    var shownTo = Math.min(end, total);
+
+    if (currentQuery.trim()) {
+      summary.textContent = 'Showing ' + shownFrom + '–' + shownTo + ' of ' + total + ' matching PGs';
+    } else {
+      summary.textContent = 'Showing ' + shownFrom + '–' + shownTo + ' of ' + rows.length + ' assigned PGs';
+    }
+
+    noResult.classList.toggle('cd-hidden', total !== 0);
+    pagination.classList.toggle('cd-hidden', total === 0);
+
+    pageIndicator.textContent = 'Page ' + currentPage + ' of ' + totalPages;
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= totalPages;
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      currentQuery = this.value || '';
+      currentPage = 1;
+      renderRows();
+    });
+  }
+
+  if (pageSizeSelect) {
+    pageSizeSelect.addEventListener('change', function () {
+      pageSize = parseInt(this.value, 10) || 25;
+      currentPage = 1;
+      renderRows();
+    });
+  }
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', function () {
+      currentPage -= 1;
+      renderRows();
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', function () {
+      currentPage += 1;
+      renderRows();
+    });
+  }
+
+  if (toggleBtn) {
+   // SET INITIAL STATE (collapsed)
+panel.classList.remove('is-open');
+toggleBtn.classList.remove('is-open');
+toggleBtn.setAttribute('aria-expanded', 'false');
+toggleBtn.querySelector('span').textContent = 'Show Assigned PG List';
+
+toggleBtn.addEventListener('click', function () {
+  var isOpen = panel.classList.toggle('is-open');
+
+  toggleBtn.classList.toggle('is-open', isOpen);
+  toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  toggleBtn.querySelector('span').textContent = isOpen
+    ? 'Hide Assigned PG List'
+    : 'Show Assigned PG List';
+});
+  }
+
+  renderRows();
+});
+</script>
 {% endblock %}
