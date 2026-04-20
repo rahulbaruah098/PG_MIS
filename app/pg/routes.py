@@ -2045,7 +2045,8 @@ def api_cashbook(pg_id):
         return jsonify(doc)
 
     # POST (only PG should write)
-    if session.get("role") != "PG_DATA_ENTRY":
+    role = getattr(g, "role", None) or session.get("role")
+    if role != "PG_DATA_ENTRY":
         abort(403)
 
     payload = request.get_json(silent=True) or {}
@@ -2506,70 +2507,167 @@ def meeting_register(pg_id):
         ).sort([("name", 1)]).limit(500)
     )
 
+    # =========================================================
+    # POST → SAVE / UPDATE MEETING
+    # =========================================================
     if request.method == "POST":
         if _wants_json():
             body = request.get_json(silent=True) or {}
+
             meeting_date = (body.get("meeting_date") or "").strip()
-            meeting_type = (body.get("meeting_type") or "general").strip().lower()
-            agenda = (body.get("agenda") or "").strip()
-            resolution = (body.get("resolution") or "").strip()
-            att = body.get("attendance_ids", [])
-            if not isinstance(att, list):
+            meeting_type = (body.get("meeting_type") or "").strip().lower()
+            agenda = body.get("agenda", None)
+            resolution = body.get("resolution", None)
+            deliberations = body.get("deliberations", None)
+            att = body.get("attendance_ids", None)
+
+            if att is not None and not isinstance(att, list):
                 att = []
         else:
             meeting_date = (request.form.get("meeting_date") or "").strip()
-            meeting_type = (request.form.get("meeting_type") or "general").strip().lower()
-            agenda = (request.form.get("agenda") or "").strip()
-            resolution = (request.form.get("resolution") or "").strip()
-            att = request.form.getlist("attendance")
+            meeting_type = (request.form.get("meeting_type") or "").strip().lower()
+            agenda = request.form.get("agenda", None)
+            resolution = request.form.get("resolution", None)
+
+            # optional deliberations support for web form
+            deliberations_raw = request.form.get("deliberations")
+            deliberations = deliberations_raw if deliberations_raw is not None else None
+
+            form_att = request.form.getlist("attendance")
+            att = form_att if form_att else None
 
         if not meeting_date:
             return _deny("Meeting date is required.", 400)
 
-        att_ids = []
-        for mid in att:
-            mid_str = str(mid).strip()
-            if not mid_str:
-                continue
-            if ObjectId.is_valid(mid_str):
-                att_ids.append(ObjectId(mid_str))
-            else:
-                att_ids.append(mid_str)
+        try:
+            datetime.strptime(meeting_date, "%Y-%m-%d")
+        except ValueError:
+            return _deny("Invalid meeting date format. Use YYYY-MM-DD.", 400)
 
-        doc = {
+        existing_doc = db.pg_meetings.find_one({
+            "pg_id": pg_obj_id,
+            "meeting_date": meeting_date
+        }) or {}
+
+        # Preserve existing meeting_type if not sent
+        final_meeting_type = meeting_type or existing_doc.get("meeting_type") or "general"
+
+        # Preserve existing agenda/resolution if omitted
+        final_agenda = existing_doc.get("agenda", "")
+        if agenda is not None:
+            final_agenda = str(agenda).strip()
+
+        final_resolution = existing_doc.get("resolution", "")
+        if resolution is not None:
+            final_resolution = str(resolution).strip()
+
+        # Preserve/add deliberations
+        final_deliberations = existing_doc.get("deliberations", [])
+        if deliberations is not None:
+            if isinstance(deliberations, list):
+                cleaned = []
+                for item in deliberations:
+                    if isinstance(item, dict):
+                        cleaned_item = {
+                            "id": str(item.get("id") or ""),
+                            "content": str(item.get("content") or "").strip()
+                        }
+                        if cleaned_item["content"]:
+                            cleaned.append(cleaned_item)
+                    else:
+                        text = str(item).strip()
+                        if text:
+                            cleaned.append({
+                                "id": "",
+                                "content": text
+                            })
+                final_deliberations = cleaned
+            else:
+                text = str(deliberations).strip()
+                final_deliberations = [{"id": "", "content": text}] if text else []
+
+        # Preserve existing attendance if omitted
+        if att is None:
+            final_att_ids = existing_doc.get("attendance", []) or []
+        else:
+            final_att_ids = []
+            for mid in att:
+                mid_str = str(mid).strip()
+                if not mid_str:
+                    continue
+                if ObjectId.is_valid(mid_str):
+                    final_att_ids.append(ObjectId(mid_str))
+                else:
+                    final_att_ids.append(mid_str)
+
+        now = datetime.utcnow()
+
+        update_data = {
             "pg_id": pg_obj_id,
             "meeting_date": meeting_date,
-            "meeting_type": meeting_type,
-            "agenda": agenda,
-            "attendance": att_ids,          # stored field
-            "attendance_count": len(att_ids),
-            "resolution": resolution,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "meeting_type": final_meeting_type,
+            "agenda": final_agenda,
+            "deliberations": final_deliberations,
+            "attendance": final_att_ids,
+            "attendance_count": len(final_att_ids),
+            "resolution": final_resolution,
+            "updated_at": now,
         }
 
-        result = db.pg_meetings.insert_one(doc)
+        db.pg_meetings.update_one(
+            {
+                "pg_id": pg_obj_id,
+                "meeting_date": meeting_date
+            },
+            {
+                "$set": update_data,
+                "$setOnInsert": {
+                    "created_at": now
+                }
+            },
+            upsert=True
+        )
+
+        saved_doc = db.pg_meetings.find_one({
+            "pg_id": pg_obj_id,
+            "meeting_date": meeting_date
+        })
 
         if _wants_json():
             return jsonify({
                 "ok": True,
                 "message": "Meeting saved successfully.",
                 "meeting": {
-                    "_id": str(result.inserted_id),
-                    "meeting_date": meeting_date,
-                    "meeting_type": meeting_type,
-                    "agenda": agenda,
-                    "resolution": resolution,
-                    "attendance_ids": [str(x) for x in att_ids],
-                    "attendance_count": len(att_ids),
+                    "_id": str(saved_doc["_id"]),
+                    "meeting_date": saved_doc.get("meeting_date", ""),
+                    "meeting_type": saved_doc.get("meeting_type", "general"),
+                    "agenda": saved_doc.get("agenda", ""),
+                    "deliberations": saved_doc.get("deliberations", []),
+                    "resolution": saved_doc.get("resolution", ""),
+                    "attendance_ids": [
+                        str(x) for x in (saved_doc.get("attendance") or [])
+                    ],
+                    "attendance_count": int(saved_doc.get("attendance_count") or 0),
                 }
             }), 200
 
-        flash("Meeting saved.", "success")
+        flash("Meeting saved successfully.", "success")
         return redirect(url_for("pg.meeting_register", pg_id=pg_id))
 
+    # =========================================================
+    # GET → FETCH MEETINGS / SINGLE MEETING
+    # =========================================================
+    selected_date = (request.args.get("meeting_date") or "").strip()
+
+    query = {"pg_id": pg_obj_id}
+    if selected_date:
+        query["meeting_date"] = selected_date
+
     meetings = list(
-        db.pg_meetings.find({"pg_id": pg_obj_id}).sort([("meeting_date", -1), ("created_at", -1)])
+        db.pg_meetings.find(query).sort([
+            ("meeting_date", -1),
+            ("created_at", -1)
+        ])
     )
 
     if _wants_json():
@@ -2581,20 +2679,23 @@ def meeting_register(pg_id):
             },
             "members": [
                 {
-                    "_id": str(m.get("_id")),
+                    "_id": str(m["_id"]),
                     "name": m.get("name") or m.get("member_name") or "Member"
                 }
                 for m in member_docs
             ],
             "meetings": [
                 {
-                    "_id": str(mt.get("_id")),
+                    "_id": str(mt["_id"]),
                     "meeting_date": mt.get("meeting_date", ""),
-                    "meeting_type": (mt.get("meeting_type") or "general").lower(),
+                    "meeting_type": mt.get("meeting_type", "general"),
                     "agenda": mt.get("agenda", ""),
+                    "deliberations": mt.get("deliberations", []),
                     "resolution": mt.get("resolution", ""),
-                    "attendance_ids": [str(x) for x in (mt.get("attendance") or [])],
-                    "attendance_count": int(mt.get("attendance_count") or len(mt.get("attendance") or [])),
+                    "attendance_ids": [
+                        str(x) for x in (mt.get("attendance") or [])
+                    ],
+                    "attendance_count": int(mt.get("attendance_count") or 0),
                 }
                 for mt in meetings
             ]
@@ -2606,7 +2707,6 @@ def meeting_register(pg_id):
         members=member_docs,
         meetings=meetings
     )
-
 
 # === CORE ENGINE INTEGRATION ACTIVE ===
 # AuditLogger.log(action, user_id, entity, entity_id) available
