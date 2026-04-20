@@ -1912,18 +1912,91 @@ let outputPrintPreviewOpen = false;
     }
   }
 
+
+  let selectedPeriod = (() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  })();
+  let outputHistory = [];
+
+  function monthLabel(month, year){
+    const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    return `${names[(Number(month) || 1) - 1] || "Month"} ${year || ""}`.trim();
+  }
+
+  function ensureHistoryBox(){
+    let el = document.getElementById('oprHistoryBox');
+    if(el) return el;
+    el = document.createElement('section');
+    el.id = 'oprHistoryBox';
+    el.style.marginTop = '16px';
+    el.style.padding = '16px';
+    el.style.background = '#fff';
+    el.style.border = '1px solid rgba(15,23,42,.08)';
+    el.style.borderRadius = '18px';
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div style="font-size:18px;font-weight:800;color:#0f172a">Saved Month Records</div><div id="oprCurrentPeriodText" style="font-size:13px;color:#64748b;margin-top:4px"></div></div><div id="oprHistoryCards" style="display:flex;gap:10px;flex-wrap:wrap"></div></div>';
+    const sheet = document.querySelector('.opr-page .opr-shell, .opr-page .opr-container, .opr-page main, .opr-page') || document.body;
+    sheet.appendChild(el);
+    return el;
+  }
+
+  function renderHistoryBox(){
+    ensureHistoryBox();
+    const current = document.getElementById('oprCurrentPeriodText');
+    const cards = document.getElementById('oprHistoryCards');
+    if(current) current.textContent = `Working month: ${monthLabel(selectedPeriod.month, selectedPeriod.year)}`;
+    if(!cards) return;
+    if(!outputHistory.length){
+      cards.innerHTML = '<div style="font-size:13px;color:#64748b">No saved month records yet.</div>';
+      return;
+    }
+    cards.innerHTML = outputHistory.map(item => {
+      const active = Number(item.year) === Number(selectedPeriod.year) && Number(item.month) === Number(selectedPeriod.month);
+      return `<button type="button" class="opr-history-card" data-year="${item.year}" data-month="${item.month}" style="border:1px solid ${active ? '#10b981' : 'rgba(15,23,42,.08)'};background:${active ? '#ecfdf5' : '#f8fafc'};color:#0f172a;border-radius:14px;padding:10px 14px;font-weight:700;cursor:pointer">${monthLabel(item.month, item.year)}</button>`;
+    }).join('');
+    cards.querySelectorAll('.opr-history-card').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        selectedPeriod = { year: Number(btn.dataset.year), month: Number(btn.dataset.month) };
+        const payload = await loadFromServer(selectedPeriod.year, selectedPeriod.month);
+        if(payload){
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          state.rows = Array.isArray(payload.rows) ? payload.rows.map(r => computeRow(r)) : [computeRow(newRow())];
+          state.produceName = payload.produceName || '';
+          state.unitStock = payload.unitStock || '';
+          activeTab = (["all","purchases","sales","stock"].includes((payload.activeTab || '').toString().trim()) ? payload.activeTab : 'all');
+          renderAll();
+        }
+        renderHistoryBox();
+      });
+    });
+  }
+
+  async function loadHistoryFromServer(){
+    const pg = (window.PG_ID || '').trim();
+    if(!pg) return [];
+    try{
+      const res = await fetch(`/pg/api/register/output/${encodeURIComponent(pg)}?history=1`, { method:'GET' });
+      if(!res.ok) return [];
+      const data = await res.json().catch(()=>null);
+      outputHistory = Array.isArray(data && data.history) ? data.history : [];
+      return outputHistory;
+    }catch(_){
+      outputHistory = [];
+      return [];
+    }
+  }
+
  
-  async function loadFromServer(){
+  async function loadFromServer(year = selectedPeriod.year, month = selectedPeriod.month){
     const pg = (window.PG_ID || "").trim();
     if(!pg) return null;
     try{
-      const res = await fetch(`/pg/api/register/output/${encodeURIComponent(pg)}`, { method:"GET" });
+      const res = await fetch(`/pg/api/register/output/${encodeURIComponent(pg)}?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`, { method:"GET" });
       if(!res.ok) return null;
       const doc = await res.json().catch(()=>null);
       const payload = doc && (doc.data || doc) ? (doc.data || doc) : null;
       if(payload){
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    saveToServer(payload);
       }
       return payload;
     }catch(_e){
@@ -1934,7 +2007,7 @@ let outputPrintPreviewOpen = false;
   function saveToServer(payload){
     const pg = (window.PG_ID || "").trim();
     if(!pg) return;
-    fetch(`/pg/api/register/output/${encodeURIComponent(pg)}`,{
+    fetch(`/pg/api/register/output/${encodeURIComponent(pg)}?year=${encodeURIComponent(selectedPeriod.year)}&month=${encodeURIComponent(selectedPeriod.month)}`,{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ data: payload }),
@@ -2794,10 +2867,18 @@ cloned.querySelectorAll("tr").forEach(tr=>{
   }
 
   (async function init(){
-  await loadFromServer();
+  await loadHistoryFromServer();
+  const serverPayload = await loadFromServer(selectedPeriod.year, selectedPeriod.month);
 
-  const saved = loadFromStorage();
-  if(saved && Array.isArray(saved.rows)){
+  if(serverPayload && Array.isArray(serverPayload.rows)){
+    state.rows = serverPayload.rows.map(r => computeRow(r));
+    state.produceName = serverPayload.produceName || "";
+    state.unitStock = serverPayload.unitStock || "";
+    state.rows.forEach(r => { if(typeof r.selected !== "boolean") r.selected = false; });
+    activeTab = "all";
+  }else{
+    const saved = loadFromStorage();
+    if(saved && Array.isArray(saved.rows)){
     state.rows = saved.rows.map(r => computeRow(r));
     state.produceName = saved.produceName || "";
     state.unitStock = saved.unitStock || "";
@@ -2809,11 +2890,12 @@ cloned.querySelectorAll("tr").forEach(tr=>{
     }else{
       activeTab = "all";
     }
-  }else{
-    state.rows = [ computeRow(newRow()) ];
-    state.produceName = "";
-    state.unitStock = "";
-    activeTab = "all";
+    }else{
+      state.rows = [ computeRow(newRow()) ];
+      state.produceName = "";
+      state.unitStock = "";
+      activeTab = "all";
+    }
   }
 
   els.produceName.setAttribute("readonly","readonly");
@@ -2821,6 +2903,7 @@ cloned.querySelectorAll("tr").forEach(tr=>{
 
   startLangWatcher();
   renderAll();
+  renderHistoryBox();
 })();
 
   function setTab(tab){
@@ -2876,6 +2959,8 @@ cloned.querySelectorAll("tr").forEach(tr=>{
     saveToStorage();
     editMode = false;
     renderAll();
+    await loadHistoryFromServer();
+    renderHistoryBox();
     toast(t("toast_saved"));
   });
 

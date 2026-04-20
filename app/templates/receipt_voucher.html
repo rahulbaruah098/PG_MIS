@@ -2814,6 +2814,71 @@ entries.forEach(e=>{
   }
 
 
+  let selectedPeriod = (() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  })();
+  let receiptHistory = [];
+
+  function monthLabel(month, year){
+    const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    return `${names[(Number(month) || 1) - 1] || "Month"} ${year || ""}`.trim();
+  }
+
+  function ensureReceiptHistoryBox(){
+    let el = document.getElementById('receiptHistoryBox');
+    if(el) return el;
+    el = document.createElement('section');
+    el.id = 'receiptHistoryBox';
+    el.style.marginTop = '16px';
+    el.style.padding = '16px';
+    el.style.background = '#fff';
+    el.style.border = '1px solid rgba(15,23,42,.08)';
+    el.style.borderRadius = '18px';
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div style="font-size:18px;font-weight:800;color:#0f172a">Saved Month Records</div><div id="receiptCurrentPeriodText" style="font-size:13px;color:#64748b;margin-top:4px"></div></div><div id="receiptHistoryCards" style="display:flex;gap:10px;flex-wrap:wrap"></div></div>';
+    const target = document.querySelector('.ll-wrap, .ll-page, main') || document.body;
+    target.appendChild(el);
+    return el;
+  }
+
+  function renderReceiptHistoryBox(){
+    ensureReceiptHistoryBox();
+    const current = document.getElementById('receiptCurrentPeriodText');
+    const cards = document.getElementById('receiptHistoryCards');
+    if(current) current.textContent = `Working month: ${monthLabel(selectedPeriod.month, selectedPeriod.year)}`;
+    if(!cards) return;
+    if(!receiptHistory.length){
+      cards.innerHTML = '<div style="font-size:13px;color:#64748b">No saved month records yet.</div>';
+      return;
+    }
+    cards.innerHTML = receiptHistory.map(item => {
+      const active = Number(item.year) === Number(selectedPeriod.year) && Number(item.month) === Number(selectedPeriod.month);
+      return `<button type="button" class="receipt-history-card" data-year="${item.year}" data-month="${item.month}" style="border:1px solid ${active ? '#10b981' : 'rgba(15,23,42,.08)'};background:${active ? '#ecfdf5' : '#f8fafc'};color:#0f172a;border-radius:14px;padding:10px 14px;font-weight:700;cursor:pointer">${monthLabel(item.month, item.year)}</button>`;
+    }).join('');
+    cards.querySelectorAll('.receipt-history-card').forEach(btn => {
+      btn.addEventListener('click', async ()=>{
+        selectedPeriod = { year: Number(btn.dataset.year), month: Number(btn.dataset.month) };
+        await loadReceiptVoucher(selectedPeriod.year, selectedPeriod.month);
+        renderReceiptHistoryBox();
+      });
+    });
+  }
+
+  async function loadReceiptHistory(){
+    const pg_id = getPgId();
+    if(!pg_id) return [];
+    try{
+      const res = await fetch(`/pg/receipt-voucher/${encodeURIComponent(pg_id)}?history=1`, { method:'GET' });
+      if(!res.ok) return [];
+      const data = await res.json().catch(()=>null);
+      receiptHistory = Array.isArray(data && data.history) ? data.history : [];
+      return receiptHistory;
+    }catch(_){
+      receiptHistory = [];
+      return [];
+    }
+  }
+
   async function saveReceiptVoucher(){
     try{
       const pg_id = getPgId();
@@ -2826,7 +2891,7 @@ entries.forEach(e=>{
 
       if (!pg_id) throw new Error("Missing PG context");
 
-      const res = await fetch(`/pg/receipt-voucher/${encodeURIComponent(pg_id)}`, {
+      const res = await fetch(`/pg/receipt-voucher/${encodeURIComponent(pg_id)}?year=${encodeURIComponent(selectedPeriod.year)}&month=${encodeURIComponent(selectedPeriod.month)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -2836,8 +2901,12 @@ entries.forEach(e=>{
         throw new Error((data && (data.error || data.message)) || `HTTP ${res.status}`);
       }
 
+      await loadReceiptHistory();
+      renderReceiptHistoryBox();
       snapshot = takeSnapshot();
       setEditMode(false);
+      await loadReceiptHistory();
+      renderReceiptHistoryBox();
       showPopup("success", T[lang].msgTitleSuccess, (data && data.message) || T[lang].msgSavedLocal);
 
     }catch(err){
@@ -2865,10 +2934,10 @@ entries.forEach(e=>{
     }catch(_e){}
   }
 
-  async function loadReceiptVoucher(){
+  async function loadReceiptVoucher(year = selectedPeriod.year, month = selectedPeriod.month){
     const pg_id = getPgId();
     try{
-      const res = await fetch(`/pg/receipt-voucher/${encodeURIComponent(pg_id)}`, { method:"GET" });
+      const res = await fetch(`/pg/receipt-voucher/${encodeURIComponent(pg_id)}?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`, { method:"GET" });
       if (!res.ok) return;
       const data = await res.json().catch(()=>null);
       if (!data) return;
@@ -2901,6 +2970,7 @@ entries.forEach(e=>{
       snapshot = takeSnapshot();
       setEditMode(false);
       setActivePanel(getSavedActivePanel(), true);
+      renderReceiptHistoryBox();
     }catch(err){
       console.warn("Receipt voucher load skipped:", err);
       setActivePanel(getSavedActivePanel(), true);
@@ -2985,10 +3055,18 @@ entries.forEach(e=>{
         member_code: String(m.member_code || "").trim()
       })).filter(m => m.name || m.member_code);
 
-      populateReceiptMemberDropdowns("pg", $("llMemberNamePg")?.value || "", $("llMemberCodePg")?.value || "");
-      populateReceiptMemberDropdowns("m", $("llMemberNameM")?.value || "", $("llMemberCodeM")?.value || "");
-      syncReceiptMemberPair("pg", $("llMemberNamePg")?.value ? "name" : "code");
-      syncReceiptMemberPair("m", $("llMemberNameM")?.value ? "name" : "code");
+      const pgNameValue = $("llMemberNamePg")?.value || "";
+      const pgCodeValue = $("llMemberCodePg")?.value || "";
+      const mNameValue = $("llMemberNameM")?.value || "";
+      const mCodeValue = $("llMemberCodeM")?.value || "";
+      populateReceiptMemberDropdowns("pg", pgNameValue, pgCodeValue);
+      populateReceiptMemberDropdowns("m", mNameValue, mCodeValue);
+      if($("llMemberNamePg")) $("llMemberNamePg").value = pgNameValue;
+      if($("llMemberCodePg")) $("llMemberCodePg").value = pgCodeValue;
+      if($("llMemberNameM")) $("llMemberNameM").value = mNameValue;
+      if($("llMemberCodeM")) $("llMemberCodeM").value = mCodeValue;
+      syncReceiptMemberPair("pg", pgNameValue ? "name" : "code");
+      syncReceiptMemberPair("m", mNameValue ? "name" : "code");
     }catch(err){
       console.warn("Receipt member list load skipped:", err);
     }
@@ -3358,6 +3436,7 @@ entries.forEach(e=>{
   setEditMode(false);
 
   loadReceiptMembers();
+  loadReceiptHistory().then(renderReceiptHistoryBox);
 
   const localData = localStorage.getItem(RECEIPT_VOUCHER_STORAGE_KEY);
   if(localData){
@@ -3366,15 +3445,17 @@ entries.forEach(e=>{
       restoreSection("pg", parsed.pg_section || {});
       restoreSection("m", parsed.member_section || {});
       loadReceiptMembers();
+      loadReceiptHistory().then(renderReceiptHistoryBox);
       snapshot = takeSnapshot();
       setActivePanel(getSavedActivePanel(), true);
+      loadReceiptVoucher();
     }catch(e){
       console.warn("Local load failed", e);
       loadReceiptVoucher();
     }
   }else{
     hydrateCurrentPgName();
-    loadReceiptVoucher();
+    loadReceiptHistory().then(()=> loadReceiptVoucher());
   }
 
 })();

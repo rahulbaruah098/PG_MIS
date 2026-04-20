@@ -2154,7 +2154,7 @@ function loadActiveTab(){
   function periodText(m, y){
     const names = monthNames(cashbookLang);
     if (m === null || y === null) return "—";
-    return `${names[m]} ${y}`;
+    return `${names[(Number(m) || 1) - 1] || ""} ${y}`.trim();
   }
 
   function fillPeriodSelect(selectMonth, selectYear, monthVal, yearVal){
@@ -2164,7 +2164,7 @@ function loadActiveTab(){
     selectMonth.innerHTML = "";
     names.forEach((m,i)=>{
       const o = document.createElement("option");
-      o.value = String(i);
+      o.value = String(i + 1);
       o.textContent = m;
       selectMonth.appendChild(o);
     });
@@ -2179,7 +2179,7 @@ function loadActiveTab(){
       selectYear.appendChild(o);
     }
 
-    selectMonth.value = String(monthVal ?? now.getMonth());
+    selectMonth.value = String(monthVal ?? (now.getMonth() + 1));
     selectYear.value = String(yearVal ?? now.getFullYear());
   }
 
@@ -2210,6 +2210,7 @@ function loadActiveTab(){
       : cashbookTranslations[cashbookLang].payments;
     setTheme();
     renderAll();
+    renderCashbookHistoryBox();
   }
 
   function setEditingUI(){
@@ -3135,6 +3136,66 @@ cbPaymentsTab.addEventListener("click", ()=>{
     renderAll();
   });
 
+  let cbHistory = [];
+  function cbMonthLabel(month, year){
+    const names = monthNames(cashbookLang);
+    return `${names[(Number(month) || 1) - 1] || "Month"} ${year || ""}`.trim();
+  }
+  function ensureCashbookHistoryBox(){
+    let el = document.getElementById('cbHistoryBox');
+    if(el) return el;
+    el = document.createElement('section');
+    el.id = 'cbHistoryBox';
+    el.style.marginTop = '16px';
+    el.style.padding = '16px';
+    el.style.background = '#fff';
+    el.style.border = '1px solid rgba(15,23,42,.08)';
+    el.style.borderRadius = '18px';
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div style="font-size:18px;font-weight:800;color:#0f172a">Saved Month Records</div><div id="cbCurrentPeriodText" style="font-size:13px;color:#64748b;margin-top:4px"></div></div><div id="cbHistoryCards" style="display:flex;gap:10px;flex-wrap:wrap"></div></div>';
+    const host = document.querySelector('.cashbook-page, .cb-page, .page-shell, main') || document.body;
+    host.appendChild(el);
+    return el;
+  }
+  function renderCashbookHistoryBox(){
+    ensureCashbookHistoryBox();
+    const cur = document.getElementById('cbCurrentPeriodText');
+    const cards = document.getElementById('cbHistoryCards');
+    if(cur) cur.textContent = `Current view: ${cbMonthLabel(cbPeriodMonth, cbPeriodYear)}`;
+    if(!cards) return;
+    if(!Array.isArray(cbHistory) || !cbHistory.length){
+      cards.innerHTML = '<span style="font-size:13px;color:#64748b">No saved months yet.</span>';
+      return;
+    }
+    cards.innerHTML = cbHistory.map(item => {
+      const active = Number(item.year) === Number(cbPeriodYear) && Number(item.month) === Number(cbPeriodMonth);
+      return `<button type="button" class="cb-history-card" data-year="${item.year}" data-month="${item.month}" style="border:1px solid ${active ? '#10b981' : 'rgba(15,23,42,.08)'};background:${active ? '#ecfdf5' : '#f8fafc'};color:#0f172a;border-radius:14px;padding:10px 14px;font-weight:700;cursor:pointer">${cbMonthLabel(item.month, item.year)}</button>`;
+    }).join('');
+    cards.querySelectorAll('.cb-history-card').forEach(btn => {
+      btn.addEventListener('click', async ()=>{
+        cbPeriodMonth = Number(btn.dataset.month);
+        cbPeriodYear = Number(btn.dataset.year);
+        fillGateSelects();
+        await loadFromServer();
+        renderAll();
+        renderCashbookHistoryBox();
+      });
+    });
+  }
+  async function loadCashbookHistory(){
+    const pg = (window.PG_ID || '').trim();
+    if(!pg) return [];
+    try{
+      const res = await fetch(`/pg/api/cashbook/${encodeURIComponent(pg)}?history=1`, { method:'GET' });
+      if(!res.ok) return [];
+      const data = await res.json().catch(()=>null);
+      cbHistory = Array.isArray(data && data.history) ? data.history : [];
+      return cbHistory;
+    }catch(_){
+      cbHistory = [];
+      return [];
+    }
+  }
+
   cbGateContinue.addEventListener("click", ()=>{
     cbPendingPeriod = {
       month: Number(cbGateMonth.value),
@@ -3154,7 +3215,7 @@ cbPaymentsTab.addEventListener("click", ()=>{
   cbGateResetYes.addEventListener("click", ()=>{
     closeOverlay(cbGateResetOverlay);
     const now = new Date();
-    cbGateMonth.value = String(now.getMonth());
+    cbGateMonth.value = String(now.getMonth() + 1);
     cbGateYear.value = String(now.getFullYear());
   });
 

@@ -2024,6 +2024,34 @@ def _get_period_from_args():
     return year, month
 
 
+def _period_history(db, collection, query, limit=24):
+    rows = list(db[collection].find(query, {"year": 1, "month": 1, "updated_at": 1, "created_at": 1}).sort([('year', -1), ('month', -1), ('updated_at', -1), ('created_at', -1)]))
+    seen = set()
+    history = []
+    for row in rows:
+        year = row.get('year')
+        month = row.get('month')
+        if year in (None, '') or month in (None, ''):
+            continue
+        try:
+            year = int(year)
+            month = int(month)
+        except Exception:
+            continue
+        key = (year, month)
+        if key in seen:
+            continue
+        seen.add(key)
+        history.append({
+            'year': year,
+            'month': month,
+            'updated_at': row.get('updated_at').isoformat() if row.get('updated_at') else None,
+        })
+        if len(history) >= limit:
+            break
+    return history
+
+
 # ---------- Cash Book (used by finance.cashbook template) ----------
 @pg_bp.route("/api/cashbook/<pg_id>", methods=["GET", "POST"])
 @login_required
@@ -2036,7 +2064,10 @@ def api_cashbook(pg_id):
     coll = "pg_cashbooks"
 
     if request.method == "GET":
-        doc = db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))), "year": year, "month": month}) if (year and month) else db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, sort=[("updated_at", -1)])
+        base_q = {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}
+        if request.args.get("history") in ("1", "true", "yes"):
+            return jsonify({"history": _period_history(db, coll, base_q)})
+        doc = db[coll].find_one({**base_q, "year": year, "month": month}) if (year and month) else db[coll].find_one(base_q, sort=[("updated_at", -1)])
         if not doc:
             pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
             return jsonify({"receipts": [], "payments": [], "pg_name": pg_doc.get("name", ""), "year": year, "month": month})
@@ -2086,7 +2117,10 @@ def api_ledger_book(pg_id):
     coll = "pg_ledger_books"
 
     if request.method == "GET":
-        doc = db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))), "year": year, "month": month}) if (year and month) else db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, sort=[("updated_at", -1)])
+        base_q = {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}
+        if request.args.get("history") in ("1", "true", "yes"):
+            return jsonify({"history": _period_history(db, coll, base_q)})
+        doc = db[coll].find_one({**base_q, "year": year, "month": month}) if (year and month) else db[coll].find_one(base_q, sort=[("updated_at", -1)])
         if not doc:
             pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
             return jsonify({"entries": [], "pg_name": pg_doc.get("name", ""), "year": year, "month": month})
@@ -2118,12 +2152,15 @@ def api_loan_ledger(loan_id):
 
     coll = "pg_loan_ledgers"
     year, month = _get_period_from_args()
-    q = {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))), "loan_id": str(loan_id)}
+    base_q = {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))), "loan_id": str(loan_id)}
+    q = dict(base_q)
     if year is not None: q["year"] = year
     if month is not None: q["month"] = month
 
     if request.method == "GET":
-        doc = db[coll].find_one(q) or db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))), "loan_id": str(loan_id)}, sort=[("updated_at", -1)])
+        if request.args.get("history") in ("1", "true", "yes"):
+            return jsonify({"history": _period_history(db, coll, base_q)})
+        doc = db[coll].find_one(q) or db[coll].find_one(base_q, sort=[("updated_at", -1)])
         pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
         current_pg_name = pg_doc.get("name", "")
         if not doc:
@@ -2173,7 +2210,10 @@ def api_receipt_voucher(pg_id):
     coll = "pg_receipt_vouchers"
 
     if request.method == "GET":
-        doc = db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))), "year": year, "month": month}) if (year and month) else db[coll].find_one({"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, sort=[("updated_at", -1)])
+        base_q = {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}
+        if request.args.get("history") in ("1", "true", "yes"):
+            return jsonify({"history": _period_history(db, coll, base_q)})
+        doc = db[coll].find_one({**base_q, "year": year, "month": month}) if (year and month) else db[coll].find_one(base_q, sort=[("updated_at", -1)])
         pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
         current_pg_name = pg_doc.get("name", "")
         if not doc:
@@ -2228,17 +2268,20 @@ def api_generic_register(name, pg_id):
     coll = allowed[name]
 
     if request.method == "GET":
+        base_q = {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get("pg_id")))}
+        if request.args.get("history") in ("1", "true", "yes"):
+            return jsonify({"history": _period_history(db, coll, base_q)})
         doc = (
             db[coll].find_one(
                 {
-                    "pg_id": (safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))),
+                    **base_q,
                     "year": year,
                     "month": month,
                 }
             )
             if (year and month)
             else db[coll].find_one(
-                {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get("pg_id")))},
+                base_q,
                 sort=[("updated_at", -1)],
             )
         )

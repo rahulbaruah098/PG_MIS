@@ -1974,6 +1974,78 @@
     };
   }
 
+  let selectedPeriod = (() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  })();
+  let loanHistory = [];
+
+  function monthLabel(month, year){
+    const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    return `${names[(Number(month) || 1) - 1] || "Month"} ${year || ""}`.trim();
+  }
+
+  function currentMemberName(){
+    return String($("llMemberName")?.value || "").trim();
+  }
+
+  function ensureLoanHistoryBox(){
+    let el = document.getElementById('loanHistoryBox');
+    if(el) return el;
+    el = document.createElement('section');
+    el.id = 'loanHistoryBox';
+    el.style.marginTop = '16px';
+    el.style.padding = '16px';
+    el.style.background = '#fff';
+    el.style.border = '1px solid rgba(15,23,42,.08)';
+    el.style.borderRadius = '18px';
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div style="font-size:18px;font-weight:800;color:#0f172a">Saved Month Records</div><div id="loanCurrentPeriodText" style="font-size:13px;color:#64748b;margin-top:4px"></div></div><div id="loanHistoryCards" style="display:flex;gap:10px;flex-wrap:wrap"></div></div>';
+    const target = document.querySelector('.ll-wrap, .ll-page, main') || document.body;
+    target.appendChild(el);
+    return el;
+  }
+
+  function renderLoanHistoryBox(){
+    ensureLoanHistoryBox();
+    const current = document.getElementById('loanCurrentPeriodText');
+    const cards = document.getElementById('loanHistoryCards');
+    const member = currentMemberName();
+    if(current) current.textContent = `${member ? `Member: ${member} • ` : ''}Working month: ${monthLabel(selectedPeriod.month, selectedPeriod.year)}`;
+    if(!cards) return;
+    if(!loanHistory.length){
+      cards.innerHTML = '<div style="font-size:13px;color:#64748b">No saved month records yet for the selected member.</div>';
+      return;
+    }
+    cards.innerHTML = loanHistory.map(item => {
+      const active = Number(item.year) === Number(selectedPeriod.year) && Number(item.month) === Number(selectedPeriod.month);
+      return `<button type="button" class="loan-history-card" data-year="${item.year}" data-month="${item.month}" style="border:1px solid ${active ? '#10b981' : 'rgba(15,23,42,.08)'};background:${active ? '#ecfdf5' : '#f8fafc'};color:#0f172a;border-radius:14px;padding:10px 14px;font-weight:700;cursor:pointer">${monthLabel(item.month, item.year)}</button>`;
+    }).join('');
+    cards.querySelectorAll('.loan-history-card').forEach(btn => {
+      btn.addEventListener('click', async ()=>{
+        selectedPeriod = { year: Number(btn.dataset.year), month: Number(btn.dataset.month) };
+        await loadLoanLedger(selectedPeriod.year, selectedPeriod.month);
+        renderLoanHistoryBox();
+      });
+    });
+  }
+
+  async function loadLoanHistory(){
+    const loan_id = getLoanId();
+    const member = currentMemberName();
+    try{
+      const qs = new URLSearchParams({ history: '1' });
+      if(member) qs.set('member_name', member);
+      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(loan_id)}?${qs.toString()}`, { method:'GET' });
+      if(!res.ok) return [];
+      const data = await res.json().catch(()=>null);
+      loanHistory = Array.isArray(data && data.history) ? data.history : [];
+      return loanHistory;
+    }catch(_){
+      loanHistory = [];
+      return [];
+    }
+  }
+
   async function saveLoanLedger(){
     const loan_id = getLoanId();
     const payload = buildPayload();
@@ -1981,7 +2053,9 @@
     try{ localStorage.setItem(storageKey(loan_id), JSON.stringify(payload)); }catch(_){}
 
     try{
-      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(loan_id)}`,{
+      const qs = new URLSearchParams({ year: String(selectedPeriod.year), month: String(selectedPeriod.month) });
+      if(payload.member_name) qs.set('member_name', payload.member_name);
+      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(loan_id)}?${qs.toString()}`,{
         method:"POST",
         headers:{ "Content-Type":"application/json" },
         body: JSON.stringify(payload)
@@ -1998,8 +2072,12 @@
         return;
       }
 
+      await loadLoanHistory();
+      renderLoanHistoryBox();
       llSnapshot = takeSnapshot();
       setEditMode(false);
+      await loadLoanHistory();
+      renderLoanHistoryBox();
       openInfoModal((data && data.message) ? data.message : "Saved successfully", (T[lang].title || "Loan Ledger"));
     }catch(err){
       console.warn("Server save skipped:", err);
@@ -2021,11 +2099,14 @@
     }catch(_){}
   }
 
-  async function loadLoanLedger(){
+  async function loadLoanLedger(year = selectedPeriod.year, month = selectedPeriod.month){
     const loan_id = getLoanId();
+    const member = currentMemberName();
 
     try{
-      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(loan_id)}`, { method:"GET" });
+      const qs = new URLSearchParams({ year: String(year), month: String(month) });
+      if(member) qs.set('member_name', member);
+      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(loan_id)}?${qs.toString()}`, { method:"GET" });
       if (res.ok){
         const data = await res.json().catch(()=>null);
         if (data){
@@ -2034,6 +2115,7 @@
             llSnapshot = takeSnapshot();
             setEditMode(false);
           }
+          renderLoanHistoryBox();
           return;
         }
       }
@@ -2044,6 +2126,7 @@
       if (raw){
         const data = JSON.parse(raw);
         hydrateFromData(data);
+        renderLoanHistoryBox();
         if (!llIsEditing){
           llSnapshot = takeSnapshot();
           setEditMode(false);
@@ -2248,10 +2331,10 @@
   setEditMode(false);
   const memberSelect = $("llMemberName");
   if (memberSelect){
-    memberSelect.addEventListener("change", ()=>syncSpouseFromSelectedMember(true));
+    memberSelect.addEventListener("change", async ()=>{ syncSpouseFromSelectedMember(true); await loadLoanHistory(); renderLoanHistoryBox(); });
   }
   loadCurrentPgName();
-  loadPgMembers().then(()=>loadLoanLedger());
+  loadPgMembers().then(async ()=>{ await loadLoanHistory(); renderLoanHistoryBox(); await loadLoanLedger(); });
 
   setTimeout(()=>{
     const l = readLangFromBase();
