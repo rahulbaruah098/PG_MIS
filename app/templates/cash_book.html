@@ -2308,7 +2308,7 @@ function loadActiveTab(){
 
   function openPeriodConfirm(){
     const t = cashbookTranslations[cashbookLang];
-    const m = monthNames(cashbookLang)[cbPendingPeriod.month];
+    const m = monthNames(cashbookLang)[(Number(cbPendingPeriod.month) || 1) - 1] || "";
     const y = cbPendingPeriod.year;
     cbPeriodConfirmTitle.textContent = t.periodConfirmTitle;
     cbPeriodConfirmMsg.textContent = t.periodConfirmMsg(m, y);
@@ -2331,7 +2331,7 @@ function loadActiveTab(){
 
   function openChangePeriodConfirm(){
     const t = cashbookTranslations[cashbookLang];
-    const m = monthNames(cashbookLang)[cbPendingPeriod.month];
+    const m = monthNames(cashbookLang)[(Number(cbPendingPeriod.month) || 1) - 1] || "";
     const y = cbPendingPeriod.year;
     cbChangePeriodConfirmTitle.textContent = t.changePeriodConfirmTitle;
     cbChangePeriodConfirmMsg.textContent = t.changePeriodConfirmMsg(m, y);
