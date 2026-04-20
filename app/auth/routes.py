@@ -118,6 +118,8 @@ def login():
         session.clear()
         session["user_id"] = str(user["_id"])
         session["role"] = user["role"]
+        session["username"] = user.get("username")
+        session["cadre_name"] = user.get("name") or user.get("full_name") or user.get("username")
         session["state_id"] = json_safe(user.get("state_id"))
         session["district_id"] = json_safe(user.get("district_id"))
         session["block_id"] = json_safe(user.get("block_id"))

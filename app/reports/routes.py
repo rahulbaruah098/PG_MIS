@@ -909,6 +909,22 @@ def cadre_dashboard():
     session.pop("pg_id", None)
     return render_template("dashboard_cadre.html", pgs=pgs, assigned_pg_count=len(pgs))
 
+@reports_bp.route("/cadre/assigned-pgs")
+@roles_required("CADRE_CC")
+def cadre_assigned_pgs():
+    db = current_app.mongo_db
+
+    assigned_ids = [ObjectId(x) for x in (session.get("assigned_pg_ids") or []) if ObjectId.is_valid(x)]
+    pgs = []
+    if assigned_ids:
+        pgs = list(db.pgs.find({"_id": {"$in": assigned_ids}}).sort("name", 1))
+
+    return render_template(
+        "cadre_assigned_pgs.html",
+        pgs=pgs,
+        assigned_pg_count=len(pgs)
+    )
+
 @reports_bp.route("/export/scope.csv")
 @login_required
 def export_scope_csv():
