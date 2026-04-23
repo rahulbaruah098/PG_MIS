@@ -2246,6 +2246,59 @@ def api_receipt_voucher(pg_id):
     }, user=_current_user_dict())
     return jsonify({"ok": True, "message": "Saved successfully"})
 
+
+#changes by atlanta
+# ---------- Receipt Voucher Member Options ----------
+@pg_bp.route("/receipt-voucher-members/<pg_id>", methods=["GET"])
+@login_required
+@roles_required("PG_DATA_ENTRY", "CADRE_CC", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+def api_receipt_voucher_members(pg_id):
+    db = current_app.mongo_db
+    _load_pg_or_404(db, pg_id)
+
+    members = list(
+        db.pg_members.find(
+            {
+                "pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))),
+                "$or": [
+                    {"is_active": True},
+                    {"is_active": {"$exists": False}}
+                ]
+            },
+            {
+                "_id": 1,
+                "name": 1,
+                "member_name": 1,
+                "member_code": 1,
+                "shg_code": 1,
+            }
+        ).sort("name", 1)
+    )
+
+    result = []
+    for m in members:
+        member_name = (
+            m.get("name")
+            or m.get("member_name")
+            or ""
+        )
+        member_code = (
+            m.get("member_code")
+            or m.get("shg_code")
+            or ""
+        )
+
+        result.append({
+            "_id": str(m.get("_id")),
+            "member_name": str(member_name),
+            "member_code": str(member_code),
+        })
+
+    return jsonify({
+        "ok": True,
+        "members": result
+    })
+
 @pg_bp.route("/api/register/<name>/<pg_id>", methods=["GET", "POST"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
@@ -2268,26 +2321,77 @@ def api_generic_register(name, pg_id):
     coll = allowed[name]
 
     if request.method == "GET":
-        base_q = {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get("pg_id")))}
-        if request.args.get("history") in ("1", "true", "yes"):
-            return jsonify({"history": _period_history(db, coll, base_q)})
+        base_pg_id = (safe_objectid(pg_id) or safe_objectid(session.get("pg_id")))
+        search = (request.args.get("search") or "").strip()
+
+        # INPUT REGISTER ONLY: optional feed search
+        # This does not affect other registers
+        if name == "input" and search:
+            doc = db[coll].find_one(
+                {
+                    "pg_id": base_pg_id,
+                    "data.meta.regInputName": {"$regex": search, "$options": "i"},
+                },
+                sort=[("updated_at", -1)],
+            )
+
+            if not doc:
+                pg_doc = db.pgs.find_one({"_id": base_pg_id}, {"name": 1}) or {}
+                return jsonify({
+                    "ok": False,
+                    "error": "No matching feed found",
+                    "data": {"pg_name": pg_doc.get("name", "")},
+                    "year": year,
+                    "month": month,
+                }), 404
+
+            doc["_id"] = str(doc["_id"])
+            doc["pg_id"] = str(doc["pg_id"])
+            return jsonify(doc)
+
+        # OUTPUT REGISTER ONLY: optional produce search
+        # This does not affect other registers
+        if name == "output" and search:
+            doc = db[coll].find_one(
+                {
+                    "pg_id": base_pg_id,
+                    "data.meta.regOutputName": {"$regex": search, "$options": "i"},
+                },
+                sort=[("updated_at", -1)],
+            )
+
+            if not doc:
+                pg_doc = db.pgs.find_one({"_id": base_pg_id}, {"name": 1}) or {}
+                return jsonify({
+                    "ok": False,
+                    "error": "No matching produce found",
+                    "data": {"pg_name": pg_doc.get("name", "")},
+                    "year": year,
+                    "month": month,
+                }), 404
+
+            doc["_id"] = str(doc["_id"])
+            doc["pg_id"] = str(doc["pg_id"])
+            return jsonify(doc)
+
+        # EXISTING GENERIC FLOW FOR ALL REGISTERS
         doc = (
             db[coll].find_one(
                 {
-                    **base_q,
+                    "pg_id": base_pg_id,
                     "year": year,
                     "month": month,
                 }
             )
             if (year and month)
             else db[coll].find_one(
-                base_q,
+                {"pg_id": base_pg_id},
                 sort=[("updated_at", -1)],
             )
         )
 
         if not doc:
-            pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get("pg_id")))}, {"name": 1}) or {}
+            pg_doc = db.pgs.find_one({"_id": base_pg_id}, {"name": 1}) or {}
             return jsonify({"data": {"pg_name": pg_doc.get("name", "")}, "year": year, "month": month})
 
         doc["_id"] = str(doc["_id"])

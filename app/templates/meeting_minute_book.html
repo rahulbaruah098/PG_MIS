@@ -595,7 +595,7 @@
   border-radius:12px;
   transition:transform .12s ease, background .12s ease;
 }
-    
+   
     .mmb-iconBtn:hover,
     .mmb-rowDelete:hover{
       transform:translateY(-1px);
@@ -806,6 +806,135 @@
 
 
     .mmb-fileInput{ display:none; }
+
+    .mmb-stepBar{
+      padding:12px 16px 0;
+      background:rgba(255,255,255,.94);
+    }
+    .mmb-stepWrap{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .mmb-stepChip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid rgba(15,23,42,.14);
+      border-radius:999px;
+      background:#fff;
+      color:rgba(15,23,42,.72);
+      padding:10px 14px;
+      font-size:12px;
+      font-weight:950;
+    }
+    .mmb-stepChip.active{
+      background:rgba(16,185,129,.14);
+      color:var(--accent);
+      border-color:rgba(16,185,129,.26);
+    }
+    .mmb-stepChip.locked{
+      opacity:.6;
+    }
+    .mmb-periodSection{
+      padding:14px 16px 2px;
+      border-bottom:1.5px solid var(--line2);
+      background:rgba(255,255,255,.96);
+    }
+    .mmb-periodGrid{
+      display:grid;
+      grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);
+      gap:14px;
+      align-items:start;
+    }
+    .mmb-periodCard{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,250,252,.92));
+      box-shadow:var(--shadow2);
+      overflow:hidden;
+    }
+    .mmb-periodCardHead{
+      padding:12px 14px;
+      border-bottom:1px solid var(--line2);
+      background:rgba(247,250,249,.7);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .mmb-periodCardBody{
+      padding:14px;
+    }
+    .mmb-periodControls{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0,1fr));
+      gap:12px;
+      align-items:end;
+    }
+    .mmb-historyList{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      max-height:160px;
+      overflow:auto;
+    }
+    .mmb-historyBtn{
+      border:1px solid rgba(15,23,42,.14);
+      background:#fff;
+      color:var(--ink);
+      border-radius:999px;
+      padding:8px 12px;
+      font-size:12px;
+      font-weight:900;
+      cursor:pointer;
+      transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .mmb-historyBtn:hover{
+      transform:translateY(-1px);
+      box-shadow:var(--shadow2);
+      background:rgba(248,250,252,.9);
+    }
+    .mmb-historyBtn.active{
+      background:rgba(16,185,129,.14);
+      border-color:rgba(16,185,129,.28);
+      color:var(--accent);
+    }
+    .mmb-historyBtn.pending{
+      background:rgba(248,250,252,.95);
+      border-color:rgba(11,77,58,.22);
+      color:var(--ink);
+      box-shadow:inset 0 0 0 1px rgba(11,77,58,.08);
+    }
+    .mmb-stepActions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:18px;
+    }
+    .mmb-ghostBtn{
+      border:1px solid rgba(15,23,42,.14);
+      background:#fff;
+      color:var(--ink);
+      border-radius:12px;
+      padding:12px 14px;
+      font-weight:950;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      cursor:pointer;
+      transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .mmb-ghostBtn:hover{
+      transform:translateY(-1px);
+      box-shadow:var(--shadow2);
+      background:rgba(248,250,252,.9);
+    }
+
 
     /* ============================================================
        Signature modal + popup (original)
@@ -1112,6 +1241,8 @@
     @media (max-width:1024px){
       .mmb-topGrid{ grid-template-columns:1fr; }
       .mmb-kpis{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .mmb-periodGrid{ grid-template-columns:1fr; }
+      .mmb-summaryBody{ grid-template-columns:1fr; }
     }
 
    @media (max-width:720px){
@@ -1139,6 +1270,8 @@
   .mmb-tab ion-icon{ font-size:17px; }
   .mmb-toolbar{ padding:12px; }
   .mmb-searchWrap{ min-width:100%; flex:1 1 100%; }
+  .mmb-periodSection{ padding:12px 12px 2px; }
+  .mmb-stepBar{ padding:10px 12px 0; }
 }
    @media (max-width:560px){
   .mmb-head{ align-items:flex-start; }
@@ -1192,7 +1325,11 @@
   .mmb-pagination{ justify-content:center; }
   .mmb-kpis{ grid-template-columns:1fr 1fr; }
   .mmb-mobileCard{ flex-basis:90%; }
+  .mmb-periodControls{ grid-template-columns:1fr; }
+  .mmb-stepActions{ flex-direction:column; }
+  .mmb-summaryBody{ grid-template-columns:1fr; }
 }
+
     @media (max-width:420px){
       .mmb-title{ font-size:15px; }
       .mmb-kpis{ grid-template-columns:1fr; }
@@ -1205,7 +1342,145 @@
       .mmb-tab span{ font-size:13px; }
     }
 
-    
+
+    .mmb-summarySection{
+      margin:0 0 16px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      overflow:hidden;
+      background:rgba(255,255,255,.98);
+      box-shadow:var(--shadow2);
+    }
+    .mmb-summaryBody{
+      padding:14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .mmb-summaryIntro{
+      min-width:220px;
+      flex:1 1 260px;
+      color:var(--muted);
+      font-size:13px;
+      font-weight:900;
+      line-height:1.5;
+    }
+    .mmb-summaryActionBtn{
+      border:1px solid rgba(16,185,129,.35);
+      background:rgba(16,185,129,.12);
+      color:var(--accent);
+      border-radius:12px;
+      padding:12px 16px;
+      font-weight:950;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      cursor:pointer;
+      transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+      white-space:nowrap;
+    }
+    .mmb-summaryActionBtn:hover{
+      transform:translateY(-1px);
+      box-shadow:var(--shadow2);
+      background:rgba(16,185,129,.16);
+    }
+    .mmb-summaryActionBtn ion-icon{ font-size:18px; }
+
+    .mmb-previewModal{
+      position:fixed;
+      inset:0;
+      z-index:10001;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      background:rgba(15,23,42,.55);
+      backdrop-filter:blur(6px);
+    }
+    .mmb-previewModal.show{ display:flex; }
+    .mmb-previewCard{
+      width:min(1080px, 100%);
+      max-height:92vh;
+      overflow:hidden;
+      background:rgba(255,255,255,.98);
+      border:1px solid rgba(255,255,255,.45);
+      border-radius:18px;
+      box-shadow:0 26px 60px -30px rgba(0,0,0,.55);
+      display:flex;
+      flex-direction:column;
+    }
+    .mmb-previewHead{
+      padding:14px 16px;
+      border-bottom:1px solid rgba(15,23,42,.10);
+      background:radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%), linear-gradient(135deg, rgba(240,253,244,.92), rgba(255,255,255,.96));
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .mmb-previewTitle{ margin:0; font-size:16px; font-weight:950; color:var(--accent); }
+    .mmb-previewHeadRight{ display:flex; gap:10px; flex-wrap:wrap; }
+    .mmb-previewBody{ padding:18px; overflow:auto; background:#fff; }
+    .mmb-officialDoc{ border:1px solid var(--line); border-radius:16px; background:#fff; overflow:hidden; }
+    .mmb-officialHeader{ padding:18px; border-bottom:1px solid var(--line2); text-align:center; }
+    .mmb-officialHeading{ margin:0; font-size:20px; font-weight:950; color:var(--ink); }
+    .mmb-officialSub{ margin:8px 0 0; color:var(--muted); font-weight:900; font-size:13px; }
+    .mmb-officialMeta{ padding:14px 18px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; border-bottom:1px solid var(--line2); background:rgba(248,250,252,.7); }
+    .mmb-officialMetaItem{ border:1px solid var(--line2); border-radius:12px; background:#fff; padding:12px; }
+    .mmb-officialMetaLabel{ display:block; font-size:11px; font-weight:900; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px; }
+    .mmb-officialMetaValue{ font-size:14px; font-weight:950; color:var(--ink); }
+    .mmb-officialSection{ padding:18px; border-bottom:1px solid var(--line2); }
+    .mmb-officialSection:last-child{ border-bottom:0; }
+    .mmb-officialSectionTitle{ margin:0 0 12px; font-size:15px; font-weight:950; color:var(--ink); display:flex; align-items:center; gap:8px; }
+    .mmb-officialList{ margin:0; padding-left:22px; display:grid; gap:8px; font-size:14px; font-weight:850; color:var(--ink); line-height:1.5; }
+    .mmb-officialEmpty{ color:var(--muted); font-size:13px; font-weight:900; }
+    .mmb-officialTableWrap{ overflow:auto; }
+    .mmb-officialTable{ width:100%; border-collapse:collapse; min-width:720px; }
+    .mmb-officialTable th, .mmb-officialTable td{ border:1px solid var(--line2); padding:10px 12px; text-align:left; vertical-align:middle; font-size:13px; }
+    .mmb-officialTable th{ background:rgba(248,250,252,.9); font-weight:950; }
+    .mmb-officialSigImg{ max-width:140px; max-height:52px; object-fit:contain; display:block; }
+    @media (max-width:1024px){ .mmb-officialMeta{ grid-template-columns:1fr; } }
+    @media print{
+      @page{ size:A4; margin:14mm; }
+      html, body{ background:#fff !important; }
+      body *{ visibility:hidden !important; }
+      #mmbPreviewModal, #mmbPreviewModal *{ visibility:visible !important; }
+      #mmbPreviewModal{ position:static !important; inset:auto !important; display:block !important; background:#fff !important; padding:0 !important; }
+      .mmb-previewCard{ box-shadow:none !important; border:0 !important; width:100% !important; max-height:none !important; border-radius:0 !important; }
+      .mmb-previewHead{ padding:0 0 12px !important; background:#fff !important; }
+      .mmb-previewHeadRight, #mmbPreviewCloseBtn, #mmbPreviewPrintBtn{ display:none !important; }
+      .mmb-previewBody{ overflow:visible !important; padding:0 !important; }
+      .mmb-officialDoc{ border:0 !important; border-radius:0 !important; }
+      .mmb-officialSection, .mmb-officialMeta, .mmb-officialHeader{ break-inside:avoid; page-break-inside:avoid; }
+      .mmb-officialTable{ min-width:0 !important; }
+    }
+
+    /* Cross device stability */
+    .mmb-wrap img,
+    .mmb-wrap canvas,
+    .mmb-wrap svg{ max-width:100%; height:auto; }
+
+    .mmb-wrap button,
+    .mmb-wrap input,
+    .mmb-wrap select,
+    .mmb-wrap textarea{ font:inherit; }
+
+    .mmb-wrap select,
+    .mmb-wrap input,
+    .mmb-wrap textarea{ -webkit-appearance:none; appearance:none; }
+
+    .mmb-wrap input[type="date"]{ min-height:44px; }
+
+    .mmb-tableWrap,
+    .mmb-mobileRail,
+    .mmb-periodCardBody,
+    .mmb-toolbar,
+    .mmb-sectionFoot{ min-width:0; }
+
   </style>
   <script>window.PG_ID = "{{ pg_id|default('') }}";</script>
 {% endblock %}
@@ -1226,18 +1501,82 @@
           </div>
         </div>
 
-        <!-- Tabs -->
-        <div class="mmb-tabs">
-          <div class="mmb-tabWrap">
-            <button class="mmb-tab active" id="mmbTabMinutes" type="button">
+        <!-- Period + History -->
+        <div class="mmb-periodSection">
+          <div class="mmb-periodGrid">
+            <div class="mmb-periodCard">
+              <div class="mmb-periodCardHead">
+                <h3 class="mmb-cardTitle">
+                  <ion-icon name="time"></ion-icon>
+                  <span id="mmbPeriodTitleTxt">Record Interval</span>
+                </h3>
+                <div class="mmb-chip">
+                  <ion-icon name="archive"></ion-icon>
+                  <span id="mmbCurrentPeriodInfo">Current interval</span>
+                </div>
+              </div>
+              <div class="mmb-periodCardBody">
+                <div class="mmb-periodControls">
+                  <div class="mmb-field">
+                    <div class="mmb-labelRow">
+                      <ion-icon name="calendar-clear"></ion-icon>
+                      <span id="mmbPeriodMonthLbl">Month</span>
+                    </div>
+                    <select id="mmbPeriodMonth" class="mmb-select" style="width:100%;">
+                      <option value="1">January</option>
+                      <option value="2">February</option>
+                      <option value="3">March</option>
+                      <option value="4">April</option>
+                      <option value="5">May</option>
+                      <option value="6">June</option>
+                      <option value="7">July</option>
+                      <option value="8">August</option>
+                      <option value="9">September</option>
+                      <option value="10">October</option>
+                      <option value="11">November</option>
+                      <option value="12">December</option>
+                    </select>
+                  </div>
+                  <div class="mmb-field">
+                    <div class="mmb-labelRow">
+                      <ion-icon name="calendar-number"></ion-icon>
+                      <span id="mmbPeriodYearLbl">Year</span>
+                    </div>
+                    <select id="mmbPeriodYear" class="mmb-select" style="width:100%;"></select>
+                  </div>
+                  <button class="mmb-btn" id="mmbLoadPeriodBtn" type="button" style="justify-content:center; border-radius:12px; padding:12px 14px;">
+                    <ion-icon name="sync"></ion-icon>
+                    <span id="mmbLoadPeriodTxt">Load Interval</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="mmb-periodCard">
+              <div class="mmb-periodCardHead">
+                <h3 class="mmb-cardTitle">
+                  <ion-icon name="albums"></ion-icon>
+                  <span id="mmbHistoryTitleTxt">Record History</span>
+                </h3>
+              </div>
+              <div class="mmb-periodCardBody">
+                <div class="mmb-historyList" id="mmbHistoryList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Steps -->
+        <div class="mmb-stepBar">
+          <div class="mmb-stepWrap">
+            <div class="mmb-stepChip active" id="mmbStepMinutesChip">
               <ion-icon name="document-text"></ion-icon>
               <span id="mmbTabMinutesTxt">Meeting Minutes</span>
-            </button>
-
-            <button class="mmb-tab" id="mmbTabMembers" type="button">
+            </div>
+            <div class="mmb-stepChip locked" id="mmbStepMembersChip">
               <ion-icon name="people"></ion-icon>
               <span id="mmbTabMembersTxt">Members Present</span>
-            </button>
+            </div>
           </div>
         </div>
 
@@ -1264,7 +1603,7 @@
                   <div class="mmb-kpiLabel" id="mmbDecKpiTxt">Decision</div>
                   <div class="mmb-kpiValue" id="mmbDecKpiVal">0</div>
                 </div>
-                <div class="mmb-kpi">
+                <div class="mmb-kpi" style="display:none;">
                   <div class="mmb-kpiLabel" id="mmbMinuteMatchTxt">Search Matches</div>
                   <div class="mmb-kpiValue" id="mmbMinuteMatchVal">0</div>
                 </div>
@@ -1314,6 +1653,26 @@
                 <ion-icon name="document-text"></ion-icon>
                 <span id="mmbMinutesFilterInfo">Showing all minutes rows</span>
               </div>
+            </div>
+          </div>
+
+          <div class="mmb-summarySection">
+            <div class="mmb-sectionHead">
+              <div class="mmb-sectionTitle">
+                <ion-icon name="reader"></ion-icon>
+                <span id="mmbSummaryTitle">Meeting Minutes Summary</span>
+              </div>
+              <div class="mmb-chip">
+                <ion-icon name="document"></ion-icon>
+                <span id="mmbSummaryHelp">Open official meeting record view</span>
+              </div>
+            </div>
+            <div class="mmb-summaryBody">
+              <div class="mmb-summaryIntro" id="mmbSummaryIntro">Open this interval in an official formatted summary showing meeting details, minutes, members present, and signatures.</div>
+              <button class="mmb-summaryActionBtn" id="mmbOpenSummaryBtn" type="button">
+                <ion-icon name="open-outline"></ion-icon>
+                <span id="mmbOpenSummaryTxt">Open Official Summary</span>
+              </button>
             </div>
           </div>
 
@@ -1458,10 +1817,12 @@
             </div>
           </div>
 
-          <button class="mmb-saveBtn" id="mmbSaveMinutes" type="button">
-            <ion-icon name="save"></ion-icon>
-            <span id="mmbSaveMinutesTxt">Save Meeting Minutes</span>
-          </button>
+          <div class="mmb-stepActions">
+            <button class="mmb-saveBtn" id="mmbContinueBtn" type="button">
+              <ion-icon name="arrow-forward-circle"></ion-icon>
+              <span id="mmbContinueBtnTxt">Continue to Members Present</span>
+            </button>
+          </div>
         </div>
 
         <!-- Members -->
@@ -1487,7 +1848,7 @@
                   <div class="mmb-kpiLabel" id="mmbUnsignedKpiTxt">Without Signature</div>
                   <div class="mmb-kpiValue" id="mmbUnsignedKpiVal">0</div>
                 </div>
-                <div class="mmb-kpi">
+                <div class="mmb-kpi" style="display:none;">
                   <div class="mmb-kpiLabel" id="mmbMemberMatchTxt">Search Matches</div>
                   <div class="mmb-kpiValue" id="mmbMemberMatchVal">0</div>
                 </div>
@@ -1538,6 +1899,26 @@
             </div>
           </div>
 
+          <div class="mmb-summarySection">
+            <div class="mmb-sectionHead">
+              <div class="mmb-sectionTitle">
+                <ion-icon name="reader"></ion-icon>
+                <span id="mmbSummaryTitleMembers">Meeting Minutes Summary</span>
+              </div>
+              <div class="mmb-chip">
+                <ion-icon name="document"></ion-icon>
+                <span id="mmbSummaryHelpMembers">Open official meeting record view</span>
+              </div>
+            </div>
+            <div class="mmb-summaryBody">
+              <div class="mmb-summaryIntro" id="mmbSummaryIntroMembers">Open this interval in an official formatted summary showing meeting details, minutes, members present, and signatures.</div>
+              <button class="mmb-summaryActionBtn" id="mmbOpenSummaryBtnMembers" type="button">
+                <ion-icon name="open-outline"></ion-icon>
+                <span id="mmbOpenSummaryTxtMembers">Open Official Summary</span>
+              </button>
+            </div>
+          </div>
+
           <div class="mmb-section">
             <div class="mmb-sectionHead">
               <div class="mmb-sectionTitle">
@@ -1580,10 +1961,17 @@
             </div>
           </div>
 
-          <button class="mmb-saveBtn" id="mmbSaveMembers" type="button" style="margin-top:16px;">
-            <ion-icon name="save"></ion-icon>
-            <span id="mmbSaveMembersTxt">Save Members Present</span>
-          </button>
+          <div class="mmb-stepActions">
+            <button class="mmb-ghostBtn" id="mmbStepBackBtn" type="button">
+              <ion-icon name="arrow-back-circle"></ion-icon>
+              <span id="mmbStepBackBtnTxt">Back to Meeting Minutes</span>
+            </button>
+
+            <button class="mmb-saveBtn" id="mmbSaveMembers" type="button" style="margin-top:0;">
+              <ion-icon name="save"></ion-icon>
+              <span id="mmbSaveMembersTxt">Save Full Record</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1656,6 +2044,25 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="mmb-previewModal" id="mmbPreviewModal" aria-hidden="true">
+      <div class="mmb-previewCard" role="dialog" aria-modal="true" aria-labelledby="mmbPreviewTitle">
+        <div class="mmb-previewHead">
+          <h3 class="mmb-previewTitle" id="mmbPreviewTitle">Meeting Minutes Official Summary</h3>
+          <div class="mmb-previewHeadRight">
+            <button class="mmb-ghostBtn" id="mmbPreviewPrintBtn" type="button">
+              <ion-icon name="print"></ion-icon>
+              <span id="mmbPreviewPrintTxt">Print</span>
+            </button>
+            <button class="mmb-ghostBtn" id="mmbPreviewCloseBtn" type="button">
+              <ion-icon name="close-circle"></ion-icon>
+              <span id="mmbPreviewCloseTxt">Close</span>
+            </button>
+          </div>
+        </div>
+        <div class="mmb-previewBody" id="mmbPreviewBody"></div>
       </div>
     </div>
 
@@ -1775,7 +2182,31 @@
           noRows: "No rows found.",
           noMembers: "No members found.",
           prev: "Prev",
-          next: "Next"
+          next: "Next",
+          continueToMembers: "Continue to Members Present",
+          backToMinutes: "Back to Meeting Minutes",
+          saveFullRecord: "Save Full Record",
+          recordInterval: "Record Interval",
+          month: "Month",
+          year: "Year",
+          loadInterval: "Load Interval",
+          currentInterval: "Current interval",
+          recordHistory: "Record History",
+          intervalLoaded: "Interval loaded successfully.",
+          intervalEmpty: "No saved data found for this interval. A fresh record is ready.",
+          currentStepMinutes: "Step 1 • MEETING MINUTES",
+          currentStepMembers: "Step 2 • MEMBERS PRESENT",
+          meetingSummaryTitle: "Meeting Minutes Summary",
+          meetingSummaryHelp: "Quick view of this interval",
+          agendaSummaryTitle: "Agenda Summary",
+          deliberationSummaryTitle: "Deliberation Summary",
+          decisionSummaryTitle: "Decision Summary",
+          summaryEmpty: "No summary available for this section yet.",
+          summaryOpenHelp: "Open official meeting record view",
+          summaryIntro: "Open this interval in an official formatted summary showing meeting details, minutes, members present, and signatures.",
+          openOfficialSummary: "Open Official Summary",
+          printLabel: "Print",
+          closeLabel: "Close"
         },
         bn: {
           back: "ফিরে যান",
@@ -1857,7 +2288,31 @@
           noRows: "কোনো সারি পাওয়া যায়নি।",
           noMembers: "কোনো সদস্য পাওয়া যায়নি।",
           prev: "পূর্ববর্তী",
-          next: "পরবর্তী"
+          next: "পরবর্তী",
+          continueToMembers: "উপস্থিত সদস্য ধাপে যান",
+          backToMinutes: "মিটিং মিনিটসে ফিরে যান",
+          saveFullRecord: "সম্পূর্ণ রেকর্ড সংরক্ষণ",
+          recordInterval: "রেকর্ড ইন্টারভাল",
+          month: "মাস",
+          year: "বছর",
+          loadInterval: "ইন্টারভাল লোড করুন",
+          currentInterval: "বর্তমান ইন্টারভাল",
+          recordHistory: "রেকর্ড হিস্ট্রি",
+          intervalLoaded: "নির্বাচিত ইন্টারভালের তথ্য লোড হয়েছে।",
+          intervalEmpty: "এই ইন্টারভালের জন্য কোনো সংরক্ষিত তথ্য পাওয়া যায়নি। নতুন রেকর্ড প্রস্তুত আছে।",
+          currentStepMinutes: "ধাপ ১ • সভার কার্যবিবরণী",
+          currentStepMembers: "ধাপ ২ • উপস্থিত সদস্য",
+          meetingSummaryTitle: "মিটিং মিনিটস সারাংশ",
+          meetingSummaryHelp: "এই সময়সীমার দ্রুত সারাংশ",
+          agendaSummaryTitle: "এজেন্ডা সারাংশ",
+          deliberationSummaryTitle: "আলোচনার সারাংশ",
+          decisionSummaryTitle: "সিদ্ধান্তের সারাংশ",
+          summaryEmpty: "এই অংশে এখনো কোনো সারাংশ নেই।",
+          summaryOpenHelp: "অফিসিয়াল মিটিং রেকর্ড ভিউ খুলুন",
+          summaryIntro: "এই সময়সীমার মিটিংয়ের বিস্তারিত, সদস্য উপস্থিতি ও স্বাক্ষরসহ অফিসিয়াল ফরম্যাটে সারাংশ খুলুন।",
+          openOfficialSummary: "অফিসিয়াল সারাংশ খুলুন",
+          printLabel: "প্রিন্ট",
+          closeLabel: "বন্ধ করুন"
         }
       };
 
@@ -1987,8 +2442,11 @@
       persistLang(language);
 
       let activeTab = "minutes";
+      let currentStep = "minutes";
+      let step2Visited = false;
 
       let meetingDate = new Date();
+      let loadedPeriod = { year: meetingDate.getFullYear(), month: meetingDate.getMonth() + 1 };
       let agendaItems = [{ id: "1", content: "" }];
       let deliberations = [{ id: "1", content: "" }];
       let decisions = [{ id: "1", content: "" }];
@@ -2008,6 +2466,14 @@
       };
 
       let mmbEventsBound = false;
+
+      const Sig = {
+        openForMemberId: null,
+        draftDataUrl: null,
+        camStream: null,
+        camVideoEl: null,
+        camUiMounted: false
+      };
 
       /* =========================
          Helpers
@@ -2062,11 +2528,21 @@
         return `${start + 1}-${end} / ${total} ${t.pageInfoSuffix}`;
       }
 
-      function filterMinuteRows(rows){
-        const q = (ui.minutesSearch || "").trim().toLowerCase();
-        if(!q) return rows.slice();
-        return rows.filter(r => String(r.content || "").toLowerCase().includes(q));
-      }
+function filterMinuteRows(rows){
+  const q = (ui.minutesSearch || "").trim().toLowerCase();
+
+  if(!Array.isArray(rows) || !rows.length){
+    return [{ id: uid(), content: "" }];
+  }
+
+  if(!q) return rows.slice();
+
+  const matched = rows.filter(r =>
+    String(r.content || "").toLowerCase().includes(q)
+  );
+
+  return matched.length ? matched : rows.slice();
+}
 
       function filterMembersRows(rows){
         const q = (ui.membersSearch || "").trim().toLowerCase();
@@ -2259,7 +2735,8 @@ if(backTxt) backTxt.textContent = t.back;
         $("mmbAddRowTxt2").textContent = t.addRow;
         $("mmbAddRowTxt3").textContent = t.addRow;
 
-        $("mmbSaveMinutesTxt").textContent = t.saveMeetingMinutes;
+        const continueTxt = $("mmbContinueBtnTxt");
+        if(continueTxt) continueTxt.textContent = t.continueToMembers;
 
         $("mmbMembersTitle").textContent = t.membersPresentTitle;
         $("mmbThSl").textContent = t.slNo;
@@ -2268,7 +2745,20 @@ if(backTxt) backTxt.textContent = t.back;
         $("mmbThAct").textContent = t.action;
 
         $("mmbAddMemberTxt").textContent = t.addMember;
-        $("mmbSaveMembersTxt").textContent = t.saveMembersPresent;
+        $("mmbSaveMembersTxt").textContent = t.saveFullRecord;
+        const stepBackTxt = $("mmbStepBackBtnTxt");
+        if(stepBackTxt) stepBackTxt.textContent = t.backToMinutes;
+
+        const periodTitle = $("mmbPeriodTitleTxt");
+        if(periodTitle) periodTitle.textContent = t.recordInterval;
+        const monthLbl = $("mmbPeriodMonthLbl");
+        if(monthLbl) monthLbl.textContent = t.month;
+        const yearLbl = $("mmbPeriodYearLbl");
+        if(yearLbl) yearLbl.textContent = t.year;
+        const loadPeriodTxt = $("mmbLoadPeriodTxt");
+        if(loadPeriodTxt) loadPeriodTxt.textContent = t.loadInterval;
+        const historyTitle = $("mmbHistoryTitleTxt");
+        if(historyTitle) historyTitle.textContent = t.recordHistory;
 
         $("mmbMinutesOverviewTxt").textContent = t.minutesOverview;
         $("mmbMembersOverviewTxt").textContent = t.membersOverview;
@@ -2304,7 +2794,7 @@ if(backTxt) backTxt.textContent = t.back;
         $("mmbDcColTxt").textContent = t.decisionsTaken;
         $("mmbDcActTxt").textContent = t.action;
 
-    
+   
 
         $("mmbMembersRegisterTxt").textContent = t.membersRegister;
         $("mmbMemberDateTxt").textContent = t.meetingDateLabel;
@@ -2356,207 +2846,257 @@ window.addEventListener("pgmis:lang", (e) => {
   const lang = e?.detail?.lang;
   window.updatePageLanguage(lang);
 });
-      
-function setTab(tab){
-  activeTab = (tab === "members") ? "members" : "minutes";
-
-  try{
-    localStorage.setItem(`PGMIS_MMB_ACTIVE_TAB_${MMB_PG || "anon"}`, activeTab);
-  }catch(e){}
-
-  const minutesBtn = $("mmbTabMinutes");
-  const membersBtn = $("mmbTabMembers");
+     
+function updateStepUi(){
+  const minutesChip = $("mmbStepMinutesChip");
+  const membersChip = $("mmbStepMembersChip");
   const panelMinutes = $("mmbPanelMinutes");
   const panelMembers = $("mmbPanelMembers");
+  const t = translations[language] || translations.en;
 
-  if(activeTab === "minutes"){
-    minutesBtn.classList.add("active");
-    membersBtn.classList.remove("active");
-    panelMinutes.style.display = "";
-    panelMembers.style.display = "none";
+  if(currentStep === "members"){
+    if(minutesChip){
+      minutesChip.classList.remove("active");
+      minutesChip.classList.remove("locked");
+    }
+    if(membersChip){
+      membersChip.classList.add("active");
+      membersChip.classList.remove("locked");
+    }
+    if(panelMinutes) panelMinutes.style.display = "none";
+    if(panelMembers) panelMembers.style.display = "";
+    const info = $("mmbCurrentPeriodInfo");
+    if(info) info.textContent = t.currentStepMembers;
   } else {
-    membersBtn.classList.add("active");
-    minutesBtn.classList.remove("active");
-    panelMembers.style.display = "";
-    panelMinutes.style.display = "none";
+    if(minutesChip){
+      minutesChip.classList.add("active");
+      minutesChip.classList.remove("locked");
+    }
+    if(membersChip){
+      membersChip.classList.remove("active");
+      membersChip.classList.toggle("locked", !step2Visited);
+    }
+    if(panelMinutes) panelMinutes.style.display = "";
+    if(panelMembers) panelMembers.style.display = "none";
+    const info = $("mmbCurrentPeriodInfo");
+    if(info) info.textContent = t.currentStepMinutes;
   }
 }
 
-      function renderTableLikeTextRows(type, rows, tableBodyId, cardRailId, pageInfoId, paginationId, pageKey, mobileTitle){
-        const t = translations[language] || translations.en;
-        const tbody = $(tableBodyId);
-        const rail = $(cardRailId);
+function setStep(step){
+  currentStep = (step === "members") ? "members" : "minutes";
+  if(currentStep === "members") step2Visited = true;
 
-        if(!tbody || !rail) return;
-
-        tbody.innerHTML = "";
-        rail.innerHTML = "";
-
-        const filtered = filterMinuteRows(rows);
-        const sliced = pageSlice(filtered, ui[pageKey], ui.minutesRowsPerPage);
-        ui[pageKey] = sliced.page;
-
-        if(!sliced.rows.length){
-          tbody.innerHTML = `<tr><td colspan="3"><div class="mmb-empty">${escapeHtml(t.noRows)}</div></td></tr>`;
-          rail.innerHTML = `<div class="mmb-mobileCard"><div class="mmb-empty">${escapeHtml(t.noRows)}</div></div>`;
-        } else {
-          sliced.rows.forEach((row, idx) => {
-            const sl = sliced.start + idx + 1;
-
-            const tr = document.createElement("tr");
-
-            const tdSl = document.createElement("td");
-            tdSl.className = "mmb-colSl";
-            tdSl.innerHTML = `<span class="mmb-slBadge">${sl}</span>`;
-            tr.appendChild(tdSl);
-
-            const tdText = document.createElement("td");
-            const isAgenda = type === "agenda";
-            const placeholder =
-              isAgenda ? t.agendaPlaceholder :
-              (type === "deliberation" ? t.deliberationPlaceholder : t.decisionPlaceholder);
-
-           const field = document.createElement(isAgenda ? "input" : "textarea");
-if(isAgenda){
-  field.type = "text";
-  field.style.minHeight = "54px";
-} else {
-  field.rows = 6;
-  field.style.minHeight = "140px";
+  activeTab = currentStep;
+  try{
+    localStorage.setItem(`PGMIS_MMB_ACTIVE_TAB_${MMB_PG || "anon"}`, activeTab);
+  }catch(e){}
+  updateStepUi();
 }
-field.style.width = "100%";
-field.style.maxWidth = "100%";
 
-            field.placeholder = placeholder;
-            field.value = row.content || "";
-
-            field.addEventListener("input", (e) => {
-              const val = e.target.value;
-              if(type === "agenda"){
-                agendaItems = agendaItems.map(x => x.id === row.id ? ({...x, content: val}) : x);
-              } else if(type === "deliberation"){
-                deliberations = deliberations.map(x => x.id === row.id ? ({...x, content: val}) : x);
-              } else {
-                decisions = decisions.map(x => x.id === row.id ? ({...x, content: val}) : x);
-              }
-            });
-
-            tdText.appendChild(field);
-            tr.appendChild(tdText);
-
-            const tdAct = document.createElement("td");
-            tdAct.className = "mmb-colAction";
-
-            const listRef = (type === "agenda") ? agendaItems : (type === "deliberation" ? deliberations : decisions);
-            if(listRef.length > 1){
-              const delBtn = document.createElement("button");
-              delBtn.className = "mmb-iconBtn mmb-iconBtnDanger";
-              delBtn.type = "button";
-              delBtn.title = t.deleteRow;
-              delBtn.setAttribute("aria-label", t.deleteRow);
-              delBtn.innerHTML = '<ion-icon name="trash"></ion-icon>';
-              delBtn.addEventListener("click", () => {
-                if(type === "agenda" && agendaItems.length > 1){
-                  agendaItems = agendaItems.filter(x => x.id !== row.id);
-                  afterRowMutation("agenda");
-                } else if(type === "deliberation" && deliberations.length > 1){
-                  deliberations = deliberations.filter(x => x.id !== row.id);
-                  afterRowMutation("delib");
-                } else if(type === "decision" && decisions.length > 1){
-                  decisions = decisions.filter(x => x.id !== row.id);
-                  afterRowMutation("dec");
-                }
-              });
-              tdAct.appendChild(delBtn);
-            }
-
-            tr.appendChild(tdAct);
-            tbody.appendChild(tr);
-
-            const card = document.createElement("div");
-            card.className = "mmb-mobileCard";
-            card.innerHTML = `
-              <div class="mmb-mobileCardHead">
-                <div class="mmb-mobileCardTitle">
-                  <span class="mmb-slBadge">${sl}</span>
-                  <strong>${escapeHtml(mobileTitle)}</strong>
-                </div>
-              </div>
-            `;
-
-            const body = document.createElement("div");
-            body.className = "mmb-mobileCardBody";
-
-            const block = document.createElement("div");
-            block.innerHTML = `<p class="mmb-mobileLabel">${escapeHtml(mobileTitle)}</p>`;
-
-            const mobileField = document.createElement(isAgenda ? "input" : "textarea");
-if(isAgenda){
-  mobileField.type = "text";
-  mobileField.style.minHeight = "52px";
-} else {
-  mobileField.rows = 6;
-  mobileField.style.minHeight = "150px";
+function setTab(tab){
+  setStep(tab);
 }
-mobileField.style.width = "100%";
-mobileField.style.maxWidth = "100%";
-            mobileField.placeholder = placeholder;
-            mobileField.value = row.content || "";
-            mobileField.addEventListener("input", (e) => {
-              field.value = e.target.value;
-              field.dispatchEvent(new Event("input", { bubbles:true }));
-            });
-            block.appendChild(mobileField);
-            body.appendChild(block);
 
-            if(listRef.length > 1){
-              const actBlock = document.createElement("div");
-              actBlock.style.display = "flex";
-              actBlock.style.justifyContent = "flex-end";
+    function renderTableLikeTextRows(type, rows, tableBodyId, cardRailId, pageInfoId, paginationId, uiPageKey, mobileTitle){
+  const tbody = $(tableBodyId);
+  const cardRail = $(cardRailId);
+  const pageInfo = $(pageInfoId);
+  const pagination = $(paginationId);
+  const t = translations[language] || translations.en;
 
-              const delBtn2 = document.createElement("button");
-              delBtn2.className = "mmb-rowDelete";
-              delBtn2.type = "button";
-              delBtn2.innerHTML = '<ion-icon name="trash"></ion-icon>';
-              delBtn2.addEventListener("click", () => {
-                if(type === "agenda" && agendaItems.length > 1){
-                  agendaItems = agendaItems.filter(x => x.id !== row.id);
-                  afterRowMutation("agenda");
-                } else if(type === "deliberation" && deliberations.length > 1){
-                  deliberations = deliberations.filter(x => x.id !== row.id);
-                  afterRowMutation("delib");
-                } else if(type === "decision" && decisions.length > 1){
-                  decisions = decisions.filter(x => x.id !== row.id);
-                  afterRowMutation("dec");
-                }
-              });
-              actBlock.appendChild(delBtn2);
-              body.appendChild(actBlock);
-            }
+  if(!tbody || !cardRail || !pageInfo || !pagination) return;
 
-            card.appendChild(body);
-            rail.appendChild(card);
-          });
-        }
+  tbody.innerHTML = "";
+  cardRail.innerHTML = "";
+  pagination.innerHTML = "";
 
-        $(pageInfoId).textContent = buildPageInfo(sliced.total, sliced.start, sliced.end);
-        renderPagination(paginationId, sliced.page, sliced.pages, (nextPage) => {
-          ui[pageKey] = nextPage;
-          renderAll();
-        });
+  // Always keep at least one editable row alive
+  if(!Array.isArray(rows) || !rows.length){
+    const fallback = [{ id: uid(), content: "" }];
+
+    if(type === "agenda"){
+      agendaItems = fallback;
+      rows = agendaItems;
+    } else if(type === "deliberation"){
+      deliberations = fallback;
+      rows = deliberations;
+    } else {
+      decisions = fallback;
+      rows = decisions;
+    }
+  }
+
+  const filtered = filterMinuteRows(rows);
+  const perPage = Math.max(1, parseInt(ui.minutesRowsPerPage, 10) || 10);
+  const sliced = pageSlice(filtered, ui[uiPageKey] || 1, perPage);
+  ui[uiPageKey] = sliced.page;
+
+  const sourceRows = (type === "agenda")
+    ? agendaItems
+    : (type === "deliberation" ? deliberations : decisions);
+
+  const visibleRows = (filtered && filtered.length) ? filtered : sourceRows;
+
+  if(!visibleRows.length){
+    const fallback = [{ id: uid(), content: "" }];
+
+    if(type === "agenda"){
+      agendaItems = fallback;
+      rows = agendaItems;
+    } else if(type === "deliberation"){
+      deliberations = fallback;
+      rows = deliberations;
+    } else {
+      decisions = fallback;
+      rows = decisions;
+    }
+
+    return renderTableLikeTextRows(type, rows, tableBodyId, cardRailId, pageInfoId, paginationId, uiPageKey, mobileTitle);
+  }
+
+  const currentRows = sliced.rows && sliced.rows.length ? sliced.rows : visibleRows.slice(0, 1);
+
+  currentRows.forEach((row, idx) => {
+    const sl = sliced.start + idx + 1;
+    const isAgenda = type === "agenda";
+    const placeholder =
+      isAgenda ? t.agendaPlaceholder :
+      (type === "deliberation" ? t.deliberationPlaceholder : t.decisionPlaceholder);
+
+    const tr = document.createElement("tr");
+
+    const tdSl = document.createElement("td");
+    tdSl.className = "mmb-colSl";
+    tdSl.innerHTML = `<span class="mmb-slBadge">${sl}</span>`;
+    tr.appendChild(tdSl);
+
+    const tdText = document.createElement("td");
+
+    const field = document.createElement(isAgenda ? "input" : "textarea");
+    if(isAgenda){
+      field.type = "text";
+      field.style.minHeight = "54px";
+    } else {
+      field.rows = 6;
+      field.style.minHeight = "140px";
+    }
+    field.style.width = "100%";
+    field.style.maxWidth = "100%";
+    field.placeholder = placeholder;
+    field.value = row.content || "";
+
+    field.addEventListener("input", (e) => {
+      const val = e.target.value;
+      if(type === "agenda"){
+        agendaItems = agendaItems.map(x => x.id === row.id ? ({ ...x, content: val }) : x);
+      } else if(type === "deliberation"){
+        deliberations = deliberations.map(x => x.id === row.id ? ({ ...x, content: val }) : x);
+      } else {
+        decisions = decisions.map(x => x.id === row.id ? ({ ...x, content: val }) : x);
       }
+    });
 
-      /* ============================================================
-         Signature logic (original)
-         ============================================================ */
-      const Sig = {
-        openForMemberId: null,
-        draftDataUrl: null,
-        camStream: null,
-        camVideoEl: null,
-        camUiMounted: false
-      };
+    tdText.appendChild(field);
+    tr.appendChild(tdText);
 
+    const tdAct = document.createElement("td");
+    tdAct.className = "mmb-colAction";
+
+    const listRef = (type === "agenda")
+      ? agendaItems
+      : (type === "deliberation" ? deliberations : decisions);
+
+    if(listRef.length > 1){
+      const delBtn = document.createElement("button");
+      delBtn.className = "mmb-iconBtn mmb-iconBtnDanger";
+      delBtn.type = "button";
+      delBtn.title = t.deleteRow;
+      delBtn.setAttribute("aria-label", t.deleteRow);
+      delBtn.innerHTML = '<ion-icon name="trash"></ion-icon>';
+      delBtn.addEventListener("click", () => {
+        if(type === "agenda" && agendaItems.length > 1){
+          agendaItems = agendaItems.filter(x => x.id !== row.id);
+          afterRowMutation("agenda");
+        } else if(type === "deliberation" && deliberations.length > 1){
+          deliberations = deliberations.filter(x => x.id !== row.id);
+          afterRowMutation("delib");
+        } else if(type === "decision" && decisions.length > 1){
+          decisions = decisions.filter(x => x.id !== row.id);
+          afterRowMutation("dec");
+        }
+      });
+      tdAct.appendChild(delBtn);
+    }
+
+    tr.appendChild(tdAct);
+    tbody.appendChild(tr);
+
+    const card = document.createElement("div");
+    card.className = "mmb-mobileCard";
+    card.innerHTML = `
+      <div class="mmb-mobileCardHead">
+        <div class="mmb-mobileCardTitle">
+          <span class="mmb-slBadge">${sl}</span>
+          <strong>${escapeHtml(mobileTitle)}</strong>
+        </div>
+      </div>
+    `;
+
+    const body = document.createElement("div");
+    body.className = "mmb-mobileCardBody";
+
+    const block = document.createElement("div");
+    block.innerHTML = `<p class="mmb-mobileLabel">${escapeHtml(mobileTitle)}</p>`;
+
+    const mobileField = document.createElement(isAgenda ? "input" : "textarea");
+    if(isAgenda){
+      mobileField.type = "text";
+      mobileField.style.minHeight = "52px";
+    } else {
+      mobileField.rows = 6;
+      mobileField.style.minHeight = "150px";
+    }
+    mobileField.style.width = "100%";
+    mobileField.style.maxWidth = "100%";
+    mobileField.placeholder = placeholder;
+    mobileField.value = row.content || "";
+
+    mobileField.addEventListener("input", (e) => {
+      const val = e.target.value;
+      field.value = val;
+      if(type === "agenda"){
+        agendaItems = agendaItems.map(x => x.id === row.id ? ({ ...x, content: val }) : x);
+      } else if(type === "deliberation"){
+        deliberations = deliberations.map(x => x.id === row.id ? ({ ...x, content: val }) : x);
+      } else {
+        decisions = decisions.map(x => x.id === row.id ? ({ ...x, content: val }) : x);
+      }
+    });
+
+    field.addEventListener("input", (e) => {
+      mobileField.value = e.target.value;
+    });
+
+    block.appendChild(mobileField);
+    body.appendChild(block);
+    card.appendChild(body);
+    cardRail.appendChild(card);
+  });
+
+  const totalCount = sourceRows.length;
+  pageInfo.textContent = `${totalCount} ${t.pageInfoSuffix}`;
+
+  renderPagination(
+    paginationId,
+    sliced.page,
+    sliced.pages,
+    (nextPage) => {
+      ui[uiPageKey] = nextPage;
+      renderAll();
+    }
+  );
+}
       function stopCamera(){
         try{
           if(Sig.camStream){
@@ -2643,18 +3183,23 @@ mobileField.style.maxWidth = "100%";
           try{
             const v = Sig.camVideoEl;
             if(!v) return;
-            const w = v.videoWidth || 1280;
-            const h = v.videoHeight || 720;
+
+            const srcW = v.videoWidth || 1280;
+            const srcH = v.videoHeight || 720;
+            const maxW = 360;
+            const scale = Math.min(1, maxW / srcW);
+            const outW = Math.max(240, Math.round(srcW * scale));
+            const outH = Math.max(135, Math.round(srcH * scale));
 
             const c = document.createElement("canvas");
-            c.width = w;
-            c.height = h;
+            c.width = outW;
+            c.height = outH;
             const ctx = c.getContext("2d");
             ctx.fillStyle = "#fff";
-            ctx.fillRect(0,0,w,h);
-            ctx.drawImage(v, 0, 0, w, h);
+            ctx.fillRect(0,0,outW,outH);
+            ctx.drawImage(v, 0, 0, outW, outH);
 
-            const url = c.toDataURL("image/png");
+            const url = c.toDataURL("image/jpeg", 0.65);
             Sig.draftDataUrl = url;
 
             stopCamera();
@@ -2697,7 +3242,10 @@ mobileField.style.maxWidth = "100%";
           }
         }catch(err){
           stopCamera();
-          try{ $("mmbSigCaptureInput").click(); }catch(e){}
+          try{
+            const fallbackInput = $("mmbSigCaptureInput");
+            if(fallbackInput) fallbackInput.click();
+          }catch(e){}
         }
       }
 
@@ -2711,9 +3259,16 @@ mobileField.style.maxWidth = "100%";
         showModal(true);
 
         if(autoAction === "capture"){
-          setTimeout(() => { startCameraCapture(); }, 60);
+          setTimeout(() => {
+            startCameraCapture();
+          }, 60);
         } else if(autoAction === "upload"){
-          setTimeout(() => { try { $("mmbSigUploadInput").click(); } catch(e){} }, 60);
+          setTimeout(() => {
+            try {
+              const upInput = $("mmbSigUploadInput");
+              if(upInput) upInput.click();
+            } catch(e){}
+          }, 60);
         } else if(autoAction === "draw"){
           setTimeout(() => { try { resizePad(); } catch(e){} }, 60);
         }
@@ -2756,8 +3311,54 @@ mobileField.style.maxWidth = "100%";
 
       function readFileAsDataUrl(file, cb){
         if(!file) return cb(null);
+
+        const isImage = /^image\//i.test(file.type || "");
+        if(!isImage){
+          const reader = new FileReader();
+          reader.onload = () => cb(reader.result);
+          reader.onerror = () => cb(null);
+          reader.readAsDataURL(file);
+          return;
+        }
+
         const reader = new FileReader();
-        reader.onload = () => cb(reader.result);
+        reader.onload = () => {
+          try{
+            const img = new Image();
+            img.onload = () => {
+              try{
+                const srcW = img.naturalWidth || img.width || 0;
+                const srcH = img.naturalHeight || img.height || 0;
+                if(!srcW || !srcH){
+                  cb(reader.result);
+                  return;
+                }
+
+                const maxW = 360;
+                const scale = Math.min(1, maxW / srcW);
+                const outW = Math.max(240, Math.round(srcW * scale));
+                const outH = Math.max(135, Math.round(srcH * scale));
+
+                const canvas = document.createElement("canvas");
+                canvas.width = outW;
+                canvas.height = outH;
+
+                const ctx = canvas.getContext("2d");
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(0, 0, outW, outH);
+                ctx.drawImage(img, 0, 0, outW, outH);
+
+                cb(canvas.toDataURL("image/jpeg", 0.65));
+              }catch(e){
+                cb(reader.result);
+              }
+            };
+            img.onerror = () => cb(reader.result);
+            img.src = reader.result;
+          }catch(e){
+            cb(reader.result);
+          }
+        };
         reader.onerror = () => cb(null);
         reader.readAsDataURL(file);
       }
@@ -2851,16 +3452,47 @@ mobileField.style.maxWidth = "100%";
       function padToDataUrl(){
         const c = getPad();
         if(!c) return null;
-        return c.toDataURL("image/png");
+
+        try{
+          const srcW = c.width || 0;
+          const srcH = c.height || 0;
+          if(!srcW || !srcH) return c.toDataURL("image/png");
+
+          const maxW = 360;
+          const scale = Math.min(1, maxW / srcW);
+          const outW = Math.max(240, Math.round(srcW * scale));
+          const outH = Math.max(90, Math.round(srcH * scale));
+
+          const out = document.createElement("canvas");
+          out.width = outW;
+          out.height = outH;
+
+          const ctx = out.getContext("2d");
+          ctx.fillStyle = "#fff";
+          ctx.fillRect(0, 0, outW, outH);
+          ctx.drawImage(c, 0, 0, outW, outH);
+
+          return out.toDataURL("image/jpeg", 0.65);
+        }catch(e){
+          return c.toDataURL("image/png");
+        }
       }
 
       function wireSignatureModal(){
-        $("mmbSigCloseBtn").addEventListener("click", () => showModal(false));
-        $("mmbSigModal").addEventListener("click", (e) => {
+        const closeBtn = $("mmbSigCloseBtn");
+        const modalEl = $("mmbSigModal");
+        const removeBtn = $("mmbSigRemoveBtn");
+        const usePadBtn = $("mmbSigUsePad");
+        const savePadBtn = $("mmbSigSaveBtn");
+        const clearPadBtn = $("mmbSigClearPad");
+        if(!closeBtn || !modalEl || !removeBtn || !usePadBtn || !savePadBtn || !clearPadBtn) return;
+
+        closeBtn.addEventListener("click", () => showModal(false));
+        modalEl.addEventListener("click", (e) => {
           if(e.target && e.target.id === "mmbSigModal") showModal(false);
         });
 
-        $("mmbSigRemoveBtn").addEventListener("click", () => {
+        removeBtn.addEventListener("click", () => {
           stopCamera();
           Sig.draftDataUrl = null;
           renderSigPreview(null);
@@ -2915,9 +3547,9 @@ mobileField.style.maxWidth = "100%";
           c.addEventListener("touchend", endDraw, {passive:false});
         }
 
-        $("mmbSigClearPad").addEventListener("click", () => clearPad());
+        clearPadBtn.addEventListener("click", () => clearPad());
 
-        $("mmbSigUsePad").addEventListener("click", () => {
+        usePadBtn.addEventListener("click", () => {
           const t = translations[language] || translations.en;
           stopCamera();
           if(!hasInk()){
@@ -2929,7 +3561,7 @@ mobileField.style.maxWidth = "100%";
           renderSigPreview(url);
         });
 
-  $("mmbSigSaveBtn").addEventListener("click", () => {
+  savePadBtn.addEventListener("click", () => {
   stopCamera();
 
   if(!Sig.openForMemberId){
@@ -2939,17 +3571,15 @@ mobileField.style.maxWidth = "100%";
 
   let savedUrl = Sig.draftDataUrl || null;
 
-  // If user drew on canvas and clicked Save directly without pressing "Use"
   if(!savedUrl && hasInk()){
     savedUrl = padToDataUrl();
   }
 
   setMemberSignature(Sig.openForMemberId, savedUrl);
-
-  // keep modal state clean
   Sig.draftDataUrl = savedUrl;
   Sig.openForMemberId = null;
 
+  renderAll();
   showModal(false);
   afterRowMutation("members");
 });
@@ -2982,12 +3612,169 @@ mobileField.style.maxWidth = "100%";
         const t = translations[language] || translations.en;
         const tableBody = $("mmbMembersTableBody");
         const rail = $("mmbMembersCardRail");
+        if(!tableBody || !rail) return;
+
         tableBody.innerHTML = "";
         rail.innerHTML = "";
+
+        if(!Array.isArray(members) || !members.length){
+          members = [{ id: uid(), name: "", member_id: "", member_code: "", signature: null }];
+        }
 
         const filtered = filterMembersRows(members);
         const sliced = pageSlice(filtered, ui.membersPage, ui.membersRowsPerPage);
         ui.membersPage = sliced.page;
+
+        function updateMemberIdentity(memberRowId, rawValue){
+          const value = String(rawValue || "").trim();
+          const matched = memberDirectory.find(opt => {
+            const label = opt.member_code ? `${opt.name} (${opt.member_code})` : opt.name;
+            return value === label || value === (opt.name || "");
+          });
+
+          const duplicate = matched
+            ? findDuplicateMemberRow(memberRowId, matched.id || "", matched.name || value)
+            : findDuplicateMemberRow(memberRowId, "", value);
+
+          if(duplicate){
+            showPopup("This member is already added in this meeting. One member can be entered only once.", "danger");
+            members = members.map(x => x.id === memberRowId ? ({ ...x, member_id:"", name:"", member_code:"" }) : x);
+            return false;
+          }
+
+          members = members.map(x => {
+            if(x.id !== memberRowId) return x;
+            if(matched){
+              return {
+                ...x,
+                member_id: matched.id || "",
+                name: matched.name || value,
+                member_code: matched.member_code || ""
+              };
+            }
+            return {
+              ...x,
+              member_id: "",
+              name: value,
+              member_code: ""
+            };
+          });
+          return true;
+        }
+
+        function buildNameInput(member){
+          const wrap = document.createElement("div");
+          wrap.style.width = "100%";
+
+          const input = document.createElement("input");
+          input.type = "text";
+          input.className = "mmb-nameInput";
+          input.placeholder = t.enterMemberName;
+          input.autocomplete = "off";
+          input.setAttribute("list", `mmbMemberList_${member.id}`);
+
+          const matched = memberDirectory.find(opt => (opt.id || "") === (member.member_id || ""));
+          if(matched){
+            input.value = matched.member_code ? `${matched.name} (${matched.member_code})` : matched.name;
+          } else {
+            input.value = member.name || "";
+          }
+
+          const list = document.createElement("datalist");
+          list.id = `mmbMemberList_${member.id}`;
+          memberDirectory.forEach((opt) => {
+            const option = document.createElement("option");
+            option.value = opt.member_code ? `${opt.name} (${opt.member_code})` : (opt.name || "");
+            list.appendChild(option);
+          });
+
+          const commit = (val, rerenderOnUnknown) => {
+            updateMemberIdentity(member.id, val);
+            if(rerenderOnUnknown){
+              renderAll();
+            }
+          };
+
+          input.addEventListener("input", (e) => {
+            updateMemberIdentity(member.id, e.target.value);
+          });
+          input.addEventListener("change", (e) => {
+            commit(e.target.value, true);
+          });
+          input.addEventListener("blur", (e) => {
+            commit(e.target.value, false);
+          });
+
+          wrap.appendChild(input);
+          wrap.appendChild(list);
+          return { wrap, input };
+        }
+
+        function buildSignatureBlock(member){
+          const hasSignature =
+            typeof member.signature === "string" &&
+            member.signature.trim() !== "";
+
+          if(hasSignature){
+            const preview = document.createElement("div");
+            preview.className = "mmb-sigPreview";
+
+            const img = document.createElement("img");
+            img.src = member.signature;
+            img.alt = t.signature;
+            preview.appendChild(img);
+
+            const rm = document.createElement("button");
+            rm.className = "mmb-sigRemove";
+            rm.type = "button";
+            rm.innerHTML = '<ion-icon name="close-circle"></ion-icon>';
+            rm.setAttribute("aria-label", t.deleteRow);
+            rm.title = t.deleteRow;
+            rm.addEventListener("click", (e) => {
+              e.stopPropagation();
+              members = members.map(x =>
+                x.id === member.id ? ({ ...x, signature: null }) : x
+              );
+              afterRowMutation("members");
+            });
+            preview.appendChild(rm);
+
+            preview.style.cursor = "pointer";
+            preview.addEventListener("click", (e) => {
+              if(e.target && e.target.closest && e.target.closest(".mmb-sigRemove")) return;
+              openSigModal(member.id);
+            });
+
+            return preview;
+          }
+
+          const actions = document.createElement("div");
+          actions.className = "mmb-sigActions";
+
+          const btnCapture = document.createElement("button");
+          btnCapture.className = "mmb-captureBtn";
+          btnCapture.type = "button";
+          btnCapture.innerHTML = `<ion-icon name="camera"></ion-icon><span>${t.sigCapture}</span>`;
+          btnCapture.addEventListener("click", () => openSigModal(member.id, "capture"));
+
+          const btnUpload = document.createElement("button");
+          btnUpload.className = "mmb-captureBtn";
+          btnUpload.type = "button";
+          btnUpload.innerHTML = `<ion-icon name="cloud-upload"></ion-icon><span>${t.sigUpload}</span>`;
+          btnUpload.addEventListener("click", () => openSigModal(member.id, "upload"));
+
+          const btnDraw = document.createElement("button");
+          btnDraw.className = "mmb-captureBtn";
+          btnDraw.type = "button";
+          btnDraw.innerHTML = `<ion-icon name="brush"></ion-icon><span>${t.sigDraw}</span>`;
+          btnDraw.addEventListener("click", () => openSigModal(member.id, "draw"));
+
+          actions.appendChild(btnCapture);
+          actions.appendChild(btnUpload);
+          actions.appendChild(btnDraw);
+
+          return actions;
+        }
 
         if(!sliced.rows.length){
           tableBody.innerHTML = `<tr><td colspan="4"><div class="mmb-empty">${escapeHtml(t.noMembers)}</div></td></tr>`;
@@ -3004,208 +3791,112 @@ mobileField.style.maxWidth = "100%";
             tr.appendChild(tdSl);
 
             const tdName = document.createElement("td");
-            const nameSelect = document.createElement("select");
-            nameSelect.className = "mmb-nameInput";
-            const emptyOpt = document.createElement("option");
-            emptyOpt.value = "";
-            emptyOpt.textContent = t.enterMemberName;
-            nameSelect.appendChild(emptyOpt);
-            memberDirectory.forEach((opt) => {
-              const el = document.createElement("option");
-              el.value = opt.id || opt.name || "";
-              el.textContent = opt.member_code ? `${opt.name} (${opt.member_code})` : opt.name;
-              el.dataset.name = opt.name || "";
-              el.dataset.code = opt.member_code || "";
-              nameSelect.appendChild(el);
-            });
-            nameSelect.value = m.member_id || "";
-            if (!nameSelect.value && m.name) {
-              const matched = memberDirectory.find(x => (x.name || "") === m.name);
-              if (matched) nameSelect.value = matched.id || "";
-            }
-            nameSelect.addEventListener("change", (e) => {
-              const opt = e.target.selectedOptions && e.target.selectedOptions[0];
-              const memberId = e.target.value || "";
-              const memberName = opt ? (opt.dataset.name || opt.textContent || "") : "";
-              const memberCode = opt ? (opt.dataset.code || "") : "";
-              members = members.map(x => x.id === m.id ? ({...x, member_id: memberId, name: memberName, member_code: memberCode}) : x);
-            });
-            tdName.appendChild(nameSelect);
+            const desktopName = buildNameInput(m);
+            tdName.appendChild(desktopName.wrap);
             tr.appendChild(tdName);
 
             const tdSig = document.createElement("td");
             tdSig.className = "mmb-colSig";
+            tdSig.appendChild(buildSignatureBlock(m));
+            tr.appendChild(tdSig);
 
-          function buildSignatureBlock(member){
-  const hasSignature =
-    typeof member.signature === "string" &&
-    member.signature.trim() !== "";
+            const tdAct = document.createElement("td");
+            tdAct.className = "mmb-colAction";
+            if(members.length > 1){
+              const desktopDel = document.createElement("button");
+              desktopDel.className = "mmb-rowDelete";
+              desktopDel.type = "button";
+              desktopDel.innerHTML = '<ion-icon name="trash"></ion-icon>';
+              desktopDel.title = t.deleteRow;
+              desktopDel.setAttribute("aria-label", t.deleteRow);
+              desktopDel.addEventListener("click", () => {
+                if(members.length > 1){
+                  members = members.filter(x => x.id !== m.id);
+                  afterRowMutation("members");
+                }
+              });
+              tdAct.appendChild(desktopDel);
+            }
+            tr.appendChild(tdAct);
 
-  if(hasSignature){
-    const preview = document.createElement("div");
-    preview.className = "mmb-sigPreview";
+            tableBody.appendChild(tr);
 
-    const img = document.createElement("img");
-    img.src = member.signature;
-    img.alt = t.signature;
-    preview.appendChild(img);
+            const card = document.createElement("div");
+            card.className = "mmb-mobileCard";
+            card.innerHTML = `
+              <div class="mmb-mobileCardHead">
+                <div class="mmb-mobileCardTitle">
+                  <span class="mmb-slBadge">${sl}</span>
+                  <strong>${escapeHtml(t.nameOfMember)}</strong>
+                </div>
+              </div>
+            `;
 
-    const rm = document.createElement("button");
-    rm.className = "mmb-sigRemove";
-    rm.type = "button";
-    rm.innerHTML = '<ion-icon name="close-circle"></ion-icon>';
-    rm.setAttribute("aria-label", t.deleteRow);
-    rm.title = t.deleteRow;
-    rm.addEventListener("click", (e) => {
-      e.stopPropagation();
-      members = members.map(x =>
-        x.id === member.id ? ({ ...x, signature: null }) : x
-      );
-      afterRowMutation("members");
-    });
-    preview.appendChild(rm);
+            const cardBody = document.createElement("div");
+            cardBody.className = "mmb-mobileCardBody";
 
-    preview.style.cursor = "pointer";
-    preview.addEventListener("click", (e) => {
-      if(e.target && e.target.closest && e.target.closest(".mmb-sigRemove")) return;
-      openSigModal(member.id);
-    });
+            const nameBlock = document.createElement("div");
+            nameBlock.innerHTML = `<p class="mmb-mobileLabel">${escapeHtml(t.nameOfMember)}</p>`;
+            const mobileName = buildNameInput(m);
+            mobileName.input.value = desktopName.input.value || "";
+            mobileName.input.addEventListener("input", (e) => {
+              desktopName.input.value = e.target.value;
+              desktopName.input.dispatchEvent(new Event("input", { bubbles:true }));
+            });
+            mobileName.input.addEventListener("change", (e) => {
+              desktopName.input.value = e.target.value;
+              desktopName.input.dispatchEvent(new Event("change", { bubbles:true }));
+            });
+            nameBlock.appendChild(mobileName.wrap);
+            cardBody.appendChild(nameBlock);
 
-    return preview;
-  }
+            const sigBlock = document.createElement("div");
+            sigBlock.innerHTML = `<p class="mmb-mobileLabel">${escapeHtml(t.signature)}</p>`;
+            sigBlock.appendChild(buildSignatureBlock(m));
+            cardBody.appendChild(sigBlock);
 
-  const actions = document.createElement("div");
-  actions.className = "mmb-sigActions";
+            if(members.length > 1){
+              const actBlock = document.createElement("div");
+              actBlock.style.display = "flex";
+              actBlock.style.justifyContent = "flex-end";
 
-  const btnCapture = document.createElement("button");
-  btnCapture.className = "mmb-captureBtn";
-  btnCapture.type = "button";
-  btnCapture.innerHTML = `<ion-icon name="camera"></ion-icon><span>${t.sigCapture}</span>`;
-  btnCapture.addEventListener("click", () => openSigModal(member.id, "capture"));
+              const del = document.createElement("button");
+              del.className = "mmb-rowDelete";
+              del.type = "button";
+              del.innerHTML = '<ion-icon name="trash"></ion-icon>';
+              del.addEventListener("click", () => {
+                if(members.length > 1){
+                  members = members.filter(x => x.id !== m.id);
+                  afterRowMutation("members");
+                }
+              });
+              actBlock.appendChild(del);
+              cardBody.appendChild(actBlock);
+            }
 
-  const btnUpload = document.createElement("button");
-  btnUpload.className = "mmb-captureBtn";
-  btnUpload.type = "button";
-  btnUpload.innerHTML = `<ion-icon name="cloud-upload"></ion-icon><span>${t.sigUpload}</span>`;
-  btnUpload.addEventListener("click", () => openSigModal(member.id, "upload"));
+            card.appendChild(cardBody);
+            rail.appendChild(card);
+          });
+        }
 
-  const btnDraw = document.createElement("button");
-  btnDraw.className = "mmb-captureBtn";
-  btnDraw.type = "button";
-  btnDraw.innerHTML = `<ion-icon name="brush"></ion-icon><span>${t.sigDraw}</span>`;
-  btnDraw.addEventListener("click", () => openSigModal(member.id, "draw"));
-
-  actions.appendChild(btnCapture);
-  actions.appendChild(btnUpload);
-  actions.appendChild(btnDraw);
-
-  return actions;
-}
-
-
-tdSig.appendChild(buildSignatureBlock(m));
-tr.appendChild(tdSig);
-
-const tdAct = document.createElement("td");
-tdAct.className = "mmb-colAction";
-if(members.length > 1){
-  const desktopDel = document.createElement("button");
-  desktopDel.className = "mmb-rowDelete";
-  desktopDel.type = "button";
-  desktopDel.innerHTML = '<ion-icon name="trash"></ion-icon>';
-  desktopDel.title = t.deleteRow;
-  desktopDel.setAttribute("aria-label", t.deleteRow);
-  desktopDel.addEventListener("click", () => {
-    if(members.length > 1){
-      members = members.filter(x => x.id !== m.id);
-      afterRowMutation("members");
-    }
-  });
-  tdAct.appendChild(desktopDel);
-}
-tr.appendChild(tdAct);
-
-tableBody.appendChild(tr);
-
-const card = document.createElement("div");
-card.className = "mmb-mobileCard";
-card.innerHTML = `
-  <div class="mmb-mobileCardHead">
-    <div class="mmb-mobileCardTitle">
-      <span class="mmb-slBadge">${sl}</span>
-      <strong>${escapeHtml(t.nameOfMember)}</strong>
-    </div>
-  </div>
-`;
-
-const cardBody = document.createElement("div");
-cardBody.className = "mmb-mobileCardBody";
-
-const nameBlock = document.createElement("div");
-nameBlock.innerHTML = `<p class="mmb-mobileLabel">${escapeHtml(t.nameOfMember)}</p>`;
-const mobileName = nameSelect.cloneNode(true);
-mobileName.value = nameSelect.value || "";
-mobileName.addEventListener("change", (e) => {
-  nameSelect.value = e.target.value;
-  nameSelect.dispatchEvent(new Event("change", { bubbles:true }));
-});
-nameBlock.appendChild(mobileName);
-cardBody.appendChild(nameBlock);
-
-const sigBlock = document.createElement("div");
-sigBlock.innerHTML = `<p class="mmb-mobileLabel">${escapeHtml(t.signature)}</p>`;
-sigBlock.appendChild(buildSignatureBlock(m));
-cardBody.appendChild(sigBlock);
-
-if(members.length > 1){
-  const actBlock = document.createElement("div");
-  actBlock.style.display = "flex";
-  actBlock.style.justifyContent = "flex-end";
-
-  const del = document.createElement("button");
-  del.className = "mmb-rowDelete";
-  del.type = "button";
-  del.innerHTML = '<ion-icon name="trash"></ion-icon>';
-  del.addEventListener("click", () => {
-    if(members.length > 1){
-      members = members.filter(x => x.id !== m.id);
-      afterRowMutation("members");
-    }
-  });
-  actBlock.appendChild(del);
-  cardBody.appendChild(actBlock);
-}
-
-card.appendChild(cardBody);
-rail.appendChild(card);
+        $("mmbMembersPageInfo").textContent = buildPageInfo(sliced.total, sliced.start, sliced.end);
+        renderPagination("mmbMembersPagination", sliced.page, sliced.pages, (p) => {
+          ui.membersPage = p;
+          renderAll();
         });
       }
-
-$("mmbMembersPageInfo").textContent = buildPageInfo(sliced.total, sliced.start, sliced.end);
-renderPagination("mmbMembersPagination", sliced.page, sliced.pages, (p) => {
-  ui.membersPage = p;
-  renderAll();
-});
-}
       function renderKpis(){
-        const filteredMinutes = filterMinuteRows([
-          ...agendaItems.map(x => ({ content: x.content })),
-          ...deliberations.map(x => ({ content: x.content })),
-          ...decisions.map(x => ({ content: x.content }))
-        ]);
-
         const signed = members.filter(m => !!m.signature).length;
-        const filteredMembers = filterMembersRows(members);
 
         $("mmbAgendaKpiVal").textContent = String(agendaItems.length);
         $("mmbDelibKpiVal").textContent = String(deliberations.length);
         $("mmbDecKpiVal").textContent = String(decisions.length);
-        $("mmbMinuteMatchVal").textContent = String(filteredMinutes.length);
+        if($("mmbMinuteMatchVal")) $("mmbMinuteMatchVal").textContent = "";
 
         $("mmbMemberKpiVal").textContent = String(members.length);
         $("mmbSignedKpiVal").textContent = String(signed);
         $("mmbUnsignedKpiVal").textContent = String(Math.max(0, members.length - signed));
-        $("mmbMemberMatchVal").textContent = String(filteredMembers.length);
+        if($("mmbMemberMatchVal")) $("mmbMemberMatchVal").textContent = "";
 
         $("mmbAgendaRowsVal").textContent = String(agendaItems.length);
         $("mmbDelibRowsVal").textContent = String(deliberations.length);
@@ -3213,6 +3904,174 @@ renderPagination("mmbMembersPagination", sliced.page, sliced.pages, (p) => {
         $("mmbMembersRowsVal").textContent = String(members.length);
 
         $("mmbMemberDateVal").textContent = formatDatePretty(meetingDate);
+      }
+
+      function getNonEmptyMinuteRows(rows){
+        return (Array.isArray(rows) ? rows : []).map(x => String((x && x.content) || "").trim()).filter(Boolean);
+      }
+
+      function buildOfficialListHtml(items, emptyText){
+        if(!items.length) return `<div class="mmb-officialEmpty">${escapeHtml(emptyText)}</div>`;
+        return `<ol class="mmb-officialList">${items.map(v => `<li>${escapeHtml(v)}</li>`).join("")}</ol>`;
+      }
+
+      function buildOfficialMembersTable(){
+        const t = translations[language] || translations.en;
+        const rows = Array.isArray(members) ? members : [];
+        if(!rows.length){
+          return `<div class="mmb-officialEmpty">${escapeHtml(t.noMembers || "No members found.")}</div>`;
+        }
+        return `
+          <div class="mmb-officialTableWrap">
+            <table class="mmb-officialTable">
+              <thead>
+                <tr>
+                  <th>${escapeHtml(t.slNo || "Sl No")}</th>
+                  <th>${escapeHtml(t.nameOfMember || "Name of Member")}</th>
+                  <th>Member Code</th>
+                  <th>${escapeHtml(t.signature || "Signature")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map((m, idx) => `
+                  <tr>
+                    <td>${idx + 1}</td>
+                    <td>${escapeHtml(m.name || "")}</td>
+                    <td>${escapeHtml(m.member_code || "")}</td>
+                    <td>${m.signature ? `<img class="mmb-officialSigImg" src="${m.signature}" alt="Signature ${idx+1}" />` : `<span class="mmb-officialEmpty">Not signed</span>`}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>`;
+      }
+
+      function buildOfficialSummaryHtml(){
+        const t = translations[language] || translations.en;
+        const period = getActivePeriod();
+        const periodLabel = new Date(period.year, period.month - 1, 1).toLocaleDateString("en-GB", { month:"long", year:"numeric" });
+        const agenda = getNonEmptyMinuteRows(agendaItems);
+        const delibs = getNonEmptyMinuteRows(deliberations);
+        const decs = getNonEmptyMinuteRows(decisions);
+        const meetingDt = (meetingDate instanceof Date && !isNaN(meetingDate.getTime())) ? formatDatePretty(meetingDate) : "—";
+        return `
+          <div class="mmb-officialDoc">
+            <div class="mmb-officialHeader">
+              <h2 class="mmb-officialHeading">${escapeHtml(t.meetingSummaryTitle || "Meeting Minutes Summary")}</h2>
+              <p class="mmb-officialSub">Official formatted record for the selected interval</p>
+            </div>
+            <div class="mmb-officialMeta">
+              <div class="mmb-officialMetaItem">
+                <span class="mmb-officialMetaLabel">Interval</span>
+                <div class="mmb-officialMetaValue">${escapeHtml(periodLabel)}</div>
+              </div>
+              <div class="mmb-officialMetaItem">
+                <span class="mmb-officialMetaLabel">Meeting Date</span>
+                <div class="mmb-officialMetaValue">${escapeHtml(meetingDt)}</div>
+              </div>
+              <div class="mmb-officialMetaItem">
+                <span class="mmb-officialMetaLabel">Total Members Present</span>
+                <div class="mmb-officialMetaValue">${members.length}</div>
+              </div>
+            </div>
+            <div class="mmb-officialSection">
+              <h3 class="mmb-officialSectionTitle"><ion-icon name="list"></ion-icon>${escapeHtml(t.agendaItems || "Agenda Items")}</h3>
+              ${buildOfficialListHtml(agenda, t.noRows || "No rows found.")}
+            </div>
+            <div class="mmb-officialSection">
+              <h3 class="mmb-officialSectionTitle"><ion-icon name="chatbubbles"></ion-icon>${escapeHtml(t.detailsOfDeliberations || "Details of Deliberations")}</h3>
+              ${buildOfficialListHtml(delibs, t.noRows || "No rows found.")}
+            </div>
+            <div class="mmb-officialSection">
+              <h3 class="mmb-officialSectionTitle"><ion-icon name="checkmark-done"></ion-icon>${escapeHtml(t.decisionsTaken || "Decisions Taken")}</h3>
+              ${buildOfficialListHtml(decs, t.noRows || "No rows found.")}
+            </div>
+            <div class="mmb-officialSection">
+              <h3 class="mmb-officialSectionTitle"><ion-icon name="people"></ion-icon>${escapeHtml(t.membersPresentTitle || "Members Present")}</h3>
+              ${buildOfficialMembersTable()}
+            </div>
+          </div>`;
+      }
+
+      function openOfficialSummaryModal(){
+        const modal = $("mmbPreviewModal");
+        const body = $("mmbPreviewBody");
+        if(!modal || !body) return;
+        body.innerHTML = buildOfficialSummaryHtml();
+        modal.classList.add("show");
+        modal.setAttribute("aria-hidden", "false");
+      }
+
+      function closeOfficialSummaryModal(){
+        const modal = $("mmbPreviewModal");
+        if(!modal) return;
+        modal.classList.remove("show");
+        modal.setAttribute("aria-hidden", "true");
+      }
+
+      function buildPrintableSummaryDocument(){
+        return `<!doctype html>
+<html><head><meta charset="utf-8"><title>Meeting Minutes Summary</title><style>
+          @page{size:A4; margin:14mm;}
+          html,body{margin:0;padding:0;background:#fff;color:#0f172a;font-family:Arial,Helvetica,sans-serif;}
+          .doc{width:100%;}
+          .mmb-officialDoc{border:1px solid #d7dee7;border-radius:0;background:#fff;overflow:hidden;}
+          .mmb-officialHeader{padding:18px;border-bottom:1px solid #e7edf3;text-align:center;}
+          .mmb-officialHeading{margin:0;font-size:20px;font-weight:700;}
+          .mmb-officialSub{margin:8px 0 0;color:#64748b;font-weight:700;font-size:12px;}
+          .mmb-officialMeta{padding:14px 18px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;border-bottom:1px solid #e7edf3;background:#f8fafc;}
+          .mmb-officialMetaItem{border:1px solid #e7edf3;border-radius:10px;background:#fff;padding:12px;}
+          .mmb-officialMetaLabel{display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+          .mmb-officialMetaValue{font-size:14px;font-weight:700;color:#0f172a;}
+          .mmb-officialSection{padding:18px;border-bottom:1px solid #e7edf3;page-break-inside:avoid;break-inside:avoid;}
+          .mmb-officialSection:last-child{border-bottom:0;}
+          .mmb-officialSectionTitle{margin:0 0 12px;font-size:15px;font-weight:700;color:#0f172a;}
+          .mmb-officialList{margin:0;padding-left:22px;display:grid;gap:8px;font-size:14px;font-weight:600;color:#0f172a;line-height:1.5;}
+          .mmb-officialEmpty{color:#64748b;font-size:13px;font-weight:700;}
+          .mmb-officialTable{width:100%;border-collapse:collapse;}
+          .mmb-officialTable th,.mmb-officialTable td{border:1px solid #e7edf3;padding:10px 12px;text-align:left;vertical-align:middle;font-size:13px;}
+          .mmb-officialTable th{background:#f8fafc;font-weight:700;}
+          .mmb-officialSigImg{max-width:140px;max-height:52px;object-fit:contain;display:block;}
+        </style></head><body><div class="doc">${buildOfficialSummaryHtml()}</div></body></html>`;
+      }
+
+      function printOfficialSummary(){
+        const w = window.open("", "_blank", "width=1024,height=768");
+        if(!w){
+          window.print();
+          return;
+        }
+        w.document.open();
+        w.document.write(buildPrintableSummaryDocument());
+        w.document.close();
+        w.focus();
+        setTimeout(() => { try{ w.print(); }catch(_e){} }, 250);
+      }
+
+      function renderMinutesSummary(){
+        const t = translations[language] || translations.en;
+        const title = $("mmbSummaryTitle");
+        if(title) title.textContent = t.meetingSummaryTitle || "Meeting Minutes Summary";
+        const help = $("mmbSummaryHelp");
+        if(help) help.textContent = t.summaryOpenHelp || "Open official meeting record view";
+        const intro = $("mmbSummaryIntro");
+        if(intro) intro.textContent = t.summaryIntro || "Open this interval in an official formatted summary showing meeting details, minutes, members present, and signatures.";
+        const btn = $("mmbOpenSummaryTxt");
+        if(btn) btn.textContent = t.openOfficialSummary || "Open Official Summary";
+        const titleMembers = $("mmbSummaryTitleMembers");
+        if(titleMembers) titleMembers.textContent = t.meetingSummaryTitle || "Meeting Minutes Summary";
+        const helpMembers = $("mmbSummaryHelpMembers");
+        if(helpMembers) helpMembers.textContent = t.summaryOpenHelp || "Open official meeting record view";
+        const introMembers = $("mmbSummaryIntroMembers");
+        if(introMembers) introMembers.textContent = t.summaryIntro || "Open this interval in an official formatted summary showing meeting details, minutes, members present, and signatures.";
+        const btnMembers = $("mmbOpenSummaryTxtMembers");
+        if(btnMembers) btnMembers.textContent = t.openOfficialSummary || "Open Official Summary";
+        const prevTitle = $("mmbPreviewTitle");
+        if(prevTitle) prevTitle.textContent = t.meetingSummaryTitle || "Meeting Minutes Summary";
+        const printTxt = $("mmbPreviewPrintTxt");
+        if(printTxt) printTxt.textContent = t.printLabel || "Print";
+        const closeTxt = $("mmbPreviewCloseTxt");
+        if(closeTxt) closeTxt.textContent = t.closeLabel || "Close";
       }
 
       function renderAll(){
@@ -3249,6 +4108,8 @@ renderPagination("mmbMembersPagination", sliced.page, sliced.pages, (p) => {
 
         renderMembers();
         renderKpis();
+        renderMinutesSummary();
+        updateStepUi();
       }
 
       function setLanguageFromBase(lang){
@@ -3265,13 +4126,174 @@ window.onPGMISLanguageChange = function(lang){
   window.updatePageLanguage(lang);
 };
 
+
+      function getPeriodStorageKey(year, month){
+        return `PGMIS_MMB_${MMB_PG || "anon"}_${year}_${month}`;
+      }
+
+      function getSelectedPeriod(){
+        const monthEl = $("mmbPeriodMonth");
+        const yearEl = $("mmbPeriodYear");
+        const y = parseInt((yearEl || {}).value, 10);
+        const m = parseInt((monthEl || {}).value, 10);
+        if(Number.isFinite(y) && Number.isFinite(m) && m >= 1 && m <= 12){
+          return { year: y, month: m };
+        }
+        return {
+          year: loadedPeriod?.year || meetingDate.getFullYear(),
+          month: loadedPeriod?.month || (meetingDate.getMonth() + 1)
+        };
+      }
+
+      function getActivePeriod(){
+        return loadedPeriod || getSelectedPeriod();
+      }
+
+      function formatPeriodLabel(period){
+        return new Date(period.year, period.month - 1, 1).toLocaleDateString("en-GB", { month:"long", year:"numeric" });
+      }
+
+      function updatePeriodVisualState(){
+        const selected = getSelectedPeriod();
+        const loaded = getActivePeriod();
+        const info = $("mmbCurrentPeriodInfo");
+        if(info){
+          if(selected.year === loaded.year && selected.month === loaded.month){
+            info.textContent = `Loaded interval: ${formatPeriodLabel(loaded)}`;
+          }else{
+            info.textContent = `Loaded: ${formatPeriodLabel(loaded)} • Selected: ${formatPeriodLabel(selected)}`;
+          }
+        }
+        renderHistoryList(selected, loaded);
+      }
+
+      function syncPeriodControls(){
+        const p = getActivePeriod();
+        const monthEl = $("mmbPeriodMonth");
+        const yearEl = $("mmbPeriodYear");
+        if(monthEl) monthEl.value = String(p.month);
+        if(yearEl) yearEl.value = String(p.year);
+        updatePeriodVisualState();
+      }
+
+      function populatePeriodYears(){
+        const host = $("mmbPeriodYear");
+        if(!host) return;
+        const currentYear = new Date().getFullYear();
+        const selected = getActivePeriod().year;
+        host.innerHTML = "";
+        for(let y = currentYear + 2; y >= currentYear - 7; y--){
+          const opt = document.createElement("option");
+          opt.value = String(y);
+          opt.textContent = String(y);
+          if(y === selected) opt.selected = true;
+          host.appendChild(opt);
+        }
+      }
+
+      function buildEmptyPayloadForCurrentPeriod(year, month){
+        const active = {
+          year: Number(year) || getActivePeriod().year,
+          month: Number(month) || getActivePeriod().month
+        };
+        const baseDate = new Date(active.year, active.month - 1, 1);
+        return {
+          minutes: {
+            dateISO: baseDate.toISOString(),
+            datePretty: formatDatePretty(baseDate),
+            agendaItems: [""],
+            deliberations: [""],
+            decisions: [""],
+          },
+          members: [{ id: uid(), name: "", member_id: "", member_code: "", signature: null }],
+          meta: { savedAt: null, periodYear: active.year, periodMonth: active.month }
+        };
+      }
+
+      function findDuplicateMemberRow(currentRowId, candidateMemberId, candidateName){
+        const cmpId = String(candidateMemberId || "").trim();
+        const cmpName = String(candidateName || "").trim().toLowerCase();
+        return members.find(row => {
+          if(!row || row.id === currentRowId) return false;
+          const rowId = String(row.member_id || "").trim();
+          const rowName = String(row.name || "").trim().toLowerCase();
+          if(cmpId && rowId && rowId === cmpId) return true;
+          if(!cmpId && cmpName && !rowId && rowName === cmpName) return true;
+          return false;
+        }) || null;
+      }
+
+      function renderHistoryList(selectedArg, loadedArg){
+        const host = $("mmbHistoryList");
+        if(!host) return;
+        const selected = selectedArg || getSelectedPeriod();
+        const loaded = loadedArg || getActivePeriod();
+        const now = new Date();
+        host.innerHTML = "";
+        for(let i = 0; i < 12; i++){
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "mmb-historyBtn";
+          const by = d.getFullYear();
+          const bm = d.getMonth() + 1;
+          if(by === loaded.year && bm === loaded.month){
+            btn.classList.add("active");
+          } else if(by === selected.year && bm === selected.month){
+            btn.classList.add("pending");
+          }
+          btn.textContent = d.toLocaleDateString("en-GB", { month:"short", year:"numeric" });
+          btn.addEventListener("click", async () => {
+            if($("mmbPeriodYear")) $("mmbPeriodYear").value = String(by);
+            if($("mmbPeriodMonth")) $("mmbPeriodMonth").value = String(bm);
+            await applySelectedPeriodAndLoad();
+          });
+          host.appendChild(btn);
+        }
+      }
+
+      async function applySelectedPeriodAndLoad(){
+        const month = parseInt(($("mmbPeriodMonth") && $("mmbPeriodMonth").value) || "1", 10);
+        const year = parseInt(($("mmbPeriodYear") && $("mmbPeriodYear").value) || String(new Date().getFullYear()), 10);
+
+        const currentDay = (meetingDate instanceof Date && !isNaN(meetingDate.getTime())) ? meetingDate.getDate() : 1;
+        const maxDay = new Date(year, month, 0).getDate();
+        const safeDay = Math.min(currentDay, maxDay);
+
+        meetingDate = new Date(year, month - 1, safeDay);
+        $("mmbMeetingDate").value = toDateInputValue(meetingDate);
+        loadedPeriod = { year, month };
+        saveSelectedPeriodSession(loadedPeriod);
+        syncPeriodControls();
+
+        const payload = await mmbLoadFromServer(year, month);
+        if(payload){
+          mmbRestorePayload(payload);
+          showPopup(`Loaded ${formatPeriodLabel({ year, month })}.`, "success");
+        }else{
+          agendaItems = [{ id: uid(), content: "" }];
+          deliberations = [{ id: uid(), content: "" }];
+          decisions = [{ id: uid(), content: "" }];
+          members = [{ id: uid(), name: "", member_id: "", member_code: "", signature: null }];
+          ensureUniqueRowIds();
+          clampUiPages();
+          currentStep = getSavedActiveTab();
+          activeTab = currentStep;
+          if(currentStep === "members") step2Visited = true;
+          renderAll();
+          showPopup(`Started a new record for ${formatPeriodLabel({ year, month })}.`, "success");
+        }
+
+        setStep("minutes");
+      }
+
       /* =========================
          Backend persistence (original)
          ========================= */
       const MMB_PG = (window.PG_ID || "").trim();
       const MMB_STORAGE_KEY = `PGMIS_MMB_${MMB_PG || "anon"}`;
-
       const MMB_ACTIVE_TAB_KEY = `PGMIS_MMB_ACTIVE_TAB_${MMB_PG || "anon"}`;
+      const MMB_SELECTED_PERIOD_SESSION_KEY = `PGMIS_MMB_SELECTED_PERIOD_${MMB_PG || "anon"}`;
 
 function getSavedActiveTab(){
   try{
@@ -3282,16 +4304,49 @@ function getSavedActiveTab(){
   }
 }
 
+function saveSelectedPeriodSession(period){
+  try{
+    if(!period || !Number(period.year) || !Number(period.month)) return;
+    sessionStorage.setItem(MMB_SELECTED_PERIOD_SESSION_KEY, JSON.stringify({ year:Number(period.year), month:Number(period.month) }));
+  }catch(e){}
+}
+
+function readSelectedPeriodSession(){
+  try{
+    const raw = sessionStorage.getItem(MMB_SELECTED_PERIOD_SESSION_KEY);
+    if(!raw) return null;
+    const parsed = JSON.parse(raw);
+    const year = Number(parsed && parsed.year);
+    const month = Number(parsed && parsed.month);
+    if(Number.isFinite(year) && Number.isFinite(month) && month >= 1 && month <= 12){
+      return { year, month };
+    }
+  }catch(e){}
+  return null;
+}
+
       function mmbPeriodFromDate(d){
         const dt = (d instanceof Date) ? d : new Date();
         return { year: dt.getFullYear(), month: dt.getMonth()+1 };
       }
 
-      function mmbBuildPayload(){
+      function mmbBuildPayload(periodYear, periodMonth){
+        const active = {
+          year: Number(periodYear) || getActivePeriod().year,
+          month: Number(periodMonth) || getActivePeriod().month
+        };
+        let dateForPayload = (meetingDate instanceof Date) ? new Date(meetingDate.getTime()) : new Date(active.year, active.month - 1, 1);
+        if(isNaN(dateForPayload.getTime())){
+          dateForPayload = new Date(active.year, active.month - 1, 1);
+        }
+        if(dateForPayload.getFullYear() !== active.year || (dateForPayload.getMonth() + 1) !== active.month){
+          const safeDay = Math.min((dateForPayload.getDate && dateForPayload.getDate()) || 1, 28);
+          dateForPayload = new Date(active.year, active.month - 1, safeDay);
+        }
         return {
           minutes: {
-            dateISO: (meetingDate instanceof Date) ? meetingDate.toISOString() : new Date().toISOString(),
-            datePretty: formatDatePretty(meetingDate),
+            dateISO: dateForPayload.toISOString(),
+            datePretty: formatDatePretty(dateForPayload),
             agendaItems: agendaItems.map(x => x.content),
             deliberations: deliberations.map(x => x.content),
             decisions: decisions.map(x => x.content),
@@ -3299,9 +4354,11 @@ function getSavedActiveTab(){
           members: members.map(m => ({
             id: m.id,
             name: m.name,
+            member_id: m.member_id || "",
+            member_code: m.member_code || "",
             signature: m.signature || null,
           })),
-          meta: { savedAt: new Date().toISOString() }
+          meta: { savedAt: new Date().toISOString(), periodYear: active.year, periodMonth: active.month }
         };
       }
 
@@ -3309,11 +4366,14 @@ function getSavedActiveTab(){
         if(!payload) return;
         try{
           const mins = payload.minutes || {};
+          const meta = payload.meta || {};
+          if(Number(meta.periodYear) && Number(meta.periodMonth)) loadedPeriod = { year:Number(meta.periodYear), month:Number(meta.periodMonth) };
           if(mins.dateISO){
             const d = new Date(mins.dateISO);
             if(!isNaN(d.getTime())){
               meetingDate = d;
               $("mmbMeetingDate").value = toDateInputValue(meetingDate);
+              syncPeriodControls();
             }
           }
           agendaItems = (mins.agendaItems || []).map(c => ({ id: uid(), content: (c||"") }));
@@ -3332,27 +4392,34 @@ function getSavedActiveTab(){
         }catch(_e){}
       }
 
-      async function mmbLoadFromServer(){
+      async function mmbLoadFromServer(periodYear, periodMonth){
         if(!MMB_PG) return null;
-        const p = mmbPeriodFromDate(meetingDate);
-        const qs = `?year=${encodeURIComponent(p.year)}&month=${encodeURIComponent(p.month)}`;
+        const active = {
+          year: Number(periodYear) || getActivePeriod().year,
+          month: Number(periodMonth) || getActivePeriod().month
+        };
+        const qs = `?year=${encodeURIComponent(active.year)}&month=${encodeURIComponent(active.month)}`;
         try{
           const res = await fetch(`/pg/api/register/minutes/${encodeURIComponent(MMB_PG)}${qs}`, { method:"GET" });
           if(!res.ok) return null;
           const doc = await res.json().catch(()=>null);
           const payload = doc && (doc.data || doc) ? (doc.data || doc) : null;
           if(payload){
-            localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(payload));
+            try{ localStorage.setItem(getPeriodStorageKey(active.year, active.month), JSON.stringify(payload)); }catch(e){}
+            try{ localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(payload)); }catch(e){}
             return payload;
           }
         }catch(_e){}
         return null;
       }
 
-      async function mmbSaveToServer(payload){
+      async function mmbSaveToServer(payload, periodYear, periodMonth){
         if(!MMB_PG) return {ok:false, message:"Missing PG context"};
-        const p = mmbPeriodFromDate(meetingDate);
-        const qs = `?year=${encodeURIComponent(p.year)}&month=${encodeURIComponent(p.month)}`;
+        const active = {
+          year: Number(periodYear) || getActivePeriod().year,
+          month: Number(periodMonth) || getActivePeriod().month
+        };
+        const qs = `?year=${encodeURIComponent(active.year)}&month=${encodeURIComponent(active.month)}`;
         try{
           const res = await fetch(`/pg/api/register/minutes/${encodeURIComponent(MMB_PG)}${qs}`, {
             method:"POST",
@@ -3367,6 +4434,23 @@ function getSavedActiveTab(){
         }
       }
 
+      function hasDuplicateMembersInMeeting(){
+        const seenIds = new Set();
+        const seenNames = new Set();
+        for(const m of (members || [])){
+          const id = String((m && m.member_id) || "").trim();
+          const name = String((m && m.name) || "").trim().toLowerCase();
+          if(id){
+            if(seenIds.has(id)) return true;
+            seenIds.add(id);
+          } else if(name){
+            if(seenNames.has(name)) return true;
+            seenNames.add(name);
+          }
+        }
+        return false;
+      }
+
       function wireEvents(){
         if(mmbEventsBound) return;
         mmbEventsBound = true;
@@ -3376,14 +4460,32 @@ function getSavedActiveTab(){
           else window.location.href = "{{ url_for('pg.pg_home') }}";
         };
 
-        $("mmbTabMinutes").onclick = () => setTab("minutes");
-        $("mmbTabMembers").onclick = () => setTab("members");
+        const continueBtn = $("mmbContinueBtn");
+        const stepBackBtn = $("mmbStepBackBtn");
+        const loadPeriodBtn = $("mmbLoadPeriodBtn");
+        const openSummaryBtn = $("mmbOpenSummaryBtn");
+        const openSummaryBtnMembers = $("mmbOpenSummaryBtnMembers");
+        const previewCloseBtn = $("mmbPreviewCloseBtn");
+        const previewPrintBtn = $("mmbPreviewPrintBtn");
+        const previewModal = $("mmbPreviewModal");
+
+        if(continueBtn) continueBtn.onclick = () => setStep("members");
+        if(stepBackBtn) stepBackBtn.onclick = () => setStep("minutes");
+        if(loadPeriodBtn) loadPeriodBtn.onclick = () => { applySelectedPeriodAndLoad(); };
+        if(openSummaryBtn) openSummaryBtn.onclick = () => openOfficialSummaryModal();
+        if(openSummaryBtnMembers) openSummaryBtnMembers.onclick = () => openOfficialSummaryModal();
+        if(previewCloseBtn) previewCloseBtn.onclick = () => closeOfficialSummaryModal();
+        if(previewPrintBtn) previewPrintBtn.onclick = () => printOfficialSummary();
+        if(previewModal) previewModal.addEventListener("click", (e) => { if(e.target && e.target.id === "mmbPreviewModal") closeOfficialSummaryModal(); });
 
         $("mmbMeetingDate").onchange = (e) => {
           const v = e.target.value;
           if(v){
             const [y,m,d] = v.split("-").map(Number);
             meetingDate = new Date(y, (m-1), d);
+            loadedPeriod = { year:y, month:m };
+            saveSelectedPeriodSession(loadedPeriod);
+            syncPeriodControls();
             renderAll();
           }
         };
@@ -3416,6 +4518,9 @@ function getSavedActiveTab(){
           renderAll();
         };
 
+        if($("mmbPeriodMonth")) $("mmbPeriodMonth").onchange = () => { applySelectedPeriodAndLoad(); };
+        if($("mmbPeriodYear")) $("mmbPeriodYear").onchange = () => { applySelectedPeriodAndLoad(); };
+
         $("mmbAddAgenda").onclick = () => {
           agendaItems = [...agendaItems, { id: uid(), content:"" }];
           afterRowMutation("agenda");
@@ -3436,7 +4541,7 @@ function getSavedActiveTab(){
           afterRowMutation("members");
         };
 
-        $("mmbSaveMinutes").onclick = () => {
+        if($("mmbSaveMinutes")) $("mmbSaveMinutes").onclick = async () => {
           const t = translations[language] || translations.en;
 
           const data = {
@@ -3448,15 +4553,22 @@ function getSavedActiveTab(){
 
           console.log("Meeting Minutes Data:", data);
 
-          const payload = mmbBuildPayload();
-          localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(payload));
-          mmbSaveToServer(payload).then(r=>{
-            showPopup(r.ok ? t.savedMinutes : (r.message||t.savedMinutes), r.ok ? "success" : "danger");
-          });
+          const activePeriod = getActivePeriod();
+          saveSelectedPeriodSession(activePeriod);
+          const payload = mmbBuildPayload(activePeriod.year, activePeriod.month);
+          localStorage.setItem(getPeriodStorageKey(activePeriod.year, activePeriod.month), JSON.stringify(payload));
+          try{ localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(payload)); }catch(e){}
+          const r = await mmbSaveToServer(payload, activePeriod.year, activePeriod.month);
+          showPopup(r.ok ? t.savedMinutes : (r.message||t.savedMinutes), r.ok ? "success" : "danger");
         };
 
-        $("mmbSaveMembers").onclick = () => {
+        if($("mmbSaveMembers")) $("mmbSaveMembers").onclick = async () => {
           const t = translations[language] || translations.en;
+
+          if(hasDuplicateMembersInMeeting()){
+            showPopup("The same member cannot be added more than once in a meeting.", "danger");
+            return;
+          }
 
           const data = members.map(m => ({
             name: m.name,
@@ -3465,11 +4577,13 @@ function getSavedActiveTab(){
 
           console.log("Members Present Data:", data);
 
-          const payload = mmbBuildPayload();
-          localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(payload));
-          mmbSaveToServer(payload).then(r=>{
-            showPopup(r.ok ? t.savedMembers : (r.message||t.savedMembers), r.ok ? "success" : "danger");
-          });
+          const activePeriod = getActivePeriod();
+          saveSelectedPeriodSession(activePeriod);
+          const payload = mmbBuildPayload(activePeriod.year, activePeriod.month);
+          localStorage.setItem(getPeriodStorageKey(activePeriod.year, activePeriod.month), JSON.stringify(payload));
+          try{ localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(payload)); }catch(e){}
+          const r = await mmbSaveToServer(payload, activePeriod.year, activePeriod.month);
+          showPopup(r.ok ? t.saveFullRecord : (r.message||t.saveFullRecord), r.ok ? "success" : "danger");
         };
       }
 
@@ -3480,6 +4594,8 @@ function getSavedActiveTab(){
 
         meetingDate = new Date();
         $("mmbMeetingDate").value = toDateInputValue(meetingDate);
+        populatePeriodYears();
+        syncPeriodControls();
 
         wirePopup();
         wireEvents();
@@ -3489,14 +4605,26 @@ function getSavedActiveTab(){
           const server = await mmbLoadFromServer();
           if(server){ mmbRestorePayload(server); return; }
           try{
-            const local = JSON.parse(localStorage.getItem(MMB_STORAGE_KEY) || "null");
-            if(local) mmbRestorePayload(local);
+            const p = mmbPeriodFromDate(meetingDate);
+            const local = JSON.parse(localStorage.getItem(getPeriodStorageKey(p.year, p.month)) || "null");
+            const legacy = JSON.parse(localStorage.getItem(MMB_STORAGE_KEY) || "null");
+            if(local && payloadMatchesPeriod(local, p.year, p.month)) mmbRestorePayload(local);
+            else if(legacy && payloadMatchesPeriod(legacy, p.year, p.month)) mmbRestorePayload(legacy);
+            else resetIntervalStateToBlank(p.year, p.month);
           }catch(_e){}
         })();
 
-      wireSignatureModal();
+   wireSignatureModal();
 window.updatePageLanguage(detectLanguageStrict());
-setTab(getSavedActiveTab());
+
+try{
+  currentStep = getSavedActiveTab();
+  activeTab = currentStep;
+  if(currentStep === "members") step2Visited = true;
+  updateStepUi();
+}catch(_e){
+  setStep("minutes");
+}
 
         let ticks = 0;
         const syncTimer = setInterval(() => {
