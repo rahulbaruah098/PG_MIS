@@ -2024,31 +2024,58 @@ def _get_period_from_args():
     return year, month
 
 
-def _period_history(db, collection, query, limit=24):
-    rows = list(db[collection].find(query, {"year": 1, "month": 1, "updated_at": 1, "created_at": 1}).sort([('year', -1), ('month', -1), ('updated_at', -1), ('created_at', -1)]))
-    seen = set()
-    history = []
-    for row in rows:
-        year = row.get('year')
-        month = row.get('month')
-        if year in (None, '') or month in (None, ''):
-            continue
+def _period_history(db, collection, query, limit=60):
+    docs = list(
+        db[collection]
+        .find(query, {"year": 1, "month": 1, "updated_at": 1, "created_at": 1, "data": 1})
+        .sort([("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)])
+        .limit(limit)
+    )
+
+    def _month_name(month):
         try:
-            year = int(year)
-            month = int(month)
+            return datetime(2000, int(month), 1).strftime("%b")
         except Exception:
-            continue
-        key = (year, month)
-        if key in seen:
-            continue
-        seen.add(key)
+            return "Unknown"
+
+    history = []
+
+    for doc in docs:
+        data = doc.get("data") or {}
+        rows = data.get("rows") or data.get("assets") or []
+
+        year = doc.get("year")
+        month = doc.get("month")
+
+        # Asset register fallback: web old docs may have year/month null.
+        if (not year or not month) and rows:
+            first_date = str(rows[0].get("purchase_date") or "").strip()
+            for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d"):
+                try:
+                    d = datetime.strptime(first_date, fmt)
+                    year = d.year
+                    month = d.month
+                    break
+                except Exception:
+                    pass
+
+        label = (
+            f"{_month_name(month)} {year}"
+            if year and month
+            else f"Saved {doc.get('updated_at').strftime('%d %b %Y')}" if doc.get("updated_at") else "Saved Record"
+        )
+
         history.append({
-            'year': year,
-            'month': month,
-            'updated_at': row.get('updated_at').isoformat() if row.get('updated_at') else None,
+            "_id": str(doc.get("_id")),
+            "year": int(year) if year else None,
+            "month": int(month) if month else None,
+            "period": f"{year}-{int(month):02d}" if year and month else "",
+            "label": label,
+            "row_count": len(rows) if isinstance(rows, list) else 0,
+            "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else "",
+            "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else "",
         })
-        if len(history) >= limit:
-            break
+
     return history
 
 
@@ -2375,19 +2402,25 @@ def api_generic_register(name, pg_id):
             return jsonify(doc)
 
         # EXISTING GENERIC FLOW FOR ALL REGISTERS
+        base_q = {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get("pg_id")))}
+
+        if request.args.get("history") in ("1", "true", "yes"):
+            return jsonify({"history": _period_history(db, coll, base_q)})
+
+        doc_id = (request.args.get("doc_id") or "").strip()
+        if doc_id:
+            doc = db[coll].find_one({**base_q, "_id": safe_objectid(doc_id)})
+            if not doc:
+                return jsonify({"ok": False, "error": "Record not found"}), 404
+
+            doc["_id"] = str(doc["_id"])
+            doc["pg_id"] = str(doc["pg_id"])
+            return jsonify(doc)
+
         doc = (
-            db[coll].find_one(
-                {
-                    "pg_id": base_pg_id,
-                    "year": year,
-                    "month": month,
-                }
-            )
+            db[coll].find_one({**base_q, "year": year, "month": month})
             if (year and month)
-            else db[coll].find_one(
-                {"pg_id": base_pg_id},
-                sort=[("updated_at", -1)],
-            )
+            else db[coll].find_one(base_q, sort=[("updated_at", -1)])
         )
 
         if not doc:
@@ -2691,7 +2724,113 @@ def meeting_register(pg_id):
         except ValueError:
             return _deny("Invalid meeting date format. Use YYYY-MM-DD.", 400)
 
-        existing_doc = db.pg_meetings.find_one({
+        # 🔁 Detect if request is meeting minutes (app/web unified)
+        is_minutes_payload = any([
+            agenda is not None,
+            resolution is not None,
+            deliberations is not None
+        ])
+
+        # 🔁 Select correct collection
+        collection = db.pg_meeting_minutes if is_minutes_payload else db.pg_meetings
+
+        nested_data = body.get("data") if _wants_json() else None
+        is_nested_minutes_payload = isinstance(nested_data, dict) and (
+            isinstance(nested_data.get("minutes"), dict) or isinstance(nested_data.get("members"), list)
+        )
+
+        if is_nested_minutes_payload:
+            now = datetime.utcnow()
+            minutes_data = nested_data.get("minutes") or {}
+            members_data = nested_data.get("members") or []
+
+            existing_minutes_doc = db.pg_meeting_minutes.find_one({
+                "pg_id": pg_obj_id,
+                "meeting_date": meeting_date
+            }) or {}
+
+            existing_data = existing_minutes_doc.get("data") or {}
+            existing_minutes = existing_data.get("minutes") or {}
+            existing_members = existing_data.get("members") or []
+
+            incoming_minutes_has_data = any([
+                minutes_data.get("agendaItems"),
+                minutes_data.get("deliberations"),
+                minutes_data.get("decisions"),
+            ])
+
+            final_minutes = minutes_data if incoming_minutes_has_data else existing_minutes
+            final_members = members_data if isinstance(members_data, list) and members_data else existing_members
+
+            web_minutes_doc = {
+                "pg_id": pg_obj_id,
+                "year": int(body.get("year") or meeting_date[:4]),
+                "month": int(body.get("month") or meeting_date[5:7]),
+                "data": {
+                    "minutes": {
+                        "dateISO": final_minutes.get("dateISO") or f"{meeting_date}T00:00:00.000Z",
+                        "datePretty": final_minutes.get("datePretty") or datetime.strptime(meeting_date, "%Y-%m-%d").strftime("%d %b %Y"),
+                        "agendaItems": final_minutes.get("agendaItems") or [],
+                        "deliberations": final_minutes.get("deliberations") or [],
+                        "decisions": final_minutes.get("decisions") or [],
+                    },
+                    "members": final_members,
+                },
+                "meta": {
+                    **(existing_minutes_doc.get("meta") or {}),
+                    **(body.get("meta") or {}),
+                    "periodYear": int(body.get("year") or meeting_date[:4]),
+                    "periodMonth": int(body.get("month") or meeting_date[5:7]),
+                    "savedAt": datetime.utcnow().isoformat() + "Z",
+                },
+                "updated_at": now,
+            }
+
+            date_pretty_key = datetime.strptime(meeting_date, "%Y-%m-%d").strftime("%d %b %Y")
+
+            db.pg_meeting_minutes.update_one(
+                {
+                    "pg_id": pg_obj_id,
+                    "$or": [
+                        {"meeting_date": meeting_date},
+                        {"data.minutes.datePretty": date_pretty_key},
+                    ],
+                },
+                {
+                    "$set": web_minutes_doc,
+                    "$setOnInsert": {
+                        "created_at": now,
+                    }
+                },
+                upsert=True
+            )
+
+            saved_doc = db.pg_meeting_minutes.find_one({
+                "pg_id": pg_obj_id,
+                "$or": [
+                    {"meeting_date": meeting_date},
+                    {"data.minutes.datePretty": date_pretty_key},
+                ]
+            })
+
+            if _wants_json():
+                return jsonify({
+                    "ok": True,
+                    "message": "Meeting minutes saved successfully.",
+                    "meeting": {
+                        "_id": str(saved_doc.get("_id")) if saved_doc else "",
+                        "meeting_date": meeting_date,
+                        "year": int(body.get("year") or meeting_date[:4]),
+                        "month": int(body.get("month") or meeting_date[5:7]),
+                        "data": (saved_doc or web_minutes_doc).get("data", {}),
+                        "meta": (saved_doc or web_minutes_doc).get("meta", {}),
+                    }
+                }), 200
+
+            flash("Meeting saved successfully.", "success")
+            return redirect(url_for("pg.meeting_register", pg_id=pg_id))
+
+        existing_doc = collection.find_one({
             "pg_id": pg_obj_id,
             "meeting_date": meeting_date
         }) or {}
@@ -2761,7 +2900,7 @@ def meeting_register(pg_id):
             "updated_at": now,
         }
 
-        db.pg_meetings.update_one(
+        collection.update_one(
             {
                 "pg_id": pg_obj_id,
                 "meeting_date": meeting_date
@@ -2775,7 +2914,7 @@ def meeting_register(pg_id):
             upsert=True
         )
 
-        saved_doc = db.pg_meetings.find_one({
+        saved_doc = collection.find_one({
             "pg_id": pg_obj_id,
             "meeting_date": meeting_date
         })
@@ -2801,21 +2940,96 @@ def meeting_register(pg_id):
         flash("Meeting saved successfully.", "success")
         return redirect(url_for("pg.meeting_register", pg_id=pg_id))
 
-    # =========================================================
-    # GET → FETCH MEETINGS / SINGLE MEETING
+        # =========================================================
+        # GET → FETCH FROM pg_meeting_minutes ONLY
+        # Works for both WEB records and APP records
     # =========================================================
     selected_date = (request.args.get("meeting_date") or "").strip()
 
-    query = {"pg_id": pg_obj_id}
-    if selected_date:
-        query["meeting_date"] = selected_date
+    def _parse_pretty_to_iso(value):
+        value = str(value or "").strip()
+        if not value:
+            return ""
+        for fmt in ("%d %b %Y", "%d %B %Y"):
+            try:
+                return datetime.strptime(value, fmt).strftime("%Y-%m-%d")
+            except Exception:
+                pass
+        return ""
 
-    meetings = list(
-        db.pg_meetings.find(query).sort([
-            ("meeting_date", -1),
-            ("created_at", -1)
+    def _date_pretty_from_iso(date_key):
+        try:
+            return datetime.strptime(date_key, "%Y-%m-%d").strftime("%d %b %Y")
+        except Exception:
+            return date_key
+
+    query = {"pg_id": pg_obj_id}
+
+    if selected_date:
+        selected_pretty = _date_pretty_from_iso(selected_date)
+        query["$or"] = [
+            {"meeting_date": selected_date},
+            {"data.minutes.datePretty": selected_pretty},
+            {"data.minutes.dateISO": {"$regex": f"^{selected_date}"}},
+        ]
+
+    minutes_docs = list(
+        db.pg_meeting_minutes.find(query).sort([
+            ("year", -1),
+            ("month", -1),
+            ("updated_at", -1),
+            ("created_at", -1),
         ])
     )
+
+    def _serialize_minutes_doc(doc):
+        data = doc.get("data") or {}
+        minutes = data.get("minutes") or {}
+        members = data.get("members") or []
+
+        pretty = minutes.get("datePretty") or doc.get("datePretty") or ""
+        date_key = (
+            doc.get("meeting_date")
+            or _parse_pretty_to_iso(pretty)
+            or str(minutes.get("dateISO") or "")[:10]
+        )
+
+        agenda_items = minutes.get("agendaItems") or []
+        deliberations = minutes.get("deliberations") or []
+        decisions = minutes.get("decisions") or []
+
+        return {
+            "_id": str(doc.get("_id")),
+            "meeting_date": date_key,
+            "datePretty": pretty or _date_pretty_from_iso(date_key),
+            "year": int(doc.get("year") or doc.get("meta", {}).get("periodYear") or date_key[:4] or 0),
+            "month": int(doc.get("month") or doc.get("meta", {}).get("periodMonth") or date_key[5:7] or 0),
+
+            "data": {
+                "minutes": {
+                    "dateISO": minutes.get("dateISO") or "",
+                    "datePretty": pretty or _date_pretty_from_iso(date_key),
+                    "agendaItems": agenda_items,
+                    "deliberations": deliberations,
+                    "decisions": decisions,
+                },
+                "members": members,
+            },
+
+            # compatibility for app form loading
+            "agenda": "\n".join([str(x).strip() for x in agenda_items if str(x).strip()]),
+            "deliberations": [
+                {"id": str(i + 1), "content": str(x).strip()}
+                for i, x in enumerate(deliberations)
+                if str(x).strip()
+            ],
+            "resolution": "\n".join([str(x).strip() for x in decisions if str(x).strip()]),
+            "members_present": members,
+            "attendance_count": len(members),
+            "source": "pg_meeting_minutes",
+        }
+
+    meetings = [_serialize_minutes_doc(doc) for doc in minutes_docs]
 
     if _wants_json():
         return jsonify({
@@ -2831,29 +3045,8 @@ def meeting_register(pg_id):
                 }
                 for m in member_docs
             ],
-            "meetings": [
-                {
-                    "_id": str(mt["_id"]),
-                    "meeting_date": mt.get("meeting_date", ""),
-                    "meeting_type": mt.get("meeting_type", "general"),
-                    "agenda": mt.get("agenda", ""),
-                    "deliberations": mt.get("deliberations", []),
-                    "resolution": mt.get("resolution", ""),
-                    "attendance_ids": [
-                        str(x) for x in (mt.get("attendance") or [])
-                    ],
-                    "attendance_count": int(mt.get("attendance_count") or 0),
-                }
-                for mt in meetings
-            ]
+            "meetings": meetings
         }), 200
-
-    return render_template(
-        "meeting_register.html",
-        pg=pg,
-        members=member_docs,
-        meetings=meetings
-    )
 
 # === CORE ENGINE INTEGRATION ACTIVE ===
 # AuditLogger.log(action, user_id, entity, entity_id) available
