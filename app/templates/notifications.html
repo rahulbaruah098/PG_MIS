@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="max-width: 980px; margin: 18px auto;">
+  <h2>Notifications</h2>
+  <div style="display:grid; gap:10px; margin-top:10px;">
+    {% for n in notes %}
+    <div style="padding:12px 14px; border:1px solid #e5e7eb; border-radius:12px; background:#fff;">
+      <div style="display:flex; justify-content:space-between; gap:12px;">
+        <strong>{{ n.title }}</strong>
+        <span style="color:#6b7280; font-size:12px;">{{ n.ts }}</span>
+      </div>
+      <div style="color:#374151; margin-top:6px;">{{ n.body }}</div>
+      {% if n.link %}
+        <div style="margin-top:8px;"><a href="{{ n.link }}">Open</a></div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div style="color:#6b7280;">No notifications.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

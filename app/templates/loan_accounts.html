@@ -1,0 +1,1185 @@
+{% extends "base.html" %}
+{% block title %}PG Loan Accounts{% endblock %}
+{% block content %}
+
+<style>
+  /* ============================================================
+     PG LOAN ACCOUNTS — RESKIN (LEDGER BOOK LOOK)
+     ✅ ONLY UI/CSS/UX changed
+     ✅ ALL data contents + Jinja + routes + form names kept as-is
+     ✅ Back button INSIDE header line (top-left) — ONLY mobile/tablet/app
+     ✅ Scoped under .pla-wrap only (no global body/* rules)
+     ✅ Adds EN/BN translation hookup (listens to base navbar toggle + persists)
+     ✅ Existing loans section upgraded with search + pagination + mobile swipe cards
+     ✅ Empty mobile state now uses structured field-wise card layout
+     ============================================================ */
+
+  .pla-wrap{
+    width: 100%;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    color: var(--ink);
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .pla-wrap *{ box-sizing:border-box; }
+
+  .pla-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+    position: relative;
+  }
+
+  /* Header */
+  .pla-head{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+    position: relative;
+  }
+  .pla-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: .2px;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+  .pla-sub{
+    margin-top: .35rem;
+    color: rgba(15,23,42,.62);
+    font-weight: 800;
+    text-align: center;
+    font-size: 12px;
+  }
+
+  /* Back (mobile only) */
+  .pla-back{
+    display:none;
+    position:absolute;
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color: rgba(11,77,58,.98);
+    user-select:none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .pla-back:hover{
+    transform: translateY(-50%) translateX(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .pla-back:active{ transform: translateY(-50%) scale(.98); }
+  .pla-back svg{ width:18px;height:18px;display:block; }
+
+  /* Top fields */
+  .pla-topfields{
+    padding: 10px 16px 14px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .pla-field{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .pla-label{
+    font-weight: 900;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .pla-muted{
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(15,23,42,.72);
+    min-width: 0;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Content */
+  .pla-body{
+    padding: 12px 16px 16px;
+    background: rgba(255,255,255,.96);
+  }
+
+  .pla-block{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.92);
+    overflow: hidden;
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+    margin-bottom: 12px;
+  }
+  .pla-block-head{
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(247,250,249,.66);
+  }
+  .pla-block-title{
+    margin:0;
+    font-weight: 950;
+    font-size: 13px;
+    letter-spacing: .15px;
+  }
+  .pla-block-sub{
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: rgba(15,23,42,.62);
+    font-weight: 750;
+  }
+  .pla-block-body{ padding: 12px; }
+
+  /* Form grid */
+  .pla-grid{
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 10px 14px;
+    align-items: start;
+  }
+  .pla-col-3{ grid-column: span 3; }
+  .pla-col-6{ grid-column: span 6; }
+  .pla-col-12{ grid-column: span 12; }
+
+  .pla-stack{
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  /* Inputs */
+  .pla-input,
+  .pla-select{
+    width: 100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: rgba(247,250,249,.75);
+    font-weight: 800;
+    font-size: 12px;
+    outline: none;
+    color: var(--ink);
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .pla-input:focus,
+  .pla-select:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+  .pla-stack label{
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--ink);
+  }
+
+  /* Buttons */
+  .pla-actions{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .pla-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+    text-decoration:none;
+  }
+  .pla-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .pla-btn:disabled{
+    opacity: .45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+  .pla-btn.pla-primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .pla-btn.pla-primary:hover{ background: rgba(16,185,129,.16); }
+  .pla-btn.pla-ghost{
+    background: rgba(255,255,255,.9);
+    color: rgba(11,77,58,.98);
+    border-color: rgba(11,77,58,.18);
+  }
+
+  /* View only message */
+  .pla-viewonly{
+    margin: 0;
+    color:#065f46;
+    font-weight: 800;
+    font-size: 12px;
+  }
+
+  /* Existing loans tools */
+  .pla-tools{
+    display:grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .pla-search-wrap{ min-width:0; }
+  .pla-search{
+    width:100%;
+    height:48px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background: rgba(247,250,249,.85);
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 850;
+    color: var(--ink);
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .pla-search::placeholder{ color: rgba(15,23,42,.46); }
+  .pla-search:focus{
+    border-color: rgba(11,77,58,.36);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  .pla-rows-wrap{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width: fit-content;
+  }
+  .pla-rows-chip{
+    height:48px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 0 16px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background: rgba(247,250,249,.85);
+    font-weight: 950;
+    font-size: 13px;
+  }
+  .pla-rows-chip select{
+    border:0;
+    outline:none;
+    background: transparent;
+    font-weight: 950;
+    color: var(--ink);
+    font-size: 13px;
+    cursor:pointer;
+  }
+  .pla-meta{
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 12px;
+    background: rgba(247,250,249,.58);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .pla-meta-text{
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.72);
+  }
+  .pla-swipe-note{
+    font-size: 11px;
+    font-weight: 850;
+    color: rgba(15,23,42,.50);
+  }
+
+  /* Existing loans table */
+  .pla-table-wrap{
+    overflow:auto;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+  }
+  .pla-table-scroll{
+    overflow-x:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pla-table-scroll::-webkit-scrollbar{ height: 10px; }
+  .pla-table-scroll::-webkit-scrollbar-thumb{
+    background: rgba(15,23,42,.18);
+    border-radius: 999px;
+  }
+
+  table.pla-table{
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 860px;
+  }
+  .pla-table th,
+  .pla-table td{
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    text-align: left;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .pla-table th{
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: rgba(240,253,244,.92);
+    color: #065f46;
+    font-weight: 950;
+    border-bottom: 1px solid rgba(15,23,42,.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .pla-pill{
+    display:inline-flex;
+    align-items:center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.75);
+    font-weight: 950;
+    font-size: 11px;
+    letter-spacing: .2px;
+  }
+  .pla-empty-row td{
+    color:#64748b;
+    font-weight:800;
+  }
+  .pla-hidden-row{ display:none !important; }
+
+ .pla-mobile-empty-card{
+  display:none;
+  padding:12px;
+  background: rgba(255,255,255,.98);
+}
+
+.pla-mobile-empty-card[hidden]{
+  display:none !important;
+}
+
+@media (max-width: 720px){
+  .pla-mobile-empty-card.is-visible{
+    display:block !important;
+  }
+}
+
+  .pla-mobile-card{
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 16px;
+    background: rgba(255,255,255,.98);
+    box-shadow: 0 14px 24px -22px rgba(15,23,42,.30);
+    overflow: hidden;
+  }
+  .pla-mobile-card-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+  }
+  .pla-mobile-card-row:last-child{
+    border-bottom:none;
+  }
+  .pla-mobile-card-key{
+    font-weight:950;
+    font-size:12px;
+    color: rgba(11,77,58,.92);
+    line-height:1.3;
+    flex:0 0 40%;
+    max-width:44%;
+    word-break:break-word;
+  }
+  .pla-mobile-card-val{
+    text-align:right;
+    color: rgba(15,23,42,.88);
+    font-weight:800;
+    min-width:0;
+    word-break:break-word;
+  }
+
+  /* Pagination */
+  .pla-pagination{
+    margin-top: 12px;
+    padding: 12px 14px 14px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 14px;
+    background: rgba(255,255,255,.96);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .pla-page-info{
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.72);
+  }
+  .pla-page-controls{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap: wrap;
+  }
+  .pla-page-btn{
+    min-width: 42px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border:1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.84);
+    color: var(--ink);
+    font-weight: 950;
+    font-size: 12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .pla-page-btn:hover{
+    transform: translateY(-1px);
+    background:#fff;
+    box-shadow: 0 14px 22px -18px rgba(15,23,42,.22);
+  }
+  .pla-page-btn[disabled]{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+  .pla-page-btn.is-active{
+    background: rgba(11,77,58,.10);
+    border-color: rgba(11,77,58,.25);
+    color: rgba(11,77,58,.98);
+  }
+
+  @media (max-width: 720px){
+    .pla-topfields{ grid-template-columns: 1fr; }
+    .pla-col-3, .pla-col-6{ grid-column: span 12; }
+    .pla-back{ display:flex; }
+    .pla-title{ padding-left: 54px; padding-right: 10px; text-align:left; }
+    .pla-sub{ padding-left: 54px; padding-right: 10px; text-align:left; }
+    .pla-tools{ grid-template-columns: 1fr; }
+
+    .pla-table-wrap{
+      overflow: hidden;
+    }
+    .pla-table-wrap .pla-table-scroll{
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 12px;
+      scroll-snap-type: x mandatory;
+      scroll-padding-left: 12px;
+      background: rgba(255,255,255,.98);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table.pla-table{
+      width: 100%;
+      min-width: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .pla-table thead{
+      display: none;
+    }
+    .pla-table tbody{
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 86%;
+      gap: 12px;
+      align-items: stretch;
+    }
+    .pla-table tbody tr{
+      display: flex;
+      flex-direction: column;
+      scroll-snap-align: start;
+      border: 1px solid rgba(15,23,42,.12);
+      border-radius: 16px;
+      background: rgba(255,255,255,.98);
+      box-shadow: 0 14px 24px -22px rgba(15,23,42,.30);
+      overflow: hidden;
+      min-width: 0;
+    }
+    .pla-table tbody td{
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px;
+      border-bottom: 1px solid rgba(15,23,42,.08);
+      min-width: 0;
+      word-break: break-word;
+      text-align: right;
+      color: rgba(15,23,42,.88);
+      font-weight: 800;
+    }
+    .pla-table tbody td:last-child{
+      border-bottom: none;
+    }
+    .pla-table tbody td::before{
+      content: attr(data-label);
+      font-weight: 950;
+      font-size: 12px;
+      color: rgba(11,77,58,.92);
+      line-height: 1.3;
+      flex: 0 0 40%;
+      max-width: 44%;
+      word-break: break-word;
+      text-align: left;
+    }
+    .pla-table tbody td > *{
+      min-width: 0;
+    }
+
+    .pla-empty-desktop-row{
+      display:none !important;
+    }
+  }
+
+  @media (max-width: 520px){
+    .pla-table tbody{
+      grid-auto-columns: 90%;
+    }
+  }
+</style>
+
+<div class="pla-wrap">
+  <div class="pla-sheet">
+
+    <!-- Header -->
+    <div class="pla-head">
+      <a class="pla-back" href="javascript:history.back()" aria-label="Go Back" id="plaBackAria">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <h2 class="pla-title" id="plaPageTitle">PG Loan Accounts — {{ pg.pg_name or pg.name }}</h2>
+      <div class="pla-sub" id="plaPageSub">Create multiple loans, track schedule + repayments.</div>
+    </div>
+
+    <!-- Top fields -->
+    <div class="pla-topfields">
+      <div class="pla-field">
+        <div class="pla-label" id="plaLblProducerGroup">Producer Group</div>
+        <div class="pla-muted">{{ pg.pg_name or pg.name or '—' }}</div>
+      </div>
+
+      <div class="pla-field">
+        <div class="pla-label" id="plaLblPage">Page</div>
+        <div class="pla-muted" id="plaLblPageSub">PG Loan Accounts</div>
+      </div>
+    </div>
+
+    <div class="pla-body">
+
+      <!-- Create loan form (unchanged logic) -->
+      <div class="pla-block">
+        <div class="pla-block-head">
+          <h3 class="pla-block-title" id="plaFormTitle">Create / Add Loan Account</h3>
+          <p class="pla-block-sub" id="plaFormSub">Fill the details to create a new PG loan account.</p>
+        </div>
+
+        <div class="pla-block-body">
+          {% if session.get('role') != 'PG_DATA_ENTRY' %}
+          <form method="POST" class="pla-grid">
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblLoanNo">Loan No</label>
+              <input class="pla-input" name="loan_no" placeholder="e.g., LOAN-001">
+            </div>
+
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblLender">Lender / Source</label>
+              <input class="pla-input" name="lender" placeholder="Bank / Scheme">
+            </div>
+
+            <div class="pla-stack pla-col-6">
+              <label id="plaLblPurpose">Purpose</label>
+              <input class="pla-input" name="purpose" placeholder="Working capital / equipment">
+            </div>
+
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblPrincipal">Estimated Amount</label>
+              <input class="pla-input" name="principal" type="number" step="0.01">
+            </div>
+
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblSanctionAmount">Sanction Amount</label>
+              <input class="pla-input" name="sanction_amount" type="number" step="0.01">
+            </div>
+
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblDisbursedAmount">Disbursed Amount</label>
+              <input class="pla-input" name="disbursed_amount" type="number" step="0.01">
+            </div>
+
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblDisbursementDate">Disbursement Date</label>
+              <input class="pla-input" name="disbursement_date" type="date">
+            </div>
+
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblROI">ROI (% p.a.)</label>
+              <input class="pla-input" name="roi" type="number" step="0.01">
+            </div>
+
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblTenure">Tenure (months)</label>
+              <input class="pla-input" name="tenure_months" type="number" step="1">
+            </div>
+
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblMoratorium">Moratorium (months)</label>
+              <input class="pla-input" name="moratorium_months" type="number" step="1" value="0">
+            </div>
+
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblFirstDueDate">First Due Date</label>
+              <input class="pla-input" name="first_due_date" type="date">
+            </div>
+
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblBizPlanSubmitted">Business plan submitted?</label>
+              <select class="pla-select" name="business_plan_submitted">
+                <option value="no" id="plaOptNo">No</option>
+                <option value="yes" id="plaOptYes">Yes</option>
+              </select>
+            </div>
+
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblBizPlanDate">Business plan date</label>
+              <input class="pla-input" name="business_plan_date" type="date">
+            </div>
+
+            <div class="pla-stack pla-col-3">
+              <label id="plaLblStatus">Status</label>
+              <select class="pla-select" name="status">
+                <option value="active" id="plaOptActive">Active</option>
+                <option value="closed" id="plaOptClosed">Closed</option>
+                <option value="npa" id="plaOptNpa">NPA</option>
+              </select>
+            </div>
+
+            <div class="pla-col-12 pla-actions">
+              <button class="pla-btn pla-primary" type="submit" id="plaBtnSaveLoan">Save Loan Account</button>
+              <a class="pla-btn pla-ghost" href="{{ url_for('finance.loan_dashboard', pg_id=pg._id) }}" id="plaBtnBackDash">Back to Dashboard</a>
+            </div>
+          </form>
+          {% else %}
+          <p class="pla-viewonly" id="plaViewOnlyMsg">View only: Loan entry/updates are handled by CLF/Block.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Existing Loans -->
+      <div class="pla-block">
+        <div class="pla-block-head">
+          <h3 class="pla-block-title" id="plaExistingTitle">Existing PG Loans</h3>
+        </div>
+
+        <div class="pla-block-body">
+
+          <div class="pla-tools">
+            <div class="pla-search-wrap">
+              <input type="text" class="pla-search" id="plaLoanSearch" placeholder="Search..." autocomplete="off">
+            </div>
+            <div class="pla-rows-wrap">
+              <div class="pla-rows-chip">
+                <span id="plaRowsLabel">Rows</span>
+                <select id="plaRowsPerPage" aria-label="Rows per page">
+                  <option value="10">10</option>
+                  <option value="25" selected>25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="pla-meta">
+            <div class="pla-meta-text" id="plaMetaText">Showing existing loan records</div>
+            <div class="pla-swipe-note" id="plaSwipeText">Swipe horizontally to view more</div>
+          </div>
+
+          <div class="pla-table-wrap">
+            <div class="pla-table-scroll" role="region" aria-label="Existing Loans Table">
+              <table class="pla-table" id="plaLoanTable">
+                <thead>
+                  <tr>
+                    <th id="plaThSl">SL</th>
+                    <th id="plaThLoanNo">Loan No</th>
+                    <th id="plaThSanction">Sanction</th>
+                    <th id="plaThOutstanding">Outstanding</th>
+                    <th id="plaThOverdue">Overdue</th>
+                    <th id="plaThStatus">Status</th>
+                    <th id="plaThAction">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {% for l in loans %}
+                  <tr
+                    data-pla-row
+                    data-pla-search="{{ loop.index }} {{ (l.loan_no or '')|lower }} {{ ('{:,.2f}'.format(l.sanction_amount or 0))|lower }} {{ ('{:,.2f}'.format(l.outstanding_amount or 0))|lower }} {{ ('{:,.2f}'.format(l.overdue_amount or 0))|lower }} {{ (l.status or 'active')|lower }}"
+                  >
+                    <td data-label="SL">{{ loop.index }}</td>
+                    <td data-label="Loan No">{{ l.loan_no }}</td>
+                    <td data-label="Sanction">₹{{ "{:,.2f}".format(l.sanction_amount or 0) }}</td>
+                    <td data-label="Outstanding">₹{{ "{:,.2f}".format(l.outstanding_amount or 0) }}</td>
+                    <td data-label="Overdue">₹{{ "{:,.2f}".format(l.overdue_amount or 0) }}</td>
+                    <td data-label="Status"><span class="pla-pill">{{ (l.status or 'active')|upper }}</span></td>
+                    <td data-label="Action">
+                      <a class="pla-btn pla-ghost plaBtnOpen" href="{{ url_for('finance.loan_account_view', loan_id=l._id) }}">Open</a>
+                    </td>
+                  </tr>
+                {% else %}
+                  <tr class="pla-empty-row pla-empty-desktop-row">
+                    <td colspan="7" id="plaNoLoans">No loans found.</td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="pla-mobile-empty-card" id="plaMobileEmptyCard" hidden>
+              <div class="pla-mobile-card">
+                <div class="pla-mobile-card-row">
+                  <div class="pla-mobile-card-key" id="plaEmptyFieldSl">SL</div>
+                  <div class="pla-mobile-card-val">—</div>
+                </div>
+                <div class="pla-mobile-card-row">
+                  <div class="pla-mobile-card-key" id="plaEmptyField1">Loan No</div>
+                  <div class="pla-mobile-card-val">—</div>
+                </div>
+                <div class="pla-mobile-card-row">
+                  <div class="pla-mobile-card-key" id="plaEmptyField2">Sanction</div>
+                  <div class="pla-mobile-card-val">—</div>
+                </div>
+                <div class="pla-mobile-card-row">
+                  <div class="pla-mobile-card-key" id="plaEmptyField3">Outstanding</div>
+                  <div class="pla-mobile-card-val">—</div>
+                </div>
+                <div class="pla-mobile-card-row">
+                  <div class="pla-mobile-card-key" id="plaEmptyField4">Overdue</div>
+                  <div class="pla-mobile-card-val">—</div>
+                </div>
+                <div class="pla-mobile-card-row">
+                  <div class="pla-mobile-card-key" id="plaEmptyField5">Status</div>
+                  <div class="pla-mobile-card-val">—</div>
+                </div>
+                <div class="pla-mobile-card-row">
+                  <div class="pla-mobile-card-key" id="plaEmptyField6">Action</div>
+                  <div class="pla-mobile-card-val" id="plaEmptyFieldMsg">No loans found.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {% if loans %}
+          <div class="pla-pagination" id="plaPagination">
+            <div class="pla-page-info" id="plaPageInfo">Showing 0–0 of 0</div>
+            <div class="pla-page-controls">
+              <button type="button" class="pla-page-btn" id="plaPrevBtn">Prev</button>
+              <div id="plaPageNumberWrap" class="pla-page-controls"></div>
+              <button type="button" class="pla-page-btn" id="plaNextBtn">Next</button>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div><!-- /pla-body -->
+
+  </div><!-- /pla-sheet -->
+</div><!-- /pla-wrap -->
+
+<script>
+(function(){
+
+  const PLA_T = {
+    en:{
+      docTitle:"PG Loan Accounts",
+      backAria:"Go Back",
+      pageTitlePrefix:"PG Loan Accounts — ",
+      pageSub:"Create multiple loans, track schedule + repayments.",
+
+      producerGroup:"Producer Group",
+      pageLabel:"Page",
+      pageSubRow:"PG Loan Accounts",
+
+      formTitle:"Create / Add Loan Account",
+      formSub:"Fill the details to create a new PG loan account.",
+
+      loanNo:"Loan No",
+      lender:"Lender / Source",
+      purpose:"Purpose",
+      estimatedAmount:"Estimated Amount",
+      sanctionAmount:"Sanction Amount",
+      disbursedAmount:"Disbursed Amount",
+      disbursementDate:"Disbursement Date",
+      roi:"ROI (% p.a.)",
+      tenure:"Tenure (months)",
+      moratorium:"Moratorium (months)",
+      firstDueDate:"First Due Date",
+      bizPlanSubmitted:"Business plan submitted?",
+      no:"No",
+      yes:"Yes",
+      bizPlanDate:"Business plan date",
+      statusLabel:"Status",
+      active:"Active",
+      closed:"Closed",
+      npa:"NPA",
+      saveLoan:"Save Loan Account",
+      backDash:"Back to Dashboard",
+      viewOnly:"View only: Loan entry/updates are handled by CLF/Block.",
+
+      existingTitle:"Existing PG Loans",
+      thSl:"SL",
+      thLoanNo:"Loan No",
+      thSanction:"Sanction",
+      thOutstanding:"Outstanding",
+      thOverdue:"Overdue",
+      thStatus:"Status",
+      thAction:"Action",
+      open:"Open",
+      noLoans:"No loans found.",
+
+      searchPlaceholder:"Search...",
+      rows:"Rows",
+      metaText:"Showing existing loan records",
+      swipeMore:"Swipe horizontally to view more",
+      prev:"Prev",
+      next:"Next",
+      pageWord:"Page",
+      showingOf:"Showing {start}–{end} of {total}",
+      noSearchResults:"No matching loans found."
+    },
+
+    bn:{
+      docTitle:"পিজি ঋণ হিসাব",
+      backAria:"ফিরে যান",
+      pageTitlePrefix:"পিজি ঋণ হিসাব — ",
+      pageSub:"একাধিক ঋণ তৈরি করুন, সময়সূচি ও পরিশোধ ট্র্যাক করুন।",
+
+      producerGroup:"প্রডিউসার গ্রুপ",
+      pageLabel:"পৃষ্ঠা",
+      pageSubRow:"পিজি ঋণ হিসাব",
+
+      formTitle:"ঋণ হিসাব তৈরি / যোগ করুন",
+      formSub:"নতুন পিজি ঋণ হিসাব তৈরি করতে তথ্য পূরণ করুন।",
+
+      loanNo:"ঋণ নম্বর",
+      lender:"ঋণদাতা / উৎস",
+      purpose:"উদ্দেশ্য",
+      estimatedAmount:"আনুমানিক পরিমাণ",
+      sanctionAmount:"অনুমোদিত পরিমাণ",
+      disbursedAmount:"বিতরণকৃত পরিমাণ",
+      disbursementDate:"বিতরণের তারিখ",
+      roi:"সুদের হার (% বার্ষিক)",
+      tenure:"মেয়াদ (মাস)",
+      moratorium:"মোরাটোরিয়াম (মাস)",
+      firstDueDate:"প্রথম কিস্তির তারিখ",
+      bizPlanSubmitted:"ব্যবসায়িক পরিকল্পনা জমা?",
+      no:"না",
+      yes:"হ্যাঁ",
+      bizPlanDate:"পরিকল্পনার তারিখ",
+      statusLabel:"অবস্থা",
+      active:"সক্রিয়",
+      closed:"বন্ধ",
+      npa:"এনপিএ",
+      saveLoan:"ঋণ হিসাব সংরক্ষণ",
+      backDash:"ড্যাশবোর্ডে ফিরে যান",
+      viewOnly:"শুধু দেখুন: ঋণ এন্ট্রি/আপডেট CLF/Block দ্বারা করা হয়।",
+
+      existingTitle:"বিদ্যমান পিজি ঋণসমূহ",
+      thSl:"ক্রম",
+      thLoanNo:"ঋণ নম্বর",
+      thSanction:"অনুমোদন",
+      thOutstanding:"বকেয়া",
+      thOverdue:"ওভারডিউ",
+      thStatus:"অবস্থা",
+      thAction:"অ্যাকশন",
+      open:"খুলুন",
+      noLoans:"কোনো ঋণ পাওয়া যায়নি।",
+
+      searchPlaceholder:"খুঁজুন...",
+      rows:"সারি",
+      metaText:"বিদ্যমান ঋণ রেকর্ড দেখানো হচ্ছে",
+      swipeMore:"আরও দেখতে আড়াআড়ি সোয়াইপ করুন",
+      prev:"পূর্ববর্তী",
+      next:"পরবর্তী",
+      pageWord:"পৃষ্ঠা",
+      showingOf:"{total}টির মধ্যে {start}–{end} দেখানো হচ্ছে",
+      noSearchResults:"মিল পাওয়া যায়নি।"
+    }
+  };
+
+  function safeText(id,val){
+    const el=document.getElementById(id);
+    if(el) el.textContent=val;
+  }
+
+  function fmt(str,p){
+    return String(str||'').replace(/\{(\w+)\}/g,(_,k)=>p?.[k]??'');
+  }
+
+  function getStoredLang(){
+    try{
+      const l=localStorage.getItem('pgmis_lang');
+      if(l==='en'||l==='bn') return l;
+    }catch{}
+    return 'en';
+  }
+
+  function currentText(){
+    return PLA_T[getStoredLang()]||PLA_T.en;
+  }
+
+  function applyMobileCardLabels(t){
+    const rows=document.querySelectorAll('#plaLoanTable tbody tr:not(.pla-empty-row)');
+    rows.forEach(tr=>{
+      const td=tr.querySelectorAll('td');
+      if(td[0]) td[0].dataset.label=t.thSl;
+      if(td[1]) td[1].dataset.label=t.thLoanNo;
+      if(td[2]) td[2].dataset.label=t.thSanction;
+      if(td[3]) td[3].dataset.label=t.thOutstanding;
+      if(td[4]) td[4].dataset.label=t.thOverdue;
+      if(td[5]) td[5].dataset.label=t.thStatus;
+      if(td[6]) td[6].dataset.label=t.thAction;
+    });
+  }
+
+  function syncLoanEmptyState(total){
+    const emptyRow=document.querySelector('.pla-empty-desktop-row');
+    const mobileCard=document.getElementById('plaMobileEmptyCard');
+    const isMobile=window.innerWidth<=720;
+
+    if(emptyRow){
+      emptyRow.style.display=(!isMobile && total===0)?'':'none';
+    }
+
+    if(mobileCard){
+      const show=isMobile && total===0;
+      mobileCard.hidden=!show;
+      mobileCard.classList.toggle('is-visible',show);
+    }
+  }
+
+  let plaPager=null;
+
+  function initLoanPager(){
+
+    const table=document.getElementById('plaLoanTable');
+    if(!table) return null;
+
+    const rows=Array.from(
+      table.querySelectorAll('tbody tr:not(.pla-empty-row)')
+    );
+
+    if(!rows.length){
+      syncLoanEmptyState(0);
+      return null;
+    }
+
+    const search=document.getElementById('plaLoanSearch');
+    const rowsSelect=document.getElementById('plaRowsPerPage');
+    const prev=document.getElementById('plaPrevBtn');
+    const next=document.getElementById('plaNextBtn');
+    const info=document.getElementById('plaPageInfo');
+    const pageWrap=document.getElementById('plaPageNumberWrap');
+
+    let currentPage=1;
+    let filtered=rows.slice();
+
+    function rowsPerPage(){
+      return parseInt(rowsSelect.value)||25;
+    }
+
+    function renderButtons(pages){
+      pageWrap.innerHTML='';
+      for(let i=1;i<=pages;i++){
+        const b=document.createElement('button');
+        b.className='pla-page-btn'+(i===currentPage?' is-active':'');
+        b.textContent=i;
+        b.onclick=()=>{currentPage=i;render();};
+        pageWrap.appendChild(b);
+      }
+    }
+
+    function render(){
+
+      const rpp=rowsPerPage();
+      const total=filtered.length;
+      const pages=Math.max(1,Math.ceil(total/rpp));
+
+      if(currentPage>pages) currentPage=pages;
+
+      rows.forEach(r=>r.classList.add('pla-hidden-row'));
+
+      const start=(currentPage-1)*rpp;
+      const end=start+rpp;
+
+      filtered.slice(start,end).forEach(r=>{
+        r.classList.remove('pla-hidden-row');
+      });
+
+      syncLoanEmptyState(total);
+
+      renderButtons(pages);
+
+      prev.disabled=currentPage<=1;
+      next.disabled=currentPage>=pages;
+
+      const t=currentText();
+      const s=total?start+1:0;
+      const e=total?Math.min(end,total):0;
+
+      if(info){
+        info.textContent=fmt(t.showingOf,{start:s,end:e,total});
+      }
+    }
+
+    function applySearch(){
+      const q=search.value.trim().toLowerCase();
+      filtered=rows.filter(r=>{
+        return !q || r.dataset.plaSearch.includes(q);
+      });
+      currentPage=1;
+      render();
+    }
+
+    search.addEventListener('input',applySearch);
+    rowsSelect.addEventListener('change',()=>{currentPage=1;render();});
+
+    prev.onclick=()=>{currentPage--;render();};
+    next.onclick=()=>{currentPage++;render();};
+
+    window.addEventListener('resize',()=>syncLoanEmptyState(filtered.length));
+
+    render();
+
+    return {render};
+  }
+
+  function applyPLA(lang){
+
+    const t=PLA_T[lang]||PLA_T.en;
+
+    document.title=t.docTitle;
+
+    safeText('plaLblProducerGroup',t.producerGroup);
+    safeText('plaLblPage',t.pageLabel);
+    safeText('plaLblPageSub',t.pageSubRow);
+
+    safeText('plaFormTitle',t.formTitle);
+    safeText('plaFormSub',t.formSub);
+
+    safeText('plaExistingTitle',t.existingTitle);
+
+    safeText('plaRowsLabel',t.rows);
+    safeText('plaMetaText',t.metaText);
+    safeText('plaSwipeText',t.swipeMore);
+
+    safeText('plaPrevBtn',t.prev);
+    safeText('plaNextBtn',t.next);
+
+    safeText('plaThSl',t.thSl);
+    safeText('plaThLoanNo',t.thLoanNo);
+    safeText('plaThSanction',t.thSanction);
+    safeText('plaThOutstanding',t.thOutstanding);
+    safeText('plaThOverdue',t.thOverdue);
+    safeText('plaThStatus',t.thStatus);
+    safeText('plaThAction',t.thAction);
+
+    safeText('plaEmptyFieldSl',t.thSl);
+    safeText('plaEmptyField1',t.thLoanNo);
+    safeText('plaEmptyField2',t.thSanction);
+    safeText('plaEmptyField3',t.thOutstanding);
+    safeText('plaEmptyField4',t.thOverdue);
+    safeText('plaEmptyField5',t.thStatus);
+    safeText('plaEmptyField6',t.thAction);
+
+    const search=document.getElementById('plaLoanSearch');
+    if(search) search.placeholder=t.searchPlaceholder;
+
+    document.querySelectorAll('.plaBtnOpen').forEach(b=>b.textContent=t.open);
+
+    applyMobileCardLabels(t);
+
+    if(plaPager) plaPager.render();
+  }
+
+  function initPLAPage(){
+
+    plaPager=initLoanPager();
+
+    applyPLA(getStoredLang());
+
+    requestAnimationFrame(()=>{
+      if(plaPager) plaPager.render();
+    });
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',initPLAPage,{once:true});
+  }else{
+    initPLAPage();
+  }
+
+})();
+</script>
+
+{% endblock %}

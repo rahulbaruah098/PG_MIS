@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+{% block title %}Sector Analytics{% endblock %}
+{% block content %}
+
+<style>
+  /* ============================================================
+     SECTOR ANALYTICS — RESKIN (FUNDS / LEDGER BOOK LOOK)
+     ✅ ONLY UI/CSS changed
+     ✅ ALL data contents + bindings kept as-is
+     ✅ Scoped under .sa-wrap only (no global rules)
+     ============================================================ */
+
+  .sa-wrap{
+    width: 100%;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    /* same token language as Funds page */
+    --ink:#0f172a;
+    --muted:#64748b;
+
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    color: var(--ink);
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .sa-wrap *{ box-sizing:border-box; }
+
+  .sa-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+    position: relative;
+  }
+
+  .sa-head{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+    position: relative; /* anchor for mobile back */
+  }
+  .sa-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: .2px;
+  }
+
+  /* Mobile-only back button (same pattern as funds) */
+  .sa-back{
+    display:none; /* hidden on desktop */
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    transform: translateY(-50%);
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: rgba(11,77,58,.98);
+    user-select: none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .sa-back:hover{
+    transform: translateY(-50%) translateX(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .sa-back:active{ transform: translateY(-50%) scale(.98); }
+  .sa-back svg{ width: 18px; height: 18px; display:block; }
+
+  /* Top fields row (like funds: Producer Group / Page) */
+  .sa-topfields{
+    padding: 10px 16px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .sa-field{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .sa-label{
+    font-weight: 900;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .sa-value{
+    flex: 1;
+    width: 100%;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: transparent;
+    font-weight: 850;
+    font-size: 12px;
+    color: rgba(15,23,42,.78);
+    min-width: 0;
+  }
+
+  /* Actions bar (filter form) */
+  .sa-actions{
+    padding: 10px 16px;
+    display:flex;
+    align-items:flex-end;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.94);
+    flex-wrap: wrap;
+  }
+  .sa-actions-left{
+    display:flex;
+    align-items:flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .sa-actions-right{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content:flex-end;
+    margin-left:auto;
+  }
+
+  .sa-stack{
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .sa-stack label{
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(15,23,42,.72);
+  }
+
+  .sa-input{
+    width: 180px;
+    max-width: 100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(247,250,249,.75);
+    font-weight: 850;
+    font-size: 12px;
+    outline: none;
+    color: var(--ink);
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .sa-input:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+
+  .sa-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+    text-decoration:none;
+  }
+  .sa-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .sa-btn:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+  .sa-btn.sa-primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .sa-btn.sa-primary:hover{ background: rgba(16,185,129,.16); }
+
+  .sa-icon{ width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* Table card area */
+  .sa-body{
+    padding: 12px 16px 14px;
+    background: rgba(255,255,255,.96);
+  }
+
+  .sa-table{
+    width:100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow:hidden;
+    background: #fff;
+  }
+  .sa-table thead th{
+    background: rgba(240,253,244,.85);
+    color: rgba(11,77,58,.98);
+    font-weight: 950;
+    font-size: 12px;
+    letter-spacing: .02em;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line2);
+    text-align:left;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .sa-table tbody td{
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    font-size: 13px;
+    font-weight: 850;
+    color: rgba(15,23,42,.86);
+    vertical-align: top;
+  }
+  .sa-table tbody tr:last-child td{ border-bottom: 0; }
+
+  .sa-muted{
+    color: rgba(15,23,42,.62);
+    font-weight: 800;
+  }
+
+  /* Summary bar (like funds KPI pills) */
+  .sa-summary{
+    padding: 10px 16px;
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    border-top: 1.5px solid var(--line2);
+    background: rgba(247,250,249,.72);
+  }
+  .sa-kpi{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 999px;
+    background: rgba(255,255,255,.86);
+    font-weight: 950;
+    font-size: 12px;
+  }
+  .sa-kpi b{ font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 720px){
+    .sa-topfields{ grid-template-columns: 1fr; }
+    .sa-summary{ justify-content: flex-start; }
+    .sa-input{ width: 100%; }
+    .sa-back{ display:flex; } /* ✅ show mobile back only */
+  }
+</style>
+
+<div class="sa-wrap">
+  <div class="sa-sheet">
+
+    <!-- Header -->
+    <div class="sa-head">
+
+      <!-- ✅ Mobile-only back (same as funds) -->
+      <a class="sa-back" href="javascript:history.back()" aria-label="Go Back">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <h2 class="sa-title">Sector-wise Analytics</h2>
+    </div>
+
+    <!-- Top fields (keeps your content meaning intact) -->
+    <div class="sa-topfields">
+      <div class="sa-field">
+        <div class="sa-label">Page</div>
+        <input class="sa-value" type="text" value="Sector-wise Analytics" readonly />
+      </div>
+
+      <div class="sa-field">
+        <div class="sa-label">Year</div>
+        <input class="sa-value" type="text" value="{{ year }}" readonly />
+      </div>
+    </div>
+
+    <!-- Actions / Filter (keeps same form + fields) -->
+    <div class="sa-actions">
+      <form method="GET" class="sa-actions-left">
+        <div class="sa-stack">
+          <label>Year</label>
+          <input class="sa-input" name="year" type="number" value="{{ year }}">
+        </div>
+
+        <button class="sa-btn sa-primary" type="submit">
+          <svg class="sa-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M21 12a9 9 0 1 1-3.2-6.9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+          Apply
+        </button>
+      </form>
+
+     
+      
+    </div>
+
+    <!-- Table -->
+    <div class="sa-body">
+      <div style="font-size:12px;font-weight:850;color:rgba(15,23,42,.65);margin-bottom:10px;">
+        Turnover roll-up by sector • Year {{ year }}
+      </div>
+
+      <table class="sa-table">
+        <thead>
+          <tr>
+            <th>Sector</th>
+            <th>PG Count</th>
+            <th>Total Turnover</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              <td>{{ r.sector }}</td>
+              <td>{{ r.pg_count }}</td>
+              <td>₹{{ "{:,.2f}".format(r.turnover or 0) }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="3" class="sa-muted">No data.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Summary KPIs -->
+    <div class="sa-summary" aria-hidden="true">
+      <div class="sa-kpi">
+        Year:
+        <b>{{ year }}</b>
+      </div>
+      <div class="sa-kpi">
+        Sectors:
+        <b>{{ rows|length if rows is defined else 0 }}</b>
+      </div>
+      <div class="sa-kpi">
+        Note:
+        <b>Turnover roll-up</b>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

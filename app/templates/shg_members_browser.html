@@ -1,0 +1,1123 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  /* ============================================================
+     SHG MEMBERS MASTER — UI MATCHED TO OTHER RECENT PAGES
+     ✅ Same routes / JS / data contents / backend connectivity
+     ✅ Added back button
+     ✅ Added SL No column
+     ✅ Mobile/app uses card blocks
+     ✅ Background + button colours matched to other pages
+     ============================================================ */
+
+  .pg-shg-master{
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.18);
+    --line2:rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f8fafc;
+    --soft2:#f7faf9;
+    --accent:#0b4d3a;
+    --success:#16a34a;
+    --shadow:0 18px 34px -26px rgba(15,23,42,.35);
+    --shadow-soft:0 14px 26px -22px rgba(15,23,42,.28);
+
+    width:100%;
+    max-width:100%;
+    margin:0 auto;
+    padding:clamp(12px,2.2vw,22px);
+    color:var(--ink);
+    position:relative;
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  }
+  .pg-shg-master *{ box-sizing:border-box; }
+
+  .pg-shell{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+    position:relative;
+  }
+
+  /* Header */
+  .pg-head{
+    padding:14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom:1.5px solid var(--line2);
+    position:relative;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .pg-head-left{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    min-width:0;
+    flex:1 1 auto;
+  }
+  .pg-title{
+    margin:0;
+    font-weight:950;
+    font-size:18px;
+    line-height:1.25;
+    color:var(--ink);
+    letter-spacing:.2px;
+  }
+  .pg-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    font-weight:800;
+    color:rgba(15,23,42,.68);
+    line-height:1.45;
+  }
+
+  /* Back button */
+  .pg-back{
+    display:none;
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    box-shadow:0 12px 20px -16px rgba(15,23,42,.38);
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color:rgba(11,77,58,.98);
+    flex:0 0 auto;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .pg-back:hover{
+    transform:translateX(-1px);
+    box-shadow:0 16px 26px -18px rgba(15,23,42,.46);
+    background:rgba(255,255,255,.98);
+  }
+  .pg-back svg{ width:18px; height:18px; display:block; }
+
+  .pg-head-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  /* Buttons matched to other pages */
+  .pg-btn,
+  .pg-page-btn{
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.8);
+    color:var(--ink);
+    border-radius:999px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    user-select:none;
+    text-decoration:none;
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .pg-btn{
+    min-height:42px;
+    padding:10px 14px;
+    white-space:nowrap;
+  }
+  .pg-page-btn{
+    min-width:40px;
+    height:38px;
+    padding:8px 10px;
+  }
+  .pg-btn:hover,
+  .pg-page-btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+  }
+
+  .pg-btn-primary,
+  .pg-page-btn.is-active,
+  .pg-search-btn{
+    border:1px solid rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .pg-btn-primary:hover,
+  .pg-page-btn.is-active:hover,
+  .pg-search-btn:hover{
+    background:rgba(16,185,129,.16);
+  }
+
+  .pg-page-btn.is-active{
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  .pg-page-btn[disabled]{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+
+  /* Body section */
+  .pg-section{
+    padding:16px;
+    background:rgba(255,255,255,.96);
+  }
+
+  .pg-card{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    background:rgba(255,255,255,.94);
+    overflow:hidden;
+    box-shadow:var(--shadow-soft);
+  }
+
+  .pg-card-head{
+    padding:14px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(247,250,249,.66);
+  }
+  .pg-card-title{
+    margin:0;
+    font-weight:950;
+    font-size:13px;
+    line-height:1.35;
+    color:var(--ink);
+  }
+  .pg-card-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color:rgba(15,23,42,.62);
+    font-weight:750;
+    line-height:1.45;
+  }
+
+  .pg-card-body{
+    padding:14px;
+  }
+
+  /* Filter grid */
+  .pg-grid{
+    display:grid;
+    grid-template-columns:repeat(12,minmax(0,1fr));
+    gap:12px 14px;
+    align-items:end;
+  }
+  .pg-col-2{ grid-column:span 2; }
+  .pg-col-3{ grid-column:span 3; }
+  .pg-col-4{ grid-column:span 4; }
+
+  .pg-label{
+    margin:0 0 6px;
+    font-size:12px;
+    font-weight:900;
+    color:var(--ink);
+    line-height:1.25;
+  }
+  .pg-input,
+  .pg-select{
+    width:100%;
+    min-width:0;
+    min-height:44px;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:14px;
+    padding:10px 12px;
+    background:rgba(247,250,249,.78);
+    font-weight:800;
+    font-size:12px;
+    line-height:1.35;
+    outline:none;
+    color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .pg-input:focus,
+  .pg-select:focus{
+    border-color:rgba(11,77,58,.40);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  .pg-search-btn{
+    width:100%;
+    min-height:44px;
+    border-radius:999px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  .pg-loading{
+    display:none;
+    align-items:center;
+    gap:10px;
+    font-weight:900;
+    color:var(--muted);
+  }
+  .spinner{
+    width:18px; height:18px;
+    border-radius:999px;
+    border:3px solid rgba(11,77,58,.12);
+    border-top-color:rgba(11,77,58,.75);
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* Table card */
+  .pg-table-shell{
+    margin-top:14px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    overflow:hidden;
+    background:rgba(255,255,255,.92);
+    box-shadow:var(--shadow-soft);
+  }
+
+  .pg-table-topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:12px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+  .pg-meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+  }
+  .pg-meta span{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.75);
+    font-weight:900;
+    font-size:12px;
+    color:rgba(15,23,42,.78);
+  }
+
+  .pg-table-wrap{
+    width:100%;
+    overflow:auto;
+    max-height:62vh;
+  }
+  table.pg-table{
+    width:100%;
+    min-width:1620px;
+    border-collapse:separate;
+    border-spacing:0;
+    font-size:13px;
+  }
+  .pg-table thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:rgba(247,250,249,.94);
+    color:var(--ink);
+    text-align:left;
+    padding:12px;
+    font-weight:950;
+    border-bottom:1px solid var(--line2);
+    white-space:nowrap;
+  }
+  .pg-table tbody td{
+    padding:12px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    vertical-align:top;
+    color:#20372d;
+    background:rgba(255,255,255,.55);
+  }
+  .pg-table tbody tr:hover td{
+    background:rgba(247,250,249,.88);
+  }
+
+  .pg-slno{
+    width:72px;
+    min-width:72px;
+    font-weight:950;
+    color:#173b2c;
+  }
+
+  .user-cell{
+    min-width:280px;
+    max-width:420px;
+  }
+  .user-card{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .user-main{
+    font-weight:950;
+    color:#173b2c;
+    font-size:14px;
+    line-height:1.15;
+  }
+  .user-sub{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    color:#2a4a3d;
+    font-weight:800;
+    font-size:12px;
+    opacity:.95;
+  }
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.75);
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.15);
+  }
+  .pill code{
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+    font-weight:900;
+    font-size:12px;
+    color:#184133;
+    background:transparent;
+    padding:0;
+  }
+
+  /* Mobile card blocks */
+  .pg-mobile-list{
+    display:none;
+    padding:12px;
+    gap:12px;
+    flex-direction:column;
+  }
+  .pg-mcard{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    background:rgba(255,255,255,.96);
+    box-shadow:var(--shadow-soft);
+    overflow:hidden;
+  }
+  .pg-mcard-head{
+    padding:12px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(247,250,249,.7);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .pg-mcard-sl{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:34px;
+    height:34px;
+    padding:0 10px;
+    border-radius:999px;
+    font-weight:950;
+    color:#0b4d3a;
+    border:1px solid rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
+    flex:0 0 auto;
+  }
+  .pg-mcard-body{
+    padding:12px;
+    display:grid;
+    gap:10px;
+  }
+  .pg-mrow{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom:1px dashed rgba(15,23,42,.10);
+    padding-bottom:8px;
+  }
+  .pg-mrow:last-child{
+    border-bottom:none;
+    padding-bottom:0;
+  }
+  .pg-mkey{
+    min-width:120px;
+    font-weight:950;
+    color:rgba(15,23,42,.72);
+    font-size:12px;
+  }
+  .pg-mval{
+    flex:1;
+    text-align:right;
+    color:#20372d;
+    font-weight:800;
+    font-size:12px;
+    word-break:break-word;
+  }
+  .pg-muser{
+    text-align:left;
+  }
+  .pg-muser .user-card{ align-items:flex-start; }
+
+  /* Pagination */
+  .pg-pager{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px;
+    border-top:1px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+  .pg-pager .info{
+    color:var(--muted);
+    font-weight:900;
+    font-size:12px;
+    white-space:nowrap;
+  }
+  .pg-pages{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+  .pg-ellipsis{
+    padding:0 4px;
+    color:var(--muted);
+    font-weight:1000;
+  }
+
+  /* Responsive */
+  @media (max-width: 1200px){
+    .pg-col-2{ grid-column:span 3; }
+    .pg-col-3{ grid-column:span 4; }
+    .pg-col-4{ grid-column:span 6; }
+  }
+  @media (max-width: 900px){
+    .pg-shg-master{
+      padding:12px;
+    }
+    .pg-grid{
+      grid-template-columns:repeat(6,minmax(0,1fr));
+    }
+    .pg-col-2{ grid-column:span 3; }
+    .pg-col-3{ grid-column:span 3; }
+    .pg-col-4{ grid-column:span 6; }
+  }
+  @media (max-width: 720px){
+    .pg-back{ display:inline-flex; }
+
+    .pg-head{
+      padding:14px 14px 12px;
+    }
+    .pg-head-left{
+      width:100%;
+    }
+    .pg-title{
+      font-size:16px;
+      line-height:1.3;
+      min-height:38px;
+      display:flex;
+      align-items:center;
+    }
+    .pg-sub{
+      font-size:12px;
+    }
+    .pg-head-actions{
+      width:100%;
+      justify-content:flex-start;
+    }
+    .pg-btn{
+      width:100%;
+      justify-content:center;
+    }
+
+    .pg-section{
+      padding:14px;
+    }
+    .pg-card-head,
+    .pg-card-body{
+      padding:12px;
+    }
+
+    .pg-table-wrap{ display:none; }
+    .pg-mobile-list{ display:flex; }
+
+    .pg-table-topbar,
+    .pg-pager{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+    .pg-pages{
+      justify-content:flex-start;
+    }
+
+    .pg-mkey{
+      min-width:100px;
+    }
+  }
+  @media (max-width: 520px){
+    .pg-grid{
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    .pg-col-2,.pg-col-3,.pg-col-4{
+      grid-column:1 / -1 !important;
+    }
+    .pg-shg-master{
+      padding:10px;
+    }
+    .pg-section{
+      padding:12px;
+    }
+    .pg-mcard-head,
+    .pg-mcard-body{
+      padding:10px;
+    }
+    .pg-mrow{
+      flex-direction:column;
+      align-items:flex-start;
+      gap:4px;
+    }
+    .pg-mval{
+      text-align:left;
+      width:100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .spinner{ animation:none; }
+    .pg-btn,.pg-page-btn,.pg-search-btn,.pg-back{ transition:none; }
+  }
+</style>
+
+<div class="pg-shg-master">
+  <div class="pg-shell">
+
+    <div class="pg-head">
+      <div class="pg-head-left">
+        <a class="pg-back" href="javascript:history.back()" aria-label="Go Back">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"></path>
+          </svg>
+        </a>
+
+        <div>
+          <h2 class="pg-title">SHG Members Master (TRESP)</h2>
+          <div class="pg-sub">Browse the full member-level master dataset (about 140k rows) using cascading filters.</div>
+        </div>
+      </div>
+
+      <div class="pg-head-actions">
+        <a class="pg-btn pg-btn-primary" href="{{ url_for('master_data.shg_browser') }}">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M10 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          View SHG Summary
+        </a>
+      </div>
+    </div>
+
+    <div class="pg-section">
+      <div class="pg-card">
+        <div class="pg-card-head">
+          <h3 class="pg-card-title">SHG Member Filters</h3>
+          <p class="pg-card-sub">Use the cascading filters below to search and browse member-level master records.</p>
+        </div>
+
+        <div class="pg-card-body">
+          <div class="pg-grid">
+            <div class="pg-col-2">
+              <div class="pg-label">State</div>
+              <select id="shg_state" class="pg-select"></select>
+            </div>
+            <div class="pg-col-2">
+              <div class="pg-label">District</div>
+              <select id="shg_district" class="pg-select"></select>
+            </div>
+            <div class="pg-col-2">
+              <div class="pg-label">Block</div>
+              <select id="shg_block" class="pg-select"></select>
+            </div>
+            <div class="pg-col-2">
+              <div class="pg-label">Gram Panchayat</div>
+              <select id="shg_gp" class="pg-select"></select>
+            </div>
+            <div class="pg-col-2">
+              <div class="pg-label">Village</div>
+              <select id="shg_village" class="pg-select"></select>
+            </div>
+            <div class="pg-col-2">
+              <div class="pg-label">Search</div>
+              <input id="shg_q" class="pg-input" placeholder="Member/SHG code or name">
+            </div>
+
+            <div class="pg-col-2">
+              <div class="pg-label">Rows / Page</div>
+              <select id="shg_page_size" class="pg-select">
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+              </select>
+            </div>
+
+            <div class="pg-col-2">
+              <button class="pg-search-btn" type="button" onclick="doSearch(1)">Search</button>
+            </div>
+
+            <div class="pg-col-4" style="display:flex;align-items:center;gap:10px;padding-left:6px;">
+              <div class="pg-loading" id="pg_loading">
+                <div class="spinner"></div>
+                Loading…
+              </div>
+            </div>
+          </div>
+
+          <div class="pg-table-shell">
+            <div class="pg-table-topbar">
+              <div class="pg-meta" id="pg_meta">
+                <span>Showing: <b id="pg_showing">0</b></span>
+                <span>Page: <b id="pg_page">1</b>/<b id="pg_pages">1</b></span>
+              </div>
+
+              <div class="pg-top-controls">
+                <button class="pg-page-btn pg-btn-primary" type="button" onclick="doSearch(1)" title="Refresh">↻</button>
+              </div>
+            </div>
+
+            <div class="pg-table-wrap">
+              <table class="pg-table" aria-label="SHG Members Master">
+                <thead>
+                  <tr>
+                    <th style="width:72px;">SL No</th>
+                    <th>State</th>
+                    <th>District</th>
+                    <th>Block</th>
+                    <th>Gram Panchayat</th>
+                    <th>Village</th>
+                    <th>User</th>
+                    <th>Member Code</th>
+                    <th>Designation in SHG</th>
+                    <th>Social Category</th>
+                    <th>Religion</th>
+                    <th>Education</th>
+                    <th>Disability</th>
+                    <th>Is head of Family</th>
+                    <th>Father/Mother/Spouse Name</th>
+                  </tr>
+                </thead>
+                <tbody id="pg_tbody"></tbody>
+              </table>
+            </div>
+
+            <div class="pg-mobile-list" id="pg_mobile_list"></div>
+
+            <div class="pg-pager">
+              <div class="info" id="pg_info">—</div>
+              <div class="pg-pages" id="pg_pages_container"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+
+  function opt(value, label) {
+    const o = document.createElement('option');
+    o.value = value ?? '';
+    o.textContent = label ?? value ?? '';
+    return o;
+  }
+
+  function setLoading(on){
+    const l = el('pg_loading');
+    if(!l) return;
+    l.style.display = on ? 'inline-flex' : 'none';
+  }
+
+  function last5(s){
+    s = (s ?? '').toString();
+    const digits = s.replace(/\D/g,'');
+    if(digits.length >= 5) return digits.slice(-5);
+    return s.slice(-5);
+  }
+
+  function renderUserCell(r){
+    const member = (r["Member Name"] ?? '').toString().trim();
+    const shgName = (r["SHG Name"] ?? '').toString().trim();
+    const shgCode = (r["SHG Code"] ?? '').toString().trim();
+    const code5 = shgCode;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'user-card';
+
+    const main = document.createElement('div');
+    main.className = 'user-main';
+    main.textContent = member || '—';
+    wrap.appendChild(main);
+
+    const sub = document.createElement('div');
+    sub.className = 'user-sub';
+
+    const pill1 = document.createElement('span');
+    pill1.className = 'pill';
+    pill1.textContent = shgName || 'SHG —';
+    sub.appendChild(pill1);
+
+    const pill2 = document.createElement('span');
+    pill2.className = 'pill';
+    pill2.innerHTML = 'Code: <code>' + (code5 || '—') + '</code>';
+    sub.appendChild(pill2);
+
+    wrap.appendChild(sub);
+    return wrap;
+  }
+
+  async function loadOptions(selectEl, url, placeholder) {
+    selectEl.innerHTML = '';
+    selectEl.appendChild(opt('', placeholder));
+    const res = await fetch(url, {credentials: 'same-origin'});
+    const data = await res.json();
+    (data || []).forEach(v => selectEl.appendChild(opt(v, v)));
+  }
+
+  const STATE = {
+    page: 1,
+    pageSize: 100,
+    lastRows: [],
+    lastFetchCount: 0
+  };
+
+  async function init() {
+    let scope = {role:null,state:null,district:null,block:null};
+    try{
+      const r = await fetch('/master/shg/scope', {credentials:'same-origin'});
+      if(r.ok) scope = await r.json();
+    }catch(e){}
+
+    await loadOptions(el('shg_state'), '/master/shg/states', 'All States');
+
+    if(scope.state){
+      el('shg_state').value = scope.state;
+      el('shg_state').disabled = true;
+    }
+    await refreshDistricts();
+
+    if(scope.district){
+      el('shg_district').value = scope.district;
+      el('shg_district').disabled = true;
+    }
+    await refreshBlocks();
+
+    if(scope.block){
+      el('shg_block').value = scope.block;
+      el('shg_block').disabled = true;
+    }
+    await refreshGPs();
+
+    el('shg_page_size').addEventListener('change', () => {
+      STATE.pageSize = parseInt(el('shg_page_size').value || '100', 10);
+      doSearch(1);
+    });
+
+    el('shg_q').addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        doSearch(1);
+      }
+    });
+  }
+
+  async function refreshDistricts() {
+    const s = el('shg_state').value;
+    await loadOptions(el('shg_district'), '/master/shg/districts?state=' + encodeURIComponent(s), 'All Districts');
+    await refreshBlocks();
+  }
+  async function refreshBlocks() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    let url = '/master/shg/blocks?state=' + encodeURIComponent(s) + '&district=' + encodeURIComponent(d);
+    await loadOptions(el('shg_block'), url, 'All Blocks');
+    await refreshGPs();
+  }
+  async function refreshGPs() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    const b = el('shg_block').value;
+    let url = '/master/shg/gps?state=' + encodeURIComponent(s) + '&district=' + encodeURIComponent(d) + '&block=' + encodeURIComponent(b);
+    await loadOptions(el('shg_gp'), url, 'All GPs');
+    await refreshVillages();
+  }
+  async function refreshVillages() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    const b = el('shg_block').value;
+    const gp = el('shg_gp').value;
+    let url = '/master/shg/villages?state=' + encodeURIComponent(s) + '&district=' + encodeURIComponent(d) + '&block=' + encodeURIComponent(b) + '&gp=' + encodeURIComponent(gp);
+    await loadOptions(el('shg_village'), url, 'All Villages');
+  }
+
+  function buildParams(page, pageSize){
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    const b = el('shg_block').value;
+    const gp = el('shg_gp').value;
+    const v = el('shg_village').value;
+    const q = (el('shg_q').value || '').trim();
+
+    const params = new URLSearchParams();
+    if (s) params.set('state', s);
+    if (d) params.set('district', d);
+    if (b) params.set('block', b);
+    if (gp) params.set('gp', gp);
+    if (v) params.set('village', v);
+    if (q) params.set('q', q);
+    params.set('page', String(page));
+    params.set('page_size', String(pageSize));
+    return params;
+  }
+
+  function createMobileRow(key, valueNodeOrText, isUser){
+    const row = document.createElement('div');
+    row.className = 'pg-mrow';
+
+    const k = document.createElement('div');
+    k.className = 'pg-mkey';
+    k.textContent = key;
+
+    const v = document.createElement('div');
+    v.className = 'pg-mval' + (isUser ? ' pg-muser' : '');
+
+    if (valueNodeOrText instanceof Node) {
+      v.appendChild(valueNodeOrText);
+    } else {
+      v.textContent = valueNodeOrText ?? '';
+    }
+
+    row.appendChild(k);
+    row.appendChild(v);
+    return row;
+  }
+
+  function renderRows(rows, currentPage, pageSize){
+    const tbody = el('pg_tbody');
+    const mobile = el('pg_mobile_list');
+    tbody.innerHTML = '';
+    mobile.innerHTML = '';
+
+    (rows || []).forEach((r, idx) => {
+      const slNo = ((currentPage - 1) * pageSize) + idx + 1;
+
+      const tr = document.createElement('tr');
+
+      const tdSl = document.createElement('td');
+      tdSl.className = 'pg-slno';
+      tdSl.textContent = slNo;
+      tr.appendChild(tdSl);
+
+      const beforeUser = ["State","District","Block","Gram Panchayat","Village"];
+      beforeUser.forEach(c => {
+        const td = document.createElement('td');
+        td.textContent = r[c] ?? '';
+        tr.appendChild(td);
+      });
+
+      const tdUser = document.createElement('td');
+      tdUser.className = 'user-cell';
+      tdUser.appendChild(renderUserCell(r));
+      tr.appendChild(tdUser);
+
+      const afterUser = [
+        "Member Code",
+        "Designation in SHG",
+        "Social Category",
+        "Religion",
+        "Education",
+        "Disability",
+        "Is head of Family",
+        "Father/Mother/Spouse Name"
+      ];
+      afterUser.forEach(c => {
+        const td = document.createElement('td');
+        td.textContent = r[c] ?? '';
+        tr.appendChild(td);
+      });
+
+      tbody.appendChild(tr);
+
+      const card = document.createElement('div');
+      card.className = 'pg-mcard';
+
+      const head = document.createElement('div');
+      head.className = 'pg-mcard-head';
+
+      const sl = document.createElement('div');
+      sl.className = 'pg-mcard-sl';
+      sl.textContent = slNo;
+
+      const userWrap = document.createElement('div');
+      userWrap.style.flex = '1 1 auto';
+      userWrap.appendChild(renderUserCell(r));
+
+      head.appendChild(sl);
+      head.appendChild(userWrap);
+      card.appendChild(head);
+
+      const body = document.createElement('div');
+      body.className = 'pg-mcard-body';
+
+      body.appendChild(createMobileRow('State', r["State"] ?? ''));
+      body.appendChild(createMobileRow('District', r["District"] ?? ''));
+      body.appendChild(createMobileRow('Block', r["Block"] ?? ''));
+      body.appendChild(createMobileRow('Gram Panchayat', r["Gram Panchayat"] ?? ''));
+      body.appendChild(createMobileRow('Village', r["Village"] ?? ''));
+      body.appendChild(createMobileRow('Member Code', r["Member Code"] ?? ''));
+      body.appendChild(createMobileRow('Designation', r["Designation in SHG"] ?? ''));
+      body.appendChild(createMobileRow('Social Category', r["Social Category"] ?? ''));
+      body.appendChild(createMobileRow('Religion', r["Religion"] ?? ''));
+      body.appendChild(createMobileRow('Education', r["Education"] ?? ''));
+      body.appendChild(createMobileRow('Disability', r["Disability"] ?? ''));
+      body.appendChild(createMobileRow('Head of Family', r["Is head of Family"] ?? ''));
+      body.appendChild(createMobileRow('Father/Mother/Spouse', r["Father/Mother/Spouse Name"] ?? ''));
+
+      card.appendChild(body);
+      mobile.appendChild(card);
+    });
+
+    el('pg_showing').textContent = (rows || []).length;
+  }
+
+  function renderPager(currentPage, totalPages, hasPrev, hasNext){
+    el('pg_page').textContent = String(currentPage);
+    el('pg_pages').textContent = String(totalPages);
+
+    const box = el('pg_pages_container');
+    box.innerHTML = '';
+
+    const prev = document.createElement('button');
+    prev.type = 'button';
+    prev.className = 'pg-page-btn';
+    prev.textContent = 'Prev';
+    prev.disabled = !hasPrev;
+    prev.onclick = () => doSearch(currentPage - 1);
+    box.appendChild(prev);
+
+    const win = 5;
+    const start = Math.max(1, currentPage - win);
+    const end = Math.min(totalPages, currentPage + win);
+
+    if(start > 1){
+      box.appendChild(pageBtn(1, currentPage));
+      if(start > 2){
+        const e = document.createElement('span');
+        e.className = 'pg-ellipsis';
+        e.textContent = '…';
+        box.appendChild(e);
+      }
+    }
+
+    for(let p = start; p <= end; p++){
+      box.appendChild(pageBtn(p, currentPage));
+    }
+
+    if(end < totalPages){
+      if(end < totalPages - 1){
+        const e = document.createElement('span');
+        e.className = 'pg-ellipsis';
+        e.textContent = '…';
+        box.appendChild(e);
+      }
+      box.appendChild(pageBtn(totalPages, currentPage));
+    }
+
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'pg-page-btn';
+    next.textContent = 'Next';
+    next.disabled = !hasNext;
+    next.onclick = () => doSearch(currentPage + 1);
+    box.appendChild(next);
+  }
+
+  function pageBtn(p, current){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pg-page-btn' + (p === current ? ' is-active' : '');
+    b.textContent = String(p);
+    b.onclick = () => doSearch(p);
+    return b;
+  }
+
+  async function doSearch(page=1) {
+    STATE.page = Math.max(1, parseInt(page || '1', 10));
+    STATE.pageSize = parseInt(el('shg_page_size').value || '100', 10);
+
+    setLoading(true);
+
+    try{
+      const params = buildParams(STATE.page, STATE.pageSize);
+      const res = await fetch('/master/shg/members/search?' + params.toString(), {credentials:'same-origin'});
+      const data = await res.json();
+
+      const rows = data.rows || [];
+      renderRows(rows, data.page ?? STATE.page, STATE.pageSize);
+
+      const total = data.total ?? 0;
+      const pages = data.pages ?? 1;
+      const cur = data.page ?? STATE.page;
+
+      el('pg_showing').textContent = String(rows.length);
+      el('pg_page').textContent = String(cur);
+      el('pg_pages').textContent = String(pages);
+
+      const start = total === 0 ? 0 : ((cur - 1) * STATE.pageSize + 1);
+      const end = Math.min(cur * STATE.pageSize, total);
+      el('pg_info').textContent = `Showing ${start}-${end} of ${total}`;
+
+      renderPager(cur, pages, cur > 1, cur < pages);
+    }catch(err){
+      console.error(err);
+      el('pg_tbody').innerHTML = '<tr><td colspan="15" style="padding:18px;font-weight:900;color:#7a2a2a;">Failed to load data. Please try again.</td></tr>';
+      el('pg_mobile_list').innerHTML = '<div class="pg-mcard"><div class="pg-mcard-body"><div style="padding:4px 0;font-weight:900;color:#7a2a2a;">Failed to load data. Please try again.</div></div></div>';
+      renderPager(1, 1, false, false);
+    }finally{
+      setLoading(false);
+    }
+  }
+
+  el('shg_state').addEventListener('change', async () => { await refreshDistricts(); doSearch(1); });
+  el('shg_district').addEventListener('change', async () => { await refreshBlocks(); doSearch(1); });
+  el('shg_block').addEventListener('change', async () => { await refreshGPs(); doSearch(1); });
+  el('shg_gp').addEventListener('change', async () => { await refreshVillages(); doSearch(1); });
+  el('shg_village').addEventListener('change', () => doSearch(1));
+
+  init().then(() => doSearch(1));
+</script>
+
+{% endblock %}

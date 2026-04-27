@@ -1,0 +1,1157 @@
+{% extends "base.html" %}
+{% block title %}PG Gradation{% endblock %}
+{% block content %}
+<style>
+  /* ============================================================
+     PG GRADATION — RESKIN (MATCH MONTHLY BUSINESS)
+     ✅ ONLY UI/CSS/UX changed
+     ✅ NO existing data contents / loops / logic changed
+     ✅ Back button only for mobile/tablet/app in same position/style
+     ✅ Scoped locally
+     ============================================================ */
+
+  .pgg-wrap{
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+    --accent2:#10b981;
+  }
+  .pgg-wrap *{ box-sizing: border-box; }
+
+  .pgg-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+    position: relative;
+  }
+
+/* Header */
+.pgg-head{
+  padding: 16px 18px 14px;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(11,77,58,.08), transparent 36%),
+    linear-gradient(135deg, rgba(240,253,244,.95), rgba(255,255,255,.98));
+  border-bottom: 1.5px solid var(--line2);
+  position: relative;
+}
+
+.pgg-title-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.pgg-titlebox{
+  min-width: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.pgg-title{
+  margin: 0;
+  font-weight: 850;
+  font-size: clamp(13px, 1.05vw, 16px);
+  line-height: 1.2;
+  letter-spacing: -.01em;
+  color: var(--ink);
+  text-align: center;
+}
+
+.pgg-sub{
+  margin-top: 4px;
+  font-size: clamp(10px, .78vw, 12px);
+  line-height: 1.3;
+  color: rgba(15,23,42,.62);
+  font-weight: 800;
+  text-align: center;
+}
+
+/* Back button */
+.pgg-back{
+  display:none;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: rgba(11,77,58,.98);
+  user-select: none;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  z-index: 3;
+}
+.pgg-back:hover{
+  transform: translateX(-1px);
+  box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+  background: rgba(255,255,255,.98);
+}
+.pgg-back:active{ transform: scale(.98); }
+.pgg-back svg{ width:18px; height:18px; display:block; }
+
+@media (max-width: 720px){
+  .pgg-back{ display:flex; }
+
+  .pgg-head{
+    padding: 15px 14px 12px;
+  }
+
+  .pgg-title-row{
+    justify-content: center;
+    padding-left: 52px;
+    padding-right: 0;
+    align-items: flex-start;
+  }
+
+  .pgg-titlebox{
+    width: 100%;
+    text-align: center;
+  }
+
+  .pgg-title{
+    font-size: 14px;
+    line-height: 1.22;
+    font-weight: 850;
+    text-align: center;
+    word-break: break-word;
+  }
+
+  .pgg-sub{
+    font-size: 10.5px;
+    line-height: 1.3;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  .pgg-grid{
+    grid-template-columns: repeat(12, 1fr);
+  }
+
+  .pgg-col-3,
+  .pgg-col-6{
+    grid-column: span 12 !important;
+  }
+
+  .pgg-table-wrap{
+    display: none;
+  }
+
+  .pgg-mobile-breakdown{
+    display: block;
+  }
+}
+
+@media (max-width: 380px){
+  .pgg-title-row{
+    padding-left: 48px;
+  }
+
+  .pgg-title{
+    font-size: 13px;
+  }
+
+  .pgg-sub{
+    font-size: 10px;
+  }
+}
+  /* Back button */
+  .pgg-back{
+    display:none;
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    transform: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: rgba(11,77,58,.98);
+    user-select: none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    z-index: 3;
+  }
+  .pgg-back:hover{
+    transform: translateX(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .pgg-back:active{ transform: scale(.98); }
+  .pgg-back svg{ width:18px; height:18px; display:block; }
+
+  /* KPI summary */
+  .pgg-kpis{
+    padding: 10px 16px;
+    display:grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 10px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(247,250,249,.72);
+  }
+
+  .pgg-k{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.86);
+    padding: 10px 12px;
+    min-width: 0;
+  }
+  .pgg-k .t{
+    font-size: 11px;
+    color: #0b4d3a;
+    font-weight: 950;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+  .pgg-k .v{
+    margin-top: 6px;
+    font-weight: 950;
+    font-size: 18px;
+    color: #064e3b;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+
+  /* Main content shell */
+  .pgg-body{
+    padding: 12px 16px 16px;
+    background: rgba(255,255,255,.96);
+  }
+
+  .pgg-block{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.92);
+    overflow: hidden;
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+  }
+
+  .pgg-block + .pgg-block{
+    margin-top: 12px;
+  }
+
+  .pgg-block-head{
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(247,250,249,.66);
+  }
+
+  .pgg-block-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 13px;
+    letter-spacing: .15px;
+  }
+
+  .pgg-block-sub{
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: rgba(15,23,42,.62);
+    font-weight: 750;
+  }
+
+  .pgg-block-body{
+    padding: 12px;
+  }
+
+  .pgg-grid{
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 10px 14px;
+    align-items: end;
+  }
+
+  .pgg-field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width: 0;
+  }
+
+  .pgg-field label{
+    font-size:12px;
+    color: var(--ink);
+    font-weight:900;
+  }
+
+  .pgg-input,
+  .pgg-select{
+    width: 100%;
+    background: rgba(247,250,249,.75);
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 10px 12px;
+    outline: none;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ink);
+    min-width: 0;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .pgg-input:focus,
+  .pgg-select:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+
+  .pgg-actions{
+    display:flex;
+    gap:10px;
+    align-items:end;
+    flex-wrap:wrap;
+  }
+
+  .pgg-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:10px 14px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    text-decoration:none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    white-space: nowrap;
+  }
+  .pgg-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .pgg-btn.pgg-primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .pgg-btn.pgg-primary:hover{
+    background: rgba(16,185,129,.16);
+  }
+
+  .pgg-note-card{
+    margin-top: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+    padding: 12px;
+    color:#065f46;
+    font-weight:800;
+  }
+
+  .pgg-grade-row{
+    margin-top:14px;
+    display:flex;
+    gap:14px;
+    align-items:center;
+    flex-wrap:wrap;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+    padding: 12px;
+  }
+
+/* Replace your existing .pgg-grade block with this */
+.pgg-grade{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:56px;
+  height:56px;
+  border-radius:16px;
+  background: linear-gradient(180deg, #f0fdf4, #dcfce7);
+  color:#0b4d3a;
+  border:1px solid rgba(11,77,58,.14);
+  flex-shrink:0;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.75),
+    0 10px 20px -16px rgba(11,77,58,.28);
+}
+
+.pgg-grade svg{
+  width:26px;
+  height:26px;
+  display:block;
+}
+
+@media (max-width:380px){
+  .pgg-grade{
+    width:50px;
+    height:50px;
+    border-radius:14px;
+  }
+  .pgg-grade svg{
+    width:23px;
+    height:23px;
+  }
+}
+  .pgg-grade-text{
+    min-width: 0;
+  }
+
+  .pgg-grade-head{
+    font-weight:950;
+    color:#065f46;
+  }
+
+  .pgg-grade-sub{
+    color:#64748b;
+    font-weight:700;
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  /* Breakdown cards view */
+  .pgg-breakdown-grid{
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 12px;
+  }
+
+  .pgg-break-card{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+    overflow: hidden;
+  }
+
+  .pgg-break-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    background: linear-gradient(180deg, rgba(247,250,249,.88), rgba(255,255,255,.9));
+  }
+
+  .pgg-break-name{
+    font-size: 13px;
+    font-weight: 950;
+    color: #065f46;
+    line-height: 1.25;
+  }
+
+  .pgg-break-score{
+    min-width: 44px;
+    height: 44px;
+    padding: 0 10px;
+    border-radius: 999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background: rgba(16,185,129,.12);
+    border: 1px solid rgba(16,185,129,.22);
+    color:#0b4d3a;
+    font-size: 16px;
+    font-weight: 950;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.65);
+  }
+
+  .pgg-break-body{
+    padding: 12px;
+  }
+
+  .pgg-break-label{
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: rgba(15,23,42,.56);
+    margin-bottom: 6px;
+  }
+
+  .pgg-break-metric{
+    font-size: 13px;
+    font-weight: 850;
+    color: var(--ink);
+    line-height: 1.45;
+    word-break: break-word;
+  }
+
+  /* Compact table view */
+  .pgg-table-wrap{
+    margin-top: 12px;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+  }
+  .pgg-table-wrap::-webkit-scrollbar{ height: 10px; }
+  .pgg-table-wrap::-webkit-scrollbar-thumb{
+    background: rgba(15,23,42,.14);
+    border-radius: 999px;
+  }
+  .pgg-table-wrap::-webkit-scrollbar-track{
+    background: rgba(15,23,42,.05);
+  }
+
+  .pgg-table{
+    width:100%;
+    min-width: 640px;
+    border-collapse: collapse;
+  }
+
+  .pgg-table th,
+  .pgg-table td{
+    padding:9px 12px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    text-align:left;
+    font-size:12.5px;
+    vertical-align: middle;
+    line-height: 1.35;
+  }
+
+  .pgg-table th{
+    background:#f8fcfa;
+    color:#065f46;
+    font-weight:950;
+    white-space: nowrap;
+  }
+
+  .pgg-table td{
+    color: var(--ink);
+    font-weight: 800;
+  }
+
+  .pgg-table tbody tr:hover{
+    background: rgba(247,250,249,.62);
+  }
+
+  .pgg-num{
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pgg-metric-cell{
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .pgg-mobile-breakdown{
+    display: none;
+    margin-top: 12px;
+  }
+
+  .pgg-mobile-item{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+    padding: 12px;
+  }
+
+  .pgg-mobile-item + .pgg-mobile-item{
+    margin-top: 10px;
+  }
+
+  .pgg-mobile-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom: 10px;
+  }
+
+  .pgg-mobile-name{
+    font-weight: 950;
+    color:#065f46;
+    font-size: 13px;
+  }
+
+  .pgg-mobile-score{
+    min-width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background: rgba(16,185,129,.12);
+    border: 1px solid rgba(16,185,129,.22);
+    color:#0b4d3a;
+    font-size: 14px;
+    font-weight: 950;
+    padding: 0 10px;
+  }
+
+  .pgg-mobile-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap: 10px;
+    font-size:13px;
+    margin-bottom:.45rem;
+    padding-bottom: .45rem;
+    border-bottom: 1px dashed rgba(15,23,42,.08);
+  }
+  .pgg-mobile-row:last-child{
+    margin-bottom:0;
+    padding-bottom:0;
+    border-bottom:none;
+  }
+  .pgg-mobile-label{
+    font-weight:900;
+    color:#0b4d3a;
+  }
+  .pgg-mobile-value{
+    font-weight:800;
+    color:#111827;
+    text-align:right;
+    word-break: break-word;
+  }
+
+  @media (max-width: 980px){
+    .pgg-kpis{
+      grid-template-columns: 1fr 1fr;
+    }
+    .pgg-breakdown-grid{
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 720px){
+    .pgg-back{ display:flex; }
+
+    .pgg-title-row{
+      justify-content:flex-start;
+      padding-left:54px;
+      padding-right:8px;
+      align-items:flex-start;
+    }
+
+    .pgg-titlebox{
+      text-align:left;
+    }
+
+    .pgg-title{
+      font-size:17px;
+      line-height: 1.3;
+    }
+
+    .pgg-sub{
+      font-size:11.5px;
+    }
+
+    .pgg-grid{
+      grid-template-columns: repeat(12, 1fr);
+    }
+
+    .pgg-col-3,
+    .pgg-col-6{
+      grid-column: span 12 !important;
+    }
+
+    .pgg-table-wrap{
+      display: none;
+    }
+
+    .pgg-mobile-breakdown{
+      display: block;
+    }
+  }
+
+  @media (max-width: 560px){
+    .pgg-wrap{
+      padding: 10px;
+    }
+
+    .pgg-head{
+      padding: 12px 12px 10px;
+    }
+
+    .pgg-kpis{
+      grid-template-columns: 1fr;
+      padding: 10px 12px;
+    }
+
+    .pgg-body{
+      padding: 10px 12px 12px;
+    }
+
+    .pgg-block-body{
+      padding: 10px;
+    }
+
+    .pgg-grade-row{
+      gap: 12px;
+      padding: 10px;
+    }
+
+    .pgg-break-top,
+    .pgg-break-body{
+      padding: 10px;
+    }
+  }
+
+  @media (max-width: 380px){
+    .pgg-title-row{
+      padding-left:50px;
+    }
+
+    .pgg-title{
+      font-size:15px;
+    }
+
+    .pgg-sub{
+      font-size:11px;
+    }
+
+    .pgg-grade{
+      width: 50px;
+      height: 50px;
+      font-size: 1.12rem;
+    }
+  }
+</style>
+
+<div class="pgg-wrap">
+  <div class="pgg-sheet">
+
+    <div class="pgg-head">
+      <a class="pgg-back" href="javascript:history.back()" aria-label="Go Back" id="pggBackAria">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <div class="pgg-title-row">
+        <div class="pgg-titlebox">
+          <h1 class="pgg-title"><span id="pggTitleText">PG Gradation</span> — {{ pg.pg_name or pg.name }}</h1>
+          <div class="pgg-sub" id="pggSub">Quarterly scoring across governance, finance, business & meetings</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pgg-kpis">
+      <div class="pgg-k"><div class="t" id="pggKpiYear">Year</div><div class="v">{{ year }}</div></div>
+      <div class="pgg-k"><div class="t" id="pggKpiQuarter">Quarter</div><div class="v">Q{{ quarter }}</div></div>
+      <div class="pgg-k"><div class="t" id="pggKpiScore">Score</div><div class="v">{{ (snap.score if snap else computed.score) }}</div></div>
+      <div class="pgg-k"><div class="t" id="pggKpiGrade">Grade</div><div class="v">{{ (snap.grade if snap else computed.grade) }}</div></div>
+    </div>
+
+    <div class="pgg-body">
+
+      <div class="pgg-block">
+        <div class="pgg-block-head">
+          <h3 class="pgg-block-title" id="pggFilterTitle">View Quarterly Snapshot</h3>
+        </div>
+        <div class="pgg-block-body">
+          <form method="GET" class="pgg-grid">
+            <div class="pgg-field pgg-col-3" style="grid-column:span 3">
+              <label id="pggLblYear">Year</label>
+              <input class="pgg-input" name="year" type="number" value="{{ year }}">
+            </div>
+
+            <div class="pgg-field pgg-col-3" style="grid-column:span 3">
+              <label id="pggLblQuarter">Quarter</label>
+              <select class="pgg-select" name="quarter">
+                <option value="1" {% if quarter==1 %}selected{% endif %}>Q1</option>
+                <option value="2" {% if quarter==2 %}selected{% endif %}>Q2</option>
+                <option value="3" {% if quarter==3 %}selected{% endif %}>Q3</option>
+                <option value="4" {% if quarter==4 %}selected{% endif %}>Q4</option>
+              </select>
+            </div>
+
+            <div class="pgg-actions pgg-col-6" style="grid-column:span 6">
+              <button class="pgg-btn" type="submit" id="pggBtnView">View</button>
+            </div>
+          </form>
+
+          {% if session.get('role') != 'PG_DATA_ENTRY' %}
+          <form method="POST" style="margin-top:10px">
+            <input type="hidden" name="year" value="{{ year }}">
+            <input type="hidden" name="quarter" value="{{ quarter }}">
+            <button class="pgg-btn pgg-primary" type="submit" id="pggBtnCompute">Compute & Save Snapshot</button>
+            <a class="pgg-btn" href="{{ url_for('pg.pg_home') }}" id="pggBtnBack">Back</a>
+          </form>
+          {% else %}
+          <div class="pgg-note-card"><p style="margin:0;" id="pggViewOnly">View only: Loan entry/updates are handled by CLF/Block.</p></div>
+          {% endif %}
+
+          <div class="pgg-grade-row">
+      <div class="pgg-grade" aria-hidden="true">
+  <svg viewBox="0 0 24 24" fill="none">
+    <path d="M12 3l2.35 4.76 5.25.76-3.8 3.7.9 5.23L12 15l-4.7 2.45.9-5.23-3.8-3.7 5.25-.76L12 3z"
+          fill="currentColor" opacity=".16"></path>
+    <path d="M12 4.6l1.8 3.64 4.02.58-2.91 2.84.69 4.01L12 13.8l-3.6 1.87.69-4.01-2.91-2.84 4.02-.58L12 4.6z"
+          stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+  </svg>
+</div>
+            <div class="pgg-grade-text">
+              <div class="pgg-grade-head" id="pggBreakdownTitle">Breakdown</div>
+              <div class="pgg-grade-sub" id="pggBreakdownSub">Rules are configurable later; this is the complete gradation engine scaffold.</div>
+            </div>
+          </div>
+
+          <!-- Desktop / tablet friendly cards -->
+          <div class="pgg-breakdown-grid">
+            {% set src = snap if snap else computed %}
+
+            <div class="pgg-break-card">
+              <div class="pgg-break-top">
+                <div class="pgg-break-name" id="pggCompMeetingsCard">Meetings</div>
+                <div class="pgg-break-score pgg-num">{{ src.breakdown.meetings }}</div>
+              </div>
+              <div class="pgg-break-body">
+                <div class="pgg-break-label" id="pggMetricLabel1">Metric</div>
+                <div class="pgg-break-metric"><span class="pgg-num">{{ src.metrics.meetings }}</span> <span id="pggMeetingsMetricSuffixCard">meetings</span></div>
+              </div>
+            </div>
+
+            <div class="pgg-break-card">
+              <div class="pgg-break-top">
+                <div class="pgg-break-name" id="pggCompFinancialCard">Financial</div>
+                <div class="pgg-break-score pgg-num">{{ src.breakdown.financial }}</div>
+              </div>
+              <div class="pgg-break-body">
+                <div class="pgg-break-label" id="pggMetricLabel2">Metric</div>
+                <div class="pgg-break-metric"><span id="pggFinancialMetricCard">Overdue</span> ₹{{ "{:,.2f}".format(src.metrics.overdue or 0) }}</div>
+              </div>
+            </div>
+
+            <div class="pgg-break-card">
+              <div class="pgg-break-top">
+                <div class="pgg-break-name" id="pggCompBusinessCard">Business</div>
+                <div class="pgg-break-score pgg-num">{{ src.breakdown.business }}</div>
+              </div>
+              <div class="pgg-break-body">
+                <div class="pgg-break-label" id="pggMetricLabel3">Metric</div>
+                <div class="pgg-break-metric"><span id="pggBusinessMetricCard">Turnover</span> ₹{{ "{:,.2f}".format(src.metrics.turnover or 0) }}</div>
+              </div>
+            </div>
+
+            <div class="pgg-break-card">
+              <div class="pgg-break-top">
+                <div class="pgg-break-name" id="pggCompGovernanceCard">Governance</div>
+                <div class="pgg-break-score pgg-num">{{ src.breakdown.governance }}</div>
+              </div>
+              <div class="pgg-break-body">
+                <div class="pgg-break-label" id="pggMetricLabel4">Metric</div>
+                <div class="pgg-break-metric" id="pggGovernanceMetricCard">Resolutions/attendance hooks ready</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Compact table -->
+          <div class="pgg-table-wrap">
+            <table class="pgg-table">
+              <thead>
+                <tr>
+                  <th id="pggThComponent">Component</th>
+                  <th id="pggThScore">Score</th>
+                  <th id="pggThMetric">Metric</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td id="pggCompMeetings">Meetings</td>
+                  <td class="pgg-num">{{ src.breakdown.meetings }}</td>
+                  <td class="pgg-metric-cell"><span class="pgg-num">{{ src.metrics.meetings }}</span> <span id="pggMeetingsMetricSuffix">meetings</span></td>
+                </tr>
+                <tr>
+                  <td id="pggCompFinancial">Financial</td>
+                  <td class="pgg-num">{{ src.breakdown.financial }}</td>
+                  <td class="pgg-metric-cell"><span id="pggFinancialMetric">Overdue</span> ₹{{ "{:,.2f}".format(src.metrics.overdue or 0) }}</td>
+                </tr>
+                <tr>
+                  <td id="pggCompBusiness">Business</td>
+                  <td class="pgg-num">{{ src.breakdown.business }}</td>
+                  <td class="pgg-metric-cell"><span id="pggBusinessMetric">Turnover</span> ₹{{ "{:,.2f}".format(src.metrics.turnover or 0) }}</td>
+                </tr>
+                <tr>
+                  <td id="pggCompGovernance">Governance</td>
+                  <td class="pgg-num">{{ src.breakdown.governance }}</td>
+                  <td class="pgg-metric-cell" id="pggGovernanceMetric">Resolutions/attendance hooks ready</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile cards -->
+          <div class="pgg-mobile-breakdown">
+            <div class="pgg-mobile-item">
+              <div class="pgg-mobile-top">
+                <div class="pgg-mobile-name" id="pggCompMeetingsMobile">Meetings</div>
+                <div class="pgg-mobile-score pgg-num">{{ src.breakdown.meetings }}</div>
+              </div>
+              <div class="pgg-mobile-row">
+                <span class="pgg-mobile-label" id="pggMobileMetricLabel1">Metric</span>
+                <span class="pgg-mobile-value"><span class="pgg-num">{{ src.metrics.meetings }}</span> <span id="pggMeetingsMetricSuffixMobile">meetings</span></span>
+              </div>
+            </div>
+
+            <div class="pgg-mobile-item">
+              <div class="pgg-mobile-top">
+                <div class="pgg-mobile-name" id="pggCompFinancialMobile">Financial</div>
+                <div class="pgg-mobile-score pgg-num">{{ src.breakdown.financial }}</div>
+              </div>
+              <div class="pgg-mobile-row">
+                <span class="pgg-mobile-label" id="pggMobileMetricLabel2">Metric</span>
+                <span class="pgg-mobile-value"><span id="pggFinancialMetricMobile">Overdue</span> ₹{{ "{:,.2f}".format(src.metrics.overdue or 0) }}</span>
+              </div>
+            </div>
+
+            <div class="pgg-mobile-item">
+              <div class="pgg-mobile-top">
+                <div class="pgg-mobile-name" id="pggCompBusinessMobile">Business</div>
+                <div class="pgg-mobile-score pgg-num">{{ src.breakdown.business }}</div>
+              </div>
+              <div class="pgg-mobile-row">
+                <span class="pgg-mobile-label" id="pggMobileMetricLabel3">Metric</span>
+                <span class="pgg-mobile-value"><span id="pggBusinessMetricMobile">Turnover</span> ₹{{ "{:,.2f}".format(src.metrics.turnover or 0) }}</span>
+              </div>
+            </div>
+
+            <div class="pgg-mobile-item">
+              <div class="pgg-mobile-top">
+                <div class="pgg-mobile-name" id="pggCompGovernanceMobile">Governance</div>
+                <div class="pgg-mobile-score pgg-num">{{ src.breakdown.governance }}</div>
+              </div>
+              <div class="pgg-mobile-row">
+                <span class="pgg-mobile-label" id="pggMobileMetricLabel4">Metric</span>
+                <span class="pgg-mobile-value" id="pggGovernanceMetricMobile">Resolutions/attendance hooks ready</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+  (function(){
+    const PGG_T = {
+      en: {
+        pageTitle: "PG Gradation",
+        backAria: "Go Back",
+        sub: "Quarterly scoring across governance, finance, business & meetings",
+
+        kpiYear: "Year",
+        kpiQuarter: "Quarter",
+        kpiScore: "Score",
+        kpiGrade: "Grade",
+
+        filterTitle: "View Quarterly Snapshot",
+        year: "Year",
+        quarter: "Quarter",
+        view: "View",
+        compute: "Compute & Save Snapshot",
+        back: "Back",
+        viewOnly: "View only: Loan entry/updates are handled by CLF/Block.",
+
+        breakdownTitle: "Breakdown",
+        breakdownSub: "Rules are configurable later; this is the complete gradation engine scaffold.",
+
+        thComponent: "Component",
+        thScore: "Score",
+        thMetric: "Metric",
+        metric: "Metric",
+
+        compMeetings: "Meetings",
+        compFinancial: "Financial",
+        compBusiness: "Business",
+        compGovernance: "Governance",
+
+        meetingsSuffix: "meetings",
+        financialMetric: "Overdue",
+        businessMetric: "Turnover",
+        governanceMetric: "Resolutions/attendance hooks ready"
+      },
+      bn: {
+        pageTitle: "পিজি গ্রেডেশন",
+        backAria: "ফিরে যান",
+        sub: "গভর্ন্যান্স, ফাইন্যান্স, ব্যবসা ও মিটিংস ভিত্তিক ত্রৈমাসিক স্কোরিং",
+
+        kpiYear: "বছর",
+        kpiQuarter: "ত্রৈমাসিক",
+        kpiScore: "স্কোর",
+        kpiGrade: "গ্রেড",
+
+        filterTitle: "ত্রৈমাসিক স্ন্যাপশট দেখুন",
+        year: "বছর",
+        quarter: "ত্রৈমাসিক",
+        view: "দেখুন",
+        compute: "হিসাব করুন ও স্ন্যাপশট সংরক্ষণ করুন",
+        back: "ফিরুন",
+        viewOnly: "শুধু দেখার জন্য: ঋণের এন্ট্রি/আপডেট CLF/Block দ্বারা পরিচালিত হয়।",
+
+        breakdownTitle: "বিস্তারিত",
+        breakdownSub: "নিয়ম পরে কনফিগার করা যাবে; এটি সম্পূর্ণ গ্রেডেশন ইঞ্জিনের কাঠামো।",
+
+        thComponent: "উপাদান",
+        thScore: "স্কোর",
+        thMetric: "মেট্রিক",
+        metric: "মেট্রিক",
+
+        compMeetings: "মিটিংস",
+        compFinancial: "আর্থিক",
+        compBusiness: "ব্যবসা",
+        compGovernance: "গভর্ন্যান্স",
+
+        meetingsSuffix: "টি মিটিং",
+        financialMetric: "বকেয়া",
+        businessMetric: "টার্নওভার",
+        governanceMetric: "রেজল্যুশন/উপস্থিতির হুক প্রস্তুত"
+      }
+    };
+
+    function safeText(id, val){
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    }
+
+    function getStoredLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      try{
+        const l3 = document.documentElement.getAttribute('data-lang');
+        if(l3 === 'en' || l3 === 'bn') return l3;
+      }catch(_){}
+      return 'en';
+    }
+
+    function applyPGG(lang){
+      const t = PGG_T[lang] || PGG_T.en;
+
+      try { document.title = t.pageTitle; } catch(_){}
+
+      const back = document.querySelector('.pgg-back');
+      if(back) back.setAttribute('aria-label', t.backAria);
+
+      safeText('pggTitleText', t.pageTitle);
+      safeText('pggSub', t.sub);
+
+      safeText('pggKpiYear', t.kpiYear);
+      safeText('pggKpiQuarter', t.kpiQuarter);
+      safeText('pggKpiScore', t.kpiScore);
+      safeText('pggKpiGrade', t.kpiGrade);
+
+      safeText('pggFilterTitle', t.filterTitle);
+      safeText('pggLblYear', t.year);
+      safeText('pggLblQuarter', t.quarter);
+      safeText('pggBtnView', t.view);
+      safeText('pggBtnCompute', t.compute);
+      safeText('pggBtnBack', t.back);
+      safeText('pggViewOnly', t.viewOnly);
+
+      safeText('pggBreakdownTitle', t.breakdownTitle);
+      safeText('pggBreakdownSub', t.breakdownSub);
+
+      safeText('pggThComponent', t.thComponent);
+      safeText('pggThScore', t.thScore);
+      safeText('pggThMetric', t.thMetric);
+
+      safeText('pggMetricLabel1', t.metric);
+      safeText('pggMetricLabel2', t.metric);
+      safeText('pggMetricLabel3', t.metric);
+      safeText('pggMetricLabel4', t.metric);
+
+      safeText('pggMobileMetricLabel1', t.metric);
+      safeText('pggMobileMetricLabel2', t.metric);
+      safeText('pggMobileMetricLabel3', t.metric);
+      safeText('pggMobileMetricLabel4', t.metric);
+
+      safeText('pggCompMeetings', t.compMeetings);
+      safeText('pggCompFinancial', t.compFinancial);
+      safeText('pggCompBusiness', t.compBusiness);
+      safeText('pggCompGovernance', t.compGovernance);
+
+      safeText('pggCompMeetingsCard', t.compMeetings);
+      safeText('pggCompFinancialCard', t.compFinancial);
+      safeText('pggCompBusinessCard', t.compBusiness);
+      safeText('pggCompGovernanceCard', t.compGovernance);
+
+      safeText('pggCompMeetingsMobile', t.compMeetings);
+      safeText('pggCompFinancialMobile', t.compFinancial);
+      safeText('pggCompBusinessMobile', t.compBusiness);
+      safeText('pggCompGovernanceMobile', t.compGovernance);
+
+      safeText('pggMeetingsMetricSuffix', t.meetingsSuffix);
+      safeText('pggMeetingsMetricSuffixCard', t.meetingsSuffix);
+      safeText('pggMeetingsMetricSuffixMobile', t.meetingsSuffix);
+
+      safeText('pggFinancialMetric', t.financialMetric);
+      safeText('pggFinancialMetricCard', t.financialMetric);
+      safeText('pggFinancialMetricMobile', t.financialMetric);
+
+      safeText('pggBusinessMetric', t.businessMetric);
+      safeText('pggBusinessMetricCard', t.businessMetric);
+      safeText('pggBusinessMetricMobile', t.businessMetric);
+
+      safeText('pggGovernanceMetric', t.governanceMetric);
+      safeText('pggGovernanceMetricCard', t.governanceMetric);
+      safeText('pggGovernanceMetricMobile', t.governanceMetric);
+    }
+
+    window.updatePageLanguage = function(lang){
+      if(lang !== 'en' && lang !== 'bn') lang = getStoredLang();
+      applyPGG(lang);
+    };
+
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyPGG(lang);
+    });
+
+    window.addEventListener('pgmis:lang', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyPGG(lang);
+    });
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      applyPGG(getStoredLang());
+    });
+  })();
+</script>
+{% endblock %}

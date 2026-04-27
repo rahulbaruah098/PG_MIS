@@ -1,0 +1,12 @@
+{% set _role = session.get('role') %}
+{% set cadre_in_pg = (_role == 'CADRE_CC' and (session.get('active_pg_id') or session.get('pg_id'))) %}
+{% set is_pg = (_role == 'PG_DATA_ENTRY') or cadre_in_pg %}
+{% set is_cadre = (_role == 'CADRE_CC' and not cadre_in_pg) %}
+{% set is_clf_block = (_role in ['CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN']) %}
+{% extends 'base_pg.html' if is_pg else ('base_cadre.html' if is_cadre else ('base_clf.html' if is_clf_block else 'base_default.html')) %}
+
+{# Pass-through blocks so pages extending base.html work unchanged #}
+{% block title %}{{ super() }}{% endblock %}
+{% block head_extra %}{{ super() }}{% endblock %}
+{% block content %}{{ super() }}{% endblock %}
+{% block scripts %}{{ super() }}{% endblock %}

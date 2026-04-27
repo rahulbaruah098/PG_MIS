@@ -1,0 +1,3004 @@
+{# templates/member_ledger.html #}
+{% extends "base.html" %}
+
+{% block title %}Member Ledger{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* ============================================================
+     MEMBER LEDGER — FULL UPDATED PAGE
+     ✅ Delete buttons fixed in web + app/mobile
+     ✅ Header reorganized for cleaner app/mobile view
+     ✅ Back button icon updated to provided SVG
+     ✅ Action buttons moved below header, above producer info
+     ✅ Active tab persists after refresh
+     ✅ Draft + final data persistence added (server + local fallback)
+     ✅ Existing UI/logic preserved
+     ============================================================ */
+
+  .member-ledger-page *{ margin:0; padding:0; box-sizing:border-box; }
+
+  .member-ledger-page{
+    --ink:#0f172a;
+    --ink-2:#1e293b;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.12);
+    --line2:rgba(15,23,42,.08);
+    --paper:#ffffff;
+    --soft:#f8fafc;
+    --soft2:#f1f5f9;
+    --soft3:#eef2f7;
+    --accent:#0b4d3a;
+    --accent-2:#0f5a44;
+    --mint:#dff1ea;
+    --mint-2:#edf8f3;
+    --mint-3:#cfe8de;
+    --ring:rgba(11,77,58,.10);
+
+    --danger:#b42318;
+    --dangerBg:rgba(220,38,38,.06);
+    --dangerBd:rgba(220,38,38,.20);
+
+    --primary:#0b4d3a;
+    --primaryBg:rgba(11,77,58,.08);
+    --primaryBd:rgba(11,77,58,.18);
+
+    --shadow:0 18px 34px -28px rgba(15,23,42,.22);
+    --shadow-sm:0 10px 24px -24px rgba(15,23,42,.18);
+
+    color:var(--ink);
+  }
+
+  .member-ledger-page .bg-gradient{
+    min-height:100%;
+    background:#edf4f1;
+    border-radius:18px;
+    padding:14px;
+  }
+
+  .member-ledger-page .toast-container{ display:none !important; }
+
+  .member-ledger-page .ml-wrap{
+    width:100%;
+    padding:clamp(12px,2.2vw,22px);
+  }
+  .member-ledger-page .ml-sheet{
+    background:transparent;
+    border:none;
+    border-radius:18px;
+    overflow:visible;
+    box-shadow:none;
+  }
+
+  /* Header */
+  .member-ledger-page .ml-header{
+    margin-bottom:14px;
+  }
+
+   .member-ledger-page .header-content{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+    padding:18px 20px;
+    border:1px solid rgba(11,77,58,.10);
+    background:
+      radial-gradient(circle at left top, rgba(11,77,58,.08), transparent 42%),
+      linear-gradient(180deg, #f8fcfa 0%, #f3f8f5 100%);
+    border-radius:24px;
+    box-shadow:0 18px 30px -26px rgba(15,23,42,.18);
+  }
+    .member-ledger-page .header-main{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+    width:100%;
+    min-width:0;
+    position:relative;
+  }
+
+  .member-ledger-page .mobile-back-slot{
+    display:none;
+    flex:0 0 auto;
+  }
+
+  .member-ledger-page .mobile-back-btn{
+    border:none;
+    outline:none;
+    cursor:pointer;
+    width:56px;
+    height:56px;
+    min-width:56px;
+    border-radius:18px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:#ffffff;
+    color:#0f5a44;
+    border:1px solid rgba(15,23,42,.08);
+    box-shadow:0 10px 24px -20px rgba(15,23,42,.22);
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .member-ledger-page .mobile-back-btn:hover{
+    transform:translateY(-1px);
+    background:#ffffff;
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.24);
+  }
+  .member-ledger-page .mobile-back-btn:active{ transform:translateY(0); }
+  .member-ledger-page .mobile-back-btn svg{
+    width:24px;
+    height:24px;
+    display:block;
+  }
+
+   .member-ledger-page .header-copy{
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    flex:1;
+    align-items:center;
+    text-align:center;
+  }
+   .member-ledger-page .header-title{
+    text-align:center;
+    font-size:18px;
+    font-weight:850;
+    letter-spacing:.2px;
+    color:#0f172a;
+    line-height:1.2;
+    margin:0;
+  }
+
+   .member-ledger-page .header-subtitle{
+    display:block;
+    text-align:center;
+    font-size:12.5px;
+    font-weight:800;
+    line-height:1.35;
+    color:#52637c;
+    max-width:700px;
+  }
+
+  /* Unified action panel placed BELOW header */
+  .member-ledger-page .action-panel{
+    margin-bottom:14px;
+    padding:14px;
+    border:1px solid var(--line);
+    border-radius:24px;
+    background:#fff;
+    box-shadow:var(--shadow-sm);
+  }
+
+  .member-ledger-page .actionbar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    width:100%;
+  }
+
+  .member-ledger-page .actionbar .grow-break{
+    flex-basis:100%;
+    height:0;
+    display:none;
+  }
+
+  /* Buttons */
+  .member-ledger-page .btn{
+    border-radius:999px;
+    padding:11px 18px;
+    font-weight:950;
+    font-size:12.8px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease, border-color .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    white-space:nowrap;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    color:var(--ink);
+    box-shadow:none;
+    min-height:44px;
+    line-height:1;
+    flex:0 0 auto;
+  }
+  .member-ledger-page .btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 14px 24px -22px rgba(15,23,42,.25);
+  }
+  .member-ledger-page .btn:active{ transform:translateY(0); }
+  .member-ledger-page .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  .member-ledger-page .btn svg.icon{
+    width:18px;
+    height:18px;
+    flex:0 0 auto;
+    display:block;
+  }
+
+  .member-ledger-page .btn-primary{
+    border-color:var(--primaryBd);
+    background:var(--mint-2);
+    color:var(--primary);
+  }
+  .member-ledger-page .btn-primary:hover{ background:#e5f5ee; }
+
+  .member-ledger-page .btn-danger{
+    border-color:var(--dangerBd);
+    background:var(--dangerBg);
+    color:var(--danger);
+  }
+  .member-ledger-page .btn-danger:hover{
+    background:rgba(220,38,38,.10);
+    box-shadow:0 14px 22px -20px rgba(220,38,38,.22);
+  }
+
+  .member-ledger-page .btn-ghost{
+    border-color:rgba(15,23,42,.12);
+    background:#fff;
+    color:var(--ink);
+  }
+
+  .member-ledger-page .btn-save-wide{
+    min-width:112px;
+  }
+
+  .member-ledger-page .btn-delete-wide{
+    min-width:168px;
+  }
+
+  .member-ledger-page .show-when-editing{ display:none; }
+  .member-ledger-page.is-editing .show-when-editing{ display:inline-flex; }
+  .member-ledger-page.is-editing .hide-when-editing{ display:none !important; }
+
+  .member-ledger-page .content{
+    padding:0;
+    max-width:none;
+    margin:0;
+  }
+
+  .member-ledger-page .card,
+  .member-ledger-page .table-card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:var(--shadow-sm);
+  }
+
+  .member-ledger-page .producer-card{ margin-bottom:14px; }
+
+  .member-ledger-page .card-header-producer{
+    padding:16px 18px;
+    background:linear-gradient(180deg, #f7fcf9, #eef6f1);
+    border-bottom:1px solid var(--line2);
+  }
+  .member-ledger-page .card-header-producer h2{
+    font-size:16px;
+    font-weight:950;
+    letter-spacing:.2px;
+    color:#0f172a;
+    margin:0;
+  }
+
+  .member-ledger-page .card-content-producer{
+    padding:16px 18px 18px;
+    display:grid;
+    grid-template-columns:1.2fr 1fr;
+    gap:12px 16px;
+    background:#fff;
+  }
+
+  .member-ledger-page .input-group-full{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
+
+  .member-ledger-page .label{
+    font-weight:900;
+    font-size:12px;
+    color:var(--ink);
+    margin-bottom:6px;
+    white-space:nowrap;
+  }
+
+  .member-ledger-page .input{
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:14px;
+    padding:12px 14px;
+    background:#fff;
+    font-weight:800;
+    font-size:12.5px;
+    outline:none;
+    color:var(--ink);
+    transition:box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+    min-width:0;
+  }
+  .member-ledger-page .input:focus{
+    border-color:rgba(15,23,42,.24);
+    box-shadow:0 0 0 3px rgba(15,23,42,.06);
+    background:#fff;
+  }
+  .member-ledger-page .input[disabled],
+  .member-ledger-page .input[readonly]{
+    opacity:.72;
+    cursor:not-allowed;
+    background:#f8fafc;
+  }
+
+  .member-ledger-page .select-wrapper{ position:relative; }
+  .member-ledger-page .select{
+    width:100%;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:14px;
+    padding:12px 40px 12px 13px;
+    background:#fff;
+    font-weight:800;
+    font-size:12.5px;
+    outline:none;
+    color:var(--ink);
+    appearance:none;
+    cursor:pointer;
+    transition:box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .member-ledger-page .select:focus{
+    border-color:rgba(15,23,42,.24);
+    box-shadow:0 0 0 3px rgba(15,23,42,.06);
+    background:#fff;
+  }
+  .member-ledger-page .select[disabled]{
+    opacity:.72;
+    cursor:not-allowed;
+    background:#f8fafc;
+  }
+  .member-ledger-page .select-icon{
+    position:absolute;
+    right:12px;
+    top:50%;
+    transform:translateY(-50%);
+    width:18px;
+    height:18px;
+    pointer-events:none;
+    color:rgba(15,23,42,.55);
+  }
+
+  /* Tabs */
+  .member-ledger-page .tabs{
+    margin:12px 0;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:#fff;
+    box-shadow:var(--shadow-sm);
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .member-ledger-page .tabs .seg{
+    display:inline-flex;
+    gap:6px;
+    padding:5px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.10);
+    background:#f8fafc;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    max-width:100%;
+  }
+
+  .member-ledger-page .tab{
+    border:none;
+    outline:none;
+    cursor:pointer;
+    font-weight:950;
+    font-size:12.5px;
+    padding:10px 14px;
+    border-radius:999px;
+    background:transparent;
+    color:rgba(15,23,42,.70);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+    transition:background .2s ease, color .2s ease, transform .15s ease, box-shadow .2s ease, border .2s ease;
+  }
+  .member-ledger-page .tab:hover{ transform:translateY(-1px); }
+  .member-ledger-page .tab .badge{
+    width:10px; height:10px;
+    border-radius:999px;
+    background:rgba(15,23,42,.58);
+    flex-shrink:0;
+  }
+
+  .member-ledger-page .tab.active{
+    background:#fff;
+    color:#b42318;
+    border:1px solid rgba(220,38,38,.22);
+    box-shadow:0 12px 18px -18px rgba(15,23,42,.25);
+  }
+  .member-ledger-page .tab.active .badge{
+    background:#b42318;
+  }
+
+  .member-ledger-page .tab-content{ margin-top:10px; }
+  .member-ledger-page .tab-pane{ display:none; }
+  .member-ledger-page .tab-pane.active{ display:block; }
+
+  .member-ledger-page .tab-header{
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:#fff;
+    box-shadow:var(--shadow-sm);
+    margin-bottom:12px;
+  }
+  .member-ledger-page .tab-title{
+    margin:0;
+    font-size:15px;
+    font-weight:950;
+    letter-spacing:.2px;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .member-ledger-page .tab-title::before{
+    content:"";
+    width:10px; height:10px;
+    border-radius:999px;
+    background:rgba(11,77,58,.72);
+    display:inline-block;
+  }
+
+  /* Table controls */
+  .member-ledger-page .table-controls{
+    padding:14px 16px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:1px solid var(--line2);
+    background:#fbfcfe;
+  }
+
+  .member-ledger-page .controls-left{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    width:100%;
+  }
+
+  .member-ledger-page .search-wrap{
+    display:flex !important;
+    align-items:center !important;
+    gap:8px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    border-radius:999px;
+    padding:8px 12px;
+    min-width:min(420px, 100%);
+    width:auto;
+    max-width:100%;
+    flex:1 1 280px;
+    min-height:44px;
+    height:44px;
+    aspect-ratio:auto !important;
+    overflow:hidden;
+  }
+  .member-ledger-page .search-wrap svg{
+    width:18px;
+    height:18px;
+    color:rgba(15,23,42,.45);
+    flex-shrink:0;
+  }
+  .member-ledger-page .search-input{
+    border:none;
+    outline:none;
+    background:transparent;
+    font-weight:850;
+    font-size:12.8px;
+    color:var(--ink);
+    width:100%;
+    min-width:0;
+    height:auto;
+    line-height:1.2;
+  }
+
+  .member-ledger-page .select-mini{
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    border-radius:999px;
+    padding:8px 14px;
+    font-weight:900;
+    font-size:12px;
+    outline:none;
+    cursor:pointer;
+    color:rgba(15,23,42,.82);
+    min-height:44px;
+    max-width:100%;
+  }
+
+  .member-ledger-page .table-wrap{
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .member-ledger-page table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:980px;
+  }
+
+  .member-ledger-page thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    text-align:left;
+    font-size:12px;
+    font-weight:950;
+    color:rgba(15,23,42,.76);
+    background:#f8fafc;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    padding:11px 10px;
+    white-space:nowrap;
+  }
+
+  .member-ledger-page tbody td{
+    border-bottom:1px solid rgba(15,23,42,.06);
+    padding:10px;
+    vertical-align:top;
+    background:#fff;
+  }
+  .member-ledger-page tbody tr:hover td{ background:#fcfdff; }
+
+  .member-ledger-page .cell-center{ text-align:center; }
+  .member-ledger-page .cell-tight{ width:1%; white-space:nowrap; }
+
+  .member-ledger-page .chk{
+    width:16px; height:16px;
+    accent-color:#0b4d3a;
+    cursor:pointer;
+  }
+  .member-ledger-page .chk[disabled]{ cursor:not-allowed; opacity:.6; }
+
+  .member-ledger-page .mini-input{
+    width:100%;
+    min-width:120px;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:10px;
+    padding:9px 10px;
+    background:#fff;
+    font-weight:850;
+    font-size:12px;
+    outline:none;
+    color:var(--ink);
+    transition:box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .member-ledger-page .mini-input:focus{
+    border-color:rgba(15,23,42,.24);
+    box-shadow:0 0 0 3px rgba(15,23,42,.05);
+    background:#fff;
+  }
+  .member-ledger-page .mini-input[readonly],
+  .member-ledger-page .mini-input[disabled]{
+    opacity:.76;
+    cursor:not-allowed;
+    background:#f8fafc;
+  }
+
+  .member-ledger-page .mini-input.calc,
+  .member-ledger-page .mini-input.total{
+    background:#f8fafc;
+    border-color:rgba(15,23,42,.10);
+    color:var(--ink);
+    font-weight:950;
+  }
+
+  .member-ledger-page .row-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:flex-end;
+  }
+  .member-ledger-page .row-actions .btn{
+    min-width:44px;
+    width:44px;
+    height:44px;
+    padding:0;
+    border-radius:14px;
+  }
+
+  /* Mobile swipe cards */
+  .member-ledger-page .mobile-cards-wrap{
+    display:none;
+    padding:12px;
+    background:#fff;
+  }
+
+  .member-ledger-page .mobile-cards-rail{
+    display:flex;
+    gap:12px;
+    overflow-x:auto;
+    padding:2px 2px 6px;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+  }
+  .member-ledger-page .mobile-cards-rail::-webkit-scrollbar{
+    height:8px;
+  }
+  .member-ledger-page .mobile-cards-rail::-webkit-scrollbar-thumb{
+    background:rgba(15,23,42,.16);
+    border-radius:999px;
+  }
+
+  .member-ledger-page .ml-card{
+    min-width:min(88vw, 420px);
+    width:min(88vw, 420px);
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:var(--shadow-sm);
+    scroll-snap-align:start;
+    overflow:hidden;
+  }
+  .member-ledger-page .ml-card-head{
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:linear-gradient(180deg, #fafafa, #f8fafc);
+    border-bottom:1px solid var(--line2);
+  }
+  .member-ledger-page .ml-card-sl{
+    font-size:12px;
+    font-weight:950;
+    color:rgba(15,23,42,.70);
+  }
+  .member-ledger-page .ml-card-head-right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .member-ledger-page .ml-card-body{
+    padding:12px 14px 14px;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .member-ledger-page .ml-field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .member-ledger-page .ml-field-label{
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.2px;
+    color:rgba(15,23,42,.66);
+    text-transform:uppercase;
+  }
+  .member-ledger-page .ml-card-actions{
+    display:flex;
+    justify-content:flex-end;
+    padding-top:4px;
+  }
+  .member-ledger-page .ml-card-actions .btn{
+    min-width:44px;
+    width:44px;
+    height:44px;
+    padding:0;
+    border-radius:14px;
+  }
+
+  .member-ledger-page .table-footer{
+    padding:10px 14px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    background:#fff;
+    border-top:1px solid rgba(15,23,42,.08);
+  }
+  .member-ledger-page .pager{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .member-ledger-page .pager-meta{
+    font-size:12px;
+    font-weight:900;
+    color:rgba(15,23,42,.72);
+  }
+
+  .member-ledger-page #no-purchases-text,
+  .member-ledger-page #no-sales-text{
+    padding:10px 2px 0;
+    font-size:12.5px;
+    font-weight:850;
+    color:rgba(15,23,42,.72);
+  }
+
+  /* Modals */
+  .member-ledger-page .ml-modal-overlay{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+    padding:18px;
+    background:rgba(15,23,42,.28);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+  }
+  .member-ledger-page .ml-modal-overlay.ml-show{ display:flex; }
+
+  .member-ledger-page .ml-modal{
+    width:100%;
+    max-width:520px;
+    background:#ffffff;
+    border-radius:16px;
+    border:1px solid rgba(15,23,42,.10);
+    box-shadow:0 30px 60px -30px rgba(0,0,0,.45);
+    overflow:hidden;
+    transform:translateY(6px);
+    animation:mlModalIn .18s ease-out forwards;
+  }
+  @keyframes mlModalIn{
+    from{ opacity:0; transform:translateY(10px) scale(.98); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
+
+  .member-ledger-page .ml-mhead{
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    justify-content:flex-start;
+    background:linear-gradient(180deg, #fafafa, #f8fafc);
+    border-bottom:1px solid rgba(15,23,42,.08);
+  }
+  .member-ledger-page .ml-dot{
+    width:10px; height:10px;
+    border-radius:999px;
+    background:rgba(15,23,42,.72);
+    flex:0 0 auto;
+  }
+  .member-ledger-page .ml-mtitle{
+    font-weight:950;
+    color:#0f172a;
+    font-size:15px;
+    letter-spacing:.2px;
+  }
+  .member-ledger-page .ml-mtitle.danger{ color:rgba(127,29,29,.95); }
+
+  .member-ledger-page .ml-mbody{
+    padding:14px 16px 6px;
+    color:#0f172a;
+    font-size:14px;
+    font-weight:850;
+    line-height:1.35;
+  }
+
+  .member-ledger-page .ml-mactions{
+    padding:12px 16px 16px;
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+  }
+
+  .member-ledger-page .ml-ghost{
+    border:1px solid rgba(15,23,42,.14);
+    color:#0f172a;
+    background:#fff;
+    min-width:120px;
+    border-radius:12px;
+    font-size:13.5px;
+    font-weight:950;
+    padding:10px 12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .member-ledger-page .ml-ghost:hover{
+    transform:translateY(-1px);
+    box-shadow:0 14px 22px -18px rgba(0,0,0,.20);
+    background:#f8fafc;
+  }
+
+  .member-ledger-page .ml-solid{
+    border:1px solid rgba(15,23,42,.14);
+    background:#f8fafc;
+    color:#0f172a;
+    min-width:120px;
+    border-radius:12px;
+    font-size:13.5px;
+    font-weight:950;
+    padding:10px 12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .member-ledger-page .ml-solid:hover{
+    transform:translateY(-1px);
+    box-shadow:0 14px 22px -18px rgba(0,0,0,.20);
+    background:#eef2f7;
+  }
+
+  .member-ledger-page .ml-solid.ml-danger{
+    border-color:rgba(239,68,68,.30);
+    background:rgba(239,68,68,.08);
+    color:rgba(127,29,29,.95);
+  }
+  .member-ledger-page .ml-solid.ml-danger:hover{ background:rgba(239,68,68,.12); }
+
+  /* Responsive */
+  @media (max-width: 1100px){
+    .member-ledger-page .card-content-producer{
+      grid-template-columns:1fr;
+    }
+    .member-ledger-page table{ min-width:920px; }
+
+    .member-ledger-page .actionbar{
+      gap:10px;
+    }
+    .member-ledger-page .btn-delete-wide{
+      min-width:156px;
+    }
+  }
+
+  @media (max-width: 900px){
+    .member-ledger-page .header-content{
+      padding:18px;
+    }
+    .member-ledger-page .header-title{
+      font-size:clamp(22px, 4vw, 30px);
+    }
+  }
+
+  @media (max-width: 720px){
+    .member-ledger-page .bg-gradient{
+      padding:10px;
+      border-radius:14px;
+      background:#eaf1ee;
+    }
+    .member-ledger-page .ml-wrap{ padding:0; }
+
+    .member-ledger-page .ml-header{
+      margin-bottom:12px;
+    }
+    .member-ledger-page .header-content{
+      padding:14px;
+      border-radius:22px;
+    }
+    .member-ledger-page .header-main{
+      align-items:flex-start;
+      gap:14px;
+    }
+    .member-ledger-page .mobile-back-slot{
+      display:flex;
+      align-self:flex-start;
+    }
+       .member-ledger-page .header-copy{
+      align-items:flex-start;
+      text-align:left;
+      flex:1;
+      min-width:0;
+      padding-top:2px;
+    }
+    .member-ledger-page .header-title{
+      font-size:16px;
+      font-weight:850;
+      text-align:left;
+      line-height:1.15;
+    }
+    .member-ledger-page .header-subtitle{
+      display:block;
+      font-size:12px;
+      text-align:left;
+      line-height:1.35;
+      max-width:none;
+    }
+
+    .member-ledger-page .action-panel{
+      padding:14px;
+      border-radius:20px;
+      margin-bottom:14px;
+    }
+    .member-ledger-page .actionbar{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+    .member-ledger-page .actionbar .btn{
+      width:100%;
+      min-width:0;
+      min-height:54px;
+      font-size:14px;
+      padding:14px 12px;
+      justify-content:center;
+    }
+    .member-ledger-page .actionbar .btn-delete-wide{
+      min-width:0;
+    }
+    .member-ledger-page .actionbar .grow-break{
+      display:block;
+      grid-column:1 / -1;
+    }
+    .member-ledger-page .actionbar .btn-save-wide{
+      grid-column:1 / -1;
+      width:100%;
+    }
+
+    .member-ledger-page .content{ padding:0; }
+
+    .member-ledger-page .tabs{
+      padding:10px;
+    }
+    .member-ledger-page .tabs .seg{
+      width:100%;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+    }
+    .member-ledger-page .tab{
+      justify-content:center;
+      width:100%;
+    }
+
+    .member-ledger-page .table-controls{
+      padding:16px;
+    }
+    .member-ledger-page .controls-left{
+      flex-direction:column;
+      align-items:stretch;
+      gap:12px;
+    }
+
+    .member-ledger-page .search-wrap{
+      min-width:0 !important;
+      width:100% !important;
+      max-width:100% !important;
+      flex:0 0 100% !important;
+      height:50px !important;
+      min-height:50px !important;
+      border-radius:14px !important;
+      padding:0 14px !important;
+      aspect-ratio:auto !important;
+      transform:none !important;
+    }
+    .member-ledger-page .search-input{
+      font-size:13px;
+      width:100% !important;
+      flex:1 1 auto !important;
+    }
+
+    .member-ledger-page .select-mini{
+      width:auto;
+      min-width:132px;
+      align-self:flex-start;
+      border-radius:999px;
+      padding:12px 16px;
+      min-height:50px;
+      font-size:13px;
+    }
+
+    .member-ledger-page .table-wrap{ display:none; }
+    .member-ledger-page .mobile-cards-wrap{ display:block; }
+
+    .member-ledger-page .table-footer{
+      gap:12px;
+    }
+    .member-ledger-page .pager{
+      width:100%;
+      justify-content:space-between;
+    }
+    .member-ledger-page .pager .btn{
+      min-width:92px;
+    }
+  }
+
+  @media (max-width: 520px){
+    .member-ledger-page .header-content{
+      padding:14px;
+      border-radius:20px;
+    }
+    .member-ledger-page .mobile-back-btn{
+      width:52px;
+      height:52px;
+      min-width:52px;
+      border-radius:16px;
+    }
+    .member-ledger-page .mobile-back-btn svg{
+      width:22px;
+      height:22px;
+    }
+
+    .member-ledger-page .action-panel{
+      padding:12px;
+      border-radius:18px;
+    }
+    .member-ledger-page .actionbar{
+      gap:10px;
+    }
+
+    .member-ledger-page .card-header-producer,
+    .member-ledger-page .card-content-producer,
+    .member-ledger-page .tab-header,
+    .member-ledger-page .table-controls,
+    .member-ledger-page .table-footer{
+      padding-left:14px;
+      padding-right:14px;
+    }
+    .member-ledger-page .ml-mactions{
+      justify-content:stretch;
+    }
+    .member-ledger-page .ml-ghost,
+    .member-ledger-page .ml-solid{
+      min-width:100%;
+    }
+    .member-ledger-page .ml-card{
+      min-width:calc(100vw - 48px);
+      width:calc(100vw - 48px);
+    }
+  }
+
+  @media (max-width: 390px){
+    .member-ledger-page .actionbar{
+      grid-template-columns:1fr;
+    }
+    .member-ledger-page .actionbar .btn,
+    .member-ledger-page .actionbar .btn-save-wide{
+      grid-column:auto;
+    }
+    .member-ledger-page .actionbar .grow-break{
+      display:none;
+    }
+    .member-ledger-page .btn,
+    .member-ledger-page .actionbar .btn{
+      font-size:13.5px;
+    }
+    .member-ledger-page .tab{
+      font-size:12px;
+      padding:10px 10px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
+<div class="member-ledger-page" id="member-ledger-root">
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <div id="app" class="bg-gradient">
+    <div class="ml-wrap">
+      <div class="ml-sheet">
+
+        <!-- Header -->
+        <div class="ml-header">
+          <div class="header-content">
+            <div class="header-main">
+              <div class="mobile-back-slot">
+                <button id="mobile-back-btn" class="mobile-back-btn" type="button" aria-label="Go back">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                          stroke="currentColor"
+                          stroke-width="2.5"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"></path>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="header-copy">
+                <h1 class="header-title">
+                  <span id="header-title">Member Ledger</span>
+                </h1>
+                <div class="header-subtitle">Producer purchases, sales and member transaction details</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action panel BELOW header and ABOVE producer info -->
+        <div class="action-panel" aria-label="Actions">
+          <div class="actionbar">
+            <button id="edit-btn" class="btn btn-ghost hide-when-editing" type="button">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              <span id="edit-text">Edit</span>
+            </button>
+
+            <button id="save-btn" class="btn btn-primary btn-save-wide show-when-editing" type="button">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                <path d="M17 21v-8H7v8M7 3v5h8" />
+              </svg>
+              <span id="save-text">Save</span>
+            </button>
+
+            <button id="cancel-btn" class="btn btn-ghost show-when-editing" type="button">
+              <span id="cancel-text">Cancel</span>
+            </button>
+
+            <button id="add-btn" class="btn btn-primary show-when-editing" type="button" title="Add row to current tab">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14m-7-7h14" />
+              </svg>
+              <span id="add-text">Add</span>
+            </button>
+
+            <button id="delete-selected-btn" class="btn btn-danger btn-delete-wide show-when-editing" type="button" title="Delete selected rows in current tab">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+              </svg>
+              <span id="delete-selected-text">Delete Selected</span>
+            </button>
+
+            <button id="delete-all-btn" class="btn btn-danger btn-delete-wide show-when-editing" type="button" title="Delete all rows in current tab">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+                <path d="M9 10h6M9 14h6"/>
+              </svg>
+              <span id="delete-all-text">Delete All</span>
+            </button>
+
+            <span class="grow-break show-when-editing"></span>
+
+            <!-- Hidden mobile duplicates kept only for JS compatibility -->
+            <button id="m-edit-btn" class="btn btn-ghost hide-when-editing" type="button" style="display:none;">
+              <span id="m-edit-text">Edit</span>
+            </button>
+            <button id="m-add-btn" class="btn btn-primary show-when-editing" type="button" style="display:none;">
+              <span id="m-add-text">Add</span>
+            </button>
+            <button id="m-cancel-btn" class="btn btn-ghost show-when-editing" type="button" style="display:none;">
+              <span id="m-cancel-text">Cancel</span>
+            </button>
+            <button id="m-delete-selected-btn" class="btn btn-danger show-when-editing" type="button" style="display:none;">
+              <span id="m-delete-selected-text">Delete Selected</span>
+            </button>
+            <button id="m-delete-all-btn" class="btn btn-danger show-when-editing" type="button" style="display:none;">
+              <span id="m-delete-all-text">Delete All</span>
+            </button>
+            <button id="m-save-btn" class="btn btn-primary show-when-editing" type="button" style="display:none;">
+              <span id="m-save-text">Save</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+          <!-- Producer Info Card -->
+          <div class="producer-card card">
+            <div class="card-header-producer">
+              <h2 id="producer-info-title">Producer Information</h2>
+            </div>
+
+            <div class="card-content-producer">
+              <div class="input-group-full">
+                <label id="pg-name-label" class="label">Name of Producer Group</label>
+                <input type="text" id="pg-name" class="input" value="{{ current_pg_name }}" readonly />
+              </div>
+
+              <div class="input-group-full">
+                <label id="producer-name-label" class="label">Name of the Producer</label>
+                <input type="text" id="producer-name" class="input" placeholder="Enter producer name" />
+              </div>
+
+              <div class="input-group-full">
+                <label id="stocking-unit-label" class="label">Unit of Stocking</label>
+                <div class="select-wrapper">
+                  <select id="stocking-unit" class="select">
+                    <option value="">Select unit</option>
+                    <option value="kg">Kg</option>
+                    <option value="liter">Liter</option>
+                    <option value="bag">Bag</option>
+                    <option value="piece">Piece</option>
+                  </select>
+                  <svg class="select-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="tabs">
+            <div class="seg" role="tablist" aria-label="Member ledger sections">
+              <button id="tab-purchases" class="tab active" data-tab="purchases" type="button" role="tab" aria-selected="true">
+                <span class="badge" aria-hidden="true"></span>
+                <span id="tab-purchases-text">Purchases of Input</span>
+              </button>
+
+              <button id="tab-sales" class="tab" data-tab="sales" type="button" role="tab" aria-selected="false">
+                <span class="badge" aria-hidden="true"></span>
+                <span id="tab-sales-text">Sale to PG</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tab Content -->
+          <div class="tab-content">
+            <!-- Purchases Tab -->
+            <div id="purchases-content" class="tab-pane active">
+              <div class="tab-header">
+                <h2 id="purchases-title" class="tab-title">Purchases of Input</h2>
+              </div>
+
+              <div class="table-card">
+                <div class="table-controls">
+                  <div class="controls-left">
+                    <div class="search-wrap">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <path d="M21 21l-4.3-4.3"></path>
+                      </svg>
+                      <input id="purchases-search" class="search-input" type="text" placeholder="Search..." />
+                    </div>
+
+                    <select id="purchases-per-page" class="select-mini" aria-label="Rows per page">
+                      <option value="10">10</option>
+                      <option value="25" selected>25</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="table-wrap">
+                  <table aria-label="Purchases table">
+                    <thead>
+                      <tr>
+                        <th class="cell-tight cell-center">
+                          <input id="purchases-select-all" class="chk" type="checkbox" title="Select all on this page"/>
+                        </th>
+                        <th class="cell-tight">SL No</th>
+                        <th>Date</th>
+                        <th>Unit</th>
+                        <th>Commodity/Item</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Advance</th>
+                        <th>Amount Due</th>
+                        <th>Amount Paid</th>
+                        <th>Remarks</th>
+                        <th class="cell-tight" style="text-align:right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="purchases-tbody"></tbody>
+                  </table>
+                </div>
+
+                <div class="mobile-cards-wrap">
+                  <div id="purchases-mobile-cards" class="mobile-cards-rail"></div>
+                </div>
+
+                <div class="table-footer">
+                  <div class="pager-meta" id="purchases-meta">0–0 of 0</div>
+                  <div class="pager">
+                    <button id="purchases-prev" class="btn" type="button">Prev</button>
+                    <span class="pager-meta" id="purchases-page">Page 1</span>
+                    <button id="purchases-next" class="btn" type="button">Next</button>
+                  </div>
+                </div>
+              </div>
+              <p id="no-purchases-text">No purchase entries yet. Click "Add" to create one.</p>
+            </div>
+
+            <!-- Sales Tab -->
+            <div id="sales-content" class="tab-pane">
+              <div class="tab-header">
+                <h2 id="sales-title" class="tab-title">Sale to PG</h2>
+              </div>
+
+              <div class="table-card">
+                <div class="table-controls">
+                  <div class="controls-left">
+                    <div class="search-wrap">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="7"></circle>
+                        <path d="M21 21l-4.3-4.3"></path>
+                      </svg>
+                      <input id="sales-search" class="search-input" type="text" placeholder="Search..." />
+                    </div>
+
+                    <select id="sales-per-page" class="select-mini" aria-label="Rows per page">
+                      <option value="10">10</option>
+                      <option value="25" selected>25</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="table-wrap">
+                  <table aria-label="Sales table">
+                    <thead>
+                      <tr>
+                        <th class="cell-tight cell-center">
+                          <input id="sales-select-all" class="chk" type="checkbox" title="Select all on this page"/>
+                        </th>
+                        <th class="cell-tight">SL No</th>
+                        <th>Date</th>
+                        <th>Unit</th>
+                        <th>Commodity/Item</th>
+                        <th>Qty</th>
+                        <th>Rate</th>
+                        <th>Amount</th>
+                        <th>Advance</th>
+                        <th>Final Amount</th>
+                        <th>Total</th>
+                        <th class="cell-tight" style="text-align:right;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="sales-tbody"></tbody>
+                  </table>
+                </div>
+
+                <div class="mobile-cards-wrap">
+                  <div id="sales-mobile-cards" class="mobile-cards-rail"></div>
+                </div>
+
+                <div class="table-footer">
+                  <div class="pager-meta" id="sales-meta">0–0 of 0</div>
+                  <div class="pager">
+                    <button id="sales-prev" class="btn" type="button">Prev</button>
+                    <span class="pager-meta" id="sales-page">Page 1</span>
+                    <button id="sales-next" class="btn" type="button">Next</button>
+                  </div>
+                </div>
+              </div>
+              <p id="no-sales-text">No sale entries yet. Click "Add" to create one.</p>
+            </div>
+          </div>
+
+        </div><!-- /content -->
+      </div><!-- /ml-sheet -->
+    </div><!-- /ml-wrap -->
+  </div><!-- /app -->
+
+  <!-- Confirm Modal -->
+  <div id="mlConfirmOverlay" class="ml-modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="ml-modal">
+      <div class="ml-mhead">
+        <span class="ml-dot"></span>
+        <div class="ml-mtitle" id="mlConfirmTitle">Confirm</div>
+      </div>
+      <div class="ml-mbody" id="mlConfirmMsg">Are you sure?</div>
+      <div class="ml-mactions">
+        <button id="mlConfirmNo" class="ml-ghost" type="button">Cancel</button>
+        <button id="mlConfirmYes" class="ml-solid" type="button">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lock / Warning Modal -->
+  <div id="mlLockOverlay" class="ml-modal-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="ml-modal">
+      <div class="ml-mhead">
+        <span class="ml-dot"></span>
+        <div class="ml-mtitle" id="mlLockTitle">Action blocked</div>
+      </div>
+      <div class="ml-mbody" id="mlLockMsg">You are in Edit mode. Please Save or Cancel before leaving this page.</div>
+      <div class="ml-mactions">
+        <button id="mlLockOk" class="ml-solid" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/plain" id="react-member-ledger-source">
+/* (Your full React code remains here exactly as provided in the prompt.) */
+  </script>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ============================================================
+  // Application State
+  // ============================================================
+  let state = {
+    language: "en",
+    producerName: "",
+    stockingUnit: "",
+    purchases: [],
+    sales: [],
+    activeTab: "purchases",
+
+    editMode: false,
+    snapshot: null,
+
+    ui: {
+      purchases: { search:"", page:1, perPage:25, selected: new Set() },
+      sales:     { search:"", page:1, perPage:25, selected: new Set() },
+    }
+  };
+
+  const MEMBER_LEDGER_TAB_KEY = "member_ledger_active_tab";
+  const MEMBER_LEDGER_STORAGE_PREFIX = "member_ledger:";
+  const MEMBER_LEDGER_DRAFT_DEBOUNCE = 450;
+
+  let memberLedgerDraftTimer = null;
+  let memberLedgerHydrating = false;
+
+  // ============================================================
+  // Translations
+  // ============================================================
+  const translations = {
+    en: {
+      title: "Member Ledger",
+      save: "Save",
+      edit: "Edit",
+      cancel: "Cancel",
+      producerInfo: "Producer Information",
+      producerName: "Name of the Producer",
+      stockingUnit: "Unit of Stocking",
+      selectUnit: "Select unit",
+      purchases: "Purchases of Input",
+      sales: "Sale to PG",
+      add: "Add Row",
+      noPurchases: 'No purchase entries yet. Click "Add" to create one.',
+      noSales: 'No sale entries yet. Click "Add" to create one.',
+      enterProducerName: "Enter producer name",
+      enterCommodity: "Enter commodity",
+      enterRemarks: "Enter remarks",
+      savedSuccess: "Member ledger saved successfully!",
+      deleteSuccess: "Entry deleted",
+      back: "Back",
+
+      confirmSavePage: "Do you want to SAVE the Member Ledger?",
+      confirmCancel: "Discard changes and exit edit mode?",
+      confirmDelete: "Delete this entry?",
+      confirmDeleteSelected: "Delete selected entries?",
+      confirmDeleteAll: "Delete ALL entries in this section?",
+
+      actionBlockedTitle: "Action blocked",
+      actionBlockedMsg: "You are in Edit mode. Please Save or Cancel before leaving this page.",
+
+      ok: "OK",
+      confirm: "Confirm",
+      delete: "Delete",
+      prev: "Prev",
+      next: "Next",
+      searchPH: "Search...",
+      rowsPerPageAria: "Rows per page",
+      actions: "Actions",
+      date: "Date",
+      unit: "Unit",
+      commodity: "Commodity/Item",
+      qty: "Qty",
+      rate: "Rate",
+      amount: "Amount",
+      advance: "Advance",
+      amountDue: "Amount Due",
+      amountPaid: "Amount Paid",
+      finalAmount: "Final Amount",
+      total: "Total",
+      remarks: "Remarks",
+      noRowsFound: "No rows found."
+    },
+    bn: {
+      title: "সদস্য খাতা",
+      save: "সংরক্ষণ",
+      edit: "সম্পাদনা",
+      cancel: "বাতিল",
+      producerInfo: "উৎপাদকের তথ্য",
+      producerName: "উৎপাদকের নাম",
+      stockingUnit: "ভাণ্ডারের পরিমাণ",
+      selectUnit: "একক নির্বাচন করুন",
+      purchases: "সামগ্রী ক্রয়",
+      sales: "পিজিতে বিক্রয়",
+      add: "সারি যোগ করুন",
+      noPurchases: 'এখনও কোনো ক্রয় এন্ট্রি নেই। তৈরি করতে "যোগ করুন" এ ক্লিক করুন।',
+      noSales: 'এখনও কোনো বিক্রয় এন্ট্রি নেই। তৈরি করতে "যোগ করুন" এ ক্লিক করুন।',
+      enterProducerName: "উৎপাদকের নাম লিখুন",
+      enterCommodity: "পণ্য লিখুন",
+      enterRemarks: "মন্তব্য লিখুন",
+      savedSuccess: "সদস্য খাতা সফলভাবে সংরক্ষিত হয়েছে!",
+      deleteSuccess: "এন্ট্রি মুছে ফেলা হয়েছে",
+      back: "ফিরুন",
+
+      confirmSavePage: "আপনি কি সদস্য খাতা সংরক্ষণ করতে চান?",
+      confirmCancel: "পরিবর্তন বাতিল করে এডিট মোড থেকে বের হবেন?",
+      confirmDelete: "এই এন্ট্রি মুছে ফেলবেন?",
+      confirmDeleteSelected: "নির্বাচিত এন্ট্রি মুছে ফেলবেন?",
+      confirmDeleteAll: "এই সেকশনের সব এন্ট্রি মুছে ফেলবেন?",
+
+      actionBlockedTitle: "Action blocked",
+      actionBlockedMsg: "আপনি এডিট মোডে আছেন। এই পেজ ছাড়ার আগে Save অথবা Cancel করুন।",
+
+      ok: "ঠিক আছে",
+      confirm: "নিশ্চিত",
+      delete: "মুছুন",
+      prev: "পূর্ববর্তী",
+      next: "পরবর্তী",
+      searchPH: "অনুসন্ধান...",
+      rowsPerPageAria: "প্রতি পৃষ্ঠায় সারি",
+      actions: "অ্যাকশন",
+      date: "তারিখ",
+      unit: "একক",
+      commodity: "পণ্য/সামগ্রী",
+      qty: "পরিমাণ",
+      rate: "দর",
+      amount: "পরিমাণ",
+      advance: "অগ্রিম",
+      amountDue: "বাকি",
+      amountPaid: "পরিশোধিত",
+      finalAmount: "চূড়ান্ত পরিমাণ",
+      total: "মোট",
+      remarks: "মন্তব্য",
+      noRowsFound: "কোনো সারি পাওয়া যায়নি।"
+    },
+  };
+
+  function t(key) {
+    return (translations[state.language] && translations[state.language][key]) || key;
+  }
+
+  // ============================================================
+  // Shared persistence helpers
+  // ============================================================
+  function normalizeLedgerId(v){
+    return (v || "")
+      .toString()
+      .trim()
+      .replace(/^\/+|\/+$/g, "")
+      .replace(/[^a-zA-Z0-9_-]+/g, "_")
+      .replace(/_+/g, "_")
+      .slice(0, 120);
+  }
+
+  function getMemberLedgerId(){
+    const root = document.getElementById("member-ledger-root");
+    const body = document.body;
+
+    const candidates = [
+      window.MEMBER_LEDGER_ID,
+      window.memberLedgerId,
+      window.PG_ID,
+      root && root.getAttribute("data-member-ledger-id"),
+      root && root.getAttribute("data-pg-id"),
+      body && body.getAttribute("data-member-ledger-id"),
+      body && body.getAttribute("data-pg-id"),
+      window.location && window.location.pathname
+    ];
+
+    for (const raw of candidates){
+      const normalized = normalizeLedgerId(raw);
+      if (normalized) return normalized;
+    }
+
+    return "member_ledger_default";
+  }
+
+  function memberLedgerStorageKey(){
+    return `${MEMBER_LEDGER_STORAGE_PREFIX}${getMemberLedgerId()}`;
+  }
+
+  function buildPayload(isDraft = true){
+    return {
+      pgName: (document.getElementById("pg-name")?.value || "{{ current_pg_name }}" || ""),
+      producerName: state.producerName || "",
+      stockingUnit: state.stockingUnit || "",
+      purchases: Array.isArray(state.purchases) ? state.purchases : [],
+      sales: Array.isArray(state.sales) ? state.sales : [],
+      activeTab: state.activeTab || "purchases",
+      isDraft: !!isDraft,
+      savedAt: new Date().toISOString()
+    };
+  }
+
+  function syncFormFieldsFromState(){
+    const pn = document.getElementById("producer-name");
+    if (pn) pn.value = state.producerName || "";
+
+    const su = document.getElementById("stocking-unit");
+    if (su) su.value = state.stockingUnit || "";
+  }
+
+  function hydrateFromData(data){
+    if (!data || typeof data !== "object") return false;
+
+    memberLedgerHydrating = true;
+    try {
+      state.producerName = data.producerName || "";
+      state.stockingUnit = data.stockingUnit || "";
+      state.purchases = Array.isArray(data.purchases) ? data.purchases.map(item => ({...item})) : [];
+      state.sales = Array.isArray(data.sales) ? data.sales.map(item => ({...item})) : [];
+      state.activeTab = (data.activeTab === "sales") ? "sales" : "purchases";
+
+      state.ui.purchases.selected.clear();
+      state.ui.sales.selected.clear();
+      state.ui.purchases.page = 1;
+      state.ui.sales.page = 1;
+
+      syncFormFieldsFromState();
+      switchTab(state.activeTab);
+      renderPurchasesTable();
+      renderSalesTable();
+      updateEditableStates();
+      return true;
+    } finally {
+      memberLedgerHydrating = false;
+    }
+  }
+
+  function persistLocalPayload(payload){
+    try {
+      localStorage.setItem(memberLedgerStorageKey(), JSON.stringify(payload));
+    } catch (_) {}
+  }
+
+  async function persistServerPayload(payload){
+    const ledgerId = encodeURIComponent(getMemberLedgerId());
+    const endpoint = `/pg/api/register/member_ledger/${encodeURIComponent(window.PG_ID || "")}`;
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: payload })
+    });
+
+    let data = null;
+    try { data = await res.json(); } catch (_) {}
+
+    if (!res.ok) {
+      const msg = (data && (data.message || data.error)) || `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+
+    return data;
+  }
+
+  async function persistMemberLedger(payload){
+    persistLocalPayload(payload);
+
+    try {
+      await persistServerPayload(payload);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function loadMemberLedger(){
+    const ledgerId = encodeURIComponent(getMemberLedgerId());
+    const endpoint = `/pg/api/register/member_ledger/${encodeURIComponent(window.PG_ID || "")}`;
+
+    try {
+      const res = await fetch(endpoint, { method: "GET" });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && hydrateFromData(data.data || data)) {
+          return true;
+        }
+      }
+    } catch (_) {}
+
+    try {
+      const raw = localStorage.getItem(memberLedgerStorageKey());
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (hydrateFromData(data)) {
+          return true;
+        }
+      }
+    } catch (_) {}
+
+    return false;
+  }
+
+  
+  async function loadCurrentPgName(){
+    const pgNameEl = document.getElementById("pg-name");
+    const pgId = (window.PG_ID || "").trim();
+    if (!pgNameEl || !pgId) return;
+    if (pgNameEl.value && pgNameEl.value.trim()) return;
+    try {
+      const res = await fetch(`/pg/profile/${encodeURIComponent(pgId)}/data`, { headers: { "Accept": "application/json" } });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data && data.data && data.data.pg_name) pgNameEl.value = data.data.pg_name;
+    } catch (_) {}
+  }
+
+  function scheduleDraftSync(){
+    if (memberLedgerHydrating) return;
+    if (!state.editMode) return;
+
+    if (memberLedgerDraftTimer) clearTimeout(memberLedgerDraftTimer);
+    memberLedgerDraftTimer = setTimeout(() => {
+      persistMemberLedger(buildPayload(true));
+    }, MEMBER_LEDGER_DRAFT_DEBOUNCE);
+  }
+
+  // ============================================================
+  // Toast disabled intentionally
+  // ============================================================
+  function showToast() {
+    return;
+  }
+
+  // ============================================================
+  // Modal helpers
+  // ============================================================
+  const mlModal = {
+    overlay: null,
+    titleEl: null,
+    msgEl: null,
+    btnNo: null,
+    btnYes: null,
+    onYes: null,
+    onNo: null,
+    open: false
+  };
+
+  function mlOpenOverlay(el){
+    if (!el) return;
+    el.classList.add("ml-show");
+    el.setAttribute("aria-hidden","false");
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }
+
+  function mlCloseOverlay(el){
+    if (!el) return;
+    el.classList.remove("ml-show");
+    el.setAttribute("aria-hidden","true");
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+  }
+
+  function openConfirmModal(cfg){
+    const overlay = document.getElementById("mlConfirmOverlay");
+    const titleEl = document.getElementById("mlConfirmTitle");
+    const msgEl = document.getElementById("mlConfirmMsg");
+    const btnNo = document.getElementById("mlConfirmNo");
+    const btnYes = document.getElementById("mlConfirmYes");
+
+    if (!overlay || !titleEl || !msgEl || !btnNo || !btnYes) {
+      if (confirm(cfg.message || "Are you sure?")) { if (typeof cfg.onYes === "function") cfg.onYes(); }
+      return;
+    }
+
+    mlModal.overlay = overlay;
+    mlModal.titleEl = titleEl;
+    mlModal.msgEl = msgEl;
+    mlModal.btnNo = btnNo;
+    mlModal.btnYes = btnYes;
+    mlModal.onYes = (typeof cfg.onYes === "function") ? cfg.onYes : null;
+    mlModal.onNo = (typeof cfg.onNo === "function") ? cfg.onNo : null;
+    mlModal.open = true;
+
+    const danger = !!cfg.danger;
+
+    titleEl.textContent = cfg.title || (danger ? t("actionBlockedTitle") : t("confirm"));
+    titleEl.classList.toggle("danger", danger);
+
+    msgEl.textContent = cfg.message || "";
+
+    btnNo.textContent = cfg.noText || t("cancel");
+    btnYes.textContent = cfg.yesText || (danger ? t("delete") : t("confirm"));
+    btnYes.classList.toggle("ml-danger", danger);
+
+    mlOpenOverlay(overlay);
+  }
+
+  function closeConfirmModal(){
+    if (!mlModal.overlay) return;
+    mlCloseOverlay(mlModal.overlay);
+
+    if (mlModal.titleEl) mlModal.titleEl.classList.remove("danger");
+    if (mlModal.btnYes) mlModal.btnYes.classList.remove("ml-danger");
+
+    mlModal.open = false;
+    mlModal.onYes = null;
+    mlModal.onNo = null;
+  }
+
+  function openLockModal(customMsg){
+    const overlay = document.getElementById("mlLockOverlay");
+    const title = document.getElementById("mlLockTitle");
+    const msg = document.getElementById("mlLockMsg");
+    const ok = document.getElementById("mlLockOk");
+    if (!overlay || !title || !msg || !ok) {
+      alert(customMsg || t("actionBlockedMsg"));
+      return;
+    }
+
+    title.textContent = t("actionBlockedTitle");
+    msg.textContent = customMsg || t("actionBlockedMsg");
+    ok.textContent = t("ok");
+
+    mlOpenOverlay(overlay);
+  }
+
+  function closeLockModal(){
+    const overlay = document.getElementById("mlLockOverlay");
+    mlCloseOverlay(overlay);
+  }
+
+  function askConfirm(message, onYes, opts={}) {
+    const danger = !!opts.danger;
+
+    openConfirmModal({
+      title: opts.title || (danger ? t("actionBlockedTitle") : t("confirm")),
+      message,
+      danger,
+      yesText: opts.yesText || (danger ? t("delete") : t("confirm")),
+      noText: opts.noText || t("cancel"),
+      onYes: onYes
+    });
+  }
+
+  // ============================================================
+  // Edit mode guards
+  // ============================================================
+  let guardAttached = false;
+
+  function beforeUnloadHandler(e){
+    if (!state.editMode) return;
+    e.preventDefault();
+    e.returnValue = "";
+    return "";
+  }
+
+  function clickGuardHandler(e){
+    if (!state.editMode) return;
+
+    const inModal = e.target && e.target.closest && e.target.closest(".ml-modal-overlay.ml-show");
+    if (inModal) return;
+
+    const a = e.target.closest && e.target.closest("a[href]");
+    if (!a) return;
+
+    const href = (a.getAttribute("href") || "").trim();
+    if (!href || href === "#" || href.startsWith("#")) return;
+    if (href.toLowerCase().startsWith("javascript:")) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    openLockModal();
+  }
+
+  function popStateHandler(){
+    if (!state.editMode) return;
+    history.pushState({pgmis_edit_guard: true}, "", location.href);
+    openLockModal();
+  }
+
+  function attachGuards(){
+    if (guardAttached) return;
+    guardAttached = true;
+
+    history.pushState({pgmis_edit_guard: true}, "", location.href);
+
+    window.addEventListener("beforeunload", beforeUnloadHandler);
+    document.addEventListener("click", clickGuardHandler, true);
+    window.addEventListener("popstate", popStateHandler);
+  }
+
+  function detachGuards(){
+    if (!guardAttached) return;
+    guardAttached = false;
+
+    window.removeEventListener("beforeunload", beforeUnloadHandler);
+    document.removeEventListener("click", clickGuardHandler, true);
+    window.removeEventListener("popstate", popStateHandler);
+  }
+
+  function setEditingUI(on){
+    const root = document.getElementById("member-ledger-root");
+    if (root) root.classList.toggle("is-editing", !!on);
+  }
+
+  function enterEditMode(){
+    if (state.editMode) return;
+
+    state.snapshot = JSON.parse(JSON.stringify({
+      producerName: state.producerName,
+      stockingUnit: state.stockingUnit,
+      purchases: state.purchases,
+      sales: state.sales
+    }));
+
+    state.editMode = true;
+    setEditingUI(true);
+    attachGuards();
+    updateEditableStates();
+    renderPurchasesTable();
+    renderSalesTable();
+  }
+
+  function exitEditMode(commit){
+    if (!state.editMode) return;
+
+    if (!commit && state.snapshot){
+      state.producerName = state.snapshot.producerName || "";
+      state.stockingUnit = state.snapshot.stockingUnit || "";
+      state.purchases = state.snapshot.purchases || [];
+      state.sales = state.snapshot.sales || [];
+    }
+
+    state.snapshot = null;
+    state.editMode = false;
+
+    state.ui.purchases.selected.clear();
+    state.ui.sales.selected.clear();
+
+    detachGuards();
+    setEditingUI(false);
+
+    syncFormFieldsFromState();
+    updateEditableStates();
+    renderPurchasesTable();
+    renderSalesTable();
+  }
+
+  function updateEditableStates(){
+    const canEdit = !!state.editMode;
+
+    const producerName = document.getElementById("producer-name");
+    const stockingUnit = document.getElementById("stocking-unit");
+
+    if (producerName){
+      producerName.disabled = !canEdit;
+      producerName.readOnly = !canEdit;
+    }
+    if (stockingUnit){
+      stockingUnit.disabled = !canEdit;
+    }
+
+    const psa = document.getElementById("purchases-select-all");
+    const ssa = document.getElementById("sales-select-all");
+    if (psa) psa.disabled = !canEdit;
+    if (ssa) ssa.disabled = !canEdit;
+  }
+
+  // ============================================================
+  // Data ops
+  // ============================================================
+  function addPurchase() {
+    if (!state.editMode) return;
+
+    const newPurchase = {
+      id: Date.now().toString() + Math.random().toString(16).slice(2),
+      date: "",
+      commodity: "",
+      unit: "",
+      qty: "",
+      rate: "",
+      amount: "",
+      advance: "",
+      amountDue: "",
+      amountPaid: "",
+      remarks: "",
+      saved: false,
+    };
+
+    state.purchases.push(newPurchase);
+
+    const per = state.ui.purchases.perPage || 25;
+    const total = filterRows("purchases", state.purchases).length;
+    state.ui.purchases.page = Math.max(1, Math.ceil(total / per));
+
+    renderPurchasesTable();
+    scheduleDraftSync();
+  }
+
+  function addSale() {
+    if (!state.editMode) return;
+
+    const newSale = {
+      id: Date.now().toString() + Math.random().toString(16).slice(2),
+      date: "",
+      commodity: "",
+      unit: "",
+      qty: "",
+      rate: "",
+      amount: "",
+      advance: "",
+      finalAmount: "",
+      total: "",
+      saved: false,
+    };
+
+    state.sales.push(newSale);
+
+    const per = state.ui.sales.perPage || 25;
+    const total = filterRows("sales", state.sales).length;
+    state.ui.sales.page = Math.max(1, Math.ceil(total / per));
+
+    renderSalesTable();
+    scheduleDraftSync();
+  }
+
+  // ============================================================
+  // Update funcs
+  // ============================================================
+  function updatePurchase(id, field, value) {
+    const purchase = state.purchases.find((p) => p.id === id);
+    if (!purchase) return;
+
+    purchase[field] = value;
+
+    if (field === "qty" || field === "rate") {
+      const qty = parseFloat(purchase.qty) || 0;
+      const rate = parseFloat(purchase.rate) || 0;
+      purchase.amount = (qty * rate).toFixed(2);
+      const amt = document.querySelector(`[data-purchase-id="${id}"] [data-field="amount"]`);
+      if (amt) amt.value = purchase.amount;
+      const mobileAmt = document.querySelector(`[data-purchase-mobile-id="${id}"] [data-field="amount"]`);
+      if (mobileAmt) mobileAmt.value = purchase.amount;
+    }
+
+    if (field === "amount" || field === "advance" || field==="qty" || field==="rate") {
+      const amount = parseFloat(purchase.amount) || 0;
+      const advance = parseFloat(purchase.advance) || 0;
+      purchase.amountDue = (amount - advance).toFixed(2);
+      const due = document.querySelector(`[data-purchase-id="${id}"] [data-field="amountDue"]`);
+      if (due) due.value = purchase.amountDue;
+      const mobileDue = document.querySelector(`[data-purchase-mobile-id="${id}"] [data-field="amountDue"]`);
+      if (mobileDue) mobileDue.value = purchase.amountDue;
+    }
+
+    scheduleDraftSync();
+  }
+
+  function updateSale(id, field, value) {
+    const sale = state.sales.find((s) => s.id === id);
+    if (!sale) return;
+
+    sale[field] = value;
+
+    if (field === "qty" || field === "rate") {
+      const qty = parseFloat(sale.qty) || 0;
+      const rate = parseFloat(sale.rate) || 0;
+      sale.amount = (qty * rate).toFixed(2);
+      const amt = document.querySelector(`[data-sale-id="${id}"] [data-field="amount"]`);
+      if (amt) amt.value = sale.amount;
+      const mobileAmt = document.querySelector(`[data-sale-mobile-id="${id}"] [data-field="amount"]`);
+      if (mobileAmt) mobileAmt.value = sale.amount;
+    }
+
+    if (field === "amount" || field === "advance" || field === "finalAmount" || field==="qty" || field==="rate") {
+      const amount = parseFloat(sale.amount) || 0;
+      const advance = parseFloat(sale.advance) || 0;
+      const finalAmount = parseFloat(sale.finalAmount) || 0;
+      sale.total = (amount + advance + finalAmount).toFixed(2);
+      const total = document.querySelector(`[data-sale-id="${id}"] [data-field="total"]`);
+      if (total) total.value = sale.total;
+      const mobileTotal = document.querySelector(`[data-sale-mobile-id="${id}"] [data-field="total"]`);
+      if (mobileTotal) mobileTotal.value = sale.total;
+    }
+
+    scheduleDraftSync();
+  }
+
+  // ============================================================
+  // Delete
+  // ============================================================
+  function deletePurchase(id) {
+    if (!state.editMode) return;
+    askConfirm(t("confirmDelete"), () => {
+      state.purchases = state.purchases.filter((p) => p.id !== id);
+      state.ui.purchases.selected.delete(id);
+      renderPurchasesTable();
+      scheduleDraftSync();
+    }, {danger:true});
+  }
+
+  function deleteSale(id) {
+    if (!state.editMode) return;
+    askConfirm(t("confirmDelete"), () => {
+      state.sales = state.sales.filter((s) => s.id !== id);
+      state.ui.sales.selected.delete(id);
+      renderSalesTable();
+      scheduleDraftSync();
+    }, {danger:true});
+  }
+
+  function deleteSelected(tab){
+    if (!state.editMode) return;
+
+    const ui = state.ui[tab];
+    const ids = Array.from(ui.selected || []);
+    if (ids.length === 0){
+      return;
+    }
+
+    askConfirm(t("confirmDeleteSelected"), () => {
+      if (tab === "purchases"){
+        state.purchases = state.purchases.filter(x => !ui.selected.has(x.id));
+      } else {
+        state.sales = state.sales.filter(x => !ui.selected.has(x.id));
+      }
+      ui.selected.clear();
+      if (tab === "purchases") renderPurchasesTable(); else renderSalesTable();
+      scheduleDraftSync();
+    }, {danger:true});
+  }
+
+  function deleteAll(tab){
+    if (!state.editMode) return;
+
+    askConfirm(t("confirmDeleteAll"), () => {
+      if (tab === "purchases"){
+        state.purchases = [];
+        state.ui.purchases.selected.clear();
+        renderPurchasesTable();
+      } else {
+        state.sales = [];
+        state.ui.sales.selected.clear();
+        renderSalesTable();
+      }
+      scheduleDraftSync();
+    }, {danger:true});
+  }
+
+  // ============================================================
+  // Save / Cancel
+  // ============================================================
+  function saveData() {
+    if (!state.editMode) return;
+
+    askConfirm(t("confirmSavePage"), async () => {
+      if (memberLedgerDraftTimer) {
+        clearTimeout(memberLedgerDraftTimer);
+        memberLedgerDraftTimer = null;
+      }
+
+      const data = buildPayload(false);
+      await persistMemberLedger(data);
+      exitEditMode(true);
+    }, {danger:false});
+  }
+
+  function cancelEdits(){
+    if (!state.editMode) return;
+
+    askConfirm(t("confirmCancel"), () => {
+      exitEditMode(false);
+    }, {danger:false});
+  }
+
+  // ============================================================
+  // Table helpers
+  // ============================================================
+  function normalize(s){ return (s||"").toString().toLowerCase().trim(); }
+
+  function filterRows(tab, rows){
+    const q = normalize(state.ui[tab].search);
+    if (!q) return rows;
+
+    return rows.filter(r=>{
+      const blob = Object.keys(r).map(k => normalize(r[k])).join(" ");
+      return blob.includes(q);
+    });
+  }
+
+  function paginate(tab, rows){
+    const ui = state.ui[tab];
+    const per = ui.perPage || 25;
+    const total = rows.length;
+    const pages = Math.max(1, Math.ceil(total / per));
+    ui.page = Math.min(Math.max(1, ui.page), pages);
+
+    const start = (ui.page - 1) * per;
+    const end = start + per;
+    return { pageRows: rows.slice(start, end), total, pages, start, end };
+  }
+
+  function setMeta(tab, start, end, total){
+    const meta = document.getElementById(tab+"-meta");
+    if (meta){
+      const a = total === 0 ? 0 : (start + 1);
+      const b = Math.min(end, total);
+      meta.textContent = `${a}–${b} of ${total}`;
+    }
+    const p = document.getElementById(tab+"-page");
+    if (p){
+      p.textContent = `Page ${state.ui[tab].page}`;
+    }
+  }
+
+  function setEmpty(tab, isEmpty){
+    const empty = document.getElementById(tab+"-empty");
+    if (empty) empty.style.display = "none";
+  }
+
+  function renderNoRowsMessage(colspan){
+    return `
+      <tr>
+        <td colspan="${colspan}" style="
+          text-align:center;
+          padding:18px 12px;
+          font-weight:900;
+          color:rgba(15,23,42,.65);
+          background:#fff;
+        ">
+          ${t("noRowsFound")}
+        </td>
+      </tr>
+    `;
+  }
+
+  // ============================================================
+  // Render Purchases Table
+  // ============================================================
+  function renderPurchasesTable(){
+    const tbody = document.getElementById("purchases-tbody");
+    const mobileRail = document.getElementById("purchases-mobile-cards");
+    if (!tbody) return;
+
+    const canEdit = !!state.editMode;
+
+    const filtered = filterRows("purchases", state.purchases);
+    const pg = paginate("purchases", filtered);
+    setMeta("purchases", pg.start, pg.end, pg.total);
+    setEmpty("purchases", state.purchases.length === 0);
+
+    if (pg.total === 0){
+      tbody.innerHTML = renderNoRowsMessage(13);
+      if (mobileRail) {
+        mobileRail.innerHTML = `
+          <div class="ml-card" style="min-width:100%;width:100%;">
+            <div class="ml-card-body" style="padding:18px 14px;text-align:center;font-weight:900;color:rgba(15,23,42,.65);">
+              ${t("noRowsFound")}
+            </div>
+          </div>
+        `;
+      }
+
+      const selAll = document.getElementById("purchases-select-all");
+      if (selAll){
+        selAll.checked = false;
+        selAll.indeterminate = false;
+        selAll.disabled = true;
+      }
+
+      const prev = document.getElementById("purchases-prev");
+      const next = document.getElementById("purchases-next");
+      if (prev) prev.disabled = true;
+      if (next) next.disabled = true;
+
+      return;
+    }
+
+    tbody.innerHTML = pg.pageRows.map((p, idx) => {
+      const sl = pg.start + idx + 1;
+      const disabledAttr = canEdit ? "" : "disabled";
+      const roCalc = "readonly";
+
+      const checked = state.ui.purchases.selected.has(p.id) ? "checked" : "";
+      return `
+        <tr data-purchase-id="${p.id}">
+          <td class="cell-tight cell-center">
+            <input class="chk" type="checkbox" ${checked} ${disabledAttr}
+              onchange="toggleSelect('purchases','${p.id}', this.checked)">
+          </td>
+          <td class="cell-tight">${sl}</td>
+
+          <td><input class="mini-input" type="date" value="${p.date || ""}" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','date',this.value)"></td>
+
+          <td><input class="mini-input" type="text" value="${(p.unit||"")}" placeholder="Kg/L/Pcs" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','unit',this.value)"></td>
+
+          <td><input class="mini-input" type="text" value="${(p.commodity||"")}" placeholder="${t("enterCommodity")}" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','commodity',this.value)"></td>
+
+          <td><input class="mini-input" type="number" value="${(p.qty||"")}" placeholder="0" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','qty',this.value)"></td>
+
+          <td><input class="mini-input" type="number" value="${(p.rate||"")}" placeholder="0.00" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','rate',this.value)"></td>
+
+          <td><input class="mini-input calc" data-field="amount" type="number" value="${(p.amount||"")}" placeholder="0.00" ${roCalc}></td>
+
+          <td><input class="mini-input" type="number" value="${(p.advance||"")}" placeholder="0.00" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','advance',this.value)"></td>
+
+          <td><input class="mini-input calc" data-field="amountDue" type="number" value="${(p.amountDue||"")}" placeholder="0.00" ${roCalc}></td>
+
+          <td><input class="mini-input" type="number" value="${(p.amountPaid||"")}" placeholder="0.00" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','amountPaid',this.value)"></td>
+
+          <td><input class="mini-input" type="text" value="${(p.remarks||"")}" placeholder="${t("enterRemarks")}" ${disabledAttr}
+              oninput="updatePurchase('${p.id}','remarks',this.value)"></td>
+
+          <td class="cell-tight" style="text-align:right;">
+            <div class="row-actions">
+              <button class="btn btn-danger" type="button" ${canEdit ? "" : "disabled"}
+                onclick="deletePurchase('${p.id}')">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    if (mobileRail){
+      mobileRail.innerHTML = pg.pageRows.map((p, idx) => {
+        const sl = pg.start + idx + 1;
+        const disabledAttr = canEdit ? "" : "disabled";
+        const roCalc = "readonly";
+        const checked = state.ui.purchases.selected.has(p.id) ? "checked" : "";
+
+        return `
+          <div class="ml-card" data-purchase-mobile-id="${p.id}">
+            <div class="ml-card-head">
+              <div class="ml-card-sl">SL No ${sl}</div>
+              <div class="ml-card-head-right">
+                <input class="chk" type="checkbox" ${checked} ${disabledAttr}
+                  onchange="toggleSelect('purchases','${p.id}', this.checked)">
+              </div>
+            </div>
+
+            <div class="ml-card-body">
+              <div class="ml-field">
+                <div class="ml-field-label">${t("date")}</div>
+                <input class="mini-input" type="date" value="${p.date || ""}" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','date',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("unit")}</div>
+                <input class="mini-input" type="text" value="${(p.unit||"")}" placeholder="Kg/L/Pcs" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','unit',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("commodity")}</div>
+                <input class="mini-input" type="text" value="${(p.commodity||"")}" placeholder="${t("enterCommodity")}" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','commodity',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("qty")}</div>
+                <input class="mini-input" type="number" value="${(p.qty||"")}" placeholder="0" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','qty',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("rate")}</div>
+                <input class="mini-input" type="number" value="${(p.rate||"")}" placeholder="0.00" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','rate',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("amount")}</div>
+                <input class="mini-input calc" data-field="amount" type="number" value="${(p.amount||"")}" placeholder="0.00" ${roCalc}>
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("advance")}</div>
+                <input class="mini-input" type="number" value="${(p.advance||"")}" placeholder="0.00" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','advance',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("amountDue")}</div>
+                <input class="mini-input calc" data-field="amountDue" type="number" value="${(p.amountDue||"")}" placeholder="0.00" ${roCalc}>
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("amountPaid")}</div>
+                <input class="mini-input" type="number" value="${(p.amountPaid||"")}" placeholder="0.00" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','amountPaid',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("remarks")}</div>
+                <input class="mini-input" type="text" value="${(p.remarks||"")}" placeholder="${t("enterRemarks")}" ${disabledAttr}
+                  oninput="updatePurchase('${p.id}','remarks',this.value)">
+              </div>
+
+              <div class="ml-card-actions">
+                <button class="btn btn-danger" type="button" ${canEdit ? "" : "disabled"}
+                  onclick="deletePurchase('${p.id}')">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    const selAll = document.getElementById("purchases-select-all");
+    if (selAll){
+      const pageIds = pg.pageRows.map(x=>x.id);
+      const allChecked = pageIds.length>0 && pageIds.every(id => state.ui.purchases.selected.has(id));
+      const anyChecked = pageIds.some(id => state.ui.purchases.selected.has(id));
+      selAll.checked = allChecked;
+      selAll.indeterminate = !allChecked && anyChecked;
+      selAll.disabled = !canEdit;
+    }
+
+    const prev = document.getElementById("purchases-prev");
+    const next = document.getElementById("purchases-next");
+    if (prev) prev.disabled = (state.ui.purchases.page <= 1);
+    if (next) next.disabled = (state.ui.purchases.page >= pg.pages);
+  }
+
+  // ============================================================
+  // Render Sales Table
+  // ============================================================
+  function renderSalesTable(){
+    const tbody = document.getElementById("sales-tbody");
+    const mobileRail = document.getElementById("sales-mobile-cards");
+    if (!tbody) return;
+
+    const canEdit = !!state.editMode;
+
+    const filtered = filterRows("sales", state.sales);
+    const pg = paginate("sales", filtered);
+    setMeta("sales", pg.start, pg.end, pg.total);
+    setEmpty("sales", state.sales.length === 0);
+
+    if (pg.total === 0){
+      tbody.innerHTML = renderNoRowsMessage(12);
+      if (mobileRail){
+        mobileRail.innerHTML = `
+          <div class="ml-card" style="min-width:100%;width:100%;">
+            <div class="ml-card-body" style="padding:18px 14px;text-align:center;font-weight:900;color:rgba(15,23,42,.65);">
+              ${t("noRowsFound")}
+            </div>
+          </div>
+        `;
+      }
+
+      const selAll = document.getElementById("sales-select-all");
+      if (selAll){
+        selAll.checked = false;
+        selAll.indeterminate = false;
+        selAll.disabled = true;
+      }
+
+      const prev = document.getElementById("sales-prev");
+      const next = document.getElementById("sales-next");
+      if (prev) prev.disabled = true;
+      if (next) next.disabled = true;
+
+      return;
+    }
+
+    tbody.innerHTML = pg.pageRows.map((s, idx) => {
+      const sl = pg.start + idx + 1;
+      const disabledAttr = canEdit ? "" : "disabled";
+      const roCalc = "readonly";
+
+      const checked = state.ui.sales.selected.has(s.id) ? "checked" : "";
+      return `
+        <tr data-sale-id="${s.id}">
+          <td class="cell-tight cell-center">
+            <input class="chk" type="checkbox" ${checked} ${disabledAttr}
+              onchange="toggleSelect('sales','${s.id}', this.checked)">
+          </td>
+          <td class="cell-tight">${sl}</td>
+
+          <td><input class="mini-input" type="date" value="${s.date || ""}" ${disabledAttr}
+              oninput="updateSale('${s.id}','date',this.value)"></td>
+
+          <td><input class="mini-input" type="text" value="${(s.unit||"")}" placeholder="Kg/L/Pcs" ${disabledAttr}
+              oninput="updateSale('${s.id}','unit',this.value)"></td>
+
+          <td><input class="mini-input" type="text" value="${(s.commodity||"")}" placeholder="${t("enterCommodity")}" ${disabledAttr}
+              oninput="updateSale('${s.id}','commodity',this.value)"></td>
+
+          <td><input class="mini-input" type="number" value="${(s.qty||"")}" placeholder="0" ${disabledAttr}
+              oninput="updateSale('${s.id}','qty',this.value)"></td>
+
+          <td><input class="mini-input" type="number" value="${(s.rate||"")}" placeholder="0.00" ${disabledAttr}
+              oninput="updateSale('${s.id}','rate',this.value)"></td>
+
+          <td><input class="mini-input calc" data-field="amount" type="number" value="${(s.amount||"")}" placeholder="0.00" ${roCalc}></td>
+
+          <td><input class="mini-input" type="number" value="${(s.advance||"")}" placeholder="0.00" ${disabledAttr}
+              oninput="updateSale('${s.id}','advance',this.value)"></td>
+
+          <td><input class="mini-input" type="number" value="${(s.finalAmount||"")}" placeholder="0.00" ${disabledAttr}
+              oninput="updateSale('${s.id}','finalAmount',this.value)"></td>
+
+          <td><input class="mini-input total" data-field="total" type="number" value="${(s.total||"")}" placeholder="0.00" ${roCalc}></td>
+
+          <td class="cell-tight" style="text-align:right;">
+            <div class="row-actions">
+              <button class="btn btn-danger" type="button" ${canEdit ? "" : "disabled"}
+                onclick="deleteSale('${s.id}')">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    if (mobileRail){
+      mobileRail.innerHTML = pg.pageRows.map((s, idx) => {
+        const sl = pg.start + idx + 1;
+        const disabledAttr = canEdit ? "" : "disabled";
+        const roCalc = "readonly";
+        const checked = state.ui.sales.selected.has(s.id) ? "checked" : "";
+
+        return `
+          <div class="ml-card" data-sale-mobile-id="${s.id}">
+            <div class="ml-card-head">
+              <div class="ml-card-sl">SL No ${sl}</div>
+              <div class="ml-card-head-right">
+                <input class="chk" type="checkbox" ${checked} ${disabledAttr}
+                  onchange="toggleSelect('sales','${s.id}', this.checked)">
+              </div>
+            </div>
+
+            <div class="ml-card-body">
+              <div class="ml-field">
+                <div class="ml-field-label">${t("date")}</div>
+                <input class="mini-input" type="date" value="${s.date || ""}" ${disabledAttr}
+                  oninput="updateSale('${s.id}','date',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("unit")}</div>
+                <input class="mini-input" type="text" value="${(s.unit||"")}" placeholder="Kg/L/Pcs" ${disabledAttr}
+                  oninput="updateSale('${s.id}','unit',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("commodity")}</div>
+                <input class="mini-input" type="text" value="${(s.commodity||"")}" placeholder="${t("enterCommodity")}" ${disabledAttr}
+                  oninput="updateSale('${s.id}','commodity',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("qty")}</div>
+                <input class="mini-input" type="number" value="${(s.qty||"")}" placeholder="0" ${disabledAttr}
+                  oninput="updateSale('${s.id}','qty',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("rate")}</div>
+                <input class="mini-input" type="number" value="${(s.rate||"")}" placeholder="0.00" ${disabledAttr}
+                  oninput="updateSale('${s.id}','rate',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("amount")}</div>
+                <input class="mini-input calc" data-field="amount" type="number" value="${(s.amount||"")}" placeholder="0.00" ${roCalc}>
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("advance")}</div>
+                <input class="mini-input" type="number" value="${(s.advance||"")}" placeholder="0.00" ${disabledAttr}
+                  oninput="updateSale('${s.id}','advance',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("finalAmount")}</div>
+                <input class="mini-input" type="number" value="${(s.finalAmount||"")}" placeholder="0.00" ${disabledAttr}
+                  oninput="updateSale('${s.id}','finalAmount',this.value)">
+              </div>
+
+              <div class="ml-field">
+                <div class="ml-field-label">${t("total")}</div>
+                <input class="mini-input total" data-field="total" type="number" value="${(s.total||"")}" placeholder="0.00" ${roCalc}>
+              </div>
+
+              <div class="ml-card-actions">
+                <button class="btn btn-danger" type="button" ${canEdit ? "" : "disabled"}
+                  onclick="deleteSale('${s.id}')">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    const selAll = document.getElementById("sales-select-all");
+    if (selAll){
+      const pageIds = pg.pageRows.map(x=>x.id);
+      const allChecked = pageIds.length>0 && pageIds.every(id => state.ui.sales.selected.has(id));
+      const anyChecked = pageIds.some(id => state.ui.sales.selected.has(id));
+      selAll.checked = allChecked;
+      selAll.indeterminate = !allChecked && anyChecked;
+      selAll.disabled = !canEdit;
+    }
+
+    const prev = document.getElementById("sales-prev");
+    const next = document.getElementById("sales-next");
+    if (prev) prev.disabled = (state.ui.sales.page <= 1);
+    if (next) next.disabled = (state.ui.sales.page >= pg.pages);
+  }
+
+  function toggleSelect(tab, id, checked){
+    const ui = state.ui[tab];
+    if (!ui) return;
+    if (!state.editMode) return;
+
+    if (checked) ui.selected.add(id);
+    else ui.selected.delete(id);
+
+    if (tab === "purchases") renderPurchasesTable();
+    else renderSalesTable();
+  }
+
+  function toggleSelectAll(tab, checked){
+    if (!state.editMode) return;
+
+    const ui = state.ui[tab];
+    if (!ui) return;
+
+    const rows = tab === "purchases" ? filterRows("purchases", state.purchases) : filterRows("sales", state.sales);
+    const pg = paginate(tab, rows);
+    pg.pageRows.forEach(r => {
+      if (checked) ui.selected.add(r.id);
+      else ui.selected.delete(r.id);
+    });
+
+    if (tab === "purchases") renderPurchasesTable();
+    else renderSalesTable();
+  }
+
+  // ============================================================
+  // Tabs
+  // ============================================================
+  function switchTab(tab) {
+    state.activeTab = tab;
+    try { localStorage.setItem(MEMBER_LEDGER_TAB_KEY, tab); } catch(_) {}
+
+    document.querySelectorAll(".member-ledger-page .tab").forEach((btn) => btn.classList.remove("active"));
+    const activeBtn = document.querySelector(`.member-ledger-page [data-tab="${tab}"]`);
+    if (activeBtn) activeBtn.classList.add("active");
+
+    document.querySelectorAll(".member-ledger-page .tab-pane").forEach((pane) => pane.classList.remove("active"));
+    const activePane = document.getElementById(`${tab}-content`);
+    if (activePane) activePane.classList.add("active");
+  }
+
+  function restoreActiveTab(){
+    let saved = "purchases";
+    try {
+      const val = localStorage.getItem(MEMBER_LEDGER_TAB_KEY);
+      if (val === "purchases" || val === "sales") saved = val;
+    } catch(_) {}
+    state.activeTab = saved;
+    switchTab(saved);
+  }
+
+  // ============================================================
+  // UI text updates
+  // ============================================================
+  function updateUI() {
+    const ht = document.getElementById("header-title");
+    if (ht) ht.textContent = t("title");
+
+    const et = document.getElementById("edit-text");
+    const met = document.getElementById("m-edit-text");
+    if (et) et.textContent = t("edit");
+    if (met) met.textContent = t("edit");
+
+    const st = document.getElementById("save-text");
+    const mst = document.getElementById("m-save-text");
+    if (st) st.textContent = t("save");
+    if (mst) mst.textContent = t("save");
+
+    const ct = document.getElementById("cancel-text");
+    const mct = document.getElementById("m-cancel-text");
+    if (ct) ct.textContent = t("cancel");
+    if (mct) mct.textContent = t("cancel");
+
+    const at = document.getElementById("add-text");
+    const mat = document.getElementById("m-add-text");
+    if (at) at.textContent = t("add");
+    if (mat) mat.textContent = t("add");
+
+    const dst = document.getElementById("delete-selected-text");
+    const mdst = document.getElementById("m-delete-selected-text");
+    if (dst) dst.textContent = "Delete Selected";
+    if (mdst) mdst.textContent = "Delete Selected";
+
+    const dat = document.getElementById("delete-all-text");
+    const mdat = document.getElementById("m-delete-all-text");
+    if (dat) dat.textContent = "Delete All";
+    if (mdat) mdat.textContent = "Delete All";
+
+    const pit = document.getElementById("producer-info-title");
+    if (pit) pit.textContent = t("producerInfo");
+
+    const pnl = document.getElementById("producer-name-label");
+    if (pnl) pnl.textContent = t("producerName");
+
+    const sul = document.getElementById("stocking-unit-label");
+    if (sul) sul.textContent = t("stockingUnit");
+
+    const pn = document.getElementById("producer-name");
+    if (pn) pn.placeholder = t("enterProducerName");
+
+    const su = document.getElementById("stocking-unit");
+    if (su && su.options && su.options.length){
+      if (su.options[0].value === "") su.options[0].textContent = t("selectUnit");
+    }
+
+    const tpt = document.getElementById("tab-purchases-text");
+    if (tpt) tpt.textContent = t("purchases");
+
+    const tst = document.getElementById("tab-sales-text");
+    if (tst) tst.textContent = t("sales");
+
+    const pt = document.getElementById("purchases-title");
+    if (pt) pt.textContent = t("purchases");
+
+    const sat = document.getElementById("sales-title");
+    if (sat) sat.textContent = t("sales");
+
+    const np = document.getElementById("no-purchases-text");
+    if (np) np.textContent = t("noPurchases");
+
+    const ns = document.getElementById("no-sales-text");
+    if (ns) ns.textContent = t("noSales");
+
+    const ps = document.getElementById("purchases-search");
+    const ss = document.getElementById("sales-search");
+    if (ps) ps.placeholder = t("searchPH");
+    if (ss) ss.placeholder = t("searchPH");
+
+    const pp = document.getElementById("purchases-prev");
+    const pnxt = document.getElementById("purchases-next");
+    const sp = document.getElementById("sales-prev");
+    const snxt = document.getElementById("sales-next");
+    if (pp) pp.textContent = t("prev");
+    if (pnxt) pnxt.textContent = t("next");
+    if (sp) sp.textContent = t("prev");
+    if (snxt) snxt.textContent = t("next");
+
+    const mb = document.getElementById("mobile-back-btn");
+    if (mb) mb.setAttribute("aria-label", t("back"));
+
+    const cNo = document.getElementById("mlConfirmNo");
+    const cYes = document.getElementById("mlConfirmYes");
+    if (cNo) cNo.textContent = t("cancel");
+    if (cYes) {
+      const isDanger = cYes.classList.contains("ml-danger");
+      cYes.textContent = isDanger ? t("delete") : t("confirm");
+    }
+
+    const lt = document.getElementById("mlLockTitle");
+    const lm = document.getElementById("mlLockMsg");
+    const lok = document.getElementById("mlLockOk");
+    if (lt) lt.textContent = t("actionBlockedTitle");
+    if (lm) lm.textContent = t("actionBlockedMsg");
+    if (lok) lok.textContent = t("ok");
+
+    renderPurchasesTable();
+    renderSalesTable();
+    updateEditableStates();
+  }
+
+  // ============================================================
+  // Sync language with base
+  // ============================================================
+  function resolveBaseLang(){
+    const g = (window.PGMIS_LANG || "").toString().toLowerCase();
+    if (g === "bn" || g === "en") return g;
+
+    const ls = (localStorage.getItem("PGMIS_LANG") || localStorage.getItem("pgmis_lang") || "").toString().toLowerCase();
+    if (ls === "bn" || ls === "en") return ls;
+
+    const htmlLang = (document.documentElement.getAttribute("lang") || "").toLowerCase();
+    if (htmlLang.startsWith("bn")) return "bn";
+    if (htmlLang.startsWith("en")) return "en";
+
+    return "en";
+  }
+
+  function applyLanguageFromBase(lang) {
+    const L = (lang === "bn") ? "bn" : "en";
+    if (state.language === L) return;
+    state.language = L;
+    updateUI();
+  }
+
+  // ============================================================
+  // DOM bind
+  // ============================================================
+  document.addEventListener("DOMContentLoaded", async () => {
+    document.getElementById("edit-btn")?.addEventListener("click", enterEditMode);
+    document.getElementById("m-edit-btn")?.addEventListener("click", enterEditMode);
+
+    document.getElementById("save-btn")?.addEventListener("click", saveData);
+    document.getElementById("m-save-btn")?.addEventListener("click", saveData);
+
+    document.getElementById("cancel-btn")?.addEventListener("click", cancelEdits);
+    document.getElementById("m-cancel-btn")?.addEventListener("click", cancelEdits);
+
+    document.getElementById("mobile-back-btn")?.addEventListener("click", () => {
+      if (state.editMode) {
+        openLockModal();
+        return;
+      }
+      window.history.back();
+    });
+
+    const confirmOverlay = document.getElementById("mlConfirmOverlay");
+    document.getElementById("mlConfirmNo")?.addEventListener("click", () => {
+      const onNo = mlModal.onNo;
+      closeConfirmModal();
+      if (typeof onNo === "function") onNo();
+    });
+    document.getElementById("mlConfirmYes")?.addEventListener("click", () => {
+      const onYes = mlModal.onYes;
+      closeConfirmModal();
+      if (typeof onYes === "function") onYes();
+    });
+    confirmOverlay?.addEventListener("click", (e) => {
+      if (e.target === confirmOverlay) closeConfirmModal();
+    });
+
+    const lockOverlay = document.getElementById("mlLockOverlay");
+    document.getElementById("mlLockOk")?.addEventListener("click", closeLockModal);
+    lockOverlay?.addEventListener("click", (e)=>{ if (e.target === lockOverlay) closeLockModal(); });
+
+    window.addEventListener("keydown", (e)=>{
+      if (e.key !== "Escape") return;
+      const lock = document.getElementById("mlLockOverlay");
+      const conf = document.getElementById("mlConfirmOverlay");
+      if (lock && lock.classList.contains("ml-show")) { closeLockModal(); return; }
+      if (conf && conf.classList.contains("ml-show")) { closeConfirmModal(); return; }
+    });
+
+    const addHandler = () => {
+      if (!state.editMode) return;
+      if (state.activeTab === "purchases") addPurchase();
+      else addSale();
+    };
+    document.getElementById("add-btn")?.addEventListener("click", addHandler);
+    document.getElementById("m-add-btn")?.addEventListener("click", addHandler);
+
+    const deleteSelectedHandler = () => {
+      if (!state.editMode) return;
+      deleteSelected(state.activeTab);
+    };
+    document.getElementById("delete-selected-btn")?.addEventListener("click", deleteSelectedHandler);
+    document.getElementById("m-delete-selected-btn")?.addEventListener("click", deleteSelectedHandler);
+
+    const deleteAllHandler = () => {
+      if (!state.editMode) return;
+      deleteAll(state.activeTab);
+    };
+    document.getElementById("delete-all-btn")?.addEventListener("click", deleteAllHandler);
+    document.getElementById("m-delete-all-btn")?.addEventListener("click", deleteAllHandler);
+
+    document.getElementById("producer-name")?.addEventListener("input", (e) => {
+      state.producerName = e.target.value;
+      scheduleDraftSync();
+    });
+    document.getElementById("stocking-unit")?.addEventListener("change", (e) => {
+      state.stockingUnit = e.target.value;
+      scheduleDraftSync();
+    });
+
+    document.getElementById("tab-purchases")?.addEventListener("click", () => switchTab("purchases"));
+    document.getElementById("tab-sales")?.addEventListener("click", () => switchTab("sales"));
+
+    document.getElementById("purchases-search")?.addEventListener("input", (e)=>{
+      state.ui.purchases.search = e.target.value || "";
+      state.ui.purchases.page = 1;
+      renderPurchasesTable();
+    });
+    document.getElementById("sales-search")?.addEventListener("input", (e)=>{
+      state.ui.sales.search = e.target.value || "";
+      state.ui.sales.page = 1;
+      renderSalesTable();
+    });
+
+    document.getElementById("purchases-per-page")?.addEventListener("change", (e)=>{
+      state.ui.purchases.perPage = parseInt(e.target.value,10) || 25;
+      state.ui.purchases.page = 1;
+      renderPurchasesTable();
+    });
+    document.getElementById("sales-per-page")?.addEventListener("change", (e)=>{
+      state.ui.sales.perPage = parseInt(e.target.value,10) || 25;
+      state.ui.sales.page = 1;
+      renderSalesTable();
+    });
+
+    document.getElementById("purchases-prev")?.addEventListener("click", ()=>{
+      state.ui.purchases.page = Math.max(1, state.ui.purchases.page - 1);
+      renderPurchasesTable();
+    });
+    document.getElementById("purchases-next")?.addEventListener("click", ()=>{
+      state.ui.purchases.page = state.ui.purchases.page + 1;
+      renderPurchasesTable();
+    });
+    document.getElementById("sales-prev")?.addEventListener("click", ()=>{
+      state.ui.sales.page = Math.max(1, state.ui.sales.page - 1);
+      renderSalesTable();
+    });
+    document.getElementById("sales-next")?.addEventListener("click", ()=>{
+      state.ui.sales.page = state.ui.sales.page + 1;
+      renderSalesTable();
+    });
+
+    document.getElementById("purchases-select-all")?.addEventListener("change", (e)=>{
+      toggleSelectAll("purchases", e.target.checked);
+    });
+    document.getElementById("sales-select-all")?.addEventListener("change", (e)=>{
+      toggleSelectAll("sales", e.target.checked);
+    });
+
+    applyLanguageFromBase(resolveBaseLang());
+
+    window.addEventListener("pgmis-language-change", (e) => {
+      const next = (e && e.detail && e.detail.lang) ? e.detail.lang : resolveBaseLang();
+      applyLanguageFromBase(next);
+    });
+
+    window.onPGMISLanguageChange = (lang) => {
+      applyLanguageFromBase(lang);
+    };
+
+    window.addEventListener("storage", (e) => {
+      if (e && e.key && e.key !== memberLedgerStorageKey()) return;
+      if (state.editMode) return;
+      loadCurrentPgName();
+      loadMemberLedger();
+    });
+
+    setEditingUI(false);
+    updateEditableStates();
+    syncFormFieldsFromState();
+
+    restoreActiveTab();
+    renderPurchasesTable();
+    renderSalesTable();
+
+    await loadCurrentPgName();
+    await loadMemberLedger();
+    updateUI();
+  });
+
+  // ============================================================
+  // Expose functions for inline handlers
+  // ============================================================
+  window.updatePurchase = updatePurchase;
+  window.updateSale = updateSale;
+  window.deletePurchase = deletePurchase;
+  window.deleteSale = deleteSale;
+  window.toggleSelect = toggleSelect;
+</script>
+{% endblock %}

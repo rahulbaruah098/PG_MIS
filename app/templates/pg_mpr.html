@@ -1,0 +1,978 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* ============================================================
+   MONTHLY PROGRESS PAGE — RESKIN (MATCH MONTHLY BUSINESS)
+   ✅ ONLY UI/CSS/UX changed
+   ✅ NO existing data contents / loops / logic changed
+   ✅ Back button only for mobile/tablet/app in same position/style
+   ✅ Added SL.No, search, pagination, rows-per-page selector
+   ✅ Mobile/app view matches swipe-card format
+   ✅ Headers/field labels remain visible even when no data exists
+   ✅ Scoped to .mpr-wrap only
+============================================================ */
+
+.mpr-wrap{
+  width: 100%;
+  padding: clamp(12px, 2.2vw, 22px);
+
+  --ink:#0f172a;
+  --muted:#64748b;
+  --line: rgba(15,23,42,.18);
+  --line2: rgba(15,23,42,.12);
+  --paper:#ffffff;
+  --soft:#f7faf9;
+  --accent:#0b4d3a;
+
+  color: var(--ink);
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+}
+.mpr-wrap *{ box-sizing:border-box; }
+
+.mpr-sheet{
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  position: relative;
+}
+
+/* Header */
+.mpr-head{
+  padding: 14px 16px 12px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border-bottom: 1.5px solid var(--line2);
+  position: relative;
+}
+.mpr-title{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+}
+
+.mpr-title-text{
+  min-width: 0;
+  text-align: center;
+}
+.mpr-h1{
+  margin:0;
+  font-size:18px;
+  font-weight:950;
+  letter-spacing: .2px;
+  color: var(--ink);
+}
+.mpr-sub{
+  margin:4px 0 0;
+  font-size:12px;
+  color: rgba(15,23,42,.68);
+  font-weight:800;
+}
+
+/* Back (mobile only) */
+.mpr-back{
+  display:none;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  transform: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: rgba(11,77,58,.98);
+  user-select: none;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+}
+.mpr-back:hover{
+  transform: translateX(-1px);
+  box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+  background: rgba(255,255,255,.98);
+}
+.mpr-back:active{ transform: scale(.98); }
+.mpr-back svg{ width: 18px; height: 18px; display:block; }
+
+/* Top controls */
+.mpr-topbar{
+  padding: 14px 14px 0;
+}
+.mpr-controls{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.mpr-search{
+  position:relative;
+  flex:1 1 320px;
+  min-width:240px;
+}
+.mpr-search svg{
+  position:absolute;
+  left:12px;
+  top:50%;
+  transform:translateY(-50%);
+  width:17px;
+  height:17px;
+  opacity:.55;
+  pointer-events:none;
+}
+.mpr-search input{
+  width:100%;
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--ink);
+  border-radius:999px;
+  padding:12px 14px 12px 38px;
+  font-size:13px;
+  font-weight:700;
+  outline:none;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.mpr-search input:focus{
+  border-color: rgba(11,77,58,.38);
+  box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+}
+
+.mpr-meta{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.mpr-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:#fff;
+  padding:9px 12px;
+  font-size:12px;
+  font-weight:900;
+  color:var(--ink);
+  min-height:42px;
+}
+.mpr-chip strong{
+  color:var(--accent);
+  font-weight:950;
+}
+.mpr-select{
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:#fff;
+  color:var(--ink);
+  padding:7px 28px 7px 10px;
+  min-width:74px;
+  font-size:12px;
+  font-weight:900;
+  outline:none;
+}
+.mpr-select:focus{
+  border-color: rgba(11,77,58,.38);
+  box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+}
+
+/* Desktop helper */
+.mpr-mobile-helper{
+  display:none;
+}
+
+/* Table card */
+.mpr-card{
+  background:#fff;
+  padding: 14px;
+}
+
+/* Desktop table */
+.mpr-table-wrap{
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#fff;
+}
+.mpr-table-wrap::-webkit-scrollbar{ height: 10px; }
+.mpr-table-wrap::-webkit-scrollbar-thumb{
+  background: rgba(15,23,42,.14);
+  border-radius: 999px;
+}
+.mpr-table-wrap::-webkit-scrollbar-track{
+  background: rgba(15,23,42,.05);
+}
+
+.mpr-table{
+  width:100%;
+  min-width: 860px;
+  border-collapse:collapse;
+}
+.mpr-table th{
+  background:#f8fcfa;
+  color:#0b4d3a;
+  font-weight:950;
+  font-size:12px;
+  padding:12px 14px;
+  text-align:left;
+  border-bottom:1px solid var(--line2);
+  white-space: nowrap;
+}
+.mpr-table td{
+  padding:12px 14px;
+  border-top:1px solid #e5e7eb;
+  font-weight:800;
+  font-size:13px;
+  color: var(--ink);
+}
+.mpr-table tbody tr:hover{
+  background: rgba(247,250,249,.62);
+}
+.mpr-emptyDesktop td{
+  text-align:center;
+  color:var(--muted);
+  font-weight:800;
+  padding:18px 14px;
+}
+
+/* Mobile cards */
+.mpr-mobile{
+  display:none;
+  padding:0;
+}
+.mpr-mobile-rail{
+  display:flex;
+  gap:16px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:6px;
+}
+.mpr-mobile-rail::-webkit-scrollbar{ height:10px; }
+.mpr-mobile-rail::-webkit-scrollbar-thumb{
+  background: rgba(15,23,42,.14);
+  border-radius: 999px;
+}
+.mpr-mobile-rail::-webkit-scrollbar-track{
+  background: rgba(15,23,42,.05);
+}
+
+.mpr-item{
+  flex:0 0 min(84vw, 430px);
+  min-width:min(84vw, 430px);
+  border:1px solid rgba(15,23,42,.14);
+  border-radius:22px;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+  overflow:hidden;
+  scroll-snap-align:start;
+}
+.mpr-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap: 12px;
+  font-size:13px;
+  padding:14px 16px;
+  border-top: 1px solid rgba(15,23,42,.08);
+}
+.mpr-row:first-child{ border-top:none; }
+.mpr-label{
+  font-weight:950;
+  color:#0b4d3a;
+  min-width:110px;
+  line-height:1.25;
+}
+.mpr-value{
+  font-weight:900;
+  color:#111827;
+  text-align: right;
+  word-break: break-word;
+  line-height:1.3;
+}
+
+/* Pagination */
+.mpr-pager{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  padding: 2px 14px 14px;
+}
+.mpr-pagerInfo{
+  font-size:12px;
+  font-weight:900;
+  color:rgba(15,23,42,.72);
+}
+.mpr-pagerBtns{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.mpr-pageBtn{
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--ink);
+  border-radius:999px;
+  padding:10px 14px;
+  min-width:88px;
+  font-size:12px;
+  font-weight:950;
+  cursor:pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+}
+.mpr-pageBtn:hover:not(:disabled){
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px -14px rgba(15,23,42,.35);
+  background:#f8fcfa;
+}
+.mpr-pageBtn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+.mpr-pageNum{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:110px;
+  border:1px solid rgba(11,77,58,.24);
+  background:rgba(11,77,58,.08);
+  color:var(--accent);
+  border-radius:999px;
+  padding:10px 14px;
+  font-size:12px;
+  font-weight:950;
+}
+
+/* Responsive */
+@media (max-width: 768px){
+  .mpr-table-wrap{display:none;}
+  .mpr-mobile{display:block;}
+  .mpr-mobile-helper{
+    display:block;
+    margin: 0 0 12px;
+    padding: 14px 16px;
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:#fff;
+  }
+  .mpr-helper-title{
+    font-size:13px;
+    font-weight:950;
+    color: rgba(15,23,42,.80);
+  }
+  .mpr-helper-sub{
+    margin-top:4px;
+    font-size:12px;
+    font-weight:800;
+    color: rgba(15,23,42,.58);
+  }
+}
+
+@media (max-width: 720px){
+  .mpr-back{ display:flex; }
+
+  .mpr-title{
+    justify-content: flex-start;
+    padding-left: 54px;
+    padding-right: 8px;
+  }
+
+  .mpr-title-text{
+    text-align: left;
+  }
+
+  .mpr-h1{
+    font-size:17px;
+    line-height: 1.3;
+  }
+
+  .mpr-sub{
+    font-size:11.5px;
+  }
+
+  .mpr-controls{
+    align-items:stretch;
+  }
+  .mpr-search,
+  .mpr-meta{
+    width:100%;
+  }
+  .mpr-meta{
+    justify-content:space-between;
+  }
+  .mpr-pager{
+    align-items:stretch;
+  }
+  .mpr-pagerInfo{
+    width:100%;
+    text-align:center;
+  }
+  .mpr-pagerBtns{
+    width:100%;
+    justify-content:center;
+  }
+}
+
+@media (max-width: 560px){
+  .mpr-wrap{
+    padding: 10px;
+  }
+
+  .mpr-head{
+    padding: 12px 12px 10px;
+  }
+
+  .mpr-topbar{
+    padding: 12px 12px 0;
+  }
+
+  .mpr-card{
+    padding: 12px;
+  }
+
+  .mpr-item{
+    flex-basis: 90vw;
+    min-width: 90vw;
+  }
+
+  .mpr-row{
+    padding:14px;
+    font-size:12.5px;
+  }
+
+  .mpr-label{
+    min-width: 96px;
+  }
+}
+
+@media (max-width: 380px){
+  .mpr-title{
+    padding-left: 50px;
+  }
+
+  .mpr-h1{
+    font-size:15px;
+  }
+
+  .mpr-sub{
+    font-size:11px;
+  }
+}
+</style>
+
+<div class="mpr-wrap">
+  <div class="mpr-sheet">
+
+    <!-- Header -->
+    <div class="mpr-head">
+      <a class="mpr-back" href="javascript:history.back()" aria-label="Go Back" id="mprBackAria">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <div class="mpr-title">
+        <div class="mpr-title-text">
+          <div class="mpr-h1" id="mprTitle">PG Monthly Progress Reports</div>
+          <div class="mpr-sub" id="mprSub">Turnover &amp; Member Participation Snapshot</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="mpr-topbar">
+      <div class="mpr-controls">
+        <div class="mpr-search">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <input type="text" id="mprSearch" placeholder="Search..." aria-label="Search">
+        </div>
+
+        <div class="mpr-meta">
+          <label class="mpr-chip" for="mprPageSize">
+            <span id="mprRowsLabel">Rows</span>
+            <select id="mprPageSize" class="mpr-select" aria-label="Rows per page">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
+
+          <div class="mpr-chip">
+            <span id="mprTotalLabel">Total</span>
+            <strong id="mprTotalCount">{{ snapshots|length if snapshots else 0 }}</strong>
+          </div>
+
+          <div class="mpr-chip">
+            <span id="mprVisibleLabel">Visible</span>
+            <strong id="mprVisibleCount">{{ snapshots|length if snapshots else 0 }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE / MOBILE CARDS -->
+    <div class="mpr-card">
+
+      <!-- Mobile helper -->
+      <div class="mpr-mobile-helper" id="mprMobileHelper">
+        <div class="mpr-helper-title" id="mprHelperTitle">Showing monthly progress records</div>
+        <div class="mpr-helper-sub" id="mprHelperSub">Swipe horizontally to view more</div>
+      </div>
+
+      <!-- Desktop Table -->
+      <div class="mpr-table-wrap">
+        <table class="mpr-table">
+          <thead>
+            <tr>
+              <th id="mprThSl">SL.No</th>
+              <th id="mprThYear">Year</th>
+              <th id="mprThMonth">Month</th>
+              <th id="mprThTurnover">Monthly Turnover</th>
+              <th id="mprThInput">% Members (Input)</th>
+              <th id="mprThOutput">% Members (Output)</th>
+            </tr>
+          </thead>
+          <tbody id="mprTableBody">
+            {% for s in snapshots %}
+            <tr class="mpr-data-row">
+              <td class="mpr-sl">1</td>
+              <td>{{ s.year }}</td>
+              <td>{{ s.month }}</td>
+              <td>{{ s.monthly_turnover }}</td>
+              <td>{{ s.pct_members_input }}</td>
+              <td>{{ s.pct_members_output }}</td>
+            </tr>
+            {% else %}
+            <tr id="mprEmptyDesktop" class="mpr-emptyDesktop">
+              <td colspan="6" id="mprNoDataDesktop">No progress records found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Card View -->
+      <div class="mpr-mobile">
+        <div class="mpr-mobile-rail" id="mprMobileRail">
+          {% for s in snapshots %}
+          <div class="mpr-item mpr-mobile-item">
+            <div class="mpr-row"><span class="mpr-label" id="mprLblSl{{ loop.index }}">SL.No</span><span class="mpr-value mpr-sl-mobile">1</span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprLblYear{{ loop.index }}">Year</span><span class="mpr-value">{{ s.year }}</span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprLblMonth{{ loop.index }}">Month</span><span class="mpr-value">{{ s.month }}</span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprLblTurnover{{ loop.index }}">Turnover</span><span class="mpr-value">{{ s.monthly_turnover }}</span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprLblInput{{ loop.index }}">Input %</span><span class="mpr-value">{{ s.pct_members_input }}</span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprLblOutput{{ loop.index }}">Output %</span><span class="mpr-value">{{ s.pct_members_output }}</span></div>
+          </div>
+          {% else %}
+          <div class="mpr-item" id="mprEmptyMobile">
+            <div class="mpr-row"><span class="mpr-label" id="mprEmptyLblSl">SL.No</span><span class="mpr-value">—</span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprEmptyLblYear">Year</span><span class="mpr-value">—</span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprEmptyLblMonth">Month</span><span class="mpr-value">—</span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprEmptyLblTurnover">Turnover</span><span class="mpr-value">—</span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprEmptyLblInput">Input %</span><span class="mpr-value">—</span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprEmptyLblOutput">Output %</span><span class="mpr-value">—</span></div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Pagination -->
+    <div class="mpr-pager" id="mprPager">
+      <div class="mpr-pagerInfo" id="mprPagerInfo">Showing 0–0 of 0</div>
+
+      <div class="mpr-pagerBtns">
+        <button type="button" class="mpr-pageBtn" id="mprPrevBtn">Prev</button>
+        <div class="mpr-pageNum" id="mprPageNum">Page 1 / 1</div>
+        <button type="button" class="mpr-pageBtn" id="mprNextBtn">Next</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // MONTHLY PROGRESS — TRANSLATION CONNECTIVITY (EN/BN)
+  // ✅ No change to data, loops, routes, or backend logic
+  // ✅ Listens to base navbar language toggle broadcasts
+  // ✅ Persists until user manually toggles again
+  // ============================================================
+
+  (function(){
+    const MPR_T = {
+      en: {
+        docTitle: "Monthly Progress Reports",
+        backAria: "Go Back",
+        title: "PG Monthly Progress Reports",
+        sub: "Turnover & Member Participation Snapshot",
+        helperTitle: "Showing monthly progress records",
+        helperSub: "Swipe horizontally to view more",
+        search: "Search...",
+        rows: "Rows",
+        total: "Total",
+        visible: "Visible",
+        sl: "SL.No",
+        year: "Year",
+        month: "Month",
+        turnover: "Monthly Turnover",
+        input: "% Members (Input)",
+        output: "% Members (Output)",
+        inputShort: "Input %",
+        outputShort: "Output %",
+        turnoverShort: "Turnover",
+        noData: "No progress records found.",
+        prev: "Prev",
+        next: "Next",
+        page: "Page",
+        showing: "Showing",
+        of: "of"
+      },
+      bn: {
+        docTitle: "মাসিক অগ্রগতি প্রতিবেদন",
+        backAria: "ফিরে যান",
+        title: "পিজি মাসিক অগ্রগতি প্রতিবেদন",
+        sub: "টার্নওভার ও সদস্য অংশগ্রহণের স্ন্যাপশট",
+        helperTitle: "মাসিক অগ্রগতির রেকর্ড দেখানো হচ্ছে",
+        helperSub: "আরও দেখতে আড়াআড়ি সোয়াইপ করুন",
+        search: "খুঁজুন...",
+        rows: "সারি",
+        total: "মোট",
+        visible: "দেখানো",
+        sl: "ক্রমিক নং",
+        year: "বছর",
+        month: "মাস",
+        turnover: "মাসিক টার্নওভার",
+        input: "% সদস্য (ইনপুট)",
+        output: "% সদস্য (আউটপুট)",
+        inputShort: "ইনপুট %",
+        outputShort: "আউটপুট %",
+        turnoverShort: "টার্নওভার",
+        noData: "কোনো অগ্রগতি রেকর্ড পাওয়া যায়নি।",
+        prev: "পূর্ববর্তী",
+        next: "পরবর্তী",
+        page: "পৃষ্ঠা",
+        showing: "দেখানো হচ্ছে",
+        of: "মোট"
+      }
+    };
+
+    function safeText(id, val){
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    }
+
+    function safePlaceholder(id, val){
+      const el = document.getElementById(id);
+      if(el) el.setAttribute('placeholder', val);
+    }
+
+    function applyRepeated(prefix, val){
+      document.querySelectorAll('[id^="' + prefix + '"]').forEach(el => {
+        el.textContent = val;
+      });
+    }
+
+    function applyMPR(lang){
+      const t = MPR_T[lang] || MPR_T.en;
+
+      try { document.title = t.docTitle; } catch(_){}
+
+      const back = document.querySelector('.mpr-back');
+      if(back) back.setAttribute('aria-label', t.backAria);
+
+      safeText('mprTitle', t.title);
+      safeText('mprSub', t.sub);
+      safeText('mprHelperTitle', t.helperTitle);
+      safeText('mprHelperSub', t.helperSub);
+      safePlaceholder('mprSearch', t.search);
+
+      safeText('mprRowsLabel', t.rows);
+      safeText('mprTotalLabel', t.total);
+      safeText('mprVisibleLabel', t.visible);
+
+      safeText('mprThSl', t.sl);
+      safeText('mprThYear', t.year);
+      safeText('mprThMonth', t.month);
+      safeText('mprThTurnover', t.turnover);
+      safeText('mprThInput', t.input);
+      safeText('mprThOutput', t.output);
+
+      safeText('mprNoDataDesktop', t.noData);
+      safeText('mprPrevBtn', t.prev);
+      safeText('mprNextBtn', t.next);
+
+      applyRepeated('mprLblSl', t.sl);
+      applyRepeated('mprLblYear', t.year);
+      applyRepeated('mprLblMonth', t.month);
+      applyRepeated('mprLblTurnover', t.turnoverShort);
+      applyRepeated('mprLblInput', t.inputShort);
+      applyRepeated('mprLblOutput', t.outputShort);
+
+      safeText('mprEmptyLblSl', t.sl);
+      safeText('mprEmptyLblYear', t.year);
+      safeText('mprEmptyLblMonth', t.month);
+      safeText('mprEmptyLblTurnover', t.turnoverShort);
+      safeText('mprEmptyLblInput', t.inputShort);
+      safeText('mprEmptyLblOutput', t.outputShort);
+
+      if (window.__mprRenderPagerText) window.__mprRenderPagerText();
+    }
+
+    function getStoredLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      try{
+        const l3 = document.documentElement.getAttribute('data-lang');
+        if(l3 === 'en' || l3 === 'bn') return l3;
+      }catch(_){}
+      return 'en';
+    }
+
+    window.updatePageLanguage = function(lang){
+      if(lang !== 'en' && lang !== 'bn') lang = getStoredLang();
+      applyMPR(lang);
+    };
+
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyMPR(lang);
+    });
+
+    window.addEventListener('pgmis:lang', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyMPR(lang);
+    });
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      applyMPR(getStoredLang());
+    });
+  })();
+</script>
+
+<script>
+/* ============================================================
+   MONTHLY PROGRESS — SEARCH + PAGINATION + PAGE SIZE
+   ✅ Frontend only
+   ✅ No backend / route / loop changes
+============================================================ */
+(function(){
+  const searchInput = document.getElementById('mprSearch');
+  const pageSizeSelect = document.getElementById('mprPageSize');
+  const totalCountEl = document.getElementById('mprTotalCount');
+  const visibleCountEl = document.getElementById('mprVisibleCount');
+  const pagerInfoEl = document.getElementById('mprPagerInfo');
+  const pageNumEl = document.getElementById('mprPageNum');
+  const prevBtn = document.getElementById('mprPrevBtn');
+  const nextBtn = document.getElementById('mprNextBtn');
+
+  const desktopRows = Array.from(document.querySelectorAll('#mprTableBody .mpr-data-row'));
+  const mobileCards = Array.from(document.querySelectorAll('#mprMobileRail .mpr-mobile-item'));
+
+  const desktopEmpty = document.getElementById('mprEmptyDesktop');
+  const mobileEmpty = document.getElementById('mprEmptyMobile');
+
+  let currentPage = 1;
+  let pageSize = 25;
+  let filteredIndexes = desktopRows.map((_, i) => i);
+
+  function getLang(){
+    try{
+      const l1 = localStorage.getItem('pgmis_lang');
+      if(l1 === 'en' || l1 === 'bn') return l1;
+    }catch(_){}
+    try{
+      const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+      if(l2 === 'en' || l2 === 'bn') return l2;
+    }catch(_){}
+    return 'en';
+  }
+
+  function pagerWord(key){
+    const lang = getLang();
+    const words = {
+      en: { page: 'Page', showing: 'Showing', of: 'of' },
+      bn: { page: 'পৃষ্ঠা', showing: 'দেখানো হচ্ছে', of: 'মোট' }
+    };
+    return (words[lang] || words.en)[key];
+  }
+
+  function textOf(el){
+    return (el.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+
+  function getDesktopRowText(row){
+    return textOf(row);
+  }
+
+  function getMobileCardText(card){
+    return textOf(card);
+  }
+
+  function setSerials(indexes){
+    indexes.forEach((originalIdx, displayIdx) => {
+      const serial = displayIdx + 1;
+      const dRow = desktopRows[originalIdx];
+      const mCard = mobileCards[originalIdx];
+
+      const dSl = dRow ? dRow.querySelector('.mpr-sl') : null;
+      const mSl = mCard ? mCard.querySelector('.mpr-sl-mobile') : null;
+
+      if (dSl) dSl.textContent = serial;
+      if (mSl) mSl.textContent = serial;
+    });
+  }
+
+  function updateCounts(total, visible){
+    if (totalCountEl) totalCountEl.textContent = total;
+    if (visibleCountEl) visibleCountEl.textContent = visible;
+  }
+
+  function renderPagerText(start, end, visible, totalPages){
+    if (pagerInfoEl){
+      pagerInfoEl.textContent = pagerWord('showing') + ' ' + start + '–' + end + ' ' + pagerWord('of') + ' ' + visible;
+    }
+    if (pageNumEl){
+      pageNumEl.textContent = pagerWord('page') + ' ' + currentPage + ' / ' + totalPages;
+    }
+  }
+
+  function applyVisibility(){
+    const query = (searchInput?.value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+    if (!desktopRows.length){
+      updateCounts(0, 0);
+      if (desktopEmpty) desktopEmpty.style.display = '';
+      if (mobileEmpty) mobileEmpty.style.display = '';
+      renderPagerText(0, 0, 0, 1);
+      if (prevBtn) prevBtn.disabled = true;
+      if (nextBtn) nextBtn.disabled = true;
+      return;
+    }
+
+    filteredIndexes = desktopRows
+      .map((row, idx) => ({ idx, row, card: mobileCards[idx] }))
+      .filter(item => {
+        if (!query) return true;
+        return getDesktopRowText(item.row).includes(query) || getMobileCardText(item.card).includes(query);
+      })
+      .map(item => item.idx);
+
+    setSerials(filteredIndexes);
+
+    const total = desktopRows.length;
+    const visible = filteredIndexes.length;
+    updateCounts(total, visible);
+
+    if (visible === 0){
+      desktopRows.forEach(r => r.style.display = 'none');
+      mobileCards.forEach(c => c.style.display = 'none');
+
+      if (desktopEmpty) desktopEmpty.style.display = '';
+      if (mobileEmpty) mobileEmpty.style.display = '';
+
+      currentPage = 1;
+      renderPagerText(0, 0, 0, 1);
+      if (prevBtn) prevBtn.disabled = true;
+      if (nextBtn) nextBtn.disabled = true;
+      return;
+    }
+
+    if (desktopEmpty) desktopEmpty.style.display = 'none';
+    if (mobileEmpty) mobileEmpty.style.display = 'none';
+
+    const totalPages = Math.max(1, Math.ceil(visible / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = Math.min(startIdx + pageSize, visible);
+    const pageIndexes = new Set(filteredIndexes.slice(startIdx, endIdx));
+
+    desktopRows.forEach((row, idx) => {
+      row.style.display = pageIndexes.has(idx) ? '' : 'none';
+    });
+    mobileCards.forEach((card, idx) => {
+      card.style.display = pageIndexes.has(idx) ? '' : 'none';
+    });
+
+    renderPagerText(startIdx + 1, endIdx, visible, totalPages);
+
+    if (prevBtn) prevBtn.disabled = currentPage <= 1;
+    if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+  }
+
+  if (pageSizeSelect){
+    pageSizeSelect.value = '25';
+    pageSizeSelect.addEventListener('change', function(){
+      const v = parseInt(this.value, 10);
+      pageSize = [10,25,50,100].includes(v) ? v : 25;
+      currentPage = 1;
+      applyVisibility();
+    });
+  }
+
+  if (searchInput){
+    searchInput.addEventListener('input', function(){
+      currentPage = 1;
+      applyVisibility();
+    });
+  }
+
+  if (prevBtn){
+    prevBtn.addEventListener('click', function(){
+      currentPage -= 1;
+      applyVisibility();
+    });
+  }
+
+  if (nextBtn){
+    nextBtn.addEventListener('click', function(){
+      currentPage += 1;
+      applyVisibility();
+    });
+  }
+
+  window.__mprRenderPagerText = function(){
+    applyVisibility();
+  };
+
+  document.addEventListener('DOMContentLoaded', applyVisibility);
+})();
+</script>
+
+{% endblock %}

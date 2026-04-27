@@ -1,0 +1,1001 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* ============================================================
+   CLF OFFICIAL CONSOLE — RESKIN TO MATCH OTHER PAGES
+   ✅ ONLY UI/CSS/UX changed
+   ✅ ALL existing routes / forms / row data / actions kept intact
+   ✅ Added: back button, search, serial no, pagination, rows-per-page
+   ✅ Mobile/app: table becomes swipe card blocks
+   ✅ Fully responsive for web/tablet/mobile/app
+   ✅ Scoped under .cc-wrap only
+   ============================================================ */
+
+.cc-wrap{
+  width:100%;
+  padding:clamp(12px,2.2vw,22px);
+
+  --ink:#0f172a;
+  --muted:#64748b;
+  --line:rgba(15,23,42,.18);
+  --line2:rgba(15,23,42,.12);
+  --paper:#ffffff;
+  --soft:#f7faf9;
+  --accent:#0b4d3a;
+  --accent2:#10b981;
+  --accent3:#22c55e;
+  --ring:rgba(11,77,58,.14);
+
+  color:var(--ink);
+  max-width:1200px;
+  margin:0 auto;
+  position:relative;
+}
+.cc-wrap *{ box-sizing:border-box; }
+
+.cc-sheet{
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:0 18px 34px -26px rgba(15,23,42,.35);
+  position:relative;
+}
+
+/* Header */
+.cc-head{
+  padding:14px 16px 12px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border-bottom:1.5px solid var(--line2);
+  position:relative;
+}
+.cc-title{
+  margin:0;
+  font-weight:950;
+  font-size:18px;
+  text-align:center;
+  letter-spacing:.2px;
+  line-height:1.25;
+}
+.cc-sub{
+  margin:6px 0 0;
+  text-align:center;
+  font-size:12px;
+  font-weight:800;
+  color:rgba(15,23,42,.62);
+}
+
+/* Back button */
+.cc-back{
+  position:absolute;
+  top:12px;
+  left:12px;
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  border:1px solid rgba(15,23,42,.14);
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  box-shadow:0 12px 20px -16px rgba(15,23,42,.38);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  color:rgba(11,77,58,.98);
+  user-select:none;
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  z-index:2;
+}
+.cc-back:hover{
+  transform:translateX(-1px);
+  box-shadow:0 16px 26px -18px rgba(15,23,42,.46);
+  background:rgba(255,255,255,.98);
+}
+.cc-back:active{ transform:translateX(-1px) scale(.98); }
+.cc-back svg{ width:18px; height:18px; display:block; }
+
+/* top fields */
+.cc-topfields{
+  padding:10px 16px 14px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px 14px;
+  border-bottom:1.5px solid var(--line2);
+  background:rgba(255,255,255,.92);
+}
+.cc-field{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.cc-label{
+  font-weight:900;
+  font-size:12px;
+  white-space:nowrap;
+  color:var(--ink);
+}
+.cc-muted{
+  font-size:12px;
+  font-weight:800;
+  color:rgba(15,23,42,.72);
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* two panels */
+.cc-panels{
+  padding:12px 16px 16px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  background:rgba(255,255,255,.96);
+}
+.cc-block{
+  border:1px solid rgba(15,23,42,.14);
+  border-radius:14px;
+  background:rgba(255,255,255,.92);
+  overflow:hidden;
+  box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+  min-width:0;
+}
+.cc-block-head{
+  padding:12px 12px 10px;
+  border-bottom:1px solid var(--line2);
+  background:rgba(247,250,249,.66);
+}
+.cc-block-title{
+  margin:0;
+  font-weight:950;
+  font-size:13px;
+  letter-spacing:.15px;
+  color:var(--ink);
+}
+.cc-block-sub{
+  margin:6px 0 0;
+  font-size:12px;
+  color:rgba(15,23,42,.62);
+  font-weight:750;
+}
+.cc-block-body{ padding:12px; }
+
+.cc-grid{
+  display:grid;
+  grid-template-columns:repeat(12, 1fr);
+  gap:10px 14px;
+  align-items:start;
+}
+.cc-col-3{ grid-column:span 3; }
+.cc-col-4{ grid-column:span 4; }
+.cc-col-6{ grid-column:span 6; }
+.cc-col-12{ grid-column:span 12; }
+
+.cc-stack{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:0;
+}
+.cc-stack label{
+  font-size:.78rem;
+  font-weight:900;
+  color:rgba(11,77,58,.92);
+}
+
+.cc-input{
+  width:100%;
+  border:1px solid rgba(15,23,42,.16);
+  border-radius:12px;
+  padding:8px 10px;
+  background:rgba(247,250,249,.75);
+  font-weight:800;
+  font-size:12px;
+  outline:none;
+  color:var(--ink);
+  transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.cc-input:focus{
+  border-color:rgba(11,77,58,.40);
+  box-shadow:0 0 0 3px rgba(11,77,58,.10);
+  background:#fff;
+}
+
+.cc-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-start;
+  margin-top:6px;
+}
+
+.cc-btn{
+  border:1px solid rgba(15,23,42,.14);
+  background:rgba(247,250,249,.8);
+  color:var(--ink);
+  border-radius:999px;
+  padding:10px 14px;
+  font-weight:950;
+  font-size:12px;
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  user-select:none;
+  white-space:nowrap;
+  text-decoration:none;
+}
+.cc-btn:hover{
+  transform:translateY(-1px);
+  background:#fff;
+  box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+}
+.cc-btn:disabled,
+.cc-btn[disabled]{
+  opacity:.45;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
+}
+.cc-btn.cc-primary{
+  border-color:rgba(16,185,129,.35);
+  background:rgba(16,185,129,.12);
+  color:#0b4d3a;
+}
+.cc-btn.cc-primary:hover{ background:rgba(16,185,129,.16); }
+.cc-btn.cc-success{
+  border-color:rgba(34,197,94,.35);
+  background:rgba(34,197,94,.12);
+  color:#166534;
+}
+.cc-btn.cc-success:hover{ background:rgba(34,197,94,.16); }
+.cc-btn.cc-danger{
+  border-color:rgba(220,38,38,.26);
+  background:rgba(220,38,38,.07);
+  color:#991b1b;
+}
+.cc-btn.cc-danger:hover{ background:rgba(220,38,38,.11); }
+.cc-btn.cc-secondary{
+  border-color:rgba(15,23,42,.14);
+  background:rgba(247,250,249,.8);
+  color:var(--ink);
+}
+.cc-btn.cc-view{
+  border-color:rgba(37,99,235,.24);
+  background:rgba(37,99,235,.06);
+  color:#1d4ed8;
+}
+.cc-btn.cc-view:hover{ background:rgba(37,99,235,.11); }
+
+/* tools */
+.cc-tools{
+  margin:0 16px 12px;
+  padding:12px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:12px;
+  border:1px solid rgba(15,23,42,.12);
+  border-radius:14px;
+  background:rgba(255,255,255,.96);
+}
+.cc-search-wrap{ min-width:0; }
+.cc-search{
+  width:100%;
+  height:48px;
+  border:1px solid rgba(15,23,42,.14);
+  border-radius:999px;
+  background:rgba(247,250,249,.85);
+  padding:0 16px;
+  font-size:14px;
+  font-weight:850;
+  color:var(--ink);
+  outline:none;
+  transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.cc-search::placeholder{ color:rgba(15,23,42,.46); }
+.cc-search:focus{
+  border-color:rgba(11,77,58,.36);
+  box-shadow:0 0 0 3px rgba(11,77,58,.10);
+  background:#fff;
+}
+.cc-rows-wrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:fit-content;
+}
+.cc-rows-chip{
+  height:48px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 16px;
+  border:1px solid rgba(15,23,42,.14);
+  border-radius:999px;
+  background:rgba(247,250,249,.85);
+  font-weight:950;
+  font-size:13px;
+}
+.cc-rows-chip select{
+  border:0;
+  outline:none;
+  background:transparent;
+  font-weight:950;
+  color:var(--ink);
+  font-size:13px;
+  cursor:pointer;
+}
+
+.cc-meta{
+  margin:0 16px 12px;
+  padding:10px 12px;
+  border:1px solid rgba(15,23,42,.12);
+  border-radius:12px;
+  background:rgba(247,250,249,.58);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.cc-meta-text{
+  font-size:12px;
+  font-weight:850;
+  color:rgba(15,23,42,.72);
+}
+.cc-swipe-note{
+  font-size:11px;
+  font-weight:850;
+  color:rgba(15,23,42,.50);
+}
+
+/* table */
+.cc-table-wrap{
+  margin:0 16px 12px;
+  border-radius:14px;
+  border:1px solid rgba(15,23,42,.12);
+  overflow:hidden;
+  background:rgba(255,255,255,.96);
+}
+.cc-table-scroll{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  max-height:68vh;
+}
+.cc-table-scroll::-webkit-scrollbar{ height:10px; width:10px; }
+.cc-table-scroll::-webkit-scrollbar-thumb{
+  background:rgba(15,23,42,.18);
+  border-radius:999px;
+}
+.cc-table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+}
+.cc-table thead th{
+  background:rgba(247,250,249,.76);
+  color:rgba(11,77,58,.98);
+  font-weight:950;
+  font-size:12px;
+  padding:10px;
+  border-bottom:1px solid rgba(15,23,42,.10);
+  position:sticky;
+  top:0;
+  z-index:1;
+  white-space:nowrap;
+}
+.cc-table td{
+  padding:10px;
+  border-bottom:1px solid rgba(15,23,42,.08);
+  font-size:12.5px;
+  color:rgba(15,23,42,.88);
+  vertical-align:top;
+}
+.cc-table tr:last-child td{ border-bottom:none; }
+.cc-table tbody tr:hover{ background:rgba(16,185,129,.04); }
+
+.cc-empty{
+  color:rgba(100,116,139,.95);
+  font-weight:800;
+}
+
+.cc-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:28px;
+  padding:.42rem .72rem;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:.15px;
+  white-space:nowrap;
+}
+.cc-badge-light{
+  background:rgba(15,23,42,.06);
+  border:1px solid rgba(15,23,42,.10);
+  color:var(--ink);
+}
+.cc-badge-warning{
+  background:rgba(245,158,11,.18);
+  border:1px solid rgba(245,158,11,.28);
+  color:#92400e;
+}
+.cc-badge-success{
+  background:rgba(34,197,94,.18);
+  border:1px solid rgba(34,197,94,.26);
+  color:#065f46;
+}
+.cc-badge-danger{
+  background:rgba(220,38,38,.16);
+  border:1px solid rgba(220,38,38,.26);
+  color:#991b1b;
+}
+.cc-badge-secondary{
+  background:rgba(100,116,139,.16);
+  border:1px solid rgba(100,116,139,.24);
+  color:#334155;
+}
+
+.cc-pgname{
+  font-weight:950;
+  line-height:1.35;
+}
+.cc-pgid{
+  font-size:12px;
+  color:var(--muted);
+  font-weight:800;
+  margin-top:3px;
+}
+.cc-act-wrap{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.cc-act-wrap form{ margin:0; }
+
+.cc-pagination{
+  margin:0 16px 16px;
+  padding:12px 14px 14px;
+  border:1px solid rgba(15,23,42,.12);
+  border-radius:14px;
+  background:rgba(255,255,255,.96);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.cc-page-info{
+  font-size:12px;
+  font-weight:850;
+  color:rgba(15,23,42,.72);
+}
+.cc-page-controls{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.cc-page-btn{
+  min-width:42px;
+  height:40px;
+  padding:0 12px;
+  border-radius:999px;
+  border:1px solid rgba(15,23,42,.14);
+  background:rgba(247,250,249,.84);
+  color:var(--ink);
+  font-weight:950;
+  font-size:12px;
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+}
+.cc-page-btn:hover{
+  transform:translateY(-1px);
+  background:#fff;
+  box-shadow:0 14px 22px -18px rgba(15,23,42,.22);
+}
+.cc-page-btn[disabled]{
+  opacity:.45;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
+}
+.cc-page-btn.is-active{
+  background:rgba(11,77,58,.10);
+  border-color:rgba(11,77,58,.25);
+  color:rgba(11,77,58,.98);
+}
+
+.cc-tip{
+  margin:0 16px 16px;
+  padding:12px 14px;
+  border:1px dashed rgba(15,23,42,.16);
+  border-radius:14px;
+  background:rgba(247,250,249,.72);
+  color:var(--muted);
+  font-size:12px;
+  font-weight:850;
+}
+
+.cc-hidden-row{ display:none !important; }
+
+/* Responsive */
+@media (max-width: 980px){
+  .cc-panels{ grid-template-columns:1fr; }
+}
+
+@media (max-width: 720px){
+  .cc-title{
+    text-align:left;
+    padding-left:54px;
+    padding-right:8px;
+    font-size:17px;
+  }
+  .cc-sub{
+    text-align:left;
+    padding-left:54px;
+    padding-right:8px;
+  }
+  .cc-topfields{ grid-template-columns:1fr; }
+  .cc-col-3,.cc-col-4,.cc-col-6{ grid-column:span 12; }
+  .cc-tools{ grid-template-columns:1fr; }
+
+  .cc-table-wrap{
+    border-radius:14px;
+    overflow:hidden;
+  }
+
+  .cc-table-scroll{
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding:12px;
+    scroll-snap-type:x mandatory;
+    scroll-padding-left:12px;
+    background:rgba(255,255,255,.98);
+    max-height:none;
+  }
+
+  .cc-table{
+    width:100%;
+    min-width:0;
+    border-collapse:separate;
+    border-spacing:0;
+  }
+
+  .cc-table thead{
+    display:none;
+  }
+
+  .cc-table tbody{
+    display:grid;
+    grid-auto-flow:column;
+    grid-auto-columns:88%;
+    gap:12px;
+    align-items:stretch;
+  }
+
+  .cc-table tbody tr{
+    display:flex;
+    flex-direction:column;
+    scroll-snap-align:start;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:16px;
+    background:rgba(255,255,255,.98);
+    box-shadow:0 14px 24px -22px rgba(15,23,42,.30);
+    overflow:hidden;
+    min-width:0;
+  }
+
+  .cc-table tbody td{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    padding:11px 12px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    min-width:0;
+    word-break:break-word;
+    text-align:right;
+    color:rgba(15,23,42,.88);
+    font-weight:800;
+  }
+
+  .cc-table tbody td:last-child{
+    border-bottom:none;
+  }
+
+  .cc-table tbody td::before{
+    content:attr(data-label);
+    font-weight:950;
+    font-size:12px;
+    color:rgba(11,77,58,.92);
+    line-height:1.3;
+    flex:0 0 42%;
+    max-width:46%;
+    word-break:break-word;
+    text-align:left;
+  }
+
+  .cc-table tbody td > *{
+    min-width:0;
+  }
+
+  .cc-table tbody tr.cc-empty-row{
+    display:block;
+    min-height:auto;
+  }
+
+  .cc-table tbody tr.cc-empty-row td{
+    display:block;
+    text-align:left;
+    padding:14px 12px;
+    border-bottom:none;
+  }
+
+  .cc-table tbody tr.cc-empty-row td::before{
+    display:none;
+    content:none;
+  }
+
+  .cc-act-wrap{
+    justify-content:flex-start;
+  }
+}
+
+@media (max-width: 520px){
+  .cc-table tbody{
+    grid-auto-columns:92%;
+  }
+}
+</style>
+
+<div class="cc-wrap">
+  <div class="cc-sheet">
+
+    <!-- Header -->
+    <div class="cc-head">
+      <a class="cc-back" href="javascript:history.back()" aria-label="Go Back">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <h2 class="cc-title">CLF Official Console</h2>
+      <p class="cc-sub">Approve monthly submissions from PGs under your CLF and lock approved periods.</p>
+    </div>
+
+    <!-- Top fields -->
+    <div class="cc-topfields">
+      <div class="cc-field">
+        <div class="cc-label">Selected Period</div>
+        <div class="cc-muted">{{ month }}/{{ year }}</div>
+      </div>
+      <div class="cc-field">
+        <div class="cc-label">Page</div>
+        <div class="cc-muted">CLF Official Console</div>
+      </div>
+    </div>
+
+    <!-- Panels -->
+    <div class="cc-panels">
+
+      <!-- Period Selector -->
+      <section class="cc-block">
+        <div class="cc-block-head">
+          <h3 class="cc-block-title">Select Period</h3>
+          <p class="cc-block-sub">Load PG-wise module statuses for the selected year and month.</p>
+        </div>
+        <div class="cc-block-body">
+          <form class="cc-grid" method="get">
+            <div class="cc-stack cc-col-6">
+              <label>Year</label>
+              <input name="year" class="cc-input" value="{{ year }}" type="number" min="2000" max="2100">
+            </div>
+            <div class="cc-stack cc-col-6">
+              <label>Month</label>
+              <input name="month" class="cc-input" value="{{ month }}" type="number" min="1" max="12">
+            </div>
+            <div class="cc-col-12 cc-actions">
+              <button class="cc-btn cc-primary w-100" style="width:100%;" type="submit">Load</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Guide -->
+      <section class="cc-block">
+        <div class="cc-block-head">
+          <h3 class="cc-block-title">How to use</h3>
+          <p class="cc-block-sub">Quick guide for approvals.</p>
+        </div>
+        <div class="cc-block-body" style="font-size:12px; color:rgba(15,23,42,.76); font-weight:800; line-height:1.6;">
+          <div style="font-weight:950; color:var(--ink); margin-bottom:6px;">Steps</div>
+          <ol style="margin:0; padding-left:18px;">
+            <li>Choose <b>Year</b> and <b>Month</b> and click <b>Load</b>.</li>
+            <li>Open <b>View PG</b> to verify entries.</li>
+            <li>Use <b>Approve</b> / <b>Reject</b> for modules that are <b>submitted_to_clf</b>.</li>
+          </ol>
+          <div style="margin-top:10px; padding:10px 12px; border-radius:14px; background:rgba(16,185,129,.08); border:1px solid rgba(16,185,129,.16); color:#064e3b; font-weight:900;">
+            Tip: After District approval, lock the period to freeze edits for that month.
+          </div>
+          <div class="cc-actions" style="margin-top:12px;">
+            <a class="cc-btn cc-secondary" href="{{ url_for('reports.hierarchy_dashboard') }}">Open Hierarchy Dashboard</a>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Search / Tools -->
+    <div class="cc-tools">
+      <div class="cc-search-wrap">
+        <input type="text" class="cc-search" id="ccSearch" placeholder="Search by PG, PG ID, module or status..." autocomplete="off">
+      </div>
+      <div class="cc-rows-wrap">
+        <div class="cc-rows-chip">
+          <span>Rows</span>
+          <select id="ccRowsPerPage" aria-label="Rows per page">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="cc-meta">
+      <div class="cc-meta-text" id="ccMetaText">Showing approval records</div>
+      <div class="cc-swipe-note">Swipe horizontally to view more</div>
+    </div>
+
+    <!-- Table -->
+    <div class="cc-table-wrap">
+      <div class="cc-table-scroll" role="region" aria-label="CLF Console Table">
+        <table class="cc-table" id="ccTable">
+          <thead>
+            <tr>
+              <th style="width:70px;">SL</th>
+              <th>PG</th>
+              <th>Module</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+            {% set s = row.status or '—' %}
+            <tr
+              data-cc-row
+              data-cc-search="{{ loop.index }} {{ (row.pg_name or '')|lower }} {{ (row.pg_id or '')|lower }} {{ (row.module or '')|lower }} {{ (s or '')|lower }}"
+            >
+              <td data-label="SL" class="cc-sl-cell">{{ loop.index }}</td>
+
+              <td data-label="PG">
+                <div class="cc-pgname">{{ row.pg_name }}</div>
+                <div class="cc-pgid">PG ID: {{ row.pg_id }}</div>
+              </td>
+
+              <td data-label="Module">
+                <span class="cc-badge cc-badge-light">{{ row.module|upper }}</span>
+              </td>
+
+              <td data-label="Status">
+                {% if 'submitted' in s %}
+                  <span class="cc-badge cc-badge-warning">{{ s }}</span>
+                {% elif 'approved' in s %}
+                  <span class="cc-badge cc-badge-success">{{ s }}</span>
+                {% elif 'rejected' in s %}
+                  <span class="cc-badge cc-badge-danger">{{ s }}</span>
+                {% else %}
+                  <span class="cc-badge cc-badge-secondary">{{ s }}</span>
+                {% endif %}
+              </td>
+
+              <td data-label="Actions" class="text-end">
+                <div class="cc-act-wrap">
+                  <form method="post" action="{{ url_for('reports.approve_monthly', pg_id=row.pg_id, year=year, month=month, module=row.module, level='clf') }}">
+                    <button class="cc-btn cc-success" {% if row.status != 'submitted_to_clf' %}disabled{% endif %}>Approve</button>
+                  </form>
+
+                  <form method="post" action="{{ url_for('reports.reject_monthly', pg_id=row.pg_id, year=year, month=month, module=row.module, level='clf') }}">
+                    <input type="hidden" name="remark" value="Rejected by CLF">
+                    <button class="cc-btn cc-danger" {% if row.status != 'submitted_to_clf' %}disabled{% endif %}>Reject</button>
+                  </form>
+
+                  <a class="cc-btn cc-view" href="{{ url_for('reports.pg_mpr', pg_id=row.pg_id) }}">View PG</a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+
+            {% if not rows %}
+            <tr class="cc-empty-row">
+              <td colspan="5" class="cc-empty" id="ccEmptyCell">No PGs found under this CLF.</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if rows %}
+    <div class="cc-pagination" id="ccPagination">
+      <div class="cc-page-info" id="ccPageInfo">Showing 0–0 of 0</div>
+      <div class="cc-page-controls">
+        <button type="button" class="cc-page-btn" id="ccPrevBtn">Prev</button>
+        <div id="ccPageNumberWrap" class="cc-page-controls"></div>
+        <button type="button" class="cc-page-btn" id="ccNextBtn">Next</button>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="cc-tip">
+      Tip: After District approval, lock the period to freeze edits for that month.
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  const table = document.getElementById('ccTable');
+  const searchInput = document.getElementById('ccSearch');
+  const rowsSelect = document.getElementById('ccRowsPerPage');
+  const prevBtn = document.getElementById('ccPrevBtn');
+  const nextBtn = document.getElementById('ccNextBtn');
+  const pageInfo = document.getElementById('ccPageInfo');
+  const pageWrap = document.getElementById('ccPageNumberWrap');
+  const emptyCell = document.getElementById('ccEmptyCell');
+
+  if(!table || !searchInput || !rowsSelect || !prevBtn || !nextBtn || !pageInfo || !pageWrap){
+    return;
+  }
+
+  const tbody = table.querySelector('tbody');
+  const allRows = Array.from(tbody.querySelectorAll('tr')).filter(tr => !tr.classList.contains('cc-empty-row'));
+
+  if(!allRows.length){
+    return;
+  }
+
+  let currentPage = 1;
+  let filteredRows = allRows.slice();
+
+  function getRowsPerPage(){
+    const n = parseInt(rowsSelect.value, 10);
+    return Number.isFinite(n) && n > 0 ? n : 25;
+  }
+
+  function updateSerials(visibleRows, startIndex){
+    visibleRows.forEach((row, idx) => {
+      const slCell = row.querySelector('.cc-sl-cell');
+      if(slCell){
+        slCell.textContent = startIndex + idx + 1;
+      }
+    });
+  }
+
+  function refreshInfo(){
+    const total = filteredRows.length;
+    const rows = getRowsPerPage();
+    const pageCount = Math.max(1, Math.ceil(total / rows));
+
+    if(currentPage > pageCount) currentPage = pageCount;
+
+    const start = total ? ((currentPage - 1) * rows) + 1 : 0;
+    const end = total ? Math.min(currentPage * rows, total) : 0;
+    pageInfo.textContent = `Showing ${start}–${end} of ${total}`;
+
+    Array.from(pageWrap.querySelectorAll('[data-cc-page-btn]')).forEach(btn => {
+      const page = btn.getAttribute('data-cc-page-btn');
+      btn.textContent = page;
+      btn.setAttribute('aria-label', `Page ${page}`);
+    });
+  }
+
+  function renderPageButtons(pageCount){
+    pageWrap.innerHTML = '';
+    for(let i = 1; i <= pageCount; i++){
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cc-page-btn' + (i === currentPage ? ' is-active' : '');
+      btn.textContent = String(i);
+      btn.setAttribute('data-cc-page-btn', String(i));
+      btn.addEventListener('click', () => {
+        currentPage = i;
+        render();
+      });
+      pageWrap.appendChild(btn);
+    }
+  }
+
+  function render(){
+    const rows = getRowsPerPage();
+    const total = filteredRows.length;
+    const pageCount = Math.max(1, Math.ceil(total / rows));
+
+    if(currentPage > pageCount) currentPage = pageCount;
+    if(currentPage < 1) currentPage = 1;
+
+    allRows.forEach(row => row.classList.add('cc-hidden-row'));
+
+    if(emptyCell){
+      const emptyRow = emptyCell.closest('tr');
+      if(emptyRow){
+        emptyRow.style.display = total === 0 ? '' : 'none';
+      }
+      if(total === 0){
+        emptyCell.textContent = 'No matching records found.';
+      }
+    }
+
+    if(total > 0){
+      const startIndex = (currentPage - 1) * rows;
+      const endIndex = startIndex + rows;
+      const visibleRows = filteredRows.slice(startIndex, endIndex);
+      visibleRows.forEach(row => row.classList.remove('cc-hidden-row'));
+      updateSerials(visibleRows, startIndex);
+    }
+
+    renderPageButtons(pageCount);
+    prevBtn.disabled = currentPage <= 1 || total === 0;
+    nextBtn.disabled = currentPage >= pageCount || total === 0;
+    refreshInfo();
+
+    const scrollWrap = table.closest('.cc-table-scroll');
+    if(scrollWrap) scrollWrap.scrollLeft = 0;
+  }
+
+  function applySearch(){
+    const q = String(searchInput.value || '').trim().toLowerCase();
+    filteredRows = allRows.filter(row => {
+      const hay = String(row.getAttribute('data-cc-search') || '').toLowerCase();
+      return !q || hay.includes(q);
+    });
+    currentPage = 1;
+    render();
+  }
+
+  prevBtn.addEventListener('click', () => {
+    if(currentPage > 1){
+      currentPage -= 1;
+      render();
+    }
+  });
+
+  nextBtn.addEventListener('click', () => {
+    const pageCount = Math.max(1, Math.ceil(filteredRows.length / getRowsPerPage()));
+    if(currentPage < pageCount){
+      currentPage += 1;
+      render();
+    }
+  });
+
+  rowsSelect.addEventListener('change', () => {
+    currentPage = 1;
+    render();
+  });
+
+  searchInput.addEventListener('input', applySearch);
+
+  render();
+})();
+</script>
+
+{% endblock %}
+

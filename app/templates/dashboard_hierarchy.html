@@ -1,0 +1,931 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+/* ============================================================
+   ROLE DASHBOARD — LEDGER BOOK LOOK (SCOPED)
+   ✅ ONLY UI/Design updated
+   ✅ Re-ordered sections + proper gaps
+   ✅ Dashboard header + Overview in different containers
+   ✅ Overview KPI cards copied to match your 2nd image style (icon + card grid)
+   ✅ SHG section compact (no empty chart space)
+   ✅ PG quick actions: search + pagination + page-size (10/25/50/100), default 25
+   Scope: .rd-wrap
+============================================================ */
+
+.rd-wrap{
+  width: 100%;
+  padding: clamp(10px, 2vw, 20px);
+
+  --ink:#0f172a;
+  --muted:#64748b;
+
+  --line: rgba(15,23,42,.18);
+  --line2: rgba(15,23,42,.12);
+
+  --paper:#ffffff;
+  --soft:#f7faf9;
+
+  --accent:#0b4d3a;
+  --ring: rgba(11,77,58,.10);
+
+  color: var(--ink);
+}
+.rd-wrap *{ box-sizing:border-box; }
+
+/* Stack containers with clean gaps */
+.rd-stack{
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  display:flex;
+  flex-direction:column;
+  gap: 14px; /* ✅ proper gaps between containers */
+}
+
+/* Sheet */
+.rd-sheet{
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+}
+
+/* Header (separate container) */
+.rd-head{
+  padding: 18px 18px 16px;
+  background:
+   background: linear-gradient(135deg, #f8fafc, #ffffff);
+  border-bottom: 0;
+}
+.rd-title{
+  margin: 0;
+  font-weight: 950;
+  font-size: clamp(20px, 1.9vw, 26px);
+  text-align: left;
+  letter-spacing: .2px;
+}
+.rd-sub{
+  margin: 6px 0 0;
+  text-align:left;
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 12px;
+}
+
+/* Sections */
+.rd-section{
+  padding: 14px 18px;
+  border-bottom: 1.5px solid var(--line2);
+  background: rgba(255,255,255,.94);
+}
+.rd-section:last-child{ border-bottom: 0; }
+
+.rd-section-title{
+  display:flex;
+  align-items:flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.rd-left-title{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  min-width: 220px;
+}
+.rd-dot{
+  width: 10px; height: 10px;
+  border-radius: 999px;
+  background: rgba(11,77,58,.90);
+  box-shadow: 0 0 0 6px rgba(16,185,129,.12);
+}
+.rd-h6{
+  margin: 0;
+  font-weight: 950;
+  font-size: 13px;
+  letter-spacing: .15px;
+}
+.rd-mini{
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+.rd-muted{ color: var(--muted) !important; }
+
+/* ============================================================
+   ✅ OVERVIEW KPI UI (match your 2nd image)
+   - icon tile + soft card + grid row (desktop)
+============================================================ */
+.rd-ov-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.rd-ov-card{
+  position: relative;
+ border: 1px solid rgba(15,23,42,.12);
+  border-radius: 18px;
+ background: linear-gradient(135deg, #f8fafc, #ffffff);
+  box-shadow: 0 18px 30px -26px rgba(15,23,42,.28);
+  padding: 14px 14px 12px;
+  overflow:hidden;
+  min-height: 118px;
+}
+.rd-ov-icon{
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border: 1px solid rgba(15,23,42,.10);
+  background: rgba(248,250,252,.9);
+  box-shadow: 0 12px 18px -16px rgba(15,23,42,.35);
+}
+.rd-ov-icon svg{
+  width: 26px;
+  height: 26px;
+  stroke: rgba(15,23,42,.88);
+}
+.rd-ov-label{
+  margin-top: 12px;
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(15,23,42,.70);
+}
+.rd-ov-value{
+  margin-top: 8px;
+  font-weight: 950;
+  font-size: clamp(26px, 2.1vw, 34px);
+  line-height: 1;
+  letter-spacing: .2px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(15,23,42,.95);
+}
+.rd-ov-foot{
+  margin-top: 10px;
+  font-weight: 850;
+  font-size: 12px;
+  color: rgba(11,77,58,.85);
+}
+.rd-ov-foot .rd-muted{
+  color: rgba(100,116,139,.95) !important;
+  font-weight: 800;
+}
+
+/* Buttons */
+.rd-btn{
+  border: 1px solid rgba(15,23,42,.14) !important;
+  background: rgba(247,250,249,.82) !important;
+  color: var(--ink) !important;
+  border-radius: 999px !important;
+  padding: 9px 12px !important;
+  font-weight: 800 !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  white-space: nowrap;
+  text-decoration: none !important;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap: 8px;
+}
+.rd-btn:hover{
+  transform: translateY(-1px);
+  background: #fff !important;
+  box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+}
+.rd-btn-primary{
+  border-color: rgba(16,185,129,.35) !important;
+  background: rgba(16,185,129,.12) !important;
+  color:#0b4d3a !important;
+}
+.rd-btn-primary:hover{ background: rgba(16,185,129,.16) !important; }
+.rd-btn-info{
+  border-color: rgba(59,130,246,.22) !important;
+  background: rgba(59,130,246,.08) !important;
+  color: #1d4ed8 !important;
+}
+.rd-btn-warn{
+  border-color: rgba(245,158,11,.28) !important;
+  background: rgba(245,158,11,.10) !important;
+  color: #92400e !important;
+}
+
+/* Cards */
+.rd-table-card{
+  height: 100%;
+  border: 1px solid rgba(15,23,42,.14) !important;
+  border-radius: 16px !important;
+  background: rgba(255,255,255,.94) !important;
+  box-shadow: none !important;
+}
+.rd-table-card .card-body{
+  padding: 14px 14px !important;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+/* ===== PG header tools ===== */
+.rd-pg-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.rd-tools{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+.rd-search{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(15,23,42,.16);
+  border-radius: 999px;
+  background: rgba(247,250,249,.78);
+  width: min(420px, 100%);
+}
+.rd-search input{
+  border:none;
+  outline:none;
+  background: transparent;
+  width: 100%;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.rd-search input::placeholder{
+  color: rgba(100,116,139,.95);
+  font-weight: 650;
+}
+.rd-count-pill{
+  padding: 8px 10px;
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 999px;
+  background: rgba(247,250,249,.55);
+  font-size: 12px;
+  font-weight: 750;
+  color: rgba(15,23,42,.80);
+  white-space: nowrap;
+}
+
+/* Page size */
+.rd-page-size{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 999px;
+  background: rgba(247,250,249,.55);
+}
+.rd-page-size label{
+  margin:0;
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(15,23,42,.78);
+  white-space: nowrap;
+}
+.rd-page-size select{
+  border: 1px solid rgba(15,23,42,.14);
+  border-radius: 999px;
+  background: #fff;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  outline: none;
+}
+
+/* Proper table shell */
+.rd-table-shell{
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+.rd-table-shell .table-responsive{
+  max-height: 44vh;
+  overflow:auto;
+}
+
+/* Table look */
+.rd-table{ margin: 0 !important; width: 100%; }
+.rd-table thead th{
+  background: var(--soft) !important;
+  border-bottom: 1px solid rgba(15,23,42,.12) !important;
+  font-weight: 750 !important;
+  color: rgba(15,23,42,.90) !important;
+  letter-spacing: .1px;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 10px 12px !important;
+}
+.rd-table tbody td{
+  border-top: 1px solid rgba(15,23,42,.08) !important;
+  vertical-align: middle;
+  padding: 10px 12px !important;
+  font-weight: 600;
+  color: rgba(15,23,42,.86);
+}
+.rd-table tbody tr:hover{ background: rgba(16,185,129,.05) !important; }
+
+/* Column widths */
+.rd-col-name{ width: 46%; }
+.rd-col-sector{ width: 22%; }
+.rd-col-actions{ width: 32%; }
+
+/* Actions: neat, non-messy, auto-wrap */
+.rd-actions{
+  display:flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.rd-actions .rd-btn{
+  padding: 8px 10px !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+}
+
+/* Empty state */
+.rd-empty{
+  padding: 12px;
+  text-align: center;
+  color: rgba(15,23,42,.70);
+  font-weight: 750;
+  font-size: 12px;
+  display:none;
+  background: rgba(247,250,249,.55);
+  border-top: 1px solid rgba(15,23,42,.08);
+}
+.rd-empty.show{ display:block; }
+
+/* Pagination bar */
+.rd-pager{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 14px;
+  background: rgba(247,250,249,.55);
+}
+.rd-pager-left{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.rd-page-info{
+  font-size: 12px;
+  font-weight: 850;
+  color: rgba(15,23,42,.82);
+}
+.rd-pager-right{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+.rd-btn-ghost{
+  border: 1px solid rgba(15,23,42,.12) !important;
+  background: rgba(255,255,255,.7) !important;
+}
+.rd-btn-ghost[disabled]{
+  opacity: .5;
+  cursor:not-allowed;
+  transform:none !important;
+  box-shadow:none !important;
+}
+
+/* SHG compact card (no empty chart space) */
+.rd-compact{
+  border: 1px solid rgba(15,23,42,.14);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f8fafc, #ffffff);
+  padding: 14px 14px;
+}
+.rd-compact-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.rd-compact-title{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+.rd-compact h6{
+  margin:0;
+  font-weight: 950;
+  font-size: 13px;
+}
+.rd-compact p{
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 12px;
+  max-width: 62ch;
+}
+
+/* === Responsive === */
+@media (max-width: 1100px){
+  .rd-ov-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 992px){
+  .rd-section{ padding: 12px 14px; }
+}
+@media (max-width: 720px){
+  .rd-wrap{ padding: 10px; }
+  .rd-sheet{ border-radius: 14px; }
+  .rd-head{ padding: 14px 12px 12px; }
+  .rd-section{ padding: 12px 12px; }
+  .rd-title{ text-align:left; }
+
+  /* Overview cards stack nicely on mobile/app */
+  .rd-ov-grid{ grid-template-columns: 1fr; }
+
+  /* PG tools: stack cleanly */
+  .rd-tools{ width: 100%; justify-content: stretch; }
+  .rd-search{ width: 100%; }
+  .rd-count-pill{ width: 100%; text-align: center; }
+  .rd-page-size{ width: 100%; justify-content: space-between; }
+
+  /* Table actions */
+  .rd-actions{ justify-content: flex-start; }
+  .rd-actions .rd-btn{ flex: 1 1 110px; }
+
+  .rd-table-shell .table-responsive{ max-height: 52vh; }
+  .rd-table thead th, .rd-table tbody td{ padding: 10px 10px !important; }
+
+  .rd-pager{ padding: 10px 10px; }
+  .rd-pager-right{ width:100%; justify-content: stretch; }
+  .rd-pager-right .rd-btn{ flex: 1 1 120px; }
+}
+@media (max-width: 420px){
+  .rd-btn{ padding: 9px 10px !important; }
+}
+</style>
+
+<div class="rd-wrap">
+  <div class="rd-stack">
+
+    <!-- ✅ CONTAINER 1: DASHBOARD HEADER (separate) -->
+    <div class="rd-sheet">
+      <div class="rd-head">
+        <h3 class="rd-title">{{ role }} Dashboard</h3>
+        <p class="rd-sub">Quick snapshot + actions for your jurisdiction.</p>
+      </div>
+    </div>
+
+    <!-- ✅ CONTAINER 2: OVERVIEW + MODULES (separate) -->
+    <div class="rd-sheet">
+
+      <!-- OVERVIEW -->
+      <div class="rd-section">
+        <div class="rd-section-title">
+          <div class="rd-left-title">
+            <span class="rd-dot"></span>
+            <h6 class="rd-h6">Overview</h6>
+          </div>
+          <div class="d-flex gap-2 flex-wrap" style="align-items:center;">
+            <div class="rd-mini">Live totals from your current scope</div>
+            <a class="btn rd-btn rd-btn-ghost" href="{{ url_for('reports.export_scope_csv') }}">Download CSV</a>
+          </div>
+        </div>
+
+        <!-- ✅ Copy your 2nd image style (icon cards, horizontal grid) -->
+        <div class="rd-ov-grid">
+
+          <!-- Card 1 -->
+          <div class="rd-ov-card">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <!-- users icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">TOTAL PGs</div>
+            <div class="rd-ov-value">{{ pg_count }}</div>
+            <div class="rd-ov-foot">From PG master data</div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="rd-ov-card">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <!-- id-card icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="2"/>
+                <path d="M8 8h8"/>
+                <path d="M8 12h6"/>
+                <path d="M8 16h5"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">TOTAL MEMBERS</div>
+            <div class="rd-ov-value">{{ member_count }}</div>
+            <div class="rd-ov-foot">From Membership Register</div>
+          </div>
+
+          <!-- Card (Lakhpati Didi) -->
+          <div class="rd-ov-card" onclick="location.href='{{ url_for('reports.lakhpati_report') }}'" style="cursor:pointer">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <!-- badge icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 21s8-4.5 8-11V5l-8-3-8 3v5c0 6.5 8 11 8 11z"/>
+                <path d="M8 12h8"/>
+                <path d="M10 8h4"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">LAKHPATI DIDI</div>
+            <div class="rd-ov-value">{{ lakhpati_total or 0 }}</div>
+            <div class="rd-ov-foot">Click to open report</div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="rd-ov-card">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <!-- layers icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2 2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">SHG MASTER</div>
+            <div class="rd-ov-value">{{ shg_total }}</div>
+            <div class="rd-ov-foot">Active: <span class="rd-muted">{{ shg_active }}</span></div>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="rd-ov-card">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <!-- trending-up icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 6l-9.5 9.5-5-5L1 18"/>
+                <path d="M17 6h6v6"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">TURNOVER (TOTAL)</div>
+            <div class="rd-ov-value">{{ turnover_total or 0 }}</div>
+            <div class="rd-ov-foot">From Market Transactions</div>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="rd-ov-card">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <!-- bar chart icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20V10"/>
+                <path d="M18 20V4"/>
+                <path d="M6 20v-6"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">PROFIT (TOTAL)</div>
+            <div class="rd-ov-value">{{ profit_total or 0 }}</div>
+            <div class="rd-ov-foot">Income–Expenditure</div>
+          </div>
+
+          <!-- Card 5B -->
+          <div class="rd-ov-card">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <!-- bar chart icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20V10"/>
+                <path d="M18 20V4"/>
+                <path d="M6 20v-6"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">LOSS (TOTAL)</div>
+            <div class="rd-ov-value">{{ loss_total or 0 }}</div>
+            <div class="rd-ov-foot">Income–Expenditure</div>
+          </div>
+
+          <!-- Card 6 -->
+          <div class="rd-ov-card">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <!-- award icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2l3 7h7l-5.5 4.2L18 21l-6-4-6 4 1.5-7.8L2 9h7z"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">PGs WITH GRANTS</div>
+            <div class="rd-ov-value">{{ pgs_with_grants or 0 }}</div>
+            <div class="rd-ov-foot">At least 1 grant</div>
+          </div>
+
+          <!-- Card 7 -->
+          <div class="rd-ov-card">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <!-- bank icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 10h18"/>
+                <path d="M5 10V20"/>
+                <path d="M19 10V20"/>
+                <path d="M9 10V20"/>
+                <path d="M15 10V20"/>
+                <path d="M2 20h20"/>
+                <path d="M12 2l10 6H2l10-6z"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">GRANTS RECEIVED (TOTAL)</div>
+            <div class="rd-ov-value">{{ grants_total or 0 }}</div>
+            <div class="rd-ov-foot">All PGs in scope</div>
+          </div>
+
+          <!-- Card 8 -->
+          <div class="rd-ov-card">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <!-- badge icon -->
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2l3 6 7 1-5 4 1 7-6-3-6 3 1-7-5-4 7-1z"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">LAKHPATI DIDI</div>
+            <div class="rd-ov-value">{{ lakhpati_total or 0 }}</div>
+            <div class="rd-ov-foot">Members marked</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ✅ PG QUICK ACTIONS (NOW ABOVE SHG SECTION) -->
+      <div class="rd-section">
+        <div class="card rd-table-card">
+          <div class="card-body">
+
+            <div class="rd-pg-head">
+              <div>
+                <div class="rd-left-title" style="margin-bottom:4px;">
+                  <span class="rd-dot"></span>
+                  <h6 class="rd-h6">PGs (quick actions)</h6>
+                </div>
+                <div class="rd-mini">Open modules directly for a PG</div>
+              </div>
+
+              <div class="rd-tools">
+                <div class="rd-search" title="Search PGs">
+                  <input id="rdPgSearch" type="text" placeholder="Search by PG name / sector..." autocomplete="off" />
+                </div>
+
+                <div class="rd-page-size" title="Rows per page">
+                  <label for="rdPgPageSize">View</label>
+                  <select id="rdPgPageSize">
+                    <option value="10">10</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+
+                <div class="rd-count-pill" id="rdPgCountPill">Showing 0 / 0</div>
+              </div>
+            </div>
+
+            <div class="rd-table-shell">
+              <div class="table-responsive">
+                <table class="table table-sm align-middle rd-table" id="rdPgTable">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="rd-col-name">PG Name</th>
+                      <th class="rd-col-sector">Sector</th>
+                      <th class="rd-col-actions text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rdPgTbody">
+                    {% for pg in pgs %}
+                      <tr class="rd-pg-row" data-pg-search="{{ (pg.name ~ ' ' ~ (pg.sector or ''))|lower }}">
+                        <td class="rd-col-name">{{ pg.name }}</td>
+                        <td class="rd-col-sector">{{ pg.sector or '-' }}</td>
+                        <td class="rd-col-actions text-end">
+                          <div class="rd-actions">
+                            <a class="btn btn-sm rd-btn rd-btn-primary" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('pg.pg_view', pg_id=pg._id)) }}">Open</a>
+                            <a class="btn btn-sm rd-btn rd-btn-info" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('finance.pg_funds', pg_id=pg._id)) }}">Funds</a>
+                            <a class="btn btn-sm rd-btn rd-btn-warn" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('finance.pg_loans', pg_id=pg._id)) }}">Loans</a>
+                          </div>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                    {% if not pgs %}
+                      <tr class="rd-pg-row">
+                        <td colspan="3" class="text-muted">No PGs found under your jurisdiction.</td>
+                      </tr>
+                    {% endif %}
+                  </tbody>
+                </table>
+
+                <div class="rd-empty" id="rdPgEmpty">No PGs match your search.</div>
+              </div>
+            </div>
+
+            <!-- ✅ Pagination -->
+            <div class="rd-pager" id="rdPgPager" style="display:none;">
+              <div class="rd-pager-left">
+                <div class="rd-page-info" id="rdPgPageInfo">Page 1 of 1</div>
+                <div class="rd-mini" id="rdPgRangeInfo" style="margin:0;">Showing 0–0</div>
+              </div>
+              <div class="rd-pager-right">
+                <button class="btn rd-btn rd-btn-ghost" id="rdPgPrev" type="button">Prev</button>
+                <button class="btn rd-btn rd-btn-ghost" id="rdPgNext" type="button">Next</button>
+              </div>
+            </div>
+
+            <div class="rd-mini" style="margin:0;">
+              Tip: “Open” sets active PG and takes you to PG view; “Funds/Loans” jump into Finance modules.
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ SHG SECTION (COMPACT, NO EMPTY SPACE) -->
+      <div class="rd-section">
+        <div class="rd-compact">
+          <div class="rd-compact-row">
+            <div>
+              <div class="rd-compact-title">
+                <span class="rd-dot"></span>
+                <h6>SHG distribution (Top 12)</h6>
+              </div>
+              <p>Browse the SHG Master to verify mapped SHGs and view distribution details.</p>
+            </div>
+
+            <a href="{{ url_for('master_data.shg_browser') }}" class="btn rd-btn rd-btn-primary">
+              Browse SHG Master
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /rd-sheet -->
+
+  </div><!-- /rd-stack -->
+</div>
+
+<script>
+  (function(){
+    // =========================
+    // PG Quick Actions: Search + Pagination (client-side)
+    // =========================
+    const search = document.getElementById('rdPgSearch');
+    const tbody = document.getElementById('rdPgTbody');
+    const rowsAll = tbody ? Array.from(tbody.querySelectorAll('tr.rd-pg-row')) : [];
+    const pill = document.getElementById('rdPgCountPill');
+    const empty = document.getElementById('rdPgEmpty');
+
+    const pageSizeSel = document.getElementById('rdPgPageSize');
+    const pager = document.getElementById('rdPgPager');
+    const btnPrev = document.getElementById('rdPgPrev');
+    const btnNext = document.getElementById('rdPgNext');
+    const pageInfo = document.getElementById('rdPgPageInfo');
+    const rangeInfo = document.getElementById('rdPgRangeInfo');
+
+    const dataRows = rowsAll.filter(r => r.getAttribute('data-pg-search')); // ignore "No PGs..." row
+    const totalAll = dataRows.length;
+
+    let pageSize = 25;
+    let page = 1;
+
+    function setCountText(visible, total){
+      if (pill) pill.textContent = `Showing ${visible} / ${total}`;
+    }
+
+    function getQuery(){
+      return (search && search.value ? search.value : '').trim().toLowerCase();
+    }
+
+    function getFilteredRows(){
+      const q = getQuery();
+      if (!q) return dataRows.slice();
+
+      return dataRows.filter(tr => {
+        const key = (tr.getAttribute('data-pg-search') || '');
+        return key.includes(q);
+      });
+    }
+
+    function hideAllDataRows(){
+      dataRows.forEach(tr => tr.style.display = 'none');
+    }
+
+    function render(){
+      if (!totalAll){
+        setCountText(0, 0);
+        if (empty) empty.classList.remove('show');
+        if (pager) pager.style.display = 'none';
+        return;
+      }
+
+      const filtered = getFilteredRows();
+      const totalFiltered = filtered.length;
+
+      // Empty state for search
+      if (empty){
+        if (totalFiltered === 0) empty.classList.add('show');
+        else empty.classList.remove('show');
+      }
+
+      // Clamp page
+      pageSize = parseInt(pageSizeSel?.value || pageSize, 10) || 25;
+      const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
+      if (page > totalPages) page = totalPages;
+      if (page < 1) page = 1;
+
+      // Show pager only if there is something to paginate OR at least one row exists
+      if (pager){
+        pager.style.display = (totalFiltered > 0) ? '' : 'none';
+      }
+
+      // Compute slice
+      const startIndex = (page - 1) * pageSize;
+      const endIndexExclusive = startIndex + pageSize;
+      const pageRows = filtered.slice(startIndex, endIndexExclusive);
+
+      // Apply visibility
+      hideAllDataRows();
+      pageRows.forEach(tr => tr.style.display = '');
+
+      // Update counts
+      const visibleNow = pageRows.length;
+      setCountText(visibleNow, totalAll); // keeps "Showing visible / total(all)" as your pill pattern
+
+      // Pager text + buttons
+      if (pageInfo) pageInfo.textContent = `Page ${page} of ${totalPages}`;
+
+      if (rangeInfo){
+        if (totalFiltered === 0){
+          rangeInfo.textContent = `Showing 0–0`;
+        } else {
+          const shownFrom = startIndex + 1;
+          const shownTo = Math.min(startIndex + visibleNow, totalFiltered);
+          rangeInfo.textContent = `Showing ${shownFrom}–${shownTo} of ${totalFiltered} (filtered)`;
+        }
+      }
+
+      if (btnPrev){
+        btnPrev.disabled = (page <= 1);
+      }
+      if (btnNext){
+        btnNext.disabled = (page >= totalPages);
+      }
+    }
+
+    // Init defaults
+    if (pageSizeSel){
+      pageSizeSel.value = "25";
+      pageSize = 25;
+    }
+
+    // Initial render
+    render();
+
+    // Events
+    if (search){
+      search.addEventListener('input', () => {
+        page = 1; // reset on search
+        render();
+      });
+    }
+    if (pageSizeSel){
+      pageSizeSel.addEventListener('change', () => {
+        page = 1; // reset on page size change
+        render();
+      });
+    }
+    if (btnPrev){
+      btnPrev.addEventListener('click', () => {
+        page -= 1;
+        render();
+      });
+    }
+    if (btnNext){
+      btnNext.addEventListener('click', () => {
+        page += 1;
+        render();
+      });
+    }
+  })();
+</script>
+{% endblock %}

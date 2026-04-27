@@ -1,0 +1,1227 @@
+{% extends "base.html" %}
+{% block title %}Member Loan Accounts{% endblock %}
+{% block content %}
+
+<style>
+  /* ============================================================
+     MEMBER LOAN ACCOUNTS — LEDGER LOOK + RESPONSIVE + TRANSLATION
+     ✅ ONLY UI/CSS/UX + text translation hookup added
+     ✅ NO route/form/name/logic/data changes
+     ✅ Back button MOBILE ONLY (hidden on web/desktop)
+     ✅ Back button aligned INSIDE header row (no overlap)
+     ✅ Fully responsive (app/mobile/tablet/desktop)
+     ✅ Scoped under .mla-wrap only
+     ✅ Existing loans: SL + search + pagination added
+     ✅ Mobile/app rows shown as swipe cards
+     ✅ Empty state still shows field headers/cards so user knows columns
+     ✅ Fixed inconsistent empty-state rendering on desktop/mobile
+     ============================================================ */
+
+  .mla-wrap{
+    width:100%;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    max-width: 1200px;
+    margin: 0 auto;
+    color: var(--ink);
+  }
+  .mla-wrap *{ box-sizing:border-box; }
+
+  .mla-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  }
+
+  /* Header */
+  .mla-head{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+  }
+
+  .mla-head-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+
+  .mla-leftslot,
+  .mla-rightslot{
+    flex: 0 0 42px;
+    width: 42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .mla-back{
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color: rgba(11,77,58,.98);
+    user-select:none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .mla-back:hover{
+    transform: translateX(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .mla-back:active{ transform: scale(.98); }
+  .mla-back svg{ width:18px; height:18px; display:block; }
+
+  .mla-title-wrap{
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align:center;
+  }
+  .mla-title{
+    margin:0;
+    font-weight: 950;
+    font-size: clamp(16px, 1.8vw, 20px);
+    letter-spacing: .2px;
+    line-height: 1.15;
+    word-break: normal;
+    overflow-wrap: anywhere;
+  }
+  .mla-sub{
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: rgba(15,23,42,.62);
+    font-weight: 800;
+  }
+
+  /* Top fields strip */
+  .mla-topfields{
+    padding: 10px 16px 14px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .mla-field{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width:0;
+  }
+  .mla-label{
+    font-weight: 900;
+    font-size: 12px;
+    white-space:nowrap;
+    color: var(--ink);
+  }
+  .mla-muted{
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(15,23,42,.72);
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  /* Cards */
+  .mla-body{
+    padding: 12px 16px 16px;
+    background: rgba(255,255,255,.96);
+  }
+  .mla-card{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.92);
+    overflow: hidden;
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+    margin-bottom: 12px;
+  }
+  .mla-card-head{
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(247,250,249,.66);
+  }
+  .mla-card-title{
+    margin:0;
+    font-weight:950;
+    font-size: 13px;
+    letter-spacing:.15px;
+  }
+  .mla-card-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color: rgba(15,23,42,.62);
+    font-weight:750;
+  }
+  .mla-card-body{ padding: 12px; }
+
+  /* Form grid */
+  .mla-grid{
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 10px 14px;
+    align-items:start;
+  }
+  .mla-col-3{ grid-column: span 3; }
+  .mla-col-4{ grid-column: span 4; }
+  .mla-col-5{ grid-column: span 5; }
+  .mla-col-6{ grid-column: span 6; }
+  .mla-col-12{ grid-column: span 12; }
+
+  .mla-stack{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+  }
+
+  .mla-stack label{
+    font-weight:900;
+    font-size:12px;
+    color: var(--ink);
+  }
+
+  /* Inputs */
+  .mla-input, .mla-select{
+    width:100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: rgba(247,250,249,.75);
+    font-weight:800;
+    font-size:12px;
+    outline:none;
+    color: var(--ink);
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .mla-input:focus, .mla-select:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  /* Buttons */
+  .mla-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top: 4px;
+  }
+  .mla-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    user-select:none;
+    white-space:nowrap;
+    text-decoration:none;
+  }
+  .mla-btn:hover{
+    transform: translateY(-1px);
+    background:#fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .mla-btn.primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .mla-btn.primary:hover{ background: rgba(16,185,129,.16); }
+
+  /* Info note */
+  .mla-note{
+    margin:0;
+    color:#065f46;
+    font-weight:800;
+    font-size:12px;
+  }
+
+  /* Existing loans controls */
+  .mla-tools{
+    padding: 12px 12px 0;
+    display:grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 12px;
+  }
+  .mla-search-wrap{ min-width:0; }
+  .mla-search{
+    width:100%;
+    height:48px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background: rgba(247,250,249,.85);
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 850;
+    color: var(--ink);
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .mla-search::placeholder{ color: rgba(15,23,42,.46); }
+  .mla-search:focus{
+    border-color: rgba(11,77,58,.36);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  .mla-rows-wrap{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width: fit-content;
+  }
+  .mla-rows-chip{
+    height:48px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 0 16px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background: rgba(247,250,249,.85);
+    font-weight: 950;
+    font-size: 13px;
+  }
+  .mla-rows-chip select{
+    border:0;
+    outline:none;
+    background: transparent;
+    font-weight: 950;
+    color: var(--ink);
+    font-size: 13px;
+    cursor:pointer;
+  }
+  .mla-meta{
+    margin: 12px 12px 0;
+    padding: 10px 12px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 12px;
+    background: rgba(247,250,249,.58);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .mla-meta-text{
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.72);
+  }
+  .mla-swipe-note{
+    font-size: 11px;
+    font-weight: 850;
+    color: rgba(15,23,42,.50);
+  }
+
+  /* Table */
+  .mla-tablewrap{
+    width:100%;
+    overflow:hidden;
+    border-top: 1px solid var(--line2);
+    margin-top: 12px;
+  }
+  .mla-table-scroll{
+    width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .mla-table-scroll::-webkit-scrollbar{ height: 10px; }
+  .mla-table-scroll::-webkit-scrollbar-thumb{
+    background: rgba(15,23,42,.18);
+    border-radius: 999px;
+  }
+
+  table.mla-table{
+    width:100%;
+    border-collapse: separate;
+    border-spacing:0;
+    min-width: 880px;
+  }
+  .mla-table th, .mla-table td{
+    padding: 10px;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    text-align:left;
+    font-size: 12px;
+    white-space:nowrap;
+    font-weight: 800;
+  }
+  .mla-table th{
+    position: sticky;
+    top: 0;
+    background: rgba(240,253,244,.92);
+    color: #065f46;
+    font-weight: 950;
+    z-index: 1;
+  }
+
+  .mla-hidden-row{ display:none !important; }
+
+  /* Empty mobile card */
+  .mla-mobile-empty-card{
+    display:none;
+    padding:12px;
+    background: rgba(255,255,255,.98);
+  }
+  .mla-mobile-empty-card[hidden]{
+    display:none !important;
+  }
+  @media (max-width: 720px){
+    .mla-mobile-empty-card.is-visible{
+      display:block !important;
+    }
+  }
+  .mla-mobile-card{
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 16px;
+    background: rgba(255,255,255,.98);
+    box-shadow: 0 14px 24px -22px rgba(15,23,42,.30);
+    overflow: hidden;
+  }
+  .mla-mobile-card-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+  }
+  .mla-mobile-card-row:last-child{ border-bottom:none; }
+  .mla-mobile-card-key{
+    font-weight:950;
+    font-size:12px;
+    color: rgba(11,77,58,.92);
+    line-height:1.3;
+    flex:0 0 40%;
+    max-width:44%;
+    word-break:break-word;
+  }
+  .mla-mobile-card-val{
+    text-align:right;
+    color: rgba(15,23,42,.88);
+    font-weight:800;
+    min-width:0;
+    word-break:break-word;
+  }
+
+  /* Pagination */
+  .mla-pagination{
+    margin: 12px;
+    padding: 12px 14px 14px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 14px;
+    background: rgba(255,255,255,.96);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .mla-page-info{
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.72);
+  }
+  .mla-page-controls{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap: wrap;
+  }
+  .mla-page-btn{
+    min-width: 42px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border:1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.84);
+    color: var(--ink);
+    font-weight: 950;
+    font-size: 12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .mla-page-btn:hover{
+    transform: translateY(-1px);
+    background:#fff;
+    box-shadow: 0 14px 22px -18px rgba(15,23,42,.22);
+  }
+  .mla-page-btn[disabled]{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+  .mla-page-btn.is-active{
+    background: rgba(11,77,58,.10);
+    border-color: rgba(11,77,58,.25);
+    color: rgba(11,77,58,.98);
+  }
+
+  @media (max-width: 980px){
+    .mla-topfields{ grid-template-columns: 1fr; }
+    .mla-col-3, .mla-col-4, .mla-col-5, .mla-col-6{ grid-column: span 12; }
+    .mla-sheet{ border-radius: 18px; }
+  }
+
+  @media (max-width: 720px){
+    .mla-back{ display:flex; }
+    .mla-tools{ grid-template-columns: 1fr; }
+
+    .mla-tablewrap{
+      overflow: hidden;
+    }
+    .mla-table-scroll{
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 12px;
+      scroll-snap-type: x mandatory;
+      scroll-padding-left: 12px;
+      background: rgba(255,255,255,.98);
+    }
+
+    table.mla-table{
+      width: 100%;
+      min-width: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .mla-table thead{
+      display: none;
+    }
+    .mla-table tbody{
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 86%;
+      gap: 12px;
+      align-items: stretch;
+    }
+    .mla-table tbody tr{
+      display: flex;
+      flex-direction: column;
+      scroll-snap-align: start;
+      border: 1px solid rgba(15,23,42,.12);
+      border-radius: 16px;
+      background: rgba(255,255,255,.98);
+      box-shadow: 0 14px 24px -22px rgba(15,23,42,.30);
+      overflow: hidden;
+      min-width: 0;
+    }
+    .mla-table tbody td{
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px;
+      border-bottom: 1px solid rgba(15,23,42,.08);
+      min-width: 0;
+      word-break: break-word;
+      text-align: right;
+      color: rgba(15,23,42,.88);
+      font-weight: 800;
+      white-space: normal;
+    }
+    .mla-table tbody td:last-child{
+      border-bottom: none;
+    }
+    .mla-table tbody td::before{
+      content: attr(data-label);
+      font-weight: 950;
+      font-size: 12px;
+      color: rgba(11,77,58,.92);
+      line-height: 1.3;
+      flex: 0 0 40%;
+      max-width: 44%;
+      word-break: break-word;
+      text-align: left;
+    }
+    .mla-table tbody td > *{
+      min-width: 0;
+    }
+    .mla-empty-desktop-row{
+      display:none !important;
+    }
+  }
+
+  @media (max-width: 420px){
+    .mla-head{ padding: 12px 12px 10px; }
+    .mla-topfields{ padding: 10px 12px 12px; }
+    .mla-body{ padding: 12px; }
+  }
+</style>
+
+<div class="mla-wrap">
+  <div class="mla-sheet">
+
+    <!-- Header -->
+    <div class="mla-head">
+      <div class="mla-head-row">
+        <div class="mla-leftslot">
+          <a class="mla-back" href="javascript:history.back()" aria-label="Go Back" id="mlaBackAria">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                    stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </a>
+        </div>
+
+        <div class="mla-title-wrap">
+          <h2 class="mla-title" id="mlaPageTitle" data-pg-name="{{ pg.pg_name or pg.name }}">
+            Member Loan Accounts — {{ pg.pg_name or pg.name }}
+          </h2>
+          <div class="mla-sub" id="mlaPageSub">Create member loans and track repayments.</div>
+        </div>
+
+        <div class="mla-rightslot" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <!-- Top fields -->
+    <div class="mla-topfields">
+      <div class="mla-field">
+        <div class="mla-label" id="mlaLblProducerGroup">Producer Group</div>
+        <div class="mla-muted">{{ pg.pg_name or pg.name or '—' }}</div>
+      </div>
+
+      <div class="mla-field">
+        <div class="mla-label" id="mlaLblPage">Page</div>
+        <div class="mla-muted" id="mlaLblPageValue">Member Loan Accounts</div>
+      </div>
+    </div>
+
+    <div class="mla-body">
+
+      <!-- Create form -->
+      <div class="mla-card">
+        <div class="mla-card-head">
+          <h3 class="mla-card-title" id="mlaCreateTitle">Create Member Loan</h3>
+          <p class="mla-card-sub" id="mlaCreateSub">Fill details and save. No change to existing workflow.</p>
+        </div>
+
+        <div class="mla-card-body">
+          {% if session.get('role') != 'PG_DATA_ENTRY' %}
+          <form method="POST" class="mla-grid">
+
+            <div class="mla-stack mla-col-4">
+              <label id="mlaLblMember">Member</label>
+              <select name="member_id" required class="mla-select" id="mlaMemberSelect">
+                <option value="" id="mlaMemberSelectPlaceholder">Select member</option>
+                {% for m in members %}
+                  <option value="{{ m._id }}">{{ m.name or m.member_name or 'Member' }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mla-stack mla-col-3">
+              <label id="mlaLblLoanNo">Loan No</label>
+              <input name="loan_no" placeholder="e.g., MLOAN-01" class="mla-input" id="mlaLoanNoPh">
+            </div>
+
+            <div class="mla-stack mla-col-5">
+              <label id="mlaLblPurpose">Purpose</label>
+              <input name="purpose" class="mla-input">
+            </div>
+
+            <div class="mla-stack mla-col-3">
+              <label id="mlaLblPrincipal">Principal</label>
+              <input name="principal" type="number" step="0.01" class="mla-input">
+            </div>
+
+            <div class="mla-stack mla-col-3">
+              <label id="mlaLblRoi">ROI (% p.a.)</label>
+              <input name="roi" type="number" step="0.01" class="mla-input">
+            </div>
+
+            <div class="mla-stack mla-col-3">
+              <label id="mlaLblTenure">Tenure (months)</label>
+              <input name="tenure_months" type="number" step="1" class="mla-input">
+            </div>
+
+            <div class="mla-stack mla-col-3">
+              <label id="mlaLblFirstDue">First Due Date</label>
+              <input name="first_due_date" type="date" class="mla-input">
+            </div>
+
+            <div class="mla-stack mla-col-3">
+              <label id="mlaLblStatus">Status</label>
+              <select name="status" class="mla-select">
+                <option value="active" id="mlaStatusActive">Active</option>
+                <option value="closed" id="mlaStatusClosed">Closed</option>
+                <option value="npa" id="mlaStatusNpa">NPA</option>
+              </select>
+            </div>
+
+            <div class="mla-col-12 mla-actions">
+              <button class="mla-btn primary" type="submit" id="mlaBtnSave">Save Member Loan</button>
+              <a class="mla-btn" href="{{ url_for('finance.loan_dashboard', pg_id=pg._id) }}" id="mlaBtnBackDash">Back to Loan Dashboard</a>
+            </div>
+          </form>
+
+          {% else %}
+          <p class="mla-note" id="mlaViewOnlyNote">View only: Loan entry/updates are handled by CLF/Block.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Existing loans list -->
+      <div class="mla-card">
+        <div class="mla-card-head">
+          <h3 class="mla-card-title" id="mlaExistingTitle">Existing Member Loans</h3>
+        </div>
+
+        <div class="mla-tools">
+          <div class="mla-search-wrap">
+            <input type="text" class="mla-search" id="mlaLoanSearch" placeholder="Search..." autocomplete="off">
+          </div>
+          <div class="mla-rows-wrap">
+            <div class="mla-rows-chip">
+              <span id="mlaRowsLabel">Rows</span>
+              <select id="mlaRowsPerPage" aria-label="Rows per page">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="mla-meta">
+          <div class="mla-meta-text" id="mlaMetaText">Showing existing member loan records</div>
+          <div class="mla-swipe-note" id="mlaSwipeText">Swipe horizontally to view more</div>
+        </div>
+
+        <div class="mla-tablewrap">
+          <div class="mla-table-scroll" role="region" aria-label="Existing Member Loans Table">
+            <table class="mla-table" id="mlaLoanTable">
+              <thead>
+                <tr>
+                  <th id="mlaThSl">SL</th>
+                  <th id="mlaThLoanNo">Loan No</th>
+                  <th id="mlaThPrincipal">Principal</th>
+                  <th id="mlaThOutstanding">Outstanding</th>
+                  <th id="mlaThOverdue">Overdue</th>
+                  <th id="mlaThStatus">Status</th>
+                  <th id="mlaThAction">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for l in loans %}
+                <tr
+                  data-mla-row
+                  data-mla-search="{{ loop.index }} {{ (l.loan_no or '')|lower }} {{ ('{:,.2f}'.format(l.principal or 0))|lower }} {{ ('{:,.2f}'.format(l.outstanding_amount or 0))|lower }} {{ ('{:,.2f}'.format(l.overdue_amount or 0))|lower }} {{ (l.status or 'active')|lower }}"
+                >
+                  <td data-label="SL">{{ loop.index }}</td>
+                  <td data-label="Loan No">{{ l.loan_no }}</td>
+                  <td data-label="Principal">₹{{ "{:,.2f}".format(l.principal or 0) }}</td>
+                  <td data-label="Outstanding">₹{{ "{:,.2f}".format(l.outstanding_amount or 0) }}</td>
+                  <td data-label="Overdue">₹{{ "{:,.2f}".format(l.overdue_amount or 0) }}</td>
+                  <td data-label="Status">{{ (l.status or 'active')|upper }}</td>
+                  <td data-label="Action">
+                    <a class="mla-btn mlaBtnOpen" href="{{ url_for('finance.member_loan_view', loan_id=l._id) }}">Open</a>
+                  </td>
+                </tr>
+                {% else %}
+                <tr class="mla-empty-row mla-empty-desktop-row">
+                  <td colspan="7" id="mlaNoLoans">No member loans found.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mla-mobile-empty-card" id="mlaMobileEmptyCard" hidden>
+            <div class="mla-mobile-card">
+              <div class="mla-mobile-card-row">
+                <div class="mla-mobile-card-key" id="mlaEmptyFieldSl">SL</div>
+                <div class="mla-mobile-card-val">—</div>
+              </div>
+              <div class="mla-mobile-card-row">
+                <div class="mla-mobile-card-key" id="mlaEmptyField1">Loan No</div>
+                <div class="mla-mobile-card-val">—</div>
+              </div>
+              <div class="mla-mobile-card-row">
+                <div class="mla-mobile-card-key" id="mlaEmptyField2">Principal</div>
+                <div class="mla-mobile-card-val">—</div>
+              </div>
+              <div class="mla-mobile-card-row">
+                <div class="mla-mobile-card-key" id="mlaEmptyField3">Outstanding</div>
+                <div class="mla-mobile-card-val">—</div>
+              </div>
+              <div class="mla-mobile-card-row">
+                <div class="mla-mobile-card-key" id="mlaEmptyField4">Overdue</div>
+                <div class="mla-mobile-card-val">—</div>
+              </div>
+              <div class="mla-mobile-card-row">
+                <div class="mla-mobile-card-key" id="mlaEmptyField5">Status</div>
+                <div class="mla-mobile-card-val">—</div>
+              </div>
+              <div class="mla-mobile-card-row">
+                <div class="mla-mobile-card-key" id="mlaEmptyField6">Action</div>
+                <div class="mla-mobile-card-val" id="mlaEmptyFieldMsg">No member loans found.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mla-pagination" id="mlaPagination">
+          <div class="mla-page-info" id="mlaPageInfo">Showing 0–0 of 0</div>
+          <div class="mla-page-controls">
+            <button type="button" class="mla-page-btn" id="mlaPrevBtn">Prev</button>
+            <div id="mlaPageNumberWrap" class="mla-page-controls"></div>
+            <button type="button" class="mla-page-btn" id="mlaNextBtn">Next</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const T = {
+      en: {
+        docTitle: "Member Loan Accounts",
+        backAria: "Go Back",
+        heroTitlePrefix: "Member Loan Accounts —",
+        pageSub: "Create member loans and track repayments.",
+        producerGroup: "Producer Group",
+        page: "Page",
+        pageValue: "Member Loan Accounts",
+        createTitle: "Create Member Loan",
+        createSub: "Fill details and save. No change to existing workflow.",
+        member: "Member",
+        selectMember: "Select member",
+        loanNo: "Loan No",
+        purpose: "Purpose",
+        principal: "Principal",
+        roi: "ROI (% p.a.)",
+        tenure: "Tenure (months)",
+        firstDue: "First Due Date",
+        status: "Status",
+        statusActive: "Active",
+        statusClosed: "Closed",
+        statusNpa: "NPA",
+        saveLoan: "Save Member Loan",
+        backDash: "Back to Loan Dashboard",
+        viewOnly: "View only: Loan entry/updates are handled by CLF/Block.",
+        existingTitle: "Existing Member Loans",
+        thSl: "SL",
+        thLoanNo: "Loan No",
+        thPrincipal: "Principal",
+        thOutstanding: "Outstanding",
+        thOverdue: "Overdue",
+        thStatus: "Status",
+        thAction: "Action",
+        open: "Open",
+        noLoans: "No member loans found.",
+        searchPlaceholder: "Search...",
+        rows: "Rows",
+        metaText: "Showing existing member loan records",
+        swipeMore: "Swipe horizontally to view more",
+        prev: "Prev",
+        next: "Next",
+        pageWord: "Page",
+        showingOf: "Showing {start}–{end} of {total}",
+        noSearchResults: "No matching member loans found."
+      },
+      bn: {
+        docTitle: "সদস্য ঋণ হিসাব",
+        backAria: "ফিরে যান",
+        heroTitlePrefix: "সদস্য ঋণ হিসাব —",
+        pageSub: "সদস্য ঋণ তৈরি করুন এবং পরিশোধ ট্র্যাক করুন।",
+        producerGroup: "প্রডিউসার গ্রুপ",
+        page: "পৃষ্ঠা",
+        pageValue: "সদস্য ঋণ হিসাব",
+        createTitle: "সদস্য ঋণ তৈরি করুন",
+        createSub: "তথ্য পূরণ করে সংরক্ষণ করুন। বিদ্যমান ওয়ার্কফ্লো অপরিবর্তিত।",
+        member: "সদস্য",
+        selectMember: "সদস্য নির্বাচন করুন",
+        loanNo: "ঋণ নম্বর",
+        purpose: "উদ্দেশ্য",
+        principal: "মূলধন",
+        roi: "সুদের হার (% বার্ষিক)",
+        tenure: "মেয়াদ (মাস)",
+        firstDue: "প্রথম কিস্তির তারিখ",
+        status: "অবস্থা",
+        statusActive: "চলমান",
+        statusClosed: "বন্ধ",
+        statusNpa: "এনপিএ",
+        saveLoan: "সদস্য ঋণ সংরক্ষণ",
+        backDash: "ঋণ ড্যাশবোর্ডে ফিরুন",
+        viewOnly: "শুধু দেখার জন্য: ঋণ এন্ট্রি/আপডেট CLF/Block দ্বারা পরিচালিত।",
+        existingTitle: "বিদ্যমান সদস্য ঋণ",
+        thSl: "ক্রম",
+        thLoanNo: "ঋণ নম্বর",
+        thPrincipal: "মূলধন",
+        thOutstanding: "বকেয়া",
+        thOverdue: "বকেয়া কিস্তি",
+        thStatus: "অবস্থা",
+        thAction: "অ্যাকশন",
+        open: "খুলুন",
+        noLoans: "কোনো সদস্য ঋণ পাওয়া যায়নি।",
+        searchPlaceholder: "খুঁজুন...",
+        rows: "সারি",
+        metaText: "বিদ্যমান সদস্য ঋণ রেকর্ড দেখানো হচ্ছে",
+        swipeMore: "আরও দেখতে আড়াআড়ি সোয়াইপ করুন",
+        prev: "পূর্ববর্তী",
+        next: "পরবর্তী",
+        pageWord: "পৃষ্ঠা",
+        showingOf: "{total}টির মধ্যে {start}–{end} দেখানো হচ্ছে",
+        noSearchResults: "মিল পাওয়া যায়নি।"
+      }
+    };
+
+    function safeText(id, val){
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    }
+    function safePlaceholder(id, val){
+      const el = document.getElementById(id);
+      if(el && 'placeholder' in el) el.placeholder = val;
+    }
+    function fmt(str, params){
+      return String(str || '').replace(/\{(\w+)\}/g, (_, key) => (params && params[key] != null ? params[key] : ''));
+    }
+
+    function getStoredLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      try{
+        const l3 = document.documentElement.getAttribute('data-lang');
+        if(l3 === 'en' || l3 === 'bn') return l3;
+      }catch(_){}
+      return 'en';
+    }
+
+    function currentText(){
+      return T[getStoredLang()] || T.en;
+    }
+
+    function applyMobileCardLabels(t){
+      const rows = document.querySelectorAll('#mlaLoanTable tbody tr:not(.mla-empty-row)');
+      rows.forEach((tr) => {
+        const tds = tr.querySelectorAll('td');
+        if(tds[0]) tds[0].setAttribute('data-label', t.thSl);
+        if(tds[1]) tds[1].setAttribute('data-label', t.thLoanNo);
+        if(tds[2]) tds[2].setAttribute('data-label', t.thPrincipal);
+        if(tds[3]) tds[3].setAttribute('data-label', t.thOutstanding);
+        if(tds[4]) tds[4].setAttribute('data-label', t.thOverdue);
+        if(tds[5]) tds[5].setAttribute('data-label', t.thStatus);
+        if(tds[6]) tds[6].setAttribute('data-label', t.thAction);
+      });
+    }
+
+    function syncEmptyState(total){
+      const emptyCell = document.getElementById('mlaNoLoans');
+      const mobileEmptyCard = document.getElementById('mlaMobileEmptyCard');
+      const emptyRow = emptyCell ? emptyCell.closest('tr') : null;
+      const isMobile = window.innerWidth <= 720;
+
+      if(emptyRow){
+        emptyRow.style.display = (total === 0 && !isMobile) ? '' : 'none';
+      }
+      if(mobileEmptyCard){
+        const showMobileCard = total === 0 && isMobile;
+        mobileEmptyCard.hidden = !showMobileCard;
+        mobileEmptyCard.classList.toggle('is-visible', showMobileCard);
+      }
+    }
+
+    let mlaPager = null;
+
+    function initLoanPager(){
+      const table = document.getElementById('mlaLoanTable');
+      const searchInput = document.getElementById('mlaLoanSearch');
+      const rowsSelect = document.getElementById('mlaRowsPerPage');
+      const prevBtn = document.getElementById('mlaPrevBtn');
+      const nextBtn = document.getElementById('mlaNextBtn');
+      const pageInfo = document.getElementById('mlaPageInfo');
+      const pageWrap = document.getElementById('mlaPageNumberWrap');
+      const emptyCell = document.getElementById('mlaNoLoans');
+
+      if(!table || !searchInput || !rowsSelect || !prevBtn || !nextBtn || !pageInfo || !pageWrap){
+        syncEmptyState(document.querySelectorAll('#mlaLoanTable tbody tr[data-mla-row]').length);
+        return null;
+      }
+
+      const tbody = table.querySelector('tbody');
+      const allRows = Array.from(tbody.querySelectorAll('tr')).filter(tr => !tr.classList.contains('mla-empty-row'));
+
+      let currentPage = 1;
+      let filteredRows = allRows.slice();
+
+      function getRowsPerPage(){
+        const n = parseInt(rowsSelect.value, 10);
+        return Number.isFinite(n) && n > 0 ? n : 25;
+      }
+
+      function refreshTexts(){
+        const t = currentText();
+        const total = filteredRows.length;
+        const rows = getRowsPerPage();
+        const pageCount = Math.max(1, Math.ceil(Math.max(total, 1) / rows));
+
+        if(currentPage > pageCount) currentPage = pageCount;
+
+        const start = total ? ((currentPage - 1) * rows) + 1 : 0;
+        const end = total ? Math.min(currentPage * rows, total) : 0;
+        pageInfo.textContent = fmt(t.showingOf, { start, end, total });
+
+        Array.from(pageWrap.querySelectorAll('[data-mla-page-btn]')).forEach(btn => {
+          const page = btn.getAttribute('data-mla-page-btn');
+          btn.textContent = page;
+          btn.setAttribute('aria-label', t.pageWord + ' ' + page);
+        });
+
+        const isSearching = !!searchInput.value.trim();
+        const emptyMsg = isSearching ? t.noSearchResults : t.noLoans;
+        if(emptyCell && total === 0){
+          emptyCell.textContent = emptyMsg;
+        }
+        safeText('mlaEmptyFieldMsg', emptyMsg);
+      }
+
+      function renderPageButtons(pageCount){
+        pageWrap.innerHTML = '';
+        for(let i = 1; i <= pageCount; i++){
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'mla-page-btn' + (i === currentPage ? ' is-active' : '');
+          btn.textContent = String(i);
+          btn.setAttribute('data-mla-page-btn', String(i));
+          btn.addEventListener('click', () => {
+            currentPage = i;
+            render();
+          });
+          pageWrap.appendChild(btn);
+        }
+      }
+
+      function render(){
+        const rows = getRowsPerPage();
+        const total = filteredRows.length;
+        const pageCount = Math.max(1, Math.ceil(Math.max(total, 1) / rows));
+
+        if(currentPage > pageCount) currentPage = pageCount;
+        if(currentPage < 1) currentPage = 1;
+
+        allRows.forEach(row => row.classList.add('mla-hidden-row'));
+
+        if(total > 0){
+          const startIndex = (currentPage - 1) * rows;
+          const endIndex = startIndex + rows;
+          filteredRows.slice(startIndex, endIndex).forEach(row => row.classList.remove('mla-hidden-row'));
+        }
+
+        syncEmptyState(total);
+        renderPageButtons(pageCount);
+
+        prevBtn.disabled = currentPage <= 1 || total === 0;
+        nextBtn.disabled = currentPage >= pageCount || total === 0;
+
+        refreshTexts();
+
+        const scrollWrap = table.closest('.mla-table-scroll');
+        if(scrollWrap) scrollWrap.scrollLeft = 0;
+      }
+
+      function applySearch(){
+        const q = String(searchInput.value || '').trim().toLowerCase();
+        filteredRows = allRows.filter(row => {
+          const hay = String(row.getAttribute('data-mla-search') || '').toLowerCase();
+          return !q || hay.includes(q);
+        });
+        currentPage = 1;
+        render();
+      }
+
+      prevBtn.addEventListener('click', () => {
+        if(currentPage > 1){
+          currentPage -= 1;
+          render();
+        }
+      });
+
+      nextBtn.addEventListener('click', () => {
+        const pageCount = Math.max(1, Math.ceil(Math.max(filteredRows.length, 1) / getRowsPerPage()));
+        if(currentPage < pageCount){
+          currentPage += 1;
+          render();
+        }
+      });
+
+      rowsSelect.addEventListener('change', () => {
+        currentPage = 1;
+        render();
+      });
+
+      searchInput.addEventListener('input', applySearch);
+
+      window.addEventListener('resize', () => {
+        render();
+      });
+
+      return {
+        render,
+        refreshTexts
+      };
+    }
+
+    function applyLang(lang){
+      const t = T[lang] || T.en;
+
+      try { document.title = t.docTitle; } catch(_){}
+
+      const back = document.querySelector('.mla-back');
+      if(back) back.setAttribute('aria-label', t.backAria);
+
+      const titleEl = document.getElementById('mlaPageTitle');
+      if(titleEl){
+        const pgName = titleEl.getAttribute('data-pg-name') || '';
+        titleEl.textContent = (t.heroTitlePrefix || "Member Loan Accounts —") + " " + pgName;
+      }
+
+      safeText('mlaPageSub', t.pageSub);
+      safeText('mlaLblProducerGroup', t.producerGroup);
+      safeText('mlaLblPage', t.page);
+      safeText('mlaLblPageValue', t.pageValue);
+
+      safeText('mlaCreateTitle', t.createTitle);
+      safeText('mlaCreateSub', t.createSub);
+
+      safeText('mlaLblMember', t.member);
+      safeText('mlaMemberSelectPlaceholder', t.selectMember);
+
+      safeText('mlaLblLoanNo', t.loanNo);
+      safePlaceholder('mlaLoanNoPh', "e.g., MLOAN-01");
+
+      safeText('mlaLblPurpose', t.purpose);
+      safeText('mlaLblPrincipal', t.principal);
+      safeText('mlaLblRoi', t.roi);
+      safeText('mlaLblTenure', t.tenure);
+      safeText('mlaLblFirstDue', t.firstDue);
+      safeText('mlaLblStatus', t.status);
+
+      safeText('mlaStatusActive', t.statusActive);
+      safeText('mlaStatusClosed', t.statusClosed);
+      safeText('mlaStatusNpa', t.statusNpa);
+
+      safeText('mlaBtnSave', t.saveLoan);
+      safeText('mlaBtnBackDash', t.backDash);
+      safeText('mlaViewOnlyNote', t.viewOnly);
+
+      safeText('mlaExistingTitle', t.existingTitle);
+      safeText('mlaRowsLabel', t.rows);
+      safeText('mlaMetaText', t.metaText);
+      safeText('mlaSwipeText', t.swipeMore);
+      safeText('mlaPrevBtn', t.prev);
+      safeText('mlaNextBtn', t.next);
+
+      safeText('mlaThSl', t.thSl);
+      safeText('mlaThLoanNo', t.thLoanNo);
+      safeText('mlaThPrincipal', t.thPrincipal);
+      safeText('mlaThOutstanding', t.thOutstanding);
+      safeText('mlaThOverdue', t.thOverdue);
+      safeText('mlaThStatus', t.thStatus);
+      safeText('mlaThAction', t.thAction);
+
+      safeText('mlaEmptyFieldSl', t.thSl);
+      safeText('mlaEmptyField1', t.thLoanNo);
+      safeText('mlaEmptyField2', t.thPrincipal);
+      safeText('mlaEmptyField3', t.thOutstanding);
+      safeText('mlaEmptyField4', t.thOverdue);
+      safeText('mlaEmptyField5', t.thStatus);
+      safeText('mlaEmptyField6', t.thAction);
+
+      document.querySelectorAll('.mlaBtnOpen').forEach(el => { el.textContent = t.open; });
+
+      const search = document.getElementById('mlaLoanSearch');
+      if(search) search.placeholder = t.searchPlaceholder;
+
+      const isSearching = !!(search && search.value && search.value.trim());
+      safeText('mlaNoLoans', isSearching ? t.noSearchResults : t.noLoans);
+      safeText('mlaEmptyFieldMsg', isSearching ? t.noSearchResults : t.noLoans);
+
+      applyMobileCardLabels(t);
+
+      if(mlaPager){
+        if(typeof mlaPager.refreshTexts === 'function') mlaPager.refreshTexts();
+        if(typeof mlaPager.render === 'function') mlaPager.render();
+      } else {
+        syncEmptyState(document.querySelectorAll('#mlaLoanTable tbody tr[data-mla-row]').length);
+      }
+    }
+
+    function initMLAPage(){
+      applyLang(getStoredLang());
+      mlaPager = initLoanPager();
+
+      requestAnimationFrame(() => {
+        if(mlaPager && typeof mlaPager.render === 'function'){
+          mlaPager.render();
+        } else {
+          syncEmptyState(document.querySelectorAll('#mlaLoanTable tbody tr[data-mla-row]').length);
+        }
+      });
+    }
+
+    window.updatePageLanguage = function(lang /*, baseT */){
+      if(lang !== 'en' && lang !== 'bn') lang = getStoredLang();
+      applyLang(lang);
+    };
+
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyLang(lang);
+    });
+    window.addEventListener('pgmis:lang', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyLang(lang);
+    });
+
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', initMLAPage, { once:true });
+    } else {
+      initMLAPage();
+    }
+  })();
+</script>
+
+{% endblock %}

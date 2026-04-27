@@ -1,0 +1,1332 @@
+{% extends "base.html" %}
+{% block title %}Stock / Inventory Register{% endblock %}
+{% block content %}
+
+<style>
+  /* ============================================================
+     STOCK / INVENTORY REGISTER — RESKIN (MATCH MONTHLY BUSINESS LOOK)
+     ✅ ONLY UI/CSS/UX changed
+     ✅ ALL data contents + form fields + names + routes kept as-is
+     ✅ Fully responsive: desktop/laptop + tablet + mobile/app
+     ✅ Scoped under .st-wrap only (no global body/* rules)
+     ✅ Translation-ready IDs for navbar language system (EN/BN)
+     ✅ Mobile/app tables converted into horizontal swipe cards
+     ✅ Search + pagination added frontend-only
+     ============================================================ */
+
+  .st-wrap{
+    width: 100%;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    color: var(--ink);
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .st-wrap *{ box-sizing:border-box; }
+
+  .st-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+    position: relative;
+  }
+
+  /* Header */
+  .st-head{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+    position: relative;
+  }
+  .st-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: .2px;
+    line-height: 1.25;
+  }
+  .st-sub{
+    margin: 6px 0 0;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(15,23,42,.62);
+  }
+
+  /* Back (mobile only) */
+  .st-back{
+    display:none;
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    transform: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: rgba(11,77,58,.98);
+    user-select: none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .st-back:hover{
+    transform: translateX(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .st-back:active{ transform: translateX(-1px) scale(.98); }
+  .st-back svg{ width: 18px; height: 18px; display:block; }
+
+  @media (max-width: 720px){
+    .st-back{ display:flex; }
+    .st-title{
+      text-align: left;
+      padding-left: 54px;
+      padding-right: 8px;
+    }
+    .st-sub{
+      text-align: left;
+      padding-left: 54px;
+      padding-right: 8px;
+    }
+  }
+
+  /* Top fields */
+  .st-topfields{
+    padding: 10px 16px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .st-field{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .st-label{
+    font-weight: 900;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .st-muted{
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(15,23,42,.72);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Layout two panels */
+  .st-panels{
+    padding: 12px 16px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    background: rgba(255,255,255,.96);
+  }
+
+  .st-block{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.92);
+    overflow: hidden;
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+    min-width: 0;
+  }
+  .st-block-head{
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(247,250,249,.66);
+  }
+  .st-block-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 13px;
+    letter-spacing: .15px;
+    color: var(--ink);
+  }
+  .st-block-sub{
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: rgba(15,23,42,.62);
+    font-weight: 750;
+  }
+  .st-block-body{
+    padding: 12px;
+  }
+
+  /* Grid */
+  .st-grid{
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 10px 14px;
+    align-items: start;
+  }
+  .col-2{ grid-column: span 2; }
+  .col-3{ grid-column: span 3; }
+  .col-4{ grid-column: span 4; }
+  .col-6{ grid-column: span 6; }
+  .col-12{ grid-column: span 12; }
+
+  .st-stack{
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .st-stack label{
+    font-size: .78rem;
+    font-weight: 900;
+    color: rgba(11,77,58,.92);
+  }
+
+  /* Inputs */
+  .st-input,
+  .st-select,
+  .st-textarea{
+    width: 100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(247,250,249,.75);
+    font-weight: 800;
+    font-size: 12px;
+    outline: none;
+    color: var(--ink);
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .st-input:focus,
+  .st-select:focus,
+  .st-textarea:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+  .st-textarea{
+    min-height: 64px;
+    resize: vertical;
+    line-height: 1.35;
+  }
+
+  /* Buttons */
+  .st-actions{
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items:center;
+    justify-content:flex-start;
+    margin-top: 6px;
+  }
+  .st-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+    text-decoration:none;
+  }
+  .st-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .st-btn:disabled{
+    opacity: .45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .st-btn.st-primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .st-btn.st-primary:hover{ background: rgba(16,185,129,.16); }
+
+  .st-icon{ width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* Search / pagination tools */
+  .st-tools{
+    margin-top: 12px;
+    padding: 12px;
+    display:grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 12px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 14px;
+    background: rgba(255,255,255,.96);
+  }
+  .st-search-wrap{ min-width:0; }
+  .st-search{
+    width:100%;
+    height:48px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background: rgba(247,250,249,.85);
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 850;
+    color: var(--ink);
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .st-search::placeholder{ color: rgba(15,23,42,.46); }
+  .st-search:focus{
+    border-color: rgba(11,77,58,.36);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+  .st-rows-wrap{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width: fit-content;
+  }
+  .st-rows-chip{
+    height:48px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 0 16px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background: rgba(247,250,249,.85);
+    font-weight: 950;
+    font-size: 13px;
+  }
+  .st-rows-chip select{
+    border:0;
+    outline:none;
+    background: transparent;
+    font-weight: 950;
+    color: var(--ink);
+    font-size: 13px;
+    cursor:pointer;
+  }
+  .st-meta{
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 12px;
+    background: rgba(247,250,249,.58);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .st-meta-text{
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.72);
+  }
+  .st-swipe-note{
+    font-size: 11px;
+    font-weight: 850;
+    color: rgba(15,23,42,.50);
+  }
+
+  /* Tables */
+  .st-table-wrap{
+    margin-top: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,.12);
+    overflow: hidden;
+    background: rgba(255,255,255,.96);
+  }
+  .st-table{
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .st-table thead th{
+    background: rgba(247,250,249,.76);
+    color: rgba(11,77,58,.98);
+    font-weight: 950;
+    font-size: 12px;
+    padding: 10px;
+    border-bottom: 1px solid rgba(15,23,42,.10);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .st-table td{
+    padding: 10px;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    font-size: 12.5px;
+    color: rgba(15,23,42,.88);
+    vertical-align: top;
+  }
+  .st-table tr:last-child td{ border-bottom: none; }
+  .st-empty{
+    color: rgba(100,116,139,.95);
+    font-weight: 800;
+  }
+
+  .st-table-scroll{
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .st-table-scroll::-webkit-scrollbar{ height: 10px; }
+  .st-table-scroll::-webkit-scrollbar-thumb{
+    background: rgba(15,23,42,.18);
+    border-radius: 999px;
+  }
+
+  .st-pagination{
+    margin-top: 12px;
+    padding: 12px 14px 14px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 14px;
+    background: rgba(255,255,255,.96);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .st-page-info{
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.72);
+  }
+  .st-page-controls{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap: wrap;
+  }
+  .st-page-btn{
+    min-width: 42px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border:1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.84);
+    color: var(--ink);
+    font-weight: 950;
+    font-size: 12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .st-page-btn:hover{
+    transform: translateY(-1px);
+    background:#fff;
+    box-shadow: 0 14px 22px -18px rgba(15,23,42,.22);
+  }
+  .st-page-btn[disabled]{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+  .st-page-btn.is-active{
+    background: rgba(11,77,58,.10);
+    border-color: rgba(11,77,58,.25);
+    color: rgba(11,77,58,.98);
+  }
+
+  .st-hidden-row{ display:none !important; }
+
+  @media (max-width: 980px){
+    .st-panels{ grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 720px){
+    .st-topfields{ grid-template-columns: 1fr; }
+    .col-2,.col-3,.col-4,.col-6{ grid-column: span 12; }
+    .st-back{ display:flex; }
+    .st-title{ font-size: 17px; }
+    .st-tools{ grid-template-columns: 1fr; }
+
+    .st-table-wrap{
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .st-table-scroll{
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 12px;
+      scroll-snap-type: x mandatory;
+      scroll-padding-left: 12px;
+      background: rgba(255,255,255,.98);
+    }
+
+    .st-table{
+      width: 100%;
+      min-width: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .st-table thead{
+      display: none;
+    }
+
+    .st-table tbody{
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 86%;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .st-table tbody tr{
+      display: flex;
+      flex-direction: column;
+      scroll-snap-align: start;
+      border: 1px solid rgba(15,23,42,.12);
+      border-radius: 16px;
+      background: rgba(255,255,255,.98);
+      box-shadow: 0 14px 24px -22px rgba(15,23,42,.30);
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .st-table tbody td{
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px;
+      border-bottom: 1px solid rgba(15,23,42,.08);
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .st-table tbody td:last-child{
+      border-bottom: none;
+    }
+
+    .st-table tbody td::before{
+      content: attr(data-label);
+      font-weight: 950;
+      font-size: 12px;
+      color: rgba(11,77,58,.92);
+      line-height: 1.3;
+      flex: 0 0 40%;
+      max-width: 44%;
+      word-break: break-word;
+    }
+
+    .st-table tbody td > *{
+      min-width: 0;
+    }
+
+    .st-table tbody td{
+      text-align: right;
+      color: rgba(15,23,42,.88);
+      font-weight: 800;
+    }
+
+    .st-table tbody tr.st-empty-row{
+      display: block;
+      min-height: auto;
+    }
+
+    .st-table tbody tr.st-empty-row td{
+      display: block;
+      text-align: left;
+      padding: 14px 12px;
+      border-bottom: none;
+    }
+
+    .st-table tbody tr.st-empty-row td::before{
+      display: none;
+      content: none;
+    }
+  }
+
+  @media (max-width: 520px){
+    .st-table tbody{
+      grid-auto-columns: 90%;
+    }
+  }
+</style>
+
+<div class="st-wrap">
+  <div class="st-sheet">
+
+    <!-- Header -->
+    <div class="st-head">
+      <a class="st-back" href="javascript:history.back()" aria-label="Go Back">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <h2 class="st-title" id="stTitle">
+        Stock / Inventory — {{ pg.pg_name or pg.name }}
+      </h2>
+      <p class="st-sub" id="stSub">
+        Opening/Closing stock (monthly) • Commodity-wise • Stock movement ledger
+      </p>
+    </div>
+
+    <!-- Top fields -->
+    <div class="st-topfields">
+      <div class="st-field">
+        <div class="st-label" id="stPgLabel">Producer Group</div>
+        <div class="st-muted">{{ pg.pg_name or pg.name or '—' }}</div>
+      </div>
+
+      <div class="st-field">
+        <div class="st-label" id="stPageLabel">Page</div>
+        <div class="st-muted" id="stPageValue">Stock / Inventory Register</div>
+      </div>
+    </div>
+
+    <div class="st-panels">
+
+      <!-- Monthly Stock -->
+      <section class="st-block">
+        <div class="st-block-head">
+          <h3 class="st-block-title" id="stMonthlyTitle">Monthly Stock (Commodity-wise)</h3>
+          <p class="st-block-sub" id="stMonthlySub">Record monthly opening & closing stock values for each commodity.</p>
+        </div>
+
+        <div class="st-block-body">
+          <form method="POST" class="st-grid">
+            <div class="st-stack col-3">
+              <label id="stYearLabel">Year</label>
+              <input class="st-input" name="year" type="number" value="">
+            </div>
+
+            <div class="st-stack col-3">
+              <label id="stMonthLabel">Month</label>
+              <input class="st-input" name="month" type="number" min="1" max="12">
+            </div>
+
+            <div class="st-stack col-6">
+              <label id="stCommodityLabel">Commodity</label>
+              <input class="st-input" name="commodity" required placeholder="Egg / Broiler / Feed / ...">
+            </div>
+
+            <div class="st-stack col-3">
+              <label id="stOpenQtyLabel">Opening Qty</label>
+              <input class="st-input" name="opening_qty" type="number" step="0.01">
+            </div>
+
+            <div class="st-stack col-3">
+              <label id="stOpenValLabel">Opening Value</label>
+              <input class="st-input" name="opening_value" type="number" step="0.01">
+            </div>
+
+            <div class="st-stack col-3">
+              <label id="stCloseQtyLabel">Closing Qty</label>
+              <input class="st-input" name="closing_qty" type="number" step="0.01">
+            </div>
+
+            <div class="st-stack col-3">
+              <label id="stCloseValLabel">Closing Value</label>
+              <input class="st-input" name="closing_value" type="number" step="0.01">
+            </div>
+
+            <div class="st-stack col-4">
+              <label id="stValuationLabel">Valuation</label>
+              <select class="st-select" name="valuation_method">
+                <option value="avg" id="stValAvg">Average</option>
+                <option value="fifo" id="stValFifo">FIFO</option>
+                <option value="lifo" id="stValLifo">LIFO</option>
+              </select>
+            </div>
+
+            <div class="col-12 st-actions">
+              <button class="st-btn st-primary" type="submit" id="stSaveMonthlyBtn">
+                <svg class="st-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <span id="stSaveMonthlyText">Save Monthly Stock</span>
+              </button>
+            </div>
+          </form>
+
+          <div class="st-tools">
+            <div class="st-search-wrap">
+              <input type="text" class="st-search" id="stMonthlySearch" placeholder="Search..." autocomplete="off">
+            </div>
+            <div class="st-rows-wrap">
+              <div class="st-rows-chip">
+                <span id="stMonthlyRowsLabel">Rows</span>
+                <select id="stMonthlyRowsPerPage" aria-label="Rows per page">
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="25" selected>25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="st-meta">
+            <div class="st-meta-text" id="stMonthlyMetaText">Showing monthly stock records</div>
+            <div class="st-swipe-note" id="stMonthlySwipeText">Swipe horizontally to view more</div>
+          </div>
+
+          <div class="st-table-wrap">
+            <div class="st-table-scroll" role="region" aria-label="Monthly Stock Table">
+              <table class="st-table" id="stMonthlyTable">
+                <thead>
+                  <tr>
+                      <th id="stThSl">SL</th>
+                    <th id="stThYear">Year</th>
+                    <th id="stThMonth">Month</th>
+                    <th id="stThCommodity">Commodity</th>
+                    <th id="stThOpenQty">Opening Qty</th>
+                    <th id="stThCloseQty">Closing Qty</th>
+                    <th id="stThCloseVal">Closing Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in records %}
+                  <tr data-st-row data-st-search="{{ loop.index }} {{ (r.year|string)|lower }} {{ (r.month|string)|lower }} {{ (r.commodity or '')|lower }}">
+                    <td data-label="SL">{{ loop.index }}</td>
+                    <td data-label="Year">{{ r.year }}</td>
+                      <td data-label="Month">{{ r.month }}</td>
+                      <td data-label="Commodity">{{ r.commodity }}</td>
+                      <td data-label="Opening Qty">{{ r.opening_qty }}</td>
+                      <td data-label="Closing Qty">{{ r.closing_qty }}</td>
+                      <td data-label="Closing Value">₹{{ "{:,.2f}".format(r.closing_value or 0) }}</td>
+                    </tr>
+                  {% else %}
+                    <tr class="st-empty-row">
+                      <td colspan="6" class="st-empty" id="stNoStock">No stock records yet.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {% if records %}
+          <div class="st-pagination" id="stMonthlyPagination">
+            <div class="st-page-info" id="stMonthlyPageInfo">Showing 0–0 of 0</div>
+            <div class="st-page-controls">
+              <button type="button" class="st-page-btn" id="stMonthlyPrevBtn">Prev</button>
+              <div id="stMonthlyPageNumberWrap" class="st-page-controls"></div>
+              <button type="button" class="st-page-btn" id="stMonthlyNextBtn">Next</button>
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+      </section>
+
+      <!-- Movement Ledger -->
+      <section class="st-block">
+        <div class="st-block-head">
+          <h3 class="st-block-title" id="stMoveTitle">Stock Movement Ledger</h3>
+          <p class="st-block-sub" id="stMoveSub">Track purchase/sale/adjustment entries to reflect stock movement.</p>
+        </div>
+
+        <div class="st-block-body">
+          <form method="POST" action="{{ url_for('business.stock_movement', pg_id=pg._id) }}" class="st-grid">
+            <div class="st-stack col-4">
+              <label id="stMoveCommodityLabel">Commodity</label>
+              <input class="st-input" name="commodity" required>
+            </div>
+
+            <div class="st-stack col-4">
+              <label id="stMoveTypeLabel">Type</label>
+              <select class="st-select" name="movement_type">
+                <option value="purchase" id="stTypePurchase">Purchase</option>
+                <option value="sale" id="stTypeSale">Sale</option>
+                <option value="adjustment" id="stTypeAdjustment">Adjustment</option>
+              </select>
+            </div>
+
+            <div class="st-stack col-2">
+              <label id="stQtyLabel">Qty</label>
+              <input class="st-input" name="qty" type="number" step="0.01" required>
+            </div>
+
+            <div class="st-stack col-2">
+              <label id="stRateLabel">Rate</label>
+              <input class="st-input" name="rate" type="number" step="0.01" required>
+            </div>
+
+            <div class="st-stack col-12">
+              <label id="stRemarksLabel">Remarks</label>
+              <textarea class="st-textarea" name="remarks"></textarea>
+            </div>
+
+            <div class="col-12 st-actions">
+              <button class="st-btn st-primary" type="submit" id="stAddMoveBtn">
+                <svg class="st-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 5v14"></path>
+                  <path d="M5 12h14"></path>
+                </svg>
+                <span id="stAddMoveText">Add Movement</span>
+              </button>
+            </div>
+          </form>
+
+          <div class="st-tools">
+            <div class="st-search-wrap">
+              <input type="text" class="st-search" id="stMovementSearch" placeholder="Search..." autocomplete="off">
+            </div>
+            <div class="st-rows-wrap">
+              <div class="st-rows-chip">
+                <span id="stMovementRowsLabel">Rows</span>
+                <select id="stMovementRowsPerPage" aria-label="Rows per page">
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="25" selected>25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="st-meta">
+            <div class="st-meta-text" id="stMovementMetaText">Showing stock movement records</div>
+            <div class="st-swipe-note" id="stMovementSwipeText">Swipe horizontally to view more</div>
+          </div>
+
+          <div class="st-table-wrap">
+            <div class="st-table-scroll" role="region" aria-label="Movement Ledger Table">
+              <table class="st-table" id="stMovementTable">
+                <thead>
+                  <tr>
+                      <th id="stThSl2">SL</th>
+                    <th id="stThDate">Date</th>
+                    <th id="stThCommodity2">Commodity</th>
+                    <th id="stThType">Type</th>
+                    <th id="stThQty">Qty</th>
+                    <th id="stThAmount">Amount</th>
+                    <th id="stThRemarks">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for m in movements %}
+                  <tr data-st-row data-st-search="{{ loop.index }} {{ (m.ts.strftime('%Y-%m-%d') if m.ts else '')|lower }} {{ (m.commodity or '')|lower }}">
+                    <td data-label="SL">{{ loop.index }}</td>
+                    <td data-label="Date">{{ m.ts.strftime('%Y-%m-%d') if m.ts else '' }}</td>
+                      <td data-label="Commodity">{{ m.commodity }}</td>
+                      <td data-label="Type">{{ m.movement_type }}</td>
+                      <td data-label="Qty">{{ m.qty }}</td>
+                      <td data-label="Amount">₹{{ "{:,.2f}".format(m.amount or 0) }}</td>
+                      <td data-label="Remarks">{{ m.remarks }}</td>
+                    </tr>
+                  {% else %}
+                    <tr class="st-empty-row">
+                      <td colspan="7" class="st-empty" id="stNoMoves">No movements yet.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {% if movements %}
+          <div class="st-pagination" id="stMovementPagination">
+            <div class="st-page-info" id="stMovementPageInfo">Showing 0–0 of 0</div>
+            <div class="st-page-controls">
+              <button type="button" class="st-page-btn" id="stMovementPrevBtn">Prev</button>
+              <div id="stMovementPageNumberWrap" class="st-page-controls"></div>
+              <button type="button" class="st-page-btn" id="stMovementNextBtn">Next</button>
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // PAGE TRANSLATION (hooks into base.html language system)
+  // ✅ No logic changes, only text replacement by IDs
+  // ✅ Language persists because base.html persists it
+  // ✅ Mobile swipe cards also update their labels when language changes
+  // ✅ Search + pagination are frontend-only
+  // ============================================================
+
+  (function(){
+    const TRANSLATIONS = {
+      en: {
+        stTitlePrefix: "Stock / Inventory — ",
+        stSub: "Opening/Closing stock (monthly) • Commodity-wise • Stock movement ledger",
+        stPgLabel: "Producer Group",
+        stPageLabel: "Page",
+        stPageValue: "Stock / Inventory Register",
+stThSl: "SL",
+stThSl2: "SL",
+
+        stMonthlyTitle: "Monthly Stock (Commodity-wise)",
+        stMonthlySub: "Record monthly opening & closing stock values for each commodity.",
+        stYearLabel: "Year",
+        stMonthLabel: "Month",
+        stCommodityLabel: "Commodity",
+        stOpenQtyLabel: "Opening Qty",
+        stOpenValLabel: "Opening Value",
+        stCloseQtyLabel: "Closing Qty",
+        stCloseValLabel: "Closing Value",
+        stValuationLabel: "Valuation",
+        stValAvg: "Average",
+        stValFifo: "FIFO",
+        stValLifo: "LIFO",
+        stSaveMonthlyText: "Save Monthly Stock",
+
+        stThYear: "Year",
+        stThMonth: "Month",
+        stThCommodity: "Commodity",
+        stThOpenQty: "Opening Qty",
+        stThCloseQty: "Closing Qty",
+        stThCloseVal: "Closing Value",
+        stNoStock: "No stock records yet.",
+
+        stMoveTitle: "Stock Movement Ledger",
+        stMoveSub: "Track purchase/sale/adjustment entries to reflect stock movement.",
+        stMoveCommodityLabel: "Commodity",
+        stMoveTypeLabel: "Type",
+        stTypePurchase: "Purchase",
+        stTypeSale: "Sale",
+        stTypeAdjustment: "Adjustment",
+        stQtyLabel: "Qty",
+        stRateLabel: "Rate",
+        stRemarksLabel: "Remarks",
+        stAddMoveText: "Add Movement",
+
+        stThDate: "Date",
+        stThCommodity2: "Commodity",
+        stThType: "Type",
+        stThQty: "Qty",
+        stThAmount: "Amount",
+        stThRemarks: "Remarks",
+        stNoMoves: "No movements yet.",
+
+        stSearchPlaceholder: "Search...",
+        stRowsLabel: "Rows",
+        stSwipeMore: "Swipe horizontally to view more",
+        stMonthlyMeta: "Showing monthly stock records",
+        stMovementMeta: "Showing stock movement records",
+        stPrev: "Prev",
+        stNext: "Next",
+        stPage: "Page",
+        stShowingOf: "Showing {start}–{end} of {total}",
+        stNoSearchResults: "No matching records found."
+      },
+      bn: {
+        stTitlePrefix: "স্টক / ইনভেন্টরি — ",
+        stSub: "প্রারম্ভিক/সমাপনী স্টক (মাসিক) • পণ্যভিত্তিক • স্টক মুভমেন্ট লেজার",
+        stPgLabel: "প্রোডিউসার গ্রুপ",
+        stPageLabel: "পৃষ্ঠা",
+        stPageValue: "স্টক / ইনভেন্টরি রেজিস্টার",
+stThSl: "ক্রম",
+stThSl2: "ক্রম",
+        stMonthlyTitle: "মাসিক স্টক (পণ্যভিত্তিক)",
+        stMonthlySub: "প্রতিটি পণ্যের জন্য মাসিক প্রারম্ভিক ও সমাপনী স্টক/মূল্য সংরক্ষণ করুন।",
+        stYearLabel: "বছর",
+        stMonthLabel: "মাস",
+        stCommodityLabel: "পণ্য",
+        stOpenQtyLabel: "প্রারম্ভিক পরিমাণ",
+        stOpenValLabel: "প্রারম্ভিক মূল্য",
+        stCloseQtyLabel: "সমাপনী পরিমাণ",
+        stCloseValLabel: "সমাপনী মূল্য",
+        stValuationLabel: "মূল্যায়ন পদ্ধতি",
+        stValAvg: "গড়",
+        stValFifo: "FIFO",
+        stValLifo: "LIFO",
+        stSaveMonthlyText: "মাসিক স্টক সংরক্ষণ করুন",
+
+        stThYear: "বছর",
+        stThMonth: "মাস",
+        stThCommodity: "পণ্য",
+        stThOpenQty: "প্রারম্ভিক পরিমাণ",
+        stThCloseQty: "সমাপনী পরিমাণ",
+        stThCloseVal: "সমাপনী মূল্য",
+        stNoStock: "এখনও কোনো স্টক রেকর্ড নেই।",
+
+        stMoveTitle: "স্টক মুভমেন্ট লেজার",
+        stMoveSub: "ক্রয়/বিক্রয়/সমন্বয় এন্ট্রি দিয়ে স্টক চলাচল ট্র্যাক করুন।",
+        stMoveCommodityLabel: "পণ্য",
+        stMoveTypeLabel: "ধরন",
+        stTypePurchase: "ক্রয়",
+        stTypeSale: "বিক্রয়",
+        stTypeAdjustment: "সমন্বয়",
+        stQtyLabel: "পরিমাণ",
+        stRateLabel: "দর",
+        stRemarksLabel: "মন্তব্য",
+        stAddMoveText: "মুভমেন্ট যোগ করুন",
+
+        stThDate: "তারিখ",
+        stThCommodity2: "পণ্য",
+        stThType: "ধরন",
+        stThQty: "পরিমাণ",
+        stThAmount: "পরিমাণের মূল্য",
+        stThRemarks: "মন্তব্য",
+        stNoMoves: "এখনও কোনো মুভমেন্ট নেই।",
+
+        stSearchPlaceholder: "খুঁজুন...",
+        stRowsLabel: "সারি",
+        stSwipeMore: "আরও দেখতে আড়াআড়ি সোয়াইপ করুন",
+        stMonthlyMeta: "মাসিক স্টক রেকর্ড দেখানো হচ্ছে",
+        stMovementMeta: "স্টক মুভমেন্ট রেকর্ড দেখানো হচ্ছে",
+        stPrev: "পূর্ববর্তী",
+        stNext: "পরবর্তী",
+        stPage: "পৃষ্ঠা",
+        stShowingOf: "{total}টির মধ্যে {start}–{end} দেখানো হচ্ছে",
+        stNoSearchResults: "মিল পাওয়া যায়নি।"
+      }
+    };
+
+    function getLang(){
+      return (
+        localStorage.getItem("pgmis_lang") ||
+        sessionStorage.getItem("PGMIS_LANG_SESSION") ||
+        document.documentElement.getAttribute("data-lang") ||
+        "en"
+      );
+    }
+
+    function safeText(id, text){
+      const el = document.getElementById(id);
+      if(el && typeof text === "string") el.textContent = text;
+    }
+
+    function formatText(str, params){
+      return String(str || '').replace(/\{(\w+)\}/g, (_, key) => (params && params[key] != null ? params[key] : ''));
+    }
+
+    function applyMobileCardLabels(t){
+      const monthlyTable = document.getElementById('stMonthlyTable');
+      if(monthlyTable){
+        const monthlyRows = monthlyTable.querySelectorAll('tbody tr:not(.st-empty-row)');
+        monthlyRows.forEach((tr) => {
+          const tds = tr.querySelectorAll('td');
+          if(tds[0]) tds[0].setAttribute('data-label', t.stThYear);
+          if(tds[1]) tds[1].setAttribute('data-label', t.stThMonth);
+          if(tds[2]) tds[2].setAttribute('data-label', t.stThCommodity);
+          if(tds[3]) tds[3].setAttribute('data-label', t.stThOpenQty);
+          if(tds[4]) tds[4].setAttribute('data-label', t.stThCloseQty);
+          if(tds[5]) tds[5].setAttribute('data-label', t.stThCloseVal);
+        });
+      }
+
+      const movementTable = document.getElementById('stMovementTable');
+      if(movementTable){
+        const movementRows = movementTable.querySelectorAll('tbody tr:not(.st-empty-row)');
+        movementRows.forEach((tr) => {
+          const tds = tr.querySelectorAll('td');
+          if(tds[0]) tds[0].setAttribute('data-label', t.stThDate);
+          if(tds[1]) tds[1].setAttribute('data-label', t.stThCommodity2);
+          if(tds[2]) tds[2].setAttribute('data-label', t.stThType);
+          if(tds[3]) tds[3].setAttribute('data-label', t.stThQty);
+          if(tds[4]) tds[4].setAttribute('data-label', t.stThAmount);
+          if(tds[5]) tds[5].setAttribute('data-label', t.stThRemarks);
+        });
+      }
+    }
+
+    function initTablePager(config){
+      const table = document.getElementById(config.tableId);
+      const searchInput = document.getElementById(config.searchId);
+      const rowsSelect = document.getElementById(config.rowsSelectId);
+      const prevBtn = document.getElementById(config.prevBtnId);
+      const nextBtn = document.getElementById(config.nextBtnId);
+      const pageInfo = document.getElementById(config.pageInfoId);
+      const pageWrap = document.getElementById(config.pageWrapId);
+      const emptyCell = document.getElementById(config.emptyId);
+
+      if(!table || !searchInput || !rowsSelect || !prevBtn || !nextBtn || !pageInfo || !pageWrap) return;
+
+      const tbody = table.querySelector('tbody');
+      const allRows = Array.from(tbody.querySelectorAll('tr')).filter(tr => !tr.classList.contains('st-empty-row'));
+      if(!allRows.length) return;
+
+      let currentPage = 1;
+      let filteredRows = allRows.slice();
+
+      function getRowsPerPage(){
+        const n = parseInt(rowsSelect.value, 10);
+        return Number.isFinite(n) && n > 0 ? n : 25;
+      }
+
+      function getText(){
+        return TRANSLATIONS[getLang()] || TRANSLATIONS.en;
+      }
+
+      function refreshTexts(){
+        const t = getText();
+        const total = filteredRows.length;
+        const rows = getRowsPerPage();
+        const pageCount = Math.max(1, Math.ceil(total / rows));
+        if(currentPage > pageCount) currentPage = pageCount;
+
+        const start = total ? ((currentPage - 1) * rows) + 1 : 0;
+        const end = total ? Math.min(currentPage * rows, total) : 0;
+        pageInfo.textContent = formatText(t.stShowingOf, { start, end, total });
+
+        Array.from(pageWrap.querySelectorAll('[data-st-page-btn]')).forEach(btn => {
+          const page = btn.getAttribute('data-st-page-btn');
+          btn.textContent = page;
+          btn.setAttribute('aria-label', formatText(t.stPage, { page }));
+        });
+
+        if(emptyCell && total === 0){
+          emptyCell.textContent = t.stNoSearchResults;
+        }
+      }
+
+      function renderPageButtons(pageCount){
+        pageWrap.innerHTML = '';
+        for(let i = 1; i <= pageCount; i++){
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'st-page-btn' + (i === currentPage ? ' is-active' : '');
+          btn.textContent = String(i);
+          btn.setAttribute('data-st-page-btn', String(i));
+          btn.addEventListener('click', () => {
+            currentPage = i;
+            render();
+          });
+          pageWrap.appendChild(btn);
+        }
+      }
+
+      function render(){
+        const rows = getRowsPerPage();
+        const total = filteredRows.length;
+        const pageCount = Math.max(1, Math.ceil(total / rows));
+
+        if(currentPage > pageCount) currentPage = pageCount;
+        if(currentPage < 1) currentPage = 1;
+
+        allRows.forEach(row => row.classList.add('st-hidden-row'));
+
+        if(emptyCell){
+          const emptyRow = emptyCell.closest('tr');
+          if(emptyRow){
+            emptyRow.style.display = total === 0 ? '' : 'none';
+          }
+        }
+
+        if(total > 0){
+          const startIndex = (currentPage - 1) * rows;
+          const endIndex = startIndex + rows;
+          filteredRows.slice(startIndex, endIndex).forEach(row => row.classList.remove('st-hidden-row'));
+        }
+
+        renderPageButtons(pageCount);
+        prevBtn.disabled = currentPage <= 1 || total === 0;
+        nextBtn.disabled = currentPage >= pageCount || total === 0;
+        refreshTexts();
+
+        const scrollWrap = table.closest('.st-table-scroll');
+        if(scrollWrap) scrollWrap.scrollLeft = 0;
+      }
+
+      function applySearch(){
+        const q = String(searchInput.value || '').trim().toLowerCase();
+        filteredRows = allRows.filter(row => {
+          const hay = String(row.getAttribute('data-st-search') || '').toLowerCase();
+          return !q || hay.includes(q);
+        });
+        currentPage = 1;
+        render();
+      }
+
+      prevBtn.addEventListener('click', () => {
+        if(currentPage > 1){
+          currentPage -= 1;
+          render();
+        }
+      });
+
+      nextBtn.addEventListener('click', () => {
+        const pageCount = Math.max(1, Math.ceil(filteredRows.length / getRowsPerPage()));
+        if(currentPage < pageCount){
+          currentPage += 1;
+          render();
+        }
+      });
+
+      rowsSelect.addEventListener('change', () => {
+        currentPage = 1;
+        render();
+      });
+
+      searchInput.addEventListener('input', applySearch);
+
+      config.refresh = refreshTexts;
+      render();
+      return { refreshTexts };
+    }
+
+    let monthlyPager = null;
+    let movementPager = null;
+
+    function applyLang(lang){
+      const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
+
+      const titleEl = document.getElementById("stTitle");
+      if(titleEl){
+        const pgName = "{{ pg.pg_name or pg.name }}";
+        titleEl.textContent = (t.stTitlePrefix || "Stock / Inventory — ") + pgName;
+      }
+
+      safeText("stSub", t.stSub);
+      safeText("stPgLabel", t.stPgLabel);
+      safeText("stPageLabel", t.stPageLabel);
+      safeText("stPageValue", t.stPageValue);
+
+      safeText("stMonthlyTitle", t.stMonthlyTitle);
+      safeText("stMonthlySub", t.stMonthlySub);
+      safeText("stYearLabel", t.stYearLabel);
+      safeText("stMonthLabel", t.stMonthLabel);
+      safeText("stCommodityLabel", t.stCommodityLabel);
+      safeText("stOpenQtyLabel", t.stOpenQtyLabel);
+      safeText("stOpenValLabel", t.stOpenValLabel);
+      safeText("stCloseQtyLabel", t.stCloseQtyLabel);
+      safeText("stCloseValLabel", t.stCloseValLabel);
+      safeText("stValuationLabel", t.stValuationLabel);
+      safeText("stValAvg", t.stValAvg);
+      safeText("stValFifo", t.stValFifo);
+      safeText("stValLifo", t.stValLifo);
+      safeText("stSaveMonthlyText", t.stSaveMonthlyText);
+
+      safeText("stThYear", t.stThYear);
+      safeText("stThMonth", t.stThMonth);
+      safeText("stThCommodity", t.stThCommodity);
+      safeText("stThOpenQty", t.stThOpenQty);
+      safeText("stThCloseQty", t.stThCloseQty);
+      safeText("stThCloseVal", t.stThCloseVal);
+      safeText("stNoStock", t.stNoStock);
+
+      safeText("stMoveTitle", t.stMoveTitle);
+      safeText("stMoveSub", t.stMoveSub);
+      safeText("stMoveCommodityLabel", t.stMoveCommodityLabel);
+      safeText("stMoveTypeLabel", t.stMoveTypeLabel);
+      safeText("stTypePurchase", t.stTypePurchase);
+      safeText("stTypeSale", t.stTypeSale);
+      safeText("stTypeAdjustment", t.stTypeAdjustment);
+      safeText("stQtyLabel", t.stQtyLabel);
+      safeText("stRateLabel", t.stRateLabel);
+      safeText("stRemarksLabel", t.stRemarksLabel);
+      safeText("stAddMoveText", t.stAddMoveText);
+
+      safeText("stThDate", t.stThDate);
+      safeText("stThCommodity2", t.stThCommodity2);
+      safeText("stThType", t.stThType);
+      safeText("stThQty", t.stThQty);
+      safeText("stThAmount", t.stThAmount);
+      safeText("stThRemarks", t.stThRemarks);
+      safeText("stNoMoves", t.stNoMoves);
+
+      safeText("stMonthlyRowsLabel", t.stRowsLabel);
+      safeText("stMovementRowsLabel", t.stRowsLabel);
+      safeText("stMonthlyMetaText", t.stMonthlyMeta);
+      safeText("stMovementMetaText", t.stMovementMeta);
+      safeText("stMonthlySwipeText", t.stSwipeMore);
+      safeText("stMovementSwipeText", t.stSwipeMore);
+      safeText("stMonthlyPrevBtn", t.stPrev);
+      safeText("stMonthlyNextBtn", t.stNext);
+      safeText("stMovementPrevBtn", t.stPrev);
+      safeText("stMovementNextBtn", t.stNext);
+
+      const monthlySearch = document.getElementById('stMonthlySearch');
+      const movementSearch = document.getElementById('stMovementSearch');
+      if(monthlySearch) monthlySearch.placeholder = t.stSearchPlaceholder;
+      if(movementSearch) movementSearch.placeholder = t.stSearchPlaceholder;
+
+      applyMobileCardLabels(t);
+
+      if(monthlyPager && typeof monthlyPager.refreshTexts === 'function') monthlyPager.refreshTexts();
+      if(movementPager && typeof movementPager.refreshTexts === 'function') movementPager.refreshTexts();
+    }
+
+    window.updatePageLanguage = function(lang){
+      applyLang(lang || getLang());
+    };
+
+    window.addEventListener("pgmis:language-change", (e)=>{
+      try{
+        const lang = (e && e.detail && e.detail.lang) ? e.detail.lang : getLang();
+        applyLang(lang);
+      }catch(_){}
+    });
+
+    window.addEventListener("pgmis:lang", (e)=>{
+      try{
+        const lang = (e && e.detail && e.detail.lang) ? e.detail.lang : getLang();
+        applyLang(lang);
+      }catch(_){}
+    });
+
+    document.addEventListener('DOMContentLoaded', function(){
+      monthlyPager = initTablePager({
+        tableId: 'stMonthlyTable',
+        searchId: 'stMonthlySearch',
+        rowsSelectId: 'stMonthlyRowsPerPage',
+        prevBtnId: 'stMonthlyPrevBtn',
+        nextBtnId: 'stMonthlyNextBtn',
+        pageInfoId: 'stMonthlyPageInfo',
+        pageWrapId: 'stMonthlyPageNumberWrap',
+        emptyId: 'stNoStock'
+      });
+
+      movementPager = initTablePager({
+        tableId: 'stMovementTable',
+        searchId: 'stMovementSearch',
+        rowsSelectId: 'stMovementRowsPerPage',
+        prevBtnId: 'stMovementPrevBtn',
+        nextBtnId: 'stMovementNextBtn',
+        pageInfoId: 'stMovementPageInfo',
+        pageWrapId: 'stMovementPageNumberWrap',
+        emptyId: 'stNoMoves'
+      });
+
+      applyLang(getLang());
+    });
+  })();
+</script>
+
+{% endblock %}

@@ -1,0 +1,3463 @@
+{% extends "base.html" %}
+{% block title %}Receipt voucher{% endblock %}
+
+{% block content %}
+<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
+<style>
+  /* ============================================================
+     Receipt voucher (SCOPED) — under .ll-wrap only
+     ✅ Header title centered and resized like reference
+     ✅ App/mobile-only back button added
+     ✅ Swipe text + swipe functionality removed
+     ✅ Empty table on first load (no blank seeded rows)
+     ✅ Active section persists after refresh/reload
+     ✅ Mobile/app section buttons stacked vertically
+     ✅ Existing functionality / logic / backend connectivity preserved
+     ============================================================ */
+
+  .ll-wrap{
+    width:100%;
+    padding: clamp(12px, 2.2vw, 22px);
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,.14);
+    --line2: rgba(15,23,42,.08);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    --sec1: rgba(16,185,129,.10);
+    --sec2: rgba(59,130,246,.10);
+    --sec1b: rgba(5,150,105,.22);
+    --sec2b: rgba(37,99,235,.22);
+
+    color: var(--ink);
+  }
+  .ll-wrap *{ box-sizing:border-box; }
+
+  .ll-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  }
+
+  /* ===== Header ===== */
+  .ll-head{
+    padding: 0;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.92), rgba(255,255,255,.94));
+    border-bottom: 1px solid var(--line2);
+  }
+
+  .ll-head-top{
+    position: relative;
+    min-height: 108px;
+    padding: 18px 18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .ll-title{
+    margin: 0;
+    font-weight: 850;
+    font-size: 18px;
+    line-height: 1.2;
+    letter-spacing: .2px;
+    text-align: center;
+    color: #0f172a;
+  }
+
+  .ll-app-back,
+  .ll-app-back-spacer{
+    display:none;
+  }
+
+  .ll-app-back{
+    border: 1px solid rgba(15,23,42,.12);
+    background: rgba(255,255,255,.88);
+    color: var(--ink);
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow: 0 10px 18px -16px rgba(15,23,42,.32);
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+  }
+  .ll-app-back:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+    background:#fff;
+  }
+  .ll-app-back svg{
+    width: 18px;
+    height: 18px;
+    display:block;
+  }
+
+  .ll-icon{ width: 14px; height: 14px; flex-shrink: 0; }
+  .ll-hidden{ display:none !important; }
+
+  /* ===== Tabs ===== */
+  .ll-tabs{
+    padding: 10px 16px 14px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(255,255,255,.92);
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .ll-seg{
+    display:inline-flex;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,.12);
+    background: rgba(247,250,249,.72);
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.25);
+    overflow:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ll-seg button{
+    border:none;
+    outline:none;
+    cursor:pointer;
+    font-weight: 950;
+    font-size: 12px;
+    padding: 10px 12px;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(15,23,42,.70);
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    white-space: nowrap;
+    transition: background .2s ease, color .2s ease, transform .15s ease;
+  }
+  .ll-seg button:hover{ transform: translateY(-1px); }
+
+  .ll-seg .ll-badge{
+    width: 10px; height: 10px;
+    border-radius: 999px;
+    background: rgba(11,77,58,.9);
+    box-shadow: 0 0 0 6px rgba(16,185,129,.12);
+  }
+  .ll-seg .ll-badge.b2{
+    background: rgba(37,99,235,.9);
+    box-shadow: 0 0 0 6px rgba(59,130,246,.12);
+  }
+  .ll-seg button.active{
+    background: #fff;
+    color: #dc2626;
+    border: 1px solid rgba(220,38,38,.35);
+    box-shadow: 0 16px 22px -20px rgba(15,23,42,.28);
+  }
+
+  /* ===== Panels (swipe removed) ===== */
+  .ll-rail{
+    position: relative;
+    width: 100%;
+    overflow: visible;
+    background: rgba(255,255,255,.92);
+  }
+  .ll-track{
+    display:block;
+    width:100%;
+    transform:none !important;
+    transition:none !important;
+    will-change:auto;
+  }
+  .ll-panel{
+    width:100%;
+    padding: 0;
+    min-height: 100%;
+    display:none;
+  }
+  .ll-panel.is-active{
+    display:block;
+  }
+  .ll-panel-inner{
+    border-top: 1px solid var(--line2);
+    background: #fff;
+  }
+
+  .ll-panel[data-panel="pg"] .ll-panel-inner{
+    background:
+      radial-gradient(circle at 10% 10%, var(--sec1), transparent 55%),
+      #fff;
+  }
+  .ll-panel[data-panel="member"] .ll-panel-inner{
+    background:
+      radial-gradient(circle at 10% 10%, var(--sec2), transparent 55%),
+      #fff;
+  }
+
+  /* Header */
+  .ll-panel-head{
+    padding: 14px 16px;
+    display:flex;
+    align-items:flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--line2);
+    background:
+      linear-gradient(to bottom, rgba(255,255,255,.88), rgba(255,255,255,.74));
+  }
+  .ll-panel-head::after{
+    content:"";
+    display:block;
+    width:100%;
+    height: 1px;
+    background: rgba(15,23,42,.06);
+    margin-top: 10px;
+  }
+  .ll-panel-title{
+    margin: 0;
+    font-size: 14px;
+    font-weight: 950;
+    letter-spacing: .2px;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+  .ll-strip{
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(11,77,58,.90);
+    box-shadow: 0 0 0 7px rgba(16,185,129,.14);
+    flex-shrink: 0;
+  }
+  .ll-strip.b2{
+    background: rgba(37,99,235,.90);
+    box-shadow: 0 0 0 7px rgba(59,130,246,.14);
+  }
+  .ll-panel-note{
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.65);
+    max-width: 720px;
+    line-height: 1.3;
+    margin-top: 6px;
+  }
+
+  /* Top fields */
+  .ll-topfields{
+    padding: 12px 16px 14px;
+    display:grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 10px 14px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .ll-field{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .ll-label{
+    font-weight: 900;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .ll-input{
+    flex: 1;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(247,250,249,.75);
+    font-weight: 800;
+    font-size: 12px;
+    outline: none;
+    min-width: 0;
+  }
+  .ll-input:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+  .ll-panel[data-panel="member"] .ll-input:focus{
+    border-color: rgba(37,99,235,.40);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.10);
+  }
+  .ll-input[readonly]{
+    background: transparent;
+    border-color: rgba(15,23,42,.10);
+  }
+
+  /* Controls */
+  .ll-controls{
+    padding: 10px 16px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(255,255,255,.92);
+    flex-wrap: wrap;
+  }
+  .ll-controls-left{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: min(720px, 100%);
+  }
+  .ll-search{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 999px;
+    background: rgba(247,250,249,.75);
+    min-width: min(520px, 100%);
+  }
+  .ll-search input{
+    border:none;
+    outline:none;
+    background: transparent;
+    width: 100%;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .ll-pill{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 999px;
+    background: rgba(247,250,249,.75);
+    font-size: 12px;
+    font-weight: 950;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .ll-pill select{
+    border:none;
+    outline:none;
+    background: transparent;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .ll-controls-right{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-left: auto;
+    justify-content: flex-end;
+  }
+  .ll-pager{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .ll-pageinfo{
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(15,23,42,.80);
+    padding: 8px 10px;
+    border: 1px solid rgba(15,23,42,.10);
+    border-radius: 999px;
+    background: rgba(247,250,249,.55);
+  }
+
+  /* ===== Action bar that docks ABOVE TABLE ===== */
+  .ll-action-dock{
+    padding: 10px 16px 2px;
+    background: rgba(255,255,255,.92);
+  }
+  .ll-actionbar{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .ll-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .ll-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .ll-btn:disabled{
+    opacity: .45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .ll-btn.danger{
+    border-color: rgba(220,38,38,.30);
+    background: rgba(220,38,38,.08);
+    color: #991b1b;
+  }
+  .ll-btn.danger:hover{
+    background: rgba(220,38,38,.12);
+  }
+
+  /* ===== Table section ===== */
+  .ll-table-card{
+    margin: 10px 16px 0;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 18px 26px -26px rgba(15,23,42,.35);
+  }
+  .ll-table-cardhead{
+    padding: 10px 12px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    background:
+      radial-gradient(circle at 18% 25%, rgba(16,185,129,.12), transparent 60%),
+      linear-gradient(to right, rgba(247,250,249,.92), rgba(255,255,255,.92));
+    border-bottom: 1px solid rgba(15,23,42,.08);
+  }
+  .ll-panel[data-panel="member"] .ll-table-cardhead{
+    background:
+      radial-gradient(circle at 18% 25%, rgba(59,130,246,.12), transparent 60%),
+      linear-gradient(to right, rgba(239,246,255,.92), rgba(255,255,255,.92));
+  }
+  .ll-table-cardtitle{
+    font-size: 12px;
+    font-weight: 950;
+    color: rgba(15,23,42,.78);
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+  .ll-table-cardtitle .pill{
+    width: 8px; height: 8px; border-radius: 999px;
+    background: rgba(11,77,58,.90);
+    box-shadow: 0 0 0 6px rgba(16,185,129,.10);
+  }
+  .ll-panel[data-panel="member"] .ll-table-cardtitle .pill{
+    background: rgba(37,99,235,.90);
+    box-shadow: 0 0 0 6px rgba(37,99,235,.10);
+  }
+
+  .ll-table-wrap{
+    width: 100%;
+    overflow: auto;
+    background: #fff;
+  }
+  .ll-table{
+    min-width: 1240px;
+  }
+
+  .ll-th-row{
+    display:grid;
+    grid-template-columns: .55fr .7fr 2.2fr 1.1fr 1.1fr 1.2fr 1.3fr .8fr;
+    background: var(--soft);
+    border-bottom: 1px solid var(--line);
+  }
+  .ll-th{
+    padding: 10px 10px;
+    font-size: 12px;
+    font-weight: 950;
+    border-right: 1px solid var(--line2);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    line-height: 1.15;
+  }
+  .ll-th:last-child{ border-right:none; }
+
+  .ll-body{
+    display:flex;
+    flex-direction: column;
+  }
+  .ll-row{
+    display:grid;
+    grid-template-columns: .55fr .7fr 2.2fr 1.1fr 1.1fr 1.2fr 1.3fr .8fr;
+    border-bottom: 1px solid rgba(15,23,42,.06);
+  }
+  .ll-cell{
+    padding: 8px 10px;
+    border-right: 1px solid rgba(15,23,42,.06);
+    min-width: 0;
+    display:flex;
+    align-items:center;
+  }
+  .ll-cell:last-child{ border-right:none; }
+
+  .ll-in{
+    width:100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .ll-in.num{
+    text-align:right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ll-check{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+  }
+  .ll-check input{
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    accent-color: #0b4d3a;
+    cursor: pointer;
+  }
+  .ll-panel[data-panel="member"] .ll-check input{
+    accent-color: #2563eb;
+  }
+  .ll-wrap.ll-readonly .ll-check input{
+    opacity: .45;
+    pointer-events: none;
+  }
+  .ll-sl{
+    width:100%;
+    justify-content:center;
+    font-weight: 950;
+    font-size: 12px;
+    color: rgba(15,23,42,.75);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ll-row-actions{
+    width:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap: 8px;
+  }
+  .ll-del{
+    border: 1px solid rgba(220,38,38,.22);
+    background: rgba(220,38,38,.08);
+    color:#991b1b;
+    border-radius: 10px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 950;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .ll-del:hover{
+    transform: translateY(-1px);
+    background: rgba(220,38,38,.12);
+    box-shadow: 0 14px 22px -20px rgba(220,38,38,.30);
+  }
+  .ll-wrap.ll-readonly .ll-del{
+    opacity: .35;
+    pointer-events: none;
+  }
+
+  .ll-wrap.ll-readonly .ll-in,
+  .ll-wrap.ll-readonly .ll-input{
+    cursor: default;
+  }
+  .ll-wrap.ll-readonly .ll-cell{
+    cursor: default;
+  }
+
+  .ll-row.ll-hide{ display:none !important; }
+
+  .ll-empty{
+    padding: 18px 16px;
+    text-align:center;
+    color: rgba(15,23,42,.70);
+    font-weight: 900;
+    font-size: 12px;
+    display:none;
+  }
+  .ll-empty.show{ display:block; }
+
+  .ll-summary{
+    padding: 10px 16px;
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    border-top: 1px solid var(--line2);
+    background: rgba(247,250,249,.72);
+  }
+  .ll-panel[data-panel="member"] .ll-summary{
+    background: rgba(239,246,255,.72);
+  }
+  .ll-kpi{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 999px;
+    background: rgba(255,255,255,.86);
+    font-weight: 950;
+    font-size: 12px;
+  }
+  .ll-kpi b{ font-variant-numeric: tabular-nums; }
+
+  /* ===== Signatures ===== */
+  .ll-sign{
+    padding: 12px 16px 12px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    border-top: 1px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .ll-panel[data-panel="pg"] .ll-sign{ margin-bottom: 0; }
+
+  .ll-signbox{
+    border: 1px dashed rgba(15,23,42,.20);
+    border-radius: 14px;
+    background: rgba(247,250,249,.50);
+    padding: 10px 12px;
+    display:flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+  .ll-signlabel{
+    font-weight: 950;
+    font-size: 12px;
+    color: rgba(15,23,42,.78);
+  }
+
+  .ll-signpreview{
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.12);
+    background: #fff;
+    overflow:hidden;
+    position: relative;
+    padding: 10px;
+  }
+  .ll-signgrid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .ll-signpane{
+    border: 1px solid rgba(15,23,42,.10);
+    border-radius: 12px;
+    background: rgba(247,250,249,.35);
+    overflow:hidden;
+    position: relative;
+    min-height: 120px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .ll-signpane.white{
+    background: #fff;
+  }
+
+  .ll-signpreview img{
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display:block;
+  }
+  .ll-signempty{
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(15,23,42,.45);
+    text-align:center;
+    padding: 0 10px;
+  }
+
+  /* Manual pad */
+  .ll-padwrap{
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  .ll-padlabel{
+    position:absolute;
+    top: 8px;
+    left: 10px;
+    font-size: 11px;
+    font-weight: 950;
+    color: rgba(15,23,42,.55);
+    background: rgba(255,255,255,.78);
+    border: 1px solid rgba(15,23,42,.08);
+    padding: 4px 8px;
+    border-radius: 999px;
+    pointer-events:none;
+  }
+  .ll-pad{
+    width: 100%;
+    height: 120px;
+    display:block;
+    background: #fff;
+    touch-action: none;
+  }
+  .ll-wrap.ll-readonly .ll-pad{
+    pointer-events:none;
+    opacity:.75;
+  }
+
+  .ll-signactions{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+  .ll-sbtn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.85);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 8px 10px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    display:inline-flex;
+    align-items:center;
+    gap: 6px;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .ll-sbtn:hover{ transform: translateY(-1px); box-shadow: 0 14px 22px -20px rgba(15,23,42,.22); }
+  .ll-sbtn.danger{
+    border-color: rgba(220,38,38,.30);
+    background: rgba(220,38,38,.08);
+    color:#991b1b;
+  }
+  .ll-wrap.ll-readonly .ll-sbtn{
+    opacity: .35;
+    pointer-events: none;
+  }
+  .ll-signfile{ display:none; }
+
+  /* ===== MODALS ===== */
+  .ll-modal-overlay{
+    position: fixed;
+    inset: 0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index: 9999;
+    padding: 18px;
+    background: rgba(15, 23, 42, .28);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .ll-modal-overlay.ll-show{ display:flex; }
+
+  .ll-modal{
+    width: 100%;
+    max-width: 520px;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid rgba(15,23,42,.10);
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,.45);
+    overflow:hidden;
+    transform: translateY(6px);
+    animation: llModalIn .18s ease-out forwards;
+  }
+  @keyframes llModalIn{
+    from{ opacity:0; transform: translateY(10px) scale(.98); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
+  .ll-mhead{
+    padding: 14px 16px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    justify-content: flex-start;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(16,185,129,.12), transparent 55%),
+      linear-gradient(to right, rgba(5,150,105,.10), rgba(16,185,129,.10));
+    border-bottom: 1px solid rgba(15,23,42,.08);
+  }
+  .ll-mhead.b2{
+    background:
+      radial-gradient(circle at 20% 20%, rgba(59,130,246,.12), transparent 55%),
+      linear-gradient(to right, rgba(37,99,235,.10), rgba(59,130,246,.10));
+  }
+  .ll-mhead.danger{
+    background:
+      radial-gradient(circle at 20% 20%, rgba(220,38,38,.14), transparent 55%),
+      linear-gradient(to right, rgba(220,38,38,.10), rgba(248,113,113,.10));
+  }
+  .ll-dot{
+    width: 10px; height: 10px;
+    border-radius: 999px;
+    background: rgba(11,77,58,.90);
+    box-shadow: 0 0 0 6px rgba(16,185,129,.12);
+    flex: 0 0 auto;
+  }
+  .ll-dot.b2{
+    background: rgba(37,99,235,.90);
+    box-shadow: 0 0 0 6px rgba(59,130,246,.12);
+  }
+  .ll-dot.danger{
+    background: rgba(220,38,38,.92);
+    box-shadow: 0 0 0 6px rgba(220,38,38,.12);
+  }
+  .ll-mtitle{
+    font-weight: 950;
+    color:#0b4d3a;
+    font-size: 15px;
+    letter-spacing:.2px;
+  }
+  .ll-mtitle.b2{ color:#1e40af; }
+  .ll-mtitle.danger{ color:#991b1b; }
+  .ll-mbody{
+    padding: 14px 16px 6px;
+    color:#0f172a;
+    font-size: 14px;
+    font-weight: 850;
+    line-height:1.35;
+    white-space: pre-wrap;
+  }
+  .ll-mactions{
+    padding: 12px 16px 16px;
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    flex-wrap: wrap;
+  }
+  .ll-ghost{
+    border: 1px solid rgba(15,23,42,.14);
+    color:#0f172a;
+    background:#fff;
+    min-width: 120px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    font-weight: 950;
+    padding: 10px 12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .ll-ghost:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 14px 22px -18px rgba(0,0,0,.20);
+    background: rgba(11,77,58,.06);
+  }
+  .ll-solid{
+    border: 1px solid rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+    min-width: 120px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    font-weight: 950;
+    padding: 10px 12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .ll-solid:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 14px 22px -18px rgba(0,0,0,.20);
+    background: rgba(16,185,129,.16);
+  }
+  .ll-solid.b2{
+    border-color: rgba(37,99,235,.35);
+    background: rgba(37,99,235,.12);
+    color:#1e40af;
+  }
+  .ll-solid.b2:hover{ background: rgba(37,99,235,.16); }
+  .ll-solid.danger{
+    border-color: rgba(220,38,38,.35);
+    background: rgba(220,38,38,.12);
+    color:#991b1b;
+  }
+  .ll-solid.danger:hover{ background: rgba(220,38,38,.16); }
+
+  /* ===== Camera modal ===== */
+  .ll-cam{ max-width: 720px; }
+  .ll-camwrap{
+    padding: 12px 16px 16px;
+    display:flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ll-camvideo{
+    width: 100%;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,.12);
+    background:#0b1220;
+    overflow:hidden;
+  }
+  .ll-camvideo video{
+    width: 100%;
+    height: auto;
+    display:block;
+  }
+  .ll-camnote{
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(15,23,42,.70);
+    line-height: 1.35;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 880px){
+    .ll-topfields{ grid-template-columns: 1fr; }
+    .ll-actionbar{ justify-content: center; }
+  }
+
+  @media (max-width: 720px){
+    .ll-head-top{
+      display:grid;
+      grid-template-columns: 56px 1fr 56px;
+      align-items:center;
+      gap: 8px;
+      min-height: 112px;
+      padding: 18px 16px;
+    }
+    .ll-app-back,
+    .ll-app-back-spacer{
+      display:flex;
+    }
+    .ll-app-back-spacer{
+           width:38px;
+      height:38px;
+    }
+     .ll-title{
+      margin: 0;
+      font-weight: 850;
+      font-size: 16px;
+      line-height: 1.2;
+      letter-spacing: .2px;
+      text-align: center;
+      color: #0f172a;
+    }
+
+    .ll-search{ min-width: 100%; }
+    .ll-controls-right{ width: 100%; justify-content:flex-start; }
+    .ll-summary{ justify-content:flex-start; }
+    .ll-sign{ grid-template-columns: 1fr; }
+
+    .ll-tabs{
+      padding: 12px 16px 14px;
+    }
+    .ll-seg{
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      border-radius: 24px;
+      padding: 10px;
+      overflow: visible;
+    }
+    .ll-seg button{
+      width:100%;
+      justify-content:flex-start;
+      padding: 13px 14px;
+      border: 1px solid rgba(15,23,42,.08);
+      background: rgba(255,255,255,.78);
+      border-radius: 16px;
+      font-size: 13px;
+    }
+    .ll-seg button.active{
+      background: #fff;
+      box-shadow: 0 14px 18px -18px rgba(15,23,42,.22);
+    }
+  }
+
+  @media (min-width: 721px){
+    .ll-app-back,
+    .ll-app-back-spacer{
+      display:none !important;
+    }
+  }
+
+  @media (max-width: 420px){
+    .ll-mactions{ justify-content: stretch; }
+    .ll-ghost, .ll-solid{ min-width: 100%; }
+  }
+
+  /* ===== Mobile: swipe row-cards ===== */
+  @media (max-width: 640px){
+    .ll-table{ min-width: 0; }
+    .ll-th-row{ display:none; }
+
+    .ll-table-wrap{ overflow: hidden; }
+    .ll-body{
+      flex-direction: row;
+      gap: 12px;
+      padding: 12px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .ll-row{
+      scroll-snap-align: start;
+      min-width: 88%;
+      border: 1px solid rgba(15,23,42,.10);
+      border-radius: 14px;
+      overflow:hidden;
+      box-shadow: 0 14px 20px -20px rgba(15,23,42,.25);
+      background: #fff;
+      display:block;
+    }
+
+    .ll-cell{
+      border-right: none;
+      border-bottom: 1px solid rgba(15,23,42,.06);
+      padding: 10px 12px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items:center;
+    }
+    .ll-cell:last-child{ border-bottom: none; }
+
+    .ll-cell::before{
+      content: attr(data-label);
+      font-weight: 950;
+      font-size: 12px;
+      color: rgba(15,23,42,.62);
+      white-space: nowrap;
+    }
+    .ll-in{ text-align: right; }
+    .ll-in.num{ text-align:right; }
+
+    .ll-cell[data-label=""]::before{ content:""; }
+    .ll-cell[data-label=""]{ grid-template-columns: 1fr 1fr; }
+    .ll-sl{ justify-content:flex-end; }
+
+    .ll-row-actions{ justify-content:flex-end; }
+
+    .ll-body::-webkit-scrollbar{ height: 8px; }
+    .ll-body::-webkit-scrollbar-thumb{
+      background: rgba(15,23,42,.18);
+      border-radius: 999px;
+    }
+  }
+
+  /* signature grid stacks on very small screens */
+  @media (max-width: 520px){
+    .ll-signgrid{ grid-template-columns: 1fr; }
+    .ll-pad{ height: 140px; }
+    .ll-signpane{ min-height: 140px; }
+  }
+</style>
+
+<div class="ll-wrap ll-readonly" id="llWrap">
+  <div class="ll-sheet">
+    <div class="ll-head">
+      <div class="ll-head-top">
+     <button class="ll-app-back" id="llBackBtn" type="button" aria-label="Go back">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M19 12H5M5 12l6 6M5 12l6-6"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+  </svg>
+</button>
+
+        <h2 class="ll-title" id="llTitle">Receipt Voucher</h2>
+
+        <div class="ll-app-back-spacer" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="ll-tabs">
+      <div class="ll-seg" role="tablist" aria-label="Receipt voucher sections">
+        <button id="llTabPg" type="button" class="active" role="tab" aria-selected="true">
+          <span class="ll-badge"></span>
+          <span id="llTabPgText">PG Group Receipt</span>
+        </button>
+        <button id="llTabMember" type="button" role="tab" aria-selected="false">
+          <span class="ll-badge b2"></span>
+          <span id="llTabMemberText">Group Member Receipt</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="ll-rail" id="llRail">
+      <div class="ll-track" id="llTrack">
+
+        <!-- PANEL 1 -->
+        <section class="ll-panel is-active" id="llPanelPg" data-panel="pg" aria-label="PG Group Receipt">
+          <div class="ll-panel-inner">
+            <div class="ll-panel-head">
+              <div>
+                <h3 class="ll-panel-title">
+                  <span class="ll-strip"></span>
+                  <span id="llPanelTitlePg">PG Group Receipt</span>
+                </h3>
+                <div class="ll-panel-note" id="llPanelNotePg">
+                  Use this section for group-level receipts. Add commodity rows below.
+                </div>
+              </div>
+            </div>
+
+            <div class="ll-topfields">
+              <div class="ll-field">
+                <div class="ll-label" id="llPgLabelPg">Name of Producers Group</div>
+                <input class="ll-input" id="llPgNamePg" type="text" value="{{ current_pg_name }}" readonly />
+              </div>
+
+              <div class="ll-field">
+                <div class="ll-label" id="llDateLabelPg">Date of transaction</div>
+                <input class="ll-input" id="llTxnDatePg" type="date" />
+              </div>
+
+              <div class="ll-field">
+                <div class="ll-label" id="llMemberLabelPg">Name of member</div>
+                <select class="ll-input" id="llMemberNamePg"><option value="">Select member</option></select>
+              </div>
+
+              <div class="ll-field">
+                <div class="ll-label" id="llCodeLabelPg">Member code</div>
+                <select class="ll-input" id="llMemberCodePg"><option value="">Select member code</option></select>
+              </div>
+
+              <div class="ll-field" style="grid-column: 1 / -1;">
+                <div class="ll-label" id="llDetailsLabelPg">Details on commodity procured</div>
+                <input class="ll-input" id="llDetailsPg" type="text" placeholder="Write details…" />
+              </div>
+            </div>
+
+            <div class="ll-action-dock" id="llDockPg"></div>
+
+            <div class="ll-controls">
+              <div class="ll-controls-left">
+                <div class="ll-search" title="Search">
+                  <input id="llSearchPg" type="text" placeholder="Search..." />
+                </div>
+
+                <div class="ll-pill" title="Rows per page">
+                  <span id="llRowsLabelPg">Rows</span>
+                  <select id="llRowsPerPagePg">
+                    <option value="10">10</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="ll-controls-right">
+                <div class="ll-pager">
+                  <button class="ll-btn" id="llPrevPg" type="button">Prev</button>
+                  <div class="ll-pageinfo" id="llPageInfoPg">Page 1 / 1</div>
+                  <button class="ll-btn" id="llNextPg" type="button">Next</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="ll-table-card">
+              <div class="ll-table-cardhead">
+                <div class="ll-table-cardtitle"><span class="pill"></span> <span id="llTableTitlePg">Table</span></div>
+              </div>
+
+              <div class="ll-table-wrap">
+                <div class="ll-table">
+                  <div class="ll-th-row">
+                    <div class="ll-th" title="Select"><input id="llSelectAllPg" type="checkbox" aria-label="Select all visible rows (PG)" /></div>
+                    <div class="ll-th" id="llHSlPg">Sl No</div>
+                    <div class="ll-th" id="llHCommodityPg">Commodity</div>
+                    <div class="ll-th" id="llHGradePg">Grade</div>
+                    <div class="ll-th" id="llHRatePg">Rate</div>
+                    <div class="ll-th" id="llHVolumePg">Volume (Qnt/Ltr.)</div>
+                    <div class="ll-th" id="llHValuePg">Value (Rupees)</div>
+                    <div class="ll-th" id="llHActionsPg">Actions</div>
+                  </div>
+
+                  <div class="ll-empty" id="llEmptyPg">No rows found.</div>
+                  <div class="ll-body" id="llBodyPg"></div>
+                </div>
+              </div>
+
+              <div class="ll-summary">
+                <div class="ll-kpi" id="llKpiRowsPg">Visible Rows: <b id="llVisibleRowsPg">0</b></div>
+                <div class="ll-kpi" id="llKpiVolumePg">Total Volume: <b id="llTotalVolumePg">0</b></div>
+                <div class="ll-kpi" id="llKpiValuePg">Total Value: <b id="llTotalValuePg">0</b></div>
+              </div>
+            </div>
+
+            <div class="ll-sign">
+              <div class="ll-signbox" data-sign-scope="pg" data-sign-role="member">
+                <div class="ll-signlabel" id="llSignMemberPg">Signature of PG member</div>
+
+                <div class="ll-signpreview">
+                  <div class="ll-signgrid">
+                    <div class="ll-signpane white">
+                      <div class="ll-signempty" id="llSignEmptyPgMember">No signature image</div>
+                      <img id="llSignImgPgMember" class="ll-hidden" alt="PG member signature preview" />
+                    </div>
+
+                    <div class="ll-signpane">
+                      <div class="ll-padwrap">
+                        <div class="ll-padlabel" id="llPadLabelPgMember">Sign here</div>
+                        <canvas id="llPadPgMember" class="ll-pad"></canvas>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ll-signactions">
+                  <input class="ll-signfile" id="llSignFilePgMember" type="file" accept="image/*" />
+                  <button class="ll-sbtn" type="button" id="llSignUploadPgMember">Upload</button>
+                  <button class="ll-sbtn" type="button" id="llSignCapturePgMember">Capture</button>
+                  <button class="ll-sbtn" type="button" id="llSignReplacePgMember">Replace</button>
+                  <button class="ll-sbtn danger" type="button" id="llSignRemovePgMember">Remove</button>
+
+                  <button class="ll-sbtn" type="button" id="llPadClearPgMember">Clear</button>
+                  <button class="ll-sbtn" type="button" id="llPadUsePgMember">Use</button>
+                </div>
+              </div>
+
+              <div class="ll-signbox" data-sign-scope="pg" data-sign-role="udyog">
+                <div class="ll-signlabel" id="llSignUdyogPg">Signature of Udyog Sakhi</div>
+
+                <div class="ll-signpreview">
+                  <div class="ll-signgrid">
+                    <div class="ll-signpane white">
+                      <div class="ll-signempty" id="llSignEmptyPgUdyog">No signature image</div>
+                      <img id="llSignImgPgUdyog" class="ll-hidden" alt="Udyog Sakhi signature preview" />
+                    </div>
+
+                    <div class="ll-signpane">
+                      <div class="ll-padwrap">
+                        <div class="ll-padlabel" id="llPadLabelPgUdyog">Sign here</div>
+                        <canvas id="llPadPgUdyog" class="ll-pad"></canvas>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ll-signactions">
+                  <input class="ll-signfile" id="llSignFilePgUdyog" type="file" accept="image/*" />
+                  <button class="ll-sbtn" type="button" id="llSignUploadPgUdyog">Upload</button>
+                  <button class="ll-sbtn" type="button" id="llSignCapturePgUdyog">Capture</button>
+                  <button class="ll-sbtn" type="button" id="llSignReplacePgUdyog">Replace</button>
+                  <button class="ll-sbtn danger" type="button" id="llSignRemovePgUdyog">Remove</button>
+
+                  <button class="ll-sbtn" type="button" id="llPadClearPgUdyog">Clear</button>
+                  <button class="ll-sbtn" type="button" id="llPadUsePgUdyog">Use</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- PANEL 2 -->
+        <section class="ll-panel" id="llPanelMember" data-panel="member" aria-label="Group Member Receipt">
+          <div class="ll-panel-inner">
+            <div class="ll-panel-head">
+              <div>
+                <h3 class="ll-panel-title">
+                  <span class="ll-strip b2"></span>
+                  <span id="llPanelTitleMember">Group Member Receipt</span>
+                </h3>
+                <div class="ll-panel-note" id="llPanelNoteMember">
+                  Use this section for individual member receipts. Add commodity rows below.
+                </div>
+              </div>
+            </div>
+
+            <div class="ll-topfields">
+              <div class="ll-field">
+                <div class="ll-label" id="llPgLabelM">Name of Producers Group</div>
+                <input class="ll-input" id="llPgNameM" type="text" value="{{ current_pg_name }}" readonly />
+              </div>
+
+              <div class="ll-field">
+                <div class="ll-label" id="llDateLabelM">Date of transaction</div>
+                <input class="ll-input" id="llTxnDateM" type="date" />
+              </div>
+
+              <div class="ll-field">
+                <div class="ll-label" id="llMemberLabelM">Name of member</div>
+                <select class="ll-input" id="llMemberNameM"><option value="">Select member</option></select>
+              </div>
+
+              <div class="ll-field">
+                <div class="ll-label" id="llCodeLabelM">Member code</div>
+                <select class="ll-input" id="llMemberCodeM"><option value="">Select member code</option></select>
+              </div>
+
+              <div class="ll-field" style="grid-column: 1 / -1;">
+                <div class="ll-label" id="llDetailsLabelM">Details on commodity procured</div>
+                <input class="ll-input" id="llDetailsM" type="text" placeholder="Write details…" />
+              </div>
+            </div>
+
+            <div class="ll-action-dock" id="llDockM"></div>
+
+            <div class="ll-controls">
+              <div class="ll-controls-left">
+                <div class="ll-search" title="Search">
+                  <input id="llSearchM" type="text" placeholder="Search..." />
+                </div>
+
+                <div class="ll-pill" title="Rows per page">
+                  <span id="llRowsLabelM">Rows</span>
+                  <select id="llRowsPerPageM">
+                    <option value="10">10</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="ll-controls-right">
+                <div class="ll-pager">
+                  <button class="ll-btn" id="llPrevM" type="button">Prev</button>
+                  <div class="ll-pageinfo" id="llPageInfoM">Page 1 / 1</div>
+                  <button class="ll-btn" id="llNextM" type="button">Next</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="ll-table-card">
+              <div class="ll-table-cardhead">
+                <div class="ll-table-cardtitle"><span class="pill"></span> <span id="llTableTitleM">Table</span></div>
+              </div>
+
+              <div class="ll-table-wrap">
+                <div class="ll-table">
+                  <div class="ll-th-row">
+                    <div class="ll-th" title="Select"><input id="llSelectAllM" type="checkbox" aria-label="Select all visible rows (Member)" /></div>
+                    <div class="ll-th" id="llHSlM">Sl No</div>
+                    <div class="ll-th" id="llHCommodityM">Commodity</div>
+                    <div class="ll-th" id="llHGradeM">Grade</div>
+                    <div class="ll-th" id="llHRateM">Rate</div>
+                    <div class="ll-th" id="llHVolumeM">Volume (Qnt/Ltr.)</div>
+                    <div class="ll-th" id="llHValueM">Value (Rupees)</div>
+                    <div class="ll-th" id="llHActionsM">Actions</div>
+                  </div>
+
+                  <div class="ll-empty" id="llEmptyM">No rows found.</div>
+                  <div class="ll-body" id="llBodyM"></div>
+                </div>
+              </div>
+
+              <div class="ll-summary">
+                <div class="ll-kpi" id="llKpiRowsM">Visible Rows: <b id="llVisibleRowsM">0</b></div>
+                <div class="ll-kpi" id="llKpiVolumeM">Total Volume: <b id="llTotalVolumeM">0</b></div>
+                <div class="ll-kpi" id="llKpiValueM">Total Value: <b id="llTotalValueM">0</b></div>
+              </div>
+            </div>
+
+            <div class="ll-sign">
+              <div class="ll-signbox" data-sign-scope="m" data-sign-role="member">
+                <div class="ll-signlabel" id="llSignMemberM">Signature of PG member</div>
+
+                <div class="ll-signpreview">
+                  <div class="ll-signgrid">
+                    <div class="ll-signpane white">
+                      <div class="ll-signempty" id="llSignEmptyMMember">No signature image</div>
+                      <img id="llSignImgMMember" class="ll-hidden" alt="Member signature preview" />
+                    </div>
+
+                    <div class="ll-signpane">
+                      <div class="ll-padwrap">
+                        <div class="ll-padlabel" id="llPadLabelMMember">Sign here</div>
+                        <canvas id="llPadMMember" class="ll-pad"></canvas>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ll-signactions">
+                  <input class="ll-signfile" id="llSignFileMMember" type="file" accept="image/*" />
+                  <button class="ll-sbtn" type="button" id="llSignUploadMMember">Upload</button>
+                  <button class="ll-sbtn" type="button" id="llSignCaptureMMember">Capture</button>
+                  <button class="ll-sbtn" type="button" id="llSignReplaceMMember">Replace</button>
+                  <button class="ll-sbtn danger" type="button" id="llSignRemoveMMember">Remove</button>
+
+                  <button class="ll-sbtn" type="button" id="llPadClearMMember">Clear</button>
+                  <button class="ll-sbtn" type="button" id="llPadUseMMember">Use</button>
+                </div>
+              </div>
+
+              <div class="ll-signbox" data-sign-scope="m" data-sign-role="udyog">
+                <div class="ll-signlabel" id="llSignUdyogM">Signature of Udyog Sakhi</div>
+
+                <div class="ll-signpreview">
+                  <div class="ll-signgrid">
+                    <div class="ll-signpane white">
+                      <div class="ll-signempty" id="llSignEmptyMUdyog">No signature image</div>
+                      <img id="llSignImgMUdyog" class="ll-hidden" alt="Udyog Sakhi signature preview" />
+                    </div>
+
+                    <div class="ll-signpane">
+                      <div class="ll-padwrap">
+                        <div class="ll-padlabel" id="llPadLabelMUdyog">Sign here</div>
+                        <canvas id="llPadMUdyog" class="ll-pad"></canvas>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ll-signactions">
+                  <input class="ll-signfile" id="llSignFileMUdyog" type="file" accept="image/*" />
+                  <button class="ll-sbtn" type="button" id="llSignUploadMUdyog">Upload</button>
+                  <button class="ll-sbtn" type="button" id="llSignCaptureMUdyog">Capture</button>
+                  <button class="ll-sbtn" type="button" id="llSignReplaceMUdyog">Replace</button>
+                  <button class="ll-sbtn danger" type="button" id="llSignRemoveMUdyog">Remove</button>
+
+                  <button class="ll-sbtn" type="button" id="llPadClearMUdyog">Clear</button>
+                  <button class="ll-sbtn" type="button" id="llPadUseMUdyog">Use</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <div class="ll-actionbar ll-hidden" id="llActionBar">
+      <button class="ll-btn ll-hidden" id="llCancelBtn" type="button">
+        <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18"></path>
+          <path d="M6 6l12 12"></path>
+        </svg>
+        <span id="llCancelText">Cancel</span>
+      </button>
+
+      <button class="ll-btn danger" id="llDeleteAllTop" type="button" disabled>
+        <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+          <path d="M10 11v6"></path>
+          <path d="M14 11v6"></path>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+        </svg>
+        <span id="llDeleteAllText">Delete All</span>
+      </button>
+
+      <button class="ll-btn" id="llAddRowTop" type="button" disabled>
+        <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 5v14"></path>
+          <path d="M5 12h14"></path>
+        </svg>
+        <span id="llAddRowText">+ Add Row</span>
+      </button>
+
+      <button class="ll-btn" id="llEditSaveBtn" type="button">
+        <svg id="llEditIcon" class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+        <svg id="llSaveIcon" class="ll-icon ll-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        <span id="llEditSaveText">Edit</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- SAVE CONFIRM MODAL -->
+<div id="llSaveOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
+  <div class="ll-modal">
+    <div class="ll-mhead" id="llSaveHead">
+      <span class="ll-dot" id="llSaveDot"></span>
+      <div class="ll-mtitle" id="llSaveTitle">Confirm Save</div>
+    </div>
+    <div class="ll-mbody" id="llSaveMsg">Do you want to save these changes?</div>
+    <div class="ll-mactions">
+      <button id="llSaveCancel" class="ll-ghost" type="button">Cancel</button>
+      <button id="llSaveYes" class="ll-solid" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- CANCEL CONFIRM MODAL -->
+<div id="llCancelOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
+  <div class="ll-modal">
+    <div class="ll-mhead" id="llCancelHead">
+      <span class="ll-dot" id="llCancelDot"></span>
+      <div class="ll-mtitle" id="llCancelTitle">Discard changes?</div>
+    </div>
+    <div class="ll-mbody" id="llCancelMsg">This will revert all unsaved changes.</div>
+    <div class="ll-mactions">
+      <button id="llCancelNo" class="ll-ghost" type="button">Cancel</button>
+      <button id="llCancelYes" class="ll-solid" type="button">Discard</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT-LOCK MODAL -->
+<div id="llLockOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
+  <div class="ll-modal">
+    <div class="ll-mhead" id="llLockHead">
+      <span class="ll-dot" id="llLockDot"></span>
+      <div class="ll-mtitle" id="llLockTitle">Action blocked</div>
+    </div>
+    <div class="ll-mbody" id="llLockMsg">You are in Edit mode. Please Save or Cancel before leaving this page.</div>
+    <div class="ll-mactions">
+      <button id="llLockOk" class="ll-solid" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE ROW CONFIRM MODAL -->
+<div id="llDeleteRowOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
+  <div class="ll-modal">
+    <div class="ll-mhead danger" id="llDeleteRowHead">
+      <span class="ll-dot danger" id="llDeleteRowDot"></span>
+      <div class="ll-mtitle danger" id="llDeleteRowTitle">Delete this row?</div>
+    </div>
+    <div class="ll-mbody" id="llDeleteRowMsg">This row will be removed (you can still Undo by Cancel if not saved).</div>
+    <div class="ll-mactions">
+      <button id="llDeleteRowNo" class="ll-ghost" type="button">Cancel</button>
+      <button id="llDeleteRowYes" class="ll-solid danger" type="button">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE ALL / SELECTED CONFIRM MODAL -->
+<div id="llDeleteAllOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
+  <div class="ll-modal">
+    <div class="ll-mhead danger" id="llDeleteAllHead">
+      <span class="ll-dot danger" id="llDeleteAllDot"></span>
+      <div class="ll-mtitle danger" id="llDeleteAllTitle">Delete all rows?</div>
+    </div>
+    <div class="ll-mbody" id="llDeleteAllMsg">All rows in this section will be removed (until you Save).</div>
+    <div class="ll-mactions">
+      <button id="llDeleteAllNo" class="ll-ghost" type="button">Cancel</button>
+      <button id="llDeleteAllYes" class="ll-solid danger" type="button">Delete All</button>
+    </div>
+  </div>
+</div>
+
+<!-- CAMERA CAPTURE MODAL -->
+<div id="llCamOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
+  <div class="ll-modal ll-cam">
+    <div class="ll-mhead" id="llCamHead">
+      <span class="ll-dot" id="llCamDot"></span>
+      <div class="ll-mtitle" id="llCamTitle">Capture Signature</div>
+    </div>
+    <div class="ll-camwrap">
+      <div class="ll-camvideo">
+        <video id="llCamVideo" playsinline autoplay muted></video>
+      </div>
+      <div class="ll-camnote" id="llCamNote">
+        If camera permission is denied, use Upload instead.
+      </div>
+    </div>
+    <div class="ll-mactions">
+      <button id="llCamCancel" class="ll-ghost" type="button">Cancel</button>
+      <button id="llCamSnap" class="ll-solid" type="button">Capture</button>
+      <button id="llCamUse" class="ll-solid" type="button">Use Photo</button>
+    </div>
+  </div>
+</div>
+
+<!-- GENERIC POPUP -->
+<div id="llInfoOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
+  <div class="ll-modal">
+    <div class="ll-mhead" id="llInfoHead">
+      <span class="ll-dot" id="llInfoDot"></span>
+      <div class="ll-mtitle" id="llInfoTitle">Message</div>
+    </div>
+    <div class="ll-mbody" id="llInfoMsg">...</div>
+    <div class="ll-mactions">
+      <button id="llInfoOk" class="ll-solid" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const ACTIVE_PANEL_KEY = `receipt_voucher_active_panel:${(window.PG_ID || "").trim() || "anon"}`;
+  const RECEIPT_VOUCHER_STORAGE_KEY = `receipt_voucher_data:${(window.PG_ID || "").trim() || "anon"}`;
+
+  const T = {
+    en: {
+      title: "Receipt Voucher",
+      tab_pg: "PG Group Receipt",
+      tab_member: "Group Member Receipt",
+      note_pg: "Use this section for group-level receipts. Add commodity rows below.",
+      note_member: "Use this section for individual member receipts. Add commodity rows below.",
+      pgLabel: "Name of Producers Group",
+      dateLabel: "Date of transaction",
+      memberLabel: "Name of member",
+      codeLabel: "Member code",
+      detailsLabel: "Details on commodity procured",
+      rowsLabel: "Rows",
+      searchPH: "Search...",
+      prev: "Prev",
+      next: "Next",
+      pageInfo: (a,b)=>`Page ${a} / ${b}`,
+      empty: "No rows found.",
+      hSl: "Sl No",
+      hCommodity: "Commodity",
+      hGrade: "Grade",
+      hRate: "Rate",
+      hVolume: "Volume (Qnt/Ltr.)",
+      hValue: "Value (Rupees)",
+      hActions: "Actions",
+      addRow: " Add Row",
+      deleteAll: "Delete All",
+      deleteSelected: "Delete Selected",
+      delRow: "Delete",
+      editButton: "Edit",
+      saveButton: "Save",
+      cancelButton: "Cancel",
+      kpiRows: "Visible Rows:",
+      kpiVolume: "Total Volume:",
+      kpiValue: "Total Value:",
+      phPg: "Write PG name…",
+      phMember: "Select member",
+      phCode: "Select member code",
+      phDetails: "Write details…",
+      phCommodity: "Write commodity…",
+      phGrade: "Grade…",
+      phRate: "0",
+      phVolume: "0",
+      phValue: "0",
+      signMember: "Signature of PG member",
+      signUdyog: "Signature of Udyog Sakhi",
+      signEmpty: "No signature image",
+      upload: "Upload",
+      capture: "Capture",
+      replace: "Replace",
+      remove: "Remove",
+      padLabel: "Sign here",
+      padClear: "Clear",
+      padUse: "Use",
+      confirmTitle: "Confirm Save",
+      confirmMsg: "Do you want to save these changes?",
+      confirmYes: "Confirm",
+      confirmNo: "Cancel",
+      cancelTitle: "Discard changes?",
+      cancelMsg: "This will revert all unsaved changes.",
+      cancelYes: "Discard",
+      lockTitle: "Action blocked",
+      lockMsg: "You are in Edit mode. Please Save or Cancel before leaving this page.",
+      lockOk: "OK",
+      delRowTitle: "Delete this row?",
+      delRowMsg: "This row will be removed (you can still Undo by Cancel if not saved).",
+      delAllTitle: "Delete all rows?",
+      delAllMsg: "All rows in this section will be removed (until you Save).",
+      delSelTitle: (n)=>`Delete ${n} selected row(s)?`,
+      delSelMsg: "Selected rows will be removed (until you Save).",
+      delYes: "Delete",
+      delAllYes: "Delete All",
+      camTitle: "Capture Signature",
+      camNote: "If camera permission is denied, use Upload instead.",
+      camCancel: "Cancel",
+      camSnap: "Capture",
+      camUse: "Use Photo",
+      ok: "OK",
+      msgTitleInfo: "Message",
+      msgTitleSuccess: "Success",
+      msgTitleError: "Error",
+      msgTitleWarn: "Warning",
+      msgSignFirst: "Please sign first.",
+      msgCaptureFirst: "Please Capture first.",
+      msgCouldNotLoadImage: "Could not load image.",
+      msgSavedLocal: "✅ Saved locally (backend not connected)"
+    },
+    bn: {
+      title: "রসিদ ভাউচার",
+      tab_pg: "উৎপাদক দল রসিদ",
+      tab_member: "সদস্য রসিদ",
+      note_pg: "এই অংশে দলভিত্তিক রসিদ লিখুন। নিচে পণ্যের সারি যোগ করুন।",
+      note_member: "এই অংশে সদস্যভিত্তিক রসিদ লিখুন। নিচে পণ্যের সারি যোগ করুন।",
+      pgLabel: "উৎপাদক দলের নাম",
+      dateLabel: "লেনদেনের তারিখ",
+      memberLabel: "সদস্যের নাম",
+      codeLabel: "সদস্যের কোড",
+      detailsLabel: "ক্রয়কৃত পণ্যের বিবরণ",
+      rowsLabel: "সারি",
+      searchPH: "খুঁজুন...",
+      prev: "পূর্বে",
+      next: "পরের",
+      pageInfo: (a,b)=>`পৃষ্ঠা ${a} / ${b}`,
+      empty: "কোনো সারি পাওয়া যায়নি।",
+      hSl: "ক্রমিক",
+      hCommodity: "পণ্য",
+      hGrade: "শ্রেণী",
+      hRate: "দর",
+      hVolume: "আয়তন (কেজি/লিটার)",
+      hValue: "মান (টাকা)",
+      hActions: "অ্যাকশন",
+      addRow: " সারি যোগ করুন",
+      deleteAll: "সব মুছুন",
+      deleteSelected: "নির্বাচিত মুছুন",
+      delRow: "মুছুন",
+      editButton: "সম্পাদনা",
+      saveButton: "সংরক্ষণ",
+      cancelButton: "বাতিল",
+      kpiRows: "দেখানো সারি:",
+      kpiVolume: "মোট আয়তন:",
+      kpiValue: "মোট মান:",
+      phPg: "উৎপাদক দলের নাম লিখুন…",
+      phMember: "সদস্য নির্বাচন করুন",
+      phCode: "সদস্য কোড নির্বাচন করুন",
+      phDetails: "বিবরণ লিখুন…",
+      phCommodity: "পণ্যের নাম…",
+      phGrade: "শ্রেণী…",
+      phRate: "০",
+      phVolume: "০",
+      phValue: "০",
+      signMember: "সদস্যের স্বাক্ষর",
+      signUdyog: "উদ্যোগ সখীর স্বাক্ষর",
+      signEmpty: "স্বাক্ষরের ছবি নেই",
+      upload: "আপলোড",
+      capture: "ক্যাপচার",
+      replace: "পরিবর্তন",
+      remove: "সরান",
+      padLabel: "এখানে স্বাক্ষর করুন",
+      padClear: "মুছুন",
+      padUse: "ব্যবহার করুন",
+      confirmTitle: "সংরক্ষণ নিশ্চিত করুন",
+      confirmMsg: "আপনি কি পরিবর্তনগুলো সংরক্ষণ করতে চান?",
+      confirmYes: "নিশ্চিত",
+      confirmNo: "বাতিল",
+      cancelTitle: "পরিবর্তন বাতিল করবেন?",
+      cancelMsg: "এতে সব সংরক্ষণ না হওয়া পরিবর্তন ফিরে যাবে।",
+      cancelYes: "বাতিল করুন",
+      lockTitle: "অ্যাকশন বন্ধ করা হয়েছে",
+      lockMsg: "আপনি এডিট মোডে আছেন। অনুগ্রহ করে সংরক্ষণ করুন অথবা বাতিল করুন, তারপর পেজ ছাড়ুন।",
+      lockOk: "ঠিক আছে",
+      delRowTitle: "এই সারি মুছবেন?",
+      delRowMsg: "এই সারিটি মুছে যাবে (সংরক্ষণ না করলে Cancel দিয়ে আগের অবস্থায় ফিরতে পারবেন)।",
+      delAllTitle: "সব সারি মুছবেন?",
+      delAllMsg: "এই অংশের সব সারি মুছে যাবে (Save না করা পর্যন্ত)।",
+      delSelTitle: (n)=>`${n}টি নির্বাচিত সারি মুছবেন?`,
+      delSelMsg: "নির্বাচিত সারিগুলো মুছে যাবে (Save না করা পর্যন্ত)।",
+      delYes: "মুছুন",
+      delAllYes: "সব মুছুন",
+      camTitle: "স্বাক্ষর ক্যাপচার",
+      camNote: "ক্যামেরা অনুমতি না পেলে Upload ব্যবহার করুন।",
+      camCancel: "বাতিল",
+      camSnap: "ক্যাপচার",
+      camUse: "ব্যবহার করুন",
+      ok: "ঠিক আছে",
+      msgTitleInfo: "বার্তা",
+      msgTitleSuccess: "সফল",
+      msgTitleError: "ত্রুটি",
+      msgTitleWarn: "সতর্কতা",
+      msgSignFirst: "অনুগ্রহ করে আগে স্বাক্ষর করুন।",
+      msgCaptureFirst: "অনুগ্রহ করে আগে ক্যাপচার করুন।",
+      msgCouldNotLoadImage: "ছবি লোড করা যায়নি।",
+      msgSavedLocal: "✅ লোকালি সংরক্ষণ হয়েছে (ব্যাকএন্ড সংযুক্ত নয়)"
+    }
+  };
+
+  let lang = "en";
+  let isEditing = false;
+  let snapshot = null;
+
+  function makeSectionState(prefix){
+    return {
+      prefix,
+      allRows: [],
+      page: 1,
+      perPage: 25,
+      query: "",
+      signatures: {
+        member: "",
+        udyog: ""
+      }
+    };
+  }
+
+  const S = {
+    pg: makeSectionState("Pg"),
+    m: makeSectionState("M")
+  };
+
+  function normalizeLang(v){
+    if (!v) return null;
+    const s = String(v).toLowerCase();
+    if (s === "bn" || s.includes("bangla") || s.includes("বাংলা") || s.includes("bengali")) return "bn";
+    if (s === "en" || s.includes("english")) return "en";
+    return null;
+  }
+
+  function getInitialLang(){
+    const candidates = [
+      window.PGMIS_LANGUAGE,
+      window.PGMIS_LANG,
+      window.pgmisLang,
+      window.pgmis_language,
+      window.currentLang,
+      document.documentElement.getAttribute("data-lang"),
+      document.documentElement.getAttribute("lang"),
+      (()=>{ try{ return localStorage.getItem("pgmis_lang"); }catch(_){ return null; } })(),
+      (()=>{ try{ return localStorage.getItem("pgmis_language"); }catch(_){ return null; } })(),
+      (()=>{ try{ return localStorage.getItem("lang"); }catch(_){ return null; } })(),
+      (()=>{ try{ return localStorage.getItem("language"); }catch(_){ return null; } })()
+    ];
+
+    for (const c of candidates){
+      const n = normalizeLang(c);
+      if (n) return n;
+    }
+    return "en";
+  }
+
+  function getSavedActivePanel(){
+    try{
+      const v = localStorage.getItem(ACTIVE_PANEL_KEY);
+      return (v === "member") ? "member" : "pg";
+    }catch(_){
+      return "pg";
+    }
+  }
+
+  function saveActivePanel(which){
+    try{
+      localStorage.setItem(ACTIVE_PANEL_KEY, which === "member" ? "member" : "pg");
+    }catch(_){}
+  }
+
+  function n2(v){
+    const x = parseFloat(String(v || "").replace(/[, ]+/g,""));
+    return Number.isFinite(x) ? x : 0;
+  }
+
+  function fmt(v){
+    const x = Number(v || 0);
+    return (Math.round(x * 100) / 100).toString();
+  }
+
+  function rowText(rowEl){
+    const parts = [];
+    rowEl.querySelectorAll("input[data-ll]").forEach(el=>{
+      const k = el.getAttribute("data-ll");
+      if (k === "sel" || k === "sl") return;
+      parts.push((el.value || el.placeholder || "").toLowerCase());
+    });
+    return parts.join(" ");
+  }
+
+  function id(prefix, base){ return "ll" + base + prefix; }
+
+  function openOverlay(el){
+    el.classList.add("ll-show");
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeOverlay(el){
+    el.classList.remove("ll-show");
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+  }
+
+  function showPopup(kind, title, msg){
+    const t = T[lang];
+    const head = $("llInfoHead");
+    const dot  = $("llInfoDot");
+    const okBtn = $("llInfoOk");
+
+    head.classList.remove("b2","danger");
+    dot.classList.remove("b2","danger");
+    okBtn.classList.remove("b2","danger");
+
+    if (kind === "error"){
+      head.classList.add("danger");
+      dot.classList.add("danger");
+      okBtn.classList.add("danger");
+      $("llInfoTitle").textContent = title || t.msgTitleError;
+    } else if (kind === "warn"){
+      $("llInfoTitle").textContent = title || t.msgTitleWarn;
+    } else if (kind === "success"){
+      $("llInfoTitle").textContent = title || t.msgTitleSuccess;
+    } else {
+      $("llInfoTitle").textContent = title || t.msgTitleInfo;
+    }
+
+    $("llInfoMsg").textContent = String(msg || "");
+    $("llInfoOk").textContent = t.ok;
+    openOverlay($("llInfoOverlay"));
+  }
+
+  $("llInfoOk").addEventListener("click", ()=>closeOverlay($("llInfoOverlay")));
+  $("llInfoOverlay").addEventListener("click", (e)=>{ if (e.target === $("llInfoOverlay")) closeOverlay($("llInfoOverlay")); });
+
+  function setModalSkin(kind){
+    const head = $("llSaveHead");
+    const dot  = $("llSaveDot");
+    if (kind === "member"){
+      head.classList.add("b2");
+      dot.classList.add("b2");
+      $("llSaveYes").classList.add("b2");
+    } else {
+      head.classList.remove("b2");
+      dot.classList.remove("b2");
+      $("llSaveYes").classList.remove("b2");
+    }
+  }
+
+  function openSaveConfirm(){
+    const t = T[lang];
+    $("llSaveTitle").textContent = t.confirmTitle;
+    $("llSaveMsg").textContent = t.confirmMsg;
+    $("llSaveCancel").textContent = t.confirmNo;
+    $("llSaveYes").textContent = t.confirmYes;
+    setModalSkin(activePanel === "member" ? "member" : "pg");
+    openOverlay($("llSaveOverlay"));
+  }
+
+  function openCancelConfirm(){
+    const t = T[lang];
+    $("llCancelTitle").textContent = t.cancelTitle;
+    $("llCancelMsg").textContent = t.cancelMsg;
+    $("llCancelNo").textContent = t.confirmNo;
+    $("llCancelYes").textContent = t.cancelYes;
+    openOverlay($("llCancelOverlay"));
+  }
+
+  function openLockModal(){
+    const t = T[lang];
+    $("llLockTitle").textContent = t.lockTitle;
+    $("llLockMsg").textContent = t.lockMsg;
+    $("llLockOk").textContent = t.lockOk;
+    openOverlay($("llLockOverlay"));
+  }
+
+  $("llSaveCancel").addEventListener("click", ()=>closeOverlay($("llSaveOverlay")));
+  $("llSaveOverlay").addEventListener("click", (e)=>{ if (e.target === $("llSaveOverlay")) closeOverlay($("llSaveOverlay")); });
+
+  $("llCancelNo").addEventListener("click", ()=>closeOverlay($("llCancelOverlay")));
+  $("llCancelOverlay").addEventListener("click", (e)=>{ if (e.target === $("llCancelOverlay")) closeOverlay($("llCancelOverlay")); });
+
+  $("llLockOk").addEventListener("click", ()=>closeOverlay($("llLockOverlay")));
+  $("llLockOverlay").addEventListener("click", (e)=>{ if (e.target === $("llLockOverlay")) closeOverlay($("llLockOverlay")); });
+
+  let lockActive = false;
+  let lockPushed = false;
+  let lockOpen = false;
+
+  function setLock(on){
+    lockActive = !!on;
+    if (lockActive && !lockPushed){
+      try{
+        history.pushState({ ll_lock: true }, document.title, location.href);
+        lockPushed = true;
+      }catch(_){}
+    }
+    if (!lockActive){
+      lockPushed = false;
+      lockOpen = false;
+      closeOverlay($("llLockOverlay"));
+    }
+  }
+
+  function triggerLock(){
+    if (!lockActive) return;
+    if (lockOpen) return;
+    lockOpen = true;
+    openLockModal();
+    setTimeout(()=>{ lockOpen = false; }, 350);
+  }
+
+  window.addEventListener("popstate", ()=>{
+    if (!lockActive) return;
+    try{ history.pushState({ ll_lock: true }, document.title, location.href); }catch(_){}
+    triggerLock();
+  });
+
+  document.addEventListener("click", (e)=>{
+    if (!lockActive) return;
+
+    const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
+    if (!a) return;
+
+    const href = (a.getAttribute("href") || "").trim();
+    if (!href || href === "#" || href.startsWith("#") || href.toLowerCase().startsWith("javascript:")) return;
+
+    if (e.ctrlKey || e.metaKey || e.button === 1) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    triggerLock();
+  }, true);
+
+  window.addEventListener("keydown", (e)=>{
+    if (!lockActive) return;
+
+    const key = (e.key || "").toLowerCase();
+    const isF5 = (key === "f5") || (e.keyCode === 116);
+    const isCtrlF5 = (e.ctrlKey && isF5);
+    const isCtrlR = (e.ctrlKey || e.metaKey) && (key === "r");
+    const isHardReload = ((e.ctrlKey || e.metaKey) && e.shiftKey && key === "r") || isCtrlF5;
+
+    if (isF5 || isCtrlR || isHardReload){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      triggerLock();
+      return false;
+    }
+  }, true);
+
+  window.addEventListener("beforeunload", (e)=>{
+    if (!lockActive) return;
+    e.preventDefault();
+    e.returnValue = "";
+  });
+
+  let pendingDelete = { sectionKey:null, rowEl:null };
+  let pendingDeleteAll = { sectionKey:null, mode:"all", count:0 };
+
+  function openDeleteRowConfirm(sectionKey, rowEl){
+    if (!isEditing) return;
+    pendingDelete = { sectionKey, rowEl };
+
+    const t = T[lang];
+    $("llDeleteRowTitle").textContent = t.delRowTitle;
+    $("llDeleteRowMsg").textContent = t.delRowMsg;
+    $("llDeleteRowNo").textContent = t.confirmNo;
+    $("llDeleteRowYes").textContent = t.delYes;
+
+    openOverlay($("llDeleteRowOverlay"));
+  }
+
+  function openDeleteAllConfirm(sectionKey, mode="all", count=0){
+    if (!isEditing) return;
+    pendingDeleteAll = { sectionKey, mode, count };
+
+    const t = T[lang];
+    if (mode === "selected"){
+      $("llDeleteAllTitle").textContent = t.delSelTitle(count);
+      $("llDeleteAllMsg").textContent = t.delSelMsg;
+      $("llDeleteAllYes").textContent = t.delYes;
+    }else{
+      $("llDeleteAllTitle").textContent = t.delAllTitle;
+      $("llDeleteAllMsg").textContent = t.delAllMsg;
+      $("llDeleteAllYes").textContent = t.delAllYes;
+    }
+    $("llDeleteAllNo").textContent = t.confirmNo;
+
+    openOverlay($("llDeleteAllOverlay"));
+  }
+
+  $("llDeleteRowNo").addEventListener("click", ()=>closeOverlay($("llDeleteRowOverlay")));
+  $("llDeleteRowOverlay").addEventListener("click",(e)=>{ if(e.target===$("llDeleteRowOverlay")) closeOverlay($("llDeleteRowOverlay")); });
+
+  $("llDeleteAllNo").addEventListener("click", ()=>closeOverlay($("llDeleteAllOverlay")));
+  $("llDeleteAllOverlay").addEventListener("click",(e)=>{ if(e.target===$("llDeleteAllOverlay")) closeOverlay($("llDeleteAllOverlay")); });
+
+  function getSelectedRows(sectionKey){
+    const st = sectionKey === "pg" ? S.pg : S.m;
+    return st.allRows.filter(r=>{
+      const c = r.querySelector("[data-ll='sel']");
+      return !!(c && c.checked);
+    });
+  }
+
+  function clearSelection(sectionKey){
+    const st = sectionKey === "pg" ? S.pg : S.m;
+    st.allRows.forEach(r=>{
+      const c = r.querySelector("[data-ll='sel']");
+      if (c) c.checked = false;
+    });
+    if (sectionKey === "pg") $("llSelectAllPg").checked = false;
+    else $("llSelectAllM").checked = false;
+    syncDeleteAllLabel();
+  }
+
+  function doDeleteRow(){
+    const { sectionKey, rowEl } = pendingDelete || {};
+    if (!sectionKey || !rowEl) return;
+
+    const st = sectionKey === "pg" ? S.pg : S.m;
+    const idx = st.allRows.indexOf(rowEl);
+    if (idx >= 0) st.allRows.splice(idx, 1);
+
+    if (rowEl && rowEl.parentNode) rowEl.parentNode.removeChild(rowEl);
+
+    recalcTotalsAndVisibility(sectionKey, true);
+    syncDeleteAllLabel();
+  }
+
+  function doDeleteAll(sectionKey){
+    const st = sectionKey === "pg" ? S.pg : S.m;
+    const bodyId = sectionKey === "pg" ? "llBodyPg" : "llBodyM";
+
+    st.allRows = [];
+    $(bodyId).innerHTML = "";
+
+    recalcTotalsAndVisibility(sectionKey, true);
+    syncDeleteAllLabel();
+  }
+
+  function doDeleteSelected(sectionKey){
+    const st = sectionKey === "pg" ? S.pg : S.m;
+    const selected = getSelectedRows(sectionKey);
+    if (!selected.length) return;
+
+    selected.forEach(rowEl=>{
+      const idx = st.allRows.indexOf(rowEl);
+      if (idx >= 0) st.allRows.splice(idx, 1);
+      if (rowEl && rowEl.parentNode) rowEl.parentNode.removeChild(rowEl);
+    });
+
+    recalcTotalsAndVisibility(sectionKey, true);
+    clearSelection(sectionKey);
+    syncDeleteAllLabel();
+  }
+
+  $("llDeleteRowYes").addEventListener("click", ()=>{
+    closeOverlay($("llDeleteRowOverlay"));
+    doDeleteRow();
+  });
+
+  $("llDeleteAllYes").addEventListener("click", ()=>{
+    closeOverlay($("llDeleteAllOverlay"));
+    const k = pendingDeleteAll && pendingDeleteAll.sectionKey;
+    const mode = pendingDeleteAll && pendingDeleteAll.mode;
+    if (!k) return;
+    if (mode === "selected") doDeleteSelected(k);
+    else doDeleteAll(k);
+  });
+
+  function setRowEditable(row, on){
+    row.querySelectorAll("input[data-ll]").forEach(el=>{
+      const key = el.getAttribute("data-ll");
+      if (key === "value"){ el.readOnly = true; return; }
+      if (key === "sel"){ el.disabled = !on; return; }
+      if (key === "sl"){ return; }
+      el.readOnly = !on;
+    });
+  }
+
+  function wireRow(row, sectionKey){
+    const rateEl = row.querySelector("[data-ll='rate']");
+    const volEl  = row.querySelector("[data-ll='volume']");
+    const valEl  = row.querySelector("[data-ll='value']");
+
+    function computeValue(){
+      const rate = n2(rateEl.value);
+      const vol  = n2(volEl.value);
+      const value = rate * vol;
+      valEl.value = (rate || vol) ? fmt(value) : "";
+    }
+
+    const onInput = () => {
+      computeValue();
+      recalcTotalsAndVisibility(sectionKey);
+      syncDeleteAllLabel();
+    };
+
+    row.querySelectorAll("input").forEach(el=>{
+      el.addEventListener("input", onInput);
+      el.addEventListener("change", onInput);
+    });
+
+    const delBtn = row.querySelector("[data-ll='del']");
+    if (delBtn){
+      delBtn.addEventListener("click", ()=>{
+        openDeleteRowConfirm(sectionKey, row);
+      });
+    }
+
+    const sel = row.querySelector("[data-ll='sel']");
+    if (sel){
+      sel.addEventListener("change", syncDeleteAllLabel);
+    }
+
+    computeValue();
+    setRowEditable(row, isEditing);
+  }
+
+  function createRow(sectionKey){
+    const t = T[lang];
+    const row = document.createElement("div");
+    row.className = "ll-row";
+    row.innerHTML = `
+      <div class="ll-cell ll-check" data-label=""><input type="checkbox" data-ll="sel" aria-label="Select row" /></div>
+      <div class="ll-cell ll-sl" data-label="${t.hSl}"><span data-ll="sl">1</span></div>
+      <div class="ll-cell" data-label="${t.hCommodity}"><input class="ll-in" data-ll="commodity" placeholder="${t.phCommodity}" /></div>
+      <div class="ll-cell" data-label="${t.hGrade}"><input class="ll-in" data-ll="grade" placeholder="${t.phGrade}" /></div>
+      <div class="ll-cell" data-label="${t.hRate}"><input class="ll-in num" data-ll="rate" placeholder="${t.phRate}" inputmode="decimal" /></div>
+      <div class="ll-cell" data-label="${t.hVolume}"><input class="ll-in num" data-ll="volume" placeholder="${t.phVolume}" inputmode="decimal" /></div>
+      <div class="ll-cell" data-label="${t.hValue}"><input class="ll-in num" data-ll="value" placeholder="${t.phValue}" readonly /></div>
+      <div class="ll-cell" data-label="${t.hActions}">
+        <div class="ll-row-actions">
+          <button type="button" class="ll-del" data-ll="del">${t.delRow}</button>
+        </div>
+      </div>
+    `;
+    wireRow(row, sectionKey);
+    return row;
+  }
+
+  function addRow(sectionKey){
+    if (!isEditing) return;
+    const st = sectionKey === "pg" ? S.pg : S.m;
+    const bodyId = sectionKey === "pg" ? "llBodyPg" : "llBodyM";
+
+    const row = createRow(sectionKey);
+    st.allRows.push(row);
+    $(bodyId).appendChild(row);
+    recalcTotalsAndVisibility(sectionKey, true);
+    syncDeleteAllLabel();
+  }
+
+  function getFilteredRows(sectionKey){
+    const st = sectionKey === "pg" ? S.pg : S.m;
+    const q = (st.query || "").trim().toLowerCase();
+    if (!q) return st.allRows.slice();
+    return st.allRows.filter(r => rowText(r).includes(q));
+  }
+
+  function renderVisibility(sectionKey){
+    const st = sectionKey === "pg" ? S.pg : S.m;
+
+    const emptyId = sectionKey === "pg" ? "llEmptyPg" : "llEmptyM";
+    const pageInfoId = sectionKey === "pg" ? "llPageInfoPg" : "llPageInfoM";
+    const prevId = sectionKey === "pg" ? "llPrevPg" : "llPrevM";
+    const nextId = sectionKey === "pg" ? "llNextPg" : "llNextM";
+    const visibleRowsId = sectionKey === "pg" ? "llVisibleRowsPg" : "llVisibleRowsM";
+
+    const filtered = getFilteredRows(sectionKey);
+
+    filtered.forEach((r, i)=>{
+      const sl = r.querySelector("[data-ll='sl']");
+      if (sl) sl.textContent = String(i + 1);
+    });
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / st.perPage));
+    st.page = Math.min(Math.max(st.page, 1), totalPages);
+
+    const start = (st.page - 1) * st.perPage;
+    const end = start + st.perPage;
+
+    st.allRows.forEach(r => r.classList.add("ll-hide"));
+    const slice = filtered.slice(start, end);
+    slice.forEach(r => r.classList.remove("ll-hide"));
+
+    $(pageInfoId).textContent = T[lang].pageInfo(st.page, totalPages);
+    $(prevId).disabled = (st.page <= 1);
+    $(nextId).disabled = (st.page >= totalPages);
+    $(visibleRowsId).textContent = String(slice.length);
+
+    const empty = $(emptyId);
+    if (filtered.length === 0) empty.classList.add("show");
+    else empty.classList.remove("show");
+
+    return { filtered, slice, totalPages };
+  }
+
+  function recalcTotalsAndVisibility(sectionKey, resetPageIfNeeded=false){
+    const totalVolId = sectionKey === "pg" ? "llTotalVolumePg" : "llTotalVolumeM";
+    const totalValId = sectionKey === "pg" ? "llTotalValuePg" : "llTotalValueM";
+
+    const { filtered, totalPages } = renderVisibility(sectionKey);
+
+    let totalVol = 0;
+    let totalVal = 0;
+
+    filtered.forEach(r=>{
+      totalVol += n2(r.querySelector("[data-ll='volume']").value);
+      totalVal += n2(r.querySelector("[data-ll='value']").value);
+    });
+
+    $(totalVolId).textContent = fmt(totalVol);
+    $(totalValId).textContent = fmt(totalVal);
+
+    if (resetPageIfNeeded){
+      const st = sectionKey === "pg" ? S.pg : S.m;
+      st.page = Math.min(st.page, totalPages);
+      renderVisibility(sectionKey);
+    }
+  }
+
+  function syncDeleteAllLabel(){
+    const t = T[lang];
+    const key = (activePanel === "pg") ? "pg" : "m";
+    const selCount = getSelectedRows(key).length;
+
+    $("llDeleteAllText").textContent = selCount > 0 ? t.deleteSelected : t.deleteAll;
+    $("llDeleteAllTop").disabled = !isEditing;
+  }
+
+  function setEditingUI(){
+    const t = T[lang];
+    $("llEditIcon").classList.toggle("ll-hidden", isEditing);
+    $("llSaveIcon").classList.toggle("ll-hidden", !isEditing);
+    $("llEditSaveText").textContent = isEditing ? t.saveButton : t.editButton;
+    $("llCancelBtn").classList.toggle("ll-hidden", !isEditing);
+    $("llCancelText").textContent = t.cancelButton;
+    $("llAddRowTop").disabled = !isEditing;
+    $("llDeleteAllTop").disabled = !isEditing;
+    syncDeleteAllLabel();
+    $("llActionBar").classList.remove("ll-hidden");
+  }
+
+  function setAllEditable(on){
+    $("llWrap").classList.toggle("ll-readonly", !on);
+
+    const topIds = [
+      "llPgNamePg","llTxnDatePg","llMemberNamePg","llMemberCodePg","llDetailsPg",
+      "llPgNameM","llTxnDateM","llMemberNameM","llMemberCodeM","llDetailsM"
+    ];
+    topIds.forEach(i => $(i).readOnly = !on);
+
+    S.pg.allRows.forEach(r => setRowEditable(r, on));
+    S.m.allRows.forEach(r => setRowEditable(r, on));
+
+    setLock(on);
+  }
+
+  function setEditMode(on){
+    isEditing = !!on;
+    setEditingUI();
+    setAllEditable(isEditing);
+    syncDeleteAllLabel();
+  }
+
+  const signMap = {
+    pg_member: { file:"llSignFilePgMember", img:"llSignImgPgMember", empty:"llSignEmptyPgMember", upload:"llSignUploadPgMember", capture:"llSignCapturePgMember", replace:"llSignReplacePgMember", remove:"llSignRemovePgMember", sectionKey:"pg", role:"member", pad:"llPadPgMember", padLabel:"llPadLabelPgMember", padClear:"llPadClearPgMember", padUse:"llPadUsePgMember" },
+    pg_udyog:  { file:"llSignFilePgUdyog",  img:"llSignImgPgUdyog",  empty:"llSignEmptyPgUdyog",  upload:"llSignUploadPgUdyog",  capture:"llSignCapturePgUdyog",  replace:"llSignReplacePgUdyog",  remove:"llSignRemovePgUdyog",  sectionKey:"pg", role:"udyog", pad:"llPadPgUdyog", padLabel:"llPadLabelPgUdyog", padClear:"llPadClearPgUdyog", padUse:"llPadUsePgUdyog" },
+    m_member:  { file:"llSignFileMMember",  img:"llSignImgMMember",  empty:"llSignEmptyMMember",  upload:"llSignUploadMMember",  capture:"llSignCaptureMMember",  replace:"llSignReplaceMMember",  remove:"llSignRemoveMMember",  sectionKey:"m",  role:"member", pad:"llPadMMember", padLabel:"llPadLabelMMember", padClear:"llPadClearMMember", padUse:"llPadUseMMember" },
+    m_udyog:   { file:"llSignFileMUdyog",   img:"llSignImgMUdyog",   empty:"llSignEmptyMUdyog",   upload:"llSignUploadMUdyog",   capture:"llSignCaptureMUdyog",   replace:"llSignReplaceMUdyog",   remove:"llSignRemoveMUdyog",   sectionKey:"m",  role:"udyog", pad:"llPadMUdyog", padLabel:"llPadLabelMUdyog", padClear:"llPadClearMUdyog", padUse:"llPadUseMUdyog" }
+  };
+
+  function setSignature(sectionKey, role, dataUrl){
+    const st = sectionKey === "pg" ? S.pg : S.m;
+    st.signatures[role] = dataUrl || "";
+    renderSignatureUI(sectionKey, role);
+  }
+
+  function getSignature(sectionKey, role){
+    const st = sectionKey === "pg" ? S.pg : S.m;
+    return st.signatures[role] || "";
+  }
+
+  function renderSignatureUI(sectionKey, role){
+    const key =
+      sectionKey === "pg"
+        ? (role === "member" ? "pg_member" : "pg_udyog")
+        : (role === "member" ? "m_member" : "m_udyog");
+
+    const cfg = signMap[key];
+    const dataUrl = getSignature(sectionKey, role);
+
+    const imgEl = $(cfg.img);
+    const emptyEl = $(cfg.empty);
+
+    if (dataUrl){
+      imgEl.src = dataUrl;
+      imgEl.classList.remove("ll-hidden");
+      emptyEl.classList.add("ll-hidden");
+    }else{
+      imgEl.removeAttribute("src");
+      imgEl.classList.add("ll-hidden");
+      emptyEl.classList.remove("ll-hidden");
+    }
+  }
+
+  function readFileAsDataURL(file){
+    return new Promise((resolve, reject)=>{
+      const fr = new FileReader();
+      fr.onload = ()=>resolve(String(fr.result || ""));
+      fr.onerror = ()=>reject(new Error("File read failed"));
+      fr.readAsDataURL(file);
+    });
+  }
+
+  function pickFile(cfg){
+    if (!isEditing) return;
+    $(cfg.file).click();
+  }
+
+  async function handleFileInput(cfg){
+    const input = $(cfg.file);
+    const file = input.files && input.files[0];
+    input.value = "";
+    if (!file) return;
+
+    try{
+      const dataUrl = await readFileAsDataURL(file);
+      setSignature(cfg.sectionKey, cfg.role, dataUrl);
+    }catch(err){
+      console.error(err);
+      showPopup("error", T[lang].msgTitleError, T[lang].msgCouldNotLoadImage);
+    }
+  }
+
+  function removeSignature(cfg){
+    if (!isEditing) return;
+    setSignature(cfg.sectionKey, cfg.role, "");
+  }
+
+  let camStream = null;
+  let camTarget = null;
+  let camPhotoDataUrl = "";
+
+  function stopCamera(){
+    if (camStream){
+      camStream.getTracks().forEach(t=>t.stop());
+      camStream = null;
+    }
+    const v = $("llCamVideo");
+    if (v) v.srcObject = null;
+    camPhotoDataUrl = "";
+    camTarget = null;
+  }
+
+  async function openCameraFor(sectionKey, role){
+    if (!isEditing) return;
+
+    camTarget = { sectionKey, role };
+    camPhotoDataUrl = "";
+
+    const t = T[lang];
+    $("llCamTitle").textContent = t.camTitle;
+    $("llCamNote").textContent = t.camNote;
+    $("llCamCancel").textContent = t.camCancel;
+    $("llCamSnap").textContent = t.camSnap;
+    $("llCamUse").textContent = t.camUse;
+
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false
+      });
+      camStream = stream;
+      $("llCamVideo").srcObject = stream;
+      openOverlay($("llCamOverlay"));
+    }catch(err){
+      console.warn("Camera denied/unavailable:", err);
+      const fallbackInput = document.createElement("input");
+      fallbackInput.type = "file";
+      fallbackInput.accept = "image/*";
+      fallbackInput.setAttribute("capture", "environment");
+      fallbackInput.onchange = async () => {
+        const f = fallbackInput.files && fallbackInput.files[0];
+        if (!f) return;
+        try{
+          const dataUrl = await readFileAsDataURL(f);
+          setSignature(sectionKey, role, dataUrl);
+        }catch(e){
+          showPopup("error", T[lang].msgTitleError, T[lang].msgCouldNotLoadImage);
+        }
+      };
+      fallbackInput.click();
+    }
+  }
+
+  $("llCamCancel").addEventListener("click", ()=>{
+    closeOverlay($("llCamOverlay"));
+    stopCamera();
+  });
+
+  $("llCamOverlay").addEventListener("click",(e)=>{
+    if (e.target === $("llCamOverlay")){
+      closeOverlay($("llCamOverlay"));
+      stopCamera();
+    }
+  });
+
+  $("llCamSnap").addEventListener("click", ()=>{
+    const v = $("llCamVideo");
+    if (!v || !v.videoWidth) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = v.videoWidth;
+    canvas.height = v.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+    camPhotoDataUrl = canvas.toDataURL("image/png");
+  });
+
+  $("llCamUse").addEventListener("click", ()=>{
+    if (!camTarget) return;
+    if (!camPhotoDataUrl){
+      showPopup("warn", T[lang].msgTitleWarn, T[lang].msgCaptureFirst);
+      return;
+    }
+    setSignature(camTarget.sectionKey, camTarget.role, camPhotoDataUrl);
+    closeOverlay($("llCamOverlay"));
+    stopCamera();
+  });
+
+  function wireSignatureButtons(){
+    Object.values(signMap).forEach(cfg=>{
+      $(cfg.file).addEventListener("change", ()=>handleFileInput(cfg));
+      $(cfg.upload).addEventListener("click", ()=>pickFile(cfg));
+      $(cfg.capture).addEventListener("click", ()=>openCameraFor(cfg.sectionKey, cfg.role));
+      $(cfg.replace).addEventListener("click", ()=>pickFile(cfg));
+      $(cfg.remove).addEventListener("click", ()=>removeSignature(cfg));
+    });
+  }
+
+  function setupPad(cfg){
+    const canvas = $(cfg.pad);
+    if (!canvas) return;
+
+    const clearBtn = $(cfg.padClear);
+    const useBtn = $(cfg.padUse);
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+    let drawing = false;
+    let last = null;
+
+    function isSmallScreen(){
+      return window.matchMedia && window.matchMedia("(max-width: 820px)").matches;
+    }
+
+    function resizeCanvas(){
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(1, Math.floor(rect.width));
+      const h = Math.max(1, Math.floor(rect.height));
+      const prev = canvas.toDataURL("image/png");
+
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = (cfg.sectionKey === "m") ? "#1e40af" : "#0b4d3a";
+
+      if (prev && prev.startsWith("data:image")){
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0,0,w,h);
+          ctx.drawImage(img, 0, 0, w, h);
+        };
+        img.src = prev;
+      } else {
+        ctx.clearRect(0,0,w,h);
+      }
+    }
+
+    function posFromEvent(e){
+      const rect = canvas.getBoundingClientRect();
+      const p = (e.touches && e.touches[0]) ? e.touches[0] : e;
+      return {
+        x: p.clientX - rect.left,
+        y: p.clientY - rect.top
+      };
+    }
+
+    function start(e){
+      if (!isEditing) return;
+      drawing = true;
+      last = posFromEvent(e);
+      e.preventDefault();
+    }
+
+    function move(e){
+      if (!drawing || !isEditing) return;
+      const p = posFromEvent(e);
+      if (!last){ last = p; return; }
+      ctx.beginPath();
+      ctx.moveTo(last.x, last.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      last = p;
+      e.preventDefault();
+    }
+
+    function end(){
+      drawing = false;
+      last = null;
+    }
+
+    if (window.PointerEvent){
+      canvas.addEventListener("pointerdown", start);
+      canvas.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", end);
+      canvas.addEventListener("pointercancel", end);
+      canvas.addEventListener("pointerleave", end);
+    } else {
+      canvas.addEventListener("mousedown", start);
+      canvas.addEventListener("mousemove", move);
+      window.addEventListener("mouseup", end);
+
+      canvas.addEventListener("touchstart", start, { passive: false });
+      canvas.addEventListener("touchmove", move, { passive: false });
+      canvas.addEventListener("touchend", end);
+      canvas.addEventListener("touchcancel", end);
+    }
+
+    function clearPad(){
+      if (!isSmallScreen()){
+        const rect = canvas.getBoundingClientRect();
+        ctx.clearRect(0,0,rect.width,rect.height);
+        return;
+      }
+      const dpr = window.devicePixelRatio || 1;
+      ctx.save();
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.restore();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function hasInk(){
+      if (!isSmallScreen()){
+        const rect = canvas.getBoundingClientRect();
+        const w = Math.max(1, Math.floor(rect.width));
+        const h = Math.max(1, Math.floor(rect.height));
+        const img = ctx.getImageData(0,0,w,h).data;
+        for (let i=3; i<img.length; i+=4){
+          if (img[i] > 0) return true;
+        }
+        return false;
+      }
+
+      const w = Math.max(1, canvas.width|0);
+      const h = Math.max(1, canvas.height|0);
+      let img;
+      try{
+        img = ctx.getImageData(0,0,w,h).data;
+      }catch(_){
+        const d = canvas.toDataURL("image/png");
+        return !!(d && d.length > 2000);
+      }
+      for (let i=3; i<img.length; i+=4){
+        if (img[i] > 0) return true;
+      }
+      return false;
+    }
+
+    function usePad(){
+      if (!isEditing) return;
+      if (!hasInk()){
+        showPopup("warn", T[lang].msgTitleWarn, T[lang].msgSignFirst);
+        return;
+      }
+
+      const dataUrl = canvas.toDataURL("image/png");
+      setSignature(cfg.sectionKey, cfg.role, dataUrl);
+      clearPad();
+    }
+
+    if (clearBtn) clearBtn.addEventListener("click", clearPad);
+    if (useBtn) useBtn.addEventListener("click", usePad);
+
+    resizeCanvas();
+    window.addEventListener("resize", ()=>resizeCanvas());
+  }
+
+  function initPads(){
+    Object.values(signMap).forEach(cfg => setupPad(cfg));
+  }
+
+  function snapSection(sectionKey){
+    const p = sectionKey === "pg" ? "Pg" : "M";
+    const st = sectionKey === "pg" ? S.pg : S.m;
+
+    return {
+      pg_name: $(id(p,"PgName")).value || "",
+      txn_date: $(id(p,"TxnDate")).value || "",
+      member_name: $(id(p,"MemberName")).value || "",
+      member_code: $(id(p,"MemberCode")).value || "",
+      details: $(id(p,"Details")).value || "",
+      signatures: {
+        member: st.signatures.member || "",
+        udyog: st.signatures.udyog || ""
+      },
+   entries: st.allRows
+  .map(r => ({
+    commodity: r.querySelector("[data-ll='commodity']").value || "",
+    grade: r.querySelector("[data-ll='grade']").value || "",
+    rate: n2(r.querySelector("[data-ll='rate']").value),
+    volume: n2(r.querySelector("[data-ll='volume']").value),
+    value: n2(r.querySelector("[data-ll='value']").value)
+  }))
+  .filter(e => {
+    const commodity = String(e.commodity || "").trim();
+    const grade = String(e.grade || "").trim();
+    return commodity || grade || e.rate || e.volume || e.value;
+  })
+    };
+  }
+
+  let activePanel = "pg";
+
+  function takeSnapshot(){
+    return { pg: snapSection("pg"), member: snapSection("m"), active: activePanel };
+  }
+
+  function restoreSection(sectionKey, data){
+    const p = sectionKey === "pg" ? "Pg" : "M";
+    const st = sectionKey === "pg" ? S.pg : S.m;
+    const bodyId = sectionKey === "pg" ? "llBodyPg" : "llBodyM";
+
+    $(id(p,"PgName")).value = data.pg_name || "";
+    $(id(p,"TxnDate")).value = data.txn_date || "";
+    $(id(p,"MemberName")).value = data.member_name || "";
+    $(id(p,"MemberCode")).value = data.member_code || "";
+    populateReceiptMemberDropdowns(sectionKey, data.member_name || "", data.member_code || "");
+    syncReceiptMemberPair(sectionKey, data.member_name ? "name" : "code");
+    $(id(p,"Details")).value = data.details || "";
+
+    st.signatures.member = (data.signatures && data.signatures.member) ? data.signatures.member : "";
+    st.signatures.udyog  = (data.signatures && data.signatures.udyog) ? data.signatures.udyog : "";
+    renderSignatureUI(sectionKey === "pg" ? "pg" : "m", "member");
+    renderSignatureUI(sectionKey === "pg" ? "pg" : "m", "udyog");
+
+    st.allRows = [];
+    $(bodyId).innerHTML = "";
+
+  const entries = (Array.isArray(data.entries) ? data.entries : []).filter(e => {
+  const commodity = String(e?.commodity || "").trim();
+  const grade = String(e?.grade || "").trim();
+  const rate = Number(e?.rate || 0);
+  const volume = Number(e?.volume || 0);
+  const value = Number(e?.value || 0);
+
+  return commodity || grade || rate || volume || value;
+});
+
+entries.forEach(e=>{
+  const r = createRow(sectionKey);
+  r.querySelector("[data-ll='commodity']").value = e.commodity || "";
+  r.querySelector("[data-ll='grade']").value = e.grade || "";
+  r.querySelector("[data-ll='rate']").value = e.rate ? String(e.rate) : "";
+  r.querySelector("[data-ll='volume']").value = e.volume ? String(e.volume) : "";
+  r.querySelector("[data-ll='value']").value = e.value ? String(e.value) : "";
+  st.allRows.push(r);
+  $(bodyId).appendChild(r);
+});
+    setAllEditable(isEditing);
+    recalcTotalsAndVisibility(sectionKey, true);
+    clearSelection(sectionKey);
+  }
+
+  function restoreSnapshot(snap){
+    if (!snap) return;
+    restoreSection("pg", snap.pg || {});
+    restoreSection("m", snap.member || {});
+    setActivePanel(snap.active || getSavedActivePanel(), true);
+  }
+
+  function enterEdit(){
+    snapshot = takeSnapshot();
+    setEditMode(true);
+  }
+
+  function requestCancel(){
+    if (!isEditing) return;
+    openCancelConfirm();
+  }
+
+  function doCancel(){
+    closeOverlay($("llCancelOverlay"));
+    restoreSnapshot(snapshot);
+    setEditMode(false);
+  }
+
+  function requestSave(){
+    if (!isEditing) return;
+    openSaveConfirm();
+  }
+
+  function getPgId(){
+    return (window.PG_ID || "").trim();
+  }
+  function applyCurrentPgNameToVoucherFields(){
+    const current = String($("llPgNamePg")?.value || $("llPgNameM")?.value || "").trim();
+    if (!current) return;
+    if ($("llPgNamePg")) $("llPgNamePg").value = current;
+    if ($("llPgNameM")) $("llPgNameM").value = current;
+  }
+
+
+  let selectedPeriod = (() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  })();
+  let receiptHistory = [];
+
+  function monthLabel(month, year){
+    const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    return `${names[(Number(month) || 1) - 1] || "Month"} ${year || ""}`.trim();
+  }
+
+  function ensureReceiptHistoryBox(){
+    let el = document.getElementById('receiptHistoryBox');
+    if(el) return el;
+    el = document.createElement('section');
+    el.id = 'receiptHistoryBox';
+    el.style.marginTop = '16px';
+    el.style.padding = '16px';
+    el.style.background = '#fff';
+    el.style.border = '1px solid rgba(15,23,42,.08)';
+    el.style.borderRadius = '18px';
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div style="font-size:18px;font-weight:800;color:#0f172a">Saved Month Records</div><div id="receiptCurrentPeriodText" style="font-size:13px;color:#64748b;margin-top:4px"></div></div><div id="receiptHistoryCards" style="display:flex;gap:10px;flex-wrap:wrap"></div></div>';
+    const target = document.querySelector('.ll-wrap, .ll-page, main') || document.body;
+    target.appendChild(el);
+    return el;
+  }
+
+  function renderReceiptHistoryBox(){
+    ensureReceiptHistoryBox();
+    const current = document.getElementById('receiptCurrentPeriodText');
+    const cards = document.getElementById('receiptHistoryCards');
+    if(current) current.textContent = `Working month: ${monthLabel(selectedPeriod.month, selectedPeriod.year)}`;
+    if(!cards) return;
+    if(!receiptHistory.length){
+      cards.innerHTML = '<div style="font-size:13px;color:#64748b">No saved month records yet.</div>';
+      return;
+    }
+    cards.innerHTML = receiptHistory.map(item => {
+      const active = Number(item.year) === Number(selectedPeriod.year) && Number(item.month) === Number(selectedPeriod.month);
+      return `<button type="button" class="receipt-history-card" data-year="${item.year}" data-month="${item.month}" style="border:1px solid ${active ? '#10b981' : 'rgba(15,23,42,.08)'};background:${active ? '#ecfdf5' : '#f8fafc'};color:#0f172a;border-radius:14px;padding:10px 14px;font-weight:700;cursor:pointer">${monthLabel(item.month, item.year)}</button>`;
+    }).join('');
+    cards.querySelectorAll('.receipt-history-card').forEach(btn => {
+      btn.addEventListener('click', async ()=>{
+        selectedPeriod = { year: Number(btn.dataset.year), month: Number(btn.dataset.month) };
+        await loadReceiptVoucher(selectedPeriod.year, selectedPeriod.month);
+        renderReceiptHistoryBox();
+      });
+    });
+  }
+
+  async function loadReceiptHistory(){
+    const pg_id = getPgId();
+    if(!pg_id) return [];
+    try{
+      const res = await fetch(`/pg/receipt-voucher/${encodeURIComponent(pg_id)}?history=1`, { method:'GET' });
+      if(!res.ok) return [];
+      const data = await res.json().catch(()=>null);
+      receiptHistory = Array.isArray(data && data.history) ? data.history : [];
+      return receiptHistory;
+    }catch(_){
+      receiptHistory = [];
+      return [];
+    }
+  }
+
+  async function saveReceiptVoucher(){
+    try{
+      const pg_id = getPgId();
+      applyCurrentPgNameToVoucherFields();
+      const payload = {
+        pg_section: snapSection("pg"),
+        member_section: snapSection("m")
+      };
+      localStorage.setItem(RECEIPT_VOUCHER_STORAGE_KEY, JSON.stringify(payload));
+
+      if (!pg_id) throw new Error("Missing PG context");
+
+      const res = await fetch(`/pg/receipt-voucher/${encodeURIComponent(pg_id)}?year=${encodeURIComponent(selectedPeriod.year)}&month=${encodeURIComponent(selectedPeriod.month)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error((data && (data.error || data.message)) || `HTTP ${res.status}`);
+      }
+
+      await loadReceiptHistory();
+      renderReceiptHistoryBox();
+      snapshot = takeSnapshot();
+      setEditMode(false);
+      await loadReceiptHistory();
+      renderReceiptHistoryBox();
+      showPopup("success", T[lang].msgTitleSuccess, (data && data.message) || T[lang].msgSavedLocal);
+
+    }catch(err){
+      console.error(err);
+      const msg = "Save failed: " + (err && err.message ? err.message : err);
+      showPopup("error", T[lang].msgTitleError, msg);
+    }
+  }
+
+
+  async function hydrateCurrentPgName(){
+    const pgId = getPgId();
+    if(!pgId) return;
+    try{
+      const res = await fetch(`/pg/profile/${encodeURIComponent(pgId)}/data`, { headers:{ "Accept":"application/json" } });
+      if(!res.ok) return;
+      const data = await res.json().catch(()=>null);
+      const pgName = data && data.data ? (data.data.pg_name || "") : "";
+      if(!pgName) return;
+      const pgEl = $("llPgNamePg");
+      const memberEl = $("llPgNameM");
+      if(pgEl) pgEl.value = pgName;
+      if(memberEl) memberEl.value = pgName;
+      applyCurrentPgNameToVoucherFields();
+    }catch(_e){}
+  }
+
+  async function loadReceiptVoucher(year = selectedPeriod.year, month = selectedPeriod.month){
+    const pg_id = getPgId();
+    try{
+      const res = await fetch(`/pg/receipt-voucher/${encodeURIComponent(pg_id)}?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`, { method:"GET" });
+      if (!res.ok) return;
+      const data = await res.json().catch(()=>null);
+      if (!data) return;
+
+      const pgData = data.pg_section || data.pg || null;
+      const mData  = data.member_section || data.member || null;
+
+      if (pgData) restoreSection("pg", {
+        pg_name: pgData.pg_name || "",
+        txn_date: pgData.txn_date || "",
+        member_name: pgData.member_name || "",
+        member_code: pgData.member_code || "",
+        details: pgData.details || "",
+        signatures: pgData.signatures || { member:"", udyog:"" },
+        entries: pgData.entries || []
+      });
+
+      if (mData) restoreSection("m", {
+        pg_name: mData.pg_name || "",
+        txn_date: mData.txn_date || "",
+        member_name: mData.member_name || "",
+        member_code: mData.member_code || "",
+        details: mData.details || "",
+        signatures: mData.signatures || { member:"", udyog:"" },
+        entries: mData.entries || []
+      });
+
+      hydrateCurrentPgName();
+      applyCurrentPgNameToVoucherFields();
+      snapshot = takeSnapshot();
+      setEditMode(false);
+      setActivePanel(getSavedActivePanel(), true);
+      renderReceiptHistoryBox();
+    }catch(err){
+      console.warn("Receipt voucher load skipped:", err);
+      setActivePanel(getSavedActivePanel(), true);
+    }
+  }
+
+
+  let receiptMembers = [];
+
+  function escapeHtml(str){
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function getMemberSelectIds(sectionKey){
+    return sectionKey === "pg"
+      ? { name: "llMemberNamePg", code: "llMemberCodePg" }
+      : { name: "llMemberNameM", code: "llMemberCodeM" };
+  }
+
+  function populateReceiptMemberDropdowns(sectionKey, currentName = "", currentCode = ""){
+    const ids = getMemberSelectIds(sectionKey);
+    const nameEl = $(ids.name);
+    const codeEl = $(ids.code);
+    if (!nameEl || !codeEl) return;
+
+    const nameOptions = ['<option value="">' + escapeHtml(T[lang].phMember || "Select member") + '</option>']
+      .concat(receiptMembers.map(m => `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}${m.member_code ? " (" + escapeHtml(m.member_code) + ")" : ""}</option>`));
+    const codeOptions = ['<option value="">' + escapeHtml(T[lang].phCode || "Select member code") + '</option>']
+      .concat(receiptMembers.map(m => `<option value="${escapeHtml(m.member_code)}">${escapeHtml(m.member_code || m.name)}</option>`));
+
+    nameEl.innerHTML = nameOptions.join("");
+    codeEl.innerHTML = codeOptions.join("");
+
+    if (currentName) nameEl.value = currentName;
+    if (currentCode) codeEl.value = currentCode;
+  }
+
+  function syncReceiptMemberPair(sectionKey, source){
+    const ids = getMemberSelectIds(sectionKey);
+    const nameEl = $(ids.name);
+    const codeEl = $(ids.code);
+    if (!nameEl || !codeEl) return;
+
+    if (source === "name"){
+      const selectedName = String(nameEl.value || "").trim();
+      if (!selectedName){
+        codeEl.value = "";
+        return;
+      }
+      const found = receiptMembers.find(m => m.name === selectedName);
+      if (found){
+        codeEl.value = found.member_code || "";
+      }
+      return;
+    }
+
+    const selectedCode = String(codeEl.value || "").trim();
+    if (!selectedCode){
+      nameEl.value = "";
+      return;
+    }
+    const found = receiptMembers.find(m => m.member_code === selectedCode) || receiptMembers.find(m => m.name === selectedCode);
+    if (found){
+      nameEl.value = found.name || "";
+    }
+  }
+
+  async function loadReceiptMembers(){
+    const pgId = getPgId();
+    if (!pgId) return;
+    try{
+      const res = await fetch(`/pg/api/members/${encodeURIComponent(pgId)}`, { headers:{ "Accept":"application/json" } });
+      const data = await res.json().catch(()=>null);
+      if (!res.ok || !data || !Array.isArray(data.members)) return;
+      receiptMembers = data.members.map(m => ({
+        id: String(m._id || ""),
+        name: String(m.name || "").trim(),
+        member_code: String(m.member_code || "").trim()
+      })).filter(m => m.name || m.member_code);
+
+      const pgNameValue = $("llMemberNamePg")?.value || "";
+      const pgCodeValue = $("llMemberCodePg")?.value || "";
+      const mNameValue = $("llMemberNameM")?.value || "";
+      const mCodeValue = $("llMemberCodeM")?.value || "";
+      populateReceiptMemberDropdowns("pg", pgNameValue, pgCodeValue);
+      populateReceiptMemberDropdowns("m", mNameValue, mCodeValue);
+      if($("llMemberNamePg")) $("llMemberNamePg").value = pgNameValue;
+      if($("llMemberCodePg")) $("llMemberCodePg").value = pgCodeValue;
+      if($("llMemberNameM")) $("llMemberNameM").value = mNameValue;
+      if($("llMemberCodeM")) $("llMemberCodeM").value = mCodeValue;
+      syncReceiptMemberPair("pg", pgNameValue ? "name" : "code");
+      syncReceiptMemberPair("m", mNameValue ? "name" : "code");
+    }catch(err){
+      console.warn("Receipt member list load skipped:", err);
+    }
+  }
+
+  const track = $("llTrack");
+
+  function dockActionBar(){
+    const bar = $("llActionBar");
+    if (!bar) return;
+    const dock = (activePanel === "pg") ? $("llDockPg") : $("llDockM");
+    if (dock && bar.parentNode !== dock){
+      dock.appendChild(bar);
+    }
+  }
+
+  function setActivePanel(which, skipFocus){
+    activePanel = (which === "member") ? "member" : "pg";
+
+    $("llPanelPg").classList.toggle("is-active", activePanel === "pg");
+    $("llPanelMember").classList.toggle("is-active", activePanel === "member");
+
+    $("llTabPg").classList.toggle("active", activePanel === "pg");
+    $("llTabMember").classList.toggle("active", activePanel === "member");
+    $("llTabPg").setAttribute("aria-selected", activePanel === "pg" ? "true" : "false");
+    $("llTabMember").setAttribute("aria-selected", activePanel === "member" ? "true" : "false");
+
+    saveActivePanel(activePanel);
+    dockActionBar();
+    syncDeleteAllLabel();
+
+    if (!skipFocus){ /* no-op */ }
+  }
+
+  $("llTabPg").addEventListener("click", ()=>setActivePanel("pg"));
+  $("llTabMember").addEventListener("click", ()=>setActivePanel("member"));
+
+  $("llAddRowTop").addEventListener("click", ()=>{
+    if (activePanel === "pg") addRow("pg");
+    else addRow("m");
+  });
+
+  $("llDeleteAllTop").addEventListener("click", ()=>{
+    if (!isEditing) return;
+    const key = (activePanel === "pg") ? "pg" : "m";
+    const sel = getSelectedRows(key);
+    if (sel.length > 0) openDeleteAllConfirm(key, "selected", sel.length);
+    else openDeleteAllConfirm(key, "all", 0);
+  });
+
+  function applyLang(){
+    const t = T[lang];
+
+    $("llTitle").textContent = t.title;
+    $("llTabPgText").textContent = t.tab_pg;
+    $("llTabMemberText").textContent = t.tab_member;
+
+    $("llPanelTitlePg").textContent = t.tab_pg;
+    $("llPanelTitleMember").textContent = t.tab_member;
+    $("llPanelNotePg").textContent = t.note_pg;
+    $("llPanelNoteMember").textContent = t.note_member;
+
+    $("llPgLabelPg").textContent = t.pgLabel;
+    $("llDateLabelPg").textContent = t.dateLabel;
+    $("llMemberLabelPg").textContent = t.memberLabel;
+    $("llCodeLabelPg").textContent = t.codeLabel;
+    $("llDetailsLabelPg").textContent = t.detailsLabel;
+
+    $("llPgNamePg").placeholder = t.phPg;
+    populateReceiptMemberDropdowns("pg", $("llMemberNamePg").value || "", $("llMemberCodePg").value || "");
+    $("llDetailsPg").placeholder = t.phDetails;
+
+    $("llPgLabelM").textContent = t.pgLabel;
+    $("llDateLabelM").textContent = t.dateLabel;
+    $("llMemberLabelM").textContent = t.memberLabel;
+    $("llCodeLabelM").textContent = t.codeLabel;
+    $("llDetailsLabelM").textContent = t.detailsLabel;
+
+    $("llPgNameM").placeholder = t.phPg;
+    populateReceiptMemberDropdowns("m", $("llMemberNameM").value || "", $("llMemberCodeM").value || "");
+    $("llDetailsM").placeholder = t.phDetails;
+
+    $("llRowsLabelPg").textContent = t.rowsLabel;
+    $("llRowsLabelM").textContent = t.rowsLabel;
+    $("llSearchPg").placeholder = t.searchPH;
+    $("llSearchM").placeholder = t.searchPH;
+
+    $("llPrevPg").textContent = t.prev;
+    $("llNextPg").textContent = t.next;
+    $("llPrevM").textContent = t.prev;
+    $("llNextM").textContent = t.next;
+
+    $("llEmptyPg").textContent = t.empty;
+    $("llEmptyM").textContent = t.empty;
+
+    $("llHSlPg").textContent = t.hSl;
+    $("llHSlM").textContent = t.hSl;
+    $("llHCommodityPg").textContent = t.hCommodity;
+    $("llHGradePg").textContent = t.hGrade;
+    $("llHRatePg").textContent = t.hRate;
+    $("llHVolumePg").textContent = t.hVolume;
+    $("llHValuePg").textContent = t.hValue;
+    $("llHActionsPg").textContent = t.hActions;
+    $("llHCommodityM").textContent = t.hCommodity;
+    $("llHGradeM").textContent = t.hGrade;
+    $("llHRateM").textContent = t.hRate;
+    $("llHVolumeM").textContent = t.hVolume;
+    $("llHValueM").textContent = t.hValue;
+    $("llHActionsM").textContent = t.hActions;
+
+    $("llAddRowText").textContent = t.addRow;
+    $("llCancelText").textContent = t.cancelButton;
+    $("llEditSaveText").textContent = isEditing ? t.saveButton : t.editButton;
+
+    const setKpiLabel = (wrapId, label, boldId) => {
+      const wrap = $(wrapId);
+      const b = $(boldId);
+      if (!wrap || !b) return;
+      Array.from(wrap.childNodes).forEach(n=>{
+        if (n.nodeType === Node.TEXT_NODE) wrap.removeChild(n);
+      });
+      wrap.insertBefore(document.createTextNode(label + " "), b);
+    };
+    setKpiLabel("llKpiRowsPg", t.kpiRows, "llVisibleRowsPg");
+    setKpiLabel("llKpiVolumePg", t.kpiVolume, "llTotalVolumePg");
+    setKpiLabel("llKpiValuePg", t.kpiValue, "llTotalValuePg");
+    setKpiLabel("llKpiRowsM", t.kpiRows, "llVisibleRowsM");
+    setKpiLabel("llKpiVolumeM", t.kpiVolume, "llTotalVolumeM");
+    setKpiLabel("llKpiValueM", t.kpiValue, "llTotalValueM");
+
+    $("llSignMemberPg").textContent = t.signMember;
+    $("llSignUdyogPg").textContent = t.signUdyog;
+    $("llSignMemberM").textContent = t.signMember;
+    $("llSignUdyogM").textContent = t.signUdyog;
+
+    $("llSignEmptyPgMember").textContent = t.signEmpty;
+    $("llSignEmptyPgUdyog").textContent = t.signEmpty;
+    $("llSignEmptyMMember").textContent = t.signEmpty;
+    $("llSignEmptyMUdyog").textContent = t.signEmpty;
+
+    $("llSignUploadPgMember").textContent = t.upload;
+    $("llSignCapturePgMember").textContent = t.capture;
+    $("llSignReplacePgMember").textContent = t.replace;
+    $("llSignRemovePgMember").textContent = t.remove;
+    $("llSignUploadPgUdyog").textContent = t.upload;
+    $("llSignCapturePgUdyog").textContent = t.capture;
+    $("llSignReplacePgUdyog").textContent = t.replace;
+    $("llSignRemovePgUdyog").textContent = t.remove;
+    $("llSignUploadMMember").textContent = t.upload;
+    $("llSignCaptureMMember").textContent = t.capture;
+    $("llSignReplaceMMember").textContent = t.replace;
+    $("llSignRemoveMMember").textContent = t.remove;
+    $("llSignUploadMUdyog").textContent = t.upload;
+    $("llSignCaptureMUdyog").textContent = t.capture;
+    $("llSignReplaceMUdyog").textContent = t.replace;
+    $("llSignRemoveMUdyog").textContent = t.remove;
+
+    $("llPadLabelPgMember").textContent = t.padLabel;
+    $("llPadLabelPgUdyog").textContent = t.padLabel;
+    $("llPadLabelMMember").textContent = t.padLabel;
+    $("llPadLabelMUdyog").textContent = t.padLabel;
+
+    $("llPadClearPgMember").textContent = t.padClear;
+    $("llPadUsePgMember").textContent = t.padUse;
+    $("llPadClearPgUdyog").textContent = t.padClear;
+    $("llPadUsePgUdyog").textContent = t.padUse;
+    $("llPadClearMMember").textContent = t.padClear;
+    $("llPadUseMMember").textContent = t.padUse;
+    $("llPadClearMUdyog").textContent = t.padClear;
+    $("llPadUseMUdyog").textContent = t.padUse;
+
+    [...S.pg.allRows, ...S.m.allRows].forEach(r=>{
+      const c = r.querySelector("[data-ll='commodity']");
+      const g = r.querySelector("[data-ll='grade']");
+      const ra = r.querySelector("[data-ll='rate']");
+      const v = r.querySelector("[data-ll='volume']");
+      const va = r.querySelector("[data-ll='value']");
+      if (c) c.placeholder = t.phCommodity;
+      if (g) g.placeholder = t.phGrade;
+      if (ra) ra.placeholder = t.phRate;
+      if (v) v.placeholder = t.phVolume;
+      if (va) va.placeholder = t.phValue;
+
+      const cells = r.querySelectorAll(".ll-cell");
+      if (cells && cells.length >= 8){
+        cells[0].setAttribute("data-label", "");
+        cells[1].setAttribute("data-label", t.hSl);
+        cells[2].setAttribute("data-label", t.hCommodity);
+        cells[3].setAttribute("data-label", t.hGrade);
+        cells[4].setAttribute("data-label", t.hRate);
+        cells[5].setAttribute("data-label", t.hVolume);
+        cells[6].setAttribute("data-label", t.hValue);
+        cells[7].setAttribute("data-label", t.hActions);
+      }
+
+      const del = r.querySelector("[data-ll='del']");
+      if (del) del.textContent = t.delRow;
+    });
+
+    renderSignatureUI("pg","member");
+    renderSignatureUI("pg","udyog");
+    renderSignatureUI("m","member");
+    renderSignatureUI("m","udyog");
+
+    setEditingUI();
+    recalcTotalsAndVisibility("pg");
+    recalcTotalsAndVisibility("m");
+    syncDeleteAllLabel();
+  }
+
+  function setLanguageFromOutside(l){
+    const n = normalizeLang(l);
+    if (!n) return;
+    if (lang === n) return;
+    lang = n;
+    applyLang();
+  }
+
+  window.saveReceiptVoucherSetLanguage = function(l){
+    setLanguageFromOutside(l);
+  };
+
+  window.receiptVoucherSetLanguage = function(l){
+    setLanguageFromOutside(l);
+  };
+
+  if (!window.pgmisPageSetLanguage){
+    window.pgmisPageSetLanguage = function(l){ setLanguageFromOutside(l); };
+  }
+  if (!window.pgmisSetLanguageForPage){
+    window.pgmisSetLanguageForPage = function(l){ setLanguageFromOutside(l); };
+  }
+
+  const langEventHandler = (e)=>{
+    const detailLang =
+      (e && e.detail && (e.detail.lang || e.detail.language || e.detail.value)) ? (e.detail.lang || e.detail.language || e.detail.value) : null;
+    const n = normalizeLang(detailLang || e);
+    if (!n) return;
+    setLanguageFromOutside(n);
+  };
+
+  window.addEventListener("pgmis-language-change", langEventHandler);
+  window.addEventListener("pgmis:language-change", langEventHandler);
+  window.addEventListener("language-change", langEventHandler);
+  window.addEventListener("app-language-change", langEventHandler);
+
+  window.addEventListener("storage", (e)=>{
+    const k = (e && e.key) ? String(e.key) : "";
+    if (!k) return;
+    if (k === "pgmis_lang" || k === "pgmis_language" || k === "lang" || k === "language"){
+      const n = normalizeLang(e.newValue);
+      if (n) setLanguageFromOutside(n);
+    }
+  });
+
+  function wireSection(sectionKey){
+    const st = sectionKey === "pg" ? S.pg : S.m;
+
+    const searchId = sectionKey === "pg" ? "llSearchPg" : "llSearchM";
+    const rowsId = sectionKey === "pg" ? "llRowsPerPagePg" : "llRowsPerPageM";
+    const prevId = sectionKey === "pg" ? "llPrevPg" : "llPrevM";
+    const nextId = sectionKey === "pg" ? "llNextPg" : "llNextM";
+
+    $(searchId).addEventListener("input", (e)=>{
+      st.query = e.target.value || "";
+      st.page = 1;
+      recalcTotalsAndVisibility(sectionKey);
+      syncDeleteAllLabel();
+    });
+
+    $(rowsId).addEventListener("change", (e)=>{
+      const v = parseInt(e.target.value, 10);
+      st.perPage = [10,25,50,100].includes(v) ? v : 25;
+      st.page = 1;
+      recalcTotalsAndVisibility(sectionKey);
+      syncDeleteAllLabel();
+    });
+
+    $(prevId).addEventListener("click", ()=>{
+      if (st.page > 1){
+        st.page -= 1;
+        recalcTotalsAndVisibility(sectionKey);
+        syncDeleteAllLabel();
+      }
+    });
+
+    $(nextId).addEventListener("click", ()=>{
+      const filtered = getFilteredRows(sectionKey);
+      const totalPages = Math.max(1, Math.ceil(filtered.length / st.perPage));
+      if (st.page < totalPages){
+        st.page += 1;
+        recalcTotalsAndVisibility(sectionKey);
+        syncDeleteAllLabel();
+      }
+    });
+  }
+
+  wireSection("pg");
+  wireSection("m");
+
+  function wireSelectAll(sectionKey){
+    const idSel = sectionKey === "pg" ? "llSelectAllPg" : "llSelectAllM";
+    $(idSel).addEventListener("change", (e)=>{
+      if (!isEditing) { e.target.checked = false; return; }
+      const { slice } = renderVisibility(sectionKey);
+      slice.forEach(r=>{
+        const c = r.querySelector("[data-ll='sel']");
+        if (c) c.checked = !!e.target.checked;
+      });
+      syncDeleteAllLabel();
+    });
+  }
+  wireSelectAll("pg");
+  wireSelectAll("m");
+  [["pg","name"],["pg","code"],["m","name"],["m","code"]].forEach(([sectionKey, source]) => {
+    const ids = getMemberSelectIds(sectionKey);
+    const el = $(source === "name" ? ids.name : ids.code);
+    if (el){
+      el.addEventListener("change", ()=>syncReceiptMemberPair(sectionKey, source));
+    }
+  });
+
+
+  $("llEditSaveBtn").addEventListener("click", ()=>{
+    if (!isEditing){
+      enterEdit();
+      return;
+    }
+    requestSave();
+  });
+
+  $("llCancelBtn").addEventListener("click", requestCancel);
+
+  $("llSaveYes").addEventListener("click", async ()=>{
+    closeOverlay($("llSaveOverlay"));
+    await saveReceiptVoucher();
+  });
+
+  $("llCancelYes").addEventListener("click", doCancel);
+
+  $("llBackBtn").addEventListener("click", ()=>{
+    try{
+      if (window.history.length > 1) window.history.back();
+      else window.location.href = "/";
+    }catch(_){
+      window.location.href = "/";
+    }
+  });
+
+  function seed(sectionKey){
+    recalcTotalsAndVisibility(sectionKey, true);
+  }
+
+  lang = getInitialLang();
+  activePanel = getSavedActivePanel();
+
+  wireSignatureButtons();
+  renderSignatureUI("pg","member");
+  renderSignatureUI("pg","udyog");
+  renderSignatureUI("m","member");
+  renderSignatureUI("m","udyog");
+
+  setActivePanel(activePanel, true);
+  dockActionBar();
+  initPads();
+  applyLang();
+  setEditMode(false);
+
+  loadReceiptMembers();
+  loadReceiptHistory().then(renderReceiptHistoryBox);
+
+  const localData = localStorage.getItem(RECEIPT_VOUCHER_STORAGE_KEY);
+  if(localData){
+    try{
+      const parsed = JSON.parse(localData);
+      restoreSection("pg", parsed.pg_section || {});
+      restoreSection("m", parsed.member_section || {});
+      loadReceiptMembers();
+      loadReceiptHistory().then(renderReceiptHistoryBox);
+      snapshot = takeSnapshot();
+      setActivePanel(getSavedActivePanel(), true);
+      loadReceiptVoucher();
+    }catch(e){
+      console.warn("Local load failed", e);
+      loadReceiptVoucher();
+    }
+  }else{
+    hydrateCurrentPgName();
+    loadReceiptHistory().then(()=> loadReceiptVoucher());
+  }
+
+})();
+</script>
+{% endblock %}

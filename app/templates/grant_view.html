@@ -1,0 +1,1510 @@
+{% extends "base.html" %}
+{% block title %}Grant Utilization{% endblock %}
+{% block content %}
+
+<style>
+  /* ============================================================
+     GRANT UTILIZATION — LEDGER LOOK + RESPONSIVE + TRANSLATION
+     ✅ NO route changes / no field name changes
+     ✅ Keeps SAME POST utilization workflow:
+        utilized_at, head, amount, attachments(multiple), remarks
+     ✅ Keeps SAME approval/reject workflow:
+        finance.approve_grant_utilization / finance.reject_grant_utilization
+        (only if role != 'PG_DATA_ENTRY' AND status is PENDING)
+     ✅ Adds: SL.No + search + pagination + rows per page selector
+     ✅ Adds: mobile/app swipe-card history like reference
+     ✅ Even when empty, headers/field labels still display
+     ✅ Scoped under .gu-wrap only
+     ============================================================ */
+
+  .gu-wrap{
+    width:100%;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    max-width: 1200px;
+    margin: 0 auto;
+    color: var(--ink);
+  }
+  .gu-wrap *{ box-sizing:border-box; }
+
+  .gu-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  }
+
+  /* Header */
+  .gu-head{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+  }
+  .gu-head-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+  .gu-leftslot,
+  .gu-rightslot{
+    flex: 0 0 42px;
+    width: 42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .gu-back{
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color: rgba(11,77,58,.98);
+    user-select:none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .gu-back:hover{
+    transform: translateX(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .gu-back:active{ transform: scale(.98); }
+  .gu-back svg{ width:18px; height:18px; display:block; }
+
+  .gu-title-wrap{
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align:center;
+  }
+  .gu-title{
+    margin:0;
+    font-weight: 950;
+    font-size: clamp(16px, 1.8vw, 20px);
+    letter-spacing: .2px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+  .gu-sub{
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: rgba(15,23,42,.62);
+    font-weight: 850;
+  }
+
+  .gu-backdesk{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    text-decoration:none;
+    color: rgba(11,77,58,.98);
+    font-weight: 950;
+    font-size: 12px;
+    white-space: nowrap;
+    user-select:none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .gu-backdesk:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .gu-backdesk:active{ transform: scale(.98); }
+
+  /* KPI strip */
+  .gu-kpis{
+    padding: 10px 16px 14px;
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .gu-kpi{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(247,250,249,.70);
+    box-shadow: 0 10px 20px -18px rgba(15,23,42,.25);
+    padding: 10px 12px;
+    min-width:0;
+  }
+  .gu-kpi .k{
+    font-weight: 950;
+    font-size: 12px;
+    color: rgba(15,23,42,.72);
+    white-space:nowrap;
+  }
+  .gu-kpi .v{
+    margin-top:6px;
+    font-weight: 950;
+    font-size: 13px;
+    color: #0b4d3a;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  /* Body cards */
+  .gu-body{
+    padding: 12px 16px 16px;
+    background: rgba(255,255,255,.96);
+  }
+  .gu-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    align-items:start;
+  }
+  .gu-card{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.92);
+    overflow:hidden;
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+  }
+  .gu-card-head{
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(247,250,249,.66);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .gu-card-title{
+    margin:0;
+    font-weight:950;
+    font-size: 13px;
+    letter-spacing:.15px;
+  }
+  .gu-card-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color: rgba(15,23,42,.62);
+    font-weight:750;
+  }
+  .gu-card-body{ padding: 12px; }
+
+  /* Form grid */
+  .gu-formgrid{
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 10px 14px;
+    align-items:start;
+  }
+  .gu-col-4{ grid-column: span 4; }
+  .gu-col-12{ grid-column: span 12; }
+
+  .gu-stack{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+  }
+  .gu-stack label{
+    font-weight:900;
+    font-size:12px;
+    color: var(--ink);
+  }
+
+  /* Inputs */
+  .gu-input, .gu-textarea{
+    width:100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: rgba(247,250,249,.75);
+    font-weight:800;
+    font-size:12px;
+    outline:none;
+    color: var(--ink);
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .gu-input:focus, .gu-textarea:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  .gu-textarea{ min-height: 72px; resize: vertical; line-height: 1.35; }
+
+  /* File input */
+  .gu-file{
+    width:100%;
+    border: 1px dashed rgba(15,23,42,.20);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: rgba(247,250,249,.55);
+    font-weight:800;
+    font-size:12px;
+    color: rgba(15,23,42,.82);
+  }
+
+  /* Buttons */
+  .gu-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .gu-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    user-select:none;
+    white-space:nowrap;
+    text-decoration:none;
+  }
+  .gu-btn:hover{
+    transform: translateY(-1px);
+    background:#fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .gu-btn.primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .gu-btn.primary:hover{ background: rgba(16,185,129,.16); }
+
+  .gu-btn.ghost{
+    border-color: rgba(15,23,42,.16);
+    background: rgba(255,255,255,.65);
+    color: rgba(15,23,42,.78);
+  }
+  .gu-btn.ghost:hover{ background: rgba(255,255,255,.92); }
+
+  .gu-btn.danger{
+    border-color: rgba(239,68,68,.35);
+    background: rgba(239,68,68,.10);
+    color: rgba(153,27,27,1);
+  }
+  .gu-btn.danger:hover{ background: rgba(239,68,68,.14); }
+
+  .gu-pill{
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.75);
+    font-weight: 900;
+    font-size: 12px;
+    color: rgba(15,23,42,.78);
+    white-space:nowrap;
+  }
+
+  /* History controls */
+  .gu-history-controls{
+    padding: 12px 12px 0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .gu-search{
+    position:relative;
+    flex:1 1 280px;
+    min-width:220px;
+  }
+  .gu-search svg{
+    position:absolute;
+    left:12px;
+    top:50%;
+    transform:translateY(-50%);
+    width:16px;
+    height:16px;
+    opacity:.55;
+    pointer-events:none;
+  }
+  .gu-search input{
+    width:100%;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:999px;
+    background:#fff;
+    color:var(--ink);
+    padding:10px 12px 10px 36px;
+    font-size:12px;
+    font-weight:800;
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .gu-search input:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  .gu-history-meta{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .gu-meta-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.75);
+    font-weight:900;
+    font-size:12px;
+    color:rgba(15,23,42,.82);
+    min-height:40px;
+  }
+  .gu-meta-chip strong{
+    color:#0b4d3a;
+    font-weight:950;
+  }
+  .gu-pagesize{
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:999px;
+    background:#fff;
+    color:var(--ink);
+    padding:6px 28px 6px 10px;
+    font-size:12px;
+    font-weight:900;
+    outline:none;
+    min-width:72px;
+  }
+  .gu-pagesize:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+  }
+
+  /* Status badge */
+  .gu-status{
+    font-weight: 950;
+    font-size: 12px;
+  }
+  .gu-status.approved{ color:#065f46; }
+  .gu-status.rejected{ color:#991b1b; }
+  .gu-status.pending{ color:#0f172a; }
+
+  /* Row actions */
+  .gu-row-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .gu-row-actions form{ margin:0; display:inline; }
+
+  /* Table */
+  .gu-tablewrap{
+    width:100%;
+    overflow-x:auto;
+    border-top: 1px solid var(--line2);
+    margin-top:12px;
+  }
+  table.gu-table{
+    width:100%;
+    border-collapse: separate;
+    border-spacing:0;
+    min-width: 1120px;
+  }
+  .gu-table th, .gu-table td{
+    padding: 10px;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    text-align:left;
+    font-size: 12px;
+    white-space:nowrap;
+    vertical-align: top;
+  }
+  .gu-table th{
+    position: sticky;
+    top: 0;
+    background: rgba(240,253,244,.92);
+    color: #065f46;
+    font-weight: 950;
+    z-index: 1;
+  }
+  .gu-empty{
+    color:#64748b;
+    font-size:12px;
+  }
+  .gu-sl{
+    font-weight:950;
+    color:#0b4d3a;
+  }
+
+  /* Mobile helper */
+  .gu-mobile-helper{
+    display:none;
+    padding:12px 12px 0;
+  }
+  .gu-mobile-helper-box{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    background:rgba(247,250,249,.62);
+    padding:12px;
+    box-shadow: 0 10px 18px -16px rgba(15,23,42,.22);
+  }
+  .gu-mobile-helper-title{
+    font-size:13px;
+    font-weight:950;
+    color:rgba(15,23,42,.80);
+  }
+  .gu-mobile-helper-sub{
+    margin-top:4px;
+    font-size:12px;
+    font-weight:800;
+    color:rgba(15,23,42,.58);
+  }
+
+  /* Mobile empty placeholder */
+  .gu-mobile-empty{
+    display:none;
+    padding:12px;
+  }
+  .gu-mobile-rail{
+    display:flex;
+    gap:12px;
+    overflow-x:auto;
+    padding-bottom:6px;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .gu-mobile-rail::-webkit-scrollbar{ height: 8px; }
+  .gu-mobile-rail::-webkit-scrollbar-thumb{
+    background: rgba(15,23,42,.18);
+    border-radius: 999px;
+  }
+
+  .gu-mobile-card{
+    display:block;
+    min-width:90%;
+    max-width:90%;
+    scroll-snap-align:start;
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 16px;
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+    overflow:hidden;
+    padding: 10px 12px;
+  }
+  .gu-mobile-row{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    justify-content:space-between;
+    padding:8px 0;
+    border-bottom:1px dashed rgba(15,23,42,.10);
+  }
+  .gu-mobile-row:last-child{ border-bottom:none; }
+  .gu-mobile-label{
+    font-weight:950;
+    color:rgba(15,23,42,.72);
+    min-width:120px;
+    font-size:12px;
+  }
+  .gu-mobile-value{
+    font-weight:900;
+    color:var(--ink);
+    font-size:12px;
+    text-align:right;
+    word-break:break-word;
+  }
+
+  /* Pagination */
+  .gu-pager{
+    padding: 12px 12px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    border-top:1px solid var(--line2);
+  }
+  .gu-pager-info{
+    font-size:12px;
+    font-weight:900;
+    color:rgba(15,23,42,.72);
+  }
+  .gu-pager-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .gu-pager-btn{
+    border:1px solid rgba(15,23,42,.14);
+    background:#fff;
+    color:var(--ink);
+    border-radius:999px;
+    padding:10px 14px;
+    min-width:86px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .gu-pager-btn:hover:not(:disabled){
+    transform: translateY(-1px);
+    box-shadow: 0 12px 18px -16px rgba(15,23,42,.30);
+    background: rgba(247,250,249,.8);
+  }
+  .gu-pager-btn:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+  }
+  .gu-pager-num{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:106px;
+    border:1px solid rgba(11,77,58,.24);
+    background:rgba(16,185,129,.10);
+    color:#0b4d3a;
+    border-radius:999px;
+    padding:10px 14px;
+    font-weight:950;
+    font-size:12px;
+  }
+
+  /* Mobile: make table horizontal swipe cards */
+  @media (max-width: 720px){
+    .gu-tablewrap{ display:none; }
+    .gu-mobile-helper{ display:block; }
+    .gu-mobile-empty{ display:block; }
+
+    .gu-row-actions{
+      width:100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .gu-row-actions .gu-btn,
+    .gu-row-actions form{
+      width:100%;
+    }
+    .gu-row-actions form .gu-btn{
+      width:100%;
+    }
+  }
+
+  /* Responsive layout */
+  @media (max-width: 980px){
+    .gu-grid{ grid-template-columns: 1fr; }
+    .gu-kpis{ grid-template-columns: 1fr; }
+    .gu-col-4{ grid-column: span 12; }
+  }
+  @media (max-width: 720px){
+    .gu-back{ display:flex; }
+    .gu-history-controls{
+      align-items:stretch;
+    }
+    .gu-search,
+    .gu-history-meta{
+      width:100%;
+    }
+    .gu-history-meta{
+      justify-content:space-between;
+    }
+    .gu-pager{
+      align-items:stretch;
+    }
+    .gu-pager-info{
+      width:100%;
+      text-align:center;
+    }
+    .gu-pager-actions{
+      width:100%;
+      justify-content:center;
+    }
+  }
+  @media (max-width: 420px){
+    .gu-head{ padding: 12px 12px 10px; }
+    .gu-kpis{ padding: 10px 12px 12px; }
+    .gu-body{ padding: 12px; }
+    .gu-history-controls{ padding: 12px 12px 0; }
+    .gu-mobile-card{
+      min-width:92%;
+      max-width:92%;
+    }
+    .gu-mobile-label{
+      min-width:98px;
+    }
+  }
+
+  @media (max-width: 720px){
+    .gu-backdesk{
+      display: none !important;
+    }
+  }
+</style>
+
+<div class="gu-wrap" id="guWrap">
+  <div class="gu-sheet">
+
+    <!-- Header -->
+    <div class="gu-head">
+      <div class="gu-head-row">
+        <div class="gu-leftslot">
+          <a class="gu-back"
+             href="{{ url_for('finance.grants', pg_id=pg._id) }}"
+             aria-label="Back to Grants"
+             id="guBackAria">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                    stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </a>
+        </div>
+
+        <div class="gu-title-wrap">
+          <h2 class="gu-title" id="guPageTitle"
+              data-pg-name="{{ pg.pg_name or pg.name }}"
+              data-category="{{ grant.category }}">
+            Grant — {{ grant.category }} ({{ pg.pg_name or pg.name }})
+          </h2>
+          <div class="gu-sub" id="guPageSub">Add utilization entries and track grant balance.</div>
+        </div>
+
+        <div class="gu-rightslot">
+          <a class="gu-backdesk" href="{{ url_for('finance.grants', pg_id=pg._id) }}" id="guBackDesk">
+            <span id="guBackDeskText">Back</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI strip -->
+    <div class="gu-kpis">
+      <div class="gu-kpi">
+        <div class="k" id="guKReceivedK">Received</div>
+        <div class="v">₹{{ "{:,.2f}".format(grant.amount_received or 0) }}</div>
+      </div>
+      <div class="gu-kpi">
+        <div class="k" id="guKUtilizedK">Utilized</div>
+        <div class="v">₹{{ "{:,.2f}".format(utilized_total) }}</div>
+      </div>
+      <div class="gu-kpi">
+        <div class="k" id="guKBalanceK">Balance</div>
+        <div class="v">₹{{ "{:,.2f}".format(balance) }}</div>
+      </div>
+    </div>
+
+    <div class="gu-body">
+      <div class="gu-grid">
+
+        <!-- Add Utilization Entry -->
+        <div class="gu-card">
+          <div class="gu-card-head">
+            <div>
+              <h3 class="gu-card-title" id="guAddTitle">Add Utilization Entry</h3>
+              <p class="gu-card-sub" id="guAddSub">Fill the details and save.</p>
+            </div>
+          </div>
+
+          <div class="gu-card-body">
+            <form method="POST" enctype="multipart/form-data" class="gu-formgrid" id="guUtilForm">
+              <div class="gu-stack gu-col-4">
+                <label id="guLblDate">Date</label>
+                <input name="utilized_at" type="date" class="gu-input">
+              </div>
+
+              <div class="gu-stack gu-col-4">
+                <label id="guLblHead">Head</label>
+                <input name="head" placeholder="Civil work / purchase" class="gu-input" id="guPhHead" required>
+              </div>
+
+              <div class="gu-stack gu-col-4">
+                <label id="guLblAmount">Amount</label>
+                <input name="amount" type="number" step="0.01" required class="gu-input">
+              </div>
+
+              <div class="gu-stack gu-col-12">
+                <label id="guLblAttachments">Attachments (Bills / Photos)</label>
+                <input name="attachments" type="file" multiple class="gu-file" id="guFileAttachments">
+              </div>
+
+              <div class="gu-stack gu-col-12">
+                <label id="guLblRemarks">Remarks</label>
+                <textarea name="remarks" class="gu-textarea"></textarea>
+              </div>
+
+              <div class="gu-col-12 gu-actions">
+                <button class="gu-btn primary" type="submit" id="guBtnSaveUtil">
+                  Save Utilization
+                </button>
+
+                <button class="gu-btn ghost" type="button" id="guBtnClearUtil">
+                  Clear
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Utilization History -->
+        <div class="gu-card">
+          <div class="gu-card-head">
+            <div>
+              <h3 class="gu-card-title" id="guHistTitle">Utilization History</h3>
+              <p class="gu-card-sub" id="guHistSub">Latest entries appear at top.</p>
+            </div>
+
+            <span class="gu-pill" id="guCountPill">
+              Entries: {{ utils|length }}
+            </span>
+          </div>
+
+          <!-- Search + page size + counts -->
+          <div class="gu-history-controls">
+            <div class="gu-search">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <input type="text" id="guSearch" placeholder="Search..." aria-label="Search">
+            </div>
+
+            <div class="gu-history-meta">
+              <label class="gu-meta-chip" for="guPageSize">
+                <span id="guRowsLabel">Rows</span>
+                <select id="guPageSize" class="gu-pagesize" aria-label="Rows per page">
+                  <option value="10">10</option>
+                  <option value="25" selected>25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </label>
+
+              <div class="gu-meta-chip">
+                <span id="guTotalLabel">Total</span>
+                <strong id="guTotalCount">{{ utils|length if utils else 0 }}</strong>
+              </div>
+
+              <div class="gu-meta-chip">
+                <span id="guVisibleLabel">Visible</span>
+                <strong id="guVisibleCount">{{ utils|length if utils else 0 }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mobile helper -->
+          <div class="gu-mobile-helper" id="guMobileHelper">
+            <div class="gu-mobile-helper-box">
+              <div class="gu-mobile-helper-title" id="guMobileHelperTitle">Showing utilization records</div>
+              <div class="gu-mobile-helper-sub" id="guMobileHelperSub">Swipe horizontally to view more</div>
+            </div>
+          </div>
+
+          <!-- Desktop table -->
+          <div class="gu-tablewrap" id="guTableWrap">
+            <table class="gu-table" id="guTable">
+              <thead>
+                <tr>
+                  <th id="guThSl">SL.No</th>
+                  <th id="guThDate">Date</th>
+                  <th id="guThHead">Head</th>
+                  <th id="guThAmount">Amount</th>
+                  <th id="guThStatus">Status</th>
+                  <th id="guThAttachments">Attachments</th>
+                  <th id="guThRemarks">Remarks</th>
+                  {% if role and role != 'PG_DATA_ENTRY' %}
+                    <th id="guThAction">Action</th>
+                  {% endif %}
+                </tr>
+              </thead>
+
+              <tbody id="guTbody">
+                {% for u in utils %}
+                  {% set st = (u.status or 'PENDING')|upper %}
+                  <tr class="gu-row gu-data-row">
+                    <td data-label="SL.No" class="gu-sl">1</td>
+                    <td data-label="Date">{{ u.utilized_at.strftime('%Y-%m-%d') if u.utilized_at else '' }}</td>
+                    <td data-label="Head">{{ u.head }}</td>
+                    <td data-label="Amount">₹{{ "{:,.2f}".format(u.amount or 0) }}</td>
+
+                    <td data-label="Status">
+                      <span class="gu-status {% if st == 'APPROVED' %}approved{% elif st == 'REJECTED' %}rejected{% else %}pending{% endif %}">
+                        {{ st }}
+                      </span>
+                    </td>
+
+                    <td data-label="Attachments">
+                      {% if u.attachments %}
+                        {{ u.attachments|length }} file(s)
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
+
+                    <td data-label="Remarks">{{ u.remarks }}</td>
+
+                    {% if role and role != 'PG_DATA_ENTRY' %}
+                      <td data-label="Action">
+                        {% if st == 'PENDING' %}
+                          <div class="gu-row-actions">
+                            <form method="POST" action="{{ url_for('finance.approve_grant_utilization', util_id=u._id) }}">
+                              <button class="gu-btn ghost" type="submit" id="guApproveBtnText">
+                                Approve
+                              </button>
+                            </form>
+
+                            <form method="POST" action="{{ url_for('finance.reject_grant_utilization', util_id=u._id) }}">
+                              <input type="hidden" name="reason" value="Rejected" />
+                              <button class="gu-btn danger" type="submit" id="guRejectBtnText">
+                                Reject
+                              </button>
+                            </form>
+                          </div>
+                        {% else %}
+                          —
+                        {% endif %}
+                      </td>
+                    {% endif %}
+                  </tr>
+                {% else %}
+                  <tr id="guNoEntriesRow">
+                    <td colspan="{% if role and role != 'PG_DATA_ENTRY' %}8{% else %}7{% endif %}"
+                        class="gu-empty" id="guNoEntries">
+                      No utilization entries yet.
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile cards / placeholder -->
+          <div class="gu-mobile-empty" id="guMobileArea">
+            <div class="gu-mobile-rail" id="guMobileRail">
+              {% for u in utils %}
+                {% set st = (u.status or 'PENDING')|upper %}
+                <div class="gu-mobile-card gu-mobile-data">
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guMLblSl{{ loop.index }}">SL.No</div>
+                    <div class="gu-mobile-value gu-sl-mobile">1</div>
+                  </div>
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guMLblDate{{ loop.index }}">Date</div>
+                    <div class="gu-mobile-value">{{ u.utilized_at.strftime('%Y-%m-%d') if u.utilized_at else '' }}</div>
+                  </div>
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guMLblHead{{ loop.index }}">Head</div>
+                    <div class="gu-mobile-value">{{ u.head }}</div>
+                  </div>
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guMLblAmount{{ loop.index }}">Amount</div>
+                    <div class="gu-mobile-value">₹{{ "{:,.2f}".format(u.amount or 0) }}</div>
+                  </div>
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guMLblStatus{{ loop.index }}">Status</div>
+                    <div class="gu-mobile-value">{{ st }}</div>
+                  </div>
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guMLblAttachments{{ loop.index }}">Attachments</div>
+                    <div class="gu-mobile-value">
+                      {% if u.attachments %}
+                        {{ u.attachments|length }} file(s)
+                      {% else %}
+                        —
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guMLblRemarks{{ loop.index }}">Remarks</div>
+                    <div class="gu-mobile-value">{{ u.remarks or '—' }}</div>
+                  </div>
+                  {% if role and role != 'PG_DATA_ENTRY' %}
+                    <div class="gu-mobile-row">
+                      <div class="gu-mobile-label" id="guMLblAction{{ loop.index }}">Action</div>
+                      <div class="gu-mobile-value" style="width:100%;">
+                        {% if st == 'PENDING' %}
+                          <div class="gu-row-actions">
+                            <form method="POST" action="{{ url_for('finance.approve_grant_utilization', util_id=u._id) }}">
+                              <button class="gu-btn ghost" type="submit">Approve</button>
+                            </form>
+
+                            <form method="POST" action="{{ url_for('finance.reject_grant_utilization', util_id=u._id) }}">
+                              <input type="hidden" name="reason" value="Rejected" />
+                              <button class="gu-btn danger" type="submit">Reject</button>
+                            </form>
+                          </div>
+                        {% else %}
+                          —
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+              {% else %}
+                <div class="gu-mobile-card" id="guMobilePlaceholder">
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guPLblSl">SL.No</div>
+                    <div class="gu-mobile-value">—</div>
+                  </div>
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guPLblDate">Date</div>
+                    <div class="gu-mobile-value">—</div>
+                  </div>
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guPLblHead">Head</div>
+                    <div class="gu-mobile-value">—</div>
+                  </div>
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guPLblAmount">Amount</div>
+                    <div class="gu-mobile-value">—</div>
+                  </div>
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guPLblStatus">Status</div>
+                    <div class="gu-mobile-value">—</div>
+                  </div>
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guPLblAttachments">Attachments</div>
+                    <div class="gu-mobile-value">—</div>
+                  </div>
+                  <div class="gu-mobile-row">
+                    <div class="gu-mobile-label" id="guPLblRemarks">Remarks</div>
+                    <div class="gu-mobile-value">—</div>
+                  </div>
+                  {% if role and role != 'PG_DATA_ENTRY' %}
+                    <div class="gu-mobile-row">
+                      <div class="gu-mobile-label" id="guPLblAction">Action</div>
+                      <div class="gu-mobile-value">—</div>
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <div class="gu-pager" id="guPager">
+            <div class="gu-pager-info" id="guPagerInfo">Showing 0–0 of 0</div>
+
+            <div class="gu-pager-actions">
+              <button type="button" class="gu-pager-btn" id="guPrevBtn">Prev</button>
+              <div class="gu-pager-num" id="guPageNum">Page 1 / 1</div>
+              <button type="button" class="gu-pager-btn" id="guNextBtn">Next</button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // GRANT UTILIZATION — TRANSLATION (EN/BN) + CLEAR BUTTON
+  // ============================================================
+
+  (function(){
+    const T = {
+      en: {
+        docTitle: "Grant Utilization",
+        backAria: "Go Back",
+        back: "Back",
+        pageSub: "Add utilization entries and track grant balance.",
+
+        received: "Received",
+        utilized: "Utilized",
+        balance: "Balance",
+
+        addTitle: "Add Utilization Entry",
+        addSub: "Fill the details and save.",
+
+        date: "Date",
+        head: "Head",
+        headPh: "Civil work / purchase",
+        amount: "Amount",
+        attachments: "Attachments (Bills / Photos)",
+        remarks: "Remarks",
+
+        saveUtil: "Save Utilization",
+        clearUtil: "Clear",
+
+        histTitle: "Utilization History",
+        histSub: "Latest entries appear at top.",
+        entriesPrefix: "Entries: ",
+
+        search: "Search...",
+        rows: "Rows",
+        total: "Total",
+        visible: "Visible",
+
+        mobileHelperTitle: "Showing utilization records",
+        mobileHelperSub: "Swipe horizontally to view more",
+
+        thSl: "SL.No",
+        thDate: "Date",
+        thHead: "Head",
+        thAmount: "Amount",
+        thStatus: "Status",
+        thAttachments: "Attachments",
+        thRemarks: "Remarks",
+        thAction: "Action",
+
+        approve: "Approve",
+        reject: "Reject",
+
+        noEntries: "No utilization entries yet.",
+
+        prev: "Prev",
+        next: "Next",
+        page: "Page",
+        showing: "Showing",
+        of: "of"
+      },
+      bn: {
+        docTitle: "অনুদান ব্যবহার",
+        backAria: "ফিরে যান",
+        back: "ফিরে যান",
+        pageSub: "ব্যবহার এন্ট্রি যোগ করুন এবং অনুদানের ব্যালেন্স ট্র্যাক করুন।",
+
+        received: "প্রাপ্ত",
+        utilized: "ব্যবহৃত",
+        balance: "ব্যালেন্স",
+
+        addTitle: "ব্যবহার এন্ট্রি যোগ করুন",
+        addSub: "তথ্য দিন এবং সেভ করুন।",
+
+        date: "তারিখ",
+        head: "খাত",
+        headPh: "সিভিল কাজ / ক্রয়",
+        amount: "অর্থ",
+        attachments: "সংযুক্তি (বিল / ছবি)",
+        remarks: "মন্তব্য",
+
+        saveUtil: "ব্যবহার সেভ করুন",
+        clearUtil: "ক্লিয়ার",
+
+        histTitle: "ব্যবহার ইতিহাস",
+        histSub: "সর্বশেষ এন্ট্রি উপরে দেখাবে।",
+        entriesPrefix: "এন্ট্রি: ",
+
+        search: "খুঁজুন...",
+        rows: "সারি",
+        total: "মোট",
+        visible: "দেখানো",
+
+        mobileHelperTitle: "ব্যবহার রেকর্ড দেখানো হচ্ছে",
+        mobileHelperSub: "আরও দেখতে আড়াআড়ি সোয়াইপ করুন",
+
+        thSl: "ক্রমিক নং",
+        thDate: "তারিখ",
+        thHead: "খাত",
+        thAmount: "অর্থ",
+        thStatus: "স্ট্যাটাস",
+        thAttachments: "সংযুক্তি",
+        thRemarks: "মন্তব্য",
+        thAction: "অ্যাকশন",
+
+        approve: "অনুমোদন",
+        reject: "বাতিল",
+
+        noEntries: "এখনও কোনো ব্যবহার এন্ট্রি নেই।",
+
+        prev: "পূর্ববর্তী",
+        next: "পরবর্তী",
+        page: "পৃষ্ঠা",
+        showing: "দেখানো হচ্ছে",
+        of: "মোট"
+      }
+    };
+
+    function safeText(id, val){
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    }
+
+    function safePlaceholder(id, val){
+      const el = document.getElementById(id);
+      if(el) el.setAttribute('placeholder', val);
+    }
+
+    function getStoredLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      try{
+        const l3 = document.documentElement.getAttribute('data-lang');
+        if(l3 === 'en' || l3 === 'bn') return l3;
+      }catch(_){}
+      return 'en';
+    }
+
+    function applyRepeated(prefix, val){
+      document.querySelectorAll('[id^="' + prefix + '"]').forEach(el => {
+        el.textContent = val;
+      });
+    }
+
+    function applyLang(lang){
+      const t = T[lang] || T.en;
+
+      try{ document.title = t.docTitle; }catch(_){}
+
+      const back = document.querySelector('.gu-back');
+      if(back) back.setAttribute('aria-label', t.backAria);
+
+      safeText('guPageSub', t.pageSub);
+
+      safeText('guKReceivedK', t.received);
+      safeText('guKUtilizedK', t.utilized);
+      safeText('guKBalanceK', t.balance);
+
+      safeText('guAddTitle', t.addTitle);
+      safeText('guAddSub', t.addSub);
+
+      safeText('guLblDate', t.date);
+      safeText('guLblHead', t.head);
+      safeText('guLblAmount', t.amount);
+      safeText('guLblAttachments', t.attachments);
+      safeText('guLblRemarks', t.remarks);
+
+      const headInput = document.getElementById('guPhHead');
+      if(headInput) headInput.placeholder = t.headPh;
+
+      safeText('guBtnSaveUtil', t.saveUtil);
+      safeText('guBtnClearUtil', t.clearUtil);
+
+      safeText('guHistTitle', t.histTitle);
+      safeText('guHistSub', t.histSub);
+
+      safePlaceholder('guSearch', t.search);
+      safeText('guRowsLabel', t.rows);
+      safeText('guTotalLabel', t.total);
+      safeText('guVisibleLabel', t.visible);
+      safeText('guMobileHelperTitle', t.mobileHelperTitle);
+      safeText('guMobileHelperSub', t.mobileHelperSub);
+
+      safeText('guThSl', t.thSl);
+      safeText('guThDate', t.thDate);
+      safeText('guThHead', t.thHead);
+      safeText('guThAmount', t.thAmount);
+      safeText('guThStatus', t.thStatus);
+      safeText('guThAttachments', t.thAttachments);
+      safeText('guThRemarks', t.thRemarks);
+      safeText('guThAction', t.thAction);
+
+      safeText('guBackDeskText', t.back);
+
+      document.querySelectorAll('#guTbody #guApproveBtnText').forEach(el => el.textContent = t.approve);
+      document.querySelectorAll('#guTbody #guRejectBtnText').forEach(el => el.textContent = t.reject);
+
+      const pill = document.getElementById('guCountPill');
+      if(pill){
+        const raw = pill.textContent || "";
+        const m = raw.match(/(\d+)/);
+        const n = m ? m[1] : "{{ utils|length }}";
+        pill.textContent = `${t.entriesPrefix}${n}`;
+      }
+
+      safeText('guNoEntries', t.noEntries);
+      safeText('guPrevBtn', t.prev);
+      safeText('guNextBtn', t.next);
+
+      applyRepeated('guMLblSl', t.thSl);
+      applyRepeated('guMLblDate', t.thDate);
+      applyRepeated('guMLblHead', t.thHead);
+      applyRepeated('guMLblAmount', t.thAmount);
+      applyRepeated('guMLblStatus', t.thStatus);
+      applyRepeated('guMLblAttachments', t.thAttachments);
+      applyRepeated('guMLblRemarks', t.thRemarks);
+      applyRepeated('guMLblAction', t.thAction);
+
+      safeText('guPLblSl', t.thSl);
+      safeText('guPLblDate', t.thDate);
+      safeText('guPLblHead', t.thHead);
+      safeText('guPLblAmount', t.thAmount);
+      safeText('guPLblStatus', t.thStatus);
+      safeText('guPLblAttachments', t.thAttachments);
+      safeText('guPLblRemarks', t.thRemarks);
+      safeText('guPLblAction', t.thAction);
+
+      document.querySelectorAll('#guTbody td[data-label]').forEach(td=>{
+        const dl = td.getAttribute('data-label');
+        if(!dl) return;
+        const map = {
+          "SL.No": t.thSl,
+          "Date": t.thDate,
+          "Head": t.thHead,
+          "Amount": t.thAmount,
+          "Status": t.thStatus,
+          "Attachments": t.thAttachments,
+          "Remarks": t.thRemarks,
+          "Action": t.thAction,
+
+          "ক্রমিক নং": t.thSl,
+          "তারিখ": t.thDate,
+          "খাত": t.thHead,
+          "অর্থ": t.thAmount,
+          "স্ট্যাটাস": t.thStatus,
+          "সংযুক্তি": t.thAttachments,
+          "মন্তব্য": t.thRemarks,
+          "অ্যাকশন": t.thAction
+        };
+        if(map[dl]) td.setAttribute('data-label', map[dl]);
+      });
+
+      if (window.__guRenderPagerText) window.__guRenderPagerText();
+    }
+
+    window.updatePageLanguage = function(lang){
+      if(lang !== 'en' && lang !== 'bn') lang = getStoredLang();
+      applyLang(lang);
+    };
+
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyLang(lang);
+    });
+    window.addEventListener('pgmis:lang', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyLang(lang);
+    });
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      applyLang(getStoredLang());
+
+      const form = document.getElementById('guUtilForm');
+      const clearBtn = document.getElementById('guBtnClearUtil');
+      if(form && clearBtn){
+        clearBtn.addEventListener('click', ()=>{
+          form.reset();
+          const fi = document.getElementById('guFileAttachments');
+          if(fi) fi.value = "";
+          const first = form.querySelector('input[name="utilized_at"]');
+          if(first) first.focus();
+        });
+      }
+    });
+  })();
+</script>
+
+<script>
+  // ============================================================
+  // GRANT UTILIZATION — SEARCH + PAGINATION + PAGE SIZE
+  // ✅ Frontend only
+  // ✅ No backend / route / field-name changes
+  // ============================================================
+  (function(){
+    const searchInput = document.getElementById('guSearch');
+    const pageSizeSelect = document.getElementById('guPageSize');
+    const totalCountEl = document.getElementById('guTotalCount');
+    const visibleCountEl = document.getElementById('guVisibleCount');
+    const pagerInfoEl = document.getElementById('guPagerInfo');
+    const pageNumEl = document.getElementById('guPageNum');
+    const prevBtn = document.getElementById('guPrevBtn');
+    const nextBtn = document.getElementById('guNextBtn');
+
+    const desktopRows = Array.from(document.querySelectorAll('#guTbody .gu-data-row'));
+    const mobileCards = Array.from(document.querySelectorAll('#guMobileRail .gu-mobile-data'));
+
+    const desktopEmpty = document.getElementById('guNoEntriesRow');
+    const mobilePlaceholder = document.getElementById('guMobilePlaceholder');
+
+    let currentPage = 1;
+    let pageSize = 25;
+    let filteredIndexes = desktopRows.map((_, i) => i);
+
+    function getLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      return 'en';
+    }
+
+    function pagerWord(key){
+      const lang = getLang();
+      const words = {
+        en: { page: 'Page', showing: 'Showing', of: 'of' },
+        bn: { page: 'পৃষ্ঠা', showing: 'দেখানো হচ্ছে', of: 'মোট' }
+      };
+      return (words[lang] || words.en)[key];
+    }
+
+    function textOf(el){
+      return (el.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    }
+
+    function updateSerials(indexes){
+      indexes.forEach((originalIdx, displayIdx) => {
+        const serial = displayIdx + 1;
+        const dRow = desktopRows[originalIdx];
+        const mCard = mobileCards[originalIdx];
+
+        const dSl = dRow ? dRow.querySelector('.gu-sl') : null;
+        const mSl = mCard ? mCard.querySelector('.gu-sl-mobile') : null;
+
+        if (dSl) dSl.textContent = serial;
+        if (mSl) mSl.textContent = serial;
+      });
+    }
+
+    function updateCounts(total, visible){
+      if (totalCountEl) totalCountEl.textContent = total;
+      if (visibleCountEl) visibleCountEl.textContent = visible;
+    }
+
+    function renderPager(start, end, visible, totalPages){
+      if (pagerInfoEl){
+        pagerInfoEl.textContent = pagerWord('showing') + ' ' + start + '–' + end + ' ' + pagerWord('of') + ' ' + visible;
+      }
+      if (pageNumEl){
+        pageNumEl.textContent = pagerWord('page') + ' ' + currentPage + ' / ' + totalPages;
+      }
+    }
+
+    function applyVisibility(){
+      const query = (searchInput?.value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+      if (!desktopRows.length){
+        updateCounts(0, 0);
+        if (desktopEmpty) desktopEmpty.style.display = '';
+        if (mobilePlaceholder) mobilePlaceholder.style.display = '';
+        renderPager(0, 0, 0, 1);
+        if (prevBtn) prevBtn.disabled = true;
+        if (nextBtn) nextBtn.disabled = true;
+        return;
+      }
+
+      filteredIndexes = desktopRows
+        .map((row, idx) => ({ idx, row, card: mobileCards[idx] }))
+        .filter(item => {
+          if (!query) return true;
+          return textOf(item.row).includes(query) || textOf(item.card).includes(query);
+        })
+        .map(item => item.idx);
+
+      updateSerials(filteredIndexes);
+
+      const total = desktopRows.length;
+      const visible = filteredIndexes.length;
+      updateCounts(total, visible);
+
+      if (visible === 0){
+        desktopRows.forEach(r => r.style.display = 'none');
+        mobileCards.forEach(c => c.style.display = 'none');
+
+        if (desktopEmpty) desktopEmpty.style.display = '';
+        if (mobilePlaceholder) mobilePlaceholder.style.display = '';
+
+        currentPage = 1;
+        renderPager(0, 0, 0, 1);
+        if (prevBtn) prevBtn.disabled = true;
+        if (nextBtn) nextBtn.disabled = true;
+        return;
+      }
+
+      if (desktopEmpty) desktopEmpty.style.display = 'none';
+      if (mobilePlaceholder) mobilePlaceholder.style.display = 'none';
+
+      const totalPages = Math.max(1, Math.ceil(visible / pageSize));
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const startIdx = (currentPage - 1) * pageSize;
+      const endIdx = Math.min(startIdx + pageSize, visible);
+      const pageIndexes = new Set(filteredIndexes.slice(startIdx, endIdx));
+
+      desktopRows.forEach((row, idx) => {
+        row.style.display = pageIndexes.has(idx) ? '' : 'none';
+      });
+      mobileCards.forEach((card, idx) => {
+        card.style.display = pageIndexes.has(idx) ? '' : 'none';
+      });
+
+      renderPager(startIdx + 1, endIdx, visible, totalPages);
+
+      if (prevBtn) prevBtn.disabled = currentPage <= 1;
+      if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+    }
+
+    if (pageSizeSelect){
+      pageSizeSelect.value = '25';
+      pageSizeSelect.addEventListener('change', function(){
+        const v = parseInt(this.value, 10);
+        pageSize = [10,25,50,100].includes(v) ? v : 25;
+        currentPage = 1;
+        applyVisibility();
+      });
+    }
+
+    if (searchInput){
+      searchInput.addEventListener('input', function(){
+        currentPage = 1;
+        applyVisibility();
+      });
+    }
+
+    if (prevBtn){
+      prevBtn.addEventListener('click', function(){
+        currentPage -= 1;
+        applyVisibility();
+      });
+    }
+
+    if (nextBtn){
+      nextBtn.addEventListener('click', function(){
+        currentPage += 1;
+        applyVisibility();
+      });
+    }
+
+    window.__guRenderPagerText = function(){
+      applyVisibility();
+    };
+
+    document.addEventListener('DOMContentLoaded', applyVisibility);
+  })();
+</script>
+
+{% endblock %}

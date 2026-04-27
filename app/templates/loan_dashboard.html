@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Loan Dashboard{% endblock %}
+{% block content %}
+<style>
+  .ld-wrap{max-width:1200px;margin:0 auto;padding:18px;}
+  .ld-hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18);}
+  .ld-hero h1{margin:0;font-weight:950;font-size:clamp(1.2rem,2.2vw,1.7rem);}
+  .ld-hero p{margin:.35rem 0 0;color:#d1fae5;font-weight:800}
+  .ld-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+  .ld-kpi{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:10px 12px}
+  .ld-kpi .t{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;font-weight:900;color:#eafff4}
+  .ld-kpi .v{font-size:1.25rem;font-weight:950;margin-top:4px}
+  .card{margin-top:14px;background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:999px;border:1px solid rgba(5,150,105,.25);background:#ecfdf5;color:#065f46;font-weight:900;text-decoration:none}
+  .btn:hover{filter:brightness(.98)}
+  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:10px;overflow:hidden;border-radius:14px}
+  th,td{padding:10px 10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-size:.92rem}
+  th{background:#f0fdf4;color:#065f46;font-weight:950}
+  tr:hover td{background:#fbfffd}
+  .pill{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-weight:900;font-size:.78rem;border:1px solid rgba(15,23,42,.12);background:#fff}
+  .p-active{border-color:rgba(5,150,105,.25);background:#ecfdf5;color:#065f46}
+  .p-closed{border-color:rgba(2,132,199,.25);background:#e0f2fe;color:#075985}
+  .p-npa{border-color:rgba(220,38,38,.25);background:#fee2e2;color:#991b1b}
+  @media(max-width:900px){.ld-kpis{grid-template-columns:1fr}}
+</style>
+
+<div class="ld-wrap">
+  <div class="ld-hero">
+    <h1>Loan Dashboard — {{ pg.pg_name or pg.name }}</h1>
+    <p>PG loans + member loans • repayment tracking • overdue • status</p>
+    <div class="ld-kpis">
+      <div class="ld-kpi"><div class="t">Active Loans</div><div class="v">{{ kpi.active }}</div></div>
+      <div class="ld-kpi"><div class="t">Total Outstanding</div><div class="v">₹{{ "{:,.2f}".format(kpi.outstanding) }}</div></div>
+      <div class="ld-kpi"><div class="t">Total Overdue</div><div class="v">₹{{ "{:,.2f}".format(kpi.overdue) }}</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div style="font-weight:950;color:#065f46">PG Loan Accounts</div>
+      <a class="btn" href="{{ url_for('finance.loan_accounts', pg_id=pg._id) }}">+ Add / Manage PG Loans</a>
+    </div>
+    <table>
+      <thead><tr><th>Loan No</th><th>Sanctioned</th><th>Outstanding</th><th>Overdue</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for l in loans %}
+        <tr>
+          <td>{{ l.loan_no }}</td>
+          <td>₹{{ "{:,.2f}".format(l.sanction_amount or 0) }}</td>
+          <td>₹{{ "{:,.2f}".format(l.outstanding_amount or 0) }}</td>
+          <td>₹{{ "{:,.2f}".format(l.overdue_amount or 0) }}</td>
+          <td>
+            {% set st = (l.status or 'active')|lower %}
+            <span class="pill {{ 'p-npa' if st=='npa' else ('p-closed' if st=='closed' else 'p-active') }}">{{ st|upper }}</span>
+          </td>
+          <td><a class="btn" href="{{ url_for('finance.loan_account_view', loan_id=l._id) }}">Open</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" style="color:#64748b">No PG loans yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div style="font-weight:950;color:#065f46">Member Loan Accounts</div>
+      <a class="btn" href="{{ url_for('finance.member_loan_accounts', pg_id=pg._id) }}">+ Add / Manage Member Loans</a>
+    </div>
+    <table>
+      <thead><tr><th>Loan No</th><th>Principal</th><th>Outstanding</th><th>Overdue</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for l in mloans %}
+        <tr>
+          <td>{{ l.loan_no }}</td>
+          <td>₹{{ "{:,.2f}".format(l.principal or 0) }}</td>
+          <td>₹{{ "{:,.2f}".format(l.outstanding_amount or 0) }}</td>
+          <td>₹{{ "{:,.2f}".format(l.overdue_amount or 0) }}</td>
+          <td>
+            {% set st = (l.status or 'active')|lower %}
+            <span class="pill {{ 'p-npa' if st=='npa' else ('p-closed' if st=='closed' else 'p-active') }}">{{ st|upper }}</span>
+          </td>
+          <td><a class="btn" href="{{ url_for('finance.member_loan_view', loan_id=l._id) }}">Open</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" style="color:#64748b">No member loans yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

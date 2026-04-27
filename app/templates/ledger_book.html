@@ -1,0 +1,2376 @@
+{% extends "base.html" %}
+{% block title %}Ledger Book{% endblock %}
+
+{% block content %}
+<script>window.PG_ID = "{{ pg_id|default('') }}";</script>
+<style>
+  /* ============================================================
+     LEDGER BOOK (SCOPED) — under .lb-wrap only
+     ✅ Removed TOP pager (Prev/Page/Next) – ONLY bottom pager remains
+     ✅ Bottom pager moved BELOW totals line
+     ✅ Added: blank select column + SL No column
+     ✅ Added: multi-select + Delete Selected + Delete All (edit-mode only)
+     ✅ Added confirmation modal for Delete Selected / Delete All
+     ✅ Mobile/app: rows in swipeable left-right grid (scroll-snap) (not stacked)
+     ✅ No route/logic changes elsewhere
+     ============================================================ */
+
+  .lb-wrap{
+    width: 100%;
+    padding: clamp(12px, 2.2vw, 22px);
+    --ink:#0f172a;
+    --muted:#64748b;
+
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+    color: var(--ink);
+  }
+  .lb-wrap *{ box-sizing:border-box; }
+
+  .lb-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  }
+
+ .lb-head{
+  padding: 14px 16px 12px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border-bottom: 1.5px solid var(--line2);
+  position: relative;
+}
+
+.lb-title{
+  margin: 0;
+  font-weight: 950;
+  font-size: 18px;
+  text-align: center;
+  letter-spacing: .2px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.lb-back{
+  display:none;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: rgba(11,77,58,.98);
+  user-select: none;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  z-index: 2;
+}
+
+.lb-back:hover{
+  transform: translateX(-1px);
+  box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+  background: rgba(255,255,255,.98);
+}
+
+.lb-back:active{
+  transform: scale(.98);
+}
+
+.lb-back svg{
+  width: 18px;
+  height: 18px;
+  display:block;
+}
+.lb-back:hover{
+  background: rgba(16,185,129,.16);
+  transform: translateY(-1px);
+}
+
+.lb-titlewrap{
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+}
+
+.lb-head-spacer{
+  width: 56px;
+  min-width: 56px;
+  flex: 0 0 56px;
+}
+
+/* show ONLY in app/webview */
+html.is-webview .lb-back,
+body.is-webview .lb-back{
+  display:inline-flex;
+}
+
+@media (max-width: 720px){
+
+    .lb-back{ display:flex; }
+
+  .lb-head{
+    padding: 14px 14px 12px;
+  }
+
+  .lb-title{
+    text-align: left;
+    padding-left: 52px;
+    padding-right: 8px;
+    font-size: 16px;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    line-height: 1.25;
+  }
+}
+  /* action buttons */
+  .lb-actions-top{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+
+  .lb-actions-bar{
+    padding: 10px 16px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.94);
+    flex-wrap: wrap;
+  }
+  .lb-actions-bar .lb-actions-top{ margin-left: 0; }
+
+  .lb-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .lb-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .lb-btn:disabled{
+    opacity: .45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .lb-btn.lb-primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .lb-btn.lb-primary:hover{ background: rgba(16,185,129,.16); }
+
+  /* danger buttons */
+  .lb-btn.lb-danger{
+    border-color: rgba(239,68,68,.35);
+    background: rgba(239,68,68,.10);
+    color: rgba(127,29,29,.95);
+  }
+  .lb-btn.lb-danger:hover{ background: rgba(239,68,68,.14); }
+
+  .lb-icon{ width: 14px; height: 14px; flex-shrink: 0; }
+  .lb-hidden{ display:none !important; }
+
+  /* top fields */
+  .lb-topfields{
+    padding: 10px 16px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+
+  .lb-field{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .lb-label{
+    font-weight: 900;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+
+  .lb-input{
+    flex: 1;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(247,250,249,.75);
+    font-weight: 800;
+    font-size: 12px;
+    outline: none;
+  }
+  .lb-input:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+  .lb-input[readonly]{
+    background: transparent;
+    border-color: rgba(15,23,42,.12);
+  }
+
+  /* Controls: search + rows ONLY (no top pager) */
+  .lb-controls{
+    padding: 10px 16px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+    flex-wrap: wrap;
+  }
+
+  .lb-controls-left{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .lb-search{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 999px;
+    background: rgba(247,250,249,.75);
+    min-width: min(520px, 100%);
+  }
+
+  .lb-search input{
+    border:none;
+    outline:none;
+    background: transparent;
+    width: 100%;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+
+  .lb-pill{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 999px;
+    background: rgba(247,250,249,.75);
+    font-size: 12px;
+    font-weight: 950;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .lb-pill select{
+    border:none;
+    outline:none;
+    background: transparent;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* Table wrap */
+  .lb-table-wrap{
+    width: 100%;
+    overflow: auto;
+    background: #fff;
+    border-top: 1.5px solid var(--line2);
+    border-bottom: 1.5px solid var(--line2);
+  }
+  .lb-table{
+    min-width: 1280px; /* widened due to select + sl + action */
+  }
+
+  /* desktop grid columns:
+     Sel | SL | Date | Particulars | Ref | DrCr | Debit | Credit | BalDr | BalCr | Action */
+  .lb-th-row{
+    display:grid;
+    grid-template-columns: 54px 64px 140px 1fr 120px 130px 120px 120px 140px 140px 74px;
+    background: var(--soft);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .lb-th{
+    padding: 10px 10px;
+    font-size: 12px;
+    font-weight: 950;
+    border-right: 1px solid var(--line2);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    line-height: 1.15;
+  }
+  .lb-th:last-child{ border-right: none; }
+
+  .lb-th-row-2{
+    display:grid;
+    grid-template-columns: 54px 64px 140px 1fr 120px 130px 120px 120px 140px 140px 74px;
+    background: rgba(247,250,249,.92);
+    border-bottom: 1px solid var(--line2);
+  }
+
+  .lb-body{
+    display:flex;
+    flex-direction: column;
+  }
+
+  .lb-row{
+    display:grid;
+    grid-template-columns: 54px 64px 140px 1fr 120px 130px 120px 120px 140px 140px 74px;
+    border-bottom: 1px solid rgba(15,23,42,.07);
+  }
+
+  .lb-cell{
+    padding: 8px 10px;
+    border-right: 1px solid rgba(15,23,42,.07);
+    min-width: 0;
+    display:flex;
+    align-items:center;
+  }
+  .lb-cell:last-child{ border-right:none; justify-content:center; }
+
+  .lb-in{
+    width:100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+
+  .lb-in[readonly]{ opacity: .92; }
+
+  .lb-in.num{
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .lb-in.select{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 10px;
+    padding: 6px 8px;
+    background: rgba(247,250,249,.75);
+    font-weight: 900;
+    font-size: 12px;
+  }
+  .lb-in.select:disabled{
+    opacity: .70;
+    cursor:not-allowed;
+  }
+
+  /* checkbox */
+  .lb-check{
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    border: 1px solid rgba(15,23,42,.18);
+    background: rgba(247,250,249,.70);
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .lb-wrap:not(.lb-editing) .lb-check{
+    cursor: not-allowed;
+    opacity: .35;
+    pointer-events: none;
+  }
+
+  .lb-slno{
+    width: 100%;
+    text-align: center;
+    font-weight: 950;
+    font-size: 12px;
+    color: rgba(15,23,42,.75);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Delete icon button */
+  .lb-del{
+    width: 38px;
+    height: 34px;
+    border-radius: 12px;
+    border: 1px solid rgba(239,68,68,.28);
+    background: rgba(239,68,68,.08);
+    color: rgba(127,29,29,.95);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    user-select:none;
+  }
+  .lb-del:hover{
+    transform: translateY(-1px);
+    background: rgba(239,68,68,.12);
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.22);
+  }
+  .lb-del:disabled{
+    opacity: .35;
+    cursor: not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+
+  /* ✅ totals bar */
+  .lb-summary{
+    padding: 10px 16px;
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    border-top: 1.5px solid var(--line2);
+    background: rgba(247,250,249,.72);
+  }
+  .lb-kpi{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 999px;
+    background: rgba(255,255,255,.86);
+    font-weight: 950;
+    font-size: 12px;
+  }
+  .lb-kpi b{ font-variant-numeric: tabular-nums; }
+
+  .lb-empty{
+    padding: 18px 16px;
+    text-align: center;
+    color: rgba(15,23,42,.70);
+    font-weight: 900;
+    font-size: 12px;
+    display:none;
+  }
+  .lb-empty.show{ display:block; }
+
+  /* Bottom pager bar (ONLY pager, moved below totals) */
+  .lb-footer-controls{
+    padding: 12px 16px;
+    display:flex;
+    justify-content: flex-end;
+    border-top: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.94);
+  }
+
+  .lb-pager{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .lb-pageinfo{
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(15,23,42,.80);
+    padding: 8px 10px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 999px;
+    background: rgba(247,250,249,.55);
+  }
+
+  /* ============================
+     ✅ Cursor rules
+     ============================ */
+  .lb-wrap:not(.lb-editing) input.lb-input,
+  .lb-wrap:not(.lb-editing) input.lb-in{
+    cursor: pointer;
+    caret-color: transparent;
+  }
+  .lb-wrap.lb-editing input.lb-input,
+  .lb-wrap.lb-editing input.lb-in{
+    cursor: text;
+    caret-color: auto;
+  }
+  .lb-wrap:not(.lb-editing) select.lb-in.select{
+    cursor: pointer;
+  }
+
+  @media (max-width: 720px){
+    .lb-topfields{ grid-template-columns: 1fr; }
+    .lb-search{ min-width: 100%; }
+    .lb-summary{ justify-content: flex-start; }
+
+    /* ✅ Mobile swipe grid view (horizontal carousel) */
+    .lb-table{ min-width: 0; }
+    .lb-table-wrap{ overflow: visible; border-bottom: none; }
+    .lb-th-row, .lb-th-row-2{ display:none; }
+
+    .lb-body{
+      padding: 12px;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 84%;
+      gap: 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scroll-padding-left: 12px;
+      padding-bottom: 16px;
+    }
+    .lb-body::-webkit-scrollbar{ height: 8px; }
+    .lb-body::-webkit-scrollbar-thumb{ background: rgba(15,23,42,.18); border-radius: 999px; }
+
+    .lb-row{
+      scroll-snap-align: start;
+      grid-template-columns: 1fr;
+      border: 1px solid rgba(15,23,42,.14);
+      border-radius: 14px;
+      background: rgba(255,255,255,.96);
+      overflow: hidden;
+      box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
+    }
+
+    .lb-cell{
+      border-right: none;
+      border-bottom: 1px solid rgba(15,23,42,.08);
+      padding: 10px 12px;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .lb-cell:last-child{
+      border-bottom:none;
+      justify-content: flex-end;
+    }
+
+    .lb-cell::before{
+      content: attr(data-label);
+      font-weight: 950;
+      font-size: 12px;
+      color: rgba(15,23,42,.70);
+      flex: 0 0 auto;
+    }
+
+    .lb-cell .lb-in{
+      text-align: right;
+    }
+
+    /* center checkbox + sl in mobile card rows */
+    .lb-cell[data-lbcell="sel"]{ justify-content: flex-start; }
+    .lb-cell[data-lbcell="sl"]{ justify-content: flex-start; }
+
+    /* ✅ Mobile editing: hide top save/cancel/addrow (use bottom bar) */
+    .lb-wrap.lb-mobile-editing #lbCancelBtn,
+    .lb-wrap.lb-mobile-editing #lbAddRowTop,
+    .lb-wrap.lb-mobile-editing #lbEditSaveBtn,
+    .lb-wrap.lb-mobile-editing #lbDeleteAllTop,
+    .lb-wrap.lb-mobile-editing #lbDeleteSelectedTop{
+      display:none !important;
+    }
+
+    /* bottom pager aligns nicely */
+    .lb-footer-controls{ justify-content: center; }
+  }
+
+  @media (max-width: 420px){
+    .lb-body{ grid-auto-columns: 90%; }
+  }
+
+  /* ============================================================
+     MOBILE BOTTOM ACTION BAR (only during edit on mobile)
+     ============================================================ */
+  .lb-mobilebar{
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    padding: 12px;
+    background: linear-gradient(to top, rgba(255,255,255,.96), rgba(255,255,255,.82));
+    border-top: 1px solid rgba(15,23,42,.12);
+    display:flex;
+    gap: 10px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .lb-mobilebar .lb-btn{
+    flex: 1 1 140px;
+    justify-content: center;
+  }
+
+  /* ============================================================
+     MODALS (Cashbook-like)
+     ============================================================ */
+  .lb-modal-overlay{
+    position: fixed;
+    inset: 0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index: 9999;
+    padding: 18px;
+    background: rgba(15, 23, 42, .28);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .lb-modal-overlay.lb-show{ display:flex; }
+
+  .lb-modal{
+    width: 100%;
+    max-width: 520px;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid rgba(15,23,42,.10);
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,.45);
+    overflow:hidden;
+    transform: translateY(6px);
+    animation: lbModalIn .18s ease-out forwards;
+  }
+  @keyframes lbModalIn{
+    from{ opacity:0; transform: translateY(10px) scale(.98); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
+
+  .lb-mhead{
+    padding: 14px 16px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    justify-content: flex-start;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(16,185,129,.12), transparent 55%),
+      linear-gradient(to right, rgba(5,150,105,.10), rgba(16,185,129,.10));
+    border-bottom: 1px solid rgba(15,23,42,.08);
+  }
+  .lb-dot{
+    width: 10px; height: 10px;
+    border-radius: 999px;
+    background: rgba(11,77,58,.90);
+    box-shadow: 0 0 0 6px rgba(16,185,129,.12);
+    flex: 0 0 auto;
+  }
+  .lb-mtitle{
+    font-weight: 950;
+    color:#0b4d3a;
+    font-size: 15px;
+    letter-spacing:.2px;
+  }
+
+  .lb-mbody{
+    padding: 14px 16px 6px;
+    color:#0f172a;
+    font-size: 14px;
+    font-weight: 850;
+    line-height:1.35;
+  }
+
+  .lb-mactions{
+    padding: 12px 16px 16px;
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    flex-wrap: wrap;
+  }
+
+  .lb-ghost{
+    border: 1px solid rgba(15,23,42,.14);
+    color:#0f172a;
+    background:#fff;
+    min-width: 120px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    font-weight: 950;
+    padding: 10px 12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .lb-ghost:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 14px 22px -18px rgba(0,0,0,.20);
+    background: rgba(11,77,58,.06);
+  }
+
+  .lb-solid{
+    border: 1px solid rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+    min-width: 120px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    font-weight: 950;
+    padding: 10px 12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .lb-solid:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 14px 22px -18px rgba(0,0,0,.20);
+    background: rgba(16,185,129,.16);
+  }
+
+  .lb-solid.lb-danger{
+    border-color: rgba(239,68,68,.35);
+    background: rgba(239,68,68,.10);
+    color: rgba(127,29,29,.95);
+  }
+  .lb-solid.lb-danger:hover{ background: rgba(239,68,68,.14); }
+
+  @media (max-width: 420px){
+    .lb-mactions{ justify-content: stretch; }
+    .lb-ghost, .lb-solid{ min-width: 100%; }
+  }
+</style>
+
+<div class="lb-wrap" id="lbWrap">
+  <div class="lb-sheet">
+
+   <div class="lb-head">
+<a class="lb-back"
+   href="javascript:void(0)"
+   aria-label="Back"
+   onclick="(window.history.length>1)?window.history.back():window.location.href='{{ url_for('pg.pg_home') }}'">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M19 12H5M5 12l6 6M5 12l6-6"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+  </svg>
+</a>
+
+  <div class="lb-titlewrap">
+    <h2 class="lb-title" id="lbTitle">Ledger Book</h2>
+  </div>
+
+  <div class="lb-head-spacer" aria-hidden="true"></div>
+</div>
+
+    <div class="lb-topfields">
+      <div class="lb-field">
+        <div class="lb-label" id="lbPgLabel">Name of the PG</div>
+        <input class="lb-input" id="lbPgName" type="text" value="{{ current_pg_name }}" readonly />
+      </div>
+
+      <div class="lb-field">
+        <div class="lb-label" id="lbClfLabel">Name of the CLF</div>
+        <input class="lb-input" id="lbClfName" type="text" value="{{ current_clf_name }}" readonly />
+      </div>
+    </div>
+
+    <div class="lb-controls">
+      <div class="lb-controls-left">
+        <div class="lb-search" title="Search">
+          <input id="lbSearch" type="text" placeholder="Search..." />
+        </div>
+
+        <div class="lb-pill" title="Rows per page">
+          <span id="lbRowsLabel">Rows</span>
+          <select id="lbRowsPerPage">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ buttons ABOVE table -->
+    <div class="lb-actions-bar">
+      <div style="font-weight:950; font-size:12px; color:rgba(15,23,42,.72);">
+        <!-- intentionally blank label space; keeps UI clean -->
+      </div>
+
+      <div class="lb-actions-top">
+        <button class="lb-btn lb-hidden" id="lbCancelBtn" type="button">
+          <svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 6 6 18"></path>
+            <path d="M6 6l12 12"></path>
+          </svg>
+          <span id="lbCancelText">Cancel</span>
+        </button>
+
+        <button class="lb-btn" id="lbEditSaveBtn" type="button">
+          <svg id="lbEditIcon" class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          <svg id="lbSaveIcon" class="lb-icon lb-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          <span id="lbEditSaveText">Edit</span>
+        </button>
+
+        <button class="lb-btn lb-primary" id="lbAddRowTop" type="button" disabled>
+          <svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+          </svg>
+          <span id="lbAddRowText">+ Add Row</span>
+        </button>
+
+        <!-- ✅ multi delete actions (edit only) -->
+        <button class="lb-btn lb-danger" id="lbDeleteSelectedTop" type="button" disabled>
+          <svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4h8v2"></path>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+          </svg>
+          <span id="lbDeleteSelectedText">Delete Selected</span>
+        </button>
+
+        <button class="lb-btn lb-danger" id="lbDeleteAllTop" type="button" disabled>
+          <svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4h8v2"></path>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+          </svg>
+          <span id="lbDeleteAllText">Delete All</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="lb-table-wrap">
+      <div class="lb-table">
+
+        <div class="lb-th-row">
+          <!-- blank select col + SL -->
+          <div class="lb-th" id="lbHSel">
+            <input type="checkbox" class="lb-check" id="lbSelectAll" title="Select all" />
+          </div>
+          <div class="lb-th" id="lbHSl">SL</div>
+
+          <div class="lb-th" id="lbHDate">Date</div>
+          <div class="lb-th" id="lbHParticulars">Particulars</div>
+          <div class="lb-th" id="lbHRef">Ref.</div>
+          <div class="lb-th" id="lbHDrCr">Dr. Or Cr.</div>
+          <div class="lb-th" id="lbHDebit">Debit</div>
+          <div class="lb-th" id="lbHCredit">Credit</div>
+          <div class="lb-th" id="lbHBalDebit">Bal Debit</div>
+          <div class="lb-th" id="lbHBalCredit">Bal Credit</div>
+          <div class="lb-th" id="lbHAction">Action</div>
+        </div>
+
+        <div class="lb-th-row-2">
+          <div class="lb-th"></div>
+          <div class="lb-th"></div>
+
+          <div class="lb-th"></div>
+          <div class="lb-th"></div>
+          <div class="lb-th"></div>
+          <div class="lb-th"></div>
+          <div class="lb-th"></div>
+          <div class="lb-th"></div>
+          <div class="lb-th"></div>
+          <div class="lb-th"></div>
+          <div class="lb-th"></div>
+        </div>
+
+        <div class="lb-empty" id="lbEmpty">No rows found.</div>
+        <div class="lb-body" id="lbBody"></div>
+      </div>
+    </div>
+
+    <!-- ✅ Totals -->
+    <div class="lb-summary">
+      <div class="lb-kpi" id="lbKpiDebit">Total Debit: <b id="lbTotalDebit">0</b></div>
+      <div class="lb-kpi" id="lbKpiCredit">Total Credit: <b id="lbTotalCredit">0</b></div>
+      <div class="lb-kpi" id="lbKpiClose">Closing Balance: <b id="lbClosing">0</b></div>
+    </div>
+
+    <!-- ✅ ONLY pager: BELOW totals -->
+    <div class="lb-footer-controls">
+      <div class="lb-pager">
+        <button class="lb-btn" id="lbPrevBottom" type="button">Prev</button>
+        <div class="lb-pageinfo" id="lbPageInfoBottom">Page 1 / 1</div>
+        <button class="lb-btn" id="lbNextBottom" type="button">Next</button>
+      </div>
+    </div>
+
+    <!-- ✅ Mobile sticky action bar (only in edit mode on mobile) -->
+    <div class="lb-mobilebar lb-hidden" id="lbMobileBar">
+      <button class="lb-btn" id="lbMobileCancel" type="button">Cancel</button>
+      <button class="lb-btn lb-primary" id="lbMobileAddRow" type="button">+ Add Row</button>
+      <button class="lb-btn lb-danger" id="lbMobileDeleteSelected" type="button" disabled>Delete Selected</button>
+      <button class="lb-btn lb-danger" id="lbMobileDeleteAll" type="button" disabled>Delete All</button>
+      <button class="lb-btn lb-primary" id="lbMobileSave" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ SAVE CONFIRM MODAL -->
+<div id="lbSaveOverlay" class="lb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="lb-modal">
+    <div class="lb-mhead">
+      <span class="lb-dot"></span>
+      <div class="lb-mtitle" id="lbSaveTitle">Confirm Save</div>
+    </div>
+    <div class="lb-mbody" id="lbSaveMsg">Do you want to save these changes?</div>
+    <div class="lb-mactions">
+      <button id="lbSaveCancel" class="lb-ghost" type="button">Cancel</button>
+      <button id="lbSaveYes" class="lb-solid" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ CANCEL CONFIRM MODAL -->
+<div id="lbCancelOverlay" class="lb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="lb-modal">
+    <div class="lb-mhead">
+      <span class="lb-dot"></span>
+      <div class="lb-mtitle" id="lbCancelTitle">Discard changes?</div>
+    </div>
+    <div class="lb-mbody" id="lbCancelMsg">This will revert all unsaved changes.</div>
+    <div class="lb-mactions">
+      <button id="lbCancelNo" class="lb-ghost" type="button">Cancel</button>
+      <button id="lbCancelYes" class="lb-solid" type="button">Discard</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ DELETE SINGLE CONFIRM MODAL -->
+<div id="lbDeleteOverlay" class="lb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="lb-modal">
+    <div class="lb-mhead">
+      <span class="lb-dot"></span>
+      <div class="lb-mtitle" id="lbDeleteTitle">Delete row?</div>
+    </div>
+    <div class="lb-mbody" id="lbDeleteMsg">This row will be removed. You can Save to confirm or Cancel to revert.</div>
+    <div class="lb-mactions">
+      <button id="lbDeleteNo" class="lb-ghost" type="button">Cancel</button>
+      <button id="lbDeleteYes" class="lb-solid lb-danger" type="button">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ DELETE MULTI CONFIRM MODAL -->
+<div id="lbDeleteMultiOverlay" class="lb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="lb-modal">
+    <div class="lb-mhead">
+      <span class="lb-dot"></span>
+      <div class="lb-mtitle" id="lbDeleteMultiTitle">Delete Selected?</div>
+    </div>
+    <div class="lb-mbody" id="lbDeleteMultiMsg">Selected rows will be removed. You can Save to confirm or Cancel to revert.</div>
+    <div class="lb-mactions">
+      <button id="lbDeleteMultiNo" class="lb-ghost" type="button">Cancel</button>
+      <button id="lbDeleteMultiYes" class="lb-solid lb-danger" type="button">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ DELETE ALL CONFIRM MODAL -->
+<div id="lbDeleteAllOverlay" class="lb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="lb-modal">
+    <div class="lb-mhead">
+      <span class="lb-dot"></span>
+      <div class="lb-mtitle" id="lbDeleteAllTitle">Delete All?</div>
+    </div>
+    <div class="lb-mbody" id="lbDeleteAllMsg">All rows will be removed. You can Save to confirm or Cancel to revert.</div>
+    <div class="lb-mactions">
+      <button id="lbDeleteAllNo" class="lb-ghost" type="button">Cancel</button>
+      <button id="lbDeleteAllYes" class="lb-solid lb-danger" type="button">Delete All</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ EDIT-LOCK MODAL -->
+<div id="lbLockOverlay" class="lb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="lb-modal">
+    <div class="lb-mhead">
+      <span class="lb-dot"></span>
+      <div class="lb-mtitle" id="lbLockTitle">Action blocked</div>
+    </div>
+    <div class="lb-mbody" id="lbLockMsg">You are in Edit mode. Please Save or Cancel before leaving this page.</div>
+    <div class="lb-mactions">
+      <button id="lbLockOk" class="lb-solid" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+
+  function detectWebView(){
+  const ua = navigator.userAgent || "";
+  const isReactNativeWV = !!(window.ReactNativeWebView && window.ReactNativeWebView.postMessage);
+  const isFlutterWV = /flutter/i.test(ua);
+  const isAndroidWV = /\bwv\b/.test(ua) || /Version\/[\d.]+ Chrome\/[\d.]+ Mobile Safari\/[\d.]+/.test(ua);
+  const isIOSWV = /iPhone|iPad|iPod/i.test(ua) && (
+    !/Safari/i.test(ua) ||
+    /AppleWebKit(?!.*Safari)/i.test(ua)
+  );
+  const hasWebViewHint =
+    /webview|wv|; wv\)|android.*version\/[\d.]+.*chrome\/[\d.]+.*mobile/i.test(ua);
+
+  return isReactNativeWV || isFlutterWV || isAndroidWV || isIOSWV || hasWebViewHint;
+}
+
+if (detectWebView()) {
+  document.documentElement.classList.add("is-webview");
+  if (document.body) document.body.classList.add("is-webview");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (detectWebView()) {
+    document.documentElement.classList.add("is-webview");
+    document.body.classList.add("is-webview");
+  }
+});
+  const T = {
+    en: {
+      title: "Ledger Book",
+      pgLabel: "Name of the PG",
+      clfLabel: "Name of the CLF",
+
+      rowsLabel: "Rows",
+      searchPH: "Search...",
+
+      prev: "Prev",
+      next: "Next",
+      pageInfo: (a,b)=>`Page ${a} / ${b}`,
+      empty: "No rows found.",
+
+      hSel: "",
+      hSl: "SL",
+      hDate: "Date",
+      hParticulars: "Particulars",
+      hRef: "Ref.",
+      hDrCr: "Dr. Or Cr.",
+      hDebit: "Debit",
+      hCredit: "Credit",
+      hBalDebit: "Bal Debit",
+      hBalCredit: "Bal Credit",
+      hAction: "Action",
+
+      addRow: "+ Add Row",
+      save: "Save",
+
+      editButton: "Edit",
+      saveButton: "Save",
+      cancelButton: "Cancel",
+
+      deleteSelected: "Delete Selected",
+      deleteAll: "Delete All",
+
+      kpiDebit: "Total Debit:",
+      kpiCredit: "Total Credit:",
+      kpiClose: "Closing Balance:",
+
+      phDate: "DD-MM-YYYY",
+      phParticulars: "Write particulars…",
+      phRef: "Ref…",
+      phDebit: "0",
+      phCredit: "0",
+
+      dr: "Dr",
+      cr: "Cr",
+
+      // modals
+      confirmTitle: "Confirm Save",
+      confirmMsg: "Do you want to save these changes?",
+      confirmYes: "Confirm",
+      confirmNo: "Cancel",
+
+      cancelTitle: "Discard changes?",
+      cancelMsg: "This will revert all unsaved changes.",
+      cancelYes: "Discard",
+
+      deleteTitle: "Delete row?",
+      deleteMsg: "This row will be removed. You can Save to confirm or Cancel to revert.",
+      deleteYes: "Delete",
+      deleteNo: "Cancel",
+
+      deleteMultiTitle: "Delete Selected?",
+      deleteMultiMsg: (n)=>`Selected ${n} row(s) will be removed. You can Save to confirm or Cancel to revert.`,
+      deleteAllTitle: "Delete All?",
+      deleteAllMsg: "All rows will be removed. You can Save to confirm or Cancel to revert.",
+
+      lockTitle: "Action blocked",
+      lockMsg: "You are in Edit mode. Please Save or Cancel before leaving this page.",
+      lockOk: "OK"
+    },
+    bn: {
+      title: "খতিয়ানের খাতা",
+      pgLabel: "উৎপাদক দলের নাম",
+      clfLabel: "ক্লাস্টার লেভেল ফেডারেশন এর নাম",
+
+      rowsLabel: "সারি",
+      searchPH: "খুঁজুন...",
+
+      prev: "পূর্বে",
+      next: "পরের",
+      pageInfo: (a,b)=>`পৃষ্ঠা ${a} / ${b}`,
+      empty: "কোনো সারি পাওয়া যায়নি।",
+
+      hSel: "",
+      hSl: "ক্রম",
+      hDate: "তারিখ",
+      hParticulars: "বিবরণ",
+      hRef: "প্রদায়/উদ্ধৃত",
+      hDrCr: "খরচ/জমা",
+      hDebit: "খরচ",
+      hCredit: "জমা",
+      hBalDebit: "ব্যালেন্স খরচ",
+      hBalCredit: "ব্যালেন্স জমা",
+      hAction: "অ্যাকশন",
+
+      addRow: "+ সারি যোগ করুন",
+      save: "সেভ",
+
+      editButton: "সম্পাদনা করুন",
+      saveButton: "সংরক্ষণ করুন",
+      cancelButton: "বাতিল",
+
+      deleteSelected: "নির্বাচিত মুছুন",
+      deleteAll: "সব মুছুন",
+
+      kpiDebit: "মোট খরচ:",
+      kpiCredit: "মোট জমা:",
+      kpiClose: "সমাপনী ব্যালেন্স:",
+
+      phDate: "দিন-মাস-বছর",
+      phParticulars: "বিবরণ লিখুন…",
+      phRef: "রেফারেন্স…",
+      phDebit: "০",
+      phCredit: "০",
+
+      dr: "খরচ",
+      cr: "জমা",
+
+      // modals
+      confirmTitle: "সংরক্ষণ নিশ্চিত করুন",
+      confirmMsg: "আপনি কি পরিবর্তনগুলো সংরক্ষণ করতে চান?",
+      confirmYes: "নিশ্চিত",
+      confirmNo: "বাতিল",
+
+      cancelTitle: "পরিবর্তন বাতিল করবেন?",
+      cancelMsg: "এতে সব সংরক্ষণ না হওয়া পরিবর্তন ফিরে যাবে।",
+      cancelYes: "বাতিল করুন",
+
+      deleteTitle: "সারি মুছবেন?",
+      deleteMsg: "এই সারিটি মুছে যাবে। সংরক্ষণ করলে স্থায়ী হবে, বাতিল করলে ফিরে আসবে।",
+      deleteYes: "মুছুন",
+      deleteNo: "বাতিল",
+
+      deleteMultiTitle: "নির্বাচিত মুছবেন?",
+      deleteMultiMsg: (n)=>`নির্বাচিত ${n}টি সারি মুছে যাবে। সংরক্ষণ করলে স্থায়ী হবে, বাতিল করলে ফিরে আসবে।`,
+      deleteAllTitle: "সব মুছবেন?",
+      deleteAllMsg: "সব সারি মুছে যাবে। সংরক্ষণ করলে স্থায়ী হবে, বাতিল করলে ফিরে আসবে।",
+
+      lockTitle: "অ্যাকশন বন্ধ করা হয়েছে",
+      lockMsg: "আপনি এডিট মোডে আছেন। অনুগ্রহ করে সংরক্ষণ করুন অথবা বাতিল করুন, তারপর পেজ ছাড়ুন।",
+      lockOk: "ঠিক আছে"
+    }
+  };
+
+  let lang = "en";
+
+  // edit state
+  let lbIsEditing = false;
+  let lbSnapshot = null;
+
+  // pagination/search state
+  let allRows = [];
+  let filteredRows = [];
+  let page = 1;
+  let perPage = 25;
+  let query = "";
+
+  // delete pending
+  let pendingDeleteRow = null;
+  let pendingDeleteMode = null; // "single" | "multi" | "all"
+
+  function normalizeLang(v){
+    if (!v) return null;
+    const s = String(v).toLowerCase();
+    if (s === "bn" || s.includes("bangla") || s.includes("বাংলা")) return "bn";
+    if (s === "en" || s.includes("english")) return "en";
+    return null;
+  }
+
+  /* ============================================================
+     ✅ BASE LANGUAGE HOOK FIX (sync with navbar language button)
+     - Reads base language from common keys/globals
+     - Listens to multiple possible base events/hooks
+     ============================================================ */
+  const LANG_STORAGE_KEYS = [
+    "pgmis_lang",
+    "pgmis-language",
+    "pgmisLanguage",
+    "language",
+    "lang",
+    "site_lang",
+    "ui_lang"
+  ];
+
+  function readBaseLang(){
+    // 1) global hints (if base sets these)
+    try{
+      const g1 = normalizeLang(window.PGMIS_LANG);
+      if (g1) return g1;
+    }catch(_){}
+
+    try{
+      const g2 = normalizeLang(window.__PGMIS_LANG__);
+      if (g2) return g2;
+    }catch(_){}
+
+    // 2) <html lang="...">
+    try{
+      const htmlLang = normalizeLang(document.documentElement.getAttribute("lang"));
+      if (htmlLang) return htmlLang;
+    }catch(_){}
+
+    // 3) localStorage/sessionStorage keys (most common)
+    for (const k of LANG_STORAGE_KEYS){
+      try{
+        const v = localStorage.getItem(k);
+        const n = normalizeLang(v);
+        if (n) return n;
+      }catch(_){}
+      try{
+        const v2 = sessionStorage.getItem(k);
+        const n2 = normalizeLang(v2);
+        if (n2) return n2;
+      }catch(_){}
+    }
+    return null;
+  }
+
+  function persistLangToCommonStores(l){
+    // Don't break base; just mirror to common keys (safe)
+    const v = (l === "bn") ? "bn" : "en";
+    for (const k of LANG_STORAGE_KEYS){
+      try{ localStorage.setItem(k, v); }catch(_){}
+      try{ sessionStorage.setItem(k, v); }catch(_){}
+    }
+    try{ document.documentElement.setAttribute("lang", v); }catch(_){}
+    try{ window.PGMIS_LANG = v; }catch(_){}
+  }
+
+  function applyLangFromBaseIfAny(){
+    const base = readBaseLang();
+    if (!base) return;
+    if (base === lang) return;
+    lang = base;
+    applyLang();
+    recalcLedger();
+  }
+
+  function setLangAndApply(l){
+    const n = normalizeLang(l) || "en";
+    if (n === lang) return;
+    lang = n;
+    persistLangToCommonStores(lang);
+    applyLang();
+    recalcLedger();
+  }
+
+  // expose a compatibility function if base tries to call page-level setter
+  window.ledgerSetLanguage = function(l){
+    setLangAndApply(l);
+  };
+  // extra aliases (safe, non-breaking)
+  window.pgmisSetPageLanguage = window.ledgerSetLanguage;
+  window.pgmisLedgerSetLanguage = window.ledgerSetLanguage;
+
+  function n2(v){
+    const x = parseFloat(String(v || "").replace(/[, ]+/g,""));
+    return Number.isFinite(x) ? x : 0;
+  }
+
+  function fmt(v){
+    const x = Number(v || 0);
+    return (Math.round(x * 100) / 100).toString();
+  }
+
+  function getRowText(rowEl){
+    const parts = [];
+    rowEl.querySelectorAll("input, select").forEach(el=>{
+      if (el.tagName === "SELECT") parts.push(el.value || "");
+      else parts.push(el.value || el.placeholder || "");
+    });
+    return parts.join(" ").toLowerCase();
+  }
+
+  function isRowSelected(row){
+    const cb = row.querySelector("[data-lb='sel']");
+    return !!(cb && cb.checked);
+  }
+
+  function selectedRows(){
+    return allRows.filter(r => isRowSelected(r));
+  }
+
+  function updateSelectUI(){
+    const selCount = selectedRows().length;
+
+    // header select-all state should reflect ALL visible rows on current page
+    const visible = filteredRows.slice((page-1)*perPage, (page-1)*perPage + perPage);
+    const visCount = visible.length;
+    const visSelected = visible.filter(r => isRowSelected(r)).length;
+
+    const head = $("lbSelectAll");
+    if (head){
+      head.indeterminate = (visSelected > 0 && visSelected < visCount);
+      head.checked = (visCount > 0 && visSelected === visCount);
+    }
+
+    const canMulti = lbIsEditing && selCount > 0;
+    $("lbDeleteSelectedTop").disabled = !canMulti;
+    $("lbDeleteAllTop").disabled = !(lbIsEditing && allRows.length > 0);
+
+    const mobSel = $("lbMobileDeleteSelected");
+    const mobAll = $("lbMobileDeleteAll");
+    if (mobSel) mobSel.disabled = !canMulti;
+    if (mobAll) mobAll.disabled = !(lbIsEditing && allRows.length > 0);
+  }
+
+  /* ============================================================
+     MODALS
+     ============================================================ */
+  function openOverlay(el){
+    el.classList.add("lb-show");
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }
+  function closeOverlay(el){
+    el.classList.remove("lb-show");
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+  }
+
+  function openSaveConfirm(){
+    const t = T[lang];
+    $("lbSaveTitle").textContent = t.confirmTitle;
+    $("lbSaveMsg").textContent = t.confirmMsg;
+    $("lbSaveCancel").textContent = t.confirmNo;
+    $("lbSaveYes").textContent = t.confirmYes;
+    openOverlay($("lbSaveOverlay"));
+  }
+
+  function openCancelConfirm(){
+    const t = T[lang];
+    $("lbCancelTitle").textContent = t.cancelTitle;
+    $("lbCancelMsg").textContent = t.cancelMsg;
+    $("lbCancelNo").textContent = t.confirmNo;
+    $("lbCancelYes").textContent = t.cancelYes;
+    openOverlay($("lbCancelOverlay"));
+  }
+
+  function openDeleteConfirm(){
+    const t = T[lang];
+    $("lbDeleteTitle").textContent = t.deleteTitle;
+    $("lbDeleteMsg").textContent = t.deleteMsg;
+    $("lbDeleteNo").textContent = t.deleteNo;
+    $("lbDeleteYes").textContent = t.deleteYes;
+    openOverlay($("lbDeleteOverlay"));
+  }
+
+  function openDeleteMultiConfirm(n){
+    const t = T[lang];
+    $("lbDeleteMultiTitle").textContent = t.deleteMultiTitle;
+    $("lbDeleteMultiMsg").textContent = t.deleteMultiMsg(n);
+    $("lbDeleteMultiNo").textContent = t.confirmNo;
+    $("lbDeleteMultiYes").textContent = t.deleteYes;
+    openOverlay($("lbDeleteMultiOverlay"));
+  }
+
+  function openDeleteAllConfirm(){
+    const t = T[lang];
+    $("lbDeleteAllTitle").textContent = t.deleteAllTitle;
+    $("lbDeleteAllMsg").textContent = t.deleteAllMsg;
+    $("lbDeleteAllNo").textContent = t.confirmNo;
+    $("lbDeleteAllYes").textContent = t.deleteAll;
+    openOverlay($("lbDeleteAllOverlay"));
+  }
+
+  function openLockModal(){
+    const t = T[lang];
+    $("lbLockTitle").textContent = t.lockTitle;
+    $("lbLockMsg").textContent = t.lockMsg;
+    $("lbLockOk").textContent = t.lockOk;
+    openOverlay($("lbLockOverlay"));
+  }
+
+  // overlay close bindings
+  $("lbSaveCancel").addEventListener("click", ()=>closeOverlay($("lbSaveOverlay")));
+  $("lbSaveOverlay").addEventListener("click", (e)=>{ if (e.target === $("lbSaveOverlay")) closeOverlay($("lbSaveOverlay")); });
+
+  $("lbCancelNo").addEventListener("click", ()=>closeOverlay($("lbCancelOverlay")));
+  $("lbCancelOverlay").addEventListener("click", (e)=>{ if (e.target === $("lbCancelOverlay")) closeOverlay($("lbCancelOverlay")); });
+
+  $("lbDeleteNo").addEventListener("click", ()=>{ pendingDeleteRow = null; closeOverlay($("lbDeleteOverlay")); });
+  $("lbDeleteOverlay").addEventListener("click", (e)=>{ if (e.target === $("lbDeleteOverlay")) { pendingDeleteRow = null; closeOverlay($("lbDeleteOverlay")); } });
+
+  $("lbDeleteMultiNo").addEventListener("click", ()=>closeOverlay($("lbDeleteMultiOverlay")));
+  $("lbDeleteMultiOverlay").addEventListener("click", (e)=>{ if (e.target === $("lbDeleteMultiOverlay")) closeOverlay($("lbDeleteMultiOverlay")); });
+
+  $("lbDeleteAllNo").addEventListener("click", ()=>closeOverlay($("lbDeleteAllOverlay")));
+  $("lbDeleteAllOverlay").addEventListener("click", (e)=>{ if (e.target === $("lbDeleteAllOverlay")) closeOverlay($("lbDeleteAllOverlay")); });
+
+  $("lbLockOk").addEventListener("click", ()=>closeOverlay($("lbLockOverlay")));
+  $("lbLockOverlay").addEventListener("click", (e)=>{ if (e.target === $("lbLockOverlay")) closeOverlay($("lbLockOverlay")); });
+
+  /* ============================================================
+     ✅ CASHBOOK-STYLE EDIT LOCK (while edit mode active)
+     ✅ FIXED: do NOT block navbar buttons; ONLY block navigation
+     ============================================================ */
+  let lbLockActive = false;
+  let lbLockPushed = false;
+  let lbLockOpen = false;
+
+  function lbSetLock(on){
+    lbLockActive = !!on;
+
+    if (lbLockActive && !lbLockPushed){
+      try{
+        history.pushState({ lb_lock: true }, document.title, location.href);
+        lbLockPushed = true;
+      }catch(_){}
+    }
+    if (!lbLockActive){
+      lbLockPushed = false;
+      lbLockOpen = false;
+      closeOverlay($("lbLockOverlay"));
+    }
+  }
+
+  function lbArmLockNow(){
+    lbSetLock(true);
+    if (!lbLockPushed){
+      try{
+        history.pushState({ lb_lock: true }, document.title, location.href);
+        lbLockPushed = true;
+      }catch(_){}
+    }
+  }
+
+  function lbTriggerLockModal(){
+    if (!lbLockActive) return;
+    if (lbLockOpen) return;
+    lbLockOpen = true;
+    openLockModal();
+    setTimeout(()=>{ lbLockOpen = false; }, 350);
+  }
+
+  window.addEventListener("popstate", ()=> {
+    if (!lbLockActive) return;
+    try{ history.pushState({ lb_lock: true }, document.title, location.href); }catch(_){}
+    lbTriggerLockModal();
+  });
+
+  function lbIsInsideOpenModal(target){
+    return !!(target && target.closest && target.closest(".lb-modal-overlay.lb-show"));
+  }
+
+  function isNavigatingHref(href){
+    if (!href) return false;
+    const h = String(href).trim();
+    if (!h) return false;
+    if (h === "#") return false;
+    if (h.startsWith("#")) return false;
+    if (h.toLowerCase().startsWith("javascript:")) return false;
+    return true;
+  }
+
+  // ✅ ONLY block real link navigation (keeps hamburger/translate/etc working)
+  document.addEventListener("click", (e)=>{
+    if (!lbLockActive) return;
+    if (lbIsInsideOpenModal(e.target)) return;
+
+    const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
+    if (!a) return;
+
+    const href = a.getAttribute("href");
+    if (!isNavigatingHref(href)) return;
+
+    // allow new tab / modifiers
+    const target = (a.getAttribute("target") || "").toLowerCase();
+    if (target === "_blank") return;
+    if (e.ctrlKey || e.metaKey || e.button === 1) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+    lbTriggerLockModal();
+    return false;
+  }, true);
+
+  window.addEventListener("keydown", (e)=>{
+    if (!lbLockActive) return;
+
+    const key = (e.key || "").toLowerCase();
+    const isF5 = (key === "f5") || (e.keyCode === 116);
+    const isCtrlF5 = (e.ctrlKey && isF5);
+    const isCtrlR = (e.ctrlKey || e.metaKey) && (key === "r");
+    const isHardReload = ((e.ctrlKey || e.metaKey) && e.shiftKey && key === "r") || isCtrlF5;
+
+    if (isF5 || isCtrlR || isHardReload){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      lbTriggerLockModal();
+      return false;
+    }
+  }, true);
+
+  window.addEventListener("beforeunload", (e)=>{
+    if (!lbLockActive) return;
+    e.preventDefault();
+    e.returnValue = "";
+  });
+
+  /* ============================================================
+     ✅ MIS LOGIC: one-side entry + running balance
+     ============================================================ */
+  function recalcLedger(){
+    let running = 0;
+    let totalDebit = 0;
+    let totalCredit = 0;
+
+    allRows.forEach((row)=>{
+      const drcr = row.querySelector("[data-lb='drcr']").value;
+
+      const debitEl = row.querySelector("[data-lb='debit']");
+      const creditEl = row.querySelector("[data-lb='credit']");
+      const balDrEl = row.querySelector("[data-lb='bal_debit']");
+      const balCrEl = row.querySelector("[data-lb='bal_credit']");
+
+      let debit = n2(debitEl.value);
+      let credit = n2(creditEl.value);
+
+      if (drcr === "Dr"){
+        if (credit > 0){ credit = 0; creditEl.value = ""; }
+      } else {
+        if (debit > 0){ debit = 0; debitEl.value = ""; }
+      }
+
+      totalDebit += debit;
+      totalCredit += credit;
+
+      running = running + credit - debit;
+
+      if (running >= 0){
+        balDrEl.value = "";
+        balCrEl.value = fmt(running);
+      } else {
+        balDrEl.value = fmt(Math.abs(running));
+        balCrEl.value = "";
+      }
+    });
+
+    $("lbTotalDebit").textContent = fmt(totalDebit);
+    $("lbTotalCredit").textContent = fmt(totalCredit);
+    $("lbClosing").textContent = fmt(running);
+
+    updateSelectUI();
+  }
+
+  function rebuildFiltered(){
+    const q = (query || "").trim().toLowerCase();
+    filteredRows = !q ? allRows.slice() : allRows.filter(r => getRowText(r).includes(q));
+
+    const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
+    page = Math.min(Math.max(page, 1), totalPages);
+
+    renderPage();
+    recalcLedger();
+  }
+
+  function renderPage(){
+    const t = T[lang];
+
+    const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
+    const start = (page - 1) * perPage;
+    const end = start + perPage;
+    const slice = filteredRows.slice(start, end);
+
+    const body = $("lbBody");
+    body.innerHTML = "";
+    slice.forEach(r => body.appendChild(r));
+
+    slice.forEach((r, i) => {
+      const sl = r.querySelector("[data-lb='slno']");
+      if (sl) sl.textContent = String(start + i + 1);
+    });
+
+    const info = t.pageInfo(page, totalPages);
+    $("lbPageInfoBottom").textContent = info;
+
+    $("lbPrevBottom").disabled = (page <= 1);
+    $("lbNextBottom").disabled = (page >= totalPages);
+
+    const empty = $("lbEmpty");
+    if (filteredRows.length === 0) empty.classList.add("show");
+    else empty.classList.remove("show");
+
+    updateSelectUI();
+  }
+
+  function setRowEditable(row, on){
+    row.querySelectorAll("input[data-lb], select[data-lb]").forEach(el=>{
+      const key = el.getAttribute("data-lb");
+      if (key === "bal_debit" || key === "bal_credit" || key === "sel") return;
+
+      if (el.tagName === "SELECT"){
+        el.disabled = !on;
+      } else {
+        el.readOnly = !on;
+      }
+    });
+
+    const cb = row.querySelector("[data-lb='sel']");
+    if (cb){
+      cb.disabled = !on;
+      cb.style.pointerEvents = on ? "" : "none";
+    }
+
+    const delBtn = row.querySelector("[data-lb='delete']");
+    if (delBtn) delBtn.disabled = !on;
+  }
+
+  function updateMobileEditingClass(){
+    const isMobile = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+    $("lbWrap").classList.toggle("lb-mobile-editing", !!(lbIsEditing && isMobile));
+  }
+
+  function updateMobileBar(){
+    const isMobile = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+    const bar = $("lbMobileBar");
+    if (lbIsEditing && isMobile) bar.classList.remove("lb-hidden");
+    else bar.classList.add("lb-hidden");
+
+    updateMobileEditingClass();
+  }
+
+  function setAllEditable(on){
+    $("lbWrap").classList.toggle("lb-editing", !!on);
+
+    $("lbPgName").readOnly = !on;
+    $("lbClfName").readOnly = !on;
+
+    allRows.forEach(r => setRowEditable(r, on));
+
+    $("lbAddRowTop").disabled = !on;
+
+    $("lbDeleteAllTop").disabled = !(on && allRows.length > 0);
+    $("lbDeleteSelectedTop").disabled = !(on && selectedRows().length > 0);
+
+    const mobSel = $("lbMobileDeleteSelected");
+    const mobAll = $("lbMobileDeleteAll");
+    if (mobSel) mobSel.disabled = !(on && selectedRows().length > 0);
+    if (mobAll) mobAll.disabled = !(on && allRows.length > 0);
+
+    $("lbSelectAll").disabled = !on;
+
+    // ✅ lock toggles exactly with edit mode
+    lbSetLock(on);
+
+    updateMobileBar();
+    updateSelectUI();
+  }
+
+  function setEditingUI(){
+    const t = T[lang];
+
+    $("lbEditIcon").classList.toggle("lb-hidden", lbIsEditing);
+    $("lbSaveIcon").classList.toggle("lb-hidden", !lbIsEditing);
+    $("lbEditSaveText").textContent = lbIsEditing ? t.saveButton : t.editButton;
+
+    $("lbCancelBtn").classList.toggle("lb-hidden", !lbIsEditing);
+    $("lbCancelText").textContent = t.cancelButton;
+
+    $("lbAddRowText").textContent = t.addRow;
+
+    $("lbDeleteSelectedText").textContent = t.deleteSelected;
+    $("lbDeleteAllText").textContent = t.deleteAll;
+
+    $("lbMobileCancel").textContent = t.cancelButton;
+    $("lbMobileAddRow").textContent = t.addRow;
+    $("lbMobileSave").textContent = t.saveButton;
+    $("lbMobileDeleteSelected").textContent = t.deleteSelected;
+    $("lbMobileDeleteAll").textContent = t.deleteAll;
+
+    updateMobileBar();
+  }
+
+  function clearAllSelections(){
+    allRows.forEach(r=>{
+      const cb = r.querySelector("[data-lb='sel']");
+      if (cb) cb.checked = false;
+    });
+    $("lbSelectAll").checked = false;
+    $("lbSelectAll").indeterminate = false;
+    updateSelectUI();
+  }
+
+  function takeSnapshot(){
+    return {
+      pg_name: $("lbPgName").value || "",
+      clf_name: $("lbClfName").value || "",
+      entries: allRows.map(r => ({
+        _selected: !!(r.querySelector("[data-lb='sel']") && r.querySelector("[data-lb='sel']").checked),
+        date: r.querySelector("[data-lb='date']").value || "",
+        particulars: r.querySelector("[data-lb='particulars']").value || "",
+        ref: r.querySelector("[data-lb='ref']").value || "",
+        drcr: r.querySelector("[data-lb='drcr']").value || "Dr",
+        debit: n2(r.querySelector("[data-lb='debit']").value),
+        credit: n2(r.querySelector("[data-lb='credit']").value),
+      }))
+    };
+  }
+
+  function restoreSnapshot(snap){
+    if (!snap) return;
+
+    $("lbPgName").value = snap.pg_name || "";
+    $("lbClfName").value = snap.clf_name || "";
+
+    allRows = [];
+    filteredRows = [];
+    $("lbBody").innerHTML = "";
+
+    const entries = Array.isArray(snap.entries) ? snap.entries : [];
+    if (entries.length){
+      entries.forEach((e)=>{
+        const row = createRow();
+        row.querySelector("[data-lb='date']").value = e.date || "";
+        row.querySelector("[data-lb='particulars']").value = e.particulars || "";
+        row.querySelector("[data-lb='ref']").value = e.ref || "";
+        row.querySelector("[data-lb='drcr']").value = (e.drcr === "Cr") ? "Cr" : "Dr";
+        row.querySelector("[data-lb='debit']").value = e.debit ? String(e.debit) : "";
+        row.querySelector("[data-lb='credit']").value = e.credit ? String(e.credit) : "";
+        const cb = row.querySelector("[data-lb='sel']");
+        if (cb) cb.checked = !!e._selected;
+        allRows.push(row);
+      });
+      } else {
+      allRows = [];
+    }
+
+    rebuildFiltered();
+    applyLang();
+    recalcLedger();
+
+    setAllEditable(false);
+  }
+
+  function applyLang(){
+    const t = T[lang];
+
+    $("lbTitle").textContent = t.title;
+    $("lbPgLabel").textContent = t.pgLabel;
+    $("lbClfLabel").textContent = t.clfLabel;
+
+    $("lbRowsLabel").textContent = t.rowsLabel;
+    $("lbSearch").placeholder = t.searchPH;
+
+    $("lbPrevBottom").textContent = t.prev;
+    $("lbNextBottom").textContent = t.next;
+
+    $("lbEmpty").textContent = t.empty;
+
+    $("lbHSel").textContent = t.hSel;
+    $("lbHSl").textContent = t.hSl;
+    $("lbHDate").textContent = t.hDate;
+    $("lbHParticulars").textContent = t.hParticulars;
+    $("lbHRef").textContent = t.hRef;
+    $("lbHDrCr").textContent = t.hDrCr;
+    $("lbHDebit").textContent = t.hDebit;
+    $("lbHCredit").textContent = t.hCredit;
+    $("lbHBalDebit").textContent = t.hBalDebit;
+    $("lbHBalCredit").textContent = t.hBalCredit;
+    $("lbHAction").textContent = t.hAction;
+
+    $("lbKpiDebit").childNodes[0].nodeValue = t.kpiDebit + " ";
+    $("lbKpiCredit").childNodes[0].nodeValue = t.kpiCredit + " ";
+    $("lbKpiClose").childNodes[0].nodeValue = t.kpiClose + " ";
+
+    document.querySelectorAll("[data-lb='date']").forEach(i => i.placeholder = t.phDate);
+    document.querySelectorAll("[data-lb='particulars']").forEach(i => i.placeholder = t.phParticulars);
+    document.querySelectorAll("[data-lb='ref']").forEach(i => i.placeholder = t.phRef);
+    document.querySelectorAll("[data-lb='debit']").forEach(i => i.placeholder = t.phDebit);
+    document.querySelectorAll("[data-lb='credit']").forEach(i => i.placeholder = t.phCredit);
+
+    document.querySelectorAll("[data-lb='drcr']").forEach(sel => {
+      const cur = sel.value;
+      sel.innerHTML = `
+        <option value="Dr">${t.dr}</option>
+        <option value="Cr">${t.cr}</option>
+      `;
+      sel.value = (cur === "Cr") ? "Cr" : "Dr";
+    });
+
+    $("lbDeleteTitle").textContent = t.deleteTitle;
+    $("lbDeleteMsg").textContent = t.deleteMsg;
+    $("lbDeleteNo").textContent = t.deleteNo;
+    $("lbDeleteYes").textContent = t.deleteYes;
+
+    setEditingUI();
+    renderPage();
+  }
+
+  $("lbWrap").addEventListener("focusin", (e)=>{
+    if (lbIsEditing) return;
+    const el = e.target;
+    if (!el) return;
+    if (el.matches && (el.matches("input.lb-in, input.lb-input, select.lb-in.select"))){
+      try{ el.blur(); }catch(_){}
+    }
+  }, true);
+
+  function wireRow(row){
+    const onInput = () => recalcLedger();
+
+    row.querySelectorAll("input, select").forEach(el=>{
+      if (el.getAttribute("data-lb") === "sel"){
+        el.addEventListener("change", () => updateSelectUI());
+        return;
+      }
+      el.addEventListener("input", onInput);
+      el.addEventListener("change", onInput);
+    });
+
+    row.querySelector("[data-lb='drcr']").addEventListener("change", ()=>{
+      const drcr = row.querySelector("[data-lb='drcr']").value;
+      const debitEl = row.querySelector("[data-lb='debit']");
+      const creditEl = row.querySelector("[data-lb='credit']");
+      if (drcr === "Dr") creditEl.value = "";
+      else debitEl.value = "";
+      recalcLedger();
+    });
+
+    row.querySelector("[data-lb='debit']").addEventListener("input", ()=>{
+      const creditEl = row.querySelector("[data-lb='credit']");
+      if (row.querySelector("[data-lb='debit']").value) creditEl.value = "";
+      recalcLedger();
+    });
+
+    row.querySelector("[data-lb='credit']").addEventListener("input", ()=>{
+      const debitEl = row.querySelector("[data-lb='debit']");
+      if (row.querySelector("[data-lb='credit']").value) debitEl.value = "";
+      recalcLedger();
+    });
+
+    const del = row.querySelector("[data-lb='delete']");
+    if (del){
+      del.addEventListener("click", ()=>{
+        if (!lbIsEditing) return;
+        pendingDeleteRow = row;
+        pendingDeleteMode = "single";
+        openDeleteConfirm();
+      });
+    }
+  }
+
+  function createRow(){
+    const t = T[lang];
+    const row = document.createElement("div");
+    row.className = "lb-row";
+
+    row.innerHTML = `
+      <div class="lb-cell" data-lbcell="sel" data-label="${t.hSel}">
+        <input type="checkbox" class="lb-check" data-lb="sel" aria-label="Select row" />
+      </div>
+      <div class="lb-cell" data-lbcell="sl" data-label="${t.hSl}">
+        <div class="lb-slno" data-lb="slno">1</div>
+      </div>
+
+      <div class="lb-cell" data-label="${t.hDate}">
+        <input class="lb-in" data-lb="date" placeholder="${t.phDate}" />
+      </div>
+      <div class="lb-cell" data-label="${t.hParticulars}">
+        <input class="lb-in" data-lb="particulars" placeholder="${t.phParticulars}" />
+      </div>
+      <div class="lb-cell" data-label="${t.hRef}">
+        <input class="lb-in" data-lb="ref" placeholder="${t.phRef}" />
+      </div>
+      <div class="lb-cell" data-label="${t.hDrCr}" style="justify-content:space-between;">
+        <select class="lb-in select" data-lb="drcr">
+          <option value="Dr">${t.dr}</option>
+          <option value="Cr">${t.cr}</option>
+        </select>
+      </div>
+      <div class="lb-cell" data-label="${t.hDebit}">
+        <input class="lb-in num" data-lb="debit" placeholder="${t.phDebit}" inputmode="decimal" />
+      </div>
+      <div class="lb-cell" data-label="${t.hCredit}">
+        <input class="lb-in num" data-lb="credit" placeholder="${t.phCredit}" inputmode="decimal" />
+      </div>
+      <div class="lb-cell" data-label="${t.hBalDebit}">
+        <input class="lb-in num" data-lb="bal_debit" readonly />
+      </div>
+      <div class="lb-cell" data-label="${t.hBalCredit}">
+        <input class="lb-in num" data-lb="bal_credit" readonly />
+      </div>
+      <div class="lb-cell" data-label="${t.hAction}">
+        <button class="lb-del" type="button" data-lb="delete" aria-label="Delete row" title="Delete row">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4h8v2"></path>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+          </svg>
+        </button>
+      </div>
+    `;
+
+    wireRow(row);
+    setRowEditable(row, lbIsEditing);
+    return row;
+  }
+
+  function addRow(){
+    if (!lbIsEditing) return;
+    const row = createRow();
+    allRows.push(row);
+
+    if ((query || "").trim()){
+      rebuildFiltered();
+    } else {
+      filteredRows = allRows.slice();
+      renderPage();
+      recalcLedger();
+    }
+  }
+
+  function doDeleteRow(row){
+    if (!row) return;
+
+    const idx = allRows.indexOf(row);
+    if (idx >= 0) allRows.splice(idx, 1);
+
+    if ((query || "").trim()){
+      rebuildFiltered();
+    } else {
+      filteredRows = allRows.slice();
+      const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
+      page = Math.min(page, totalPages);
+      renderPage();
+      recalcLedger();
+    }
+  }
+
+  function doDeleteSelected(){
+    const sel = selectedRows();
+    if (!sel.length) return;
+
+    sel.forEach(r => {
+      const idx = allRows.indexOf(r);
+      if (idx >= 0) allRows.splice(idx, 1);
+    });
+
+    clearAllSelections();
+
+    if ((query || "").trim()){
+      rebuildFiltered();
+    } else {
+      filteredRows = allRows.slice();
+      const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
+      page = Math.min(page, totalPages);
+      renderPage();
+      recalcLedger();
+    }
+  }
+
+  function doDeleteAll(){
+    allRows = [];
+    filteredRows = [];
+    $("lbBody").innerHTML = "";
+    clearAllSelections();
+    rebuildFiltered();
+  }
+
+  $("lbDeleteYes").addEventListener("click", ()=>{
+    closeOverlay($("lbDeleteOverlay"));
+    if (pendingDeleteMode === "single"){
+      doDeleteRow(pendingDeleteRow);
+    }
+    pendingDeleteRow = null;
+    pendingDeleteMode = null;
+  });
+
+  $("lbDeleteMultiYes").addEventListener("click", ()=>{
+    closeOverlay($("lbDeleteMultiOverlay"));
+    doDeleteSelected();
+  });
+
+  $("lbDeleteAllYes").addEventListener("click", ()=>{
+    closeOverlay($("lbDeleteAllOverlay"));
+    doDeleteAll();
+  });
+
+  function getPgId(){
+    return (window.PG_ID || "{{ pg_id|default('') }}" || "").trim();
+  }
+
+  function storageKey(pg_id){
+    return `ledger:${pg_id}`;
+  }
+
+  function buildPayload(){
+    return {
+      pg_name: $("lbPgName").value || "",
+      clf_name: $("lbClfName").value || "",
+      entries: allRows.map(r => ({
+        date: r.querySelector("[data-lb='date']").value || "",
+        particulars: r.querySelector("[data-lb='particulars']").value || "",
+        ref: r.querySelector("[data-lb='ref']").value || "",
+        drcr: r.querySelector("[data-lb='drcr']").value || "Dr",
+        debit: n2(r.querySelector("[data-lb='debit']").value),
+        credit: n2(r.querySelector("[data-lb='credit']").value),
+      }))
+    };
+  }
+
+  async function saveLedger(){
+    const pg_id = getPgId();
+    const payload = buildPayload();
+
+    try{ localStorage.setItem(storageKey(pg_id), JSON.stringify(payload)); }catch(_){}
+
+    try{
+      const res = await fetch(`/pg/ledger/${encodeURIComponent(pg_id)}`,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      let data = null;
+      try{ data = await res.json(); }catch(_){}
+
+      if (!res.ok){
+        const msg = (data && data.message) ? data.message : (res.status ? `HTTP ${res.status}` : "Save failed");
+        lbSnapshot = takeSnapshot();
+        setEditMode(false);
+        alert(`Saved locally. Server save failed (${msg}).`);
+        return;
+      }
+
+      lbSnapshot = takeSnapshot();
+      setEditMode(false);
+      alert((data && data.message) ? data.message : "Saved successfully");
+    }catch(err){
+      console.warn("Server save skipped:", err);
+      lbSnapshot = takeSnapshot();
+      setEditMode(false);
+      alert("Saved locally (offline).");
+    }
+  }
+
+
+  async function hydrateLedgerPgName(){
+    const pgId = getPgId();
+    if(!pgId) return;
+    try{
+      const res = await fetch(`/pg/profile/${encodeURIComponent(pgId)}/data`, { headers:{ "Accept":"application/json" } });
+      if(!res.ok) return;
+      const data = await res.json().catch(()=>null);
+      if(data && data.data){
+        if(data.data.pg_name) $("lbPgName").value = data.data.pg_name;
+        if(data.data.clf_name) $("lbClfName").value = data.data.clf_name;
+      }
+    }catch(_e){}
+  }
+
+  async function loadLedger(){
+    const pg_id = getPgId();
+
+    try{
+      const res = await fetch(`/pg/ledger/${encodeURIComponent(pg_id)}`, { method:"GET" });
+      if (res.ok){
+        const data = await res.json().catch(()=>null);
+        if (data){
+          hydrateFromData(data);
+
+          if (!lbIsEditing){
+            lbSnapshot = takeSnapshot();
+            setEditMode(false);
+          }
+          return;
+        }
+      }
+    }catch(_){}
+
+    try{
+      const raw = localStorage.getItem(storageKey(pg_id));
+      if (raw){
+        const data = JSON.parse(raw);
+        hydrateFromData(data);
+
+        if (!lbIsEditing){
+          lbSnapshot = takeSnapshot();
+          setEditMode(false);
+        }
+        return;
+      }
+    }catch(_){}
+
+    await hydrateLedgerPgName();
+  }
+
+  function hydrateFromData(data){
+    if (data.pg_name) $("lbPgName").value = data.pg_name;
+    if (data.clf_name) $("lbClfName").value = data.clf_name;
+
+    allRows = [];
+    filteredRows = [];
+    $("lbBody").innerHTML = "";
+    clearAllSelections();
+
+    const entries = Array.isArray(data.entries) ? data.entries : [];
+    if (entries.length){
+      entries.forEach((e)=>{
+        const row = createRow();
+        row.querySelector("[data-lb='date']").value = e.date || "";
+        row.querySelector("[data-lb='particulars']").value = e.particulars || "";
+        row.querySelector("[data-lb='ref']").value = e.ref || "";
+        row.querySelector("[data-lb='drcr']").value = (e.drcr === "Cr") ? "Cr" : "Dr";
+        row.querySelector("[data-lb='debit']").value = e.debit ? String(e.debit) : "";
+        row.querySelector("[data-lb='credit']").value = e.credit ? String(e.credit) : "";
+        allRows.push(row);
+      });
+       } else {
+      allRows = [];
+    }
+
+    rebuildFiltered();
+    applyLang();
+    recalcLedger();
+    updateSelectUI();
+  }
+
+  function setEditMode(on){
+    if (on) lbArmLockNow();
+    else lbSetLock(false);
+
+    lbIsEditing = !!on;
+    setEditingUI();
+    setAllEditable(lbIsEditing);
+    recalcLedger();
+  }
+
+  function enterEdit(){
+    lbArmLockNow();
+    lbSnapshot = takeSnapshot();
+    setEditMode(true);
+  }
+
+  function requestCancel(){
+    if (!lbIsEditing) return;
+    openCancelConfirm();
+  }
+
+  function doCancel(){
+    closeOverlay($("lbCancelOverlay"));
+
+    const snap = lbSnapshot;
+
+    lbIsEditing = false;
+    lbSetLock(false);
+    $("lbWrap").classList.remove("lb-editing", "lb-mobile-editing");
+
+    try{
+      restoreSnapshot(snap);
+    } finally {
+      lbIsEditing = false;
+      lbSetLock(false);
+
+      setEditingUI();
+      setAllEditable(false);
+
+      clearAllSelections();
+      updateSelectUI();
+      recalcLedger();
+    }
+  }
+
+  function requestSave(){
+    if (!lbIsEditing) return;
+    openSaveConfirm();
+  }
+
+  // ✅ keep your existing base hook
+  window.addEventListener("pgmis-language-change", (e)=>{
+    const n = e && e.detail && e.detail.lang ? normalizeLang(e.detail.lang) : null;
+    if (!n) return;
+    setLangAndApply(n);
+  });
+
+  // ✅ add extra common hooks (no conflicts)
+  window.addEventListener("language-change", (e)=>{
+    const n = e && e.detail && e.detail.lang ? normalizeLang(e.detail.lang) : null;
+    if (!n) return;
+    setLangAndApply(n);
+  });
+
+  window.addEventListener("pgmis:language-change", (e)=>{
+    const n = e && e.detail && e.detail.lang ? normalizeLang(e.detail.lang) : null;
+    if (!n) return;
+    setLangAndApply(n);
+  });
+
+  document.addEventListener("pgmis-language-change", (e)=>{
+    const n = e && e.detail && e.detail.lang ? normalizeLang(e.detail.lang) : null;
+    if (!n) return;
+    setLangAndApply(n);
+  });
+
+  // ✅ react if base writes to storage (some bases do this)
+  window.addEventListener("storage", (e)=>{
+    if (!e) return;
+    if (!e.key) return;
+    if (!LANG_STORAGE_KEYS.includes(e.key)) return;
+    applyLangFromBaseIfAny();
+  });
+
+  $("lbAddRowTop").addEventListener("click", addRow);
+  $("lbMobileAddRow").addEventListener("click", addRow);
+
+  $("lbEditSaveBtn").addEventListener("click", ()=>{
+    if (!lbIsEditing){
+      enterEdit();
+      return;
+    }
+    requestSave();
+  });
+
+  $("lbCancelBtn").addEventListener("click", requestCancel);
+  $("lbMobileCancel").addEventListener("click", requestCancel);
+
+  $("lbMobileSave").addEventListener("click", requestSave);
+
+  $("lbSaveYes").addEventListener("click", async ()=>{
+    closeOverlay($("lbSaveOverlay"));
+    await saveLedger();
+  });
+
+  $("lbCancelYes").addEventListener("click", doCancel);
+
+  function goPrev(){
+    if (page > 1){ page -= 1; renderPage(); }
+  }
+  function goNext(){
+    const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
+    if (page < totalPages){ page += 1; renderPage(); }
+  }
+
+  $("lbPrevBottom").addEventListener("click", goPrev);
+  $("lbNextBottom").addEventListener("click", goNext);
+
+  $("lbRowsPerPage").addEventListener("change", (e)=>{
+    const v = parseInt(e.target.value, 10);
+    perPage = [10,25,50,100].includes(v) ? v : 25;
+    page = 1;
+    rebuildFiltered();
+  });
+
+  $("lbSearch").addEventListener("input", (e)=>{
+    query = e.target.value || "";
+    page = 1;
+    rebuildFiltered();
+  });
+
+  $("lbSelectAll").addEventListener("change", (e)=>{
+    if (!lbIsEditing) return;
+
+    const checked = !!e.target.checked;
+    const visible = filteredRows.slice((page-1)*perPage, (page-1)*perPage + perPage);
+
+    visible.forEach(r=>{
+      const cb = r.querySelector("[data-lb='sel']");
+      if (cb) cb.checked = checked;
+    });
+
+    updateSelectUI();
+  });
+
+  function requestDeleteSelected(){
+    if (!lbIsEditing) return;
+    const n = selectedRows().length;
+    if (!n) return;
+    pendingDeleteMode = "multi";
+    openDeleteMultiConfirm(n);
+  }
+
+  function requestDeleteAll(){
+    if (!lbIsEditing) return;
+    if (!allRows.length) return;
+    pendingDeleteMode = "all";
+    openDeleteAllConfirm();
+  }
+
+  $("lbDeleteSelectedTop").addEventListener("click", requestDeleteSelected);
+  $("lbDeleteAllTop").addEventListener("click", requestDeleteAll);
+
+  $("lbMobileDeleteSelected").addEventListener("click", requestDeleteSelected);
+  $("lbMobileDeleteAll").addEventListener("click", requestDeleteAll);
+
+  window.addEventListener("resize", ()=>{
+    updateMobileBar();
+  });
+
+  allRows = [];
+  rebuildFiltered();
+
+  // ✅ 1) apply base language FIRST (so initial render matches navbar)
+  const bootLang = readBaseLang();
+  if (bootLang) lang = bootLang;
+
+  applyLang();
+  recalcLedger();
+
+  setEditMode(false);
+  hydrateLedgerPgName();
+  loadLedger();
+
+  // ✅ 2) one more sync after load in case base sets lang late
+  setTimeout(()=>{ applyLangFromBaseIfAny(); }, 0);
+
+})();
+</script>
+{% endblock %}

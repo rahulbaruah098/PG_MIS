@@ -1,0 +1,2556 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}PGMIS - Producer Group Management Information System{% endblock %}</title>
+
+
+
+  <style>
+    /* ============================================================
+       ✅ MERGED BASE (UPDATED LOOK + YOUR PROFILE EMBED)
+       - Uses UPDATED designed base layout/colors (Nexus-like)
+       - Keeps RED logout (top + sidebar) + animations
+       - Keeps sidebar collapse (desktop) + localStorage
+       - Keeps ONLY ONE language toggle logic (no duplicates)
+       - Keeps GLOBAL confirm modal helper
+       - Keeps your embedded Profile panel (toggle from navbar)
+       - Keeps your profile data loader (/pg/profile/<pg_id>/data)
+       - ✅ Sidebar active item persists after refresh (NO default highlight)
+       - ✅ Profile UI design/colors copied from your provided profile page
+       - ✅ NO new extra menu buttons added
+       - ✅ UPDATE (NOW): Profile is VIEW-ONLY (edit mode commented out)
+       - ✅ UPDATE (NOW): Language connectivity restored for other pages too (hooks + events)
+
+       ✅ FIX (NOW): App-view mobile logout sticky overlap removed
+         - Only affects app/webview (NOT normal web browser view)
+
+       ✅ UPDATE (NOW): $ icons replaced with ₹ style icon in 3 places
+       ✅ UPDATE (NOW): Logo image placeholder added inside green brand box
+       ============================================================ */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body{
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #eef6f2;
+      color: #0f172a;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    .sr-only{
+      position:absolute !important;
+      width:1px;height:1px;
+      padding:0;margin:-1px;
+      overflow:hidden;clip:rect(0,0,0,0);
+      white-space:nowrap;border:0;
+    }
+
+    .app-container{
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+      width:100%;
+    }
+
+    /* ============================================================
+       HEADER / NAVBAR (UPDATED)
+       ============================================================ */
+    .header{
+      background: linear-gradient(180deg, rgba(231, 246, 240, 0.92), rgba(222, 241, 234, 0.92));
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+
+      height: 72px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 1.25rem;
+
+      border-bottom: 1px solid rgba(0,0,0,0.18);
+      box-shadow: 0 12px 24px -18px rgba(15, 23, 42, 0.35);
+
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      width: 100%;
+      gap: 0.9rem;
+      min-width: 0;
+    }
+
+    .header-left{
+      display:flex;
+      align-items:center;
+      gap:0.9rem;
+      min-width:0;
+      flex:1;
+    }
+
+    .header-logo{
+      display:inline-flex;
+      align-items:center;
+      gap:0.75rem;
+      font-weight:950;
+      letter-spacing:0.2px;
+      color:#0b4d3a;
+      line-height:1;
+      white-space:nowrap;
+      user-select:none;
+      cursor:pointer;
+      padding:0.35rem 0.55rem;
+      border-radius:12px;
+      transition: transform 0.15s ease, background-color 0.2s ease;
+      min-width:0;
+    }
+    .header-logo:hover{
+      background: rgba(16, 185, 129, 0.10);
+      transform: translateY(-1px);
+    }
+
+    .brand-mark{
+      width:34px;height:34px;
+      border-radius:10px;
+      background: linear-gradient(135deg, rgba(11,77,58,1), rgba(16,185,129,0.95));
+      box-shadow: 0 14px 22px -16px rgba(11, 77, 58, 0.7);
+      position:relative;
+      overflow:hidden;
+      flex:0 0 auto;
+    }
+    .brand-mark:before{
+      content:"";
+      position:absolute; inset:-40% -30%;
+      background: radial-gradient(closest-side, rgba(255,255,255,.22), transparent 62%);
+      transform: rotate(18deg);
+      z-index:0;
+    }
+
+    /* ✅ Logo image placeholder inside green box (replace later) */
+    .brand-logo{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      padding:4px;
+      z-index:1;
+      pointer-events:none;
+      user-select:none;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.18));
+    }
+
+    .brand-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
+    .brand-text strong{font-size:1.02rem;font-weight:950;letter-spacing:0.3px;line-height:1.05;}
+    .brand-text span{
+      font-size:0.78rem;font-weight:800;color: rgba(11,77,58,0.65);
+      line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:26vw;
+    }
+
+    .header-controls{
+      display:flex;
+      align-items:center;
+      gap:0.65rem;
+      flex-wrap:nowrap;
+      justify-content:flex-end;
+      min-width:0;
+      flex:0 0 auto;
+    }
+
+    .control-button{
+      display:inline-flex;
+      align-items:center;
+      gap:0.5rem;
+      background: rgba(255,255,255,0.55);
+      border: 1px solid rgba(0,0,0,0.14);
+      color:#0b4d3a;
+      padding:0.58rem 0.95rem;
+      border-radius:9999px;
+
+      cursor:pointer;
+      transition: transform 0.15s ease, background-color 0.2s ease, box-shadow .2s ease;
+      font-size:0.9rem;
+      font-weight:900;
+      white-space:nowrap;
+      user-select:none;
+      text-decoration:none;
+      flex:0 0 auto;
+    }
+    .control-button:hover{
+      background: rgba(255,255,255,0.75);
+      transform: translateY(-1px);
+      box-shadow: 0 18px 24px -22px rgba(15,23,42,0.55);
+    }
+
+    .icon-small{ width:1rem; height:1rem; }
+
+    /* Top logout (RED) */
+    .logout-top{
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.30);
+      color: #b91c1c;
+      padding-left:0.7rem;
+      padding-right:0.7rem;
+    }
+    .logout-top:hover{
+      background: rgba(239, 68, 68, 0.16);
+      box-shadow: 0 18px 24px -22px rgba(239, 68, 68, 0.55);
+    }
+
+    /* Mobile hamburger */
+    .menu-button{
+      display:none;
+      width:42px;height:42px;
+      border-radius:9999px;
+      border:1px solid rgba(11, 77, 58, 0.14);
+      background: rgba(11, 77, 58, 0.08);
+      cursor:pointer;
+      align-items:center;
+      justify-content:center;
+      transition: transform 0.15s ease, background-color 0.2s ease, box-shadow .2s ease;
+      user-select:none;
+      flex:0 0 auto;
+    }
+    .menu-button:hover{
+      background: rgba(11, 77, 58, 0.12);
+      transform: translateY(-1px);
+      box-shadow: 0 18px 24px -22px rgba(15,23,42,0.55);
+    }
+    .menu-button svg{ width:18px;height:18px;color:#0b4d3a; }
+
+    /* ============================================================
+       MAIN WRAPPER
+       ============================================================ */
+    .main-wrapper{
+      display:flex;
+      flex:1;
+      position:relative;
+      width:100%;
+      min-height: calc(100vh - 72px);
+    }
+
+    /* ============================================================
+       SIDEBAR (UPDATED)
+       ============================================================ */
+    .sidebar{
+      width:290px;
+      background:#fff;
+      border-right: 1px solid rgba(15, 23, 42, 0.06);
+      box-shadow: 12px 0 24px -22px rgba(15, 23, 42, 0.18);
+
+      display:flex;
+      flex-direction:column;
+      position:sticky;
+      top:72px;
+      height: calc(100vh - 72px);
+      overflow:hidden;
+    }
+
+    .sidebar-header{
+      padding:1.15rem 1rem;
+      background: rgba(255,255,255,0.22);
+      border: 1px solid rgba(0,0,0,0.28);
+      border-left:0;border-right:0;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.10);
+    }
+
+    .sidebar-head-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:.6rem;
+    }
+
+    .sidebar-title{
+      font-size:0.95rem;
+      font-weight:1000;
+      letter-spacing:1.2px;
+      text-transform:uppercase;
+      color:#0b4d3a;
+      text-shadow:
+        0 1px 0 rgba(255,255,255,0.65),
+        0 2px 8px rgba(15,23,42,0.18);
+      /* fallback */
+      text-shadow:
+        0.5px 0 rgba(0,0,0,0.55),
+        -0.5px 0 rgba(0,0,0,0.55),
+        0 0.5px rgba(0,0,0,0.55),
+        0 -0.5px rgba(0,0,0,0.55);
+    }
+
+    .sidebar-toggle{
+      width:40px;height:40px;
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,0.18);
+      background: rgba(255,255,255,0.45);
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      transition: transform .15s ease, background-color .2s ease, box-shadow .2s ease;
+      flex:0 0 auto;
+    }
+    .sidebar-toggle:hover{
+      background: rgba(255,255,255,0.70);
+      transform: translateY(-1px);
+      box-shadow: 0 14px 20px -18px rgba(15,23,42,0.35);
+    }
+    .sidebar-toggle-ic{ width:18px;height:18px;color:#0f172a; }
+
+    .sidebar-nav{
+      flex:1;
+      padding: 1rem 0.95rem 1rem;
+      display:flex;
+      flex-direction:column;
+      gap:0.4rem;
+      min-height:0;
+      overflow-y:auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .nav-section{
+      margin: 0.85rem 0.2rem 0.25rem;
+      font-size:0.72rem;
+      letter-spacing:0.14em;
+      text-transform:uppercase;
+      font-weight:950;
+      color: rgba(15, 23, 42, 0.58);
+      user-select:none;
+    }
+
+    .nav-item{
+      display:flex;
+      align-items:center;
+      gap:0.75rem;
+      padding:0.85rem 0.9rem;
+      border-radius:0.95rem;
+      cursor:pointer;
+      transition: transform 0.18s ease, background-color 0.2s ease, box-shadow .2s ease, border-color .2s ease;
+
+      font-size:0.95rem;
+      font-weight:850;
+
+      background:transparent;
+      border:1px solid transparent;
+      color:#0b4d3a;
+
+      user-select:none;
+      text-decoration:none;
+    }
+  /* ✅ Hover effects ONLY on real hover devices (desktop/laptop) */
+@media (hover: hover) and (pointer: fine){
+  .nav-item:hover{
+    background: rgba(173, 231, 196, 0.38);
+    border-color: rgba(15, 23, 42, 0.10);
+    transform: translateX(4px);
+    box-shadow: 0 18px 26px -24px rgba(0,0,0,0.55);
+  }
+
+  .nav-logout:hover{
+    background: linear-gradient(180deg, #d64c4c, #b93a3a);
+    transform: translateY(-1px);
+    box-shadow: 0 18px 28px -20px rgba(185,58,58,0.65);
+  }
+}
+    .nav-item.active{
+      background: rgba(173, 231, 196, 0.52);
+      border-color: rgba(15, 23, 42, 0.12);
+      box-shadow: 0 18px 26px -24px rgba(0,0,0,0.55);
+    }
+
+    .nav-icon{
+      width:1.25rem;height:1.25rem;
+      color:#0f172a;
+      flex-shrink:0;
+      filter:
+        drop-shadow(0 0 0.4px rgba(255,255,255,0.85))
+        drop-shadow(0 0 0.6px rgba(255,255,255,0.65));
+    }
+    .nav-item:hover .nav-icon,
+    .nav-item.active .nav-icon{
+      filter:
+        drop-shadow(0 0 0.6px rgba(255,255,255,0.92))
+        drop-shadow(0 0 1px rgba(255,255,255,0.75));
+    }
+
+    .nav-text{ white-space: normal; word-break: break-word; }
+
+    .nav-spacer{ flex:1; }
+
+    /* ✅ Sidebar Logout (RED boxed) */
+    .nav-logout{
+      margin-top:auto;
+      background: linear-gradient(180deg, #e05656, #c84343);
+      border: 1px solid rgba(255,255,255,0.28);
+      color:#fff;
+      justify-content:center;
+      gap:0.6rem;
+      transform:none;
+      box-shadow: 0 14px 24px -18px rgba(200,67,67,0.55);
+    }
+    .nav-logout:hover{
+      background: linear-gradient(180deg, #d64c4c, #b93a3a);
+      transform: translateY(-1px);
+      box-shadow: 0 18px 28px -20px rgba(185,58,58,0.65);
+    }
+    .nav-logout .nav-icon{ color:#fff; }
+
+    /* Collapse state */
+    .sidebar.collapsed{ width: 88px; }
+    .sidebar.collapsed .sidebar-title{ display:none; }
+    .sidebar.collapsed .nav-text{ display:none; }
+    .sidebar.collapsed .nav-section{ display:none; }
+    .sidebar.collapsed .nav-item{ justify-content:center; padding:0.85rem 0.75rem; }
+    .sidebar.collapsed .nav-icon{ margin:0; }
+    .sidebar.collapsed .nav-logout{ padding:0.9rem 0.75rem; }
+    .sidebar.collapsed .sidebar-toggle-ic{ transform: rotate(180deg); }
+
+    @media (max-width: 768px){
+      .sidebar-toggle{ display:none; }
+      .sidebar.collapsed{ width: min(340px, 88vw); }
+      .sidebar.collapsed .sidebar-title{ display:block; }
+      .sidebar.collapsed .nav-text{ display:inline; }
+      .sidebar.collapsed .nav-section{ display:block; }
+    }
+
+    /* ============================================================
+       CONTENT
+       ============================================================ */
+    .content-area{
+      flex:1;
+      padding:1.35rem;
+      overflow:auto;
+      background:#eef6f2;
+      min-width:0;
+    }
+    .content-inner{
+      max-width:1400px;
+      margin:0 auto;
+      width:100%;
+    }
+
+    /* ============================================================
+       FOOTER
+       ============================================================ */
+    .footer{
+      background: linear-gradient(180deg, rgba(222, 241, 234, 0.92), rgba(231, 246, 240, 0.92));
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+
+      padding:0.95rem 1.25rem;
+      text-align:center;
+      color: rgba(15,23,42,0.70);
+
+      border-top: 1px solid rgba(0,0,0,0.18);
+      box-shadow: 0 -12px 24px -18px rgba(15, 23, 42, 0.28);
+    }
+
+    .footer-content{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:0.5rem;
+      font-size:0.92rem;
+      font-weight:850;
+      flex-wrap:wrap;
+      line-height:1.2;
+    }
+
+    /* NEW: force footer into 2 lines */
+    .footer-2line{
+      flex-direction: column;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .footer-2line .footer-row{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap; /* safe for small screens */
+    }
+
+    .footer-2line .footer-sep{
+      opacity: .7;
+    }
+
+    .footer-link{
+      color:#0b4d3a;
+      text-decoration:none;
+      transition: opacity .2s ease, transform .15s ease;
+    }
+    .footer-link:hover{ opacity:0.95; transform: translateY(-1px); }
+
+
+    /* ============================================================
+       MOBILE MENU OVERLAY
+       ============================================================ */
+    #menuOverlay{
+      position:fixed;
+      inset:0;
+      background: rgba(15, 23, 42, 0.25);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index:89;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .25s ease;
+    }
+    #menuOverlay.show{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    /* ============================================================
+       ✅ GLOBAL CONFIRM MODAL
+       ============================================================ */
+    .pg-modal-overlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      padding:18px;
+      background: rgba(15, 23, 42, 0.28);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .pg-modal-overlay.show{ display:flex; }
+
+    .pg-modal{
+      width:100%;
+      max-width:460px;
+      background:#fff;
+      border-radius:16px;
+      border:1px solid rgba(15, 23, 42, 0.10);
+      box-shadow: 0 30px 60px -30px rgba(0,0,0,0.45);
+      overflow:hidden;
+      transform: translateY(6px);
+      animation: modalIn .18s ease-out forwards;
+    }
+    @keyframes modalIn{
+      from{ opacity:0; transform: translateY(10px) scale(0.98); }
+      to{ opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .pg-modal-head{
+      padding:14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(16,185,129,.12), transparent 55%),
+        linear-gradient(to right, rgba(5,150,105,.10), rgba(16,185,129,.10));
+      border-bottom:1px solid rgba(15, 23, 42, 0.08);
+    }
+    .pg-modal-title{
+      font-weight:950;
+      color:#0b4d3a;
+      font-size:15px;
+      letter-spacing:0.2px;
+    }
+    .pg-modal-close{
+      width:36px;height:36px;
+      border-radius:12px;
+      border:1px solid rgba(15, 23, 42, 0.10);
+      background:#fff;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      transition: transform .15s ease, box-shadow .2s ease;
+    }
+    .pg-modal-close:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 12px 18px -14px rgba(0,0,0,0.35);
+    }
+
+    .pg-modal-body{ padding:14px 16px 6px; color:#0f172a; }
+    .pg-modal-text{ font-size:14px; font-weight:850; color:#0f172a; line-height:1.35; }
+    .pg-modal-sub{ margin-top:6px; font-size:12.5px; color: rgba(15, 23, 42, 0.68); font-weight:750; }
+
+    .pg-modal-actions{
+      padding:12px 16px 16px;
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+
+    .pg-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:12px;
+      font-weight:950;
+      cursor:pointer;
+      border:1px solid transparent;
+      background:#fff;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+      user-select:none;
+      font-size:13.5px;
+      min-width:120px;
+    }
+    .pg-btn:hover{
+      transform: translateY(-1px);
+      box-shadow: 0 14px 22px -18px rgba(0,0,0,0.35);
+    }
+    .pg-btn-cancel{ border-color: rgba(15, 23, 42, 0.14); color:#0f172a; background:#fff; }
+    .pg-btn-confirm{ border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.12); color:#0b4d3a; }
+    .pg-btn-danger{ border-color: rgba(239, 68, 68, 0.30); background: rgba(239, 68, 68, 0.10); color:#991b1b; }
+
+    @media (max-width: 420px){
+      .pg-btn{ min-width: 100%; }
+      .pg-modal-actions{ justify-content: stretch; }
+    }
+
+    /* ============================================================
+       ✅ PROFILE EMBED VISIBILITY
+       ============================================================ */
+    #profilePageContainer{ display:none; }
+    #profilePageContainer.show{ display:block; }
+    #dashboardContainer.hide{ display:none; }
+
+    /* ============================================================
+       ✅ PROFILE PAGE STYLES (SCOPED) — COPIED DESIGN/COLORS ONLY
+       ============================================================ */
+    .pg-profile-page{ color:#0f172a; }
+    .pg-profile-page *{ box-sizing:border-box; }
+
+    .pg-profile-page .content-wrapper{
+      width:100%;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* HERO / HEADER CARD */
+    .pg-profile-page .profile-hero{
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(16,185,129,.16), transparent 55%),
+        radial-gradient(circle at 85% 25%, rgba(11,77,58,.18), transparent 60%),
+        linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,255,255,0.82));
+      border: 1px solid rgba(6,95,70,0.14);
+      box-shadow: 0 22px 40px -28px rgba(15,23,42,0.55);
+      overflow:hidden;
+      position:relative;
+      padding: 16px;
+    }
+
+    .pg-profile-page .profile-hero:before{
+      content:"";
+      position:absolute;
+      inset:-55% -25%;
+      background: radial-gradient(closest-side, rgba(255,255,255,.30), transparent 60%);
+      transform: rotate(14deg);
+      pointer-events:none;
+    }
+
+    .pg-profile-page .hero-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 12px;
+      position:relative;
+      z-index: 1;
+      margin-bottom: 12px;
+    }
+
+    .pg-profile-page .hero-title{
+      display:flex;
+      align-items:center;
+      gap: 12px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .pg-profile-page .hero-icon{
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(11,77,58,1), rgba(16,185,129,0.95));
+      box-shadow: 0 18px 26px -20px rgba(11,77,58,.75);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex: 0 0 auto;
+      position:relative;
+      overflow:hidden;
+    }
+    .pg-profile-page .hero-icon:after{
+      content:"";
+      position:absolute;
+      inset:-30% -30%;
+      background: radial-gradient(closest-side, rgba(255,255,255,.28), transparent 60%);
+      transform: rotate(18deg);
+    }
+    .pg-profile-page .hero-icon svg{ color:#ecfdf5; position:relative; z-index:1; }
+
+    .pg-profile-page .hero-text{ min-width:0; }
+    .pg-profile-page .hero-kicker{
+      font-size: .78rem;
+      font-weight: 950;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      color: rgba(11,77,58,.72);
+      line-height: 1.05;
+      margin-bottom: 2px;
+    }
+    .pg-profile-page .hero-title-line{
+      font-size: 1.05rem;
+      font-weight: 950;
+      color: #0b4d3a;
+      line-height: 1.15;
+      word-break: normal;
+      overflow-wrap: break-word;
+    }
+
+    .pg-profile-page .hero-actions{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex: 0 0 auto;
+      flex-wrap: wrap;
+      justify-content:flex-end;
+    }
+
+    .pg-profile-page .pill-btn{
+      display:inline-flex;
+      align-items:center;
+      gap:.55rem;
+      padding: .58rem .95rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(11,77,58,0.14);
+      background: rgba(11,77,58,0.08);
+      color: #0b4d3a;
+      cursor:pointer;
+      transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+      font-size: .9rem;
+      font-weight: 950;
+      user-select:none;
+      white-space: nowrap;
+    }
+    .pg-profile-page .pill-btn:hover{
+      background: rgba(11,77,58,0.12);
+      transform: translateY(-1px);
+      box-shadow: 0 18px 24px -22px rgba(15,23,42,0.55);
+    }
+
+    .pg-profile-page .pill-btn-danger{
+      background: rgba(239,68,68,0.10);
+      border-color: rgba(239,68,68,0.26);
+      color: #b91c1c;
+    }
+    .pg-profile-page .pill-btn-danger:hover{
+      background: rgba(239,68,68,0.14);
+      box-shadow: 0 18px 24px -22px rgba(239,68,68,0.55);
+    }
+
+    /* HERO FIELDS */
+    .pg-profile-page .hero-fields{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      position:relative;
+      z-index:1;
+      margin-top: 6px;
+    }
+
+    .pg-profile-page .mini-card{
+      border-radius: 16px;
+      background: rgba(255,255,255,0.88);
+      border: 1px solid rgba(15,23,42,0.10);
+      box-shadow: 0 16px 26px -22px rgba(15,23,42,0.55);
+      padding: 12px;
+    }
+
+    .pg-profile-page .mini-label{
+      font-size:.78rem;
+      font-weight: 950;
+      color: rgba(11,77,58,0.78);
+      margin-bottom: 6px;
+      letter-spacing: .2px;
+    }
+
+    .pg-profile-page .hero-input{
+      width:100%;
+      border-radius: 14px;
+      border: 1px solid rgba(6,95,70,0.14);
+      background: rgba(238,246,242,0.85);
+      padding: .68rem .8rem;
+      font-size: 1rem;
+      font-weight: 900;
+      color: #0f172a;
+      outline:none;
+      transition: box-shadow .2s ease, border-color .2s ease, transform .15s ease;
+    }
+    .pg-profile-page .hero-input::placeholder{ color: rgba(15,23,42,0.45); font-weight: 800; }
+    .pg-profile-page .hero-input:focus{
+      border-color: rgba(16,185,129,0.55);
+      box-shadow: 0 0 0 3px rgba(16,185,129,.12);
+      transform: translateY(-1px);
+    }
+
+    /* MAIN CONTENT CARD */
+    .pg-profile-page .profile-card{
+      margin-top: 14px;
+      border-radius: 18px;
+      background: #ffffff;
+      border: 1px solid rgba(15,23,42,0.10);
+      box-shadow: 0 22px 40px -30px rgba(15,23,42,0.55);
+      padding: 16px;
+    }
+
+    .pg-profile-page .section{ margin-bottom: 14px; }
+    .pg-profile-page .section-head{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: #0b4d3a;
+    }
+    .pg-profile-page .section-head svg{ color:#0b4d3a; }
+
+    .pg-profile-page .section-title{
+      font-size: 1rem;
+      font-weight: 950;
+      color: #0b4d3a;
+      line-height: 1.2;
+    }
+
+    .pg-profile-page .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .pg-profile-page .field{ display:flex; flex-direction:column; gap: 6px; }
+    .pg-profile-page .field-label{
+      font-size: .78rem;
+      font-weight: 950;
+      color: rgba(11,77,58,0.78);
+      letter-spacing: .2px;
+    }
+
+    .pg-profile-page .field-input,
+    .pg-profile-page .single-input{
+      width:100%;
+      border-radius: 14px;
+      border: 1px solid rgba(6,95,70,0.12);
+      background: rgba(238,246,242,0.65);
+      padding: .68rem .8rem;
+      font-size: 1rem;
+      font-weight: 850;
+      color: #0f172a;
+      outline:none;
+      transition: border-color .2s ease, box-shadow .2s ease, transform .15s ease;
+    }
+    .pg-profile-page .field-input::placeholder,
+    .pg-profile-page .single-input::placeholder{ color: rgba(15,23,42,0.45); font-weight: 750; }
+
+    .pg-profile-page .field-input:focus,
+    .pg-profile-page .single-input:focus{
+      border-color: rgba(16,185,129,0.55);
+      box-shadow: 0 0 0 3px rgba(16,185,129,.12);
+      transform: translateY(-1px);
+    }
+
+    /* ✅ View-only: make it feel like read-only (no caret focus / no typing) */
+    .pg-profile-page input[disabled]{
+      opacity: 1;
+      -webkit-text-fill-color: #0f172a;
+      cursor: default;
+      user-select: text;
+    }
+    .pg-profile-page input[disabled]:focus{
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    .pg-profile-page .is-invalid{
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 3px rgba(239,68,68,.14) !important;
+    }
+    .pg-profile-page .date-help{
+      margin-top: 6px;
+      font-size: .78rem;
+      color: rgba(11,77,58,.75);
+      font-weight: 850;
+    }
+    .pg-profile-page .date-error{
+      display:none;
+      margin-top: 8px;
+      font-size:.78rem;
+      color:#b91c1c;
+      font-weight: 950;
+    }
+    .pg-profile-page .date-error.show{ display:block; }
+
+    .pg-profile-page .date-row{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      max-width: 560px;
+    }
+
+    .pg-profile-page .divider{
+      height: 1px;
+      background: rgba(6,95,70,0.12);
+      margin: 14px 0;
+    }
+
+    .pg-profile-page .bank-grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .pg-profile-page .card-foot{
+      display:flex;
+      justify-content:center;
+      margin-top: 10px;
+    }
+    .pg-profile-page .card-foot-line{
+      width: 10.5rem;
+      height: .28rem;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, rgba(16,185,129,.35), rgba(11,77,58,.22), rgba(16,185,129,.35));
+      border: 1px solid rgba(6,95,70,0.08);
+    }
+
+    .hidden{ display:none !important; }
+
+    /* Mobile: keep title + Edit same row, but when editing (Clear All visible) push to next row */
+    @media (max-width: 520px){
+      .pg-profile-page .hero-top{ flex-wrap: nowrap; align-items: center; }
+      .pg-profile-page .hero-actions{ flex-wrap: nowrap; }
+      .pg-profile-page .hero-top.is-editing{
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .pg-profile-page .hero-top.is-editing .hero-title{ flex: 1 1 100%; }
+      .pg-profile-page .hero-top.is-editing #clearAllButton,
+      .pg-profile-page .hero-top.is-editing #editSaveButton{
+        order: 10;
+        margin-top: .6rem;
+      }
+      .pg-profile-page .hero-top.is-editing #clearAllButton{ margin-right: .5rem; }
+    }
+
+    @media (min-width: 640px){
+      .pg-profile-page .hero-fields{ grid-template-columns: repeat(2, 1fr); }
+      .pg-profile-page .grid{ grid-template-columns: repeat(2, 1fr); }
+      .pg-profile-page .bank-grid{ grid-template-columns: repeat(2, 1fr); }
+      .pg-profile-page .date-row{ grid-template-columns: 1fr 220px; align-items:end; }
+      .pg-profile-page .profile-hero{ padding: 18px; }
+      .pg-profile-page .profile-card{ padding: 18px; }
+    }
+
+    /* ============================================================
+       RESPONSIVE (BASE)
+       ============================================================ */
+    @media (max-width: 1024px){
+      .sidebar{ width:260px; }
+      .content-area{ padding:1.05rem; }
+    }
+
+    @media (max-width: 860px){
+      .brand-text span{ max-width:18vw; }
+      .control-button{ padding:0.55rem 0.85rem; }
+    }
+
+    @media (max-width: 768px){
+      .header{ padding:0 0.9rem; height:64px; position:sticky; }
+      .menu-button{ display:inline-flex; }
+
+      /* center brand */
+      .header-left{ justify-content:center; }
+
+      /* hamburger extreme left (no circle) */
+      .menu-button{
+        position:absolute;
+        left:0.55rem;
+        top:50%;
+        transform: translateY(-50%);
+        border:none;
+        background:transparent;
+        border-radius:0;
+        box-shadow:none;
+      }
+      .menu-button:hover{
+        background:transparent;
+        transform: translateY(-50%);
+        box-shadow:none;
+      }
+
+      .main-wrapper{ min-height: calc(100vh - 64px); }
+
+      /* mobile sidebar opens LEFT -> RIGHT */
+      .sidebar{
+        position:fixed;
+        left:-340px;
+        right:auto;
+        top:0;
+        height:100vh;
+        width: min(340px, 88vw);
+        z-index:90;
+        transition: left 0.35s ease;
+        box-shadow: 18px 0 40px rgba(0,0,0,0.18);
+        border-right: 1px solid rgba(0,0,0,0.12);
+        border-left:none;
+        overflow:hidden;
+      }
+      .sidebar.open{ left:0; }
+
+      .sidebar-header{ padding:1.05rem 0.95rem; background: rgba(255,255,255,0.55); }
+      .sidebar-nav{ padding:1.05rem 0.95rem 1rem; gap:0.55rem; }
+
+      .nav-spacer{ display:none; }
+
+      /* ✅ keep original web-mobile behavior intact */
+      #menuLogout.nav-logout{
+        position: relative;
+        bottom: auto;
+        margin-top: 12px;
+        width: 100%;
+        border-radius: 16px;
+        padding: 0.95rem 0.9rem;
+      }
+
+      body.menu-open{
+        overflow:hidden;
+        touch-action:none;
+      }
+
+      .content-area{ padding:0.95rem; }
+    }
+
+    /* ✅ App/WebView-only fix:
+       Remove sticky behavior and keep logout in normal flow at bottom,
+       without floating over other items. (Does NOT affect normal web view.) */
+
+    @media (max-width: 768px){
+      body.app-webview .sidebar{
+        height: 100vh;
+      }
+      @supports (height: 100dvh){
+        body.app-webview .sidebar{ height: 100dvh; }
+      }
+
+      /* Bring back spacer in app view so logout can sit at the bottom naturally */
+      body.app-webview .nav-spacer{
+        display:block !important;
+        flex:1 !important;
+        min-height: 12px;
+      }
+
+      /* Remove sticky/floating effect in app view */
+      body.app-webview #menuLogout.nav-logout{
+        position: relative !important;
+        bottom: auto !important;
+        margin-top: auto !important;
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 520px){
+      .brand-text span{ display:none; }
+      .control-button span{ display:none; }
+      .control-button{ padding:0.55rem 0.65rem; }
+      .header-controls{ gap:0.45rem; }
+
+      /* ✅ Mobile language toggle stays visible + plain text */
+      #languageToggle span,
+      #languageToggle #languageText{ display:inline !important; }
+      #languageToggle.control-button{
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 6px !important;
+        border-radius: 0 !important;
+        transform: none !important;
+        line-height: 1 !important;
+      }
+      #languageToggle.control-button:hover{
+        background: transparent !important;
+        box-shadow: none !important;
+        transform: none !important;
+      }
+      #languageToggle #languageText{
+        font-weight: 950 !important;
+        font-size: 0.95rem !important;
+        letter-spacing: 0.5px !important;
+        color: #0b4d3a !important;
+      }
+    }
+
+    @media (max-width: 420px){
+      .sidebar{ width: min(320px, 92vw); }
+      .nav-item{ padding:0.78rem 0.85rem; }
+      #menuLogout.nav-logout{ bottom:10px; }
+      .menu-button{ left:0.45rem; }
+    }
+
+    @media (max-width: 360px){
+      .header{ gap:0.55rem; }
+      .header-logo{ padding:0.3rem 0.45rem; }
+      .brand-mark{ width:32px; height:32px; }
+    }
+
+    /* ✅ APP/WEBVIEW TOUCH FIX: replace hover with touch-active feedback only */
+@media (max-width: 768px){
+  body.app-webview #sidebarNav .nav-item{
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* Disable hover styles in app webview (prevents stuck hover / malfunction) */
+  body.app-webview #sidebarNav .nav-item:hover{
+    background: transparent !important;
+    border-color: transparent !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Provide proper touch feedback */
+  body.app-webview #sidebarNav .nav-item:active,
+  body.app-webview #sidebarNav .nav-item.is-pressed{
+    background: rgba(173, 231, 196, 0.45) !important;
+    border-color: rgba(15, 23, 42, 0.10) !important;
+    transform: none !important; /* avoid weird shifting */
+    box-shadow: 0 18px 26px -24px rgba(0,0,0,0.55) !important;
+  }
+
+  /* Keep logout button touch feedback too */
+  body.app-webview #sidebarNav .nav-item.nav-logout:active,
+  body.app-webview #sidebarNav .nav-item.nav-logout.is-pressed{
+    background: linear-gradient(180deg, #d64c4c, #b93a3a) !important;
+    transform: none !important;
+  }
+}
+
+/* ✅ Touch devices: NO hover, use active/pressed instead */
+@media (hover: none) and (pointer: coarse){
+  .nav-item:hover{
+    background: transparent !important;
+    border-color: transparent !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  .nav-item:active,
+  .nav-item.is-pressed{
+    background: rgba(173, 231, 196, 0.45) !important;
+    border-color: rgba(15, 23, 42, 0.10) !important;
+    transform: none !important;
+    box-shadow: 0 18px 26px -24px rgba(0,0,0,0.55) !important;
+  }
+
+  .nav-item.nav-logout:active,
+  .nav-item.nav-logout.is-pressed{
+    background: linear-gradient(180deg, #d64c4c, #b93a3a) !important;
+    transform: none !important;
+  }
+}
+  </style>
+
+  {% block head_extra %}{% endblock %}
+</head>
+
+<body>
+  <div class="app-container">
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-left">
+        <div id="brandHome" class="header-logo" title="Go to Dashboard (Home)">
+          <div class="brand-mark" aria-hidden="true">
+            <!-- ✅ Replace this path later with your real logo file -->
+            <img
+              class="brand-logo"
+              src="{{ url_for('static', filename='images/loginlogo.JPEG') }}"
+              alt="Logo"
+              onerror="this.style.display='none';"
+            />
+          </div>
+          <div class="brand-text">
+  <strong id="brandTitle">PGMIS</strong>
+  <span id="brandSubtitle">Producer Group MIS</span>
+</div>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <button id="menuButton" class="menu-button" type="button" aria-label="Open dashboard menu" title="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="4" y1="6" x2="20" y2="6"></line>
+            <line x1="4" y1="12" x2="20" y2="12"></line>
+            <line x1="4" y1="18" x2="20" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- ✅ Language toggle shows CURRENT language label EN/BN -->
+        <button id="languageToggle" class="control-button" type="button" title="Toggle Language" aria-label="Toggle Language">
+          <span id="languageText">EN</span>
+        </button>
+
+        <!-- ✅ Profile toggle (EMBEDDED) -->
+        <button id="profileToggle" class="control-button" type="button" title="View Profile">
+          <svg id="profileIcon" class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+
+          <svg id="backIcon" class="icon-small hidden" width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+
+          <span id="profileToggleText">Profile</span>
+        </button>
+
+        <!-- ✅ Top right logout (RED) -->
+        <button id="logoutTopBtn" class="control-button logout-top" type="button" title="Logout">
+          <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span id="logoutTopText" class="sr-only">Logout</span>
+        </button>
+      </div>
+    </header>
+
+    <div id="menuOverlay" aria-hidden="true"></div>
+
+    <div class="main-wrapper">
+      <!-- SIDEBAR -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-head-row">
+            <div class="sidebar-title" id="sidebarTitle">Dashboard Menu</div>
+
+            <!-- Collapse / Expand toggle (desktop) -->
+            <button id="sidebarToggle" class="sidebar-toggle" type="button" title="Collapse sidebar" aria-label="Collapse sidebar">
+              <svg class="sidebar-toggle-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav" id="sidebarNav">
+          <a class="nav-item" data-page="dashboard" href="{{ url_for('reports.cadre_dashboard') if session.get('role') == 'CADRE_CC' else url_for('pg.pg_home') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 12l9-9 9 9"></path>
+              <path d="M9 21V9h6v12"></path>
+            </svg>
+            <span class="nav-text" id="navDashboard">Dashboard</span>
+          </a>
+
+          <div class="nav-section" id="navSectionRegisters">Registers</div>
+
+          <a class="nav-item" data-page="pg-registration" href="{{ url_for('pg.pg_registration', pg_id=session.get('pg_id')) }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+            </svg>
+            <span class="nav-text" id="navPgRegistration">PG Registration</span>
+          </a>
+
+          <a class="nav-item" data-page="membership-register" href="{{ url_for('pg.pg_members', pg_id=session.get('pg_id')) }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span class="nav-text" id="navMembershipRegister">Membership Register</span>
+          </a>
+
+          <!-- <a class="nav-item" data-page="meeting-register" href="{{ url_for('pg.meeting_register', pg_id=session.get('pg_id')) }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 2v4"></path>
+              <path d="M16 2v4"></path>
+              <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+              <path d="M3 10h18"></path>
+            </svg>
+            <span class="nav-text" id="navMeetingRegister">Meeting Register</span>
+          </a> -->
+
+          <a class="nav-item" data-page="cash-book" href="{{ url_for('finance.cashbook') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              <line x1="10" y1="8" x2="16" y2="8"></line>
+              <line x1="10" y1="12" x2="16" y2="12"></line>
+              <line x1="10" y1="16" x2="16" y2="16"></line>
+            </svg>
+            <span class="nav-text" id="navCashBook">Cash Book</span>
+          </a>
+
+          <a class="nav-item" data-page="meeting-minute" href="{{ url_for('pg.meeting_minute_book') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 12h6"></path>
+              <path d="M9 16h6"></path>
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+              <path d="M13 2v7h7"></path>
+            </svg>
+            <span class="nav-text" id="navMeeting">Meeting Minute Book</span>
+          </a>
+
+          <a class="nav-item" data-page="member-ledger" href="{{ url_for('pg.member_ledger') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 4h16v16H4z"></path>
+              <path d="M8 8h8"></path>
+              <path d="M8 12h8"></path>
+              <path d="M8 16h6"></path>
+            </svg>
+            <span class="nav-text" id="navMemberLedger">Member Ledger</span>
+          </a>
+
+          <a class="nav-item" data-page="loan-ledger" href="{{ url_for('pg.loan_ledger') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="8" width="18" height="8" rx="2"></rect>
+              <path d="M12 8V4H8"></path>
+              <path d="M20 8V4h-4"></path>
+              <path d="M4 16v4h4"></path>
+              <path d="M16 20h4v-4"></path>
+            </svg>
+            <span class="nav-text" id="navLoanLedger">Loan Ledger</span>
+          </a>
+
+          <a class="nav-item" data-page="receipt-voucher" href="{{ url_for('pg.receipt_voucher') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v18l4-2 4 2 4-2 4 2V8z"></path>
+              <path d="M14 2v6h6"></path>
+              <path d="M8 13h8"></path>
+              <path d="M8 17h6"></path>
+            </svg>
+            <span class="nav-text" id="navReceiptVoucher">Receipt Voucher</span>
+          </a>
+
+          <a class="nav-item" data-page="input-register" href="{{ url_for('pg.input_register') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73L13 2.27a2 2 0 0 0-2 0L4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            <span class="nav-text" id="navInputRegister">Input (Purchase/Sale/Stock) Register</span>
+          </a>
+
+          <a class="nav-item" data-page="asset-register" href="{{ url_for('pg.asset_register') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 7h-9"></path>
+              <path d="M14 17H5"></path>
+              <circle cx="17" cy="17" r="3"></circle>
+              <circle cx="7" cy="7" r="3"></circle>
+            </svg>
+            <span class="nav-text" id="navAssetRegister">Asset Register</span>
+          </a>
+
+          <a class="nav-item" data-page="ledger-book" href="{{ url_for('pg.ledger_book') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            <span class="nav-text" id="navLedgerBook">Ledger Book</span>
+          </a>
+
+          <a class="nav-item" data-page="output-register" href="{{ url_for('pg.output_register') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+            <span class="nav-text" id="navOutputRegister">Output on produce (Purchase/Sale/Stock) Register</span>
+          </a>
+
+          <!-- ✅ Manual-required modules (added) -->
+          <div class="nav-section" id="navSectionBusiness">Business & Finance</div>
+
+          <a class="nav-item" data-page="monthly-business" href="{{ url_for('business.monthly_business', pg_id=session.get('pg_id')) }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 3v18h18"></path>
+              <path d="M7 14l3-3 3 2 6-6"></path>
+            </svg>
+            <span class="nav-text" id="navMonthlyBusiness">Monthly Business (6.1 + 6.2)</span>
+          </a>
+
+          <a class="nav-item" data-page="stock-register" href="{{ url_for('business.stock_register', pg_id=session.get('pg_id')) }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73Z"></path>
+              <path d="M3.3 7l8.7 5 8.7-5"></path>
+            </svg>
+            <span class="nav-text" id="navStockRegister">Stock / Inventory Register</span>
+          </a>
+
+          <!-- ✅ ₹ icon (replaces $) — 1 -->
+          <a class="nav-item" data-page="income-expenditure" href="{{ url_for('business.income_expenditure', pg_id=session.get('pg_id')) }}">
+          <svg class="nav-icon"
+     width="20"
+     height="20"
+     viewBox="0 0 24 24"
+     fill="currentColor"
+     aria-hidden="true"
+     focusable="false">
+
+  <text x="50%"
+        y="50%"
+        text-anchor="middle"
+        dominant-baseline="central"
+        font-size="18"
+        font-weight="900">
+    ₹
+  </text>
+
+</svg>
+            <span class="nav-text" id="navIncomeExpenditureMonthly">Income & Expenditure (Monthly)</span>
+          </a>
+
+          <a class="nav-item" data-page="income-expenditure-year" href="{{ url_for('business.income_expenditure_year', pg_id=session.get('pg_id')) }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 3h18v18H3z"></path>
+              <path d="M7 7h10"></path>
+              <path d="M7 12h10"></path>
+              <path d="M7 17h10"></path>
+            </svg>
+            <span class="nav-text" id="navIncomeExpenditureYearly">Income & Expenditure (Yearly)</span>
+          </a>
+
+          <!-- ✅ ₹ icon (replaces $) — 2 -->
+          <a class="nav-item" data-page="loan-accounts" href="{{ url_for('finance.loan_accounts', pg_id=session.get('pg_id')) }}">
+          <svg class="nav-icon"
+     width="20"
+     height="20"
+     viewBox="0 0 24 24"
+     fill="currentColor"
+     aria-hidden="true"
+     focusable="false">
+
+  <text x="50%"
+        y="50%"
+        text-anchor="middle"
+        dominant-baseline="central"
+        font-size="18"
+        font-weight="900">
+    ₹
+  </text>
+
+</svg>
+            <span class="nav-text" id="navLoanAccounts">Loan Accounts (Auto Schedule)</span>
+          </a>
+
+          <a class="nav-item" data-page="member-loan-accounts" href="{{ url_for('finance.member_loan_accounts', pg_id=session.get('pg_id')) }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="8.5" cy="7" r="4"></circle>
+              <path d="M20 8v6"></path>
+              <path d="M23 11h-6"></path>
+            </svg>
+            <span class="nav-text" id="navMemberLoanAccounts">Member Loan Accounts</span>
+          </a>
+
+          <a class="nav-item" data-page="grants" href="{{ url_for('finance.grants', pg_id=session.get('pg_id')) }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 12v10H4V12"></path>
+              <path d="M2 7h20"></path>
+              <path d="M12 22V7"></path>
+              <path d="M12 7a4 4 0 0 0-8 0"></path>
+              <path d="M20 7a4 4 0 0 0-8 0"></path>
+            </svg>
+            <span class="nav-text" id="navGrantsUtilization">Grants / Utilization</span>
+          </a>
+
+          <div class="nav-section" id="navSectionReports">Reports & Gradation</div>
+
+          <a class="nav-item" data-page="mpr" href="{{ url_for('reports.pg_mpr', pg_id=session.get('pg_id')) }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20"></path>
+              <path d="M20 2H6.5A2.5 2.5 0 0 0 4 4.5v15"></path>
+              <path d="M8 7h8"></path>
+              <path d="M8 11h8"></path>
+              <path d="M8 15h6"></path>
+            </svg>
+            <span class="nav-text" id="navMPR">MPR Snapshots</span>
+          </a>
+
+          <a class="nav-item" data-page="gradation" href="{{ url_for('reports.gradation', pg_id=session.get('pg_id')) }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 11l3 3L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            <span class="nav-text" id="navGradation">PG Gradation (Quarterly)</span>
+          </a>
+
+          <a class="nav-item" data-page="reports-hub" href="{{ url_for('reports.reports_hub') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20"></path>
+              <path d="M20 2H6.5A2.5 2.5 0 0 0 4 4.5v15"></path>
+              <path d="M8 7h8"></path>
+              <path d="M8 11h8"></path>
+              <path d="M8 15h6"></path>
+            </svg>
+            <span class="nav-text" id="navReportsHub">Reports Hub</span>
+          </a>
+
+          <a class="nav-item" data-page="pg-overall" href="{{ url_for('reports.pg_overall_report') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span class="nav-text" id="navOverallExport">Overall Export</span>
+          </a>
+
+          <a class="nav-item" data-page="lakhpati-report" href="{{ url_for('reports.lakhpati_report') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 21s8-4.5 8-11V5l-8-3-8 3v5c0 6.5 8 11 8 11z"></path>
+              <path d="M8 12h8"></path>
+              <path d="M10 8h4"></path>
+            </svg>
+            <span class="nav-text" id="navLakhpatiDidi">Lakhpati Didi</span>
+          </a>
+
+          <!-- ✅ ₹ icon (replaces $) — 3 -->
+          <a class="nav-item" data-page="grants-report" href="{{ url_for('reports.grants_report') }}">
+           <svg class="nav-icon"
+     width="20"
+     height="20"
+     viewBox="0 0 24 24"
+     fill="currentColor"
+     aria-hidden="true"
+     focusable="false">
+
+  <text x="50%"
+        y="50%"
+        text-anchor="middle"
+        dominant-baseline="central"
+        font-size="18"
+        font-weight="900">
+    ₹
+  </text>
+
+</svg>
+            <span class="nav-text" id="navGrantsReport">Grants</span>
+          </a>
+
+          <div class="nav-spacer" aria-hidden="true"></div>
+
+          <a id="menuLogout" class="nav-item nav-logout" href="{{ url_for('auth.logout') }}">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span class="nav-text" id="navLogoutText">Logout</span>
+          </a>
+        </nav>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <main class="content-area">
+
+        <!-- Normal page content -->
+        <div id="dashboardContainer" class="content-inner">
+          {% block content %}{% endblock %}
+        </div>
+
+        <!-- ✅ Embedded Profile panel (VIEW-ONLY now) -->
+        <div id="profilePageContainer" class="pg-profile-page">
+          <!-- (UNCHANGED) ... your profile page HTML continues exactly as you provided ... -->
+          <!-- ✅ I kept your entire profile section exactly the same. -->
+          <div class="content-wrapper">
+            <!-- HERO -->
+            <div class="profile-hero">
+              <div class="hero-top" id="headerTop">
+                <div class="hero-title">
+                  <div class="hero-icon" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                  </div>
+                  <div class="hero-text">
+                    <div class="hero-kicker">PROFILE</div>
+                    <div class="hero-title-line" id="headerTitle">Producer Group Profile</div>
+                  </div>
+                </div>
+
+                <div class="hero-actions">
+                  <button id="editSaveButton" class="pill-btn hidden" type="button" disabled aria-hidden="true" tabindex="-1">
+                    <svg id="editIcon" class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+
+                    <svg id="saveIcon" class="icon-small hidden" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                      <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+
+                    <span id="editSaveText">Edit</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="hero-fields">
+                <div class="mini-card">
+                  <div class="mini-label" id="labelPgName">PG Name</div>
+                  <input type="text" id="inputPgName" class="hero-input" placeholder="Enter PG Name" value="{{ current_pg_name }}" disabled />
+                </div>
+
+                <div class="mini-card">
+                  <div class="mini-label" id="labelActivity">Activity</div>
+                  <input type="text" id="inputActivity" class="hero-input" placeholder="Enter Activity" value="" disabled />
+                </div>
+              </div>
+            </div>
+
+            <!-- MAIN CARD -->
+            <div class="profile-card">
+              <!-- (UNCHANGED profile content continues...) -->
+              <!-- Address -->
+              <div class="section">
+                <div class="section-head">
+                  <svg class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                  <div class="section-title" id="labelAddress">Address</div>
+                </div>
+
+                <div class="grid">
+                  <div class="field">
+                    <div class="field-label" id="labelVillage">Village</div>
+                    <input type="text" id="inputVillage" class="field-input" placeholder="Enter Village" value="" disabled />
+                  </div>
+
+                  <div class="field">
+                    <div class="field-label" id="labelBlock">Block</div>
+                    <input type="text" id="inputBlock" class="field-input" placeholder="Enter Block" value="" disabled />
+                  </div>
+
+                  <div class="field">
+                    <div class="field-label" id="labelDistrict">District</div>
+                    <input type="text" id="inputDistrict" class="field-input" placeholder="Enter District" value="" disabled />
+                  </div>
+
+                  <div class="field">
+                    <div class="field-label" id="labelState">State</div>
+                    <input type="text" id="inputState" class="field-input" placeholder="Enter State" value="" disabled />
+                  </div>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Formation Date -->
+              <div class="section">
+                <div class="section-head">
+                  <svg class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                  <div class="section-title" id="labelFormationDate">Date of Formation</div>
+                </div>
+
+                <div class="date-row">
+                  <div>
+                    <input type="text" id="inputFormationDateText" class="single-input"
+                           placeholder="DD/MM/YYYY (manual entry)" value="" inputmode="numeric" autocomplete="off" disabled />
+                    <div class="date-help">You can type date OR pick from calendar.</div>
+                    <div class="date-error" id="dateError">Invalid date. Use DD/MM/YYYY (e.g., 05/02/2026).</div>
+                  </div>
+
+                  <div>
+                    <input type="date" id="inputFormationDatePicker" class="single-input" value="" disabled />
+                  </div>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Total Members -->
+              <div class="section">
+                <div class="section-head">
+                  <svg class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                  <div class="section-title" id="labelTotalMembers">Total Members in PG</div>
+                </div>
+
+                <input type="number" id="inputTotalMembers" class="single-input"
+                       placeholder="Enter Total Members" min="0" step="1" value="" disabled />
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- CLF Name -->
+              <div class="section">
+                <div class="section-head">
+                  <svg class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <div class="section-title" id="labelClfName">Name of CLF under which PG belongs to</div>
+                </div>
+
+                <input type="text" id="inputClfName" class="single-input" placeholder="Enter CLF Name" value="{{ current_clf_name }}" disabled />
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Bank Details -->
+              <div class="section">
+                <div class="section-head">
+                  <svg class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                  </svg>
+                  <div class="section-title" id="labelBankDetails">Bank Details</div>
+                </div>
+
+                <div class="bank-grid">
+                  <div class="field">
+                    <div class="field-label" id="labelAccountNo">Account Number</div>
+                    <input type="text" id="inputAccountNo" class="field-input" placeholder="Enter Account Number" value="" disabled />
+                  </div>
+
+                  <div class="field">
+                    <div class="field-label" id="labelIfsc">IFSC Code</div>
+                    <input type="text" id="inputIfsc" class="field-input" placeholder="Enter IFSC Code" value="" disabled />
+                  </div>
+
+                  <div class="field">
+                    <div class="field-label" id="labelBankName">Bank Name</div>
+                    <input type="text" id="inputBankName" class="field-input" placeholder="Enter Bank Name" value="" disabled />
+                  </div>
+
+                  <div class="field">
+                    <div class="field-label" id="labelBranch">Branch</div>
+                    <input type="text" id="inputBranch" class="field-input" placeholder="Enter Branch" value="" disabled />
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-foot">
+                <div class="card-foot-line" aria-hidden="true"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-content footer-2line">
+        <div class="footer-row">
+          <span>© 2026 PGMIS™ All rights reserved.</span>
+        </div>
+        <div class="footer-row">
+          <span>Powered by —</span>
+          <a href="https://sayanant.com/" target="_blank" rel="noopener noreferrer" class="footer-link">
+            Sayanant Group, Guwahati Assam
+          </a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ✅ GLOBAL CONFIRM MODAL -->
+  <div id="confirmOverlay" class="pg-modal-overlay" aria-hidden="true">
+    <div class="pg-modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="pg-modal-head">
+        <div class="pg-modal-title" id="confirmTitle">Confirm</div>
+        <button class="pg-modal-close" id="confirmCloseBtn" type="button" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6L6 18"></path>
+            <path d="M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="pg-modal-body">
+        <div class="pg-modal-text" id="confirmMessage">Are you sure?</div>
+        <div class="pg-modal-sub" id="confirmSub">Choose Confirm to continue or Cancel to return.</div>
+      </div>
+
+      <div class="pg-modal-actions">
+        <button class="pg-btn pg-btn-cancel" id="confirmCancelBtn" type="button">Cancel</button>
+        <button class="pg-btn pg-btn-confirm" id="confirmOkBtn" type="button">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ✅ App/WebView detection (only used to fix the logout sticky overlap in app view)
+    (function(){
+      try{
+        const ua = (navigator.userAgent || "").toLowerCase();
+        const isRN = !!window.ReactNativeWebView;
+        const isWV = ua.includes("wv") || ua.includes("reactnativewebview") || ua.includes("instagram") || ua.includes("fbav");
+        if(isRN || isWV){
+          document.body.classList.add("app-webview");
+        }
+      }catch(_){}
+    })();
+  </script>
+
+  <script>
+    // ------------------------------------------------------------
+    // MENU (mobile)
+    // ------------------------------------------------------------
+    const sidebar = document.getElementById('sidebar');
+    const menuButton = document.getElementById('menuButton');
+    const menuOverlay = document.getElementById('menuOverlay');
+
+    function isMobile(){ return window.matchMedia && window.matchMedia('(max-width: 768px)').matches; }
+
+    function openMenu(){
+      if(!isMobile()) return;
+      sidebar.classList.add('open');
+      menuOverlay.classList.add('show');
+      menuOverlay.setAttribute('aria-hidden','false');
+      document.body.classList.add('menu-open');
+    }
+    function closeMenu(){
+      sidebar.classList.remove('open');
+      menuOverlay.classList.remove('show');
+      menuOverlay.setAttribute('aria-hidden','true');
+      document.body.classList.remove('menu-open');
+    }
+    function toggleMenu(){
+      if(!isMobile()) return;
+      sidebar.classList.contains('open') ? closeMenu() : openMenu();
+    }
+    menuButton?.addEventListener('click', toggleMenu);
+    menuOverlay?.addEventListener('click', closeMenu);
+
+    window.addEventListener('resize', ()=>{ if(!isMobile()) closeMenu(); });
+    document.addEventListener('keydown', (e)=>{ if(isMobile() && e.key === 'Escape') closeMenu(); });
+
+    // ------------------------------------------------------------
+    // SIDEBAR COLLAPSE (desktop) + localStorage
+    // ------------------------------------------------------------
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const SIDEBAR_KEY = 'PGMIS_SIDEBAR_COLLAPSED';
+
+    function applySidebarCollapsedState(){
+      const saved = localStorage.getItem(SIDEBAR_KEY);
+      if(saved === '1') sidebar.classList.add('collapsed');
+      else sidebar.classList.remove('collapsed');
+    }
+    function toggleSidebarCollapsed(){
+      sidebar.classList.toggle('collapsed');
+      localStorage.setItem(SIDEBAR_KEY, sidebar.classList.contains('collapsed') ? '1' : '0');
+    }
+
+    applySidebarCollapsedState();
+    sidebarToggle?.addEventListener('click', toggleSidebarCollapsed);
+
+    // ------------------------------------------------------------
+    // ✅ SIDEBAR ACTIVE ITEM (persist after refresh)
+    // ------------------------------------------------------------
+    const ACTIVE_KEY = 'PGMIS_ACTIVE_SIDEBAR_HREF';
+
+    function clearActiveNav(){
+      document.querySelectorAll('#sidebarNav .nav-item').forEach(a => a.classList.remove('active'));
+    }
+
+    function normalizePath(p){
+      try{
+        const u = new URL(p, window.location.origin);
+        return (u.pathname || '/').replace(/\/+$/, '') || '/';
+      }catch(_){
+        return (p || '/').replace(/\/+$/, '') || '/';
+      }
+    }
+
+    function applyActiveByUrl(){
+      const currentPath = normalizePath(window.location.pathname);
+      const links = Array.from(document.querySelectorAll('#sidebarNav .nav-item[href]'))
+        .filter(a => !a.classList.contains('nav-logout'));
+
+      let match = links.find(a => normalizePath(a.getAttribute('href')) === currentPath);
+
+      if(!match){
+        match = links.find(a => {
+          const hp = normalizePath(a.getAttribute('href'));
+          if(hp === '/' || hp.length < 2) return false;
+          return currentPath.startsWith(hp + '/') || currentPath.startsWith(hp);
+        });
+      }
+
+      if(match){
+        clearActiveNav();
+        match.classList.add('active');
+        sessionStorage.setItem(ACTIVE_KEY, match.getAttribute('href'));
+        return true;
+      }
+      return false;
+    }
+
+    function applyActiveByStored(){
+      const stored = sessionStorage.getItem(ACTIVE_KEY);
+      if(!stored) return false;
+
+      const links = Array.from(document.querySelectorAll('#sidebarNav .nav-item[href]'))
+        .filter(a => !a.classList.contains('nav-logout'));
+
+      const match = links.find(a => a.getAttribute('href') === stored);
+      if(match){
+        clearActiveNav();
+        match.classList.add('active');
+        return true;
+      }
+      return false;
+    }
+
+    function initActiveNav(){
+      if(applyActiveByUrl()) return;
+      applyActiveByStored();
+    }
+
+    // ------------------------------------------------------------
+    // ✅ SIDEBAR SCROLL POSITION (persist after refresh/reload)
+    // ------------------------------------------------------------
+    const sidebarNav = document.getElementById('sidebarNav');
+    const NAV_SCROLL_KEY = 'PGMIS_SIDEBAR_SCROLLTOP';
+
+    function saveSidebarScroll(){
+      if(!sidebarNav) return;
+      sessionStorage.setItem(NAV_SCROLL_KEY, String(sidebarNav.scrollTop || 0));
+    }
+
+    function restoreSidebarScroll(){
+      if(!sidebarNav) return;
+      const v = sessionStorage.getItem(NAV_SCROLL_KEY);
+      if(v == null) return;
+      const n = parseInt(v, 10);
+      if(!Number.isFinite(n)) return;
+      sidebarNav.scrollTop = Math.max(0, n);
+    }
+
+    let _scrollT = null;
+    sidebarNav?.addEventListener('scroll', ()=>{
+      if(_scrollT) return;
+      _scrollT = setTimeout(()=>{
+        _scrollT = null;
+        saveSidebarScroll();
+      }, 120);
+    }, {passive:true});
+
+    document.querySelectorAll('#sidebarNav .nav-item[href]').forEach(a => {
+      if(a.classList.contains('nav-logout')) return;
+      a.addEventListener('click', () => {
+        saveSidebarScroll();
+        sessionStorage.setItem(ACTIVE_KEY, a.getAttribute('href'));
+        clearActiveNav();
+        a.classList.add('active');
+      });
+    });
+
+    initActiveNav();
+    setTimeout(restoreSidebarScroll, 0);
+
+    // ------------------------------------------------------------
+    // BRAND HOME (go dashboard)
+    // ------------------------------------------------------------
+    document.getElementById('brandHome')?.addEventListener('click', ()=>{
+      if(isProfileView) toggleProfileView(false);
+      window.location.href = "{{ url_for('reports.cadre_dashboard') if session.get('role') == 'CADRE_CC' else url_for('pg.pg_home') }}";
+    });
+
+    // ------------------------------------------------------------
+// ------------------------------------------------------------
+// LOGOUT TOP BUTTON
+// ------------------------------------------------------------
+document.getElementById('logoutTopBtn')?.addEventListener('click', ()=>{
+  try{
+    sessionStorage.removeItem(`cashbook_selected_period__{{ session.get('pg_id') or 'default' }}`);
+  }catch(_){}
+  window.location.href = "{{ url_for('auth.logout') }}";
+});
+
+document.getElementById('menuLogout')?.addEventListener('click', function(){
+  try{
+    sessionStorage.removeItem(`cashbook_selected_period__{{ session.get('pg_id') or 'default' }}`);
+  }catch(_){}
+});
+
+    // ------------------------------------------------------------
+    // LANGUAGE (single source) + ✅ RESTORED CONNECTIVITY FOR OTHER PAGES
+    // ------------------------------------------------------------
+    const LANG_KEY = 'PGMIS_LANG_SESSION';
+    let currentLanguage = sessionStorage.getItem(LANG_KEY) || 'en';
+
+    const baseTranslations = {
+      en: {
+        brandTitle: "PGMIS",
+        brandSubtitle: "Producer Group MIS",
+        languageToggle: "EN",
+        sidebarTitle: "Dashboard Menu",
+        navSectionRegisters: "Registers",
+        navSectionAdministration: "Administration",
+
+        navSectionBusiness: "Business & Finance",
+        navSectionReports: "Reports & Gradation",
+
+        navDashboard: "Dashboard",
+        navPgRegistration: "PG Registration",
+        navMembershipRegister: "Membership Register",
+        navMeetingRegister: "Meeting Register",
+        navCashBook: "Cash Book",
+        navMeeting: "Meeting Minute Book",
+        navMemberLedger: "Member Ledger",
+        navLoanLedger: "Loan Ledger",
+        navReceiptVoucher: "Receipt Voucher",
+        navInputRegister: "Input (Purchase/Sale/Stock) Register",
+        navAssetRegister: "Asset Register",
+        navLedgerBook: "Ledger Book",
+        navOutputRegister: "Output on produce (Purchase/Sale/Stock) Register",
+
+        navMonthlyBusiness: "Monthly Business (6.1 + 6.2)",
+        navStockRegister: "Stock / Inventory Register",
+        navIncomeExpenditureMonthly: "Income & Expenditure (Monthly)",
+        navIncomeExpenditureYearly: "Income & Expenditure (Yearly)",
+        navLoanAccounts: "Loan Accounts (Auto Schedule)",
+        navMemberLoanAccounts: "Member Loan Accounts",
+        navGrantsUtilization: "Grants / Utilization",
+
+        navMPR: "MPR Snapshots",
+        navGradation: "PG Gradation (Quarterly)",
+        navReportsHub: "Reports Hub",
+        navOverallExport: "Overall Export",
+        navLakhpatiDidi: "Lakhpati Didi",
+        navGrantsReport: "Grants",
+
+        navFunds: "Funds",
+        navLoans: "Loans",
+        navUploadDocs: "Upload Documents",
+        navLogout: "Logout",
+
+        profileBtn: "Profile",
+        backBtn: "Back",
+
+        title: "Producer Group Profile",
+        pgName: "PG Name",
+        activity: "Activity",
+        address: "Address",
+        village: "Village",
+        block: "Block",
+        district: "District",
+        state: "State",
+        formationDate: "Date of Formation",
+        totalMembers: "Total Members in PG",
+        clfName: "Name of CLF under which PG belongs to",
+        bankDetails: "Bank Details",
+        accountNo: "Account Number",
+        ifsc: "IFSC Code",
+        bankName: "Bank Name",
+        branch: "Branch",
+        editButton: "Edit",
+        saveButton: "Save",
+        clearAllBtn: "Clear All",
+
+        confirmTitle: "Confirm",
+        confirmSave: "Do you want to save the changes?",
+        confirmClear: "Do you want to clear all data?",
+        confirmSub: "Choose Confirm to continue or Cancel to return.",
+        confirmBtn: "Confirm",
+        cancelBtn: "Cancel",
+
+        footerText: "PGMIS"
+      },
+      bn: {
+        brandTitle: "PGMIS",
+        brandSubtitle: "উৎপাদক গোষ্ঠী এমআইএস",
+        languageToggle: "বাংলা",
+        sidebarTitle: "ড্যাশবোর্ড মেনু",
+        navSectionRegisters: "রেজিস্টারসমূহ",
+        navSectionAdministration: "প্রশাসন",
+
+        navSectionBusiness: "ব্যবসা ও অর্থ",
+        navSectionReports: "রিপোর্ট ও গ্রেডেশন",
+
+        navDashboard: "ড্যাশবোর্ড",
+        navPgRegistration: "পিজি রেজিস্ট্রেশন",
+        navMembershipRegister: "সদস্যপদ রেজিস্টার",
+        navMeetingRegister: "মিটিং রেজিস্টার",
+        navCashBook: "নগদ বই",
+        navMeeting: "মিটিং মিনিট বুক",
+        navMemberLedger: "সদস্য খাতা",
+        navLoanLedger: "ঋণ খাতা",
+        navReceiptVoucher: "রসিদ ভাউচার",
+        navInputRegister: "ইনপুট (ক্রয়/বিক্রয়/স্টক) রেজিস্টার",
+        navAssetRegister: "সম্পদ রেজিস্টার",
+        navLedgerBook: "খাতা বই",
+        navOutputRegister: "উৎপাদনের আউটপুট (ক্রয়/বিক্রয়/স্টক) রেজিস্টার",
+
+        navMonthlyBusiness: "মাসিক ব্যবসা (৬.১ + ৬.২)",
+        navStockRegister: "স্টক / ইনভেন্টরি রেজিস্টার",
+        navIncomeExpenditureMonthly: "আয় ও ব্যয় (মাসিক)",
+        navIncomeExpenditureYearly: "আয় ও ব্যয় (বার্ষিক)",
+        navLoanAccounts: "ঋণ হিসাব (অটো শিডিউল)",
+        navMemberLoanAccounts: "সদস্য ঋণ হিসাব",
+        navGrantsUtilization: "অনুদান / ব্যবহার",
+
+        navMPR: "এমপিআর স্ন্যাপশট",
+        navGradation: "পিজি গ্রেডেশন (ত্রৈমাসিক)",
+        navReportsHub: "রিপোর্ট হাব",
+        navOverallExport: "সামগ্রিক এক্সপোর্ট",
+        navLakhpatiDidi: "লাখপতি দিদি",
+        navGrantsReport: "অনুদান",
+
+        navFunds: "তহবিল",
+        navLoans: "ঋণ",
+        navUploadDocs: "ডকুমেন্ট আপলোড",
+        navLogout: "লগআউট",
+
+        profileBtn: "প্রোফাইল",
+        backBtn: "ফিরে যান",
+
+        title: "উৎপাদক গোষ্ঠী প্রোফাইল",
+        pgName: "পিজি নাম",
+        activity: "কার্যকলাপ",
+        address: "ঠিকানা",
+        village: "গ্রাম",
+        block: "ব্লক",
+        district: "জেলা",
+        state: "রাজ্য",
+        formationDate: "গঠনের তারিখ",
+        totalMembers: "পিজিতে মোট সদস্য",
+        clfName: "সিএলএফ-এর নাম যার অধীনে পিজি রয়েছে",
+        bankDetails: "ব্যাংক বিবরণ",
+        accountNo: "অ্যাকাউন্ট নম্বর",
+        ifsc: "আইএফএসসি কোড",
+        bankName: "ব্যাংকের নাম",
+        branch: "শাখা",
+        editButton: "সম্পাদনা করুন",
+        saveButton: "সংরক্ষণ করুন",
+        clearAllBtn: "সব মুছুন",
+
+        confirmTitle: "নিশ্চিত করুন",
+        confirmSave: "আপনি কি পরিবর্তনগুলো সংরক্ষণ করতে চান?",
+        confirmClear: "আপনি কি সব ডেটা মুছে ফেলতে চান?",
+        confirmSub: "চালিয়ে যেতে Confirm চাপুন অথবা ফিরে যেতে Cancel চাপুন।",
+        confirmBtn: "Confirm",
+        cancelBtn: "Cancel",
+
+        footerText: "PGMIS"
+      }
+    };
+
+    window.PGMIS = window.PGMIS || {};
+    window.PGMIS.getLanguage = () => currentLanguage;
+    window.PGMIS.setLanguage = (lang) => {
+      if(lang !== 'en' && lang !== 'bn') return;
+      currentLanguage = lang;
+      sessionStorage.setItem(LANG_KEY, currentLanguage);
+      updateLanguage(true);
+    };
+
+    function broadcastLanguage(){
+      try{
+        if(typeof window.onPGMISLanguageChange === 'function'){
+          window.onPGMISLanguageChange(currentLanguage);
+        }
+      }catch(_){}
+
+      try{
+        if(typeof window.applyTranslations === 'function'){
+          window.applyTranslations(currentLanguage);
+        }
+      }catch(_){}
+
+      try{
+        if(typeof window.translatePage === 'function'){
+          window.translatePage(currentLanguage);
+        }
+      }catch(_){}
+
+      try{
+        if(typeof window.updatePageLanguage === 'function'){
+          window.updatePageLanguage(currentLanguage, baseTranslations[currentLanguage]);
+        }
+      }catch(_){}
+
+      try{
+        window.dispatchEvent(new CustomEvent('pgmis:language-change', {
+          detail: { lang: currentLanguage, t: baseTranslations[currentLanguage] }
+        }));
+      }catch(_){}
+    }
+
+    const languageToggle = document.getElementById('languageToggle');
+    const languageText = document.getElementById('languageText');
+
+    function persistLang(lang){
+      try{
+        localStorage.setItem("pgmis_lang", lang);
+        sessionStorage.setItem(LANG_KEY, lang);
+        document.documentElement.setAttribute("data-lang", lang);
+        window.__PGMIS_LANG = lang;
+        window.dispatchEvent(new CustomEvent("pgmis:lang", { detail: { lang } }));
+      }catch(_){}
+    }
+
+    function toggleLanguage(){
+      currentLanguage = (currentLanguage === 'en') ? 'bn' : 'en';
+      persistLang(currentLanguage);
+      updateLanguage(true);
+    }
+    languageToggle?.addEventListener('click', toggleLanguage);
+
+    // ------------------------------------------------------------
+    // PROFILE VIEW TOGGLE (embedded)
+    // ------------------------------------------------------------
+    let isProfileView = false;
+
+    const profileToggle = document.getElementById('profileToggle');
+    const profileToggleText = document.getElementById('profileToggleText');
+    const profileIcon = document.getElementById('profileIcon');
+    const backIcon = document.getElementById('backIcon');
+
+    const dashboardContainer = document.getElementById('dashboardContainer');
+    const profilePageContainer = document.getElementById('profilePageContainer');
+
+    const PG_ID = "{{ (pg._id|string) if pg else session.get('pg_id') }}";
+
+    function toYYYYMMDD(ddMmYyyy){
+      if(!ddMmYyyy) return "";
+      if(!/^\d{2}\/\d{2}\/\d{4}$/.test(ddMmYyyy)) return "";
+      const [dd,mm,yyyy] = ddMmYyyy.split("/");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    async function loadProfileData(){
+    if(!PG_ID){
+      clearProfileFields();
+      return;
+    }
+
+    try{
+      const res = await fetch(`/pg/profile/${PG_ID}/data`, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json"
+        },
+        credentials: "same-origin"
+      });
+
+      const resp = await res.json().catch(() => null);
+
+      if(!res.ok){
+        throw new Error((resp && (resp.error || resp.message)) || "Failed to fetch profile data");
+      }
+
+      const data = (resp && resp.data) ? resp.data : (resp || {});
+
+      const setVal = (id, value) => {
+        const el = document.getElementById(id);
+        if(el) el.value = value ?? "";
+      };
+
+      setVal("inputPgName", data.pg_name);
+      setVal("inputActivity", data.activity);
+      setVal("inputAddress", data.address);
+      setVal("inputVillage", data.village);
+      setVal("inputBlock", data.block);
+      setVal("inputDistrict", data.district);
+      setVal("inputState", data.state);
+      setVal("inputTotalMembers", data.total_members);
+      setVal("inputClfName", data.clf_name);
+
+      if(data.formation_date){
+        setVal("inputFormationDateText", data.formation_date);
+        const iso = toYYYYMMDD(data.formation_date);
+        setVal("inputFormationDatePicker", iso || "");
+      }else{
+        setVal("inputFormationDateText", "");
+        setVal("inputFormationDatePicker", "");
+      }
+
+      const bank = data.bank_details || {};
+      setVal("inputBankName", bank.bank_name);
+      setVal("inputBranch", bank.branch);
+      setVal("inputAccountNo", bank.account_number);
+      setVal("inputIfsc", bank.ifsc);
+
+    }catch(err){
+      console.error("Profile load error:", err);
+      clearProfileFields();
+    }
+  }
+
+    function toggleProfileView(forceState){
+      if(typeof forceState === 'boolean') isProfileView = forceState;
+      else isProfileView = !isProfileView;
+
+      if(isProfileView){
+        dashboardContainer.classList.add('hide');
+        profilePageContainer.classList.add('show');
+        profileIcon.classList.add('hidden');
+        backIcon.classList.remove('hidden');
+        loadProfileData();
+      }else{
+        dashboardContainer.classList.remove('hide');
+        profilePageContainer.classList.remove('show');
+        profileIcon.classList.remove('hidden');
+        backIcon.classList.add('hidden');
+      }
+
+      const t = baseTranslations[currentLanguage];
+      profileToggleText.textContent = isProfileView ? t.backBtn : t.profileBtn;
+
+      if(isMobile()) closeMenu();
+    }
+
+    profileToggle?.addEventListener('click', ()=> toggleProfileView());
+
+    function setDisabledAll(disabled){
+      const ids = [
+        "inputPgName","inputActivity","inputVillage","inputBlock","inputDistrict","inputState",
+        "inputFormationDateText","inputFormationDatePicker","inputTotalMembers","inputClfName",
+        "inputAccountNo","inputIfsc","inputBankName","inputBranch"
+      ];
+      ids.forEach(id=>{
+        const el = document.getElementById(id);
+        if(el) el.disabled = disabled;
+      });
+    }
+
+    function safeSetText(id, text){
+      const el = document.getElementById(id);
+      if(el) el.textContent = text;
+    }
+
+    function updateLanguage(shouldBroadcast){
+      const t = baseTranslations[currentLanguage];
+
+      if(languageText) languageText.textContent = t.languageToggle;
+
+       safeSetText('brandTitle', t.brandTitle);
+  safeSetText('brandSubtitle', t.brandSubtitle);
+      safeSetText('sidebarTitle', t.sidebarTitle);
+      safeSetText('navSectionRegisters', t.navSectionRegisters);
+      safeSetText('navSectionBusiness', t.navSectionBusiness);
+      safeSetText('navSectionReports', t.navSectionReports);
+
+      safeSetText('navDashboard', t.navDashboard);
+      safeSetText('navPgRegistration', t.navPgRegistration);
+      safeSetText('navMembershipRegister', t.navMembershipRegister);
+      safeSetText('navMeetingRegister', t.navMeetingRegister);
+      safeSetText('navCashBook', t.navCashBook);
+      safeSetText('navMeeting', t.navMeeting);
+      safeSetText('navMemberLedger', t.navMemberLedger);
+      safeSetText('navLoanLedger', t.navLoanLedger);
+      safeSetText('navReceiptVoucher', t.navReceiptVoucher);
+      safeSetText('navInputRegister', t.navInputRegister);
+      safeSetText('navAssetRegister', t.navAssetRegister);
+      safeSetText('navLedgerBook', t.navLedgerBook);
+      safeSetText('navOutputRegister', t.navOutputRegister);
+
+      // ✅ Added missing new menu item labels
+      safeSetText('navMonthlyBusiness', t.navMonthlyBusiness);
+      safeSetText('navStockRegister', t.navStockRegister);
+      safeSetText('navIncomeExpenditureMonthly', t.navIncomeExpenditureMonthly);
+      safeSetText('navIncomeExpenditureYearly', t.navIncomeExpenditureYearly);
+      safeSetText('navLoanAccounts', t.navLoanAccounts);
+      safeSetText('navMemberLoanAccounts', t.navMemberLoanAccounts);
+      safeSetText('navGrantsUtilization', t.navGrantsUtilization);
+
+      safeSetText('navMPR', t.navMPR);
+      safeSetText('navGradation', t.navGradation);
+      safeSetText('navReportsHub', t.navReportsHub);
+      safeSetText('navOverallExport', t.navOverallExport);
+      safeSetText('navLakhpatiDidi', t.navLakhpatiDidi);
+      safeSetText('navGrantsReport', t.navGrantsReport);
+      safeSetText('navLogoutText', t.navLogout);
+
+      if(profileToggleText) profileToggleText.textContent = isProfileView ? t.backBtn : t.profileBtn;
+
+      safeSetText('headerTitle', t.title);
+      safeSetText('labelPgName', t.pgName);
+      safeSetText('labelActivity', t.activity);
+      safeSetText('labelAddress', t.address);
+      safeSetText('labelVillage', t.village);
+      safeSetText('labelBlock', t.block);
+      safeSetText('labelDistrict', t.district);
+      safeSetText('labelState', t.state);
+      safeSetText('labelFormationDate', t.formationDate);
+      safeSetText('labelTotalMembers', t.totalMembers);
+      safeSetText('labelClfName', t.clfName);
+      safeSetText('labelBankDetails', t.bankDetails);
+      safeSetText('labelAccountNo', t.accountNo);
+      safeSetText('labelIfsc', t.ifsc);
+      safeSetText('labelBankName', t.bankName);
+      safeSetText('labelBranch', t.branch);
+
+      if(document.getElementById('dateError')){
+        document.getElementById('dateError').textContent = (currentLanguage === 'bn')
+          ? "অবৈধ তারিখ। DD/MM/YYYY ফরম্যাট ব্যবহার করুন (যেমন, 05/02/2026)।"
+          : "Invalid date. Use DD/MM/YYYY (e.g., 05/02/2026).";
+      }
+
+      safeSetText('confirmTitle', t.confirmTitle);
+      safeSetText('confirmSub', t.confirmSub);
+      safeSetText('confirmCancelBtn', t.cancelBtn);
+      safeSetText('confirmOkBtn', t.confirmBtn);
+
+      if(shouldBroadcast) broadcastLanguage();
+    }
+
+    function init(){
+      setDisabledAll(true);
+
+      closeMenu();
+      persistLang(currentLanguage);
+      updateLanguage(false);
+
+      broadcastLanguage();
+    }
+
+    init();
+  </script>
+
+  <!-- ============================================================
+       Auto-bind PG / CLF names across ALL PG templates
+     ============================================================ -->
+  <script>
+    (function(){
+      const pgName = {{ (current_pg_name or '')|tojson }};
+      const clfName = {{ (current_clf_name or '')|tojson }};
+
+      function shouldFillInput(el){
+        if(!el) return false;
+        const type = (el.getAttribute('type') || '').toLowerCase();
+        if(type && type !== 'text' && type !== 'search') return false;
+        if(el.disabled) return false;
+        const v = (el.value || '').trim();
+        return v.length === 0;
+      }
+
+      function tryFill(){
+        const inputs = Array.from(document.querySelectorAll('input[type="text"], input[type="search"]'));
+        for(const el of inputs){
+          const id = (el.id || '').toLowerCase();
+          const name = (el.name || '').toLowerCase();
+          const ph = (el.getAttribute('placeholder') || '').toLowerCase();
+
+          const looksPg = id.includes('pgname') || name.includes('pg_name') || name.includes('pgname') || ph.includes('pg name') || ph.includes('pgname');
+          if(looksPg && pgName && shouldFillInput(el)){
+            el.value = pgName;
+            if(id.includes('pgname') || ph.includes('pg name')) el.readOnly = true;
+          }
+
+          const looksClf = id.includes('clfname') || name.includes('clf_name') || name.includes('clfname') || ph.includes('clf name') || ph.includes('clfname') || ph.includes('block name');
+          if(looksClf && clfName && shouldFillInput(el)){
+            el.value = clfName;
+            if(id.includes('clfname') || ph.includes('clf name') || ph.includes('block name')) el.readOnly = true;
+          }
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', tryFill);
+      setTimeout(tryFill, 300);
+    })();
+  </script>
+
+
+<script>
+  // ✅ Touch feedback for sidebar items ONLY in app/webview (fix hover malfunction)
+  (function(){
+    if(!document.body.classList.contains("app-webview")) return;
+
+    const nav = document.getElementById("sidebarNav");
+    if(!nav) return;
+
+    const items = Array.from(nav.querySelectorAll(".nav-item"));
+
+    function clearPressed(){
+      items.forEach(i => i.classList.remove("is-pressed"));
+    }
+
+    items.forEach(item => {
+      // on touch start -> add pressed state
+      item.addEventListener("touchstart", () => {
+        clearPressed();
+        item.classList.add("is-pressed");
+      }, { passive: true });
+
+      // on touch end/cancel -> remove pressed state shortly after
+      item.addEventListener("touchend", () => {
+        setTimeout(() => item.classList.remove("is-pressed"), 120);
+      }, { passive: true });
+
+      item.addEventListener("touchcancel", () => {
+        item.classList.remove("is-pressed");
+      }, { passive: true });
+    });
+
+    // if user taps elsewhere, clear stuck pressed
+    document.addEventListener("touchstart", (e) => {
+      if(!nav.contains(e.target)) clearPressed();
+    }, { passive: true });
+  })();
+</script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

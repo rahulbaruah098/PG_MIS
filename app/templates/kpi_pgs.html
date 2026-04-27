@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}KPI Drilldown{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">KPI Drill-down: {{ metric.replace('_',' ').title() }}</h1>
+      <p class="text-slate-600 text-sm mt-1">Period: {{ year }}-{{ "%02d"|format(month) }}</p>
+    </div>
+    <form method="get" class="flex items-end gap-2">
+      <input type="hidden" name="metric" value="{{ metric }}"/>
+      <div>
+        <label class="block text-xs text-slate-600 mb-1">Year</label>
+        <input name="year" value="{{ year }}" class="w-28 rounded-xl border border-slate-200 px-3 py-2 bg-white"/>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-600 mb-1">Month</label>
+        <input name="month" value="{{ month }}" class="w-20 rounded-xl border border-slate-200 px-3 py-2 bg-white"/>
+      </div>
+      <button class="rounded-xl px-4 py-2 bg-slate-900 text-white">Go</button>
+    </form>
+  </div>
+
+  <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm mt-6 overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr class="text-left text-slate-600">
+          <th class="py-2 pr-4">PG</th>
+          <th class="py-2 pr-4">Value</th>
+          <th class="py-2 pr-4">Snapshot</th>
+          <th class="py-2 pr-4">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for r in rows %}
+        <tr>
+          <td class="py-2 pr-4">{{ r.name }}</td>
+          <td class="py-2 pr-4 font-medium">{{ r.value }}</td>
+          <td class="py-2 pr-4">
+            {% if r.has_snapshot %}
+              <span class="inline-flex items-center px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs">Yes</span>
+            {% else %}
+              <span class="inline-flex items-center px-2 py-1 rounded-full bg-amber-50 text-amber-700 text-xs">No</span>
+            {% endif %}
+          </td>
+          <td class="py-2 pr-4">
+            <a class="text-indigo-600 hover:underline" href="{{ url_for('pg.pg_view', pg_id=r.pg_id) }}">Open PG</a>
+            <span class="text-slate-300 mx-2">•</span>
+            <a class="text-indigo-600 hover:underline" href="{{ url_for('reports.kpi_members', pg_id=r.pg_id, metric=metric) }}">Members</a>
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not rows %}
+        <tr><td colspan="4" class="py-3 text-slate-500">No PGs found for your scope.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

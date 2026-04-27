@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+  <h4 class="mb-0">State Authorization</h4>
+  <span class="badge bg-secondary">State Admin</span>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th style="width: 60px;">#</th>
+          <th>PG</th>
+          <th>Sector</th>
+          <th>Status</th>
+          <th style="width: 340px;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pg in pgs %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>
+              <div class="fw-semibold">{{ pg.name }}</div>
+              <div class="small text-muted">Updated: {{ pg.updated_at.strftime('%Y-%m-%d') if pg.updated_at else '-' }}</div>
+            </td>
+            <td>{{ pg.sector or '-' }}</td>
+            <td><span class="badge bg-secondary">{{ pg.status or 'draft' }}</span></td>
+            <td>
+              <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('pg.pg_view', pg_id=pg._id|string) }}">Review</a>
+
+                <form method="post" class="d-inline">
+                  <input type="hidden" name="pg_id" value="{{ pg._id|string }}">
+                  <input type="hidden" name="action" value="approve">
+                  <button class="btn btn-sm btn-success" type="submit">Approve</button>
+                </form>
+
+                <form method="post" class="d-inline">
+                  <input type="hidden" name="pg_id" value="{{ pg._id|string }}">
+                  <input type="hidden" name="action" value="reject">
+                  <input class="form-control form-control-sm" name="reason" placeholder="Rejection reason (optional)" style="min-width: 180px; display:inline-block;">
+                  <button class="btn btn-sm btn-outline-danger" type="submit">Reject</button>
+                </form>
+              </div>
+
+              {% if pg.rejection_reason %}
+                <div class="small text-danger mt-1">Reason: {{ pg.rejection_reason }}</div>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="text-muted p-3">No PGs found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

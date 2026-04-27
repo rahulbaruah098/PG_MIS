@@ -1,0 +1,1137 @@
+{% extends "base.html" %}
+{% block title %}Yearly Income & Expenditure{% endblock %}
+{% block content %}
+
+<style>
+  /* ============================================================
+     YEARLY INCOME & EXPENDITURE — LEDGER BOOK LOOK
+     ✅ ONLY UI/CSS/UX changed (scoped)
+     ✅ NO change to loops/variables/data
+     ✅ Translation hook + persistence (EN/BN) compatible with base navbar
+     ✅ Back button INSIDE header line (top-left) — ONLY mobile/tablet/app
+     ✅ Month-wise section converted to searchable + paginated horizontal swipe cards
+     ============================================================ */
+
+  .yie-wrap{
+    width:100%;
+    padding: clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    color: var(--ink);
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .yie-wrap *{ box-sizing:border-box; }
+
+  .yie-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+    position: relative;
+  }
+
+  /* Header */
+  .yie-head{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+    position: relative;
+  }
+  .yie-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 18px;
+    text-align:center;
+    letter-spacing:.2px;
+  }
+
+  /* Back (mobile only) */
+  .yie-back{
+    display:none;
+    position:absolute;
+    top:50%;
+    left:14px;
+    transform:translateY(-50%);
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.14);
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color: rgba(11,77,58,.98);
+    user-select:none;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .yie-back:hover{
+    transform:translateY(-50%) translateX(-1px);
+    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
+    background: rgba(255,255,255,.98);
+  }
+  .yie-back:active{ transform:translateY(-50%) scale(.98); }
+  .yie-back svg{ width:18px;height:18px;display:block; }
+
+  /* Top fields */
+  .yie-topfields{
+    padding: 10px 16px 14px;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 14px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+  .yie-field{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  }
+  .yie-label{
+    font-weight:900;
+    font-size:12px;
+    white-space:nowrap;
+    color: var(--ink);
+  }
+  .yie-muted{
+    font-size:12px;
+    font-weight:800;
+    color: rgba(15,23,42,.72);
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  /* Actions bar (Year filter) */
+  .yie-actions{
+    padding: 10px 16px;
+    display:flex;
+    align-items:flex-end;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.94);
+    flex-wrap: wrap;
+  }
+  .yie-actions-left{
+    display:flex;
+    align-items:flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .yie-stack{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+  }
+
+  .yie-input{
+    width:100%;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius:12px;
+    padding: 8px 10px;
+    background: rgba(247,250,249,.75);
+    font-weight:800;
+    font-size:12px;
+    outline:none;
+    color: var(--ink);
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .yie-input:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  .yie-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+    text-decoration:none;
+    user-select:none;
+  }
+  .yie-btn:hover{
+    transform: translateY(-1px);
+    background:#fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .yie-btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; box-shadow:none; }
+  .yie-icon{ width:14px;height:14px;flex-shrink:0; }
+
+  /* KPI summary pills */
+  .yie-summary{
+    padding: 10px 16px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content: space-between;
+    border-top: 1.5px solid var(--line2);
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(247,250,249,.72);
+  }
+  .yie-kpi{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 999px;
+    background: rgba(255,255,255,.86);
+    font-weight: 950;
+    font-size: 12px;
+  }
+  .yie-kpi b{ font-variant-numeric: tabular-nums; }
+
+  /* Blocks */
+  .yie-body{
+    padding: 12px 16px 14px;
+    background: rgba(255,255,255,.96);
+  }
+  .yie-grid2{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items:start;
+  }
+  .yie-block{
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,.92);
+    overflow:hidden;
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+  }
+  .yie-block-head{
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(247,250,249,.66);
+  }
+  .yie-block-title{
+    margin:0;
+    font-weight:950;
+    font-size: 13px;
+    letter-spacing:.15px;
+  }
+  .yie-block-body{ padding: 12px; }
+
+  .yie-row{
+    display:flex;
+    align-items:baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed rgba(15,23,42,.14);
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .yie-row:last-child{ border-bottom:0; }
+  .yie-row .k{ color: rgba(15,23,42,.78); }
+  .yie-row .v{ font-weight: 950; font-variant-numeric: tabular-nums; }
+
+  /* Month-wise cards area */
+  .yie-table-wrap{
+    margin-top: 12px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 14px;
+    overflow:hidden;
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
+  }
+  .yie-table-head{
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(247,250,249,.66);
+  }
+  .yie-table-title{
+    margin:0;
+    font-weight:950;
+    font-size: 13px;
+    letter-spacing:.15px;
+  }
+
+  .yie-month-tools{
+    padding: 12px;
+    display:grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap: 12px;
+    border-bottom: 1px solid var(--line2);
+    background: rgba(255,255,255,.96);
+  }
+  .yie-search-wrap{
+    min-width:0;
+  }
+  .yie-search{
+    width:100%;
+    height:48px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background: rgba(247,250,249,.85);
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 850;
+    color: var(--ink);
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .yie-search::placeholder{ color: rgba(15,23,42,.46); }
+  .yie-search:focus{
+    border-color: rgba(11,77,58,.36);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+
+  .yie-rows-wrap{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width: fit-content;
+  }
+  .yie-rows-chip{
+    height:48px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 0 16px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background: rgba(247,250,249,.85);
+    font-weight: 950;
+    font-size: 13px;
+  }
+  .yie-rows-chip select{
+    border:0;
+    outline:none;
+    background: transparent;
+    font-weight: 950;
+    color: var(--ink);
+    font-size: 13px;
+    cursor:pointer;
+  }
+
+  .yie-month-meta{
+    padding: 10px 12px;
+    border-top: 1px solid var(--line2);
+    border-bottom: 1px solid var(--line2);
+    background: rgba(247,250,249,.58);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .yie-month-meta-text{
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.72);
+  }
+  .yie-swipe-note{
+    font-size: 11px;
+    font-weight: 850;
+    color: rgba(15,23,42,.50);
+  }
+
+  .yie-month-swiper{
+    overflow-x:auto;
+    overflow-y:hidden;
+    padding: 18px 16px 20px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(15,23,42,.20) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+  .yie-month-swiper::-webkit-scrollbar{ height:8px; }
+  .yie-month-swiper::-webkit-scrollbar-thumb{
+    background: rgba(15,23,42,.20);
+    border-radius:999px;
+  }
+  .yie-month-swiper::-webkit-scrollbar-track{ background: transparent; }
+
+  .yie-month-track{
+    display:flex;
+    align-items:stretch;
+    gap: 18px;
+    min-height: 380px;
+  }
+
+  .yie-month-card{
+    flex: 0 0 min(430px, calc(100vw - 86px));
+    max-width: 430px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,250,251,.98));
+    box-shadow: 0 18px 28px -24px rgba(15,23,42,.28);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  .yie-month-card[hidden]{ display:none !important; }
+
+  .yie-card-checkrow{
+    padding: 14px 16px 0;
+  }
+  .yie-card-check{
+    width:26px;
+    height:26px;
+    border-radius: 4px;
+    border: 2px solid rgba(15,23,42,.34);
+    background: rgba(255,255,255,.95);
+    display:inline-block;
+  }
+
+  .yie-card-grid{
+    display:grid;
+    grid-template-columns: 44% 56%;
+    margin-top: 10px;
+    border-top: 1px solid rgba(15,23,42,.08);
+  }
+  .yie-card-row{
+    display: contents;
+  }
+  .yie-card-key,
+  .yie-card-val{
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+    font-size: 13px;
+  }
+  .yie-card-key{
+    font-weight: 950;
+    color: rgba(15,23,42,.70);
+  }
+  .yie-card-val{
+    font-weight: 950;
+    color: rgba(15,23,42,.80);
+    text-align:right;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap:anywhere;
+  }
+
+  .yie-card-action{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    gap: 12px;
+    padding: 14px 16px 16px;
+  }
+  .yie-card-action-label{
+    font-weight: 950;
+    color: rgba(15,23,42,.72);
+  }
+  .yie-card-action-btn{
+    width:54px;
+    height:48px;
+    border-radius: 16px;
+    border: 1px solid rgba(220,38,38,.28);
+    background: rgba(254,242,242,.92);
+    color: #991b1b;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow: 0 12px 18px -16px rgba(153,27,27,.32);
+  }
+  .yie-card-action-btn svg{
+    width:20px;
+    height:20px;
+    display:block;
+  }
+
+  .yie-empty-wrap{
+    padding: 16px;
+  }
+  .yie-empty-box{
+    min-height: 64px;
+    border: 1px solid rgba(15,23,42,.14);
+    border-radius: 18px;
+    background: rgba(255,255,255,.94);
+    display:flex;
+    align-items:center;
+    padding: 16px;
+    color:#64748b;
+    font-size:13px;
+    font-weight:800;
+  }
+
+  .yie-pagination{
+    padding: 12px 14px 14px;
+    border-top: 1px solid var(--line2);
+    background: rgba(255,255,255,.96);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .yie-page-info{
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.72);
+  }
+  .yie-page-controls{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap: wrap;
+  }
+  .yie-page-btn{
+    min-width: 42px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border:1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.84);
+    color: var(--ink);
+    font-weight: 950;
+    font-size: 12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .yie-page-btn:hover{
+    transform: translateY(-1px);
+    background:#fff;
+    box-shadow: 0 14px 22px -18px rgba(15,23,42,.22);
+  }
+  .yie-page-btn[disabled]{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+  .yie-page-btn.is-active{
+    background: rgba(11,77,58,.10);
+    border-color: rgba(11,77,58,.25);
+    color: rgba(11,77,58,.98);
+  }
+
+  /* Responsive */
+  @media (max-width: 720px){
+    .yie-topfields{ grid-template-columns: 1fr; }
+    .yie-summary{ justify-content:flex-start; }
+    .yie-grid2{ grid-template-columns: 1fr; }
+    .yie-back{ display:flex; }
+
+    .yie-month-tools{
+      grid-template-columns: 1fr;
+    }
+    .yie-rows-wrap{
+      justify-content:flex-start;
+    }
+    .yie-month-swiper{
+      padding: 18px 12px 18px;
+    }
+    .yie-month-card{
+      flex-basis: min(430px, calc(100vw - 66px));
+    }
+    .yie-card-grid{
+      grid-template-columns: 47% 53%;
+    }
+  }
+
+  /* Prevent back button + title overlap (mobile/tablet) */
+  .yie-head{ position: relative; }
+
+  @media (max-width: 720px){
+    .yie-title{
+      text-align: left;
+      padding-left: 54px;
+      padding-right: 10px;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    .yie-back{
+      top: 16px;
+      transform: none;
+      left: 14px;
+    }
+
+    .yie-head{
+      padding-top: 16px;
+      padding-bottom: 14px;
+    }
+  }
+</style>
+
+<div class="yie-wrap">
+  <div class="yie-sheet">
+
+    <!-- Header -->
+    <div class="yie-head">
+      <a class="yie-back" href="javascript:history.back()" aria-label="Go Back" id="yieBackAria">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+      <h2 class="yie-title" id="yiePageTitle">Yearly Income &amp; Expenditure Statement</h2>
+    </div>
+
+    <!-- Top fields -->
+    <div class="yie-topfields">
+      <div class="yie-field">
+        <div class="yie-label" id="yieLblPG">Producer Group</div>
+        <div class="yie-muted">{{ pg.name or pg.pg_name or '—' }}</div>
+      </div>
+      <div class="yie-field">
+        <div class="yie-label" id="yieLblYearFixed">Year</div>
+        <div class="yie-muted"><span class="yie-muted" id="yieYearVal">{{ year }}</span></div>
+      </div>
+    </div>
+
+    <!-- Actions (GET year) -->
+    <div class="yie-actions">
+      <form method="get" class="yie-actions-left">
+        <div class="yie-stack" style="min-width:120px;">
+          <label class="yie-label" id="yieLblYearInput">Year</label>
+          <input name="year" value="{{ year }}" class="yie-input" />
+        </div>
+
+        <button class="yie-btn" type="submit" id="yieBtnView">
+          <svg class="yie-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 21l-4.3-4.3"></path>
+            <circle cx="11" cy="11" r="7"></circle>
+          </svg>
+          <span id="yieBtnViewText">View</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- KPI Summary -->
+    <div class="yie-summary" aria-hidden="true">
+      <div class="yie-kpi">
+        <span id="yieKpiIncomeLabel">Total Income</span>
+        <b>₹{{ "%.2f"|format(total_income or 0) }}</b>
+      </div>
+      <div class="yie-kpi">
+        <span id="yieKpiExpLabel">Total Expenditure</span>
+        <b>₹{{ "%.2f"|format(total_expenditure or 0) }}</b>
+      </div>
+      <div class="yie-kpi">
+        <span id="yieKpiSurplusLabel">Surplus / (Deficit)</span>
+        <b>₹{{ "%.2f"|format(surplus or 0) }}</b>
+      </div>
+    </div>
+
+    <div class="yie-body">
+
+      <!-- Heads blocks -->
+      <div class="yie-grid2">
+
+        <div class="yie-block">
+          <div class="yie-block-head">
+            <h3 class="yie-block-title" id="yieIncomeHeadsTitle">Income heads (year total)</h3>
+          </div>
+          <div class="yie-block-body">
+            {% for k,v in by_head_income.items() %}
+              <div class="yie-row">
+                <div class="k">{{ k.replace('_',' ').title() }}</div>
+                <div class="v">₹{{ "%.2f"|format(v) }}</div>
+              </div>
+            {% endfor %}
+            {% if not by_head_income %}
+              <div class="yie-row" style="border-bottom:0;">
+                <div class="k" id="yieNoIncomeHeads">No records for this year.</div>
+                <div class="v"></div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="yie-block">
+          <div class="yie-block-head">
+            <h3 class="yie-block-title" id="yieExpHeadsTitle">Expenditure heads (year total)</h3>
+          </div>
+          <div class="yie-block-body">
+            {% for k,v in by_head_expenditure.items() %}
+              <div class="yie-row">
+                <div class="k">{{ k.replace('_',' ').title() }}</div>
+                <div class="v">₹{{ "%.2f"|format(v) }}</div>
+              </div>
+            {% endfor %}
+            {% if not by_head_expenditure %}
+              <div class="yie-row" style="border-bottom:0;">
+                <div class="k" id="yieNoExpHeads">No records for this year.</div>
+                <div class="v"></div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Month-wise searchable + paginated swipe cards -->
+      <div class="yie-table-wrap" id="yieMonthSection">
+        <div class="yie-table-head">
+          <h3 class="yie-table-title" id="yieMonthWiseTitle">Month-wise totals</h3>
+        </div>
+
+        <div class="yie-month-tools">
+          <div class="yie-search-wrap">
+            <input
+              type="text"
+              class="yie-search"
+              id="yieMonthSearch"
+              placeholder="Search..."
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="yie-rows-wrap">
+            <div class="yie-rows-chip">
+              <span id="yieRowsLabel">Rows</span>
+              <select id="yieRowsPerPage" aria-label="Rows per page">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="yie-month-meta">
+          <div class="yie-month-meta-text" id="yieMonthMetaText">Showing month-wise cards</div>
+        </div>
+
+        {% if months %}
+          <div class="yie-month-swiper" id="yieMonthSwiper">
+            <div class="yie-month-track" id="yieMonthTrack">
+              {% for r in months %}
+                {% set calc_surplus = (r.total_income or 0) - (r.total_expenditure or 0) %}
+                <div
+                  class="yie-month-card"
+                  data-month-card
+                 data-search="{{ loop.index }} {{ (r.month or '')|lower }} {{ ('%.2f'|format(r.total_income or 0))|lower }} {{ ('%.2f'|format(r.total_expenditure or 0))|lower }} {{ ('%.2f'|format(calc_surplus))|lower }}"
+                >
+                  <div class="yie-card-checkrow">
+                    <span class="yie-card-check" aria-hidden="true"></span>
+                  </div>
+
+             <div class="yie-card-grid">
+  <div class="yie-card-row">
+    <div class="yie-card-key yieCardSlLabel">SL</div>
+    <div class="yie-card-val">{{ loop.index }}</div>
+  </div>
+
+  <div class="yie-card-row">
+    <div class="yie-card-key yieCardMonthLabel">Month</div>
+    <div class="yie-card-val">{{ r.month }}</div>
+  </div>
+
+  <div class="yie-card-row">
+    <div class="yie-card-key yieCardIncomeLabel">Income</div>
+    <div class="yie-card-val">₹{{ "%.2f"|format(r.total_income or 0) }}</div>
+  </div>
+
+  <div class="yie-card-row">
+    <div class="yie-card-key yieCardExpLabel">Expenditure</div>
+    <div class="yie-card-val">₹{{ "%.2f"|format(r.total_expenditure or 0) }}</div>
+  </div>
+
+  <div class="yie-card-row">
+    <div class="yie-card-key yieCardSurplusLabel">Surplus</div>
+    <div class="yie-card-val">₹{{ "%.2f"|format(calc_surplus) }}</div>
+  </div>
+</div>
+
+                  <div class="yie-card-action">
+                    <div class="yie-card-action-label yieActionLabel">Action</div>
+                    <button class="yie-card-action-btn" type="button" aria-label="View row">
+                      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 5C6.5 5 2.1 8.4 1 12c1.1 3.6 5.5 7 11 7s9.9-3.4 11-7c-1.1-3.6-5.5-7-11-7Z" stroke="currentColor" stroke-width="1.8"/>
+                        <circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="1.8"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% else %}
+          <div class="yie-empty-wrap">
+            <div class="yie-empty-box" id="yieNoMonths">
+              No monthly I&amp;E entries found for this year.
+            </div>
+          </div>
+        {% endif %}
+
+        {% if months %}
+          <div class="yie-pagination" id="yiePaginationBar">
+            <div class="yie-page-info" id="yiePageInfo">Showing 0–0 of 0</div>
+            <div class="yie-page-controls">
+              <button type="button" class="yie-page-btn" id="yiePrevBtn">Prev</button>
+              <div id="yiePageNumberWrap" class="yie-page-controls"></div>
+              <button type="button" class="yie-page-btn" id="yieNextBtn">Next</button>
+            </div>
+          </div>
+        {% endif %}
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // YEARLY I&E — TRANSLATION CONNECTIVITY (EN/BN)
+  // ✅ No change to data, loops, routes, or backend logic
+  // ✅ Listens to base navbar language toggle broadcasts
+  // ✅ Persists until user manually toggles again (uses same stored keys)
+  // ✅ Month cards search + pagination is frontend only
+  // ============================================================
+
+  (function(){
+    const YIE_T = {
+      en: {
+        docTitle: "Yearly Income & Expenditure",
+        backAria: "Go Back",
+        pageTitle: "Yearly Income & Expenditure Statement",
+        producerGroup: "Producer Group",
+        year: "Year",
+        yearLabel: "Year",
+        view: "View",
+        thSl: "SL",
+
+        kpiIncome: "Total Income",
+        kpiExp: "Total Expenditure",
+        kpiSurplus: "Surplus / (Deficit)",
+
+        incomeHeads: "Income heads (year total)",
+        expHeads: "Expenditure heads (year total)",
+        noRecords: "No records for this year.",
+
+        monthWise: "Month-wise totals",
+        thMonth: "Month",
+        thIncome: "Income",
+        thExp: "Expenditure",
+        thSurplus: "Surplus",
+        noMonths: "No monthly I&E entries found for this year.",
+
+        searchPlaceholder: "Search...",
+        rows: "Rows",
+        swipeHint: "Swipe horizontally to view more",
+        showingCards: "Showing month-wise cards",
+        action: "Action",
+        prev: "Prev",
+        next: "Next",
+        page: "Page",
+        showingOf: "Showing {start}–{end} of {total}",
+        noSearchResults: "No matching month-wise entries found."
+      },
+      bn: {
+        docTitle: "বার্ষিক আয় ও ব্যয়",
+        backAria: "ফিরে যান",
+        pageTitle: "বার্ষিক আয় ও ব্যয় বিবরণী",
+        producerGroup: "প্রডিউসার গ্রুপ",
+        year: "বছর",
+        yearLabel: "বছর",
+        view: "দেখুন",
+        thSl: "ক্রমিক",
+
+        kpiIncome: "মোট আয়",
+        kpiExp: "মোট ব্যয়",
+        kpiSurplus: "উদ্বৃত্ত / (ঘাটতি)",
+
+        incomeHeads: "আয়ের খাত (বার্ষিক মোট)",
+        expHeads: "ব্যয়ের খাত (বার্ষিক মোট)",
+        noRecords: "এই বছরের কোনো রেকর্ড নেই।",
+
+        monthWise: "মাসভিত্তিক মোট",
+        thMonth: "মাস",
+        thIncome: "আয়",
+        thExp: "ব্যয়",
+        thSurplus: "উদ্বৃত্ত",
+        noMonths: "এই বছরের জন্য কোনো মাসিক আয়-ব্যয় এন্ট্রি পাওয়া যায়নি।",
+
+        searchPlaceholder: "খুঁজুন...",
+        rows: "সারি",
+        swipeHint: "আরও দেখতে আড়াআড়ি সোয়াইপ করুন",
+        showingCards: "মাসভিত্তিক কার্ড দেখানো হচ্ছে",
+        action: "অ্যাকশন",
+        prev: "পূর্ববর্তী",
+        next: "পরবর্তী",
+        page: "পৃষ্ঠা",
+        showingOf: "{total}টির মধ্যে {start}–{end} দেখানো হচ্ছে",
+        noSearchResults: "মিল পাওয়া যায়নি।"
+      }
+    };
+
+    function safeText(id, val){
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    }
+
+    function getStoredLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      try{
+        const l3 = document.documentElement.getAttribute('data-lang');
+        if(l3 === 'en' || l3 === 'bn') return l3;
+      }catch(_){}
+      return 'en';
+    }
+
+    function renderFormat(str, params){
+      return String(str || '').replace(/\{(\w+)\}/g, (_, key) => (params && params[key] != null ? params[key] : ''));
+    }
+
+    function applyYIE(lang){
+      const t = YIE_T[lang] || YIE_T.en;
+
+      try { document.title = t.docTitle; } catch(_){}
+
+      const back = document.querySelector('.yie-back');
+      if(back) back.setAttribute('aria-label', t.backAria);
+
+      safeText('yiePageTitle', t.pageTitle);
+      safeText('yieLblPG', t.producerGroup);
+
+      safeText('yieLblYearFixed', t.year);
+      safeText('yieLblYearInput', t.yearLabel);
+      safeText('yieBtnViewText', t.view);
+
+      safeText('yieKpiIncomeLabel', t.kpiIncome);
+      safeText('yieKpiExpLabel', t.kpiExp);
+      safeText('yieKpiSurplusLabel', t.kpiSurplus);
+
+      safeText('yieIncomeHeadsTitle', t.incomeHeads);
+      safeText('yieExpHeadsTitle', t.expHeads);
+
+      safeText('yieNoIncomeHeads', t.noRecords);
+      safeText('yieNoExpHeads', t.noRecords);
+
+      safeText('yieMonthWiseTitle', t.monthWise);
+      safeText('yieNoMonths', t.noMonths);
+      safeText('yieRowsLabel', t.rows);
+      safeText('yieSwipeHint', t.swipeHint);
+      safeText('yieMonthMetaText', t.showingCards);
+      safeText('yiePrevBtn', t.prev);
+      safeText('yieNextBtn', t.next);
+
+      const search = document.getElementById('yieMonthSearch');
+      if(search) search.placeholder = t.searchPlaceholder;
+
+      document.querySelectorAll('.yieCardSlLabel').forEach(el => el.textContent = t.thSl);
+      document.querySelectorAll('.yieCardMonthLabel').forEach(el => el.textContent = t.thMonth);
+      document.querySelectorAll('.yieCardIncomeLabel').forEach(el => el.textContent = t.thIncome);
+      document.querySelectorAll('.yieCardExpLabel').forEach(el => el.textContent = t.thExp);
+      document.querySelectorAll('.yieCardSurplusLabel').forEach(el => el.textContent = t.thSurplus);
+      document.querySelectorAll('.yieActionLabel').forEach(el => el.textContent = t.action);
+
+      const emptySearch = document.getElementById('yieNoSearchMonths');
+      if(emptySearch) emptySearch.textContent = t.noSearchResults;
+
+      if(window.__yiePager && typeof window.__yiePager.refreshTexts === 'function'){
+        window.__yiePager.refreshTexts();
+      }
+    }
+
+    function initMonthPager(){
+      const section = document.getElementById('yieMonthSection');
+      const track = document.getElementById('yieMonthTrack');
+      const swiper = document.getElementById('yieMonthSwiper');
+      const cards = Array.from(document.querySelectorAll('[data-month-card]'));
+      const searchInput = document.getElementById('yieMonthSearch');
+      const rowsSelect = document.getElementById('yieRowsPerPage');
+      const prevBtn = document.getElementById('yiePrevBtn');
+      const nextBtn = document.getElementById('yieNextBtn');
+      const pageInfo = document.getElementById('yiePageInfo');
+      const pageWrap = document.getElementById('yiePageNumberWrap');
+
+      if(!section || !track || !swiper || !cards.length || !searchInput || !rowsSelect || !prevBtn || !nextBtn || !pageInfo || !pageWrap){
+        return;
+      }
+
+      let currentPage = 1;
+      let filteredCards = cards.slice();
+
+      const noSearch = document.createElement('div');
+      noSearch.className = 'yie-empty-wrap';
+      noSearch.innerHTML = '<div class="yie-empty-box" id="yieNoSearchMonths">No matching month-wise entries found.</div>';
+      noSearch.hidden = true;
+      swiper.insertAdjacentElement('afterend', noSearch);
+
+      function getRowsPerPage(){
+        const n = parseInt(rowsSelect.value, 10);
+        return Number.isFinite(n) && n > 0 ? n : 25;
+      }
+
+      function getLangText(){
+        return YIE_T[getStoredLang()] || YIE_T.en;
+      }
+
+      function refreshTexts(){
+        const t = getLangText();
+        const total = filteredCards.length;
+        const rows = getRowsPerPage();
+        const pageCount = Math.max(1, Math.ceil(total / rows));
+        if(currentPage > pageCount) currentPage = pageCount;
+
+        const start = total ? ((currentPage - 1) * rows) + 1 : 0;
+        const end = total ? Math.min(currentPage * rows, total) : 0;
+        pageInfo.textContent = renderFormat(t.showingOf, { start, end, total });
+
+        const noSearchEl = document.getElementById('yieNoSearchMonths');
+        if(noSearchEl) noSearchEl.textContent = t.noSearchResults;
+
+        Array.from(pageWrap.querySelectorAll('[data-page-btn]')).forEach((btn) => {
+          const page = btn.getAttribute('data-page-btn');
+          btn.textContent = page;
+          btn.setAttribute('aria-label', renderFormat(t.page, { page }));
+        });
+      }
+
+      function renderPageButtons(pageCount){
+        pageWrap.innerHTML = '';
+        for(let i = 1; i <= pageCount; i++){
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'yie-page-btn' + (i === currentPage ? ' is-active' : '');
+          btn.textContent = String(i);
+          btn.setAttribute('data-page-btn', String(i));
+          btn.addEventListener('click', () => {
+            currentPage = i;
+            render();
+          });
+          pageWrap.appendChild(btn);
+        }
+      }
+
+      function render(){
+        const rows = getRowsPerPage();
+        const total = filteredCards.length;
+        const pageCount = Math.max(1, Math.ceil(total / rows));
+
+        if(currentPage > pageCount) currentPage = pageCount;
+        if(currentPage < 1) currentPage = 1;
+
+        cards.forEach(card => { card.hidden = true; });
+
+        if(total === 0){
+          swiper.hidden = true;
+          noSearch.hidden = false;
+          pageWrap.innerHTML = '';
+          prevBtn.disabled = true;
+          nextBtn.disabled = true;
+          refreshTexts();
+          return;
+        }
+
+        swiper.hidden = false;
+        noSearch.hidden = true;
+
+        const startIndex = (currentPage - 1) * rows;
+        const endIndex = startIndex + rows;
+
+        filteredCards.slice(startIndex, endIndex).forEach(card => {
+          card.hidden = false;
+        });
+
+        swiper.scrollLeft = 0;
+
+        renderPageButtons(pageCount);
+        prevBtn.disabled = currentPage <= 1;
+        nextBtn.disabled = currentPage >= pageCount;
+        refreshTexts();
+      }
+
+      function applySearch(){
+        const q = String(searchInput.value || '').trim().toLowerCase();
+        filteredCards = cards.filter(card => {
+          const hay = String(card.getAttribute('data-search') || '').toLowerCase();
+          return !q || hay.includes(q);
+        });
+        currentPage = 1;
+        render();
+      }
+
+      prevBtn.addEventListener('click', () => {
+        if(currentPage > 1){
+          currentPage -= 1;
+          render();
+        }
+      });
+
+      nextBtn.addEventListener('click', () => {
+        const rows = getRowsPerPage();
+        const pageCount = Math.max(1, Math.ceil(filteredCards.length / rows));
+        if(currentPage < pageCount){
+          currentPage += 1;
+          render();
+        }
+      });
+
+      rowsSelect.addEventListener('change', () => {
+        currentPage = 1;
+        render();
+      });
+
+      searchInput.addEventListener('input', applySearch);
+
+      window.__yiePager = {
+        refreshTexts
+      };
+
+      render();
+    }
+
+    // Base compatibility hook
+    window.updatePageLanguage = function(lang /*, baseT */){
+      if(lang !== 'en' && lang !== 'bn') lang = getStoredLang();
+      applyYIE(lang);
+    };
+
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyYIE(lang);
+    });
+
+    window.addEventListener('pgmis:lang', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyYIE(lang);
+    });
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      initMonthPager();
+      applyYIE(getStoredLang());
+    });
+  })();
+</script>
+
+{% endblock %}

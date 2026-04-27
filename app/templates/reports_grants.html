@@ -1,0 +1,1533 @@
+{% extends "base.html" %}
+{% block title %}Grants Report{% endblock %}
+{% block content %}
+<style>
+  /* ============================================================
+     GRANTS REPORT — UI RESKIN
+     ✅ ONLY UI/CSS/translation UX changed
+     ✅ NO existing routes / data / backend logic changed
+     ✅ KPI cards moved below title and above filters
+     ✅ Mobile back button added in same style/position
+     ✅ Fully responsive for web/tablet/mobile/app
+     ✅ Scoped under .rp-wrap only
+     ✅ Results section: SL + search + pagination added
+     ✅ Mobile/app rows shown as swipe cards
+     ✅ Empty state still shows field headers/cards so user knows columns
+     ============================================================ */
+
+  .rp-wrap{
+    max-width:1280px;
+    margin:0 auto;
+    padding:clamp(12px,2.1vw,22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.12);
+    --line2:rgba(15,23,42,.08);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --soft2:#f3f8f5;
+    --accent:#0b4d3a;
+    --mint:#d8efe6;
+    --mint-2:#e4f5ee;
+    --mint-line:#9ed9c5;
+    --ring:rgba(158,217,197,.24);
+  }
+  .rp-wrap *{ box-sizing:border-box; }
+
+  .rp-shell{
+    background:
+      radial-gradient(circle at top left, rgba(11,77,58,.05), transparent 24%),
+      linear-gradient(180deg, #ffffff, #fbfcfc);
+    border:1px solid var(--line);
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:0 18px 36px -28px rgba(15,23,42,.24);
+    position:relative;
+  }
+
+  .rp-back{
+    display:none;
+    position:absolute;
+    top:12px;
+    left:12px;
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    box-shadow:0 12px 20px -16px rgba(15,23,42,.38);
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color:rgba(11,77,58,.98);
+    user-select:none;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    z-index:3;
+  }
+  .rp-back:hover{
+    transform:translateX(-1px);
+    box-shadow:0 16px 26px -18px rgba(15,23,42,.46);
+    background:rgba(255,255,255,.98);
+  }
+  .rp-back:active{ transform:scale(.98); }
+  .rp-back svg{ width:18px; height:18px; display:block; }
+
+  .rp-head{
+    padding:22px 20px 18px;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(11,77,58,.08), transparent 36%),
+      linear-gradient(135deg, rgba(240,253,244,.95), rgba(255,255,255,.98));
+    border-bottom:1px solid var(--line2);
+    position:relative;
+  }
+
+  .rp-head-row{
+    display:block;
+    max-width:1180px;
+    margin:0 auto;
+  }
+
+  .rp-headbox{
+    min-width:0;
+    width:100%;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .rp-title{
+    margin:0;
+    font-size:clamp(18px, 1.7vw, 22px);
+    line-height:1.15;
+    font-weight:900;
+    letter-spacing:-.01em;
+    color:var(--ink);
+    text-align:center;
+  }
+
+  .rp-sub{
+    margin-top:8px;
+    max-width:980px;
+    color:rgba(15,23,42,.62);
+    font-weight:800;
+    line-height:1.42;
+    font-size:clamp(12px, .95vw, 14px);
+    text-align:center;
+  }
+
+  .rp-main{
+    padding:18px;
+    display:grid;
+    gap:16px;
+  }
+
+  .rp-kpi-band{
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(252,253,252,.98));
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:20px;
+    box-shadow:0 16px 30px -26px rgba(15,23,42,.18);
+    padding:16px;
+  }
+
+  .rp-kpis{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:14px;
+  }
+
+  .kpi{
+    padding:14px 16px;
+    border-radius:18px;
+    border:1px solid rgba(15,23,42,.10);
+    background:rgba(255,255,255,.82);
+    font-weight:950;
+    color:var(--ink);
+    box-shadow:0 10px 18px -18px rgba(15,23,42,.18);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    line-height:1.2;
+    min-height:62px;
+  }
+
+  .rp-card{
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(252,253,252,.98));
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:20px;
+    box-shadow:0 16px 30px -26px rgba(15,23,42,.18);
+    overflow:hidden;
+  }
+
+  .rp-card-head{
+    margin:0;
+    padding:16px 18px 14px;
+    border-bottom:1px solid var(--line2);
+    font-weight:950;
+    color:var(--ink);
+    font-size:18px;
+    letter-spacing:-.01em;
+    line-height:1.2;
+    background:linear-gradient(180deg, rgba(247,250,249,.9), rgba(255,255,255,.98));
+  }
+
+  .rp-body{
+    padding:18px;
+  }
+
+  .rp-section{
+    border:1px solid rgba(15,23,42,.08);
+    border-radius:18px;
+    background:linear-gradient(180deg, rgba(247,250,249,.82), rgba(255,255,255,.98));
+    padding:16px;
+  }
+
+  .rp-grid{
+    display:grid;
+    grid-template-columns:repeat(12, minmax(0,1fr));
+    gap:12px;
+  }
+
+  .rp-grid .f{
+    min-width:0;
+    grid-column:span 3;
+  }
+
+  .rp-grid .f.wide{
+    grid-column:span 6;
+  }
+
+  .rp-grid label{
+    display:block;
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:rgba(15,23,42,.55);
+    margin-bottom:7px;
+    line-height:1.25;
+  }
+
+  .rp-grid select,
+  .rp-grid input{
+    width:100%;
+    min-width:0;
+    height:46px;
+    padding:0 14px;
+    border-radius:14px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    font-weight:800;
+    font-size:13px;
+    outline:none;
+    color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .rp-grid input::placeholder{ color:#7b8794; }
+  .rp-grid select:focus,
+  .rp-grid input:focus{
+    border-color:#9ed9c5;
+    box-shadow:0 0 0 4px var(--ring);
+    background:#fff;
+  }
+
+  .rp-actions{
+    display:flex;
+    gap:.7rem;
+    flex-wrap:wrap;
+    margin-top:14px;
+  }
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    min-height:46px;
+    padding:11px 16px;
+    font-weight:950;
+    font-size:13px;
+    cursor:pointer;
+    text-decoration:none;
+    border:1px solid rgba(15,23,42,.10);
+    background:#fff;
+    color:#0f172a;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;
+    white-space:nowrap;
+  }
+  .btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 14px 22px -18px rgba(15,23,42,.18);
+  }
+
+  .btn.primary{
+    background:#d8efe6;
+    color:#0b4d3a;
+    border-color:#9ed9c5;
+    box-shadow:0 10px 18px -16px rgba(11,77,58,.18);
+  }
+  .btn.primary:hover{
+    background:#e4f5ee;
+    color:#0a4534;
+    border-color:#8fd1bb;
+    box-shadow:0 14px 22px -18px rgba(11,77,58,.22);
+  }
+
+  .btn.dl{
+    background:#eef7f3;
+    color:#0f172a;
+    border-color:rgba(15,23,42,.10);
+  }
+
+  /* Results tools */
+  .rp-tools{
+    padding: 16px 18px 0;
+    display:grid;
+    grid-template-columns: minmax(0,1fr) auto;
+    gap:12px;
+  }
+  .rp-search-wrap{ min-width:0; }
+  .rp-search{
+    width:100%;
+    height:48px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background: rgba(247,250,249,.85);
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 850;
+    color: var(--ink);
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .rp-search::placeholder{ color: rgba(15,23,42,.46); }
+  .rp-search:focus{
+    border-color: rgba(11,77,58,.36);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  .rp-rows-wrap{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width: fit-content;
+  }
+  .rp-rows-chip{
+    height:48px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 0 16px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background: rgba(247,250,249,.85);
+    font-weight: 950;
+    font-size: 13px;
+  }
+  .rp-rows-chip select{
+    border:0;
+    outline:none;
+    background: transparent;
+    font-weight: 950;
+    color: var(--ink);
+    font-size: 13px;
+    cursor:pointer;
+  }
+  .rp-meta{
+    margin: 12px 18px 0;
+    padding: 10px 12px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 12px;
+    background: rgba(247,250,249,.58);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .rp-meta-text{
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.72);
+  }
+  .rp-swipe-note{
+    font-size: 11px;
+    font-weight: 850;
+    color: rgba(15,23,42,.50);
+  }
+
+  .rp-table-card{
+    overflow:hidden;
+  }
+
+  .rp-table-wrap{
+    padding:0;
+    overflow:auto;
+    max-height:520px;
+    display:block;
+    margin-top:12px;
+  }
+
+  .rp-table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:1260px;
+  }
+
+  .rp-table th,
+  .rp-table td{
+    padding:12px 12px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    font-size:13px;
+    line-height:1.45;
+    text-align:left;
+    font-weight:800;
+    color:#0f172a;
+    background:#fff;
+    vertical-align:top;
+  }
+
+  .rp-table th{
+    position:sticky;
+    top:0;
+    z-index:1;
+    background:rgba(248,250,252,.98);
+    backdrop-filter:blur(8px);
+    font-weight:950;
+    color:#0b4d3a;
+  }
+
+  .rp-table tbody tr:hover td{
+    background:#fbfdfc;
+  }
+
+  .rp-hidden-row{ display:none !important; }
+
+  .rp-empty{
+    padding:1.1rem;
+    color:rgba(15,23,42,.62);
+    font-weight:800;
+  }
+
+  .rp-swipe-wrap{
+    display:none;
+    padding:12px;
+    margin-top:12px;
+  }
+
+  .rp-swipe-rail{
+    display:flex;
+    gap:12px;
+    overflow-x:auto;
+    padding-bottom:4px;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .rp-swipe-rail::-webkit-scrollbar{
+    height:8px;
+  }
+  .rp-swipe-rail::-webkit-scrollbar-thumb{
+    background:rgba(15,23,42,.14);
+    border-radius:999px;
+  }
+  .rp-swipe-rail::-webkit-scrollbar-track{
+    background:rgba(15,23,42,.05);
+    border-radius:999px;
+  }
+
+  .rp-record-card{
+    min-width:88%;
+    max-width:88%;
+    scroll-snap-align:start;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:18px;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,251,250,.98));
+    box-shadow:0 12px 22px -22px rgba(15,23,42,.18);
+    overflow:hidden;
+  }
+
+  .rp-record-head{
+    padding:14px 14px 12px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    background:linear-gradient(180deg, rgba(247,250,249,.9), rgba(255,255,255,.98));
+  }
+
+  .rp-record-name{
+    margin:0;
+    font-size:17px;
+    line-height:1.25;
+    color:var(--ink);
+    font-weight:950;
+    word-break:break-word;
+  }
+
+  .rp-record-sub{
+    margin-top:4px;
+    color:#64748b;
+    font-size:12px;
+    line-height:1.4;
+    font-weight:800;
+    word-break:break-word;
+  }
+
+  .rp-record-body{
+    padding:12px 14px 14px;
+    display:grid;
+    gap:10px;
+  }
+
+  .rp-kv{
+    display:grid;
+    grid-template-columns:110px 1fr;
+    gap:10px;
+    align-items:start;
+  }
+
+  .rp-kv b{
+    color:#0b4d3a;
+    font-size:12px;
+    line-height:1.3;
+    font-weight:950;
+  }
+
+  .rp-kv span{
+    color:#0f172a;
+    font-size:13px;
+    line-height:1.45;
+    font-weight:800;
+    word-break:break-word;
+  }
+
+  /* Empty mobile card */
+  .rp-mobile-empty-card{
+    display:none;
+    padding:12px;
+    background: rgba(255,255,255,.98);
+    margin-top:12px;
+  }
+  .rp-mobile-empty-card[hidden]{
+    display:none !important;
+  }
+  @media (max-width:980px){
+    .rp-mobile-empty-card.is-visible{
+      display:block !important;
+    }
+  }
+
+  .rp-mobile-card{
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 16px;
+    background: rgba(255,255,255,.98);
+    box-shadow: 0 14px 24px -22px rgba(15,23,42,.30);
+    overflow: hidden;
+  }
+
+  .rp-mobile-card-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+  }
+  .rp-mobile-card-row:last-child{ border-bottom:none; }
+
+  .rp-mobile-card-key{
+    font-weight:950;
+    font-size:12px;
+    color: rgba(11,77,58,.92);
+    line-height:1.3;
+    flex:0 0 40%;
+    max-width:44%;
+    word-break:break-word;
+  }
+  .rp-mobile-card-val{
+    text-align:right;
+    color: rgba(15,23,42,.88);
+    font-weight:800;
+    min-width:0;
+    word-break:break-word;
+  }
+
+  /* Pagination */
+  .rp-pagination{
+    margin: 12px 18px 18px;
+    padding: 12px 14px 14px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 14px;
+    background: rgba(255,255,255,.96);
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .rp-page-info{
+    font-size: 12px;
+    font-weight: 850;
+    color: rgba(15,23,42,.72);
+  }
+  .rp-page-controls{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap: wrap;
+  }
+  .rp-page-btn{
+    min-width: 42px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border:1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.84);
+    color: var(--ink);
+    font-weight: 950;
+    font-size: 12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .rp-page-btn:hover{
+    transform: translateY(-1px);
+    background:#fff;
+    box-shadow: 0 14px 22px -18px rgba(15,23,42,.22);
+  }
+  .rp-page-btn[disabled]{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+  .rp-page-btn.is-active{
+    background: rgba(11,77,58,.10);
+    border-color: rgba(11,77,58,.25);
+    color: rgba(11,77,58,.98);
+  }
+
+  @media (max-width:1100px){
+    .rp-grid .f{ grid-column:span 4; }
+    .rp-grid .f.wide{ grid-column:span 6; }
+    .rp-kpis{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+  }
+
+  @media (max-width:980px){
+    .rp-back{ display:flex; }
+
+    .rp-head{
+      padding:18px 16px 14px;
+    }
+
+    .rp-head-row{
+      padding-left:56px;
+      padding-right:0;
+    }
+
+    .rp-headbox{
+      width:100%;
+      text-align:center;
+      align-items:center;
+    }
+
+    .rp-title{
+      font-size:17px;
+      line-height:1.26;
+      letter-spacing:.1px;
+      text-align:center;
+      word-break:break-word;
+    }
+
+    .rp-sub{
+      max-width:100%;
+      font-size:11.5px;
+      line-height:1.42;
+      text-align:center;
+    }
+
+    .rp-kpis{
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+
+    .rp-grid{
+      grid-template-columns:1fr;
+    }
+
+    .btn{
+      min-height:auto;
+      padding:10px 14px;
+      font-size:12px;
+    }
+
+    .rp-tools{
+      grid-template-columns:1fr;
+    }
+
+    .rp-table-wrap{
+      display:none;
+    }
+
+    .rp-swipe-wrap{
+      display:block;
+    }
+  }
+
+  @media (max-width:560px){
+    .rp-wrap{ padding:10px; }
+
+    .rp-main{
+      padding:10px;
+      gap:10px;
+    }
+
+    .rp-kpi-band{
+      padding:12px;
+    }
+
+    .rp-kpis{
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+
+    .kpi{
+      width:100%;
+      min-height:56px;
+      padding:14px 16px;
+      border-radius:18px;
+      font-size:15px;
+      text-align:center;
+    }
+
+    .rp-body{
+      padding:10px;
+    }
+
+    .rp-section{
+      padding:12px;
+      border-radius:16px;
+    }
+
+    .rp-card-head{
+      padding:14px 14px 12px;
+      font-size:16px;
+    }
+
+    .rp-actions{
+      flex-direction:column;
+    }
+
+    .rp-actions .btn{
+      width:100%;
+      justify-content:center;
+    }
+
+    .rp-record-card{
+      min-width:92%;
+      max-width:92%;
+    }
+  }
+
+  @media (max-width:420px){
+    .rp-kv{
+      grid-template-columns:92px 1fr;
+      gap:8px;
+    }
+  }
+
+  @media (max-width:380px){
+    .rp-head-row{
+      padding-left:54px;
+    }
+
+    .rp-title{
+      font-size:15px;
+    }
+
+    .rp-sub{
+      font-size:11px;
+      line-height:1.4;
+    }
+  }
+</style>
+
+<div class="rp-wrap">
+  <div class="rp-shell">
+
+    <div class="rp-head">
+      <a class="rp-back" href="javascript:history.back()" aria-label="Go Back" id="rpBackAria">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <div class="rp-head-row">
+        <div class="rp-headbox">
+          <div class="rp-title" id="rpTitle">Grants & Utilization — Report</div>
+          <div class="rp-sub" id="rpSub">Filter by State → District → Block → GP → Village → PG • Download CSV</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rp-main">
+      <div class="rp-kpi-band">
+        <div class="rp-kpis">
+          <div class="kpi"><span id="rpRowsLbl">Rows</span>: {{ total }}</div>
+          <div class="kpi"><span id="rpReceivedLbl">Received</span>: ₹{{ total_received }}</div>
+          <div class="kpi"><span id="rpUtilizedLbl">Utilized</span>: ₹{{ total_utilized }}</div>
+          <div class="kpi"><span id="rpBalanceLbl">Balance</span>: ₹{{ total_balance }}</div>
+        </div>
+      </div>
+
+      <div class="rp-card">
+        <div class="rp-card-head" id="rpFiltersTitle">Filters</div>
+        <div class="rp-body">
+          <form method="GET">
+            <div class="rp-section">
+              <div class="rp-grid">
+                <div class="f">
+                  <label id="rpLblPeriod">Period</label>
+                  <select name="period">
+                    <option value="" {% if not period %}selected{% endif %} id="rpOptAllPeriod">All</option>
+                    <option value="weekly" {% if period=='weekly' %}selected{% endif %} id="rpOptWeekly">Weekly</option>
+                    <option value="monthly" {% if period=='monthly' %}selected{% endif %} id="rpOptMonthly">Monthly</option>
+                    <option value="6monthly" {% if period=='6monthly' %}selected{% endif %} id="rpOpt6Monthly">6 Monthly</option>
+                    <option value="yearly" {% if period=='yearly' %}selected{% endif %} id="rpOptYearly">Yearly</option>
+                  </select>
+                </div>
+
+                <div class="f">
+                  <label id="rpLblGroupBy">Download Summary By</label>
+                  <select name="group_by">
+                    <option value="" {% if not group_by %}selected{% endif %} id="rpOptDetailCsv">(Detail CSV)</option>
+                    <option value="District" {% if group_by=='District' %}selected{% endif %} id="rpOptDistrict">District</option>
+                    <option value="Block" {% if group_by=='Block' %}selected{% endif %} id="rpOptBlock">Block</option>
+                    <option value="Gram Panchayat" {% if group_by=='Gram Panchayat' %}selected{% endif %} id="rpOptGp">Gram Panchayat</option>
+                    <option value="Village" {% if group_by=='Village' %}selected{% endif %} id="rpOptVillage">Village</option>
+                    <option value="PG" {% if group_by=='PG' %}selected{% endif %} id="rpOptPg">PG</option>
+                  </select>
+                </div>
+
+                <div class="f">
+                  <label id="rpLblState">State</label>
+                  <select name="state">
+                    <option value="" id="rpOptAllState">All</option>
+                    {% for s in states %}<option value="{{ s }}" {% if filters.State==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                  </select>
+                </div>
+
+                <div class="f">
+                  <label id="rpLblDistrict2">District</label>
+                  <select name="district">
+                    <option value="" id="rpOptAllDistrict">All</option>
+                    {% for s in districts %}<option value="{{ s }}" {% if filters.District==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                  </select>
+                </div>
+
+                <div class="f">
+                  <label id="rpLblBlock2">Block</label>
+                  <select name="block">
+                    <option value="" id="rpOptAllBlock">All</option>
+                    {% for s in blocks %}<option value="{{ s }}" {% if filters.Block==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                  </select>
+                </div>
+
+                <div class="f">
+                  <label id="rpLblGp2">Gram Panchayat</label>
+                  <select name="gp">
+                    <option value="" id="rpOptAllGp">All</option>
+                    {% for s in gps %}<option value="{{ s }}" {% if filters['Gram Panchayat']==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                  </select>
+                </div>
+
+                <div class="f">
+                  <label id="rpLblVillage2">Village</label>
+                  <select name="village">
+                    <option value="" id="rpOptAllVillage">All</option>
+                    {% for s in villages %}<option value="{{ s }}" {% if filters.Village==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                  </select>
+                </div>
+
+                <div class="f wide">
+                  <label id="rpLblPgName">PG Name</label>
+                  <input type="text" name="pg_name" value="{{ filters.pg_name }}" placeholder="Search PG name…" id="rpPhPgName" />
+                </div>
+              </div>
+
+              <div class="rp-actions">
+                <button class="btn primary" type="submit" id="rpApplyBtn">Apply Filters</button>
+                <a class="btn dl" id="rpDownloadBtn" href="{{ url_for('reports.export_grants_csv', state=filters.State, district=filters.District, block=filters.Block, gp=filters['Gram Panchayat'], village=filters.Village, pg_name=filters.pg_name, period=period) }}">Download CSV</a>
+                {% if group_by %}
+                  <a class="btn dl" id="rpDownloadSummaryBtn" href="{{ url_for('reports.export_grants_csv', state=filters.State, district=filters.District, block=filters.Block, gp=filters['Gram Panchayat'], village=filters.Village, pg_name=filters.pg_name, period=period, mode='summary', group_by=group_by) }}">Download Summary CSV</a>
+                {% endif %}
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="rp-card rp-table-card">
+        <div class="rp-card-head" id="rpResultsTitle">Results</div>
+
+        <div class="rp-tools">
+          <div class="rp-search-wrap">
+            <input type="text" class="rp-search" id="rpResultsSearch" placeholder="Search..." autocomplete="off">
+          </div>
+          <div class="rp-rows-wrap">
+            <div class="rp-rows-chip">
+              <span id="rpRowsPerPageLbl">Rows</span>
+              <select id="rpRowsPerPage" aria-label="Rows per page">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="rp-meta">
+          <div class="rp-meta-text" id="rpMetaText">Showing grant report records</div>
+          <div class="rp-swipe-note" id="rpSwipeText">Swipe horizontally to view more</div>
+        </div>
+
+        <div class="rp-table-wrap">
+          <table class="rp-table" id="rpResultsTable">
+            <thead>
+              <tr>
+                <th id="rpThSl">SL</th>
+                <th id="rpThPg">PG</th>
+                <th id="rpThDistrict">District</th>
+                <th id="rpThBlock">Block</th>
+                <th id="rpThCategory">Category</th>
+                <th id="rpThSource">Source</th>
+                <th id="rpThReceived">Received</th>
+                <th id="rpThUtilized">Utilized</th>
+                <th id="rpThBalance">Balance</th>
+                <th id="rpThUcStatus">UC Status</th>
+                <th id="rpThCreated">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if rows %}
+                {% for r in rows %}
+                <tr
+                  data-rp-row
+                  data-rp-search="{{ loop.index }} {{ (r['PG Name'] or '')|lower }} {{ (r['District'] or '')|lower }} {{ (r['Block'] or '')|lower }} {{ (r['Category'] or '')|lower }} {{ (r['Source'] or '')|lower }} {{ (r['Amount Received'] ~ '')|lower }} {{ (r['Utilized'] ~ '')|lower }} {{ (r['Balance'] ~ '')|lower }} {{ (r['UC Status'] or '')|lower }} {{ (r['Created At'] or '')|lower }}"
+                >
+                  <td data-label="SL">{{ loop.index }}</td>
+                  <td data-label="PG">{{ r['PG Name'] }}</td>
+                  <td data-label="District">{{ r['District'] }}</td>
+                  <td data-label="Block">{{ r['Block'] }}</td>
+                  <td data-label="Category">{{ r['Category'] }}</td>
+                  <td data-label="Source">{{ r['Source'] }}</td>
+                  <td data-label="Received">₹{{ r['Amount Received'] }}</td>
+                  <td data-label="Utilized">₹{{ r['Utilized'] }}</td>
+                  <td data-label="Balance">₹{{ r['Balance'] }}</td>
+                  <td data-label="UC Status">{{ r['UC Status'] }}</td>
+                  <td data-label="Created">{{ r['Created At'] }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr class="rp-empty-row rp-empty-desktop-row">
+                  <td colspan="11" class="rp-empty" id="rpEmpty">No grant records found for the selected filters.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="rp-swipe-wrap">
+          {% if rows %}
+            <div class="rp-swipe-rail" id="rpSwipeRail">
+              {% for r in rows %}
+              <article
+                class="rp-record-card"
+                data-rp-row
+                data-rp-search="{{ loop.index }} {{ (r['PG Name'] or '')|lower }} {{ (r['District'] or '')|lower }} {{ (r['Block'] or '')|lower }} {{ (r['Category'] or '')|lower }} {{ (r['Source'] or '')|lower }} {{ (r['Amount Received'] ~ '')|lower }} {{ (r['Utilized'] ~ '')|lower }} {{ (r['Balance'] ~ '')|lower }} {{ (r['UC Status'] or '')|lower }} {{ (r['Created At'] or '')|lower }}"
+              >
+                <div class="rp-record-head">
+                  <h4 class="rp-record-name">{{ r['PG Name'] }}</h4>
+                  <div class="rp-record-sub"><span class="rpMobSlLbl">SL</span> {{ loop.index }} • {{ r['Category'] }} • {{ r['Source'] }}</div>
+                </div>
+                <div class="rp-record-body">
+                  <div class="rp-kv">
+                    <b class="rpMobDistrictLbl">District</b>
+                    <span>{{ r['District'] }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobBlockLbl">Block</b>
+                    <span>{{ r['Block'] }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobReceivedLbl">Received</b>
+                    <span>₹{{ r['Amount Received'] }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobUtilizedLbl">Utilized</b>
+                    <span>₹{{ r['Utilized'] }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobBalanceLbl">Balance</b>
+                    <span>₹{{ r['Balance'] }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobUcStatusLbl">UC Status</b>
+                    <span>{{ r['UC Status'] }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobCreatedLbl">Created</b>
+                    <span>{{ r['Created At'] }}</span>
+                  </div>
+                </div>
+              </article>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="rp-mobile-empty-card" id="rpMobileEmptyCard" hidden>
+            <div class="rp-mobile-card">
+              <div class="rp-mobile-card-row">
+                <div class="rp-mobile-card-key" id="rpEmptyFieldSl">SL</div>
+                <div class="rp-mobile-card-val">—</div>
+              </div>
+              <div class="rp-mobile-card-row">
+                <div class="rp-mobile-card-key" id="rpEmptyField1">PG</div>
+                <div class="rp-mobile-card-val">—</div>
+              </div>
+              <div class="rp-mobile-card-row">
+                <div class="rp-mobile-card-key" id="rpEmptyField2">District</div>
+                <div class="rp-mobile-card-val">—</div>
+              </div>
+              <div class="rp-mobile-card-row">
+                <div class="rp-mobile-card-key" id="rpEmptyField3">Block</div>
+                <div class="rp-mobile-card-val">—</div>
+              </div>
+              <div class="rp-mobile-card-row">
+                <div class="rp-mobile-card-key" id="rpEmptyField4">Category</div>
+                <div class="rp-mobile-card-val">—</div>
+              </div>
+              <div class="rp-mobile-card-row">
+                <div class="rp-mobile-card-key" id="rpEmptyField5">Source</div>
+                <div class="rp-mobile-card-val">—</div>
+              </div>
+              <div class="rp-mobile-card-row">
+                <div class="rp-mobile-card-key" id="rpEmptyField6">Received</div>
+                <div class="rp-mobile-card-val">—</div>
+              </div>
+              <div class="rp-mobile-card-row">
+                <div class="rp-mobile-card-key" id="rpEmptyField7">Utilized</div>
+                <div class="rp-mobile-card-val">—</div>
+              </div>
+              <div class="rp-mobile-card-row">
+                <div class="rp-mobile-card-key" id="rpEmptyField8">Balance</div>
+                <div class="rp-mobile-card-val">—</div>
+              </div>
+              <div class="rp-mobile-card-row">
+                <div class="rp-mobile-card-key" id="rpEmptyField9">UC Status</div>
+                <div class="rp-mobile-card-val">—</div>
+              </div>
+              <div class="rp-mobile-card-row">
+                <div class="rp-mobile-card-key" id="rpEmptyField10">Created</div>
+                <div class="rp-mobile-card-val" id="rpEmptyMobile">No grant records found for the selected filters.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rp-pagination" id="rpPagination">
+          <div class="rp-page-info" id="rpPageInfo">Showing 0–0 of 0</div>
+          <div class="rp-page-controls">
+            <button type="button" class="rp-page-btn" id="rpPrevBtn">Prev</button>
+            <div id="rpPageNumberWrap" class="rp-page-controls"></div>
+            <button type="button" class="rp-page-btn" id="rpNextBtn">Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const RP_T = {
+      en: {
+        title: "Grants & Utilization — Report",
+        backAria: "Go Back",
+        sub: "Filter by State → District → Block → GP → Village → PG • Download CSV",
+
+        rows: "Rows",
+        received: "Received",
+        utilized: "Utilized",
+        balance: "Balance",
+
+        filtersTitle: "Filters",
+        period: "Period",
+        all: "All",
+        weekly: "Weekly",
+        monthly: "Monthly",
+        sixMonthly: "6 Monthly",
+        yearly: "Yearly",
+
+        groupBy: "Download Summary By",
+        detailCsv: "(Detail CSV)",
+        district: "District",
+        block: "Block",
+        gp: "Gram Panchayat",
+        village: "Village",
+        pg: "PG",
+        state: "State",
+
+        pgName: "PG Name",
+        phPgName: "Search PG name…",
+
+        apply: "Apply Filters",
+        download: "Download CSV",
+        downloadSummary: "Download Summary CSV",
+
+        results: "Results",
+        category: "Category",
+        source: "Source",
+        ucStatus: "UC Status",
+        created: "Created",
+        sl: "SL",
+        empty: "No grant records found for the selected filters.",
+        noSearchResults: "No matching grant records found.",
+        swipeHint: "Swipe horizontally to view grant cards",
+        searchPlaceholder: "Search...",
+        rowsPerPage: "Rows",
+        metaText: "Showing grant report records",
+        swipeMore: "Swipe horizontally to view more",
+        prev: "Prev",
+        next: "Next",
+        pageWord: "Page",
+        showingOf: "Showing {start}–{end} of {total}"
+      },
+      bn: {
+        title: "গ্রান্টস ও ব্যবহার — রিপোর্ট",
+        backAria: "ফিরে যান",
+        sub: "State → District → Block → GP → Village → PG অনুযায়ী ফিল্টার করুন • CSV ডাউনলোড করুন",
+
+        rows: "সারি",
+        received: "প্রাপ্ত",
+        utilized: "ব্যবহৃত",
+        balance: "ব্যালেন্স",
+
+        filtersTitle: "ফিল্টার",
+        period: "সময়কাল",
+        all: "সব",
+        weekly: "সাপ্তাহিক",
+        monthly: "মাসিক",
+        sixMonthly: "৬ মাস অন্তর",
+        yearly: "বার্ষিক",
+
+        groupBy: "সারসংক্ষেপ ডাউনলোড করুন",
+        detailCsv: "(ডিটেইল CSV)",
+        district: "জেলা",
+        block: "ব্লক",
+        gp: "গ্রাম পঞ্চায়েত",
+        village: "গ্রাম",
+        pg: "পিজি",
+        state: "রাজ্য",
+
+        pgName: "পিজি নাম",
+        phPgName: "পিজি নাম খুঁজুন…",
+
+        apply: "ফিল্টার প্রয়োগ করুন",
+        download: "CSV ডাউনলোড",
+        downloadSummary: "সারসংক্ষেপ CSV ডাউনলোড",
+
+        results: "ফলাফল",
+        category: "বিভাগ",
+        source: "উৎস",
+        ucStatus: "ইউসি অবস্থা",
+        created: "তৈরি হয়েছে",
+        sl: "ক্রম",
+        empty: "নির্বাচিত ফিল্টারের জন্য কোনো গ্রান্ট রেকর্ড পাওয়া যায়নি।",
+        noSearchResults: "মিল পাওয়া যায়নি।",
+        swipeHint: "গ্রান্ট কার্ড দেখতে আড়াআড়ি সোয়াইপ করুন",
+        searchPlaceholder: "খুঁজুন...",
+        rowsPerPage: "সারি",
+        metaText: "গ্রান্ট রিপোর্ট রেকর্ড দেখানো হচ্ছে",
+        swipeMore: "আরও দেখতে আড়াআড়ি সোয়াইপ করুন",
+        prev: "পূর্ববর্তী",
+        next: "পরবর্তী",
+        pageWord: "পৃষ্ঠা",
+        showingOf: "{total}টির মধ্যে {start}–{end} দেখানো হচ্ছে"
+      }
+    };
+
+    function safeText(id, val){
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    }
+
+    function safeTextAll(selector, val){
+      document.querySelectorAll(selector).forEach(el => {
+        el.textContent = val;
+      });
+    }
+
+    function safePlaceholder(id, val){
+      const el = document.getElementById(id);
+      if(el) el.placeholder = val;
+    }
+
+    function fmt(str, params){
+      return String(str || '').replace(/\{(\w+)\}/g, (_, key) => (params && params[key] != null ? params[key] : ''));
+    }
+
+    function getStoredLang(){
+      try{
+        const l1 = localStorage.getItem('pgmis_lang');
+        if(l1 === 'en' || l1 === 'bn') return l1;
+      }catch(_){}
+      try{
+        const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
+        if(l2 === 'en' || l2 === 'bn') return l2;
+      }catch(_){}
+      try{
+        const l3 = document.documentElement.getAttribute('data-lang');
+        if(l3 === 'en' || l3 === 'bn') return l3;
+      }catch(_){}
+      return 'en';
+    }
+
+    function currentText(){
+      return RP_T[getStoredLang()] || RP_T.en;
+    }
+
+    function applyMobileLabels(t){
+      const rows = document.querySelectorAll('#rpResultsTable tbody tr:not(.rp-empty-row)');
+      rows.forEach((tr) => {
+        const tds = tr.querySelectorAll('td');
+        if(tds[0]) tds[0].setAttribute('data-label', t.sl);
+        if(tds[1]) tds[1].setAttribute('data-label', t.pg);
+        if(tds[2]) tds[2].setAttribute('data-label', t.district);
+        if(tds[3]) tds[3].setAttribute('data-label', t.block);
+        if(tds[4]) tds[4].setAttribute('data-label', t.category);
+        if(tds[5]) tds[5].setAttribute('data-label', t.source);
+        if(tds[6]) tds[6].setAttribute('data-label', t.received);
+        if(tds[7]) tds[7].setAttribute('data-label', t.utilized);
+        if(tds[8]) tds[8].setAttribute('data-label', t.balance);
+        if(tds[9]) tds[9].setAttribute('data-label', t.ucStatus);
+        if(tds[10]) tds[10].setAttribute('data-label', t.created);
+      });
+    }
+
+    function syncEmptyState(total){
+      const emptyCell = document.getElementById('rpEmpty');
+      const mobileEmptyCard = document.getElementById('rpMobileEmptyCard');
+      const emptyRow = emptyCell ? emptyCell.closest('tr') : null;
+      const isMobile = window.innerWidth <= 980;
+
+      if(emptyRow){
+        emptyRow.style.display = (total === 0 && !isMobile) ? '' : 'none';
+      }
+      if(mobileEmptyCard){
+        const showMobileCard = total === 0 && isMobile;
+        mobileEmptyCard.hidden = !showMobileCard;
+        mobileEmptyCard.classList.toggle('is-visible', showMobileCard);
+      }
+    }
+
+    let rpPager = null;
+
+    function initResultsPager(){
+      const table = document.getElementById('rpResultsTable');
+      const searchInput = document.getElementById('rpResultsSearch');
+      const rowsSelect = document.getElementById('rpRowsPerPage');
+      const prevBtn = document.getElementById('rpPrevBtn');
+      const nextBtn = document.getElementById('rpNextBtn');
+      const pageInfo = document.getElementById('rpPageInfo');
+      const pageWrap = document.getElementById('rpPageNumberWrap');
+      const emptyCell = document.getElementById('rpEmpty');
+      const swipeRail = document.getElementById('rpSwipeRail');
+
+      if(!table || !searchInput || !rowsSelect || !prevBtn || !nextBtn || !pageInfo || !pageWrap){
+        syncEmptyState(document.querySelectorAll('#rpResultsTable tbody tr[data-rp-row]').length);
+        return null;
+      }
+
+      const tbody = table.querySelector('tbody');
+      const tableRows = Array.from(tbody.querySelectorAll('tr')).filter(tr => !tr.classList.contains('rp-empty-row'));
+      const cardRows = swipeRail ? Array.from(swipeRail.querySelectorAll('[data-rp-row]')) : [];
+
+      let currentPage = 1;
+      let filteredIndexes = tableRows.map((_, i) => i);
+
+      function getRowsPerPage(){
+        const n = parseInt(rowsSelect.value, 10);
+        return Number.isFinite(n) && n > 0 ? n : 25;
+      }
+
+      function refreshTexts(){
+        const t = currentText();
+        const total = filteredIndexes.length;
+        const rows = getRowsPerPage();
+        const pageCount = Math.max(1, Math.ceil(Math.max(total, 1) / rows));
+
+        if(currentPage > pageCount) currentPage = pageCount;
+
+        const start = total ? ((currentPage - 1) * rows) + 1 : 0;
+        const end = total ? Math.min(currentPage * rows, total) : 0;
+        pageInfo.textContent = fmt(t.showingOf, { start, end, total });
+
+        Array.from(pageWrap.querySelectorAll('[data-rp-page-btn]')).forEach(btn => {
+          const page = btn.getAttribute('data-rp-page-btn');
+          btn.textContent = page;
+          btn.setAttribute('aria-label', t.pageWord + ' ' + page);
+        });
+
+        const isSearching = !!searchInput.value.trim();
+        const emptyMsg = isSearching ? t.noSearchResults : t.empty;
+        if(emptyCell && total === 0){
+          emptyCell.textContent = emptyMsg;
+        }
+        safeText('rpEmptyMobile', emptyMsg);
+      }
+
+      function renderPageButtons(pageCount){
+        pageWrap.innerHTML = '';
+        for(let i = 1; i <= pageCount; i++){
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'rp-page-btn' + (i === currentPage ? ' is-active' : '');
+          btn.textContent = String(i);
+          btn.setAttribute('data-rp-page-btn', String(i));
+          btn.addEventListener('click', () => {
+            currentPage = i;
+            render();
+          });
+          pageWrap.appendChild(btn);
+        }
+      }
+
+      function render(){
+        const rows = getRowsPerPage();
+        const total = filteredIndexes.length;
+        const pageCount = Math.max(1, Math.ceil(Math.max(total, 1) / rows));
+
+        if(currentPage > pageCount) currentPage = pageCount;
+        if(currentPage < 1) currentPage = 1;
+
+        tableRows.forEach(row => row.classList.add('rp-hidden-row'));
+        cardRows.forEach(card => card.classList.add('rp-hidden-row'));
+
+        if(total > 0){
+          const startIndex = (currentPage - 1) * rows;
+          const endIndex = startIndex + rows;
+          filteredIndexes.slice(startIndex, endIndex).forEach(index => {
+            if(tableRows[index]) tableRows[index].classList.remove('rp-hidden-row');
+            if(cardRows[index]) cardRows[index].classList.remove('rp-hidden-row');
+          });
+        }
+
+        syncEmptyState(total);
+        renderPageButtons(pageCount);
+
+        prevBtn.disabled = currentPage <= 1 || total === 0;
+        nextBtn.disabled = currentPage >= pageCount || total === 0;
+
+        refreshTexts();
+
+        const scrollWrap = table.closest('.rp-table-wrap');
+        if(scrollWrap) scrollWrap.scrollLeft = 0;
+        if(swipeRail) swipeRail.scrollLeft = 0;
+      }
+
+      function applySearch(){
+        const q = String(searchInput.value || '').trim().toLowerCase();
+        filteredIndexes = tableRows
+          .map((row, index) => ({ row, index }))
+          .filter(({ row }) => {
+            const hay = String(row.getAttribute('data-rp-search') || '').toLowerCase();
+            return !q || hay.includes(q);
+          })
+          .map(item => item.index);
+
+        currentPage = 1;
+        render();
+      }
+
+      prevBtn.addEventListener('click', () => {
+        if(currentPage > 1){
+          currentPage -= 1;
+          render();
+        }
+      });
+
+      nextBtn.addEventListener('click', () => {
+        const pageCount = Math.max(1, Math.ceil(Math.max(filteredIndexes.length, 1) / getRowsPerPage()));
+        if(currentPage < pageCount){
+          currentPage += 1;
+          render();
+        }
+      });
+
+      rowsSelect.addEventListener('change', () => {
+        currentPage = 1;
+        render();
+      });
+
+      searchInput.addEventListener('input', applySearch);
+
+      window.addEventListener('resize', () => {
+        render();
+      });
+
+      return {
+        render,
+        refreshTexts
+      };
+    }
+
+    function applyRP(lang){
+      const t = RP_T[lang] || RP_T.en;
+
+      try { document.title = t.title; } catch(_){}
+
+      const back = document.querySelector('.rp-back');
+      if(back) back.setAttribute('aria-label', t.backAria);
+
+      safeText('rpTitle', t.title);
+      safeText('rpSub', t.sub);
+
+      safeText('rpRowsLbl', t.rows);
+      safeText('rpReceivedLbl', t.received);
+      safeText('rpUtilizedLbl', t.utilized);
+      safeText('rpBalanceLbl', t.balance);
+
+      safeText('rpFiltersTitle', t.filtersTitle);
+      safeText('rpLblPeriod', t.period);
+      safeText('rpOptAllPeriod', t.all);
+      safeText('rpOptWeekly', t.weekly);
+      safeText('rpOptMonthly', t.monthly);
+      safeText('rpOpt6Monthly', t.sixMonthly);
+      safeText('rpOptYearly', t.yearly);
+
+      safeText('rpLblGroupBy', t.groupBy);
+      safeText('rpOptDetailCsv', t.detailCsv);
+      safeText('rpOptDistrict', t.district);
+      safeText('rpOptBlock', t.block);
+      safeText('rpOptGp', t.gp);
+      safeText('rpOptVillage', t.village);
+      safeText('rpOptPg', t.pg);
+
+      safeText('rpLblState', t.state);
+      safeText('rpLblDistrict2', t.district);
+      safeText('rpLblBlock2', t.block);
+      safeText('rpLblGp2', t.gp);
+      safeText('rpLblVillage2', t.village);
+
+      safeText('rpOptAllState', t.all);
+      safeText('rpOptAllDistrict', t.all);
+      safeText('rpOptAllBlock', t.all);
+      safeText('rpOptAllGp', t.all);
+      safeText('rpOptAllVillage', t.all);
+
+      safeText('rpLblPgName', t.pgName);
+      safePlaceholder('rpPhPgName', t.phPgName);
+
+      safeText('rpApplyBtn', t.apply);
+      safeText('rpDownloadBtn', t.download);
+      safeText('rpDownloadSummaryBtn', t.downloadSummary);
+
+      safeText('rpResultsTitle', t.results);
+      safeText('rpRowsPerPageLbl', t.rowsPerPage);
+      safeText('rpMetaText', t.metaText);
+      safeText('rpSwipeText', t.swipeMore);
+      safeText('rpPrevBtn', t.prev);
+      safeText('rpNextBtn', t.next);
+
+      safeText('rpThSl', t.sl);
+      safeText('rpThPg', t.pg);
+      safeText('rpThDistrict', t.district);
+      safeText('rpThBlock', t.block);
+      safeText('rpThCategory', t.category);
+      safeText('rpThSource', t.source);
+      safeText('rpThReceived', t.received);
+      safeText('rpThUtilized', t.utilized);
+      safeText('rpThBalance', t.balance);
+      safeText('rpThUcStatus', t.ucStatus);
+      safeText('rpThCreated', t.created);
+
+      safeText('rpEmptyFieldSl', t.sl);
+      safeText('rpEmptyField1', t.pg);
+      safeText('rpEmptyField2', t.district);
+      safeText('rpEmptyField3', t.block);
+      safeText('rpEmptyField4', t.category);
+      safeText('rpEmptyField5', t.source);
+      safeText('rpEmptyField6', t.received);
+      safeText('rpEmptyField7', t.utilized);
+      safeText('rpEmptyField8', t.balance);
+      safeText('rpEmptyField9', t.ucStatus);
+      safeText('rpEmptyField10', t.created);
+
+      safeText('rpEmpty', t.empty);
+      safeText('rpEmptyMobile', t.empty);
+
+      safeTextAll('.rpMobSlLbl', t.sl);
+      safeTextAll('.rpMobDistrictLbl', t.district);
+      safeTextAll('.rpMobBlockLbl', t.block);
+      safeTextAll('.rpMobReceivedLbl', t.received);
+      safeTextAll('.rpMobUtilizedLbl', t.utilized);
+      safeTextAll('.rpMobBalanceLbl', t.balance);
+      safeTextAll('.rpMobUcStatusLbl', t.ucStatus);
+      safeTextAll('.rpMobCreatedLbl', t.created);
+
+      safePlaceholder('rpResultsSearch', t.searchPlaceholder);
+
+      applyMobileLabels(t);
+
+      if(rpPager){
+        if(typeof rpPager.refreshTexts === 'function') rpPager.refreshTexts();
+        if(typeof rpPager.render === 'function') rpPager.render();
+      } else {
+        syncEmptyState(document.querySelectorAll('#rpResultsTable tbody tr[data-rp-row]').length);
+      }
+    }
+
+    function initRPPage(){
+      applyRP(getStoredLang());
+      rpPager = initResultsPager();
+
+      requestAnimationFrame(() => {
+        if(rpPager && typeof rpPager.render === 'function'){
+          rpPager.render();
+        } else {
+          syncEmptyState(document.querySelectorAll('#rpResultsTable tbody tr[data-rp-row]').length);
+        }
+      });
+    }
+
+    window.updatePageLanguage = function(lang){
+      if(lang !== 'en' && lang !== 'bn') lang = getStoredLang();
+      applyRP(lang);
+    };
+
+    window.addEventListener('pgmis:language-change', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyRP(lang);
+    });
+
+    window.addEventListener('pgmis:lang', (e)=>{
+      const lang = e?.detail?.lang;
+      if(lang === 'en' || lang === 'bn') applyRP(lang);
+    });
+
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', initRPPage, { once:true });
+    } else {
+      initRPPage();
+    }
+  })();
+</script>
+{% endblock %}

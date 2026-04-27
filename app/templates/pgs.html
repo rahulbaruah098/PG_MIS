@@ -1,0 +1,1188 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  /* ============================================================
+     PG LIST / CREATE PAGE — BUSINESS MODEL STYLE + SEARCH/PAGINATION
+     ✅ ONLY UI/CSS + client-side search/pagination added
+     ✅ ALL existing form names, ids, routes, JS logic kept intact
+     ✅ Back button kept
+     ✅ Mobile/app PG list becomes horizontal swipe cards
+     ✅ Scoped styling only
+     ============================================================ */
+
+  .pgb-wrap{
+    width:100%;
+    max-width:1100px;
+    margin:0 auto;
+    padding:clamp(12px,2.2vw,22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.18);
+    --line2:rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    color:var(--ink);
+    position:relative;
+  }
+  .pgb-wrap *{ box-sizing:border-box; }
+
+  .pgb-sheet{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 18px 34px -26px rgba(15,23,42,.35);
+    position:relative;
+  }
+
+  /* Header */
+  .pgb-head{
+    padding:14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom:1.5px solid var(--line2);
+    position:relative;
+  }
+  .pgb-title{
+    margin:0;
+    font-weight:950;
+    font-size:18px;
+    text-align:center;
+    letter-spacing:.2px;
+    line-height:1.25;
+    color:var(--ink);
+  }
+  .pgb-subtitle{
+    margin:6px 0 0;
+    text-align:center;
+    font-size:12px;
+    font-weight:800;
+    color:rgba(15,23,42,.68);
+  }
+
+  /* Back */
+  .pgb-back{
+    display:none;
+    position:absolute;
+    top:12px;
+    left:12px;
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    box-shadow:0 12px 20px -16px rgba(15,23,42,.38);
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color:rgba(11,77,58,.98);
+    user-select:none;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    z-index:2;
+  }
+  .pgb-back:hover{
+    transform:translateX(-1px);
+    box-shadow:0 16px 26px -18px rgba(15,23,42,.46);
+    background:rgba(255,255,255,.98);
+  }
+  .pgb-back:active{ transform:scale(.98); }
+  .pgb-back svg{ width:18px; height:18px; display:block; }
+
+  /* Scope row */
+  .pgb-top{
+    padding:12px 16px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    border-bottom:1.5px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+  .pgb-top-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    min-width:0;
+  }
+  .pgb-label{
+    font-weight:900;
+    font-size:12px;
+    color:var(--ink);
+    line-height:1.25;
+  }
+  .pgb-scope{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.86);
+    font-weight:950;
+    font-size:12px;
+    color:var(--ink);
+    box-shadow:0 12px 20px -18px rgba(15,23,42,.25);
+    max-width:100%;
+  }
+  .pgb-scope .dot{
+    width:10px;
+    height:10px;
+    border-radius:999px;
+    background:linear-gradient(180deg,#16a34a,#0b5f3a);
+    box-shadow:0 0 0 4px rgba(11,77,58,.10);
+    flex:0 0 auto;
+  }
+
+  /* Main section wrappers */
+  .pgb-section{
+    padding:12px 16px 14px;
+    background:rgba(255,255,255,.96);
+  }
+
+  .pgb-block{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    background:rgba(255,255,255,.92);
+    overflow:hidden;
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+  }
+  .pgb-block + .pgb-block{ margin-top:12px; }
+
+  .pgb-block-head{
+    padding:14px 14px 12px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(247,250,249,.66);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .pgb-block-title{
+    margin:0;
+    font-weight:950;
+    font-size:13px;
+    letter-spacing:.15px;
+    line-height:1.35;
+    color:var(--ink);
+    word-break:break-word;
+  }
+  .pgb-block-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color:rgba(15,23,42,.62);
+    font-weight:750;
+    line-height:1.45;
+  }
+  .pgb-block-body{
+    padding:14px;
+  }
+
+  /* Buttons */
+  .pgb-btn{
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.8);
+    color:var(--ink);
+    border-radius:999px;
+    padding:10px 14px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    user-select:none;
+    white-space:nowrap;
+    text-decoration:none;
+    min-height:42px;
+  }
+  .pgb-btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .pgb-btn:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+  .pgb-btn.pgb-primary{
+    border-color:rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .pgb-btn.pgb-primary:hover{
+    background:rgba(16,185,129,.16);
+  }
+
+  /* Form */
+  .pgb-form{
+    display:grid;
+    grid-template-columns:repeat(12,minmax(0,1fr));
+    gap:12px 14px;
+    align-items:start;
+  }
+  .pgb-span-3{ grid-column:span 3; }
+  .pgb-span-4{ grid-column:span 4; }
+  .pgb-span-6{ grid-column:span 6; }
+  .pgb-span-12{ grid-column:span 12; }
+
+  .pgb-stack{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+    width:100%;
+  }
+  .pgb-stack .pgb-label{
+    font-size:12px;
+    white-space:normal;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+  }
+
+  .pgb-input,
+  .pgb-select{
+    width:100%;
+    min-width:0;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:14px;
+    padding:10px 12px;
+    background:rgba(247,250,249,.75);
+    font-weight:800;
+    font-size:12px;
+    line-height:1.35;
+    outline:none;
+    color:var(--ink);
+    min-height:44px;
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .pgb-input:focus,
+  .pgb-select:focus{
+    border-color:rgba(11,77,58,.40);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  .pgb-select:disabled,
+  .pgb-input:disabled{
+    background:rgba(248,250,252,.88);
+    border-color:rgba(15,23,42,.12);
+    color:rgba(15,23,42,.55);
+    cursor:not-allowed;
+  }
+
+  /* Legacy create area */
+  .pgb-legacy{
+    padding-top:12px;
+    margin-top:12px;
+    border-top:1px dashed var(--line2);
+  }
+
+  /* Toolbar */
+  .pgb-toolbar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 12px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+  .pgb-toolbar-left,
+  .pgb-toolbar-right{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .pgb-toolbar-right{ justify-content:flex-end; }
+
+  .pgb-search{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:260px;
+  }
+  .pgb-search input{ width:min(420px, 60vw); }
+
+  .pgb-pill{
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.75);
+    font-weight:900;
+    font-size:12px;
+    color:rgba(15,23,42,.78);
+  }
+
+  /* Table shell */
+  .pgb-table-area{
+    padding:0 16px 16px;
+    background:rgba(255,255,255,.96);
+  }
+  .pgb-table-shell{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:16px;
+    overflow:hidden;
+    background:rgba(255,255,255,.92);
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+  }
+  .pgb-table-wrap{
+    width:100%;
+    overflow:auto;
+    max-height:66vh;
+  }
+  table.pgb-table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    font-size:13px;
+    min-width:760px;
+  }
+  .pgb-table thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:rgba(247,250,249,.94);
+    backdrop-filter:blur(8px);
+    color:var(--ink);
+    text-align:left;
+    padding:12px 12px;
+    font-weight:950;
+    border-bottom:1px solid var(--line2);
+    white-space:nowrap;
+  }
+  .pgb-table tbody td{
+    padding:12px 12px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    vertical-align:middle;
+    color:#20372d;
+    background:rgba(255,255,255,.55);
+  }
+  .pgb-table tbody tr:hover td{
+    background:rgba(247,250,249,.88);
+  }
+
+  .pgb-num{
+    width:60px;
+    color:var(--muted);
+    font-weight:900;
+  }
+  .pgb-name{
+    font-weight:950;
+    color:#173b2c;
+  }
+  .pgb-subtle{
+    color:var(--muted);
+    font-weight:800;
+  }
+
+  .pgb-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 10px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.86);
+    box-shadow:0 10px 18px -18px rgba(15,23,42,.25);
+    font-weight:950;
+    font-size:12px;
+    color:var(--ink);
+    text-transform:lowercase;
+  }
+  .pgb-badge::before{
+    content:"";
+    width:10px;
+    height:10px;
+    border-radius:999px;
+    background:rgba(140,140,140,.7);
+    box-shadow:0 0 0 4px rgba(11,77,58,.08);
+  }
+  .pgb-badge.is-active::before{
+    background:linear-gradient(180deg,#16a34a,#0b5f3a);
+  }
+  .pgb-badge.is-inactive::before{
+    background:rgba(220,120,20,.75);
+  }
+  .pgb-badge.is-draft::before{
+    background:rgba(140,140,140,.7);
+  }
+
+  .pgb-open{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
+    color:#0b4d3a;
+    font-weight:950;
+    border-radius:999px;
+    padding:9px 14px;
+    cursor:pointer;
+    text-decoration:none;
+    white-space:nowrap;
+    min-height:40px;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .pgb-open:hover{
+    transform:translateY(-1px);
+    background:rgba(16,185,129,.16);
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  .pgb-empty{
+    padding:18px;
+    font-weight:900;
+    color:var(--muted);
+  }
+
+  .pgb-pager{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px;
+    border-top:1px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+  .pgb-pager-left,
+  .pgb-pager-right{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  /* Tablet */
+  @media (max-width: 900px){
+    .pgb-wrap{
+      padding:12px;
+    }
+    .pgb-form{
+      grid-template-columns:repeat(6,minmax(0,1fr));
+    }
+    .pgb-span-3{ grid-column:span 3; }
+    .pgb-span-4{ grid-column:span 6; }
+    .pgb-span-6{ grid-column:span 6; }
+    .pgb-span-12{ grid-column:span 6; }
+    .pgb-search{ min-width:100%; }
+    .pgb-search input{ width:100%; }
+  }
+
+  /* Mobile / app */
+  @media (max-width: 720px){
+    .pgb-wrap{
+      padding:10px;
+    }
+
+    .pgb-back{ display:flex; }
+
+    .pgb-head{
+      padding:14px 14px 12px;
+    }
+    .pgb-title{
+      text-align:left;
+      padding-left:52px;
+      padding-right:8px;
+      font-size:16px;
+      min-height:38px;
+      display:flex;
+      align-items:center;
+    }
+    .pgb-subtitle{
+      text-align:left;
+      padding-left:52px;
+      padding-right:8px;
+    }
+
+    .pgb-top{
+      padding:12px 14px;
+      align-items:flex-start;
+    }
+
+    .pgb-section{
+      padding:12px 14px 14px;
+    }
+
+    .pgb-block-head{
+      padding:14px 12px 12px;
+    }
+    .pgb-block-body{
+      padding:12px;
+    }
+
+    .pgb-form{
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    .pgb-span-3,
+    .pgb-span-4,
+    .pgb-span-6,
+    .pgb-span-12{
+      grid-column:1 / -1 !important;
+    }
+
+    .pgb-input,
+    .pgb-select{
+      font-size:12px;
+      padding:11px 12px;
+    }
+
+    .pgb-table-area{
+      padding:0 14px 14px;
+    }
+    .pgb-table-wrap{
+      max-height:none;
+      overflow:hidden;
+    }
+
+    /* Swipe cards like grants page */
+    table.pgb-table{
+      min-width:0;
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      display:block;
+    }
+    .pgb-table thead{ display:none; }
+    .pgb-table tbody{
+      display:flex;
+      gap:12px;
+      overflow-x:auto;
+      padding:12px;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch;
+    }
+    .pgb-table tbody::-webkit-scrollbar{ height:8px; }
+    .pgb-table tbody::-webkit-scrollbar-thumb{
+      background:rgba(15,23,42,.18);
+      border-radius:999px;
+    }
+
+    .pgb-table tr.pgb-row{
+      display:block;
+      min-width:84%;
+      max-width:84%;
+      scroll-snap-align:start;
+      background:rgba(255,255,255,.96);
+      border:1px solid rgba(15,23,42,.14);
+      border-radius:16px;
+      box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+      overflow:hidden;
+      padding:10px 12px;
+    }
+
+    .pgb-table tr.pgb-row td{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      justify-content:space-between;
+      padding:8px 0 !important;
+      border-bottom:1px dashed rgba(15,23,42,.10);
+      white-space:normal;
+      background:transparent !important;
+    }
+    .pgb-table tr.pgb-row td:last-child{ border-bottom:none; }
+
+    .pgb-table tr.pgb-row td::before{
+      content:attr(data-label);
+      font-weight:950;
+      color:rgba(15,23,42,.72);
+      flex:0 0 auto;
+      min-width:90px;
+    }
+
+    .pgb-table tr.pgb-row td[data-label="Open"]{
+      padding-top:10px !important;
+      border-bottom:none;
+    }
+
+    .pgb-open{
+      width:100%;
+      min-height:44px;
+    }
+
+    .pgb-toolbar{
+      align-items:stretch;
+    }
+    .pgb-toolbar-left,
+    .pgb-toolbar-right{
+      width:100%;
+    }
+    .pgb-search{
+      width:100%;
+      min-width:0;
+    }
+    .pgb-search input{
+      width:100%;
+    }
+
+    .pgb-pager{
+      flex-direction:column;
+      align-items:stretch;
+    }
+    .pgb-pager-left,
+    .pgb-pager-right{
+      width:100%;
+      justify-content:space-between;
+    }
+  }
+
+  @media (max-width: 520px){
+    .pgb-title{
+      font-size:15px;
+      line-height:1.3;
+    }
+    .pgb-block-title{
+      font-size:12.5px;
+    }
+  }
+</style>
+
+<div class="pgb-wrap">
+  <div class="pgb-sheet">
+
+    <!-- Header -->
+    <div class="pgb-head">
+      <a class="pgb-back" href="javascript:history.back()" aria-label="Go Back">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+      </a>
+
+      <h2 class="pgb-title">Producer Groups (PGs)</h2>
+      <div class="pgb-subtitle">Create PGs and manage existing PG records</div>
+    </div>
+
+    <!-- Scope -->
+    <div class="pgb-top">
+      <div class="pgb-top-left">
+        <div class="pgb-label">Current Scope :</div>
+        <div class="pgb-scope" title="Current scope">
+          <span class="dot"></span>
+          <span>{{ scope_badge or 'Scope' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create PG -->
+    <div class="pgb-section">
+      <div class="pgb-block">
+        <div class="pgb-block-head">
+          <div>
+            <h3 class="pgb-block-title">Create PG (from SHG Master)</h3>
+            <p class="pgb-block-sub">Excel-driven cascading dropdown. Creates PG + auto generates PG Login (UserID/Password).</p>
+          </div>
+
+          <button class="pgb-btn" type="button" data-bs-toggle="collapse" data-bs-target="#legacyPgCreate" aria-expanded="false">
+            Legacy Create
+          </button>
+        </div>
+
+        <div class="pgb-block-body">
+          <form method="post" class="pgb-form" id="pgCreateFromMaster">
+            <input type="hidden" name="create_mode" value="basic">
+
+            <div class="pgb-span-3 pgb-stack">
+              <label class="pgb-label">State</label>
+              <select class="pgb-select" name="State" id="shg_state" required>
+                <option value="" selected disabled>Select State</option>
+              </select>
+            </div>
+
+            <div class="pgb-span-3 pgb-stack">
+              <label class="pgb-label">District</label>
+              <select class="pgb-select" name="District" id="shg_district" required disabled>
+                <option value="" selected disabled>Select District</option>
+              </select>
+            </div>
+
+            <div class="pgb-span-3 pgb-stack">
+              <label class="pgb-label">Block</label>
+              <select class="pgb-select" name="Block" id="shg_block" required disabled>
+                <option value="" selected disabled>Select Block</option>
+              </select>
+            </div>
+
+            <div class="pgb-span-3 pgb-stack">
+              <label class="pgb-label">Gram Panchayat</label>
+              <select class="pgb-select" name="Gram Panchayat" id="shg_gp" required disabled>
+                <option value="" selected disabled>Select Gram Panchayat</option>
+              </select>
+            </div>
+
+            <div class="pgb-span-3 pgb-stack">
+              <label class="pgb-label">Village</label>
+              <select class="pgb-select" name="Village" id="shg_village" required disabled>
+                <option value="" selected disabled>Select Village</option>
+              </select>
+            </div>
+
+            <div class="pgb-span-3 pgb-stack">
+              <label class="pgb-label">PG Name</label>
+              <input class="pgb-input" name="pg_name" required>
+            </div>
+
+            <div class="pgb-span-3 pgb-stack">
+              <label class="pgb-label">Username</label>
+              <input class="pgb-input" name="username" required>
+            </div>
+
+            <div class="pgb-span-3 pgb-stack">
+              <label class="pgb-label">Password</label>
+              <input type="password" class="pgb-input" name="password" required>
+            </div>
+
+            <div class="pgb-span-3 pgb-stack" style="justify-content:end;">
+              <button class="pgb-btn pgb-primary" type="submit">Create PG + Login</button>
+            </div>
+          </form>
+
+          <div class="collapse" id="legacyPgCreate">
+            <div class="pgb-legacy">
+              <div class="pgb-block" style="margin-top:0;">
+                <div class="pgb-block-head">
+                  <div>
+                    <h3 class="pgb-block-title">Legacy: Manual PG Create</h3>
+                    <p class="pgb-block-sub">This does not auto-bind SHG details or auto-create PG login.</p>
+                  </div>
+                </div>
+
+                <div class="pgb-block-body">
+                  <form method="post" class="pgb-form" style="margin-top:0;">
+                    <input type="hidden" name="create_mode" value="manual">
+
+                    <div class="pgb-span-4 pgb-stack">
+                      <label class="pgb-label">PG Name</label>
+                      <input class="pgb-input" name="name" placeholder="e.g., Tuisa PG" required>
+                    </div>
+
+                    <div class="pgb-span-4 pgb-stack">
+                      <label class="pgb-label">Sector (optional)</label>
+                      <select class="pgb-select" name="sector">
+                        <option value="" selected>Select Sector</option>
+                        <option value="Agri">Agri</option>
+                        <option value="ARDD">ARDD</option>
+                        <option value="Fishery">Fishery</option>
+                      </select>
+                    </div>
+
+                    <div class="pgb-span-4 pgb-stack">
+                      <label class="pgb-label">Block</label>
+                      <select class="pgb-select" name="block_id" required>
+                        <option value="" selected disabled>Select Block</option>
+                        {% for b in (blocks or []) %}
+                          <option value="{{ b._id|string }}">{{ b.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+
+                    <div class="pgb-span-3 pgb-stack" style="justify-content:end;">
+                      <button class="pgb-btn pgb-primary" type="submit">Create</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- PG list -->
+    <div class="pgb-table-area">
+      <div class="pgb-block" style="margin-top:0;">
+        <div class="pgb-block-head">
+          <div>
+            <h3 class="pgb-block-title">Producer Group List</h3>
+            <p class="pgb-block-sub">Open any PG record from the list below.</p>
+          </div>
+        </div>
+
+        <div class="pgb-toolbar" id="pgbToolbar">
+          <div class="pgb-toolbar-left">
+            <div class="pgb-search">
+              <input class="pgb-input" type="text" id="pgbSearchInput" placeholder="Search PGs...">
+              <button class="pgb-btn" type="button" id="pgbSearchBtn">Search</button>
+            </div>
+            <span class="pgb-pill" id="pgbResultCount">Current PGs - 0</span>
+          </div>
+
+          <div class="pgb-toolbar-right">
+            <label class="pgb-label" for="pgbPerPage" style="margin:0;">Rows</label>
+            <select class="pgb-select" id="pgbPerPage" style="width:auto;">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pgb-block-body" style="padding:0;">
+          <div class="pgb-table-shell" style="border:none; border-radius:0; box-shadow:none;">
+            <div class="pgb-table-wrap">
+              <table class="pgb-table" id="pgbTable">
+                <thead>
+                  <tr>
+                    <th style="width:60px;">#</th>
+                    <th>PG</th>
+                    <th>Sector</th>
+                    <th>Status</th>
+                    <th style="width:160px;">Open</th>
+                  </tr>
+                </thead>
+                <tbody id="pgbTbody">
+                  {% for pg in pgs %}
+                    {% set st = (pg.status or 'draft')|lower %}
+                    <tr class="pgb-row"
+                        data-index="{{ loop.index }}"
+                        data-name="{{ pg.name }}"
+                        data-sector="{{ pg.sector or '-' }}"
+                        data-status="{{ pg.status or 'draft' }}">
+                      <td class="pgb-num" data-label="#">{{ loop.index }}</td>
+                      <td class="pgb-name" data-label="PG">{{ pg.name }}</td>
+                      <td class="pgb-subtle" data-label="Sector">{{ pg.sector or '-' }}</td>
+                      <td data-label="Status">
+                        <span class="pgb-badge {% if st == 'active' %}is-active{% elif st == 'inactive' %}is-inactive{% else %}is-draft{% endif %}">
+                          {{ pg.status or 'draft' }}
+                        </span>
+                      </td>
+                      <td data-label="Open">
+                        <a class="pgb-open" href="{{ url_for('pg.pg_view', pg_id=pg._id|string) }}">Open</a>
+                      </td>
+                    </tr>
+                  {% else %}
+                    <tr id="pgbNoDataRow">
+                      <td colspan="5" class="pgb-empty">
+                        No PGs yet.
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="pgb-pager" id="pgbPager">
+            <div class="pgb-pager-left">
+              <span class="pgb-pill" id="pgbPageInfo">Page 1 / 1</span>
+            </div>
+            <div class="pgb-pager-right">
+              <button class="pgb-btn" type="button" id="pgbPrev">Prev</button>
+              <button class="pgb-btn" type="button" id="pgbNext">Next</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  (function(){
+    const $ = id => document.getElementById(id);
+
+    const el = {
+      state: $('shg_state'),
+      district: $('shg_district'),
+      block: $('shg_block'),
+      gp: $('shg_gp'),
+      village: $('shg_village')
+    };
+
+    const fill = (select, items, placeholder) => {
+      select.innerHTML = `<option value="" selected disabled>${placeholder}</option>`;
+      (items || []).forEach(v=>{
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        select.appendChild(opt);
+      });
+    };
+
+    const lock = (select, locked)=> select.disabled = !!locked;
+
+    const resetDownstream = (from) => {
+      if(from <= 1){ fill(el.district, [], 'Select District'); lock(el.district,true); }
+      if(from <= 2){ fill(el.block, [], 'Select Block'); lock(el.block,true); }
+      if(from <= 3){ fill(el.gp, [], 'Select Gram Panchayat'); lock(el.gp,true); }
+      if(from <= 4){ fill(el.village, [], 'Select Village'); lock(el.village,true); }
+    };
+
+    const fetchJson = async (url) => {
+      const r = await fetch(url, {headers:{'X-Requested-With':'fetch'}});
+      if(!r.ok) return null;
+      return await r.json();
+    };
+
+    async function loadStates(){
+      const states = await fetchJson('{{ url_for("master_data.shg_states") }}');
+      fill(el.state, states || [], 'Select State');
+      lock(el.state,false);
+    }
+
+    async function applyScopeDefaults(){
+      const scope = await fetchJson('{{ url_for("master_data.shg_scope") }}');
+      if(!scope) return;
+
+      const role = (scope.role||'').toUpperCase();
+
+      if(scope.state){
+        el.state.value = scope.state;
+        await onState();
+      }
+      if(scope.district){
+        el.district.value = scope.district;
+        await onDistrict();
+      }
+      if(scope.block){
+        el.block.value = scope.block;
+        await onBlock();
+      }
+
+      if(role === 'BLOCK_ADMIN' || role === 'CLF_MANAGER' || role === 'CLF_ADMIN'){
+        el.state.disabled = true;
+        el.district.disabled = true;
+        el.block.disabled = true;
+      }
+
+      if(role === 'DISTRICT_ADMIN'){
+        el.state.disabled = true;
+        el.district.disabled = true;
+      }
+
+      if(role === 'ADMIN'){
+        el.state.disabled = true;
+      }
+    }
+
+    async function onState(){
+      resetDownstream(1);
+      const state = el.state.value;
+      const dists = await fetchJson(`{{ url_for("master_data.shg_districts") }}?state=${encodeURIComponent(state)}`);
+      fill(el.district, dists || [], 'Select District');
+      lock(el.district,false);
+    }
+
+    async function onDistrict(){
+      resetDownstream(2);
+      const state = el.state.value;
+      const district = el.district.value;
+      const blocks = await fetchJson(`{{ url_for('master_data.shg_blocks') }}?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}`);
+      fill(el.block, blocks || [], 'Select Block');
+      lock(el.block,false);
+    }
+
+    async function onBlock(){
+      resetDownstream(3);
+      const state = el.state.value;
+      const district = el.district.value;
+      const block = el.block.value;
+      const gps = await fetchJson(`{{ url_for('master_data.shg_gps') }}?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}&block=${encodeURIComponent(block)}`);
+      fill(el.gp, gps || [], 'Select Gram Panchayat');
+      lock(el.gp,false);
+    }
+
+    async function onGp(){
+      resetDownstream(4);
+      const state = el.state.value;
+      const district = el.district.value;
+      const block = el.block.value;
+      const gp = el.gp.value;
+      const villages = await fetchJson(`{{ url_for('master_data.shg_villages') }}?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}&block=${encodeURIComponent(block)}&gp=${encodeURIComponent(gp)}`);
+      fill(el.village, villages || [], 'Select Village');
+      lock(el.village,false);
+    }
+
+    el.state.addEventListener('change', onState);
+    el.district.addEventListener('change', onDistrict);
+    el.block.addEventListener('change', onBlock);
+    el.gp.addEventListener('change', onGp);
+
+    (async function init(){
+      await loadStates();
+      await applyScopeDefaults();
+    })();
+
+    const form = document.getElementById('pgCreateFromMaster');
+    if(form){
+      form.addEventListener('submit', function(){
+        ['shg_state','shg_district','shg_block','shg_gp','shg_village']
+          .forEach(id => {
+            const e = document.getElementById(id);
+            if(e) e.disabled = false;
+          });
+      });
+    }
+
+    /* ============================================================
+       PG LIST SEARCH + PAGINATION
+       ✅ client-side only
+       ✅ no backend/data logic changed
+       ============================================================ */
+    let currentPage = 1;
+    let perPage = 25;
+    let query = "";
+
+    const tableBody = document.getElementById('pgbTbody');
+    const searchInput = document.getElementById('pgbSearchInput');
+    const searchBtn = document.getElementById('pgbSearchBtn');
+    const perPageSelect = document.getElementById('pgbPerPage');
+    const resultCount = document.getElementById('pgbResultCount');
+    const pageInfo = document.getElementById('pgbPageInfo');
+    const prevBtn = document.getElementById('pgbPrev');
+    const nextBtn = document.getElementById('pgbNext');
+    const pager = document.getElementById('pgbPager');
+    const toolbar = document.getElementById('pgbToolbar');
+    const noDataRow = document.getElementById('pgbNoDataRow');
+
+    function getRows(){
+      return Array.from(document.querySelectorAll('#pgbTbody tr.pgb-row'));
+    }
+
+    function normalize(value){
+      return (value || "").toString().toLowerCase().trim();
+    }
+
+    function rowMatches(row, q){
+      if(!q) return true;
+      const hay = [
+        row.dataset.index,
+        row.dataset.name,
+        row.dataset.sector,
+        row.dataset.status
+      ].map(normalize).join(" | ");
+      return hay.includes(q);
+    }
+
+    function visibleRows(){
+      const q = normalize(query);
+      return getRows().filter(row => rowMatches(row, q));
+    }
+
+    function renderTable(){
+      const allRows = getRows();
+      const filteredRows = visibleRows();
+      const total = filteredRows.length;
+
+      allRows.forEach(row => {
+        row.style.display = "none";
+      });
+
+      if(noDataRow){
+        noDataRow.style.display = "none";
+      }
+
+      if(toolbar){
+        toolbar.style.display = allRows.length ? "flex" : "none";
+      }
+      if(pager){
+        pager.style.display = allRows.length ? "flex" : "none";
+      }
+
+      if(!allRows.length){
+        if(resultCount) resultCount.textContent = "Current PGs - 0";
+        if(pageInfo) pageInfo.textContent = "Page 1 / 1";
+        if(prevBtn) prevBtn.disabled = true;
+        if(nextBtn) nextBtn.disabled = true;
+        return;
+      }
+
+      if(!filteredRows.length){
+        if(resultCount) resultCount.textContent = "Current PGs - 0";
+        if(pageInfo) pageInfo.textContent = "Page 1 / 1";
+        if(prevBtn) prevBtn.disabled = true;
+        if(nextBtn) nextBtn.disabled = true;
+
+        if(noDataRow){
+          noDataRow.style.display = "";
+          const cell = noDataRow.querySelector('td');
+          if(cell) cell.textContent = "No matching PGs found.";
+        }
+        return;
+      }
+
+      const maxPage = Math.max(1, Math.ceil(total / perPage));
+      if(currentPage > maxPage) currentPage = maxPage;
+      if(currentPage < 1) currentPage = 1;
+
+      const start = (currentPage - 1) * perPage;
+      const end = start + perPage;
+      const pageRows = filteredRows.slice(start, end);
+
+      pageRows.forEach(row => {
+        row.style.display = "";
+      });
+
+      if(resultCount) resultCount.textContent = `Current PGs - ${total}`;
+      if(pageInfo) pageInfo.textContent = `Page ${currentPage} / ${maxPage}`;
+      if(prevBtn) prevBtn.disabled = currentPage <= 1;
+      if(nextBtn) nextBtn.disabled = currentPage >= maxPage;
+    }
+
+    if(searchInput){
+      searchInput.addEventListener('input', function(){
+        query = this.value || "";
+        currentPage = 1;
+        renderTable();
+      });
+    }
+
+    if(searchBtn){
+      searchBtn.addEventListener('click', function(){
+        query = searchInput ? (searchInput.value || "") : "";
+        currentPage = 1;
+        renderTable();
+      });
+    }
+
+    if(perPageSelect){
+      perPageSelect.value = "25";
+      perPageSelect.addEventListener('change', function(){
+        perPage = parseInt(this.value || "25", 10) || 25;
+        currentPage = 1;
+        renderTable();
+      });
+    }
+
+    if(prevBtn){
+      prevBtn.addEventListener('click', function(){
+        currentPage--;
+        renderTable();
+      });
+    }
+
+    if(nextBtn){
+      nextBtn.addEventListener('click', function(){
+        currentPage++;
+        renderTable();
+      });
+    }
+
+    renderTable();
+  })();
+</script>
+
+{% endblock %}

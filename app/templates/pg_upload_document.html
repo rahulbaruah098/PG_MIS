@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+/* ============================================================
+   DOCUMENT UPLOAD PAGE (SCOPED) — SAME DESIGN LANGUAGE AS LEDGER BOOK
+   ✅ Only UI/CSS changed (no form fields / no loops / no data bindings changed)
+   ✅ Desktop: clean table inside sheet
+   ✅ Mobile: table becomes swipe cards (scroll-snap) for rows
+   ✅ UPDATE (as requested):
+      - Upload button sits inline with "Choose file" (same row)
+      - Back to PG becomes an icon-only back arrow
+      - Back arrow appears ONLY on app/mobile/tablet and is top-left
+   Scoped to .docs-wrap only
+============================================================ */
+
+.docs-wrap{
+  width: 100%;
+  padding: clamp(12px, 2.2vw, 22px);
+  --ink:#0f172a;
+  --muted:#64748b;
+  --line: rgba(15,23,42,.18);
+  --line2: rgba(15,23,42,.12);
+  --paper:#ffffff;
+  --soft:#f7faf9;
+  --accent:#0b4d3a;
+  color: var(--ink);
+  position: relative;
+}
+.docs-wrap *{ box-sizing:border-box; }
+
+.docs-sheet{
+  max-width: 980px;
+  margin: 0 auto;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+}
+
+/* ---------- MOBILE/TABLET BACK ARROW (ONLY) ---------- */
+.docs-back{
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.14);
+  background: #fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration: none;
+  color: #0b4d3a;
+  box-shadow: 0 10px 18px -12px rgba(0,0,0,.25);
+}
+.docs-back svg{ width:18px; height:18px; }
+
+/* ---------- HEADER (ledger-like) ---------- */
+.docs-head{
+  position: relative; /* ✅ needed for absolute back button */
+  padding: 14px 16px 12px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border-bottom: 1.5px solid var(--line2);
+}
+.docs-title{
+  margin: 0;
+  font-weight: 950;
+  font-size: 18px;
+  text-align: center;
+  letter-spacing: .2px;
+}
+.docs-sub{
+  margin-top: 6px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap: 10px;
+  color: rgba(15,23,42,.72);
+  font-weight: 900;
+  font-size: 12px;
+}
+.docs-badge{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid rgba(15,23,42,.14);
+  border-radius: 999px;
+  background: rgba(255,255,255,.75);
+}
+.docs-badge svg{ width:14px; height:14px; color: rgba(11,77,58,.95); }
+
+/* ---------- SECTION BAR (like ledger controls) ---------- */
+.docs-controls{
+  padding: 10px 16px;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1.5px solid var(--line2);
+  background: rgba(255,255,255,.92);
+  flex-wrap: wrap;
+}
+.docs-section{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  color: rgba(11,77,58,.95);
+  font-weight: 950;
+  font-size: 12px;
+}
+.docs-section svg{ width:16px; height:16px; }
+
+/* ---------- FORM AREA ---------- */
+.docs-card{
+  padding: 14px 16px 16px;
+  background: #fff;
+  border-bottom: 1.5px solid var(--line2);
+}
+.docs-grid{
+  display:grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 10px 14px;
+  align-items: center;
+}
+.docs-label{
+  grid-column: span 3;
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(15,23,42,.72);
+  white-space: nowrap;
+}
+.docs-input{
+  grid-column: span 9;
+  width:100%;
+  border: 1px solid rgba(15,23,42,.16);
+  border-radius: 12px;
+  padding: 10px 10px;
+  background: rgba(247,250,249,.75);
+  font-weight: 800;
+  font-size: 12px;
+  outline: none;
+}
+.docs-input:focus{
+  border-color: rgba(11,77,58,.40);
+  box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+  background: #fff;
+}
+
+/* ✅ NEW: Choose file + Upload button inline (same row) */
+.docs-fileRow{
+  grid-column: span 9;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+.docs-fileRow .docs-input{
+  grid-column: auto;
+  flex: 1 1 auto;
+  margin: 0;
+}
+.docs-uploadInline{
+  flex: 0 0 auto;
+  border-radius: 12px;            /* slightly tighter to sit nicely inline */
+  padding: 10px 14px;
+  font-weight: 950;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  user-select: none;
+  white-space: nowrap;
+  border: 1px solid rgba(16,185,129,.35);
+  background: rgba(16,185,129,.12);
+  color:#0b4d3a;
+}
+.docs-uploadInline:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  background: rgba(16,185,129,.16);
+}
+
+/* ---------- BUTTONS (ledger button style) ---------- */
+.docs-actions{
+  margin-top: 12px;
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.docs-btn{
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 950;
+  font-size: 12px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  user-select: none;
+  white-space: nowrap;
+  text-decoration:none;
+}
+.docs-btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+}
+.docs-btn-primary{
+  border: 1px solid rgba(16,185,129,.35);
+  background: rgba(16,185,129,.12);
+  color:#0b4d3a;
+}
+.docs-btn-primary:hover{ background: rgba(16,185,129,.16); }
+.docs-btn-light{
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(247,250,249,.8);
+  color: var(--ink);
+}
+.docs-btn-light:hover{ background:#fff; }
+
+/* ---------- TABLE ---------- */
+.docs-h3{
+  padding: 12px 16px;
+  font-weight: 950;
+  font-size: 12px;
+  color: rgba(11,77,58,.95);
+  background: rgba(255,255,255,.92);
+  border-top: 1.5px solid var(--line2);
+  border-bottom: 1.5px solid var(--line2);
+}
+.docs-table-wrap{
+  width: 100%;
+  overflow: auto;
+  background: #fff;
+  border-bottom: 1.5px solid var(--line2);
+}
+.docs-table{
+  width:100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+.docs-table th{
+  background: var(--soft);
+  padding: 10px 10px;
+  text-align:left;
+  font-size: 12px;
+  font-weight: 950;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line2);
+  white-space: nowrap;
+}
+.docs-table th:last-child{ border-right:none; }
+.docs-table td{
+  padding: 10px 10px;
+  font-size: 12px;
+  border-top: 1px solid rgba(15,23,42,.07);
+  border-right: 1px solid rgba(15,23,42,.07);
+  font-weight: 800;
+  color: rgba(15,23,42,.88);
+  white-space: nowrap;
+}
+.docs-table td:last-child{ border-right:none; }
+.docs-table tr:hover{ background: rgba(11,77,58,.04); }
+.docs-empty{ color: rgba(15,23,42,.65); font-weight: 900; }
+
+/* ---------- NOTE ---------- */
+.docs-note{
+  padding: 10px 16px 14px;
+  font-size: 12px;
+  color: rgba(15,23,42,.62);
+  font-weight: 800;
+  background: rgba(247,250,249,.55);
+}
+
+/* ---------- MOBILE: swipe cards for uploaded files ---------- */
+.docs-mobile{
+  display:none;
+  padding: 12px;
+  border-bottom: 1.5px solid var(--line2);
+}
+.docs-rail{
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 84%;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-left: 12px;
+  padding-bottom: 16px;
+}
+.docs-rail::-webkit-scrollbar{ height: 8px; }
+.docs-rail::-webkit-scrollbar-thumb{
+  background: rgba(15,23,42,.18);
+  border-radius: 999px;
+}
+.docs-item{
+  scroll-snap-align: start;
+  border: 1px solid rgba(15,23,42,.14);
+  border-radius: 14px;
+  background: rgba(255,255,255,.96);
+  overflow: hidden;
+  box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
+}
+.docs-row{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(15,23,42,.08);
+  font-size: 12px;
+}
+.docs-row:last-child{ border-bottom:none; }
+.docs-rlabel{
+  font-weight: 950;
+  color: rgba(15,23,42,.70);
+}
+.docs-rvalue{
+  font-weight: 900;
+  color: rgba(15,23,42,.90);
+  text-align:right;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+
+
+
+  /* keep your form stack rules */
+  .docs-label{ grid-column: span 12; }
+  .docs-input{ grid-column: span 12; }
+
+  /* ✅ file row becomes vertical stack on small screens, but Upload stays right after file */
+  .docs-fileRow{
+    grid-column: span 12;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .docs-uploadInline{
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* a touch more top padding so fixed back button doesn't feel cramped */
+@media (max-width: 768px){
+  .docs-label{ grid-column: span 12; }
+  .docs-input{ grid-column: span 12; }
+
+  .docs-fileRow{
+    grid-column: span 12;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .docs-uploadInline{
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 720px){
+  .docs-table-wrap{ display:none; }
+  .docs-mobile{ display:block; }
+  .docs-table{ min-width: 0; }
+}
+@media (max-width: 420px){
+  .docs-rail{ grid-auto-columns: 90%; }
+}
+</style>
+
+<div class="docs-wrap">
+
+  <div class="docs-sheet">
+
+    <!-- HEADER -->
+  <div class="docs-head">
+
+  <!-- Back Arrow -->
+  <a class="docs-back" href="{{ url_for('pg.pg_view', pg_id=pg._id) }}" aria-label="Back to PG">
+   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <path d="M19 12H5M5 12l6 6M5 12l6-6"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+  </svg>
+  </a>
+
+  <h2 class="docs-title">Upload Documents</h2>
+
+  <div class="docs-sub">
+    <span class="docs-badge">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6 2h9l5 5v13a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z" stroke="currentColor" stroke-width="2"/>
+        <path d="M14 2v6h6" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      <span>Producer Group: {{ pg.name or pg.pg_name }}</span>
+    </span>
+  </div>
+
+</div>
+
+    <!-- SECTION BAR -->
+    <div class="docs-controls">
+      <div class="docs-section">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        Document Upload
+      </div>
+      <div style="font-weight:950; font-size:12px; color:rgba(15,23,42,.55);"></div>
+    </div>
+
+    <!-- FORM (NO DATA CHANGES) -->
+    <div class="docs-card">
+      <form method="post" enctype="multipart/form-data">
+        <div class="docs-grid">
+          <div class="docs-label">Document type</div>
+          <input class="docs-input" name="doc_type"
+                 placeholder="registration_form / minutes / photo / etc">
+
+          <div class="docs-label">Choose file</div>
+
+          <!-- ✅ file input + upload button inline -->
+          <div class="docs-fileRow">
+            <input class="docs-input" type="file" name="document" required>
+            <button class="docs-uploadInline" type="submit">Upload</button>
+          </div>
+        </div>
+
+        <!-- ✅ keep actions wrapper but remove Back button text link from here (now icon-only on mobile) -->
+        <div class="docs-actions">
+          <!-- intentionally empty; kept to avoid affecting layout/logic elsewhere -->
+        </div>
+      </form>
+    </div>
+
+    <!-- TABLE TITLE (kept same text, styled) -->
+    <div class="docs-h3">Uploaded files</div>
+
+    <!-- Desktop Table (NO DATA CHANGES) -->
+    <div class="docs-table-wrap">
+      <table class="docs-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Filename</th>
+            <th>Uploaded</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in docs %}
+          <tr>
+            <td>{{ d.doc_type }}</td>
+            <td>{{ d.filename }}</td>
+            <td>{{ d.uploaded_at }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="docs-empty">No documents yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile Card View (NO DATA CHANGES) -->
+    <div class="docs-mobile">
+      <div class="docs-rail">
+        {% for d in docs %}
+        <div class="docs-item">
+          <div class="docs-row"><span class="docs-rlabel">Type</span><span class="docs-rvalue">{{ d.doc_type }}</span></div>
+          <div class="docs-row"><span class="docs-rlabel">Filename</span><span class="docs-rvalue">{{ d.filename }}</span></div>
+          <div class="docs-row"><span class="docs-rlabel">Uploaded</span><span class="docs-rvalue">{{ d.uploaded_at }}</span></div>
+        </div>
+        {% else %}
+        <div class="docs-item">
+          <div class="docs-row"><span class="docs-rlabel">Status</span><span class="docs-rvalue">No documents yet.</span></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="docs-note">
+      Files are stored in the server upload folder and metadata is saved in MongoDB.
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

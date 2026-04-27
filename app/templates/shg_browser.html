@@ -1,0 +1,756 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  /* ============================================================
+     SHG MASTER BROWSER (SCOPED) — LEDGER BOOK LOOK
+     ✅ ONLY UI/Design updated to match Ledger Book page
+     ✅ Added: client-side Search + Pagination + Rows-per-page (10/25/50/100)
+     ✅ Default rows-per-page: 25
+     ✅ NO backend route/logic changes (same fetch URLs, same IDs kept)
+     ✅ Data contents kept intact (same fields rendered)
+     Scope: .shg-wrap only
+     ============================================================ */
+
+  .shg-wrap{
+    width: 100%;
+    padding: clamp(12px, 2.2vw, 22px);
+    --ink:#0f172a;
+    --muted:#64748b;
+
+    --line: rgba(15,23,42,.18);
+    --line2: rgba(15,23,42,.12);
+
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+    color: var(--ink);
+  }
+  .shg-wrap *{ box-sizing:border-box; }
+
+  .shg-sheet{
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+  }
+
+  .shg-head{
+    padding: 14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom: 1.5px solid var(--line2);
+  }
+
+  .shg-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: .2px;
+  }
+  .shg-sub{
+    margin: 6px auto 0;
+    max-width: 90ch;
+    text-align: center;
+    color: var(--muted);
+    font-weight: 800;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  /* Tip bar */
+  .shg-tipbar{
+    padding: 10px 16px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.94);
+    flex-wrap: wrap;
+  }
+  .shg-tip{
+    color: rgba(15,23,42,.72);
+    font-weight: 850;
+    font-size: 12px;
+  }
+  .shg-tip b{ font-weight: 950; }
+
+  /* Filters */
+  .shg-controls{
+    padding: 12px 16px 14px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+  }
+
+  .shg-grid{
+    display:grid;
+    grid-template-columns: repeat(6, minmax(150px, 1fr));
+    gap: 10px 12px;
+    align-items:end;
+  }
+
+  .shg-field{
+    min-width: 0;
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .shg-label{
+    font-weight: 900;
+    font-size: 12px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .shg-wrap .form-select,
+  .shg-wrap .form-control{
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(247,250,249,.75);
+    font-weight: 800;
+    font-size: 12px;
+    outline: none;
+    color: var(--ink);
+  }
+  .shg-wrap .form-select:focus,
+  .shg-wrap .form-control:focus{
+    border-color: rgba(11,77,58,.40);
+    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
+    background: #fff;
+  }
+
+  .shg-limit-row{
+    display:flex;
+    gap: 10px;
+    align-items:center;
+  }
+
+  /* Buttons (Ledger-like) */
+  .shg-btn{
+    border: 1px solid rgba(15,23,42,.14);
+    background: rgba(247,250,249,.8);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .shg-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+  }
+  .shg-btn:disabled{
+    opacity: .45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .shg-btn.shg-primary{
+    border-color: rgba(16,185,129,.35);
+    background: rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+  .shg-btn.shg-primary:hover{ background: rgba(16,185,129,.16); }
+
+  /* Results header row */
+  .shg-results-head{
+    padding: 10px 16px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.94);
+    flex-wrap: wrap;
+  }
+  .shg-results-title{
+    font-weight: 950;
+    font-size: 12px;
+    color: rgba(15,23,42,.82);
+    letter-spacing:.15px;
+  }
+  .shg-count{
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(15,23,42,.80);
+    padding: 8px 10px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 999px;
+    background: rgba(247,250,249,.55);
+    white-space: nowrap;
+  }
+
+  /* ✅ NEW: Search + Rows controls (Ledger style) */
+  .shg-controls2{
+    padding: 10px 16px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.92);
+    flex-wrap: wrap;
+  }
+  .shg-controls2-left{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .shg-search{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 999px;
+    background: rgba(247,250,249,.75);
+    min-width: min(520px, 100%);
+  }
+  .shg-search input{
+    border:none;
+    outline:none;
+    background: transparent;
+    width: 100%;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .shg-pill{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(15,23,42,.16);
+    border-radius: 999px;
+    background: rgba(247,250,249,.75);
+    font-size: 12px;
+    font-weight: 950;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .shg-pill select{
+    border:none;
+    outline:none;
+    background: transparent;
+    font-weight: 950;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* Table wrap */
+  .shg-table-wrap{
+    width: 100%;
+    overflow: auto;
+    background: #fff;
+    border-top: 1.5px solid var(--line2);
+    border-bottom: 1.5px solid var(--line2);
+  }
+
+  .shg-table{
+    width: 100%;
+    margin: 0;
+    min-width: 1100px;
+  }
+
+  .shg-wrap .table{
+    margin: 0 !important;
+  }
+  .shg-wrap .table thead th{
+    background: var(--soft) !important;
+    border-bottom: 1px solid var(--line) !important;
+    font-weight: 950 !important;
+    font-size: 12px !important;
+    color: rgba(15,23,42,.90) !important;
+    letter-spacing: .1px;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 10px 12px !important;
+  }
+  .shg-wrap .table tbody td{
+    border-top: 1px solid rgba(15,23,42,.08) !important;
+    vertical-align: middle;
+    padding: 10px 12px !important;
+    font-weight: 750;
+    font-size: 12px;
+    color: rgba(15,23,42,.86);
+  }
+  .shg-wrap .table tbody tr:hover{
+    background: rgba(16,185,129,.05) !important;
+  }
+
+  /* ✅ SHG Code: remove black box look (readable) */
+  .shg-wrap .badge.text-bg-dark{
+    background: transparent !important;
+    color: rgba(15,23,42,.92) !important;
+    border: 1px solid rgba(15,23,42,.14) !important;
+    border-radius: 999px !important;
+    padding: 6px 10px !important;
+    font-weight: 950 !important;
+    letter-spacing: .2px;
+  }
+
+  /* ✅ NEW: Bottom pager (Ledger-like) */
+  .shg-footer-controls{
+    padding: 12px 16px;
+    display:flex;
+    justify-content: flex-end;
+    border-top: 1.5px solid var(--line2);
+    background: rgba(255,255,255,.94);
+  }
+  .shg-pager{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .shg-pageinfo{
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(15,23,42,.80);
+    padding: 8px 10px;
+    border: 1px solid rgba(15,23,42,.12);
+    border-radius: 999px;
+    background: rgba(247,250,249,.55);
+  }
+
+  /* Responsive */
+  @media (max-width: 1200px){
+    .shg-grid{ grid-template-columns: repeat(3, minmax(160px, 1fr)); }
+  }
+  @media (max-width: 720px){
+    .shg-wrap{ padding: 10px; }
+    .shg-sheet{ border-radius: 14px; }
+
+    .shg-head{ padding: 14px 12px 12px; }
+    .shg-title{ text-align: left; }
+    .shg-sub{ text-align: left; margin-left: 0; }
+
+    .shg-tipbar{ padding: 10px 12px; }
+    .shg-controls{ padding: 12px 12px 14px; }
+    .shg-grid{ grid-template-columns: 1fr; }
+
+    .shg-limit-row{ width: 100%; }
+    .shg-limit-row .form-control{ width: 100%; }
+    .shg-btn{ width: 100%; }
+
+    .shg-controls2{ padding: 10px 12px; }
+    .shg-search{ min-width: 100%; }
+    .shg-footer-controls{ justify-content: center; }
+
+    /* Mobile/app: swipeable cards */
+    .shg-table-wrap{
+      overflow: visible;
+      border-bottom: none;
+    }
+
+    .shg-wrap #shg_tbl thead{ display:none; }
+    .shg-wrap #shg_tbl{
+      min-width: 0;
+      display: block;
+    }
+    .shg-wrap #shg_tbl tbody{
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 86%;
+      gap: 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      padding: 12px;
+      padding-bottom: 16px;
+    }
+    .shg-wrap #shg_tbl tbody::-webkit-scrollbar{ height: 8px; }
+    .shg-wrap #shg_tbl tbody::-webkit-scrollbar-thumb{
+      background: rgba(15,23,42,.18);
+      border-radius: 999px;
+    }
+
+    .shg-wrap #shg_tbl tbody tr{
+      display: block;
+      scroll-snap-align: start;
+      border: 1px solid rgba(15,23,42,.14);
+      border-radius: 14px;
+      background: rgba(255,255,255,.96);
+      overflow: hidden;
+      box-shadow: 0 14px 22px -22px rgba(15,23,42,.28);
+    }
+
+    .shg-wrap #shg_tbl tbody td{
+      display:flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px !important;
+      border-top: 1px solid rgba(15,23,42,.08) !important;
+    }
+
+    .shg-wrap #shg_tbl tbody td::before{
+      content: attr(data-label);
+      font-weight: 950;
+      font-size: 12px;
+      color: rgba(15,23,42,.70);
+      flex: 0 0 auto;
+    }
+
+    .shg-wrap #shg_tbl tbody td > *{
+      text-align: right;
+    }
+  }
+
+  @media (max-width: 420px){
+    .shg-wrap #shg_tbl tbody{ grid-auto-columns: 92%; }
+  }
+</style>
+
+<div class="shg-wrap">
+  <div class="shg-sheet">
+
+    <!-- Header -->
+    <div class="shg-head">
+      <h2 class="shg-title">SHG Master (TRESP)</h2>
+      <div class="shg-sub">
+        Browse the migrated SHG master dataset (140k+ member records (derived SHG list)) with cascading filters.
+      </div>
+    </div>
+
+    <!-- Tip -->
+    <div class="shg-tipbar">
+      <div class="shg-tip">Tip: Select State → District → Block → GP → Village, then click <b>Search</b>.</div>
+    </div>
+
+    <!-- Filters (IDs intact) -->
+    <div class="shg-controls">
+      <div class="shg-grid">
+        <div class="shg-field">
+          <label class="shg-label">State</label>
+          <select id="shg_state" class="form-select"></select>
+        </div>
+
+        <div class="shg-field">
+          <label class="shg-label">District</label>
+          <select id="shg_district" class="form-select"></select>
+        </div>
+
+        <div class="shg-field">
+          <label class="shg-label">Block</label>
+          <select id="shg_block" class="form-select"></select>
+        </div>
+
+        <div class="shg-field">
+          <label class="shg-label">Gram Panchayat</label>
+          <select id="shg_gp" class="form-select"></select>
+        </div>
+
+        <div class="shg-field">
+          <label class="shg-label">Village</label>
+          <select id="shg_village" class="form-select"></select>
+        </div>
+
+        <div class="shg-field">
+          <label class="shg-label">Limit</label>
+          <div class="shg-limit-row">
+            <input id="shg_limit" type="number" min="10" max="500" value="100" class="form-control">
+            <button id="shg_search_btn" class="shg-btn shg-primary" type="button">Search</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results header -->
+    <div class="shg-results-head">
+      <div class="shg-results-title">Results</div>
+      <div id="shg_count" class="shg-count"></div>
+    </div>
+
+    <!-- ✅ NEW: Search + Rows-per-page controls -->
+    <div class="shg-controls2">
+      <div class="shg-controls2-left">
+        <div class="shg-search" title="Search">
+          <input id="shg_search_text" type="text" placeholder="Search..." />
+        </div>
+
+        <div class="shg-pill" title="Rows per page">
+          <span>Rows</span>
+          <select id="shg_rows_per_page">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table (structure intact; tbody still filled by JS) -->
+    <div class="shg-table-wrap">
+      <div style="max-height: 60vh; overflow:auto;">
+        <table class="table table-sm table-striped align-middle shg-table" id="shg_tbl">
+          <thead class="table-light" style="position: sticky; top: 0; z-index: 2;">
+            <tr>
+              <th>State</th>
+              <th>District</th>
+              <th>Block</th>
+              <th>Gram Panchayat</th>
+              <th>Village</th>
+              <th>SHG Code</th>
+              <th>SHG Name</th>
+              <th>Active Members</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ✅ NEW: Bottom pager -->
+    <div class="shg-footer-controls">
+      <div class="shg-pager">
+        <button class="shg-btn" id="shg_prev" type="button">Prev</button>
+        <div class="shg-pageinfo" id="shg_pageinfo">Page 1 / 1</div>
+        <button class="shg-btn" id="shg_next" type="button">Next</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+
+  function opt(value, label) {
+    const o = document.createElement('option');
+    o.value = value ?? '';
+    o.textContent = label ?? value ?? '';
+    return o;
+  }
+
+  async function loadOptions(selectEl, url, placeholder) {
+    selectEl.innerHTML = '';
+    selectEl.appendChild(opt('', placeholder));
+    const res = await fetch(url, {credentials: 'same-origin'});
+    const data = await res.json();
+    (data || []).forEach(v => selectEl.appendChild(opt(v, v)));
+  }
+
+  /* ============================================================
+     ✅ NEW: Client-side paging + search (NO backend change)
+     ============================================================ */
+  let shgRawRows = [];     // last fetched rows from server
+  let shgFiltered = [];    // filtered rows (search applied)
+  let shgPage = 1;
+  let shgPerPage = 25;
+  let shgQuery = "";
+
+  function rowToSearchText(r){
+    // keep it simple & robust (no logic changes to data)
+    const parts = [
+      r['State'], r['District'], r['Block'],
+      r['Gram Panchayat'], r['Village'],
+      r['SHG Code'], r['SHG Name'],
+      r['Active Members'], r['Status']
+    ];
+    return parts.map(v => (v ?? "")).join(" ").toLowerCase();
+  }
+
+  function applyFilter(){
+    const q = (shgQuery || "").trim().toLowerCase();
+    shgFiltered = !q ? shgRawRows.slice() : shgRawRows.filter(r => rowToSearchText(r).includes(q));
+    const totalPages = Math.max(1, Math.ceil(shgFiltered.length / shgPerPage));
+    shgPage = Math.min(Math.max(shgPage, 1), totalPages);
+  }
+
+  function renderPage(){
+    const tbody = document.querySelector('#shg_tbl tbody');
+    tbody.innerHTML = '';
+
+    const total = shgRawRows.length;
+    const shownTotal = shgFiltered.length;
+
+    const totalPages = Math.max(1, Math.ceil(shgFiltered.length / shgPerPage));
+    const start = (shgPage - 1) * shgPerPage;
+    const end = start + shgPerPage;
+    const slice = shgFiltered.slice(start, end);
+
+    slice.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${r['State'] || ''}</td>
+        <td>${r['District'] || ''}</td>
+        <td>${r['Block'] || ''}</td>
+        <td>${r['Gram Panchayat'] || ''}</td>
+        <td>${r['Village'] || ''}</td>
+        <td><span class="badge text-bg-dark">${r['SHG Code'] || ''}</span></td>
+        <td>${r['SHG Name'] || ''}</td>
+        <td>${r['Active Members'] ?? ''}</td>
+        <td>${r['Status'] || ''}</td>
+      `;
+
+      // UI-only enhancement for mobile swipe cards:
+      const labels = ["State","District","Block","Gram Panchayat","Village","SHG Code","SHG Name","Active Members","Status"];
+      Array.from(tr.children).forEach((td, i) => td.setAttribute("data-label", labels[i] || ""));
+      tbody.appendChild(tr);
+    });
+
+    // Count text (keeps same element id)
+    if ((shgQuery || "").trim()){
+      el('shg_count').textContent = `Showing ${slice.length} of ${shownTotal} (filtered from ${total})`;
+    } else {
+      el('shg_count').textContent = `Showing ${slice.length} of ${total}`;
+    }
+
+    el('shg_pageinfo').textContent = `Page ${shgPage} / ${totalPages}`;
+    el('shg_prev').disabled = (shgPage <= 1);
+    el('shg_next').disabled = (shgPage >= totalPages);
+  }
+
+  function rebuildAndRender(){
+    applyFilter();
+    renderPage();
+  }
+
+  async function init() {
+    // Auto-scope by logged-in user's jurisdiction (District Admin auto district, etc.)
+    let scope = {role:null,state:null,district:null,block:null};
+    try{
+      const r = await fetch('/master/shg/scope', {credentials:'same-origin'});
+      if(r.ok) scope = await r.json();
+    }catch(e){}
+
+    await loadOptions(el('shg_state'), '/master/shg/states', 'All States');
+
+    // Apply scope locks
+    if(scope.state){
+      el('shg_state').value = scope.state;
+      el('shg_state').disabled = true;
+    }
+    await refreshDistricts();
+
+    if(scope.district){
+      el('shg_district').value = scope.district;
+      el('shg_district').disabled = true;
+    }
+    await refreshBlocks();
+
+    if(scope.block){
+      el('shg_block').value = scope.block;
+      el('shg_block').disabled = true;
+    }
+    await refreshGPs();
+  }
+
+  async function refreshDistricts() {
+    const s = el('shg_state').value;
+    await loadOptions(el('shg_district'), '/master/shg/districts?state=' + encodeURIComponent(s), 'All Districts');
+    await refreshBlocks();
+  }
+  async function refreshBlocks() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    let url = '/master/shg/blocks?state=' + encodeURIComponent(s) + '&district=' + encodeURIComponent(d);
+    await loadOptions(el('shg_block'), url, 'All Blocks');
+    await refreshGPs();
+  }
+  async function refreshGPs() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    const b = el('shg_block').value;
+    let url = '/master/shg/gps?state=' + encodeURIComponent(s) + '&district=' + encodeURIComponent(d) + '&block=' + encodeURIComponent(b);
+    await loadOptions(el('shg_gp'), url, 'All GPs');
+    await refreshVillages();
+  }
+  async function refreshVillages() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    const b = el('shg_block').value;
+    const gp = el('shg_gp').value;
+    let url = '/master/shg/villages?state=' + encodeURIComponent(s) + '&district=' + encodeURIComponent(d) + '&block=' + encodeURIComponent(b) + '&gp=' + encodeURIComponent(gp);
+    await loadOptions(el('shg_village'), url, 'All Villages');
+  }
+
+  async function doSearch() {
+    const s = el('shg_state').value;
+    const d = el('shg_district').value;
+    const b = el('shg_block').value;
+    const gp = el('shg_gp').value;
+    const v = el('shg_village').value;
+    const limit = Math.max(10, Math.min(500, parseInt(el('shg_limit').value || '100', 10)));
+
+    const params = new URLSearchParams();
+    if (s) params.set('state', s);
+    if (d) params.set('district', d);
+    if (b) params.set('block', b);
+    if (gp) params.set('gp', gp);
+    if (v) params.set('village', v);
+    params.set('limit', String(limit));
+
+    const res = await fetch('/master/shg/search?' + params.toString(), {credentials: 'same-origin'});
+    const rows = await res.json();
+
+    // store fetched rows
+    shgRawRows = Array.isArray(rows) ? rows : [];
+    shgPage = 1; // reset paging on new fetch
+    rebuildAndRender();
+  }
+
+  /* =========================
+     Event bindings (existing)
+     ========================= */
+  el('shg_state').addEventListener('change', refreshDistricts);
+  el('shg_district').addEventListener('change', refreshBlocks);
+  el('shg_block').addEventListener('change', refreshGPs);
+  el('shg_gp').addEventListener('change', refreshVillages);
+  el('shg_search_btn').addEventListener('click', doSearch);
+
+  /* =========================
+     ✅ NEW controls bindings
+     ========================= */
+  el('shg_search_text').addEventListener('input', (e) => {
+    shgQuery = e.target.value || "";
+    shgPage = 1;
+    rebuildAndRender();
+  });
+
+  el('shg_rows_per_page').addEventListener('change', (e) => {
+    const v = parseInt(e.target.value, 10);
+    shgPerPage = [10,25,50,100].includes(v) ? v : 25;
+    shgPage = 1;
+    rebuildAndRender();
+  });
+
+  el('shg_prev').addEventListener('click', () => {
+    if (shgPage > 1){
+      shgPage -= 1;
+      renderPage();
+    }
+  });
+
+  el('shg_next').addEventListener('click', () => {
+    const totalPages = Math.max(1, Math.ceil(shgFiltered.length / shgPerPage));
+    if (shgPage < totalPages){
+      shgPage += 1;
+      renderPage();
+    }
+  });
+
+  // Boot
+  init().then(doSearch);
+</script>
+{% endblock %}

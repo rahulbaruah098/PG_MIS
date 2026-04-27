@@ -1,0 +1,1571 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}PG MIS{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap + Chart.js (keep) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Your existing global css (keep) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+  <style>
+    :root{
+      --header-h:72px;
+      --footer-h:86px;
+      --sidebar-w:290px;
+       --topbar-h: 72px;
+    --sidebar-collapsed-w: 84px; 
+      --sidebar-pad:14px;
+      --sidebar-border:rgba(15,23,42,.08);
+      --sidebar-soft:#ffffff;
+      --sidebar-bg:#fff;
+      --shell:#eef6f2;
+      --brand:#0b4d3a;
+      --ink:#0f172a;
+      --mint:rgba(173,231,196,.38);
+      --mint-strong:rgba(173,231,196,.52);
+    }
+
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    html{ scroll-behavior:smooth; }
+    html, body{ min-height:100%; }
+
+    body{
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background:var(--shell);
+      color:#0f172a;
+      overflow-x:hidden;
+      min-height:100vh;
+    }
+
+    .sr-only{
+      position:absolute !important;
+      width:1px; height:1px;
+      padding:0; margin:-1px;
+      overflow:hidden; clip:rect(0,0,0,0);
+      white-space:nowrap; border:0;
+    }
+
+    .app-container{
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+      width:100%;
+      background:var(--shell);
+    }
+
+    /* ============================================================
+       HEADER / NAVBAR
+       ============================================================ */
+.header{
+  background:#dfeee7;
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  height:var(--header-h);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 1.25rem;
+  border-bottom:1px solid rgba(0,0,0,.18);
+  box-shadow:0 12px 24px -18px rgba(15,23,42,.35);
+  position:relative;
+  top:auto;
+  z-index:10;
+  width:100%;
+  gap:.9rem;
+  min-width:0;
+  flex:0 0 auto;
+}
+
+    .header-left{
+      display:flex;
+      align-items:center;
+      gap:0.9rem;
+      min-width:0;
+      flex:1;
+    }
+
+    .header-logo{
+      display:inline-flex;
+      align-items:center;
+      gap:0.75rem;
+      font-weight:950;
+      letter-spacing:.2px;
+      color:#0b4d3a;
+      line-height:1;
+      white-space:nowrap;
+      user-select:none;
+      cursor:pointer;
+      padding:0.35rem 0.55rem;
+      border-radius:12px;
+      transition: transform .15s ease, background-color .2s ease;
+      min-width:0;
+      text-decoration:none;
+    }
+    .header-logo:hover{
+      background:rgba(16,185,129,.10);
+      transform:translateY(-1px);
+      color:#0b4d3a;
+    }
+
+    .brand-mark{
+      width:34px;height:34px;
+      border-radius:10px;
+      background:linear-gradient(135deg, rgba(11,77,58,1), rgba(16,185,129,.95));
+      box-shadow:0 14px 22px -16px rgba(11,77,58,.7);
+      position:relative;
+      overflow:hidden;
+      flex:0 0 auto;
+    }
+    .brand-mark:before{
+      content:"";
+      position:absolute; inset:-40% -30%;
+      background:radial-gradient(closest-side, rgba(255,255,255,.22), transparent 62%);
+      transform:rotate(18deg);
+      z-index:0;
+    }
+    .brand-logo{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      padding:4px;
+      z-index:1;
+      pointer-events:none;
+      user-select:none;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,.18));
+    }
+
+    .brand-text{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      min-width:0;
+    }
+    .brand-text strong{
+      font-size:1.02rem;
+      font-weight:950;
+      letter-spacing:.3px;
+      line-height:1.05;
+    }
+    .brand-text span{
+      font-size:.78rem;
+      font-weight:800;
+      color:rgba(11,77,58,.65);
+      line-height:1.05;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:26vw;
+    }
+
+    .header-controls{
+      display:flex;
+      align-items:center;
+      gap:.65rem;
+      flex-wrap:nowrap;
+      justify-content:flex-end;
+      min-width:0;
+      flex:0 0 auto;
+    }
+
+    .control-button{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:.5rem;
+      background:rgba(255,255,255,.55);
+      border:1px solid rgba(0,0,0,.14);
+      color:#0b4d3a;
+      padding:.58rem .95rem;
+      border-radius:9999px;
+      cursor:pointer;
+      transition: transform .15s ease, background-color .2s ease, box-shadow .2s ease;
+      font-size:.9rem;
+      font-weight:900;
+      white-space:nowrap;
+      user-select:none;
+      text-decoration:none;
+      flex:0 0 auto;
+    }
+    .control-button:hover{
+      background:rgba(255,255,255,.75);
+      transform:translateY(-1px);
+      box-shadow:0 18px 24px -22px rgba(15,23,42,.55);
+      color:#0b4d3a;
+    }
+    .icon-small{ width:1rem; height:1rem; }
+
+    .logout-top{
+      background:rgba(239,68,68,.12);
+      border-color:rgba(239,68,68,.30);
+      color:#b91c1c;
+      padding-left:.7rem;
+      padding-right:.7rem;
+    }
+    .logout-top:hover{
+      background:rgba(239,68,68,.16);
+      box-shadow:0 18px 24px -22px rgba(239,68,68,.55);
+      color:#b91c1c;
+    }
+
+    .menu-button{
+      display:none;
+      width:42px; height:42px;
+      border-radius:9999px;
+      border:1px solid rgba(11,77,58,.14);
+      background:rgba(11,77,58,.08);
+      cursor:pointer;
+      align-items:center;
+      justify-content:center;
+      transition: transform .15s ease, background-color .2s ease, box-shadow .2s ease;
+      user-select:none;
+      flex:0 0 auto;
+    }
+    .menu-button:hover{
+      background:rgba(11,77,58,.12);
+      transform:translateY(-1px);
+      box-shadow:0 18px 24px -22px rgba(15,23,42,.55);
+    }
+    .menu-button svg{ width:18px; height:18px; color:#0b4d3a; }
+
+    /* ============================================================
+       MAIN WRAPPER
+       ============================================================ */
+    .main-wrapper{
+      display:flex;
+      flex:1 1 auto;
+      position:relative;
+      width:100%;
+      min-height:0;
+      align-items:stretch;
+      background:var(--shell);
+    }
+
+    /* ============================================================
+       SIDEBAR
+       ============================================================ */
+    .sidebar{
+  width:var(--sidebar-w);
+  background:var(--sidebar-bg);
+  border-right:1px solid var(--sidebar-border);
+  box-shadow:12px 0 24px -22px rgba(15,23,42,.18);
+  display:flex;
+  flex-direction:column;
+  position:sticky;
+  top:0;
+  height:calc(100vh - var(--footer-h));
+  max-height:calc(100vh - var(--footer-h));
+  min-height:calc(100vh - var(--footer-h));
+  overflow:hidden;
+  flex:0 0 auto;
+  z-index:20;
+  transition:width .25s ease;
+}
+
+    .sidebar-header{
+      padding:1rem var(--sidebar-pad);
+      background:rgba(255,255,255,.22);
+      border-top:1px solid rgba(0,0,0,.18);
+      border-bottom:1px solid rgba(0,0,0,.18);
+      border-left:0;
+      border-right:0;
+      box-shadow:0 1px 0 rgba(0,0,0,.08);
+      flex:0 0 auto;
+    }
+
+    .sidebar-head-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:.6rem;
+      min-height:42px;
+    }
+
+    .sidebar-title{
+      font-size:.95rem;
+      font-weight:1000;
+      letter-spacing:1.2px;
+      text-transform:uppercase;
+      color:#0b4d3a;
+      text-shadow:
+        .5px 0 rgba(0,0,0,.55),
+        -.5px 0 rgba(0,0,0,.55),
+        0 .5px rgba(0,0,0,.55),
+        0 -.5px rgba(0,0,0,.55);
+    }
+
+    .sidebar-toggle{
+      width:40px;height:40px;
+      border-radius:14px;
+      border:1px solid rgba(0,0,0,.18);
+      background:rgba(255,255,255,.45);
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      transition: transform .15s ease, background-color .2s ease, box-shadow .2s ease;
+      flex:0 0 auto;
+    }
+    .sidebar-toggle:hover{
+      background:rgba(255,255,255,.70);
+      transform:translateY(-1px);
+      box-shadow:0 14px 20px -18px rgba(15,23,42,.35);
+    }
+    .sidebar-toggle-ic{
+      width:18px;
+      height:18px;
+      color:#0f172a;
+      transition:transform .25s ease;
+    }
+
+    .sidebar-nav{
+      flex:1 1 auto;
+      padding:var(--sidebar-pad);
+      display:flex;
+      flex-direction:column;
+      gap:.45rem;
+      min-height:0;
+      overflow-y:auto;
+      overflow-x:hidden;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:thin;
+      scrollbar-color:rgba(16,185,129,.55) transparent;
+    }
+    .sidebar-nav::-webkit-scrollbar{ width:8px; }
+    .sidebar-nav::-webkit-scrollbar-thumb{
+      background:rgba(16,185,129,.55);
+      border-radius:999px;
+    }
+    .sidebar-nav::-webkit-scrollbar-track{ background:transparent; }
+
+    .nav-section{
+      margin:.8rem .35rem .2rem;
+      font-size:.72rem;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      font-weight:950;
+      color:rgba(15,23,42,.58);
+      user-select:none;
+      line-height:1.1;
+    }
+
+    .nav-item-group{
+      list-style:none;
+      margin:0;
+      padding:0;
+      display:flex;
+      flex-direction:column;
+      gap:.4rem;
+    }
+
+    .nav-item{
+      display:flex;
+      align-items:center;
+      gap:.75rem;
+      padding:.86rem .95rem;
+      border-radius:18px;
+      cursor:pointer;
+      transition: transform .18s ease, background-color .2s ease, box-shadow .2s ease, border-color .2s ease;
+      font-size:.95rem;
+      font-weight:850;
+      background:transparent;
+      border:1px solid transparent;
+      color:#0b4d3a;
+      user-select:none;
+      text-decoration:none;
+      width:100%;
+      min-height:54px;
+    }
+
+    @media (hover:hover) and (pointer:fine){
+      .nav-item:hover{
+        background:var(--mint);
+        border-color:rgba(15,23,42,.10);
+        transform:translateX(4px);
+        box-shadow:0 18px 26px -24px rgba(0,0,0,.55);
+        color:#0b4d3a;
+      }
+      .nav-logout:hover{
+        background:linear-gradient(180deg, #d64c4c, #b93a3a);
+        transform:translateY(-1px);
+        box-shadow:0 18px 28px -20px rgba(185,58,58,.65);
+        color:#fff;
+      }
+    }
+
+    .nav-item.active{
+      background:var(--mint-strong);
+      border-color:rgba(15,23,42,.12);
+      box-shadow:0 18px 26px -24px rgba(0,0,0,.55);
+    }
+
+    .nav-icon{
+      width:1.28rem; height:1.28rem;
+      color:#0f172a;
+      flex-shrink:0;
+      filter:
+        drop-shadow(0 0 .4px rgba(255,255,255,.85))
+        drop-shadow(0 0 .6px rgba(255,255,255,.65));
+    }
+    .nav-item:hover .nav-icon,
+    .nav-item.active .nav-icon{
+      filter:
+        drop-shadow(0 0 .6px rgba(255,255,255,.92))
+        drop-shadow(0 0 1px rgba(255,255,255,.75));
+    }
+
+    .nav-text{
+      white-space:normal;
+      word-break:break-word;
+      flex:1 1 auto;
+      line-height:1.2;
+    }
+
+    .nav-spacer{ flex:1 1 auto; min-height:10px; }
+
+    .nav-logout{
+      margin-top:auto;
+      background:linear-gradient(180deg, #e05656, #c84343);
+      border:1px solid rgba(255,255,255,.28);
+      color:#fff;
+      justify-content:center;
+      gap:.6rem;
+      transform:none;
+      box-shadow:0 14px 24px -18px rgba(200,67,67,.55);
+      min-height:58px;
+    }
+    .nav-logout .nav-icon{ color:#fff; }
+
+    /* ============================================================
+   DESKTOP COLLAPSED SIDEBAR — EXACT RAIL FIX
+   ============================================================ */
+.sidebar.collapsed{
+  width:var(--sidebar-collapsed-w);
+  min-width:var(--sidebar-collapsed-w);
+  max-width:var(--sidebar-collapsed-w);
+}
+
+.sidebar.collapsed .sidebar-header{
+  padding:28px 0 26px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  border-top:0;
+  border-left:0;
+  border-right:0;
+}
+
+.sidebar.collapsed .sidebar-head-row{
+  justify-content:center;
+  width:100%;
+}
+
+.sidebar.collapsed .sidebar-title{
+  display:none;
+}
+
+.sidebar.collapsed .sidebar-toggle{
+  width:60px;
+  height:60px;
+  border-radius:20px;
+  margin:0 auto;
+  background:#f3f3f3;
+  border:1px solid rgba(15,23,42,.16);
+  box-shadow:none;
+}
+
+.sidebar.collapsed .sidebar-toggle-ic{
+  transform:rotate(180deg);
+}
+
+.sidebar.collapsed .sidebar-nav{
+  padding:12px 0 14px;
+  gap:14px;
+  align-items:center;
+  overflow-x:hidden;
+}
+
+.sidebar.collapsed .nav-section{
+  display:none;
+}
+
+.sidebar.collapsed .nav-item-group{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
+}
+
+.sidebar.collapsed .nav-text{
+  display:none !important;
+}
+
+.sidebar.collapsed .nav-item{
+  width:64px !important;
+  min-width:64px !important;
+  max-width:64px !important;
+  height:64px !important;
+  min-height:64px !important;
+  max-height:64px !important;
+  padding:0 !important;
+  margin:0 auto !important;
+  justify-content:center !important;
+  align-items:center !important;
+  gap:0 !important;
+  border-radius:20px !important;
+  transform:none !important;
+}
+
+.sidebar.collapsed .nav-icon{
+  margin:0 !important;
+  width:26px !important;
+  height:26px !important;
+  flex:0 0 26px !important;
+}
+
+.sidebar.collapsed .nav-item.active{
+  background:#bfe3c9 !important;
+  border-color:rgba(15,23,42,.12);
+  box-shadow:0 16px 24px -22px rgba(0,0,0,.55);
+}
+
+.sidebar.collapsed .nav-spacer{
+  min-height:10px;
+  width:100%;
+  flex:1 1 auto;
+}
+
+.sidebar.collapsed .nav-logout{
+  width:64px !important;
+  min-width:64px !important;
+  max-width:64px !important;
+  height:64px !important;
+  min-height:64px !important;
+  max-height:64px !important;
+  padding:0 !important;
+  border-radius:20px !important;
+}
+    /* ============================================================
+       CONTENT
+       ============================================================ */
+    .content-area{
+      flex:1 1 auto;
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+      min-height:0;
+      background:var(--shell);
+    }
+
+    .content-main{
+      flex:1 1 auto;
+      min-height:0;
+      padding:1.35rem;
+      overflow:auto;
+      min-width:0;
+      background:var(--shell);
+    }
+
+    .content-inner{
+      max-width:1400px;
+      margin:0 auto;
+      width:100%;
+    }
+
+    .content-inner .container-fluid{
+      padding-left:0;
+      padding-right:0;
+    }
+
+    .alert{
+      border-radius:16px;
+      border:1px solid rgba(112,214,180,.45);
+      background:rgba(255,255,255,.85);
+      backdrop-filter:blur(10px);
+      box-shadow:0 10px 22px rgba(6,40,26,.14);
+      color:#173b2c;
+      font-weight:800;
+    }
+    .alert .btn-close{ filter:saturate(.8); }
+
+    /* ============================================================
+       FOOTER
+       ============================================================ */
+    .footer{
+  background:#dfeee7;
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  padding:.95rem 1.25rem;
+  text-align:center;
+  color:rgba(15,23,42,.70);
+  border-top:1px solid rgba(0,0,0,.18);
+  box-shadow:0 -12px 24px -18px rgba(15,23,42,.28);
+  min-height:var(--footer-h);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  position:relative;
+  z-index:5;
+}
+    .footer-content{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:.5rem;
+      font-size:.92rem;
+      font-weight:850;
+      flex-wrap:wrap;
+      line-height:1.2;
+    }
+    .footer-2line{
+      flex-direction:column;
+      gap:6px;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+    }
+    .footer-2line .footer-row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .footer-2line .footer-sep{ opacity:.7; }
+    .footer-link{
+      color:#0b4d3a;
+      text-decoration:none;
+      transition: opacity .2s ease, transform .15s ease;
+    }
+    .footer-link:hover{
+      opacity:.95;
+      transform:translateY(-1px);
+      color:#0b4d3a;
+    }
+
+    /* ============================================================
+       OVERLAY
+       ============================================================ */
+    #menuOverlay{
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,.25);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+      z-index:89;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .25s ease;
+    }
+    #menuOverlay.show{
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    @media (max-width:1024px){
+      :root{
+        --sidebar-w:260px;
+      }
+      .content-main{ padding:1.05rem; }
+    }
+
+    @media (max-width:860px){
+      .brand-text span{ max-width:18vw; }
+      .control-button{ padding:.55rem .85rem; }
+    }
+
+    @media (max-width:768px){
+      :root{
+        --header-h:64px;
+        --footer-h:86px;
+      }
+
+ .header{ padding:0 .9rem; height:var(--header-h); position:relative; }
+      .menu-button{ display:inline-flex; }
+      .header-left{ justify-content:center; }
+
+      .menu-button{
+        position:absolute;
+        left:.55rem;
+        top:50%;
+        transform:translateY(-50%);
+        border:none;
+        background:transparent;
+        border-radius:0;
+        box-shadow:none;
+      }
+      .menu-button:hover{
+        background:transparent;
+        transform:translateY(-50%);
+        box-shadow:none;
+      }
+
+      .main-wrapper{ min-height:calc(100vh - var(--header-h)); }
+
+      .sidebar{
+        position:fixed;
+        left:-340px;
+        right:auto;
+        top:0;
+        height:100vh;
+        max-height:100vh;
+        min-height:100vh;
+        width:min(340px, 88vw);
+        z-index:90;
+        transition:left .35s ease;
+        box-shadow:18px 0 40px rgba(0,0,0,.18);
+        border-right:1px solid rgba(0,0,0,.12);
+        border-left:none;
+        overflow:hidden;
+      }
+      .sidebar.open{ left:0; }
+
+      .sidebar-header{ padding:1.05rem .95rem; background:rgba(255,255,255,.55); }
+      .sidebar-nav{ padding:1.05rem .95rem 1rem; gap:.55rem; }
+
+      .sidebar-toggle{ display:none; }
+
+      .sidebar.collapsed{
+        width:min(340px, 88vw);
+      }
+      .sidebar.collapsed .sidebar-title{ display:block; }
+      .sidebar.collapsed .nav-text{ display:inline; }
+      .sidebar.collapsed .nav-section{ display:block; }
+      .sidebar.collapsed .sidebar-header{
+        padding:1.05rem .95rem;
+      }
+      .sidebar.collapsed .sidebar-nav{
+        padding:1.05rem .95rem 1rem;
+        align-items:stretch;
+      }
+      .sidebar.collapsed .nav-item-group{
+        align-items:stretch;
+      }
+      .sidebar.collapsed .nav-item{
+        width:100%;
+        max-width:none;
+        min-width:0;
+        height:auto;
+        min-height:54px;
+        padding:.86rem .95rem;
+        justify-content:flex-start;
+        border-radius:18px;
+      }
+      .sidebar.collapsed .nav-logout{
+        width:100%;
+        max-width:none;
+        min-width:0;
+        height:auto;
+        min-height:58px;
+        padding:.95rem .9rem;
+        border-radius:16px;
+      }
+
+      .nav-spacer{ display:none; }
+      #menuLogout.nav-logout{
+        position:relative;
+        bottom:auto;
+        margin-top:12px;
+      }
+
+      body.menu-open{
+        overflow:hidden;
+        touch-action:none;
+      }
+
+      .content-main{ padding:.95rem; }
+    }
+
+    @media (max-width:520px){
+      .brand-text span{ display:none; }
+      .control-button{ padding:.55rem .65rem; }
+      .header-controls{ gap:.45rem; }
+    }
+
+    @media (max-width:420px){
+      .sidebar{ width:min(320px, 92vw); }
+      .nav-item{ padding:.78rem .85rem; }
+      .menuButton{ left:.45rem; }
+    }
+
+    @media (max-width:360px){
+      .header{ gap:.55rem; }
+      .header-logo{ padding:.3rem .45rem; }
+      .brand-mark{ width:32px; height:32px; }
+    }
+
+    @media (hover:none) and (pointer:coarse){
+      .nav-item:hover{
+        background:transparent !important;
+        border-color:transparent !important;
+        transform:none !important;
+        box-shadow:none !important;
+      }
+      .nav-item:active,
+      .nav-item.is-pressed{
+        background:rgba(173,231,196,.45) !important;
+        border-color:rgba(15,23,42,.10) !important;
+        transform:none !important;
+        box-shadow:0 18px 26px -24px rgba(0,0,0,.55) !important;
+      }
+      .nav-item.nav-logout:active,
+      .nav-item.nav-logout.is-pressed{
+        background:linear-gradient(180deg, #d64c4c, #b93a3a) !important;
+        transform:none !important;
+      }
+    }
+
+    @media (prefers-reduced-motion:reduce){
+      .header-logo,
+      .control-button,
+      .menu-button,
+      .sidebar,
+      .sidebar-toggle,
+      .nav-item,
+      #menuOverlay,
+      .footer-link,
+      .sidebar-toggle-ic{
+        transition:none !important;
+      }
+    }
+  </style>
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <div class="app-container">
+
+    <header class="header">
+      <div class="header-left">
+        <a id="brandHome" class="header-logo" href="{{ url_for('reports.hierarchy_dashboard') }}" title="Go to Admin Dashboard">
+          <div class="brand-mark" aria-hidden="true">
+            <img
+              class="brand-logo"
+              src="{{ url_for('static', filename='images/loginlogo.JPEG') }}"
+              alt="Logo"
+              onerror="this.style.display='none';"
+            />
+          </div>
+          <div class="brand-text">
+            <strong>PGMIS</strong>
+            <span>Producer Group MIS</span>
+          </div>
+        </a>
+      </div>
+
+      <div class="header-controls">
+        <button id="menuButton" class="menu-button" type="button" aria-label="Open dashboard menu" title="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="4" y1="6" x2="20" y2="6"></line>
+            <line x1="4" y1="12" x2="20" y2="12"></line>
+            <line x1="4" y1="18" x2="20" y2="18"></line>
+          </svg>
+        </button>
+
+        <a id="logoutTopBtn" href="{{ url_for('auth.logout') }}" class="control-button logout-top" title="Logout" aria-label="Logout">
+          <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span class="sr-only">Logout</span>
+        </a>
+      </div>
+    </header>
+
+    <div id="menuOverlay" aria-hidden="true"></div>
+
+    <div class="main-wrapper">
+      <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-head-row">
+            <div class="sidebar-title">Dashboard Menu</div>
+            <button id="sidebarToggle" class="sidebar-toggle" type="button" title="Collapse sidebar" aria-label="Collapse sidebar">
+              <svg class="sidebar-toggle-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav" id="sidebarNav">
+
+          {% if session.get('role') in ['BLOCK_ADMIN','CLF_ADMIN'] %}
+
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="dashboard-main" href="{{ url_for('reports.hierarchy_dashboard') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 12l9-9 9 9"></path>
+                  <path d="M9 21V9h6v12"></path>
+                </svg>
+                <span class="nav-text">Dashboard</span>
+              </a>
+            </li>
+          </ul>
+
+          <div class="nav-section">Reports</div>
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="lakhpati-report" href="{{ url_for('reports.lakhpati_report') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 21s8-4.5 8-11V5l-8-3-8 3v5c0 6.5 8 11 8 11z"></path>
+                  <path d="M8 12h8"></path>
+                  <path d="M10 8h4"></path>
+                </svg>
+                <span class="nav-text">Lakhpati Didi</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="grants-report" href="{{ url_for('reports.grants_report') }}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+  <text x="12" y="17" text-anchor="middle" font-size="18" font-weight="800" fill="currentColor">₹</text>
+</svg>
+                <span class="nav-text">Grants</span>
+              </a>
+            </li>
+          </ul>
+
+          <div class="nav-section">Master Data</div>
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="master-data-tresp" href="{{ url_for('master_data.shg_members_browser') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                <span class="nav-text">Master Data (TRESP)</span>
+              </a>
+            </li>
+          </ul>
+
+          <div class="nav-section">Funds</div>
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="funds" href="#">
+     <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+  <text x="12" y="17" text-anchor="middle" font-size="18" font-weight="800" fill="currentColor">₹</text>
+</svg>
+                <span class="nav-text">Funds</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="grants-funds" href="#">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+  <text x="12" y="17" text-anchor="middle" font-size="18" font-weight="800" fill="currentColor">₹</text>
+</svg>
+                <span class="nav-text">Grants / Funds</span>
+              </a>
+            </li>
+          </ul>
+
+          <div class="nav-section">Loans</div>
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="loans" href="#">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                  <path d="M7 8h10"></path>
+                  <path d="M7 12h10"></path>
+                </svg>
+                <span class="nav-text">Loans</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="loan-dashboard" href="#">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 3v18h18"></path>
+                  <path d="M7 14l4-4 3 3 5-7"></path>
+                </svg>
+                <span class="nav-text">Loan Dashboard</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="pg-loan-account" href="#">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15V6"></path>
+                  <path d="M18.5 8.5 12 15l-3-3L3 18"></path>
+                  <path d="M21 21H3"></path>
+                </svg>
+                <span class="nav-text">PG Loan Account</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="member-loans" href="#">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <path d="M20 8v6"></path>
+                  <path d="M23 11h-6"></path>
+                </svg>
+                <span class="nav-text">Member Loans</span>
+              </a>
+            </li>
+          </ul>
+
+          <div class="nav-section">Reports & Monitoring</div>
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="mpr" href="#">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 3v18h18"></path>
+                  <path d="M18 17V9"></path>
+                  <path d="M13 17V5"></path>
+                  <path d="M8 17v-3"></path>
+                </svg>
+                <span class="nav-text">MPR</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="monthly-progress" href="#">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                  <path d="M16 2v4"></path>
+                  <path d="M8 2v4"></path>
+                  <path d="M3 10h18"></path>
+                </svg>
+                <span class="nav-text">Monthly Progress</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="sector-analytics" href="#">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 21H3"></path>
+                  <path d="M7 16V8"></path>
+                  <path d="M12 16V4"></path>
+                  <path d="M17 16v-5"></path>
+                </svg>
+                <span class="nav-text">Sector Analytics</span>
+              </a>
+            </li>
+          </ul>
+
+          <div class="nav-section">Other</div>
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="upload-docs" href="#">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <span class="nav-text">Upload Documents</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="pg-gradation" href="#">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                </svg>
+                <span class="nav-text">PG Gradation</span>
+              </a>
+            </li>
+          </ul>
+
+          {% else %}
+
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="dashboard-main" href="{{ url_for('reports.hierarchy_dashboard') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 12l9-9 9 9"></path>
+                  <path d="M9 21V9h6v12"></path>
+                </svg>
+                <span class="nav-text">Dashboard</span>
+              </a>
+            </li>
+          </ul>
+
+          <div class="nav-section">Reports</div>
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="dashboard-reports" href="{{ url_for('reports.state_dashboard') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="7" height="9"></rect>
+                  <rect x="14" y="3" width="7" height="5"></rect>
+                  <rect x="14" y="12" width="7" height="9"></rect>
+                  <rect x="3" y="16" width="7" height="5"></rect>
+                </svg>
+                <span class="nav-text">Dashboard</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="reports-hub" href="{{ url_for('reports.reports_hub') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15V6"></path>
+                  <path d="M18 8H8"></path>
+                  <path d="M18 12H8"></path>
+                  <path d="M18 16H8"></path>
+                  <path d="M3 6h.01"></path>
+                  <path d="M3 12h.01"></path>
+                  <path d="M3 18h.01"></path>
+                </svg>
+                <span class="nav-text">Reports Hub</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="lakhpati-report" href="{{ url_for('reports.lakhpati_report') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 21s8-4.5 8-11V5l-8-3-8 3v5c0 6.5 8 11 8 11z"></path>
+                  <path d="M8 12h8"></path>
+                  <path d="M10 8h4"></path>
+                </svg>
+                <span class="nav-text">Lakhpati Didi</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="grants-report" href="{{ url_for('reports.grants_report') }}">
+                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
+  <text x="12" y="17" text-anchor="middle" font-size="18" font-weight="800" fill="currentColor">₹</text>
+</svg>
+                <span class="nav-text">Grants</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="pg-overall-export" href="{{ url_for('reports.pg_overall_report') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span class="nav-text">PG Overall Export</span>
+              </a>
+            </li>
+          </ul>
+
+          <div class="nav-section">Master Data</div>
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="master-data-tresp" href="{{ url_for('master_data.shg_members_browser') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+                <span class="nav-text">Master Data (TRESP)</span>
+              </a>
+            </li>
+
+            {% if session.get('role') == 'SUPER_ADMIN' %}
+            <li>
+              <a class="nav-item" data-page="replace-master-upload" href="{{ url_for('master_data.shg_upload_replace') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <span class="nav-text">Replace Master (Upload)</span>
+              </a>
+            </li>
+            {% endif %}
+
+            {% if session.get('role') in ['SUPER_ADMIN', 'ADMIN', 'DISTRICT_ADMIN', 'BLOCK_ADMIN', 'CLF_ADMIN', 'CLF_MANAGER'] %}
+
+              {% if session.get('role') == 'SUPER_ADMIN' %}
+              <li>
+                <a class="nav-item" data-page="states" href="{{ url_for('master_data.manage_states') }}">
+                  <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 2l7 4v6c0 5-3.5 8.74-7 10-3.5-1.26-7-5-7-10V6l7-4z"></path>
+                  </svg>
+                  <span class="nav-text">States</span>
+                </a>
+              </li>
+              {% endif %}
+
+              {% if session.get('role') in ['SUPER_ADMIN','ADMIN'] %}
+              <li>
+                <a class="nav-item" data-page="districts" href="{{ url_for('master_data.manage_districts') }}">
+                  <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 1 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                  <span class="nav-text">Districts</span>
+                </a>
+              </li>
+              {% endif %}
+
+              {% if session.get('role') == 'DISTRICT_ADMIN' %}
+              <li>
+                <a class="nav-item" data-page="blocks" href="{{ url_for('master_data.manage_blocks') }}">
+                  <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                  </svg>
+                  <span class="nav-text">Blocks</span>
+                </a>
+              </li>
+              {% endif %}
+
+              {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN','BLOCK_ADMIN','CLF_ADMIN','CLF_MANAGER'] %}
+              <li>
+                <a class="nav-item" data-page="pgs" href="{{ url_for('master_data.manage_pgs') }}">
+                  <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="8.5" cy="7" r="4"></circle>
+                    <path d="M20 8v6"></path>
+                    <path d="M23 11h-6"></path>
+                  </svg>
+                  <span class="nav-text">PGs</span>
+                </a>
+              </li>
+              {% endif %}
+            {% endif %}
+          </ul>
+
+          {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN','BLOCK_ADMIN','CLF_MANAGER'] %}
+          <div class="nav-section">User Management</div>
+          <ul class="nav-item-group">
+            {% if session.get('role') == 'SUPER_ADMIN' %}
+            <li>
+              <a class="nav-item" data-page="create-state-admin" href="{{ url_for('auth.create_state_admin') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <line x1="20" y1="8" x2="20" y2="14"></line>
+                  <line x1="17" y1="11" x2="23" y2="11"></line>
+                </svg>
+                <span class="nav-text">Create State Admin</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="reset-user-passwords" href="{{ url_for('auth.super_admin_password_reset') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="11" rx="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span class="nav-text">Reset User Passwords</span>
+              </a>
+            </li>
+            {% endif %}
+
+            {% if session.get('role') == 'ADMIN' %}
+            <li>
+              <a class="nav-item" data-page="create-district-admin" href="{{ url_for('auth.create_district_admin') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <line x1="20" y1="8" x2="20" y2="14"></line>
+                  <line x1="17" y1="11" x2="23" y2="11"></line>
+                </svg>
+                <span class="nav-text">Create District Admin</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="state-authorization" href="{{ url_for('pg.state_authorization') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 12l2 2 4-4"></path>
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <span class="nav-text">State Authorization</span>
+              </a>
+            </li>
+            {% endif %}
+
+            {% if session.get('role') == 'DISTRICT_ADMIN' %}
+            <li>
+              <a class="nav-item" data-page="create-block-admin" href="{{ url_for('auth.create_clf_admin') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <line x1="20" y1="8" x2="20" y2="14"></line>
+                  <line x1="17" y1="11" x2="23" y2="11"></line>
+                </svg>
+                <span class="nav-text">Create Block Admin</span>
+              </a>
+            </li>
+            {% endif %}
+
+            {% if session.get('role') in ['BLOCK_ADMIN', 'CLF_ADMIN', 'CLF_MANAGER'] %}
+            <li>
+              <a class="nav-item" data-page="create-pg-login" href="{{ url_for('auth.create_pg_member') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <line x1="20" y1="8" x2="20" y2="14"></line>
+                  <line x1="17" y1="11" x2="23" y2="11"></line>
+                </svg>
+                <span class="nav-text">Create PG Login</span>
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+          {% endif %}
+
+          <div class="nav-section">PG Operations</div>
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="pg-management" href="{{ url_for('master_data.manage_pgs') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                </svg>
+                <span class="nav-text">PG Management</span>
+              </a>
+            </li>
+          </ul>
+
+          {% endif %}
+
+          <div class="nav-spacer"></div>
+
+          <a id="menuLogout" class="nav-item nav-logout" href="{{ url_for('auth.logout') }}">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span class="nav-text">Logout</span>
+          </a>
+        </nav>
+      </aside>
+
+      <div class="content-area">
+        <main class="content-main">
+          <div class="content-inner">
+            <div class="container-fluid py-1">
+              {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                  {% for category, msg in messages %}
+                  <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" data-timeout="3500">
+                      {{ msg }}
+                      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                  {% endfor %}
+                {% endif %}
+              {% endwith %}
+
+              {% block content %}{% endblock %}
+            </div>
+          </div>
+        </main>
+
+        <footer class="footer">
+          <div class="footer-content footer-2line">
+            <div class="footer-row">
+              <span>© 2026 PGMIS™ All rights reserved.</span>
+            </div>
+            <div class="footer-row">
+              <span>Powered by —</span>
+              <a href="https://sayanant.com/" target="_blank" rel="noopener noreferrer" class="footer-link">
+                Sayanant Group, Guwahati Assam
+              </a>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+  <script>
+    (function(){
+      const sidebar = document.getElementById('sidebar');
+      const menuButton = document.getElementById('menuButton');
+      const menuOverlay = document.getElementById('menuOverlay');
+      const sidebarToggle = document.getElementById('sidebarToggle');
+      const sidebarNav = document.getElementById('sidebarNav');
+
+      function isMobile(){
+        return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+      }
+
+      function openMenu(){
+        if(!isMobile() || !sidebar) return;
+        sidebar.classList.add('open');
+        menuOverlay?.classList.add('show');
+        menuOverlay?.setAttribute('aria-hidden','false');
+        document.body.classList.add('menu-open');
+      }
+
+      function closeMenu(){
+        sidebar?.classList.remove('open');
+        menuOverlay?.classList.remove('show');
+        menuOverlay?.setAttribute('aria-hidden','true');
+        document.body.classList.remove('menu-open');
+      }
+
+      function toggleMenu(){
+        if(!isMobile()) return;
+        sidebar?.classList.contains('open') ? closeMenu() : openMenu();
+      }
+
+      menuButton?.addEventListener('click', toggleMenu);
+      menuOverlay?.addEventListener('click', closeMenu);
+      window.addEventListener('resize', function(){ if(!isMobile()) closeMenu(); });
+      document.addEventListener('keydown', function(e){ if(isMobile() && e.key === 'Escape') closeMenu(); });
+
+      const SIDEBAR_KEY = 'PGMIS_BASE_DEFAULT_SIDEBAR_COLLAPSED';
+
+      function applySidebarCollapsedState(){
+        const saved = localStorage.getItem(SIDEBAR_KEY);
+        if(saved === '1' && !isMobile()) sidebar?.classList.add('collapsed');
+        else sidebar?.classList.remove('collapsed');
+      }
+
+      function toggleSidebarCollapsed(){
+        if(isMobile()) return;
+        sidebar?.classList.toggle('collapsed');
+        localStorage.setItem(SIDEBAR_KEY, sidebar?.classList.contains('collapsed') ? '1' : '0');
+      }
+
+      applySidebarCollapsedState();
+      sidebarToggle?.addEventListener('click', toggleSidebarCollapsed);
+      window.addEventListener('resize', applySidebarCollapsedState);
+
+      const ACTIVE_KEY = 'PGMIS_BASE_DEFAULT_ACTIVE_SIDEBAR_HREF';
+      const NAV_SCROLL_KEY = 'PGMIS_BASE_DEFAULT_SIDEBAR_SCROLLTOP';
+
+      function clearActiveNav(){
+        document.querySelectorAll('#sidebarNav .nav-item').forEach(function(a){
+          a.classList.remove('active');
+        });
+      }
+
+      function normalizePath(p){
+        try{
+          const u = new URL(p, window.location.origin);
+          return (u.pathname || '/').replace(/\/+$/, '') || '/';
+        }catch(_){
+          return (p || '/').replace(/\/+$/, '') || '/';
+        }
+      }
+
+      function applyActiveByUrl(){
+        const currentPath = normalizePath(window.location.pathname);
+        const links = Array.from(document.querySelectorAll('#sidebarNav .nav-item[href]'))
+          .filter(function(a){ return !a.classList.contains('nav-logout'); });
+
+        let match = links.find(function(a){
+          return normalizePath(a.getAttribute('href')) === currentPath;
+        });
+
+        if(!match){
+          match = links.find(function(a){
+            const hp = normalizePath(a.getAttribute('href'));
+            if(hp === '/' || hp.length < 2) return false;
+            return currentPath.startsWith(hp + '/') || currentPath.startsWith(hp);
+          });
+        }
+
+        if(match){
+          clearActiveNav();
+          match.classList.add('active');
+          sessionStorage.setItem(ACTIVE_KEY, match.getAttribute('href'));
+          return true;
+        }
+        return false;
+      }
+
+      function applyActiveByStored(){
+        const stored = sessionStorage.getItem(ACTIVE_KEY);
+        if(!stored) return false;
+        const links = Array.from(document.querySelectorAll('#sidebarNav .nav-item[href]'))
+          .filter(function(a){ return !a.classList.contains('nav-logout'); });
+
+        const match = links.find(function(a){ return a.getAttribute('href') === stored; });
+        if(match){
+          clearActiveNav();
+          match.classList.add('active');
+          return true;
+        }
+        return false;
+      }
+
+      function initActiveNav(){
+        if(applyActiveByUrl()) return;
+        applyActiveByStored();
+      }
+
+      function saveSidebarScroll(){
+        if(!sidebarNav) return;
+        sessionStorage.setItem(NAV_SCROLL_KEY, String(sidebarNav.scrollTop || 0));
+      }
+
+      function restoreSidebarScroll(){
+        if(!sidebarNav) return;
+        const v = sessionStorage.getItem(NAV_SCROLL_KEY);
+        if(v == null) return;
+        const n = parseInt(v, 10);
+        if(!Number.isFinite(n)) return;
+        sidebarNav.scrollTop = Math.max(0, n);
+      }
+
+      let scrollTimer = null;
+      sidebarNav?.addEventListener('scroll', function(){
+        if(scrollTimer) return;
+        scrollTimer = setTimeout(function(){
+          scrollTimer = null;
+          saveSidebarScroll();
+        }, 120);
+      }, { passive:true });
+
+      document.querySelectorAll('#sidebarNav .nav-item[href]').forEach(function(a){
+        if(a.classList.contains('nav-logout')) return;
+        a.addEventListener('click', function(){
+          saveSidebarScroll();
+          sessionStorage.setItem(ACTIVE_KEY, a.getAttribute('href'));
+          clearActiveNav();
+          a.classList.add('active');
+          if(isMobile()) closeMenu();
+        });
+      });
+
+      const brandHome = document.getElementById('brandHome');
+      brandHome?.addEventListener('click', function(){
+        sessionStorage.setItem(ACTIVE_KEY, "{{ url_for('reports.hierarchy_dashboard') }}");
+      });
+
+      initActiveNav();
+      setTimeout(restoreSidebarScroll, 0);
+
+      document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
+        item.addEventListener('touchstart', function(){ item.classList.add('is-pressed'); }, { passive:true });
+        ['touchend','touchcancel'].forEach(function(evt){
+          item.addEventListener(evt, function(){ item.classList.remove('is-pressed'); }, { passive:true });
+        });
+      });
+
+
+            /* Auto dismiss flash alerts */
+      const flashAlerts = document.querySelectorAll('.alert.alert-dismissible');
+      flashAlerts.forEach(function(alertEl){
+        const delay = parseInt(alertEl.getAttribute('data-timeout') || '3500', 10);
+
+        setTimeout(function(){
+          alertEl.style.transition = 'opacity .35s ease, transform .35s ease';
+          alertEl.style.opacity = '0';
+          alertEl.style.transform = 'translateY(-8px)';
+
+          setTimeout(function(){
+            try{
+              const bsAlert = bootstrap.Alert.getOrCreateInstance(alertEl);
+              bsAlert.close();
+            }catch(_){
+              alertEl.remove();
+            }
+          }, 350);
+        }, delay);
+      });
+    })();
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

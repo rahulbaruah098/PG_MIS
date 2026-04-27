@@ -1,0 +1,3376 @@
+{# templates/cash_book.html #}
+{% extends "base.html" %}
+
+{% block title %}Cash Book{% endblock %}
+
+{% block content %}
+<style>
+  /* ============================================================
+     CASHBOOK (SCOPED) — UPDATED UI SKIN
+     ✅ ONLY UI/CSS + UX enhancements added
+     ✅ No existing business logic/routes changed
+     ✅ Mobile/app: back button on gate + view pages
+     ✅ Mobile/app: horizontal swipe cards instead of table
+     ✅ Add/Delete controls only visible in Edit mode
+     ✅ Delete All + Delete Selected added
+     ✅ Cancel confirm modal added
+     ✅ Period persists on refresh
+     ✅ Change Period button added near Edit
+     ✅ Change period has extra confirm step
+     ✅ Responsive for web/mobile/tablet
+     ============================================================ */
+
+  .cb-wrap{ color:#0f172a; }
+  .cb-wrap *{ box-sizing:border-box; }
+
+  .cb-wrap{
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: clamp(12px, 2.2vw, 22px);
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    position: relative;
+    overflow: visible;
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line: rgba(15,23,42,0.10);
+    --line2: rgba(15,23,42,0.08);
+
+    --r-900:#2f8f73;
+    --r-700:#4fb596;
+    --r-500:#7fd4ba;
+    --r-200:#e8f6f1;
+    --r-150:#f3fbf8;
+
+    --p-900:#0b4d3a;
+    --p-700:#137e5f;
+    --p-500:#29b383;
+    --p-200:#d9f5e8;
+    --p-150:#eefcf6;
+
+    --g-900: var(--r-900);
+    --g-700: var(--r-700);
+    --g-500: var(--r-500);
+    --c-900: var(--r-900);
+    --c-700: var(--r-700);
+    --c-500: var(--r-500);
+    --c-200: var(--r-200);
+    --c-150: var(--r-150);
+
+    --surface:#ffffff;
+    --surface-2: rgba(255,255,255,0.92);
+    --surface-3: rgba(248,250,252,0.92);
+    --focus-ring: rgba(16,185,129,.14);
+
+    --radius: 18px;
+    --radius-sm: 14px;
+    --radius-xs: 12px;
+    --shadow: 0 18px 38px -28px rgba(15,23,42,.28);
+    --shadow-soft: 0 14px 24px -22px rgba(15,23,42,.22);
+  }
+
+  .cb-wrap[data-theme="receipts"]{
+    --g-900: var(--r-900);
+    --g-700: var(--r-700);
+    --g-500: var(--r-500);
+    --c-900: var(--r-900);
+    --c-700: var(--r-700);
+    --c-500: var(--r-500);
+    --c-200: var(--r-200);
+    --c-150: var(--r-150);
+    --focus-ring: rgba(16,185,129,.14);
+  }
+  .cb-wrap[data-theme="payments"]{
+    --g-900: var(--p-900);
+    --g-700: var(--p-700);
+    --g-500: var(--p-500);
+    --c-900: var(--p-900);
+    --c-700: var(--p-700);
+    --c-500: var(--p-500);
+    --c-200: var(--p-200);
+    --c-150: var(--p-150);
+    --focus-ring: rgba(11,77,58,.16);
+  }
+
+  .cb-section{
+    position: relative;
+    z-index: 1;
+    padding: 14px;
+    border-radius: var(--radius);
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(15,23,42,0.10);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .cb-wrap[data-theme="payments"] .cb-section{
+    border-color: rgba(11,77,58,0.14);
+  }
+
+  .cb-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:.55rem;
+    padding: .60rem .98rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(15,23,42,0.12);
+    background: rgba(255,255,255,0.90);
+    color: var(--ink);
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+    font-size: .9rem;
+    font-weight: 950;
+    user-select:none;
+    white-space: nowrap;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.28);
+  }
+  .cb-btn:hover{
+    transform: translateY(-1px);
+    background: #fff;
+    box-shadow: 0 16px 26px -22px rgba(15,23,42,.32);
+    border-color: rgba(15,23,42,0.18);
+  }
+  .cb-btn:active{ transform: translateY(0); }
+
+  .cb-solid{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(16,185,129,.28);
+    background: rgba(16,185,129,.12);
+    color: var(--g-900);
+    cursor:pointer;
+    font-weight: 950;
+    font-size: 12px;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+    min-height: 40px;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.22);
+  }
+  .cb-wrap[data-theme="payments"] .cb-solid{
+    border-color: rgba(11,77,58,.24);
+    background: rgba(11,77,58,.10);
+    color: var(--g-900);
+  }
+  .cb-solid:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 26px -22px rgba(15,23,42,.28);
+    background: rgba(16,185,129,.16);
+  }
+  .cb-wrap[data-theme="payments"] .cb-solid:hover{
+    background: rgba(11,77,58,.14);
+  }
+
+  .cb-ghost{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,.14);
+    background:#fff;
+    color: var(--ink);
+    cursor:pointer;
+    font-weight: 950;
+    font-size: 12px;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    min-height: 40px;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.20);
+  }
+  .cb-ghost:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 26px -22px rgba(15,23,42,.26);
+    background: rgba(2,6,23,.02);
+  }
+  .cb-ghost.cb-danger{
+    border-color: rgba(239,68,68,.28);
+    background: rgba(239,68,68,.10);
+    color:#991b1b;
+  }
+
+  .cb-icon{ width: 14px; height: 14px; flex-shrink: 0; }
+
+  .cb-select{
+    padding: 9px 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,0.12);
+    background: rgba(248,250,252,0.92);
+    font-weight: 950;
+    font-size: 12px;
+    color: var(--ink);
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease, transform .15s ease, background .2s ease;
+  }
+  .cb-select:focus{
+    border-color: rgba(16,185,129,0.55);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+    transform: translateY(-1px);
+    background: #fff;
+  }
+
+  .cb-search{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,0.12);
+    background: rgba(248,250,252,0.92);
+    min-width: 260px;
+  }
+  .cb-search svg{ width: 16px; height: 16px; color: var(--g-900); opacity:.75; }
+  .cb-search input{
+    border:none;
+    outline:none;
+    width: 100%;
+    font-size: 12px;
+    font-weight: 850;
+    color: var(--ink);
+    background: transparent;
+  }
+
+  .cb-input{
+    width:100%;
+    border: 1px solid rgba(15,23,42,0.12);
+    border-radius: 14px;
+    padding: 9px 10px;
+    font-size: 12px;
+    outline:none;
+    background: rgba(248,250,252,0.92);
+    color: var(--ink);
+    font-weight: 850;
+    transition: box-shadow .2s ease, border-color .2s ease, transform .15s ease, background .2s ease;
+  }
+  .cb-input:focus{
+    border-color: rgba(16,185,129,0.55);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+    transform: translateY(-1px);
+    background: #fff;
+  }
+  .cb-input[readonly]{
+    border-color: transparent;
+    background: transparent;
+    padding-left: 0;
+    padding-right: 0;
+    border-radius: 0;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+  .cb-input.cb-amt{ text-align:right; font-variant-numeric: tabular-nums; }
+  .cb-input.cb-invalid{
+    border-color: rgba(239,68,68,.45) !important;
+    box-shadow: 0 0 0 3px rgba(239,68,68,.14) !important;
+    background: rgba(254,242,242,.85) !important;
+  }
+
+  .cb-date-wrap{
+    width: 100%;
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .cb-date-wrap .cb-input{ flex: 1 1 auto; min-width: 0; }
+  .cb-date-btn{
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    border: 1px solid rgba(15,23,42,0.12);
+    background: #fff;
+    color: var(--c-900);
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    flex: 0 0 auto;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.20);
+  }
+  .cb-date-btn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 26px -22px rgba(15,23,42,.26);
+    background: rgba(16,185,129,.08);
+  }
+  .cb-wrap[data-theme="payments"] .cb-date-btn:hover{
+    background: rgba(11,77,58,.08);
+  }
+  .cb-date-hidden{
+    position:absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding:0 !important;
+    margin:-1px !important;
+    overflow:hidden !important;
+    clip: rect(0,0,0,0) !important;
+    white-space: nowrap !important;
+    border:0 !important;
+  }
+
+  .cb-gate{ background: transparent; border: none; box-shadow: none; overflow: visible; }
+  .cb-gate-top{ padding: 0 0 10px; color: var(--ink); background: transparent; }
+  .cb-gate-title{
+    font-weight: 950;
+    font-size: 15px;
+    margin: 0 0 4px;
+    letter-spacing: .2px;
+    color: var(--c-900);
+  }
+  .cb-gate-sub{
+    margin: 0;
+    font-weight: 850;
+    font-size: 12px;
+    color: rgba(15,23,42,.70);
+    line-height: 1.35;
+  }
+  .cb-gate-body{ padding: 0; display:flex; flex-direction: column; gap: 12px; }
+  .cb-gate-row{ display:flex; gap: 10px; flex-wrap: wrap; }
+  .cb-gate-field{
+    flex: 1;
+    min-width: 180px;
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .cb-gate-field label{
+    font-size: .78rem;
+    font-weight: 950;
+    color: rgba(15,23,42,.72);
+    letter-spacing: .2px;
+  }
+  .cb-gate-actions{
+    display:flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .cb-mobile-headcopy{
+    min-width:0;
+    flex:1;
+  }
+  .cb-mobile-headsub{
+    display:none;
+  }
+
+ .cb-top{
+  border-radius: var(--radius);
+  padding: clamp(16px, 2.2vw, 22px);
+  color: var(--ink);
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(15,23,42,0.10);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+.cb-top::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(16,185,129,.12), transparent 38%),
+    linear-gradient(135deg, rgba(240,253,244,.72), rgba(255,255,255,.92));
+  opacity: .95;
+}
+.cb-wrap[data-theme="payments"] .cb-top::before{
+  background:
+    radial-gradient(circle at 12% 18%, rgba(11,77,58,.12), transparent 38%),
+    linear-gradient(135deg, rgba(236,248,244,.78), rgba(255,255,255,.92));
+}
+
+.cb-top-row{
+  display:grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  align-items:center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 0;
+}
+
+.cb-title-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  width:100%;
+  flex:1;
+}
+
+.cb-mobile-back{
+  display:none;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  border: 1px solid rgba(15,23,42,.10);
+  background: linear-gradient(180deg, #fff, rgba(248,250,252,.96));
+  color: #0f5a48;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  box-shadow: 0 12px 24px -20px rgba(15,23,42,.28);
+  flex: 0 0 auto;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+}
+.cb-mobile-back:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 18px 26px -22px rgba(15,23,42,.28);
+  background: #fff;
+}
+.cb-mobile-back svg{
+  width: 25px;
+  height: 25px;
+  stroke: currentColor;
+}
+
+.cb-badge{
+  display:none !important;
+}
+
+.cb-title-block{
+  min-width:0;
+  width:100%;
+  display:flex;
+  justify-content:center;
+}
+
+.cb-title-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+  min-width:0;
+  width:100%;
+  text-align:center;
+}
+
+.cb-title{
+  margin:0;
+  font-size: clamp(16px, 1.15vw + 10px, 20px);
+  font-weight: 850;
+  line-height: 1.18;
+  letter-spacing: -.01em;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cb-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(248,250,252,0.92);
+  border: 1px solid rgba(15,23,42,.10);
+  font-weight: 900;
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+  box-shadow: 0 10px 18px -18px rgba(15,23,42,.20);
+  cursor: default;
+}
+
+.cb-actions{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content:flex-end;
+  position: relative;
+  z-index: 1;
+}
+
+  .cb-summary{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 12px;
+  margin: 0 0 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.cb-summary-below{
+  padding: 0 0 4px;
+}
+
+.cb-s-card{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.96);
+  border: 1px solid rgba(15,23,42,0.10);
+  box-shadow: 0 10px 18px -18px rgba(15,23,42,.18);
+}
+
+.cb-s-head{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  min-width: 0;
+  color: rgba(15,23,42,0.92);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.cb-s-head p{
+  margin: 0;
+  white-space: nowrap;
+}
+
+.cb-s-val{
+  margin: 0;
+  flex: 0 0 auto;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+@media (max-width: 860px){
+  .cb-summary{
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .cb-s-card{
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 16px;
+  }
+
+  .cb-s-head{
+    font-size: 12.5px;
+  }
+
+  .cb-s-val{
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 520px){
+  .cb-summary{
+    gap: 10px;
+    margin: 0 0 12px;
+  }
+
+  .cb-s-card{
+    padding: 12px 13px;
+    border-radius: 16px;
+  }
+
+  .cb-s-head{
+    gap: 7px;
+    font-size: 12px;
+  }
+
+  .cb-s-head .cb-icon{
+    width: 15px;
+    height: 15px;
+  }
+
+  .cb-s-val{
+    font-size: 14px;
+  }
+}
+
+  .cb-card{
+    margin-top: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    overflow: visible;
+    display:flex;
+    flex-direction: column;
+    min-height: 520px;
+  }
+
+  .cb-tabs{
+    display:flex;
+    gap: 10px;
+    padding: 6px 0 10px;
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+  }
+  .cb-tab{
+    flex: 0 0 auto;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(15,23,42,0.12);
+    cursor:pointer;
+    color: rgba(15,23,42,.86);
+    font-size: 13px;
+    font-weight: 950;
+    background: rgba(248,250,252,0.92);
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, color .2s ease, border-color .2s ease;
+    position: relative;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.18);
+  }
+  .cb-tab:hover{ transform: translateY(-1px); box-shadow: 0 16px 26px -22px rgba(15,23,42,.24); }
+  .cb-tab.cb-active{
+    background: rgba(254,242,242,.75) !important;
+    border-color: rgba(220,38,38,.28) !important;
+    color: #dc2626 !important;
+  }
+
+  .cb-toolbar{
+    display:flex;
+    align-items:flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0 10px;
+  }
+  .cb-tl, .cb-tr{
+    display:flex;
+    gap: 8px;
+    align-items:center;
+    flex-wrap: wrap;
+  }
+  .cb-tr{ justify-content: flex-end; }
+
+  .cb-mini{
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(16,185,129,.10);
+    border: 1px solid rgba(16,185,129,.20);
+    color: var(--c-900);
+    font-weight: 950;
+    font-size: 12px;
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.16);
+  }
+  .cb-wrap[data-theme="payments"] .cb-mini{
+    background: rgba(11,77,58,.10);
+    border-color: rgba(11,77,58,.18);
+  }
+
+  .cb-body{
+    flex:1;
+    min-height:0;
+    display:flex;
+    flex-direction: column;
+    padding: 0;
+  }
+
+  .cb-table-wrap{
+    flex:1;
+    min-height:0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid rgba(15,23,42,0.10);
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 12px 22px -22px rgba(15,23,42,.20);
+  }
+
+  .cb-table{ min-width: 980px; }
+  .cb-th, .cb-row{
+    display:grid;
+    grid-template-columns: 44px 70px 190px 1fr 90px 140px 140px 140px 60px;
+  }
+
+  .cb-th{
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(248,250,252,0.92);
+    border-bottom: 1px solid rgba(15,23,42,0.08);
+    backdrop-filter: blur(10px);
+  }
+
+  .cb-h{
+    padding: 10px 10px;
+    font-size: 12px;
+    font-weight: 950;
+    color: var(--ink);
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    border-right: 1px solid rgba(15,23,42,0.06);
+    white-space: nowrap;
+  }
+  .cb-h:last-child{ border-right: none; }
+  .cb-h.cb-center{ justify-content:center; }
+
+  .cb-rows{ display:flex; flex-direction: column; }
+  .cb-row{
+    border-bottom: 1px solid rgba(15,23,42,0.06);
+    background: transparent;
+  }
+  .cb-row:last-child{ border-bottom:none; }
+
+  .cb-c{
+    padding: 10px 10px;
+    border-right: 1px solid rgba(15,23,42,0.04);
+    font-size: 12px;
+    color: var(--ink);
+    min-width:0;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+  }
+  .cb-c:last-child{ border-right:none; }
+  .cb-c.cb-center{ justify-content:center; }
+  .cb-c.cb-right{ justify-content:flex-end; font-variant-numeric: tabular-nums; }
+
+  .cb-check{
+    width: 16px; height: 16px;
+    accent-color: var(--c-500);
+    cursor:pointer;
+  }
+
+  .cb-del{
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    color:#dc2626;
+    border: 1px solid rgba(239,68,68,.28);
+    background: rgba(239,68,68,.08);
+    margin: 0 auto;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    box-shadow: 0 10px 18px -18px rgba(239,68,68,.18);
+  }
+  .cb-del:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 26px -22px rgba(239,68,68,.30);
+    background: rgba(239,68,68,.12);
+  }
+
+  .cb-totals{
+    border-top: 1px solid rgba(15,23,42,0.08);
+    background: rgba(248,250,252,0.92);
+  }
+  .cb-total-row{
+    display:grid;
+    grid-template-columns: 44px 70px 190px 1fr 90px 140px 140px 140px 60px;
+    border-top: 1px solid rgba(15,23,42,0.05);
+  }
+  .cb-total-row.cb-grand{ background: rgba(16,185,129,.08); }
+  .cb-wrap[data-theme="payments"] .cb-total-row.cb-grand{ background: rgba(11,77,58,.08); }
+
+  .cb-tcell{
+    padding: 10px 10px;
+    border-right: 1px solid rgba(15,23,42,0.04);
+    display:flex;
+    align-items:center;
+    font-size: 12px;
+    color: var(--ink);
+    font-weight: 850;
+  }
+  .cb-tcell:last-child{ border-right:none; }
+  .cb-tlabel{ font-weight: 950; color: rgba(15,23,42,.72); }
+  .cb-tvalue{ justify-content:flex-end; color: var(--c-900); font-variant-numeric: tabular-nums; }
+
+  .cb-footer{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0 0;
+    flex-wrap: wrap;
+  }
+  .cb-pager{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .cb-info{
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--ink);
+    opacity:.82;
+  }
+  .cb-pbtn{
+    padding: 8px 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(15,23,42,0.12);
+    background: rgba(248,250,252,0.92);
+    font-weight: 950;
+    font-size: 12px;
+    cursor:pointer;
+    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+    color: var(--ink);
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.18);
+  }
+  .cb-pbtn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 16px 26px -22px rgba(15,23,42,.22);
+    background: #fff;
+  }
+  .cb-pbtn:disabled{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  .cb-hidden{ display:none !important; }
+
+  .cb-mobile{
+    display:none;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .cb-mobile-rail{
+    display:flex;
+    gap: 14px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
+  .cb-mobile-rail::-webkit-scrollbar{ height: 7px; }
+  .cb-mobile-rail::-webkit-scrollbar-thumb{
+    background: rgba(148,163,184,.55);
+    border-radius: 999px;
+  }
+  .cb-mobile-rail::-webkit-scrollbar-track{ background: transparent; }
+
+  .cb-mcard{
+    flex: 0 0 min(84vw, 420px);
+    scroll-snap-align: start;
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(15,23,42,.10);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 18px 30px -26px rgba(15,23,42,.24);
+  }
+  .cb-mhead{
+    padding: 14px 14px 10px;
+    display:flex;
+    align-items:flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    background: linear-gradient(180deg, rgba(248,250,252,.95), rgba(255,255,255,.92));
+    border-bottom: 1px solid rgba(15,23,42,.08);
+  }
+  .cb-mhead-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+    flex:1;
+  }
+  .cb-mcheck-wrap{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width: 26px;
+    flex: 0 0 26px;
+  }
+  .cb-sl-badge{
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 12px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background: rgba(248,250,252,.96);
+    border: 1px solid rgba(15,23,42,.10);
+    font-size: 13px;
+    font-weight: 950;
+    color: var(--ink);
+    box-shadow: 0 10px 18px -18px rgba(15,23,42,.22);
+  }
+  .cb-mhead-title{
+    min-width:0;
+    flex:1;
+  }
+  .cb-mhead-title strong{
+    display:block;
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 950;
+    color: var(--ink);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .cb-mhead-title span{
+    display:block;
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 850;
+    color: rgba(15,23,42,.60);
+  }
+
+  .cb-mrows{
+    display:flex;
+    flex-direction:column;
+  }
+  .cb-mrow{
+    display:grid;
+    grid-template-columns: minmax(112px, 42%) minmax(0, 1fr);
+    gap: 10px;
+    align-items:center;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(15,23,42,.07);
+  }
+  .cb-mrow:last-child{ border-bottom:none; }
+  .cb-mlabel{
+    font-size: 12px;
+    font-weight: 950;
+    color: rgba(15,23,42,.76);
+    line-height: 1.2;
+  }
+  .cb-mvalue{
+    min-width:0;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    text-align:right;
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--ink);
+  }
+  .cb-mvalue .cb-input{ text-align:right; }
+  .cb-mvalue.cb-left{
+    justify-content:flex-start;
+    text-align:left;
+  }
+  .cb-mvalue.cb-total{
+    color: var(--c-900);
+    font-weight: 950;
+  }
+  .cb-mfoot{
+    padding: 14px;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap: 10px;
+    background: rgba(248,250,252,.82);
+    border-top: 1px solid rgba(15,23,42,.07);
+  }
+
+  .cb-mtotals{
+    display:none;
+    flex-direction: column;
+    gap:10px;
+    margin-top: 6px;
+  }
+  .cb-mtrow{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(15,23,42,.10);
+    background: rgba(248,250,252,.92);
+    font-size: 13px;
+    font-weight: 950;
+    color: rgba(15,23,42,.82);
+  }
+  .cb-mtrow strong{
+    color: var(--c-900);
+    font-size: 14px;
+    font-weight: 950;
+  }
+  .cb-mtrow.cb-grand{
+    background: rgba(16,185,129,.08);
+    border-color: rgba(16,185,129,.18);
+  }
+  .cb-wrap[data-theme="payments"] .cb-mtrow.cb-grand{
+    background: rgba(11,77,58,.08);
+    border-color: rgba(11,77,58,.18);
+  }
+
+  /* ============================================================
+     MODAL STYLE — updated to match your other pages
+     ============================================================ */
+  .cb-modal-overlay{
+    position: fixed;
+    inset: 0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index: 9999;
+    padding: 18px;
+    background: rgba(15,23,42,.28);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .cb-modal-overlay.cb-show{ display:flex; }
+
+  .cb-modal{
+    width: 100%;
+    max-width: 780px;
+    background: #ffffff;
+    border-radius: 24px;
+    border: 1px solid rgba(16,185,129,.18);
+    box-shadow: 0 40px 80px -36px rgba(15,23,42,.42);
+    overflow: hidden;
+    transform: translateY(6px);
+    animation: cbModalIn .18s ease-out forwards;
+  }
+  @keyframes cbModalIn{
+    from{ opacity:0; transform: translateY(10px) scale(.98); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
+
+  .cb-mhead{
+    padding: 18px 20px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    justify-content:flex-start;
+    background: linear-gradient(90deg, rgba(16,185,129,.16), rgba(226,240,236,.92));
+    border-bottom: 1px solid rgba(15,23,42,.08);
+  }
+  .cb-dot{
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: #0f5a48;
+    box-shadow: 0 0 0 8px rgba(16,185,129,.10);
+    flex: 0 0 auto;
+  }
+  .cb-mtitle{
+    font-weight: 950;
+    color: #0f5a48;
+    font-size: 15px;
+    letter-spacing:.2px;
+  }
+  .cb-mbody{
+    padding: 22px 24px 8px;
+    color:#0f172a;
+    font-size: 14px;
+    font-weight: 900;
+    line-height:1.5;
+    min-height: 92px;
+  }
+
+  .cb-modal-field-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 0 24px 10px;
+  }
+  .cb-modal-field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .cb-modal-field label{
+    font-size: 12px;
+    font-weight: 950;
+    color: rgba(15,23,42,.72);
+  }
+
+  .cb-mactions{
+    padding: 12px 24px 24px;
+    display:flex;
+    gap:16px;
+    justify-content:flex-end;
+    flex-wrap: wrap;
+  }
+  .cb-mactions .cb-ghost,
+  .cb-mactions .cb-solid{
+    min-width: 180px;
+    min-height: 52px;
+    border-radius: 18px;
+    font-size: 14px;
+    font-weight: 950;
+    box-shadow: none;
+  }
+  .cb-mactions .cb-ghost{
+    border-color: rgba(15,23,42,.14);
+    background: #fff;
+    color: #0f172a;
+  }
+  .cb-mactions .cb-solid{
+    border-color: rgba(16,185,129,.28);
+    background: rgba(16,185,129,.16);
+    color: #0f5a48;
+  }
+  .cb-mactions .cb-ghost.cb-danger{
+    border-color: rgba(239,68,68,.28);
+    background: rgba(239,68,68,.10);
+    color:#991b1b;
+  }
+
+  .cb-toolbar-editonly{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 1024px){
+    .cb-search{ min-width: 200px; }
+    .cb-card{ min-height: 540px; }
+    .cb-table{ min-width: 940px; }
+  }
+
+
+  @media (max-width: 720px){
+  .cb-section{ padding: 12px; }
+
+  .cb-mobile-back{
+    display:inline-flex;
+    width: 56px;
+    height: 56px;
+  }
+
+  #cbGate .cb-title-wrap{
+    display:flex;
+    flex-direction:row;
+    align-items:center;
+    gap:12px;
+  }
+
+  #cbGate .cb-title-block{
+    flex:0 1 auto;
+  }
+
+  #cbGate .cb-title-row{
+    flex-wrap:nowrap;
+    align-items:center;
+    justify-content:flex-start;
+  }
+
+  #cbGate .cb-title{
+    white-space:nowrap;
+    margin:0;
+    line-height:1;
+  }
+
+  #cbGate .cb-mobile-back{
+    flex:0 0 56px;
+  }
+
+  .cb-top{
+    padding: 16px 14px 14px;
+  }
+
+  .cb-top-row{
+    grid-template-columns: 1fr;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .cb-title-wrap{
+    justify-content:center;
+  }
+
+  .cb-title-block{
+    width:100%;
+  }
+
+  .cb-title-row{
+    justify-content:center;
+    text-align:center;
+    gap:8px;
+  }
+
+  .cb-title{
+    font-size: 15px;
+    line-height: 1.22;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .cb-pill{
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .cb-actions{
+    display:flex;
+    justify-content:center;
+    width:100%;
+  }
+
+  .cb-toolbar{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .cb-tl, .cb-tr{
+    width: 100%;
+    justify-content: space-between;
+  }
+  .cb-search{ width: 100%; min-width: 0; }
+
+  .cb-table-wrap,
+  .cb-footer{
+    display:none;
+  }
+
+  .cb-mobile{
+    display:flex;
+  }
+  .cb-mtotals{
+    display:flex !important;
+  }
+
+
+
+  #cbMobileAppTitle,
+  #cbMobileAppSub,
+  #cbGateMobileTitle,
+  #cbGateMobileSub{
+    display:none !important;
+  }
+
+  .cb-modal{
+    max-width: 94vw;
+    border-radius: 22px;
+  }
+  .cb-mbody{
+    min-height: auto;
+    padding: 20px 20px 8px;
+  }
+  .cb-modal-field-grid{
+    grid-template-columns: 1fr;
+    padding: 0 20px 10px;
+  }
+  .cb-mactions{
+    padding: 12px 20px 20px;
+    gap: 12px;
+  }
+  .cb-mactions .cb-ghost,
+  .cb-mactions .cb-solid{
+    min-width: 150px;
+    flex: 1 1 0;
+  }
+}
+  @media (max-width: 520px){
+    .cb-wrap{ padding: 10px; }
+    .cb-mobile-back{
+      width: 54px;
+      height: 54px;
+      border-radius: 17px;
+    }
+    .cb-gate-row{
+      grid-template-columns: 1fr;
+      display:grid;
+    }
+    .cb-gate-field{ min-width:0; }
+    .cb-gate-actions{
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .cb-gate-actions .cb-ghost,
+    .cb-gate-actions .cb-solid{
+      width:100%;
+      min-width:0;
+    }
+    .cb-actions{
+      gap:8px;
+    }
+    .cb-btn{
+      width:100%;
+    }
+    .cb-mcard{
+      flex-basis: calc(100vw - 44px);
+    }
+    .cb-mrow{
+      grid-template-columns: minmax(104px, 44%) minmax(0, 1fr);
+      padding: 11px 12px;
+    }
+    .cb-mfoot{
+      padding: 12px;
+    }
+    .cb-mactions{
+      flex-direction: row;
+      align-items: stretch;
+    }
+    .cb-mactions .cb-ghost,
+    .cb-mactions .cb-solid{
+      min-width: 0;
+      width: calc(50% - 6px);
+      flex: 0 0 calc(50% - 6px);
+    }
+  }
+
+@media (max-width: 380px){
+  .cb-mcard{
+    flex-basis: calc(100vw - 34px);
+  }
+  .cb-title-row{
+    gap:8px;
+  }
+  .cb-title{
+    font-size: 14px;
+  }
+  .cb-pill{
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}
+</style>
+
+<div class="cb-wrap" id="cbWrap" data-theme="receipts">
+
+  <!-- PERIOD-FIRST SCREEN -->
+  <div class="cb-section" id="cbGate">
+    <div class="cb-title-wrap" style="margin-bottom:12px;">
+    <button id="cbBackGateBtn" class="cb-mobile-back" type="button" aria-label="Back">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 6l-6 6 6 6"></path>
+    <path d="M9 12h10"></path>
+  </svg>
+</button>
+
+      <div class="cb-title-block">
+        <div class="cb-title-row">
+          <p class="cb-title" id="cbGateHeaderTitle">Cash Book</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="cb-gate">
+      <div class="cb-gate-top">
+        <p class="cb-gate-title" id="cbGateTitle">Select Cashbook Period</p>
+        <p class="cb-gate-sub" id="cbGateSub">Choose Month & Year first. After confirmation, Cash Book will load.</p>
+      </div>
+
+      <div class="cb-gate-body">
+        <div class="cb-gate-row">
+          <div class="cb-gate-field">
+            <label for="cbGateMonth" id="cbGateMonthLabel">Month</label>
+            <select id="cbGateMonth" class="cb-select"></select>
+          </div>
+
+          <div class="cb-gate-field">
+            <label for="cbGateYear" id="cbGateYearLabel">Year</label>
+            <select id="cbGateYear" class="cb-select"></select>
+          </div>
+        </div>
+
+        <div class="cb-gate-actions">
+          <button id="cbGateReset" class="cb-ghost" type="button">Reset</button>
+          <button id="cbGateContinue" class="cb-solid" type="button">Continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="cbApp" class="cb-hidden">
+
+    <div class="cb-top">
+      <div class="cb-top-row">
+        <div class="cb-title-wrap">
+         <button id="cbBackAppBtn" class="cb-mobile-back" type="button" aria-label="Back">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 6l-6 6 6 6"></path>
+    <path d="M9 12h10"></path>
+  </svg>
+</button>
+
+          <div class="cb-title-block">
+            <div class="cb-title-row">
+              <p class="cb-title" id="cbHeaderTitle">Cash Book</p>
+              <span class="cb-pill" id="cbPeriodBadge" aria-label="Selected Month & Year">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cb-actions" id="cbTopActions">
+          <button id="cbChangePeriodBtn" class="cb-btn" type="button">
+            <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span id="cbChangePeriodText">Change Period</span>
+          </button>
+
+          <button id="cbCancelBtn" class="cb-btn cb-hidden" type="button">
+            <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18"></path>
+              <path d="M6 6l12 12"></path>
+            </svg>
+            <span id="cbCancelText">Cancel</span>
+          </button>
+
+          <button id="cbEditSaveBtn" class="cb-btn" type="button">
+            <svg id="cbEditIcon" class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <svg id="cbSaveIcon" class="cb-icon cb-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span id="cbEditSaveText">Edit</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cb-section">
+      <div class="cb-card">
+
+ <div class="cb-summary">
+        <div class="cb-s-card">
+          <div class="cb-s-head">
+            <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            <p id="cbLabelReceipts">Receipts</p>
+          </div>
+          <p class="cb-s-val" id="cbReceiptsTotal">₹0</p>
+        </div>
+
+        <div class="cb-s-card">
+          <div class="cb-s-head">
+            <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+              <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            <p id="cbLabelPayments">Payments</p>
+          </div>
+          <p class="cb-s-val" id="cbPaymentsTotal">₹0</p>
+        </div>
+
+        <div class="cb-s-card">
+          <div class="cb-s-head">
+            <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 5h10"></path>
+              <path d="M6 9h10"></path>
+              <path d="M9 21 6 17h4a6 6 0 0 0 0-12H6"></path>
+            </svg>
+            <p id="cbLabelBalance">Balance</p>
+          </div>
+          <p class="cb-s-val" id="cbBalanceTotal">₹0</p>
+        </div>
+      </div>
+
+        <div class="cb-tabs">
+          <button id="cbReceiptsTab" class="cb-tab cb-active" type="button">
+            <span id="cbTabReceipts">Receipts</span>
+          </button>
+          <button id="cbPaymentsTab" class="cb-tab" type="button">
+            <span id="cbTabPayments">Payments</span>
+          </button>
+        </div>
+
+        <div class="cb-toolbar">
+          <div class="cb-tl">
+            <span class="cb-mini" id="cbActivePill">Receipts</span>
+
+            <div class="cb-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input id="cbSearch" type="text" placeholder="Search date, particulars, LF, amount..." />
+            </div>
+          </div>
+
+          <div class="cb-tr" id="cbToolbarRight">
+            <select id="cbPageSize" class="cb-select">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+
+            <div class="cb-toolbar-editonly cb-hidden" id="cbEditOnlyActions">
+              <button id="cbDeleteSelectedBtn" class="cb-ghost cb-danger" type="button">
+                <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span id="cbDeleteSelectedText">Delete Selected</span>
+              </button>
+
+              <button id="cbDeleteAllBtn" class="cb-ghost cb-danger" type="button">
+                <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span id="cbDeleteAllText">Delete All</span>
+              </button>
+
+              <button id="cbAddBtn" class="cb-solid" type="button">
+                <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span id="cbAddText">Add</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="cb-body">
+          <div class="cb-table-wrap">
+            <div class="cb-table">
+              <div class="cb-th">
+                <div class="cb-h cb-center">
+                  <input id="cbSelectAll" class="cb-check cb-hidden" type="checkbox" />
+                </div>
+                <div class="cb-h cb-center" id="cbThSL">SL</div>
+                <div class="cb-h" id="cbThDate">Date</div>
+                <div class="cb-h" id="cbThParticulars">Particulars</div>
+                <div class="cb-h" id="cbThLF">LF</div>
+                <div class="cb-h" id="cbThAmount">Amount</div>
+                <div class="cb-h" id="cbThBankAmount">Bank Amount</div>
+                <div class="cb-h" id="cbThTotal">Total</div>
+                <div class="cb-h cb-center">&nbsp;</div>
+              </div>
+
+              <div id="cbRows" class="cb-rows"></div>
+
+              <div class="cb-totals">
+                <div class="cb-total-row">
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell cb-tlabel" id="cbPresentLabel">Present Total</div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell cb-tvalue" id="cbPresentTotal">₹0</div>
+                  <div class="cb-tcell"></div>
+                </div>
+
+                <div class="cb-total-row cb-grand">
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell cb-tlabel" id="cbGrandLabel">Grand Total</div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell"></div>
+                  <div class="cb-tcell cb-tvalue" id="cbGrandTotal">₹0</div>
+                  <div class="cb-tcell"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cb-footer">
+            <div class="cb-info" id="cbPagerInfo">Showing 0–0 of 0</div>
+            <div class="cb-pager">
+              <button id="cbPrev" class="cb-pbtn" type="button">Prev</button>
+              <span class="cb-info" id="cbPageInd">Page 1 / 1</span>
+              <button id="cbNext" class="cb-pbtn" type="button">Next</button>
+            </div>
+          </div>
+
+          <div id="cbMobile" class="cb-mobile"></div>
+          <div id="cbMobileTotals" class="cb-mtotals"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE MODAL -->
+<div id="cbSaveOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbSaveTitle">Confirm Save</div>
+    </div>
+    <div class="cb-mbody" id="cbSaveMsg">Do you want to save these changes?</div>
+    <div class="cb-mactions">
+      <button id="cbSaveCancel" class="cb-ghost" type="button">Cancel</button>
+      <button id="cbSaveYes" class="cb-solid" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div id="cbDeleteOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbDeleteTitle">Confirm Delete</div>
+    </div>
+    <div class="cb-mbody" id="cbDeleteMsg">Do you want to delete the selected rows?</div>
+    <div class="cb-mactions">
+      <button id="cbDeleteCancel" class="cb-ghost" type="button">Cancel</button>
+      <button id="cbDeleteYes" class="cb-ghost cb-danger" type="button">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- CANCEL/DISCARD MODAL -->
+<div id="cbDiscardOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbDiscardTitle">Discard Changes</div>
+    </div>
+    <div class="cb-mbody" id="cbDiscardMsg">Do you want to discard the changes made?</div>
+    <div class="cb-mactions">
+      <button id="cbDiscardNo" class="cb-ghost" type="button">Cancel</button>
+      <button id="cbDiscardYes" class="cb-solid" type="button">Discard</button>
+    </div>
+  </div>
+</div>
+
+<!-- PERIOD CONFIRM MODAL -->
+<div id="cbPeriodConfirmOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbPeriodConfirmTitle">Confirm Period</div>
+    </div>
+    <div class="cb-mbody" id="cbPeriodConfirmMsg">Do you want to set this period?</div>
+    <div class="cb-mactions">
+      <button id="cbPeriodConfirmCancel" class="cb-ghost" type="button">Cancel</button>
+      <button id="cbPeriodConfirmYes" class="cb-solid" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESET PERIOD CONFIRM MODAL -->
+<div id="cbGateResetOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbGateResetTitle">Confirm Reset</div>
+    </div>
+    <div class="cb-mbody" id="cbGateResetMsg">Reset Month & Year selection to current date?</div>
+    <div class="cb-mactions">
+      <button id="cbGateResetCancel" class="cb-ghost" type="button">Cancel</button>
+      <button id="cbGateResetYes" class="cb-solid" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT-LOCK MODAL -->
+<div id="cbLockOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbLockTitle">Action blocked</div>
+    </div>
+    <div class="cb-mbody" id="cbLockMsg">You are in Edit mode. Please Save or Cancel before leaving this page.</div>
+    <div class="cb-mactions">
+      <button id="cbLockOk" class="cb-solid" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE PERIOD MODAL -->
+<div id="cbChangePeriodOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbChangePeriodTitle">Change Period</div>
+    </div>
+    <div class="cb-mbody" id="cbChangePeriodMsg">Select another month and year to open a different cash book period.</div>
+    <div class="cb-modal-field-grid">
+      <div class="cb-modal-field">
+        <label for="cbChangeMonth" id="cbChangeMonthLabel">Month</label>
+        <select id="cbChangeMonth" class="cb-select"></select>
+      </div>
+      <div class="cb-modal-field">
+        <label for="cbChangeYear" id="cbChangeYearLabel">Year</label>
+        <select id="cbChangeYear" class="cb-select"></select>
+      </div>
+    </div>
+    <div class="cb-mactions">
+      <button id="cbChangePeriodCancel" class="cb-ghost" type="button">Cancel</button>
+      <button id="cbChangePeriodYes" class="cb-solid" type="button">Open</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE PERIOD OPEN CONFIRM MODAL -->
+<div id="cbChangePeriodConfirmOverlay" class="cb-modal-overlay" role="dialog" aria-modal="true">
+  <div class="cb-modal">
+    <div class="cb-mhead">
+      <span class="cb-dot"></span>
+      <div class="cb-mtitle" id="cbChangePeriodConfirmTitle">Open Selected Period</div>
+    </div>
+    <div class="cb-mbody" id="cbChangePeriodConfirmMsg">Do you want to open the selected month and year?</div>
+    <div class="cb-mactions">
+      <button id="cbChangePeriodConfirmCancel" class="cb-ghost" type="button">Cancel</button>
+      <button id="cbChangePeriodConfirmYes" class="cb-solid" type="button">Open</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const cashbookTranslations = {
+    en: {
+      title: "Cash Book",
+      receipts: "Receipts",
+      payments: "Payments",
+      balance: "Balance",
+      sl: "SL",
+      date: "Date",
+      particulars: "Particulars",
+      lf: "LF",
+      amount: "Amount",
+      bankAmount: "Bank Amount",
+      total: "Total",
+      presentTotal: "Present Total",
+      grandTotal: "Grand Total",
+      editButton: "Edit",
+      saveButton: "Save",
+      addButton: "Add",
+      cancelButton: "Cancel",
+      deleteAll: "Delete All",
+      deleteSelected: "Delete Selected",
+      changePeriod: "Change Period",
+      openPeriod: "Open",
+      searchPh: "Search date, particulars, LF, amount...",
+      datePh: "DD-MM-YYYY HH:MM",
+      calendarTitle: "Calendar",
+      confirmTitle: "Confirm Save",
+      confirmMsg: "Do you want to save these changes?",
+      confirmYes: "Confirm",
+      confirmNo: "Cancel",
+      deleteTitle: "Confirm Delete",
+      deleteMsg: "Do you want to delete the selected rows?",
+      deleteYes: "Delete",
+      pageInfo: (a,b,c)=>`Showing ${a}–${b} of ${c}`,
+      pageInd: (p,t)=>`Page ${p} / ${t}`,
+      prev: "Prev",
+      next: "Next",
+
+      gateHeaderTitle: "Cash Book",
+      gateTitle: "Select Cashbook Period",
+      gateSub: "Choose Month & Year first. After confirmation, Cash Book will load.",
+      gateMonth: "Month",
+      gateYear: "Year",
+      gateReset: "Reset",
+      gateContinue: "Continue",
+      periodConfirmTitle: "Confirm Period",
+      periodConfirmMsg: (m,y)=>`Set Cash Book period to ${m} ${y}?`,
+
+      gateResetTitle: "Confirm Reset",
+      gateResetMsg: "Reset Month & Year selection to current date?",
+
+      discardTitle: "Discard changes?",
+      discardMsg: "This will revert all unsaved changes.",
+      discardYes: "Discard",
+      discardNo: "Cancel",
+
+      changePeriodTitle: "Change Period",
+      changePeriodMsg: "Select another month and year to open a different cash book period.",
+      changePeriodOpen: "Open",
+      changePeriodConfirmTitle: "Open selected period?",
+      changePeriodConfirmMsg: (m,y)=>`Open cash book for ${m} ${y}?`,
+
+      lockTitle: "Action blocked",
+      lockOk: "OK",
+      lockMsg: "You are in Edit mode. Please Save or Discard the changes made first.",
+
+      noRowsDeleteAll: "There are no rows to delete.",
+      noRowsDeleteSelected: "Please select rows to delete.",
+      deleteAllMsg: "Do you want to delete all rows in this tab?",
+      deleteSelectedMsg: "Do you want to delete the selected rows?",
+      singleDeleteMsg: "Do you want to delete this row?",
+      saveSuccessTitle: "Saved",
+      saveFailTitle: "Save failed",
+      saveSuccessMsg: "Saved successfully",
+      rowLabel: "Row"
+    },
+    bn: {
+      title: "ক্যাশ বুক",
+      receipts: "প্রাপ্তি",
+      payments: "প্রদান",
+      balance: "ব্যালেন্স",
+      sl: "ক্রমিক",
+      date: "তারিখ",
+      particulars: "বিবরণ",
+      lf: "এলএফ",
+      amount: "পরিমাণ",
+      bankAmount: "ব্যাংক পরিমাণ",
+      total: "মোট",
+      presentTotal: "বর্তমান মোট",
+      grandTotal: "সর্বমোট",
+      editButton: "সম্পাদনা",
+      saveButton: "সংরক্ষণ",
+      addButton: "যোগ করুন",
+      cancelButton: "বাতিল",
+      deleteAll: "সব মুছুন",
+      deleteSelected: "নির্বাচিত মুছুন",
+      changePeriod: "সময়কাল বদলান",
+      openPeriod: "খুলুন",
+      searchPh: "তারিখ, বিবরণ, এলএফ, পরিমাণ খুঁজুন...",
+      datePh: "দিন-মাস-বছর ঘ:মি",
+      calendarTitle: "ক্যালেন্ডার",
+      confirmTitle: "সংরক্ষণ নিশ্চিত করুন",
+      confirmMsg: "আপনি কি পরিবর্তনগুলো সংরক্ষণ করতে চান?",
+      confirmYes: "নিশ্চিত",
+      confirmNo: "বাতিল",
+      deleteTitle: "মুছা নিশ্চিত করুন",
+      deleteMsg: "আপনি কি নির্বাচিত সারিগুলো মুছতে চান?",
+      deleteYes: "মুছুন",
+      pageInfo: (a,b,c)=>`দেখানো হচ্ছে ${a}–${b} / মোট ${c}`,
+      pageInd: (p,t)=>`পৃষ্ঠা ${p} / ${t}`,
+      prev: "আগে",
+      next: "পরে",
+
+      gateHeaderTitle: "ক্যাশ বুক",
+      gateTitle: "ক্যাশ বুক-এর সময়কাল নির্বাচন করুন",
+      gateSub: "প্রথমে মাস ও বছর নির্বাচন করুন। নিশ্চিত করার পর ক্যাশ বুক লোড হবে।",
+      gateMonth: "মাস",
+      gateYear: "বছর",
+      gateReset: "রিসেট",
+      gateContinue: "চালিয়ে যান",
+      periodConfirmTitle: "সময়কাল নিশ্চিত করুন",
+      periodConfirmMsg: (m,y)=>`ক্যাশ বুক-এর সময়কাল ${m} ${y} সেট করবেন?`,
+
+      gateResetTitle: "রিসেট নিশ্চিত করুন",
+      gateResetMsg: "মাস ও বছর বর্তমান তারিখে রিসেট করবেন?",
+
+      discardTitle: "পরিবর্তন বাতিল করবেন?",
+      discardMsg: "এতে সংরক্ষণ না-করা সব পরিবর্তন ফিরিয়ে নেওয়া হবে।",
+      discardYes: "বাতিল করুন",
+      discardNo: "ক্যানসেল",
+
+      changePeriodTitle: "সময়কাল পরিবর্তন",
+      changePeriodMsg: "অন্য মাস ও বছর নির্বাচন করে অন্য সময়ের ক্যাশ বুক খুলুন।",
+      changePeriodOpen: "খুলুন",
+      changePeriodConfirmTitle: "নির্বাচিত সময়কাল খুলবেন?",
+      changePeriodConfirmMsg: (m,y)=>`${m} ${y} এর ক্যাশ বুক খুলবেন?`,
+
+      lockTitle: "অ্যাকশন বন্ধ করা হয়েছে",
+      lockOk: "ঠিক আছে",
+      lockMsg: "আপনি এডিট মোডে আছেন। আগে পরিবর্তনগুলো Save বা Discard করুন।",
+
+      noRowsDeleteAll: "মুছার জন্য কোনো সারি নেই।",
+      noRowsDeleteSelected: "মুছতে সারি নির্বাচন করুন।",
+      deleteAllMsg: "আপনি কি এই ট্যাবের সব সারি মুছতে চান?",
+      deleteSelectedMsg: "আপনি কি নির্বাচিত সারিগুলো মুছতে চান?",
+      singleDeleteMsg: "আপনি কি এই সারিটি মুছতে চান?",
+      saveSuccessTitle: "সংরক্ষণ সম্পন্ন",
+      saveFailTitle: "সংরক্ষণ ব্যর্থ",
+      saveSuccessMsg: "সফলভাবে সংরক্ষিত",
+      rowLabel: "সারি"
+    }
+  };
+
+  let cashbookLang = 'en';
+  let cbIsEditing = false;
+  let cbActiveTab = 'receipts';
+  let cbSearch = '';
+  let cbPageSize = 25;
+  let cbPage = 1;
+  let cbSelected = new Set();
+  let cbPeriodMonth = null;
+  let cbPeriodYear = null;
+  let cbPendingPeriod = { month: null, year: null };
+  let cbPendingDeleteIds = [];
+  let cbDeleteMode = null;
+  let cbSnapshot = { receipts: [], payments: [] };
+  const cbReceipts = [];
+  const cbPayments = [];
+
+  const STORAGE_KEY = `cashbook_selected_period__{{ pg_id or 'default' }}`;
+  const TAB_STORAGE_KEY = `cashbook_active_tab__{{ pg_id or 'default' }}`;
+
+  window.PG_ID = "{{ pg_id or '' }}";
+
+  const cb$ = (id)=>document.getElementById(id);
+
+  const cbWrap = cb$("cbWrap");
+  const cbGate = cb$("cbGate");
+  const cbApp = cb$("cbApp");
+
+  const cbBackGateBtn = cb$("cbBackGateBtn");
+  const cbBackAppBtn = cb$("cbBackAppBtn");
+
+  const cbGateHeaderTitle = cb$("cbGateHeaderTitle");
+  const cbGateTitle = cb$("cbGateTitle");
+  const cbGateSub = cb$("cbGateSub");
+  const cbGateMonthLabel = cb$("cbGateMonthLabel");
+  const cbGateYearLabel = cb$("cbGateYearLabel");
+  const cbGateMonth = cb$("cbGateMonth");
+  const cbGateYear = cb$("cbGateYear");
+  const cbGateReset = cb$("cbGateReset");
+  const cbGateContinue = cb$("cbGateContinue");
+
+  const cbHeaderTitle = cb$("cbHeaderTitle");
+  const cbPeriodBadge = cb$("cbPeriodBadge");
+
+  const cbChangePeriodBtn = cb$("cbChangePeriodBtn");
+  const cbChangePeriodText = cb$("cbChangePeriodText");
+
+  const cbCancelBtn = cb$("cbCancelBtn");
+  const cbCancelText = cb$("cbCancelText");
+  const cbEditSaveBtn = cb$("cbEditSaveBtn");
+  const cbEditIcon = cb$("cbEditIcon");
+  const cbSaveIcon = cb$("cbSaveIcon");
+  const cbEditSaveText = cb$("cbEditSaveText");
+
+  const cbLabelReceipts = cb$("cbLabelReceipts");
+  const cbLabelPayments = cb$("cbLabelPayments");
+  const cbLabelBalance = cb$("cbLabelBalance");
+  const cbReceiptsTotal = cb$("cbReceiptsTotal");
+  const cbPaymentsTotal = cb$("cbPaymentsTotal");
+  const cbBalanceTotal = cb$("cbBalanceTotal");
+
+  const cbReceiptsTab = cb$("cbReceiptsTab");
+  const cbPaymentsTab = cb$("cbPaymentsTab");
+  const cbTabReceipts = cb$("cbTabReceipts");
+  const cbTabPayments = cb$("cbTabPayments");
+  const cbActivePill = cb$("cbActivePill");
+
+  const cbSearchInput = cb$("cbSearch");
+  const cbPageSizeSelect = cb$("cbPageSize");
+
+  const cbEditOnlyActions = cb$("cbEditOnlyActions");
+  const cbDeleteSelectedBtn = cb$("cbDeleteSelectedBtn");
+  const cbDeleteAllBtn = cb$("cbDeleteAllBtn");
+  const cbDeleteSelectedText = cb$("cbDeleteSelectedText");
+  const cbDeleteAllText = cb$("cbDeleteAllText");
+  const cbSelectAll = cb$("cbSelectAll");
+  const cbAddBtn = cb$("cbAddBtn");
+  const cbAddText = cb$("cbAddText");
+
+  const cbRows = cb$("cbRows");
+  const cbPresentLabel = cb$("cbPresentLabel");
+  const cbGrandLabel = cb$("cbGrandLabel");
+  const cbPresentTotal = cb$("cbPresentTotal");
+  const cbGrandTotal = cb$("cbGrandTotal");
+
+  const cbPagerInfo = cb$("cbPagerInfo");
+  const cbPrev = cb$("cbPrev");
+  const cbNext = cb$("cbNext");
+  const cbPageInd = cb$("cbPageInd");
+
+  const cbMobile = cb$("cbMobile");
+  const cbMobileTotals = cb$("cbMobileTotals");
+
+  const cbSaveOverlay = cb$("cbSaveOverlay");
+  const cbSaveTitle = cb$("cbSaveTitle");
+  const cbSaveMsg = cb$("cbSaveMsg");
+  const cbSaveCancel = cb$("cbSaveCancel");
+  const cbSaveYes = cb$("cbSaveYes");
+
+  const cbDeleteOverlay = cb$("cbDeleteOverlay");
+  const cbDeleteTitle = cb$("cbDeleteTitle");
+  const cbDeleteMsg = cb$("cbDeleteMsg");
+  const cbDeleteCancel = cb$("cbDeleteCancel");
+  const cbDeleteYes = cb$("cbDeleteYes");
+
+  const cbDiscardOverlay = cb$("cbDiscardOverlay");
+  const cbDiscardTitle = cb$("cbDiscardTitle");
+  const cbDiscardMsg = cb$("cbDiscardMsg");
+  const cbDiscardNo = cb$("cbDiscardNo");
+  const cbDiscardYes = cb$("cbDiscardYes");
+
+  const cbPeriodConfirmOverlay = cb$("cbPeriodConfirmOverlay");
+  const cbPeriodConfirmTitle = cb$("cbPeriodConfirmTitle");
+  const cbPeriodConfirmMsg = cb$("cbPeriodConfirmMsg");
+  const cbPeriodConfirmCancel = cb$("cbPeriodConfirmCancel");
+  const cbPeriodConfirmYes = cb$("cbPeriodConfirmYes");
+
+  const cbGateResetOverlay = cb$("cbGateResetOverlay");
+  const cbGateResetTitle = cb$("cbGateResetTitle");
+  const cbGateResetMsg = cb$("cbGateResetMsg");
+  const cbGateResetCancel = cb$("cbGateResetCancel");
+  const cbGateResetYes = cb$("cbGateResetYes");
+
+  const cbLockOverlay = cb$("cbLockOverlay");
+  const cbLockTitle = cb$("cbLockTitle");
+  const cbLockMsg = cb$("cbLockMsg");
+  const cbLockOk = cb$("cbLockOk");
+
+  const cbChangePeriodOverlay = cb$("cbChangePeriodOverlay");
+  const cbChangePeriodTitle = cb$("cbChangePeriodTitle");
+  const cbChangePeriodMsg = cb$("cbChangePeriodMsg");
+  const cbChangeMonthLabel = cb$("cbChangeMonthLabel");
+  const cbChangeYearLabel = cb$("cbChangeYearLabel");
+  const cbChangeMonth = cb$("cbChangeMonth");
+  const cbChangeYear = cb$("cbChangeYear");
+  const cbChangePeriodCancel = cb$("cbChangePeriodCancel");
+  const cbChangePeriodYes = cb$("cbChangePeriodYes");
+
+  const cbChangePeriodConfirmOverlay = cb$("cbChangePeriodConfirmOverlay");
+  const cbChangePeriodConfirmTitle = cb$("cbChangePeriodConfirmTitle");
+  const cbChangePeriodConfirmMsg = cb$("cbChangePeriodConfirmMsg");
+  const cbChangePeriodConfirmCancel = cb$("cbChangePeriodConfirmCancel");
+  const cbChangePeriodConfirmYes = cb$("cbChangePeriodConfirmYes");
+
+  function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
+
+  function makeTx(){
+    return { id: Date.now().toString() + Math.random().toString(16).slice(2), date:'', particulars:'', lf:'', amount:0, bankAmount:0 };
+  }
+
+  function ensureRows(){
+    if (cbReceipts.length === 0) cbReceipts.push(makeTx());
+    if (cbPayments.length === 0) cbPayments.push(makeTx());
+  }
+function saveSelectedPeriod(){
+  try{
+    if (cbPeriodMonth === null || cbPeriodYear === null) return;
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ month: cbPeriodMonth, year: cbPeriodYear }));
+  }catch(_){}
+}
+
+function loadSelectedPeriod(){
+  try{
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (typeof p?.month === "number" && typeof p?.year === "number") return p;
+  }catch(_){}
+  return null;
+}
+
+function saveActiveTab(){
+  try{
+    sessionStorage.setItem(TAB_STORAGE_KEY, cbActiveTab);
+  }catch(_){}
+}
+
+function loadActiveTab(){
+  try{
+    const tab = sessionStorage.getItem(TAB_STORAGE_KEY);
+    if (tab === "receipts" || tab === "payments") return tab;
+  }catch(_){}
+  return "receipts";
+}
+
+  async function cbLoadServer(){
+    const pg = (window.PG_ID || "").trim();
+    if (!pg || !cbPeriodYear || cbPeriodMonth === null) return false;
+    try{
+      const res = await fetch(`/pg/api/cashbook/${encodeURIComponent(pg)}?year=${encodeURIComponent(cbPeriodYear)}&month=${encodeURIComponent(cbPeriodMonth)}`, { method:"GET" });
+      if (!res.ok) return false;
+      const data = await res.json().catch(()=>null);
+      if (!data) return false;
+      cbReceipts.length = 0;
+      cbPayments.length = 0;
+      (data.receipts || []).forEach(r => cbReceipts.push(r));
+      (data.payments || []).forEach(r => cbPayments.push(r));
+      ensureRows();
+      return true;
+    }catch(_){
+      return false;
+    }
+  }
+
+  async function cbSaveServer(){
+    const pg = (window.PG_ID || "").trim();
+    if (!pg || !cbPeriodYear || cbPeriodMonth === null) return { ok:false, message:"Missing period/PG context" };
+    const payload = { receipts: cbReceipts, payments: cbPayments, meta: {} };
+    try{
+      const res = await fetch(`/pg/api/cashbook/${encodeURIComponent(pg)}?year=${encodeURIComponent(cbPeriodYear)}&month=${encodeURIComponent(cbPeriodMonth)}`,{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json().catch(()=>null);
+      if (!res.ok) return { ok:false, message:(data && (data.error || data.message)) ? (data.error || data.message) : `HTTP ${res.status}` };
+      return { ok:true, message:(data && data.message) ? data.message : "Saved" };
+    }catch(err){
+      return { ok:false, message: (err && err.message) ? err.message : "Network error" };
+    }
+  }
+
+  function txTotal(tx){
+    const a = Number(tx.amount || 0);
+    const b = Number(tx.bankAmount || 0);
+    return a + b;
+  }
+
+  function sumTotals(arr){
+    return arr.reduce((s,t)=>s + txTotal(t), 0);
+  }
+
+  function formatINR(n){
+    const v = Number(n || 0);
+    return "₹" + v.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+  }
+
+  function getActiveArr(){
+    return cbActiveTab === 'receipts' ? cbReceipts : cbPayments;
+  }
+
+  function matchesSearch(tx, q){
+    if (!q) return true;
+    const s = q.toLowerCase();
+    return (
+      String(tx.date||'').toLowerCase().includes(s) ||
+      String(tx.particulars||'').toLowerCase().includes(s) ||
+      String(tx.lf||'').toLowerCase().includes(s) ||
+      String(tx.amount||'').toLowerCase().includes(s) ||
+      String(tx.bankAmount||'').toLowerCase().includes(s)
+    );
+  }
+
+  function getFiltered(arr){
+    return arr.filter(tx => matchesSearch(tx, cbSearch));
+  }
+
+  function paginate(arr){
+    const total = arr.length;
+    const pages = Math.max(1, Math.ceil(total / cbPageSize));
+    cbPage = Math.min(cbPage, pages);
+    const start = (cbPage - 1) * cbPageSize;
+    const end = start + cbPageSize;
+    return { pageItems: arr.slice(start, end), total, pages, startIndex: start };
+  }
+
+  function setTheme(){
+    cbWrap.setAttribute("data-theme", cbActiveTab);
+  }
+
+  function monthNames(lang){
+    if (lang === "bn"){
+      return ["জানু","ফেব","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগ","সেপ্ট","অক্টো","নভে","ডিসে"];
+    }
+    return ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  }
+
+  function periodText(m, y){
+    const names = monthNames(cashbookLang);
+    if (m === null || y === null) return "—";
+    return `${names[(Number(m) || 1) - 1] || ""} ${y}`.trim();
+  }
+
+  function fillPeriodSelect(selectMonth, selectYear, monthVal, yearVal){
+    const now = new Date();
+    const names = monthNames(cashbookLang);
+
+    selectMonth.innerHTML = "";
+    names.forEach((m,i)=>{
+      const o = document.createElement("option");
+      o.value = String(i + 1);
+      o.textContent = m;
+      selectMonth.appendChild(o);
+    });
+
+    selectYear.innerHTML = "";
+    const y0 = now.getFullYear() - 5;
+    const y1 = now.getFullYear() + 5;
+    for (let y=y0; y<=y1; y++){
+      const o = document.createElement("option");
+      o.value = String(y);
+      o.textContent = String(y);
+      selectYear.appendChild(o);
+    }
+
+    selectMonth.value = String(monthVal ?? (now.getMonth() + 1));
+    selectYear.value = String(yearVal ?? now.getFullYear());
+  }
+
+  function fillGateSelects(){
+    fillPeriodSelect(cbGateMonth, cbGateYear, cbPeriodMonth, cbPeriodYear);
+    fillPeriodSelect(cbChangeMonth, cbChangeYear, cbPeriodMonth, cbPeriodYear);
+  }
+
+  function showGate(){
+    cbGate.classList.remove("cb-hidden");
+    cbApp.classList.add("cb-hidden");
+  }
+
+  function showApp(){
+    cbGate.classList.add("cb-hidden");
+    cbApp.classList.remove("cb-hidden");
+  }
+
+  function applyPeriodToHeader(){
+    cbPeriodBadge.textContent = periodText(cbPeriodMonth, cbPeriodYear);
+  }
+
+  function setTabUI(){
+    cbReceiptsTab.classList.toggle("cb-active", cbActiveTab === "receipts");
+    cbPaymentsTab.classList.toggle("cb-active", cbActiveTab === "payments");
+    cbActivePill.textContent = cbActiveTab === "receipts"
+      ? cashbookTranslations[cashbookLang].receipts
+      : cashbookTranslations[cashbookLang].payments;
+    setTheme();
+    renderAll();
+    renderCashbookHistoryBox();
+  }
+
+  function setEditingUI(){
+    const t = cashbookTranslations[cashbookLang];
+
+    cbEditIcon.classList.toggle("cb-hidden", cbIsEditing);
+    cbSaveIcon.classList.toggle("cb-hidden", !cbIsEditing);
+    cbEditSaveText.textContent = cbIsEditing ? t.saveButton : t.editButton;
+    cbCancelText.textContent = cbIsEditing ? t.cancelButton : t.cancelButton;
+
+    cbCancelBtn.classList.toggle("cb-hidden", !cbIsEditing);
+    cbEditOnlyActions.classList.toggle("cb-hidden", !cbIsEditing);
+
+    cbDeleteSelectedText.textContent = t.deleteSelected;
+    cbDeleteAllText.textContent = t.deleteAll;
+    cbAddText.textContent = t.addButton;
+    cbChangePeriodText.textContent = t.changePeriod;
+
+    cbSelectAll.classList.toggle("cb-hidden", !cbIsEditing);
+
+    if (!cbIsEditing){
+      cbSelected.clear();
+      cbSelectAll.checked = false;
+    }
+  }
+
+  function openOverlay(el){
+    el.classList.add("cb-show");
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }
+  function closeOverlay(el){
+    el.classList.remove("cb-show");
+    if (![cbSaveOverlay, cbDeleteOverlay, cbDiscardOverlay, cbPeriodConfirmOverlay, cbGateResetOverlay, cbLockOverlay, cbChangePeriodOverlay, cbChangePeriodConfirmOverlay].some(x=>x.classList.contains("cb-show"))){
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    }
+  }
+
+  function openInfoModal(title, message){
+    cbLockTitle.textContent = title || "Info";
+    cbLockMsg.textContent = message || "";
+    cbLockOk.textContent = (cashbookTranslations[cashbookLang] || {}).lockOk || "OK";
+    openOverlay(cbLockOverlay);
+  }
+
+  function openSaveConfirm(){
+    const t = cashbookTranslations[cashbookLang];
+    cbSaveTitle.textContent = t.confirmTitle;
+    cbSaveMsg.textContent = t.confirmMsg;
+    cbSaveCancel.textContent = t.confirmNo;
+    cbSaveYes.textContent = t.confirmYes;
+    openOverlay(cbSaveOverlay);
+  }
+
+  function openDiscardConfirm(){
+    const t = cashbookTranslations[cashbookLang];
+    cbDiscardTitle.textContent = t.discardTitle;
+    cbDiscardMsg.textContent = t.discardMsg;
+    cbDiscardNo.textContent = t.discardNo;
+    cbDiscardYes.textContent = t.discardYes;
+    openOverlay(cbDiscardOverlay);
+  }
+
+  function openDeleteConfirm(mode){
+    const t = cashbookTranslations[cashbookLang];
+    cbDeleteMode = mode || "selected";
+    cbDeleteTitle.textContent = t.deleteTitle;
+
+    if (cbDeleteMode === "all") cbDeleteMsg.textContent = t.deleteAllMsg;
+    else if (cbDeleteMode === "single") cbDeleteMsg.textContent = t.singleDeleteMsg;
+    else cbDeleteMsg.textContent = t.deleteSelectedMsg;
+
+    cbDeleteCancel.textContent = t.confirmNo;
+    cbDeleteYes.textContent = t.deleteYes;
+    openOverlay(cbDeleteOverlay);
+  }
+
+  function openGateResetConfirm(){
+    const t = cashbookTranslations[cashbookLang];
+    cbGateResetTitle.textContent = t.gateResetTitle;
+    cbGateResetMsg.textContent = t.gateResetMsg;
+    cbGateResetCancel.textContent = t.confirmNo;
+    cbGateResetYes.textContent = t.confirmYes;
+    openOverlay(cbGateResetOverlay);
+  }
+
+  function openLockModal(){
+    const t = cashbookTranslations[cashbookLang];
+    cbLockTitle.textContent = t.lockTitle;
+    cbLockMsg.textContent = t.lockMsg;
+    cbLockOk.textContent = t.lockOk;
+    openOverlay(cbLockOverlay);
+  }
+
+  function openPeriodConfirm(){
+    const t = cashbookTranslations[cashbookLang];
+    const m = monthNames(cashbookLang)[(Number(cbPendingPeriod.month) || 1) - 1] || "";
+    const y = cbPendingPeriod.year;
+    cbPeriodConfirmTitle.textContent = t.periodConfirmTitle;
+    cbPeriodConfirmMsg.textContent = t.periodConfirmMsg(m, y);
+    cbPeriodConfirmCancel.textContent = t.confirmNo;
+    cbPeriodConfirmYes.textContent = t.confirmYes;
+    openOverlay(cbPeriodConfirmOverlay);
+  }
+
+  function openChangePeriodModal(){
+    const t = cashbookTranslations[cashbookLang];
+    cbChangePeriodTitle.textContent = t.changePeriodTitle;
+    cbChangePeriodMsg.textContent = t.changePeriodMsg;
+    cbChangeMonthLabel.textContent = t.gateMonth;
+    cbChangeYearLabel.textContent = t.gateYear;
+    cbChangePeriodCancel.textContent = t.confirmNo;
+    cbChangePeriodYes.textContent = t.changePeriodOpen;
+    fillPeriodSelect(cbChangeMonth, cbChangeYear, cbPeriodMonth, cbPeriodYear);
+    openOverlay(cbChangePeriodOverlay);
+  }
+
+  function openChangePeriodConfirm(){
+    const t = cashbookTranslations[cashbookLang];
+    const m = monthNames(cashbookLang)[(Number(cbPendingPeriod.month) || 1) - 1] || "";
+    const y = cbPendingPeriod.year;
+    cbChangePeriodConfirmTitle.textContent = t.changePeriodConfirmTitle;
+    cbChangePeriodConfirmMsg.textContent = t.changePeriodConfirmMsg(m, y);
+    cbChangePeriodConfirmCancel.textContent = t.confirmNo;
+    cbChangePeriodConfirmYes.textContent = t.changePeriodOpen;
+    openOverlay(cbChangePeriodConfirmOverlay);
+  }
+
+  function applyLanguage(){
+    const t = cashbookTranslations[cashbookLang];
+
+    cbGateHeaderTitle.textContent = t.gateHeaderTitle;
+    cbGateTitle.textContent = t.gateTitle;
+    cbGateSub.textContent = t.gateSub;
+    cbGateMonthLabel.textContent = t.gateMonth;
+    cbGateYearLabel.textContent = t.gateYear;
+    cbGateReset.textContent = t.gateReset;
+    cbGateContinue.textContent = t.gateContinue;
+
+    cbHeaderTitle.textContent = t.title;
+    cbLabelReceipts.textContent = t.receipts;
+    cbLabelPayments.textContent = t.payments;
+    cbLabelBalance.textContent = t.balance;
+
+    cbTabReceipts.textContent = t.receipts;
+    cbTabPayments.textContent = t.payments;
+    cbActivePill.textContent = cbActiveTab === "receipts" ? t.receipts : t.payments;
+
+    cbChangePeriodText.textContent = t.changePeriod;
+    cbAddText.textContent = t.addButton;
+    cbDeleteSelectedText.textContent = t.deleteSelected;
+    cbDeleteAllText.textContent = t.deleteAll;
+
+    cb$("cbThSL").textContent = t.sl;
+    cb$("cbThDate").textContent = t.date;
+    cb$("cbThParticulars").textContent = t.particulars;
+    cb$("cbThLF").textContent = t.lf;
+    cb$("cbThAmount").textContent = t.amount;
+    cb$("cbThBankAmount").textContent = t.bankAmount;
+    cb$("cbThTotal").textContent = t.total;
+
+    cbPresentLabel.textContent = t.presentTotal;
+    cbGrandLabel.textContent = t.grandTotal;
+    cbPrev.textContent = t.prev;
+    cbNext.textContent = t.next;
+    cbSearchInput.placeholder = t.searchPh;
+
+    fillGateSelects();
+    applyPeriodToHeader();
+    setEditingUI();
+    renderAll();
+  }
+
+  function cbNormalizeLang(v){
+    if (!v) return null;
+    const s = String(v).toLowerCase();
+    if (s === "bn" || s.includes("bangla") || s.includes("বাংলা") || s.includes("bengali")) return "bn";
+    if (s === "en" || s.includes("english")) return "en";
+    return null;
+  }
+  function cbDetectGlobalLang(){
+    try{
+      if (window.PGMIS && typeof window.PGMIS.getLanguage === "function"){
+        const n = cbNormalizeLang(window.PGMIS.getLanguage());
+        if (n) return n;
+      }
+      if (typeof window.currentLanguage !== "undefined" && window.currentLanguage){
+        const n = cbNormalizeLang(window.currentLanguage);
+        if (n) return n;
+      }
+      const hl = (document.documentElement.getAttribute("lang") || "");
+      const hdl = (document.documentElement.getAttribute("data-lang") || "");
+      const bdl = (document.body && document.body.getAttribute("data-lang") || "");
+      const n1 = cbNormalizeLang(hl) || cbNormalizeLang(hdl) || cbNormalizeLang(bdl);
+      if (n1) return n1;
+      const keys = ["PGMIS_LANG_SESSION","pgmis_lang","pgmisLang","lang","language","locale","i18n_lang"];
+      for (const k of keys){
+        const lv = (sessionStorage.getItem(k) || localStorage.getItem(k) || "");
+        const n = cbNormalizeLang(lv);
+        if (n) return n;
+      }
+    }catch(_){}
+    return null;
+  }
+  function syncFromGlobal(){
+    const g = cbDetectGlobalLang();
+    if (!g || g === cashbookLang) return;
+    cashbookLang = g;
+    applyLanguage();
+  }
+
+  function cbIsLeapYear(y){ return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0); }
+  function cbDaysInMonth(m, y){
+    const mm = Number(m);
+    const yy = Number(y);
+    const days = [31, (cbIsLeapYear(yy)?29:28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    return days[mm-1] || 31;
+  }
+  function cbFormatDateTimeFromDigits(raw){
+    const digits = String(raw || "").replace(/\D/g, "");
+    const d = digits.slice(0,2);
+    const m = digits.slice(2,4);
+    const y = digits.slice(4,8);
+    const t = digits.slice(8,12);
+    let out = "";
+    if (d) out += d;
+    if (m) out += (out.length>=2 ? "-" : "") + m;
+    if (y) out += (out.length>=5 ? "-" : (out.length>=4 ? "-" : "")) + y;
+    if (t){
+      const hh = t.slice(0,2);
+      const mm = t.slice(2,4);
+      out += " " + hh + (mm ? ":" + mm : "");
+    }
+    return out;
+  }
+  function cbNormalizeManualDateTime(value){ return cbFormatDateTimeFromDigits(value); }
+  function cbIsValidDateTime(value){
+    const s = String(value || "").trim();
+    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})$/);
+    if (!m) return false;
+    const dd = Number(m[1]);
+    const mm = Number(m[2]);
+    const yyyy = Number(m[3]);
+    const HH = Number(m[4]);
+    const MIN = Number(m[5]);
+    if (yyyy < 1900 || yyyy > 2100) return false;
+    if (mm < 1 || mm > 12) return false;
+    const maxD = cbDaysInMonth(mm, yyyy);
+    if (dd < 1 || dd > maxD) return false;
+    if (HH < 0 || HH > 23) return false;
+    if (MIN < 0 || MIN > 59) return false;
+    return true;
+  }
+  function cbToDatetimeLocal(str){
+    const s = String(str || "").trim();
+    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})$/);
+    if (!m) return "";
+    const dd = m[1], mm = m[2], yyyy = m[3], HH = m[4], MIN = m[5];
+    return `${yyyy}-${mm}-${dd}T${HH}:${MIN}`;
+  }
+  function cbFromDatetimeLocal(v){
+    const s = String(v || "").trim();
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (!m) return "";
+    const yyyy = m[1], mm = m[2], dd = m[3], HH = m[4], MIN = m[5];
+    return `${dd}-${mm}-${yyyy} ${HH}:${MIN}`;
+  }
+  function cbAttachDateBehavior(textInput, hiddenPicker, onValue){
+    textInput.addEventListener("input", ()=>{
+      if (!cbIsEditing) return;
+      const before = textInput.value;
+      const after = cbNormalizeManualDateTime(before);
+      if (after !== before){
+        const pos = textInput.selectionStart || after.length;
+        textInput.value = after;
+        try{ textInput.setSelectionRange(pos, pos); }catch(_){}
+      }
+      textInput.classList.remove("cb-invalid");
+      onValue(textInput.value);
+    });
+
+    textInput.addEventListener("blur", ()=>{
+      if (!cbIsEditing) return;
+      const v = String(textInput.value || "").trim();
+      if (!v){
+        textInput.classList.remove("cb-invalid");
+        onValue("");
+        return;
+      }
+      const ok = cbIsValidDateTime(v);
+      textInput.classList.toggle("cb-invalid", !ok);
+      onValue(textInput.value);
+      if (ok && hiddenPicker){
+        hiddenPicker.value = cbToDatetimeLocal(v);
+      }
+    });
+
+    if (hiddenPicker){
+      hiddenPicker.addEventListener("change", ()=>{
+        if (!cbIsEditing) return;
+        const formatted = cbFromDatetimeLocal(hiddenPicker.value);
+        if (formatted){
+          textInput.value = formatted;
+          textInput.classList.remove("cb-invalid");
+          onValue(formatted);
+        }
+      });
+    }
+  }
+  function cbOpenPicker(pickerEl){
+    if (!pickerEl) return;
+    try{
+      if (typeof pickerEl.showPicker === "function"){ pickerEl.showPicker(); return; }
+    }catch(_){}
+    try{ pickerEl.focus(); pickerEl.click(); }catch(_){}
+  }
+
+  let cbLockActive = false;
+  let cbLockPushed = false;
+  let cbLockOpen = false;
+
+  function cbSetLock(on){
+    cbLockActive = !!on;
+    if (cbLockActive && !cbLockPushed){
+      try{
+        history.pushState({ cb_lock: true }, document.title, location.href);
+        cbLockPushed = true;
+      }catch(_){}
+    }
+    if (!cbLockActive){
+      cbLockPushed = false;
+      cbLockOpen = false;
+      closeOverlay(cbLockOverlay);
+    }
+  }
+
+  function cbTriggerLockModal(){
+    if (!cbLockActive || cbLockOpen) return;
+    cbLockOpen = true;
+    openLockModal();
+  }
+
+  function renderTotals(){
+    const r = sumTotals(cbReceipts);
+    const p = sumTotals(cbPayments);
+    cbReceiptsTotal.textContent = formatINR(r);
+    cbPaymentsTotal.textContent = formatINR(p);
+    cbBalanceTotal.textContent = formatINR(r - p);
+  }
+
+function makeTextCellInput(tx, key, placeholder, cls = "", alignRight = false, onLiveChange = null){
+  const input = document.createElement("input");
+  input.className = `cb-input ${cls}`.trim();
+  input.value = tx[key] ?? "";
+  input.readOnly = !cbIsEditing;
+  input.placeholder = placeholder || "";
+  if (alignRight) input.style.textAlign = "right";
+
+  input.addEventListener("input", ()=>{
+    tx[key] = (key === "amount" || key === "bankAmount")
+      ? Number(input.value || 0)
+      : input.value;
+
+    renderTotals();
+    renderPresentGrand();
+
+    if (typeof onLiveChange === "function"){
+      onLiveChange();
+    }
+  });
+
+  return input;
+}
+
+  function renderTable(){
+    const active = getActiveArr();
+    const filtered = getFiltered(active);
+    const { pageItems, total, pages, startIndex } = paginate(filtered);
+    const t = cashbookTranslations[cashbookLang];
+
+    const from = total === 0 ? 0 : startIndex + 1;
+    const to = Math.min(startIndex + pageItems.length, total);
+    cbPagerInfo.textContent = t.pageInfo(from, to, total);
+    cbPageInd.textContent = t.pageInd(cbPage, pages);
+
+    cbPrev.disabled = (cbPage <= 1);
+    cbNext.disabled = (cbPage >= pages);
+
+    cbRows.innerHTML = "";
+    cbSelectAll.classList.toggle("cb-hidden", !cbIsEditing);
+    if (!cbIsEditing) cbSelectAll.checked = false;
+
+    pageItems.forEach((tx, idx) => {
+      const slNo = startIndex + idx + 1;
+      const row = document.createElement("div");
+      row.className = "cb-row";
+
+      const c0 = document.createElement("div");
+      c0.className = "cb-c cb-center";
+      if (cbIsEditing){
+        const chk = document.createElement("input");
+        chk.type = "checkbox";
+        chk.className = "cb-check";
+        chk.checked = cbSelected.has(tx.id);
+        chk.addEventListener("change", ()=>{
+          if (chk.checked) cbSelected.add(tx.id);
+          else cbSelected.delete(tx.id);
+          const allIds = pageItems.map(x=>x.id);
+          cbSelectAll.checked = allIds.length > 0 && allIds.every(id=>cbSelected.has(id));
+          renderMobile();
+        });
+        c0.appendChild(chk);
+      }
+      row.appendChild(c0);
+
+      const c1 = document.createElement("div");
+      c1.className = "cb-c cb-center";
+      c1.textContent = String(slNo);
+      row.appendChild(c1);
+
+      const c2 = document.createElement("div");
+      c2.className = "cb-c";
+      const dateWrap = document.createElement("div");
+      dateWrap.className = "cb-date-wrap";
+      const inDate = document.createElement("input");
+      inDate.className = "cb-input";
+      inDate.value = tx.date || "";
+      inDate.readOnly = !cbIsEditing;
+      inDate.placeholder = t.datePh;
+
+      const dtPick = document.createElement("input");
+      dtPick.type = "datetime-local";
+      dtPick.className = "cb-date-hidden";
+      dtPick.tabIndex = -1;
+      dtPick.value = tx.date ? cbToDatetimeLocal(tx.date) : "";
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cb-date-btn";
+      btn.title = t.calendarTitle;
+      btn.disabled = !cbIsEditing;
+      btn.innerHTML = `
+        <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      `;
+      btn.addEventListener("click", ()=>{
+        if (!cbIsEditing) return;
+        cbOpenPicker(dtPick);
+      });
+      cbAttachDateBehavior(inDate, dtPick, (v)=>{ tx.date = v; });
+
+      dateWrap.appendChild(inDate);
+      dateWrap.appendChild(btn);
+      dateWrap.appendChild(dtPick);
+      c2.appendChild(dateWrap);
+      row.appendChild(c2);
+const c3 = document.createElement("div");
+c3.className = "cb-c";
+c3.appendChild(makeTextCellInput(tx, "particulars", t.particulars, "", false, null));
+row.appendChild(c3);
+
+const c4 = document.createElement("div");
+c4.className = "cb-c";
+c4.appendChild(makeTextCellInput(tx, "lf", t.lf, "", false, null));
+row.appendChild(c4);
+
+const c7 = document.createElement("div");
+c7.className = "cb-c cb-right";
+c7.style.fontWeight = "950";
+c7.style.color = "var(--c-900)";
+c7.textContent = formatINR(txTotal(tx));
+
+const updateRowTotal = () => {
+  c7.textContent = formatINR(txTotal(tx));
+};
+
+const c5 = document.createElement("div");
+c5.className = "cb-c cb-right";
+c5.appendChild(makeTextCellInput(tx, "amount", "", "cb-amt", true, updateRowTotal));
+row.appendChild(c5);
+
+const c6 = document.createElement("div");
+c6.className = "cb-c cb-right";
+c6.appendChild(makeTextCellInput(tx, "bankAmount", "", "cb-amt", true, updateRowTotal));
+row.appendChild(c6);
+
+row.appendChild(c7);
+
+      const c8 = document.createElement("div");
+      c8.className = "cb-c cb-center";
+      if (cbIsEditing){
+        const del = document.createElement("button");
+        del.className = "cb-del";
+        del.type = "button";
+        del.innerHTML = `
+          <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        `;
+        del.addEventListener("click", ()=>{
+          cbPendingDeleteIds = [tx.id];
+          openDeleteConfirm("single");
+        });
+        c8.appendChild(del);
+      }
+      row.appendChild(c8);
+
+      cbRows.appendChild(row);
+    });
+
+    cbSelectAll.onchange = ()=>{
+      if (!cbIsEditing) return;
+      const ids = pageItems.map(x=>x.id);
+      if (cbSelectAll.checked) ids.forEach(id=>cbSelected.add(id));
+      else ids.forEach(id=>cbSelected.delete(id));
+      renderTable();
+      renderMobile();
+    };
+  }
+
+  function renderPresentGrand(){
+    const active = getActiveArr();
+    const filtered = getFiltered(active);
+    const { pageItems } = paginate(filtered);
+    cbPresentTotal.textContent = formatINR(sumTotals(pageItems));
+    cbGrandTotal.textContent = formatINR(sumTotals(filtered));
+  }
+
+ function createMobileValueNode(tx, key, placeholder, opts = {}){
+  const wrap = document.createElement("div");
+  wrap.className = "cb-mvalue" + (opts.left ? " cb-left" : "");
+  if (opts.total) wrap.classList.add("cb-total");
+
+  if (opts.total){
+    wrap.textContent = formatINR(txTotal(tx));
+    return wrap;
+  }
+
+  if (key === "date"){
+    const dateWrap = document.createElement("div");
+    dateWrap.className = "cb-date-wrap";
+    if (opts.left) dateWrap.style.width = "100%";
+
+    const input = document.createElement("input");
+    input.className = "cb-input";
+    input.value = tx.date || "";
+    input.readOnly = !cbIsEditing;
+    input.placeholder = cashbookTranslations[cashbookLang].datePh;
+
+    const hidden = document.createElement("input");
+    hidden.type = "datetime-local";
+    hidden.className = "cb-date-hidden";
+    hidden.value = tx.date ? cbToDatetimeLocal(tx.date) : "";
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cb-date-btn";
+    btn.disabled = !cbIsEditing;
+    btn.innerHTML = `
+      <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+        <line x1="16" y1="2" x2="16" y2="6"></line>
+        <line x1="8" y1="2" x2="8" y2="6"></line>
+        <line x1="3" y1="10" x2="21" y2="10"></line>
+      </svg>
+    `;
+    btn.addEventListener("click", ()=>{
+      if (!cbIsEditing) return;
+      cbOpenPicker(hidden);
+    });
+
+    cbAttachDateBehavior(input, hidden, (v)=>{ tx.date = v; });
+
+    dateWrap.appendChild(input);
+    dateWrap.appendChild(btn);
+    dateWrap.appendChild(hidden);
+    wrap.appendChild(dateWrap);
+    return wrap;
+  }
+
+  const input = document.createElement("input");
+  input.className = "cb-input" + ((key === "amount" || key === "bankAmount") ? " cb-amt" : "");
+  input.value = tx[key] ?? "";
+  input.readOnly = !cbIsEditing;
+  input.placeholder = placeholder || "";
+  if (!opts.left) input.style.textAlign = "right";
+
+  input.addEventListener("input", ()=>{
+    tx[key] = (key === "amount" || key === "bankAmount")
+      ? Number(input.value || 0)
+      : input.value;
+
+    renderTotals();
+    renderPresentGrand();
+
+    if (typeof opts.onLiveChange === "function"){
+      opts.onLiveChange();
+    }
+  });
+
+  wrap.appendChild(input);
+  return wrap;
+}
+
+    
+
+  function renderMobile(){
+    const active = getActiveArr();
+    const filtered = getFiltered(active);
+    const { pageItems, startIndex } = paginate(filtered);
+    const t = cashbookTranslations[cashbookLang];
+
+    cbMobile.innerHTML = "";
+    const rail = document.createElement("div");
+    rail.className = "cb-mobile-rail";
+
+    pageItems.forEach((tx, idx)=>{
+      const slNo = startIndex + idx + 1;
+      const card = document.createElement("div");
+      card.className = "cb-mcard";
+
+      const head = document.createElement("div");
+      head.className = "cb-mhead";
+
+      const headLeft = document.createElement("div");
+      headLeft.className = "cb-mhead-left";
+
+      if (cbIsEditing){
+        const chkWrap = document.createElement("div");
+        chkWrap.className = "cb-mcheck-wrap";
+        const chk = document.createElement("input");
+        chk.type = "checkbox";
+        chk.className = "cb-check";
+        chk.checked = cbSelected.has(tx.id);
+        chk.addEventListener("change", ()=>{
+          if (chk.checked) cbSelected.add(tx.id);
+          else cbSelected.delete(tx.id);
+          renderTable();
+          renderMobile();
+        });
+        chkWrap.appendChild(chk);
+        headLeft.appendChild(chkWrap);
+      }
+
+      const sl = document.createElement("span");
+      sl.className = "cb-sl-badge";
+      sl.textContent = String(slNo);
+      headLeft.appendChild(sl);
+
+      const ttl = document.createElement("div");
+      ttl.className = "cb-mhead-title";
+      ttl.innerHTML = `<strong>${t.rowLabel} ${slNo}</strong><span>${periodText(cbPeriodMonth, cbPeriodYear)}</span>`;
+      headLeft.appendChild(ttl);
+
+      head.appendChild(headLeft);
+      card.appendChild(head);
+
+      const rows = document.createElement("div");
+      rows.className = "cb-mrows";
+
+      let mobileTotalNode = null;
+const updateMobileCardTotal = () => {
+  if (mobileTotalNode) mobileTotalNode.textContent = formatINR(txTotal(tx));
+};
+
+const dataRows = [
+  { label: t.date, key: "date", left: true },
+  { label: t.particulars, key: "particulars", left: true },
+  { label: t.lf, key: "lf", left: true },
+  { label: t.amount, key: "amount", onLiveChange: updateMobileCardTotal },
+  { label: t.bankAmount, key: "bankAmount", onLiveChange: updateMobileCardTotal },
+  { label: t.total, key: "total", total: true }
+];
+
+dataRows.forEach(item=>{
+  const row = document.createElement("div");
+  row.className = "cb-mrow";
+
+  const label = document.createElement("div");
+  label.className = "cb-mlabel";
+  label.textContent = item.label;
+
+  row.appendChild(label);
+
+  const valueNode = createMobileValueNode(tx, item.key, item.label, {
+    left: !!item.left,
+    total: !!item.total,
+    onLiveChange: item.onLiveChange || null
+  });
+
+  if (item.total) mobileTotalNode = valueNode;
+
+  row.appendChild(valueNode);
+  rows.appendChild(row);
+});
+      card.appendChild(rows);
+
+      if (cbIsEditing){
+        const foot = document.createElement("div");
+        foot.className = "cb-mfoot";
+
+        const del = document.createElement("button");
+        del.className = "cb-ghost cb-danger";
+        del.type = "button";
+        del.innerHTML = `
+          <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span>${t.deleteYes}</span>
+        `;
+        del.addEventListener("click", ()=>{
+          cbPendingDeleteIds = [tx.id];
+          openDeleteConfirm("single");
+        });
+
+        foot.appendChild(del);
+        card.appendChild(foot);
+      }
+
+      rail.appendChild(card);
+    });
+
+    cbMobile.appendChild(rail);
+
+    const present = sumTotals(pageItems);
+    const grand = sumTotals(filtered);
+    cbMobileTotals.innerHTML = `
+      <div class="cb-mtrow"><span>${t.presentTotal}</span><strong>${formatINR(present)}</strong></div>
+      <div class="cb-mtrow cb-grand"><span>${t.grandTotal}</span><strong>${formatINR(grand)}</strong></div>
+    `;
+  }
+
+  function renderAll(){
+    renderTotals();
+    renderPresentGrand();
+    renderTable();
+    renderMobile();
+  }
+
+  async function applyPeriodAndLoad(){
+    cbPeriodMonth = cbPendingPeriod.month;
+    cbPeriodYear = cbPendingPeriod.year;
+    saveSelectedPeriod();
+    applyPeriodToHeader();
+    fillGateSelects();
+    showApp();
+    ensureRows();
+    await cbLoadServer();
+    setTheme();
+    setEditingUI();
+    renderAll();
+  }
+
+  function restoreSnapshot(){
+    cbReceipts.length = 0; cbSnapshot.receipts.forEach(x=>cbReceipts.push(x));
+    cbPayments.length = 0; cbSnapshot.payments.forEach(x=>cbPayments.push(x));
+  }
+
+  function backAction(){
+    if (cbIsEditing){
+      cbTriggerLockModal();
+      return;
+    }
+    try{
+      if (window.history.length > 1) window.history.back();
+      else window.location.href = document.referrer || "/";
+    }catch(_){}
+  }
+
+cbReceiptsTab.addEventListener("click", ()=>{
+  cbActiveTab = "receipts";
+  cbPage = 1;
+  saveActiveTab();
+  setTabUI();
+});
+
+cbPaymentsTab.addEventListener("click", ()=>{
+  cbActiveTab = "payments";
+  cbPage = 1;
+  saveActiveTab();
+  setTabUI();
+});
+
+  cbSearchInput.addEventListener("input", ()=>{
+    cbSearch = cbSearchInput.value.trim();
+    cbPage = 1;
+    renderAll();
+  });
+
+  cbPageSizeSelect.addEventListener("change", ()=>{
+    cbPageSize = Number(cbPageSizeSelect.value || 25);
+    cbPage = 1;
+    renderAll();
+  });
+
+  cbPrev.addEventListener("click", ()=>{
+    cbPage = Math.max(1, cbPage - 1);
+    renderAll();
+  });
+  cbNext.addEventListener("click", ()=>{
+    cbPage = cbPage + 1;
+    renderAll();
+  });
+
+  cbAddBtn.addEventListener("click", ()=>{
+    if (!cbIsEditing) return;
+    const arr = getActiveArr();
+    arr.push(makeTx());
+    renderAll();
+  });
+
+  cbDeleteSelectedBtn.addEventListener("click", ()=>{
+    const t = cashbookTranslations[cashbookLang];
+    if (!cbIsEditing) return;
+    if (cbSelected.size === 0){
+      openInfoModal(t.deleteTitle, t.noRowsDeleteSelected);
+      return;
+    }
+    cbPendingDeleteIds = Array.from(cbSelected);
+    openDeleteConfirm("selected");
+  });
+
+  cbDeleteAllBtn.addEventListener("click", ()=>{
+    const t = cashbookTranslations[cashbookLang];
+    if (!cbIsEditing) return;
+    const arr = getActiveArr();
+    if (!arr.length){
+      openInfoModal(t.deleteTitle, t.noRowsDeleteAll);
+      return;
+    }
+    cbPendingDeleteIds = [];
+    openDeleteConfirm("all");
+  });
+
+  cbEditSaveBtn.addEventListener("click", ()=>{
+    if (!cbIsEditing){
+      cbIsEditing = true;
+      cbSnapshot = { receipts: deepClone(cbReceipts), payments: deepClone(cbPayments) };
+      cbSetLock(true);
+      setEditingUI();
+      renderAll();
+      return;
+    }
+    openSaveConfirm();
+  });
+
+  cbCancelBtn.addEventListener("click", ()=>{
+    if (!cbIsEditing) return;
+    openDiscardConfirm();
+  });
+
+  cbSaveCancel.addEventListener("click", ()=>closeOverlay(cbSaveOverlay));
+  cbSaveYes.addEventListener("click", async ()=>{
+    const result = await cbSaveServer();
+    closeOverlay(cbSaveOverlay);
+
+    const t = cashbookTranslations[cashbookLang];
+    if (!result.ok){
+      openInfoModal(
+        t.saveFailTitle,
+        (cashbookLang === "bn")
+          ? ("সার্ভারে সংরক্ষণ করা যায়নি: " + (result.message || "ত্রুটি"))
+          : ("Server save failed: " + (result.message || "Error"))
+      );
+      return;
+    }
+
+    cbIsEditing = false;
+    cbSetLock(false);
+    cbSelected.clear();
+    cbSelectAll.checked = false;
+    cbSnapshot = { receipts: deepClone(cbReceipts), payments: deepClone(cbPayments) };
+    setEditingUI();
+    renderAll();
+
+    openInfoModal(t.saveSuccessTitle, result.message || t.saveSuccessMsg);
+  });
+
+  cbDeleteCancel.addEventListener("click", ()=>{
+    cbPendingDeleteIds = [];
+    closeOverlay(cbDeleteOverlay);
+  });
+
+  cbDeleteYes.addEventListener("click", ()=>{
+    const arr = getActiveArr();
+
+    if (cbDeleteMode === "all"){
+      arr.length = 0;
+      ensureRows();
+    } else {
+      const ids = cbPendingDeleteIds.length ? cbPendingDeleteIds : Array.from(cbSelected);
+      const keep = arr.filter(tx => !ids.includes(tx.id));
+      arr.length = 0;
+      keep.forEach(x=>arr.push(x));
+      if (!arr.length) arr.push(makeTx());
+    }
+
+    cbPendingDeleteIds = [];
+    cbSelected.clear();
+    cbSelectAll.checked = false;
+    closeOverlay(cbDeleteOverlay);
+    renderAll();
+  });
+
+  cbDiscardNo.addEventListener("click", ()=>closeOverlay(cbDiscardOverlay));
+  cbDiscardYes.addEventListener("click", ()=>{
+    restoreSnapshot();
+    cbIsEditing = false;
+    cbSetLock(false);
+    cbSelected.clear();
+    cbSelectAll.checked = false;
+    closeOverlay(cbDiscardOverlay);
+    setEditingUI();
+    renderAll();
+  });
+
+  let cbHistory = [];
+  function cbMonthLabel(month, year){
+    const names = monthNames(cashbookLang);
+    return `${names[(Number(month) || 1) - 1] || "Month"} ${year || ""}`.trim();
+  }
+  function ensureCashbookHistoryBox(){
+    let el = document.getElementById('cbHistoryBox');
+    if(el) return el;
+    el = document.createElement('section');
+    el.id = 'cbHistoryBox';
+    el.style.marginTop = '16px';
+    el.style.padding = '16px';
+    el.style.background = '#fff';
+    el.style.border = '1px solid rgba(15,23,42,.08)';
+    el.style.borderRadius = '18px';
+    el.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div style="font-size:18px;font-weight:800;color:#0f172a">Saved Month Records</div><div id="cbCurrentPeriodText" style="font-size:13px;color:#64748b;margin-top:4px"></div></div><div id="cbHistoryCards" style="display:flex;gap:10px;flex-wrap:wrap"></div></div>';
+    const host = document.querySelector('.cashbook-page, .cb-page, .page-shell, main') || document.body;
+    host.appendChild(el);
+    return el;
+  }
+  function renderCashbookHistoryBox(){
+    ensureCashbookHistoryBox();
+    const cur = document.getElementById('cbCurrentPeriodText');
+    const cards = document.getElementById('cbHistoryCards');
+    if(cur) cur.textContent = `Current view: ${cbMonthLabel(cbPeriodMonth, cbPeriodYear)}`;
+    if(!cards) return;
+    if(!Array.isArray(cbHistory) || !cbHistory.length){
+      cards.innerHTML = '<span style="font-size:13px;color:#64748b">No saved months yet.</span>';
+      return;
+    }
+    cards.innerHTML = cbHistory.map(item => {
+      const active = Number(item.year) === Number(cbPeriodYear) && Number(item.month) === Number(cbPeriodMonth);
+      return `<button type="button" class="cb-history-card" data-year="${item.year}" data-month="${item.month}" style="border:1px solid ${active ? '#10b981' : 'rgba(15,23,42,.08)'};background:${active ? '#ecfdf5' : '#f8fafc'};color:#0f172a;border-radius:14px;padding:10px 14px;font-weight:700;cursor:pointer">${cbMonthLabel(item.month, item.year)}</button>`;
+    }).join('');
+    cards.querySelectorAll('.cb-history-card').forEach(btn => {
+      btn.addEventListener('click', async ()=>{
+        cbPeriodMonth = Number(btn.dataset.month);
+        cbPeriodYear = Number(btn.dataset.year);
+        fillGateSelects();
+        await loadFromServer();
+        renderAll();
+        renderCashbookHistoryBox();
+      });
+    });
+  }
+  async function loadCashbookHistory(){
+    const pg = (window.PG_ID || '').trim();
+    if(!pg) return [];
+    try{
+      const res = await fetch(`/pg/api/cashbook/${encodeURIComponent(pg)}?history=1`, { method:'GET' });
+      if(!res.ok) return [];
+      const data = await res.json().catch(()=>null);
+      cbHistory = Array.isArray(data && data.history) ? data.history : [];
+      return cbHistory;
+    }catch(_){
+      cbHistory = [];
+      return [];
+    }
+  }
+
+  cbGateContinue.addEventListener("click", ()=>{
+    cbPendingPeriod = {
+      month: Number(cbGateMonth.value),
+      year: Number(cbGateYear.value),
+    };
+    openPeriodConfirm();
+  });
+
+  cbPeriodConfirmCancel.addEventListener("click", ()=>closeOverlay(cbPeriodConfirmOverlay));
+  cbPeriodConfirmYes.addEventListener("click", async ()=>{
+    closeOverlay(cbPeriodConfirmOverlay);
+    await applyPeriodAndLoad();
+  });
+
+  cbGateReset.addEventListener("click", ()=>openGateResetConfirm());
+  cbGateResetCancel.addEventListener("click", ()=>closeOverlay(cbGateResetOverlay));
+  cbGateResetYes.addEventListener("click", ()=>{
+    closeOverlay(cbGateResetOverlay);
+    const now = new Date();
+    cbGateMonth.value = String(now.getMonth() + 1);
+    cbGateYear.value = String(now.getFullYear());
+  });
+
+  cbChangePeriodBtn.addEventListener("click", ()=>{
+    if (cbIsEditing){
+      cbTriggerLockModal();
+      return;
+    }
+    openChangePeriodModal();
+  });
+  cbChangePeriodCancel.addEventListener("click", ()=>closeOverlay(cbChangePeriodOverlay));
+  cbChangePeriodYes.addEventListener("click", ()=>{
+    if (cbIsEditing){
+      closeOverlay(cbChangePeriodOverlay);
+      cbTriggerLockModal();
+      return;
+    }
+    cbPendingPeriod = {
+      month: Number(cbChangeMonth.value),
+      year: Number(cbChangeYear.value),
+    };
+    closeOverlay(cbChangePeriodOverlay);
+    openChangePeriodConfirm();
+  });
+
+  cbChangePeriodConfirmCancel.addEventListener("click", ()=>closeOverlay(cbChangePeriodConfirmOverlay));
+  cbChangePeriodConfirmYes.addEventListener("click", async ()=>{
+    closeOverlay(cbChangePeriodConfirmOverlay);
+    await applyPeriodAndLoad();
+  });
+
+  cbBackGateBtn.addEventListener("click", backAction);
+  cbBackAppBtn.addEventListener("click", backAction);
+
+  cbLockOk.addEventListener("click", ()=>{
+    cbLockOpen = false;
+    closeOverlay(cbLockOverlay);
+  });
+
+  [cbSaveOverlay, cbDeleteOverlay, cbDiscardOverlay, cbPeriodConfirmOverlay, cbGateResetOverlay, cbLockOverlay, cbChangePeriodOverlay, cbChangePeriodConfirmOverlay].forEach(ov=>{
+    ov.addEventListener("click", (e)=>{
+      if (e.target === ov){
+        closeOverlay(ov);
+        if (ov === cbLockOverlay) cbLockOpen = false;
+      }
+    });
+  });
+
+  document.addEventListener("keydown", (e)=>{
+    if (e.key !== "Escape") return;
+    [cbSaveOverlay, cbDeleteOverlay, cbDiscardOverlay, cbPeriodConfirmOverlay, cbGateResetOverlay, cbLockOverlay, cbChangePeriodOverlay, cbChangePeriodConfirmOverlay].forEach(ov=>{
+      if (ov.classList.contains("cb-show")) closeOverlay(ov);
+    });
+    cbLockOpen = false;
+  });
+
+  window.addEventListener("pgmis:language-change", (e)=>{
+    const lang = cbNormalizeLang(e?.detail?.lang) || cbDetectGlobalLang() || "en";
+    if (lang === cashbookLang) return;
+    cashbookLang = lang;
+    applyLanguage();
+  });
+  window.addEventListener("pgmis-language-change", (e)=>{
+    const lang = cbNormalizeLang(e?.detail?.lang) || cbDetectGlobalLang() || "en";
+    if (lang === cashbookLang) return;
+    cashbookLang = lang;
+    applyLanguage();
+  });
+  window.addEventListener("storage", syncFromGlobal);
+  window.addEventListener("languagechange", syncFromGlobal);
+
+  try{
+    const _langObs = new MutationObserver(()=>syncFromGlobal());
+    _langObs.observe(document.documentElement, { attributes:true, attributeFilter:["lang","data-lang"] });
+    if (document.body) _langObs.observe(document.body, { attributes:true, attributeFilter:["data-lang"] });
+  }catch(_){}
+
+  window.addEventListener("popstate", ()=>{
+    if (!cbLockActive) return;
+    try{ history.pushState({ cb_lock: true }, document.title, location.href); }catch(_){}
+    cbTriggerLockModal();
+  });
+
+  document.addEventListener("click", (e)=>{
+    if (!cbLockActive) return;
+    const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
+    if (!a) return;
+    const href = (a.getAttribute("href") || "").trim();
+    if (!href || href === "#" || href.startsWith("#") || href.toLowerCase().startsWith("javascript:")) return;
+    if (e.ctrlKey || e.metaKey || e.button === 1) return;
+    e.preventDefault();
+    e.stopPropagation();
+    cbTriggerLockModal();
+  }, true);
+
+  window.addEventListener("keydown", (e)=>{
+    if (!cbLockActive) return;
+    const key = (e.key || "").toLowerCase();
+    const isF5 = (key === "f5") || (e.keyCode === 116);
+    const isCtrlF5 = (e.ctrlKey && isF5);
+    const isCtrlR = (e.ctrlKey || e.metaKey) && (key === "r");
+    const isHardReload = ((e.ctrlKey || e.metaKey) && e.shiftKey && key === "r") || isCtrlF5;
+    if (isF5 || isCtrlR || isHardReload){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      cbTriggerLockModal();
+      return false;
+    }
+  }, true);
+
+  window.addEventListener("beforeunload", (e) => {
+    if (!cbLockActive) return;
+    e.preventDefault();
+    e.returnValue = "";
+  });
+
+  async function init(){
+  cbActiveTab = loadActiveTab();
+
+  syncFromGlobal();
+  applyLanguage();
+
+  cbSetLock(false);
+
+  const stored = loadSelectedPeriod();
+  if (stored && typeof stored.month === "number" && typeof stored.year === "number"){
+    cbPeriodMonth = stored.month;
+    cbPeriodYear = stored.year;
+    applyPeriodToHeader();
+    fillGateSelects();
+    showApp();
+    ensureRows();
+    await cbLoadServer();
+
+    setTabUI();      // ✅ this is the missing part
+    setEditingUI();
+    renderAll();
+    return;
+  }
+
+  fillGateSelects();
+  showGate();
+
+  setTabUI();        // ✅ keep UI synced even before app opens
+  setEditingUI();
+  renderAll();
+}
+
+  init();
+})();
+</script>
+
+<script>
+  window.PG_ID = "{{ pg_id }}";
+</script>
+
+{% endblock %}
+
