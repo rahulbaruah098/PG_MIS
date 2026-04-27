@@ -1746,7 +1746,7 @@
       changePeriod: "Change Period",
       openPeriod: "Open",
       searchPh: "Search date, particulars, LF, amount...",
-      datePh: "DD-MM-YYYY HH:MM",
+     datePh: "DD-MM-YYYY",
       calendarTitle: "Calendar",
       confirmTitle: "Confirm Save",
       confirmMsg: "Do you want to save these changes?",
@@ -1821,7 +1821,7 @@
       changePeriod: "সময়কাল বদলান",
       openPeriod: "খুলুন",
       searchPh: "তারিখ, বিবরণ, এলএফ, পরিমাণ খুঁজুন...",
-      datePh: "দিন-মাস-বছর ঘ:মি",
+     datePh: "দিন-মাস-বছর",
       calendarTitle: "ক্যালেন্ডার",
       confirmTitle: "সংরক্ষণ নিশ্চিত করুন",
       confirmMsg: "আপনি কি পরিবর্তনগুলো সংরক্ষণ করতে চান?",
@@ -2430,97 +2430,104 @@ function loadActiveTab(){
     const days = [31, (cbIsLeapYear(yy)?29:28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     return days[mm-1] || 31;
   }
-  function cbFormatDateTimeFromDigits(raw){
-    const digits = String(raw || "").replace(/\D/g, "");
-    const d = digits.slice(0,2);
-    const m = digits.slice(2,4);
-    const y = digits.slice(4,8);
-    const t = digits.slice(8,12);
-    let out = "";
-    if (d) out += d;
-    if (m) out += (out.length>=2 ? "-" : "") + m;
-    if (y) out += (out.length>=5 ? "-" : (out.length>=4 ? "-" : "")) + y;
-    if (t){
-      const hh = t.slice(0,2);
-      const mm = t.slice(2,4);
-      out += " " + hh + (mm ? ":" + mm : "");
+ function cbFormatDateFromDigits(raw){
+  const digits = String(raw || "").replace(/\D/g, "");
+  const d = digits.slice(0,2);
+  const m = digits.slice(2,4);
+  const y = digits.slice(4,8);
+
+  let out = "";
+  if (d) out += d;
+  if (m) out += (out.length >= 2 ? "-" : "") + m;
+  if (y) out += (out.length >= 5 ? "-" : "") + y;
+  return out;
+}
+
+function cbNormalizeManualDate(value){
+  return cbFormatDateFromDigits(value);
+}
+
+function cbIsValidDate(value){
+  const s = String(value || "").trim();
+  const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (!m) return false;
+
+  const dd = Number(m[1]);
+  const mm = Number(m[2]);
+  const yyyy = Number(m[3]);
+
+  if (yyyy < 1900 || yyyy > 2100) return false;
+  if (mm < 1 || mm > 12) return false;
+
+  const maxD = cbDaysInMonth(mm, yyyy);
+  if (dd < 1 || dd > maxD) return false;
+
+  return true;
+}
+
+function cbToDateLocal(str){
+  const s = String(str || "").trim();
+  const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (!m) return "";
+  return `${m[3]}-${m[2]}-${m[1]}`;
+}
+
+function cbFromDateLocal(v){
+  const s = String(v || "").trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return "";
+  return `${m[3]}-${m[2]}-${m[1]}`;
+}
+function cbAttachDateBehavior(textInput, hiddenPicker, onValue){
+  textInput.addEventListener("input", ()=>{
+    if (!cbIsEditing) return;
+
+    const before = textInput.value;
+    const after = cbNormalizeManualDate(before);
+
+    if (after !== before){
+      const pos = textInput.selectionStart || after.length;
+      textInput.value = after;
+      try{ textInput.setSelectionRange(pos, pos); }catch(_){}
     }
-    return out;
-  }
-  function cbNormalizeManualDateTime(value){ return cbFormatDateTimeFromDigits(value); }
-  function cbIsValidDateTime(value){
-    const s = String(value || "").trim();
-    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})$/);
-    if (!m) return false;
-    const dd = Number(m[1]);
-    const mm = Number(m[2]);
-    const yyyy = Number(m[3]);
-    const HH = Number(m[4]);
-    const MIN = Number(m[5]);
-    if (yyyy < 1900 || yyyy > 2100) return false;
-    if (mm < 1 || mm > 12) return false;
-    const maxD = cbDaysInMonth(mm, yyyy);
-    if (dd < 1 || dd > maxD) return false;
-    if (HH < 0 || HH > 23) return false;
-    if (MIN < 0 || MIN > 59) return false;
-    return true;
-  }
-  function cbToDatetimeLocal(str){
-    const s = String(str || "").trim();
-    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})$/);
-    if (!m) return "";
-    const dd = m[1], mm = m[2], yyyy = m[3], HH = m[4], MIN = m[5];
-    return `${yyyy}-${mm}-${dd}T${HH}:${MIN}`;
-  }
-  function cbFromDatetimeLocal(v){
-    const s = String(v || "").trim();
-    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-    if (!m) return "";
-    const yyyy = m[1], mm = m[2], dd = m[3], HH = m[4], MIN = m[5];
-    return `${dd}-${mm}-${yyyy} ${HH}:${MIN}`;
-  }
-  function cbAttachDateBehavior(textInput, hiddenPicker, onValue){
-    textInput.addEventListener("input", ()=>{
-      if (!cbIsEditing) return;
-      const before = textInput.value;
-      const after = cbNormalizeManualDateTime(before);
-      if (after !== before){
-        const pos = textInput.selectionStart || after.length;
-        textInput.value = after;
-        try{ textInput.setSelectionRange(pos, pos); }catch(_){}
-      }
+
+    textInput.classList.remove("cb-invalid");
+    onValue(textInput.value);
+  });
+
+  textInput.addEventListener("blur", ()=>{
+    if (!cbIsEditing) return;
+
+    const v = String(textInput.value || "").trim();
+
+    if (!v){
       textInput.classList.remove("cb-invalid");
-      onValue(textInput.value);
-    });
-
-    textInput.addEventListener("blur", ()=>{
-      if (!cbIsEditing) return;
-      const v = String(textInput.value || "").trim();
-      if (!v){
-        textInput.classList.remove("cb-invalid");
-        onValue("");
-        return;
-      }
-      const ok = cbIsValidDateTime(v);
-      textInput.classList.toggle("cb-invalid", !ok);
-      onValue(textInput.value);
-      if (ok && hiddenPicker){
-        hiddenPicker.value = cbToDatetimeLocal(v);
-      }
-    });
-
-    if (hiddenPicker){
-      hiddenPicker.addEventListener("change", ()=>{
-        if (!cbIsEditing) return;
-        const formatted = cbFromDatetimeLocal(hiddenPicker.value);
-        if (formatted){
-          textInput.value = formatted;
-          textInput.classList.remove("cb-invalid");
-          onValue(formatted);
-        }
-      });
+      onValue("");
+      return;
     }
+
+    const ok = cbIsValidDate(v);
+    textInput.classList.toggle("cb-invalid", !ok);
+    onValue(textInput.value);
+
+    if (ok && hiddenPicker){
+      hiddenPicker.value = cbToDateLocal(v);
+    }
+  });
+
+  if (hiddenPicker){
+    hiddenPicker.addEventListener("input", ()=>{
+      if (!cbIsEditing) return;
+
+      const formatted = cbFromDateLocal(hiddenPicker.value);
+      if (formatted){
+        textInput.value = formatted;
+        textInput.classList.remove("cb-invalid");
+        onValue(formatted);
+      }
+    });
   }
+}
   function cbOpenPicker(pickerEl){
     if (!pickerEl) return;
     try{
@@ -2643,10 +2650,10 @@ function makeTextCellInput(tx, key, placeholder, cls = "", alignRight = false, o
       inDate.placeholder = t.datePh;
 
       const dtPick = document.createElement("input");
-      dtPick.type = "datetime-local";
+     dtPick.type = "date";
       dtPick.className = "cb-date-hidden";
       dtPick.tabIndex = -1;
-      dtPick.value = tx.date ? cbToDatetimeLocal(tx.date) : "";
+      dtPick.value = tx.date ? cbToDateLocal(tx.date) : "";
 
       const btn = document.createElement("button");
       btn.type = "button";
@@ -2768,9 +2775,9 @@ row.appendChild(c7);
     input.placeholder = cashbookTranslations[cashbookLang].datePh;
 
     const hidden = document.createElement("input");
-    hidden.type = "datetime-local";
+   hidden.type = "date";
     hidden.className = "cb-date-hidden";
-    hidden.value = tx.date ? cbToDatetimeLocal(tx.date) : "";
+    hidden.value = tx.date ? cbToDateLocal(tx.date) : "";
 
     const btn = document.createElement("button");
     btn.type = "button";
@@ -2823,7 +2830,7 @@ row.appendChild(c7);
   return wrap;
 }
 
-    
+   
 
   function renderMobile(){
     const active = getActiveArr();
@@ -3373,4 +3380,3 @@ cbPaymentsTab.addEventListener("click", ()=>{
 </script>
 
 {% endblock %}
-

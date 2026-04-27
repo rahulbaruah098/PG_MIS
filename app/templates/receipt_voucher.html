@@ -1796,24 +1796,28 @@
   let isEditing = false;
   let snapshot = null;
 
-  function makeSectionState(prefix){
-    return {
-      prefix,
-      allRows: [],
-      page: 1,
-      perPage: 25,
-      query: "",
-      signatures: {
-        member: "",
-        udyog: ""
-      }
-    };
-  }
-
-  const S = {
-    pg: makeSectionState("Pg"),
-    m: makeSectionState("M")
+ function makeSectionState(prefix){
+  return {
+    prefix,
+    allRows: [],
+    page: 1,
+    perPage: 25,
+    query: "",
+    currentMemberKey: "",
+    memberTables: {},
+    signatures: {
+      member: "",
+      udyog: ""
+    }
   };
+}
+
+const S = {
+  pg: makeSectionState("Pg"),
+  m: makeSectionState("M")
+};
+
+ 
 
   function normalizeLang(v){
     if (!v) return null;
@@ -2233,6 +2237,84 @@
     return row;
   }
 
+
+  function getSectionState(sectionKey){
+  return sectionKey === "pg" ? S.pg : S.m;
+}
+
+function getMemberKey(sectionKey){
+  const p = sectionKey === "pg" ? "Pg" : "M";
+  const code = String($(id(p,"MemberCode"))?.value || "").trim();
+  const name = String($(id(p,"MemberName"))?.value || "").trim();
+  return code || name || "";
+}
+
+function getCurrentEntries(sectionKey){
+  const st = getSectionState(sectionKey);
+  return st.allRows.map(r => ({
+    commodity: r.querySelector("[data-ll='commodity']").value || "",
+    grade: r.querySelector("[data-ll='grade']").value || "",
+    rate: n2(r.querySelector("[data-ll='rate']").value),
+    volume: n2(r.querySelector("[data-ll='volume']").value),
+    value: n2(r.querySelector("[data-ll='value']").value)
+  })).filter(e => {
+    return String(e.commodity || "").trim()
+      || String(e.grade || "").trim()
+      || e.rate || e.volume || e.value;
+  });
+}
+
+function saveCurrentMemberTable(sectionKey){
+  const st = getSectionState(sectionKey);
+  const key = st.currentMemberKey || getMemberKey(sectionKey);
+  if (!key) return;
+
+  st.memberTables[key] = {
+    entries: getCurrentEntries(sectionKey),
+    details: $(id(st.prefix,"Details"))?.value || "",
+    txn_date: $(id(st.prefix,"TxnDate"))?.value || "",
+    signatures: {
+      member: st.signatures.member || "",
+      udyog: st.signatures.udyog || ""
+    }
+  };
+}
+
+function loadMemberTable(sectionKey){
+  const st = getSectionState(sectionKey);
+  const p = st.prefix;
+  const bodyId = sectionKey === "pg" ? "llBodyPg" : "llBodyM";
+  const key = getMemberKey(sectionKey);
+
+  st.currentMemberKey = key;
+  const saved = key ? (st.memberTables[key] || {}) : {};
+
+  $(bodyId).innerHTML = "";
+  st.allRows = [];
+
+  $(id(p,"Details")).value = saved.details || "";
+  $(id(p,"TxnDate")).value = saved.txn_date || "";
+
+  st.signatures.member = saved.signatures?.member || "";
+  st.signatures.udyog = saved.signatures?.udyog || "";
+  renderSignatureUI(sectionKey, "member");
+  renderSignatureUI(sectionKey, "udyog");
+
+  (saved.entries || []).forEach(e => {
+    const r = createRow(sectionKey);
+    r.querySelector("[data-ll='commodity']").value = e.commodity || "";
+    r.querySelector("[data-ll='grade']").value = e.grade || "";
+    r.querySelector("[data-ll='rate']").value = e.rate ? String(e.rate) : "";
+    r.querySelector("[data-ll='volume']").value = e.volume ? String(e.volume) : "";
+    r.querySelector("[data-ll='value']").value = e.value ? String(e.value) : "";
+    st.allRows.push(r);
+    $(bodyId).appendChild(r);
+  });
+
+  setAllEditable(isEditing);
+  recalcTotalsAndVisibility(sectionKey, true);
+  clearSelection(sectionKey);
+}
   function addRow(sectionKey){
     if (!isEditing) return;
     const st = sectionKey === "pg" ? S.pg : S.m;
@@ -2365,16 +2447,38 @@
     m_udyog:   { file:"llSignFileMUdyog",   img:"llSignImgMUdyog",   empty:"llSignEmptyMUdyog",   upload:"llSignUploadMUdyog",   capture:"llSignCaptureMUdyog",   replace:"llSignReplaceMUdyog",   remove:"llSignRemoveMUdyog",   sectionKey:"m",  role:"udyog", pad:"llPadMUdyog", padLabel:"llPadLabelMUdyog", padClear:"llPadClearMUdyog", padUse:"llPadUseMUdyog" }
   };
 
-  function setSignature(sectionKey, role, dataUrl){
-    const st = sectionKey === "pg" ? S.pg : S.m;
-    st.signatures[role] = dataUrl || "";
-    renderSignatureUI(sectionKey, role);
+ function setSignature(sectionKey, role, dataUrl){
+  const st = sectionKey === "pg" ? S.pg : S.m;
+  const key = getCurrentMemberKey(sectionKey);
+
+  if (!st.memberTables) st.memberTables = {};
+
+  const existing = st.memberTables[key] || {
+    entries: [],
+    details: $(id(st.prefix,"Details"))?.value || "",
+    txn_date: $(id(st.prefix,"TxnDate"))?.value || "",
+    signatures: { member: "", udyog: "" }
+  };
+
+  if (!existing.signatures) {
+    existing.signatures = { member: "", udyog: "" };
   }
 
-  function getSignature(sectionKey, role){
-    const st = sectionKey === "pg" ? S.pg : S.m;
-    return st.signatures[role] || "";
-  }
+  existing.signatures[role] = dataUrl || "";
+  existing.details = $(id(st.prefix,"Details"))?.value || "";
+  existing.txn_date = $(id(st.prefix,"TxnDate"))?.value || "";
+
+  st.memberTables[key] = existing;
+
+  renderSignatureUI(sectionKey, role);
+}
+
+function getSignature(sectionKey, role){
+  const st = sectionKey === "pg" ? S.pg : S.m;
+  const key = getCurrentMemberKey(sectionKey);
+
+  return st.memberTables?.[key]?.signatures?.[role] || "";
+}
 
   function renderSignatureUI(sectionKey, role){
     const key =
@@ -2703,11 +2807,15 @@
       member_name: $(id(p,"MemberName")).value || "",
       member_code: $(id(p,"MemberCode")).value || "",
       details: $(id(p,"Details")).value || "",
-      signatures: {
-        member: st.signatures.member || "",
-        udyog: st.signatures.udyog || ""
-      },
-   entries: st.allRows
+    signatures: {
+  member: getSignature(sectionKey, "member"),
+  udyog: getSignature(sectionKey, "udyog")
+},
+member_tables: (() => {
+  saveActiveMemberRows(sectionKey);
+  return st.memberTables || {};
+})(),
+entries: st.allRows
   .map(r => ({
     commodity: r.querySelector("[data-ll='commodity']").value || "",
     grade: r.querySelector("[data-ll='grade']").value || "",
@@ -2730,50 +2838,63 @@
   }
 
   function restoreSection(sectionKey, data){
-    const p = sectionKey === "pg" ? "Pg" : "M";
-    const st = sectionKey === "pg" ? S.pg : S.m;
-    const bodyId = sectionKey === "pg" ? "llBodyPg" : "llBodyM";
+  data = data || {};
 
-    $(id(p,"PgName")).value = data.pg_name || "";
-    $(id(p,"TxnDate")).value = data.txn_date || "";
-    $(id(p,"MemberName")).value = data.member_name || "";
-    $(id(p,"MemberCode")).value = data.member_code || "";
-    populateReceiptMemberDropdowns(sectionKey, data.member_name || "", data.member_code || "");
-    syncReceiptMemberPair(sectionKey, data.member_name ? "name" : "code");
-    $(id(p,"Details")).value = data.details || "";
+  const p = sectionKey === "pg" ? "Pg" : "M";
+  const st = sectionKey === "pg" ? S.pg : S.m;
+  const bodyId = sectionKey === "pg" ? "llBodyPg" : "llBodyM";
 
-    st.signatures.member = (data.signatures && data.signatures.member) ? data.signatures.member : "";
-    st.signatures.udyog  = (data.signatures && data.signatures.udyog) ? data.signatures.udyog : "";
-    renderSignatureUI(sectionKey === "pg" ? "pg" : "m", "member");
-    renderSignatureUI(sectionKey === "pg" ? "pg" : "m", "udyog");
+  st.memberTables = data.member_tables || {};
+  st.signatures = { member: "", udyog: "" };
 
-    st.allRows = [];
-    $(bodyId).innerHTML = "";
+  $(id(p,"PgName")).value = data.pg_name || "";
+  $(id(p,"MemberName")).value = data.member_name || "";
+  $(id(p,"MemberCode")).value = data.member_code || "";
 
-  const entries = (Array.isArray(data.entries) ? data.entries : []).filter(e => {
-  const commodity = String(e?.commodity || "").trim();
-  const grade = String(e?.grade || "").trim();
-  const rate = Number(e?.rate || 0);
-  const volume = Number(e?.volume || 0);
-  const value = Number(e?.value || 0);
+  populateReceiptMemberDropdowns(sectionKey, data.member_name || "", data.member_code || "");
+  syncReceiptMemberPair(sectionKey, data.member_name ? "name" : "code");
 
-  return commodity || grade || rate || volume || value;
-});
+  const key = getCurrentMemberKey(sectionKey);
+  st.currentMemberKey = key;
 
-entries.forEach(e=>{
-  const r = createRow(sectionKey);
-  r.querySelector("[data-ll='commodity']").value = e.commodity || "";
-  r.querySelector("[data-ll='grade']").value = e.grade || "";
-  r.querySelector("[data-ll='rate']").value = e.rate ? String(e.rate) : "";
-  r.querySelector("[data-ll='volume']").value = e.volume ? String(e.volume) : "";
-  r.querySelector("[data-ll='value']").value = e.value ? String(e.value) : "";
-  st.allRows.push(r);
-  $(bodyId).appendChild(r);
-});
-    setAllEditable(isEditing);
-    recalcTotalsAndVisibility(sectionKey, true);
-    clearSelection(sectionKey);
+  if (!st.memberTables[key]) {
+    st.memberTables[key] = {
+      entries: Array.isArray(data.entries) ? data.entries : [],
+      details: data.details || "",
+      txn_date: data.txn_date || "",
+      signatures: {
+        member: data.signatures?.member || "",
+        udyog: data.signatures?.udyog || ""
+      }
+    };
   }
+
+  const saved = st.memberTables[key] || {};
+
+  $(id(p,"Details")).value = saved.details || "";
+  $(id(p,"TxnDate")).value = saved.txn_date || "";
+
+  st.allRows = [];
+  $(bodyId).innerHTML = "";
+
+  (saved.entries || []).forEach(e => {
+    const r = createRow(sectionKey);
+
+    r.querySelector("[data-ll='commodity']").value = e.commodity || "";
+    r.querySelector("[data-ll='grade']").value = e.grade || "";
+    r.querySelector("[data-ll='rate']").value = e.rate ? String(e.rate) : "";
+    r.querySelector("[data-ll='volume']").value = e.volume ? String(e.volume) : "";
+    r.querySelector("[data-ll='value']").value = e.value ? String(e.value) : "";
+
+    st.allRows.push(r);
+    $(bodyId).appendChild(r);
+  });
+
+  renderSignatureUI(sectionKey, "member");
+  renderSignatureUI(sectionKey, "udyog");
+
+  recalcTotalsAndVisibility(sectionKey, true);
+}
 
   function restoreSnapshot(snap){
     if (!snap) return;
@@ -3367,6 +3488,111 @@ entries.forEach(e=>{
   wireSection("pg");
   wireSection("m");
 
+
+function getCurrentMemberKey(sectionKey){
+  const ids = getMemberSelectIds(sectionKey);
+  const nameEl = $(ids.name);
+  const codeEl = $(ids.code);
+
+  const code = String(codeEl?.value || "").trim();
+  const name = String(nameEl?.value || "").trim();
+
+  return code || name || "__no_member__";
+}
+
+function ensureMemberTables(sectionKey){
+  const st = sectionKey === "pg" ? S.pg : S.m;
+
+  if (!st.memberTables) st.memberTables = {};
+  if (!st.currentMemberKey) st.currentMemberKey = getCurrentMemberKey(sectionKey);
+
+  return st;
+}
+
+function saveActiveMemberRows(sectionKey){
+  const st = ensureMemberTables(sectionKey);
+  const key = st.currentMemberKey || getCurrentMemberKey(sectionKey);
+  const existing = st.memberTables[key] || {};
+
+  st.memberTables[key] = {
+    entries: st.allRows.map(r => ({
+      commodity: r.querySelector("[data-ll='commodity']")?.value || "",
+      grade: r.querySelector("[data-ll='grade']")?.value || "",
+      rate: n2(r.querySelector("[data-ll='rate']")?.value),
+      volume: n2(r.querySelector("[data-ll='volume']")?.value),
+      value: n2(r.querySelector("[data-ll='value']")?.value)
+    })).filter(e => {
+      return String(e.commodity || "").trim()
+        || String(e.grade || "").trim()
+        || e.rate
+        || e.volume
+        || e.value;
+    }),
+
+    details: $(id(st.prefix,"Details"))?.value || "",
+    txn_date: $(id(st.prefix,"TxnDate"))?.value || "",
+
+    signatures: existing.signatures || { member: "", udyog: "" }
+  };
+}
+function clearSignatureCanvas(sectionKey, role){
+  const suffix = role === "member" ? "Member" : "Udyog";
+  const padId = sectionKey === "pg"
+    ? `llPadPg${suffix}`
+    : `llPadM${suffix}`;
+
+  const canvas = $(padId);
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+
+function applyMemberPartition(sectionKey, newKey){
+  const st = ensureMemberTables(sectionKey);
+  const bodyId = sectionKey === "pg" ? "llBodyPg" : "llBodyM";
+
+  saveActiveMemberRows(sectionKey);
+
+  st.currentMemberKey = newKey || "__no_member__";
+
+  const saved = st.memberTables[st.currentMemberKey] || {};
+  const rows = saved.entries || [];
+
+
+  $(id(st.prefix,"Details")).value = saved.details || "";
+  $(id(st.prefix,"TxnDate")).value = saved.txn_date || "";
+
+  clearSignatureCanvas(sectionKey, "member");
+clearSignatureCanvas(sectionKey, "udyog");
+
+renderSignatureUI(sectionKey, "member");
+renderSignatureUI(sectionKey, "udyog");
+
+  st.allRows = [];
+  $(bodyId).innerHTML = "";
+
+  rows.forEach(e => {
+    const r = createRow(sectionKey);
+
+    r.querySelector("[data-ll='commodity']").value = e.commodity || "";
+    r.querySelector("[data-ll='grade']").value = e.grade || "";
+    r.querySelector("[data-ll='rate']").value = e.rate ? String(e.rate) : "";
+    r.querySelector("[data-ll='volume']").value = e.volume ? String(e.volume) : "";
+    r.querySelector("[data-ll='value']").value = e.value ? String(e.value) : "";
+
+    st.allRows.push(r);
+    $(bodyId).appendChild(r);
+  });
+
+  setAllEditable(isEditing);
+  recalcTotalsAndVisibility(sectionKey, true);
+  syncDeleteAllLabel();
+}
+
   function wireSelectAll(sectionKey){
     const idSel = sectionKey === "pg" ? "llSelectAllPg" : "llSelectAllM";
     $(idSel).addEventListener("change", (e)=>{
@@ -3381,13 +3607,19 @@ entries.forEach(e=>{
   }
   wireSelectAll("pg");
   wireSelectAll("m");
-  [["pg","name"],["pg","code"],["m","name"],["m","code"]].forEach(([sectionKey, source]) => {
-    const ids = getMemberSelectIds(sectionKey);
-    const el = $(source === "name" ? ids.name : ids.code);
-    if (el){
-      el.addEventListener("change", ()=>syncReceiptMemberPair(sectionKey, source));
-    }
-  });
+[["pg","name"],["pg","code"],["m","name"],["m","code"]].forEach(([sectionKey, source]) => {
+  const ids = getMemberSelectIds(sectionKey);
+  const el = $(source === "name" ? ids.name : ids.code);
+
+  if (el){
+    el.addEventListener("change", ()=>{
+      syncReceiptMemberPair(sectionKey, source);
+
+      const key = getCurrentMemberKey(sectionKey);
+      applyMemberPartition(sectionKey, key);
+    });
+  }
+});
 
 
   $("llEditSaveBtn").addEventListener("click", ()=>{

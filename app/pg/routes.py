@@ -2149,13 +2149,31 @@ def api_ledger_book(pg_id):
             return jsonify({"history": _period_history(db, coll, base_q)})
         doc = db[coll].find_one({**base_q, "year": year, "month": month}) if (year and month) else db[coll].find_one(base_q, sort=[("updated_at", -1)])
         if not doc:
-            pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
-            return jsonify({"entries": [], "pg_name": pg_doc.get("name", ""), "year": year, "month": month})
+            pg_doc = db.pgs.find_one(
+                {"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))},
+                {"name": 1, "Block": 1}
+            ) or {}
+
+            return jsonify({
+                "entries": [],
+                "pg_name": pg_doc.get("name", ""),
+                "block_name": pg_doc.get("Block", ""),
+                "year": year,
+                "month": month
+            })
         doc["_id"] = str(doc["_id"])
         doc["pg_id"] = str(doc["pg_id"])
+        pg_doc = db.pgs.find_one(
+            {"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))},
+            {"name": 1, "Block": 1}
+        ) or {}
+
+        doc["pg_name"] = doc.get("pg_name") or pg_doc.get("name", "")
+        doc["block_name"] = doc.get("block_name") or pg_doc.get("Block", "")
         return jsonify(doc)
 
-    if session.get("role") != "PG_DATA_ENTRY":
+    role = getattr(g, "role", None) or session.get("role")
+    if role != "PG_DATA_ENTRY":
         abort(403)
 
     payload = request.get_json(silent=True) or {}
