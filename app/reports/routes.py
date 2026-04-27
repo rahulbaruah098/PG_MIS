@@ -610,6 +610,94 @@ def _turnover_timeseries(db, *, match_pg=None, months=12):
 
 
 
+def _state_dashboard_pg_row(db, pg):
+    """Small display row for PG detail tables on the state dashboard."""
+    def _name(coll, oid):
+        try:
+            if oid:
+                doc = db[coll].find_one({"_id": oid}, {"name": 1, "code": 1}) or {}
+                return doc.get("name") or doc.get("code") or ""
+        except Exception:
+            pass
+        return ""
+
+    return {
+        "id": str(pg.get("_id") or ""),
+        "name": pg.get("name") or pg.get("pg_name") or "-",
+        "sector": pg.get("sector") or "-",
+        "district": pg.get("District") or _name("districts", pg.get("district_id")) or "-",
+        "block": pg.get("Block") or _name("blocks", pg.get("block_id")) or "-",
+        "village": pg.get("Village") or pg.get("village") or "-",
+        "gp": pg.get("Gram Panchayat") or pg.get("gp") or "-",
+    }
+
+
+def _state_dashboard_build_details(db, pg_match, pg_ids, detail_key):
+    """Build click-through details for new State Dashboard KPI cards."""
+    detail_key = (detail_key or "").strip()
+    if not detail_key:
+        return None
+
+    pg_projection = {
+        "name": 1, "pg_name": 1, "sector": 1, "District": 1, "Block": 1,
+        "Village": 1, "Gram Panchayat": 1, "district_id": 1, "block_id": 1,
+    }
+
+    if detail_key == "cadres":
+        cadre_match = {"role": "CADRE_CC"}
+        if pg_match.get("state_id"):
+            cadre_match["state_id"] = pg_match["state_id"]
+        if pg_match.get("district_id"):
+            cadre_match["district_id"] = pg_match["district_id"]
+        if pg_match.get("block_id"):
+            cadre_match["block_id"] = pg_match["block_id"]
+
+        cadres = list(db.users.find(cadre_match, {"name": 1, "username": 1, "phone": 1, "contact": 1, "assigned_pg_ids": 1}).sort("name", 1))
+        rows = []
+        pg_id_set = {str(x) for x in pg_ids}
+        for c in cadres:
+            assigned_ids = []
+            for raw_id in (c.get("assigned_pg_ids") or []):
+                try:
+                    oid = raw_id if isinstance(raw_id, ObjectId) else ObjectId(str(raw_id))
+                    if str(oid) in pg_id_set:
+                        assigned_ids.append(oid)
+                except Exception:
+                    pass
+            assigned_pgs = list(db.pgs.find({"_id": {"$in": assigned_ids}}, pg_projection).sort("name", 1)) if assigned_ids else []
+            rows.append({
+                "name": c.get("name") or c.get("username") or "-",
+                "username": c.get("username") or "-",
+                "contact": c.get("phone") or c.get("contact") or c.get("contact_number") or "-",
+                "assigned_count": len(assigned_pgs),
+                "assigned_pgs": [_state_dashboard_pg_row(db, pg) for pg in assigned_pgs],
+            })
+        return {"type": "cadres", "title": "Cadre Details", "rows": rows}
+
+    if detail_key.startswith("sector:"):
+        sector = detail_key.split(":", 1)[1].strip()
+        q = dict(pg_match)
+        q["sector"] = sector
+        pgs = list(db.pgs.find(q, pg_projection).sort([("District", 1), ("Block", 1), ("Village", 1), ("name", 1)]))
+        return {
+            "type": "pgs",
+            "title": f"{sector} Based PG Details",
+            "rows": [_state_dashboard_pg_row(db, pg) for pg in pgs],
+        }
+
+    if detail_key.startswith("ffs:"):
+        module = detail_key.split(":", 1)[1].strip()
+        module_pg_ids = db.pg_members.distinct("pg_id", {"pg_id": {"$in": pg_ids}, "agri_ffs_module": module}) if pg_ids else []
+        pgs = list(db.pgs.find({"_id": {"$in": module_pg_ids}}, pg_projection).sort([("District", 1), ("Block", 1), ("Village", 1), ("name", 1)])) if module_pg_ids else []
+        return {
+            "type": "pgs",
+            "title": f"PGs Following {module}",
+            "rows": [_state_dashboard_pg_row(db, pg) for pg in pgs],
+        }
+
+    return None
+
+
 @reports_bp.route("/state_dashboard")
 @login_required
 @roles_required("SUPER_ADMIN", "ADMIN", "DISTRICT_ADMIN", "BLOCK_ADMIN", "CADRE_CC")
@@ -726,6 +814,36 @@ def state_dashboard():
     except Exception:
         lakhpati_total = 0
 
+    # New State Dashboard KPI groups: PG sector and FFS module distribution
+    sector_options = ["Agri", "ARDD", "Fishery"]
+    sector_summary = []
+    for sector in sector_options:
+        q = dict(pg_match)
+        q["sector"] = sector
+        sector_summary.append({
+            "key": sector,
+            "label": sector,
+            "count": db.pgs.count_documents(q),
+            "detail_url": url_for("reports.state_dashboard", detail=f"sector:{sector}"),
+        })
+
+    ffs_modules = ["FFS Module 1", "FFS Module 2", "FFS Module 3", "FFS Module 4", "FFS Module 5"]
+    ffs_summary = []
+    for module in ffs_modules:
+        cnt = 0
+        try:
+            cnt = len(db.pg_members.distinct("pg_id", {"pg_id": {"$in": pg_ids}, "agri_ffs_module": module})) if pg_ids else 0
+        except Exception:
+            cnt = 0
+        ffs_summary.append({
+            "key": module,
+            "label": module,
+            "count": cnt,
+            "detail_url": url_for("reports.state_dashboard", detail=f"ffs:{module}"),
+        })
+
+    selected_detail = _state_dashboard_build_details(db, pg_match, pg_ids, request.args.get("detail"))
+
     # Top districts by SHG count (within scope if applicable)
     pipe = []
     if shg_q:
@@ -769,6 +887,10 @@ def state_dashboard():
         districts_total=districts_total,
         blocks_total=blocks_total,
         cadre_count=cadre_count,
+        cadre_detail_url=url_for("reports.state_dashboard", detail="cadres"),
+        sector_summary=sector_summary,
+        ffs_summary=ffs_summary,
+        selected_detail=selected_detail,
         shg_total=shg_total,
         shg_active=shg_active,
         shg_top_districts=top_districts,

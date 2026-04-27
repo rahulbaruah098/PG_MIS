@@ -441,6 +441,87 @@
       line-height:1.35;
     }
 
+
+    .kpi-link{
+      display:block;
+      color:inherit;
+      text-decoration:none;
+      cursor:pointer;
+    }
+    .kpi-link .s::after{
+      content:"  • Click to view";
+      color:#0f766e;
+      font-weight:800;
+    }
+    .miniKpiGrid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:12px;
+      margin-bottom:16px;
+    }
+    @media (max-width:1100px){
+      .miniKpiGrid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width:640px){
+      .miniKpiGrid{ grid-template-columns:1fr; }
+    }
+    .detail-table-wrap{
+      width:100%;
+      overflow-x:auto;
+      border:1px solid rgba(191,230,210,0.95);
+      border-radius:16px;
+      background:#fff;
+    }
+    .detail-table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:760px;
+      font-size:13px;
+    }
+    .detail-table th{
+      text-align:left;
+      padding:12px 14px;
+      background:#e9f8f0;
+      color:#0b2a23;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      border-bottom:1px solid rgba(191,230,210,0.95);
+      white-space:nowrap;
+    }
+    .detail-table td{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(216,239,227,0.95);
+      color:#2f5b4f;
+      vertical-align:top;
+    }
+    .detail-table tr:last-child td{ border-bottom:0; }
+    .pg-pill-list{
+      display:flex;
+      flex-wrap:wrap;
+      gap:7px;
+      max-width:520px;
+    }
+    .pg-pill{
+      display:inline-flex;
+      align-items:center;
+      border:1px solid rgba(191,230,210,0.95);
+      background:#f1fbf5;
+      color:#0f766e;
+      border-radius:999px;
+      padding:5px 9px;
+      font-size:12px;
+      font-weight:700;
+    }
+    .empty-state{
+      padding:18px;
+      color:#5b8376;
+      background:#f8fffb;
+      border:1px dashed rgba(191,230,210,0.95);
+      border-radius:16px;
+      font-size:14px;
+    }
+
     .gridA{
       display:grid;
       grid-template-columns: 2.3fr 1.2fr;
@@ -673,6 +754,12 @@
           <div class="s">In scope</div>
         </div>
 
+        <a class="kpi kpi-link p-4 fade-in" href="{{ cadre_detail_url }}">
+          <div class="t">Total Cadres</div>
+          <div class="v">{{ cadre_count or 0 }}</div>
+          <div class="s">Cadre CC in scope</div>
+        </a>
+
         <div class="kpi p-4 fade-in">
           <div class="t">Total PGs</div>
           <div class="v">{{ pg_count or 0 }}</div>
@@ -721,6 +808,140 @@
           <div class="s">Members marked across PGs</div>
         </div>
       </div>
+
+      <!-- New State Dashboard KPI Groups -->
+      <div class="cardx card-border-soft fade-in">
+        <div class="hdr">
+          <div>
+            <div class="text-sm font-extrabold text-slate-900">PG Sector Classification</div>
+            <div class="text-xs muted">Click any sector to view PG name, village, block and district details</div>
+          </div>
+          <span class="chip">Sector KPIs</span>
+        </div>
+        <div class="bd">
+          <div class="miniKpiGrid">
+            {% for item in sector_summary %}
+              <a class="kpi kpi-link p-4" href="{{ item.detail_url }}">
+                <div class="t">{{ item.label }} Based PGs</div>
+                <div class="v">{{ item.count or 0 }}</div>
+                <div class="s">PG details</div>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="cardx card-border-soft fade-in">
+        <div class="hdr">
+          <div>
+            <div class="text-sm font-extrabold text-slate-900">Agri FFS Module Coverage</div>
+            <div class="text-xs muted">Each count shows unique PGs having at least one member mapped to that FFS module</div>
+          </div>
+          <span class="chip">FFS KPIs</span>
+        </div>
+        <div class="bd">
+          <div class="miniKpiGrid">
+            {% for item in ffs_summary %}
+              <a class="kpi kpi-link p-4" href="{{ item.detail_url }}">
+                <div class="t">{{ item.label }}</div>
+                <div class="v">{{ item.count or 0 }}</div>
+                <div class="s">PG details</div>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      {% if selected_detail %}
+      <div class="cardx card-border-soft fade-in" id="stateDetailPanel">
+        <div class="hdr">
+          <div>
+            <div class="text-sm font-extrabold text-slate-900">{{ selected_detail.title }}</div>
+            <div class="text-xs muted">
+              {% if selected_detail.type == "cadres" %}
+                Cadre-wise assigned PG count and assigned PG names
+              {% else %}
+                PG-wise village, block and district details
+              {% endif %}
+            </div>
+          </div>
+          <a class="btnlink" href="{{ url_for('reports.state_dashboard') }}">Clear Details</a>
+        </div>
+        <div class="bd">
+          {% if selected_detail.type == "cadres" %}
+            {% if selected_detail.rows %}
+              <div class="detail-table-wrap">
+                <table class="detail-table">
+                  <thead>
+                    <tr>
+                      <th>Cadre Name</th>
+                      <th>Username</th>
+                      <th>Contact</th>
+                      <th>Assigned PG Count</th>
+                      <th>Assigned PGs</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in selected_detail.rows %}
+                      <tr>
+                        <td>{{ row.name }}</td>
+                        <td>{{ row.username }}</td>
+                        <td>{{ row.contact }}</td>
+                        <td><b>{{ row.assigned_count }}</b></td>
+                        <td>
+                          {% if row.assigned_pgs %}
+                            <div class="pg-pill-list">
+                              {% for pg in row.assigned_pgs %}
+                                <span class="pg-pill">{{ pg.name }}</span>
+                              {% endfor %}
+                            </div>
+                          {% else %}
+                            -
+                          {% endif %}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="empty-state">No cadres found in this scope.</div>
+            {% endif %}
+          {% else %}
+            {% if selected_detail.rows %}
+              <div class="detail-table-wrap">
+                <table class="detail-table">
+                  <thead>
+                    <tr>
+                      <th>PG Name</th>
+                      <th>Sector</th>
+                      <th>District</th>
+                      <th>Block</th>
+                      <th>Village</th>
+                      <th>Gram Panchayat</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in selected_detail.rows %}
+                      <tr>
+                        <td><b>{{ row.name }}</b></td>
+                        <td>{{ row.sector }}</td>
+                        <td>{{ row.district }}</td>
+                        <td>{{ row.block }}</td>
+                        <td>{{ row.village }}</td>
+                        <td>{{ row.gp }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="empty-state">No PG details found for this KPI in the current scope.</div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
 
       <!-- Charts Row -->
       <div class="gridA">
