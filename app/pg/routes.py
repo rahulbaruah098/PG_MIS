@@ -396,6 +396,119 @@ def _pg_metrics(db, pg_id):
     except Exception:
         pass
 
+    from datetime import timedelta
+
+    chart_cash_flow = []
+    chart_membership_growth = []
+    chart_loan_distribution = []
+    chart_output_stock = []
+
+    # Cash flow last 7 days
+    try:
+        today = datetime.utcnow().date()
+        for i in range(6, -1, -1):
+            d = today - timedelta(days=i)
+            start = datetime(d.year, d.month, d.day)
+            end = start + timedelta(days=1)
+
+            income = 0.0
+            expense = 0.0
+
+            txns = db.pg_income_expenditure.find({
+                "pg_id": oid,
+                "created_at": {"$gte": start, "$lt": end}
+            })
+
+            for t in txns:
+                amt = float(t.get("amount") or 0)
+                ttype = (t.get("type") or t.get("txn_type") or "").lower()
+
+                if ttype in ("income", "receipt", "receipts", "credit"):
+                    income += amt
+                elif ttype in ("expense", "payment", "payments", "debit"):
+                    expense += amt
+
+            chart_cash_flow.append({
+                "label": d.strftime("%d %b"),
+                "income": income,
+                "expense": expense,
+                "net": income - expense
+            })
+    except Exception:
+        pass
+
+
+    # Membership growth by month
+    try:
+        now = datetime.utcnow()
+        for i in range(5, -1, -1):
+            month = now.month - i
+            year = now.year
+
+            while month <= 0:
+                month += 12
+                year -= 1
+
+            start = datetime(year, month, 1)
+            end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+
+            count = db.pg_members.count_documents({
+                "pg_id": oid,
+                "created_at": {"$lt": end},
+                "$or": [
+                    {"is_active": True},
+                    {"is_active": {"$exists": False}}
+                ]
+            })
+
+            chart_membership_growth.append({
+                "label": start.strftime("%b"),
+                "members": count
+            })
+    except Exception:
+        pass
+
+
+    # Loan distribution
+    try:
+        disbursed = 0.0
+        outstanding_total = 0.0
+
+        for ln in legacy_loans + new_pg_loans + new_mb_loans:
+            disbursed += float(
+                ln.get("loan_amount")
+                or ln.get("amount")
+                or ln.get("principal_amount")
+                or 0
+            )
+            outstanding_total += float(
+                ln.get("outstanding_amount")
+                or ln.get("outstanding")
+                or ln.get("balance")
+                or 0
+            )
+
+        recovered = max(0, disbursed - outstanding_total)
+
+        chart_loan_distribution = [
+            {"label": "Disbursed", "value": disbursed},
+            {"label": "Recovered", "value": recovered},
+            {"label": "Outstanding", "value": outstanding_total},
+        ]
+    except Exception:
+        pass
+
+
+    # Output stock snapshot
+    try:
+        chart_output_stock = [
+            {"label": "Input Stock", "value": _sum_qty_from_rows(input_doc)},
+            {"label": "Output Sold", "value": _sum_qty_from_rows(output_doc)},
+            {"label": "Available", "value": total_stock_kg},
+        ]
+    except Exception:
+        pass
+
     return {
         "members_count": members_count,
         "meetings_count": meetings_count,
@@ -412,6 +525,10 @@ def _pg_metrics(db, pg_id):
         "categories_count": categories_count,
         "income_7d": _fmt_inr(income_7d),
         "expense_7d": _fmt_inr(expense_7d),
+        "chart_cash_flow": chart_cash_flow,
+        "chart_membership_growth": chart_membership_growth,
+        "chart_loan_distribution": chart_loan_distribution,
+        "chart_output_stock": chart_output_stock,
 
         # Turnover + Profit/Loss (latest month)
         "turnover_latest": _fmt_inr(turnover_latest),
