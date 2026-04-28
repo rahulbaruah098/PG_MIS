@@ -1654,7 +1654,7 @@
   }
 
   async function persistServerPayload(payload){
-    const ledgerId = encodeURIComponent(getMemberLedgerId());
+   
     const endpoint = `/pg/api/register/member_ledger/${encodeURIComponent(window.PG_ID || "")}`;
 
     const res = await fetch(endpoint, {
@@ -1686,31 +1686,52 @@
   }
 
   async function loadMemberLedger(){
-    const ledgerId = encodeURIComponent(getMemberLedgerId());
-    const endpoint = `/pg/api/register/member_ledger/${encodeURIComponent(window.PG_ID || "")}`;
+  const endpoint = `/pg/api/register/member_ledger/${encodeURIComponent(window.PG_ID || "")}`;
 
-    try {
-      const res = await fetch(endpoint, { method: "GET" });
-      if (res.ok) {
-        const data = await res.json().catch(() => null);
-        if (data && hydrateFromData(data.data || data)) {
-          return true;
-        }
+  try {
+    const res = await fetch(endpoint, {
+      method: "GET",
+      headers: { "Accept": "application/json" }
+    });
+
+    if (res.ok) {
+      const serverDoc = await res.json().catch(() => null);
+
+      const ledgerData =
+        serverDoc && serverDoc.data && typeof serverDoc.data === "object"
+          ? serverDoc.data
+          : null;
+
+      const hasSavedLedger =
+        ledgerData &&
+        (
+          (Array.isArray(ledgerData.purchases) && ledgerData.purchases.length > 0) ||
+          (Array.isArray(ledgerData.sales) && ledgerData.sales.length > 0) ||
+          ledgerData.producerName ||
+          ledgerData.stockingUnit
+        );
+
+      if (hasSavedLedger) {
+        hydrateFromData(ledgerData);
+        return true;
       }
-    } catch (_) {}
-
-    try {
-      const raw = localStorage.getItem(memberLedgerStorageKey());
-      if (raw) {
-        const data = JSON.parse(raw);
-        if (hydrateFromData(data)) {
-          return true;
-        }
-      }
-    } catch (_) {}
-
-    return false;
+    }
+  } catch (err) {
+    console.warn("Member ledger server load failed:", err);
   }
+
+  try {
+    const raw = localStorage.getItem(memberLedgerStorageKey());
+    if (raw) {
+      const localData = JSON.parse(raw);
+      if (hydrateFromData(localData)) {
+        return true;
+      }
+    }
+  } catch (_) {}
+
+  return false;
+}
 
   
   async function loadCurrentPgName(){

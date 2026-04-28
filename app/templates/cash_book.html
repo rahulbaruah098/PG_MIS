@@ -3167,7 +3167,11 @@ cbPaymentsTab.addEventListener("click", ()=>{
     ensureCashbookHistoryBox();
     const cur = document.getElementById('cbCurrentPeriodText');
     const cards = document.getElementById('cbHistoryCards');
-    if(cur) cur.textContent = `Current view: ${cbMonthLabel(cbPeriodMonth, cbPeriodYear)}`;
+   if(cur){
+  cur.textContent = (cbPeriodMonth && cbPeriodYear)
+    ? `Current view: ${cbMonthLabel(cbPeriodMonth, cbPeriodYear)}`
+    : 'No month selected';
+}
     if(!cards) return;
     if(!Array.isArray(cbHistory) || !cbHistory.length){
       cards.innerHTML = '<span style="font-size:13px;color:#64748b">No saved months yet.</span>';
