@@ -2844,7 +2844,7 @@ entries: st.allRows
   const st = sectionKey === "pg" ? S.pg : S.m;
   const bodyId = sectionKey === "pg" ? "llBodyPg" : "llBodyM";
 
-  st.memberTables = data.member_tables || {};
+  st.memberTables = (data && typeof data.member_tables === "object" && data.member_tables) ? data.member_tables : {};
   st.signatures = { member: "", udyog: "" };
 
   $(id(p,"PgName")).value = data.pg_name || "";
@@ -2856,6 +2856,13 @@ entries: st.allRows
 
   const key = getCurrentMemberKey(sectionKey);
   st.currentMemberKey = key;
+
+  if (key === "__no_member__") {
+  const firstKey = Object.keys(st.memberTables || {})[0];
+  if (firstKey) {
+    st.currentMemberKey = firstKey;
+  }
+}
 
   if (!st.memberTables[key]) {
     st.memberTables[key] = {
@@ -3073,7 +3080,8 @@ entries: st.allRows
         member_code: pgData.member_code || "",
         details: pgData.details || "",
         signatures: pgData.signatures || { member:"", udyog:"" },
-        entries: pgData.entries || []
+        entries: pgData.entries || [],
+        member_tables: pgData.member_tables || {}
       });
 
       if (mData) restoreSection("m", {
@@ -3083,7 +3091,8 @@ entries: st.allRows
         member_code: mData.member_code || "",
         details: mData.details || "",
         signatures: mData.signatures || { member:"", udyog:"" },
-        entries: mData.entries || []
+        entries: mData.entries || [],
+        member_tables: mData.member_tables || {}
       });
 
       hydrateCurrentPgName();
@@ -3497,6 +3506,7 @@ function getCurrentMemberKey(sectionKey){
   const code = String(codeEl?.value || "").trim();
   const name = String(nameEl?.value || "").trim();
 
+  if (code && name) return `${code}__${name}`;
   return code || name || "__no_member__";
 }
 
@@ -3555,25 +3565,25 @@ function applyMemberPartition(sectionKey, newKey){
   const st = ensureMemberTables(sectionKey);
   const bodyId = sectionKey === "pg" ? "llBodyPg" : "llBodyM";
 
+  // Save the currently visible member rows before switching
   saveActiveMemberRows(sectionKey);
 
   st.currentMemberKey = newKey || "__no_member__";
 
-  const saved = st.memberTables[st.currentMemberKey] || {};
-  const rows = saved.entries || [];
-
+  const saved = st.memberTables[st.currentMemberKey] || {
+    entries: [],
+    details: "",
+    txn_date: "",
+    signatures: { member: "", udyog: "" }
+  };
 
   $(id(st.prefix,"Details")).value = saved.details || "";
   $(id(st.prefix,"TxnDate")).value = saved.txn_date || "";
 
-  clearSignatureCanvas(sectionKey, "member");
-clearSignatureCanvas(sectionKey, "udyog");
-
-renderSignatureUI(sectionKey, "member");
-renderSignatureUI(sectionKey, "udyog");
-
   st.allRows = [];
   $(bodyId).innerHTML = "";
+
+  const rows = Array.isArray(saved.entries) ? saved.entries : [];
 
   rows.forEach(e => {
     const r = createRow(sectionKey);
@@ -3587,6 +3597,19 @@ renderSignatureUI(sectionKey, "udyog");
     st.allRows.push(r);
     $(bodyId).appendChild(r);
   });
+
+  // If a new member has no saved row yet, show one fresh editable row
+  if (!rows.length && isEditing && st.currentMemberKey !== "__no_member__") {
+    const r = createRow(sectionKey);
+    st.allRows.push(r);
+    $(bodyId).appendChild(r);
+  }
+
+  clearSignatureCanvas(sectionKey, "member");
+  clearSignatureCanvas(sectionKey, "udyog");
+
+  renderSignatureUI(sectionKey, "member");
+  renderSignatureUI(sectionKey, "udyog");
 
   setAllEditable(isEditing);
   recalcTotalsAndVisibility(sectionKey, true);
