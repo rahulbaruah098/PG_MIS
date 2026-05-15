@@ -1,0 +1,750 @@
+{% extends "base.html" %}
+
+{% block title %}
+  PG Member Details
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .pg-members-page{
+    width:100%;
+    max-width:80rem;
+    margin:18px auto 28px;
+    padding:0 24px;
+    color:#0b2a23;
+  }
+
+  .members-shell{
+    border-radius:22px;
+    border:1.5px solid rgba(191,230,210,0.95);
+    background:rgba(255,255,255,0.94);
+    box-shadow:0 22px 60px rgba(6,95,70,0.14);
+    overflow:hidden;
+  }
+
+  .members-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    padding:22px 24px;
+    border-bottom:1px solid rgba(216,239,227,0.95);
+    background:
+      radial-gradient(120% 120% at 10% 0%, rgba(15,118,110,0.10), transparent 55%),
+      rgba(255,255,255,0.94);
+  }
+
+  .members-kicker{
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:#0f766e;
+    margin-bottom:6px;
+  }
+
+  .members-title{
+    font-size:28px;
+    line-height:1.1;
+    font-weight:900;
+    color:#0b2a23;
+    margin:0;
+  }
+
+  .members-subtitle{
+    margin-top:8px;
+    color:#4c7468;
+    font-size:14px;
+    font-weight:700;
+  }
+
+  .members-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .btnlink{
+    font-family:inherit;
+line-height:1.2;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:14px;
+    padding:10px 14px;
+    font-weight:900;
+    border:1px solid rgba(191,230,210,0.95);
+    background:rgba(255,255,255,0.88);
+    color:#0b2a23;
+    text-decoration:none;
+    box-shadow:0 10px 22px rgba(6,95,70,.10);
+    transition:all .25s ease;
+    cursor:pointer;
+  }
+
+  .btnlink.primary{
+    background:rgba(15,118,110,.10);
+    border-color:rgba(15,118,110,.25);
+    color:#0f766e;
+  }
+
+  .btnlink:hover{
+    transform:translateY(-1px);
+    box-shadow:0 14px 30px rgba(6,95,70,.16);
+  }
+
+  .btnlink.disabled{
+    opacity:.45;
+    pointer-events:none;
+    cursor:not-allowed;
+  }
+
+  .members-body{
+    padding:22px 24px 24px;
+  }
+
+  .pg-info-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:12px;
+    margin-bottom:18px;
+  }
+
+  .pg-info-card{
+    border:1px solid rgba(191,230,210,0.95);
+    border-radius:16px;
+    background:#f8fffb;
+    padding:13px 14px;
+  }
+
+  .pg-info-label{
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#0f766e;
+    margin-bottom:6px;
+  }
+
+  .pg-info-value{
+    font-size:14px;
+    font-weight:800;
+    color:#0b2a23;
+    word-break:break-word;
+  }
+
+  .members-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+  }
+
+  .members-search-form{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:1 1 520px;
+    min-width:260px;
+  }
+
+  .members-search-input{
+    width:100%;
+    border:1px solid rgba(191,230,210,0.95);
+    background:rgba(255,255,255,0.94);
+    color:#0b2a23;
+    border-radius:14px;
+    padding:11px 13px;
+    font-size:14px;
+    font-weight:700;
+    outline:none;
+    box-shadow:0 8px 18px rgba(6,95,70,0.07);
+  }
+
+  .members-search-input:focus{
+    border-color:rgba(15,118,110,0.55);
+    box-shadow:0 0 0 4px rgba(15,118,110,0.12);
+  }
+
+  .count-chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid rgba(191,230,210,0.95);
+    background:#f1fbf5;
+    color:#0f766e;
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:13px;
+    font-weight:900;
+    white-space:nowrap;
+  }
+
+  .pagination-top-select{
+    display:flex;
+    justify-content:flex-end;
+    margin:0 0 16px;
+  }
+
+  .pagination-top-select form{
+    margin:0;
+  }
+
+  .pagination-select{
+    border:1px solid rgba(191,230,210,0.95);
+    background:rgba(255,255,255,0.94);
+    color:#0b2a23;
+    border-radius:12px;
+    padding:9px 11px;
+    font-size:13px;
+    font-weight:800;
+    outline:none;
+    box-shadow:0 8px 18px rgba(6,95,70,0.07);
+  }
+
+  .members-table-wrap{
+    width:100%;
+    overflow-x:auto;
+    border:1px solid rgba(191,230,210,0.95);
+    border-radius:16px;
+    background:#fff;
+  }
+
+  .members-table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:980px;
+    font-size:13px;
+  }
+
+  .members-table th{
+    text-align:left;
+    padding:13px 14px;
+    background:#e9f8f0;
+    color:#0b2a23;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    border-bottom:1px solid rgba(191,230,210,0.95);
+    white-space:nowrap;
+  }
+
+  .members-table td{
+    padding:13px 14px;
+    border-bottom:1px solid rgba(216,239,227,0.95);
+    color:#2f5b4f;
+    vertical-align:top;
+  }
+
+  .members-table tr:last-child td{
+    border-bottom:0;
+  }
+
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    padding:5px 9px;
+    font-size:12px;
+    font-weight:900;
+    border:1px solid rgba(191,230,210,0.95);
+    background:#f1fbf5;
+    color:#0f766e;
+    white-space:nowrap;
+  }
+
+  .badge.no{
+    background:#fff;
+    color:#5b8376;
+  }
+
+  .empty-state{
+    padding:18px;
+    color:#5b8376;
+    background:#f8fffb;
+    border:1px dashed rgba(191,230,210,0.95);
+    border-radius:16px;
+    font-size:14px;
+    font-weight:800;
+  }
+
+  .pagination-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+    margin:16px 0 0;
+  }
+
+  .pagination-info{
+    color:#4c7468;
+    font-size:13px;
+    font-weight:800;
+  }
+
+  .pagination-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  @media (max-width:1024px){
+    .pg-info-grid{
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width:768px){
+    .pg-members-page{
+      padding:0 14px;
+      margin-top:14px;
+    }
+
+    .members-header,
+    .members-body{
+      padding:18px 14px;
+    }
+
+    .members-title{
+      font-size:22px;
+    }
+
+    .members-actions{
+      width:100%;
+    }
+
+    .members-actions .btnlink{
+      width:100%;
+    }
+
+    .pg-info-grid{
+      grid-template-columns:1fr;
+    }
+
+    .members-toolbar{
+      align-items:stretch;
+    }
+
+    .members-search-form{
+      flex-direction:column;
+      align-items:stretch;
+      min-width:100%;
+    }
+
+    .members-search-form .btnlink,
+    .count-chip{
+      width:100%;
+    }
+
+    .pagination-top-select{
+      justify-content:flex-start;
+      width:100%;
+    }
+
+    .pagination-top-select form,
+    .pagination-top-select .pagination-select{
+      width:100%;
+    }
+
+    .members-table-wrap{
+      width:100%;
+      max-width:100%;
+      overflow-x:auto;
+      overflow-y:visible;
+      border:0;
+      border-radius:0;
+      background:transparent;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch;
+      padding:0 0 12px;
+    }
+
+    .members-table{
+      display:block;
+      width:100%;
+      min-width:0;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:13px;
+    }
+
+    .members-table thead{
+      display:none;
+    }
+
+    .members-table tbody{
+      display:flex;
+      width:100%;
+      max-width:100%;
+      gap:14px;
+      overflow:visible;
+    }
+
+    .members-table tr{
+      display:flex;
+      flex-direction:column;
+      flex:0 0 100%;
+      width:100%;
+      min-width:100%;
+      max-width:100%;
+      scroll-snap-align:start;
+      border:1.5px solid rgba(191,230,210,0.95);
+      border-radius:18px;
+      background:rgba(255,255,255,0.96);
+      box-shadow:0 14px 30px rgba(6,95,70,0.12);
+      overflow:hidden;
+      box-sizing:border-box;
+    }
+
+    .members-table td{
+      display:grid;
+      grid-template-columns:minmax(112px, 38%) minmax(0, 1fr);
+      align-items:start;
+      gap:12px;
+      width:100%;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(216,239,227,0.95);
+      color:#2f5b4f;
+      white-space:normal;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+      box-sizing:border-box;
+      text-align:right;
+    }
+
+    .members-table td:last-child{
+      border-bottom:0;
+    }
+
+    .members-table td::before{
+      content:attr(data-label);
+      color:#0b2a23;
+      font-size:11px;
+      font-weight:900;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      text-align:left;
+      white-space:normal;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+    }
+
+    .members-table td b{
+      color:#0b2a23;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+    }
+
+    .pagination-bar{
+      align-items:stretch;
+    }
+
+    .pagination-actions{
+      width:100%;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+    }
+
+    .pagination-actions .btnlink{
+      width:100%;
+    }
+
+    .pagination-info{
+      width:100%;
+      text-align:center;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set display_sector = current_sector or pg.sector or "" %}
+
+{% if display_sector == "Agri" %}
+  {% set member_search_placeholder = "Search by member name, SHG name, contact, category, crop or FFS module" %}
+{% elif display_sector == "ARDD" %}
+  {% set member_search_placeholder = "Search by member name, SHG name, contact, category, ARDD activity or ARDD unit" %}
+{% elif display_sector == "Fishery" %}
+  {% set member_search_placeholder = "Search by member name, SHG name, contact, category or fishery activity" %}
+{% else %}
+  {% set member_search_placeholder = "Search by member name, SHG name, contact or category" %}
+{% endif %}
+
+<section class="pg-members-page">
+  <div class="members-shell">
+    <div class="members-header">
+      <div>
+        <div class="members-kicker">PG Member Details</div>
+
+        <h1 class="members-title">
+          {{ pg.name or pg.pg_name or "Selected PG" }}
+        </h1>
+
+        <div class="members-subtitle">
+          View active member records mapped under this Producer Group.
+        </div>
+      </div>
+
+      <div class="members-actions">
+  <button
+    type="button"
+    class="btnlink primary"
+    onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='{{ url_for('reports.state_dashboard') }}'; }"
+  >
+    ← Back
+  </button>
+
+  <a class="btnlink" href="{{ url_for('reports.state_dashboard') }}">
+    Back to State Dashboard
+  </a>
+</div>
+    </div>
+
+    <div class="members-body">
+      <div class="pg-info-grid">
+        <div class="pg-info-card">
+          <div class="pg-info-label">Sector</div>
+          <div class="pg-info-value">{{ pg.sector or "-" }}</div>
+        </div>
+
+        <div class="pg-info-card">
+          <div class="pg-info-label">District</div>
+          <div class="pg-info-value">{{ pg.District or "-" }}</div>
+        </div>
+
+        <div class="pg-info-card">
+          <div class="pg-info-label">Block</div>
+          <div class="pg-info-value">{{ pg.Block or "-" }}</div>
+        </div>
+
+        <div class="pg-info-card">
+          <div class="pg-info-label">Village</div>
+          <div class="pg-info-value">{{ pg.Village or "-" }}</div>
+        </div>
+
+        <div class="pg-info-card">
+          <div class="pg-info-label">Gram Panchayat</div>
+          <div class="pg-info-value">{{ pg["Gram Panchayat"] or "-" }}</div>
+        </div>
+
+        <div class="pg-info-card">
+          <div class="pg-info-label">Total Active Members</div>
+          <div class="pg-info-value">{{ members|length }}</div>
+        </div>
+      </div>
+
+      <div class="members-toolbar">
+        <form class="members-search-form" method="GET" action="{{ url_for('reports.state_dashboard_pg_members', pg_id=pg._id) }}">
+          <input
+            class="members-search-input"
+            type="search"
+            name="q"
+            value="{{ search_query or '' }}"
+            placeholder="{{ member_search_placeholder }}"
+            autocomplete="off"
+          >
+
+          <button class="btnlink primary" type="submit">Search</button>
+
+          {% if search_query %}
+            <a class="btnlink" href="{{ url_for('reports.state_dashboard_pg_members', pg_id=pg._id) }}">
+              Clear Search
+            </a>
+          {% endif %}
+        </form>
+
+        <div class="count-chip" id="memberTotalChip">
+          Total Members: {{ members|length }}
+        </div>
+      </div>
+
+      {% if members %}
+        <div class="pagination-top-select">
+          <form>
+            <select class="pagination-select" id="memberPerPageSelect" aria-label="Members per page">
+              <option value="10" selected>10 / page</option>
+              <option value="25">25 / page</option>
+              <option value="50">50 / page</option>
+              <option value="100">100 / page</option>
+            </select>
+          </form>
+        </div>
+
+        <div class="members-table-wrap">
+          <table class="members-table" id="membersPaginatedTable">
+            <thead>
+              <tr>
+                <th>Sl. No.</th>
+                <th>Member Name</th>
+                <th>SHG Name</th>
+                <th>Category</th>
+                <th>Contact</th>
+                <th>Lakhpati Didi</th>
+
+                {% if display_sector == "Agri" %}
+                  <th>Agri Crop</th>
+                  <th>FFS Module</th>
+                {% elif display_sector == "ARDD" %}
+                  <th>ARDD Activity</th>
+                  <th>ARDD Unit</th>
+                {% elif display_sector == "Fishery" %}
+                  <th>Fishery Activity</th>
+                {% endif %}
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for member in members %}
+                <tr class="member-row">
+                  <td data-label="Sl. No." class="member-sl-no"><b>{{ loop.index }}</b></td>
+                  <td data-label="Member Name"><b>{{ member.name or "-" }}</b></td>
+                  <td data-label="SHG Name">{{ member.shg_name or "-" }}</td>
+                  <td data-label="Category">{{ member.category or "-" }}</td>
+                  <td data-label="Contact">{{ member.contact or "-" }}</td>
+                  <td data-label="Lakhpati Didi">
+                    {% if member.lakh_pati_didi %}
+                      <span class="badge">Yes</span>
+                    {% else %}
+                      <span class="badge no">No</span>
+                    {% endif %}
+                  </td>
+
+                  {% if display_sector == "Agri" %}
+                    <td data-label="Agri Crop">{{ member.agri_crop or "-" }}</td>
+                    <td data-label="FFS Module">{{ member.agri_ffs_module or "-" }}</td>
+                  {% elif display_sector == "ARDD" %}
+                    <td data-label="ARDD Activity">{{ member.ardd_activity or "-" }}</td>
+                    <td data-label="ARDD Unit">{{ member.ardd_unit or "-" }}</td>
+                  {% elif display_sector == "Fishery" %}
+                    <td data-label="Fishery Activity">{{ member.fishery_activity or "-" }}</td>
+                  {% endif %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination-bar" id="memberPaginationBar">
+          <div class="pagination-info" id="memberPaginationInfo">
+            Showing 1 - {{ members|length if members|length < 10 else 10 }}
+            of {{ members|length }}
+            · Page 1 of {{ ((members|length + 9) // 10) if members|length else 1 }}
+          </div>
+
+          <div class="pagination-actions">
+            <button class="btnlink disabled" type="button" id="memberPrevBtn">
+              Previous
+            </button>
+
+            <button class="btnlink primary" type="button" id="memberNextBtn">
+              Next
+            </button>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          {% if search_query %}
+            No member details found for "{{ search_query }}".
+          {% else %}
+            No active members found for this PG.
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<script>
+  (function(){
+    const table = document.getElementById('membersPaginatedTable');
+    const perPageSelect = document.getElementById('memberPerPageSelect');
+    const paginationInfo = document.getElementById('memberPaginationInfo');
+    const prevBtn = document.getElementById('memberPrevBtn');
+    const nextBtn = document.getElementById('memberNextBtn');
+
+    if (!table || !perPageSelect || !paginationInfo || !prevBtn || !nextBtn) {
+      return;
+    }
+
+    const rows = Array.from(table.querySelectorAll('tbody tr.member-row'));
+    const totalRows = rows.length;
+    let currentPage = 1;
+    let perPage = parseInt(perPageSelect.value || '10', 10);
+
+    function totalPages(){
+      return Math.max(1, Math.ceil(totalRows / perPage));
+    }
+
+    function setButtonState(){
+      const pages = totalPages();
+
+      if (currentPage <= 1) {
+        prevBtn.classList.add('disabled');
+      } else {
+        prevBtn.classList.remove('disabled');
+      }
+
+      if (currentPage >= pages) {
+        nextBtn.classList.add('disabled');
+      } else {
+        nextBtn.classList.remove('disabled');
+      }
+    }
+
+    function renderPagination(){
+      const pages = totalPages();
+
+      if (currentPage > pages) {
+        currentPage = pages;
+      }
+
+      const startIndex = (currentPage - 1) * perPage;
+      const endIndex = Math.min(startIndex + perPage, totalRows);
+
+      rows.forEach((row, index) => {
+        const shouldShow = index >= startIndex && index < endIndex;
+        row.style.display = shouldShow ? '' : 'none';
+
+        if (shouldShow) {
+          const slNoCell = row.querySelector('.member-sl-no b');
+          if (slNoCell) {
+            slNoCell.textContent = String(index + 1);
+          }
+        }
+      });
+
+      paginationInfo.textContent =
+        `Showing ${totalRows ? startIndex + 1 : 0} - ${endIndex} of ${totalRows} · Page ${currentPage} of ${pages}`;
+
+      setButtonState();
+    }
+
+    perPageSelect.addEventListener('change', function(){
+      perPage = parseInt(this.value || '10', 10);
+      currentPage = 1;
+      renderPagination();
+    });
+
+    prevBtn.addEventListener('click', function(){
+      if (currentPage <= 1) return;
+      currentPage -= 1;
+      renderPagination();
+    });
+
+    nextBtn.addEventListener('click', function(){
+      if (currentPage >= totalPages()) return;
+      currentPage += 1;
+      renderPagination();
+    });
+
+    renderPagination();
+  })();
+</script>
+{% endblock %}

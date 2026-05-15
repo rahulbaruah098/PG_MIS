@@ -522,6 +522,109 @@
       font-size:14px;
     }
 
+    .table-action-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  padding:8px 11px;
+  font-size:12px;
+  font-weight:900;
+  color:#0f766e;
+  background:rgba(15,118,110,.10);
+  border:1px solid rgba(15,118,110,.25);
+  text-decoration:none;
+  white-space:nowrap;
+  box-shadow:0 8px 18px rgba(6,95,70,.08);
+  transition:all .22s ease;
+}
+
+.table-action-link:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 24px rgba(6,95,70,.14);
+}
+
+    .detail-toolbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+
+.detail-search-form{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:1 1 420px;
+  min-width:260px;
+}
+
+.detail-search-input{
+  width:100%;
+  border:1px solid rgba(191,230,210,0.95);
+  background:rgba(255,255,255,0.94);
+  color:#0b2a23;
+  border-radius:14px;
+  padding:11px 13px;
+  font-size:14px;
+  font-weight:600;
+  outline:none;
+  box-shadow:0 8px 18px rgba(6,95,70,0.07);
+}
+
+.detail-search-input:focus{
+  border-color:rgba(15,118,110,0.55);
+  box-shadow:0 0 0 4px rgba(15,118,110,0.12);
+}
+
+.detail-result-meta{
+  color:#4c7468;
+  font-size:13px;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+.detail-footer-actions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+
+.view-more-note{
+  color:#4c7468;
+  font-size:13px;
+  font-weight:700;
+}
+
+@media (max-width:768px){
+  .detail-toolbar{
+    align-items:stretch;
+  }
+
+  .detail-search-form{
+    flex-direction:column;
+    align-items:stretch;
+    min-width:100%;
+  }
+
+  .detail-result-meta{
+    white-space:normal;
+  }
+
+  .detail-footer-actions{
+    align-items:stretch;
+  }
+
+  .detail-footer-actions .btnlink{
+    width:100%;
+  }
+}
+
     .gridA{
       display:grid;
       grid-template-columns: 2.3fr 1.2fr;
@@ -821,7 +924,7 @@
         <div class="bd">
           <div class="miniKpiGrid">
             {% for item in sector_summary %}
-              <a class="kpi kpi-link p-4" href="{{ item.detail_url }}">
+<a class="kpi kpi-link p-4 js-state-detail-link" href="{{ item.detail_url }}">
                 <div class="t">{{ item.label }} Based PGs</div>
                 <div class="v">{{ item.count or 0 }}</div>
                 <div class="s">PG details</div>
@@ -831,119 +934,188 @@
         </div>
       </div>
 
-      <div class="cardx card-border-soft fade-in">
-        <div class="hdr">
-          <div>
-            <div class="text-sm font-extrabold text-slate-900">Agri FFS Module Coverage</div>
-            <div class="text-xs muted">Each count shows unique PGs having at least one member mapped to that FFS module</div>
-          </div>
-          <span class="chip">FFS KPIs</span>
-        </div>
-        <div class="bd">
-          <div class="miniKpiGrid">
-            {% for item in ffs_summary %}
-              <a class="kpi kpi-link p-4" href="{{ item.detail_url }}">
-                <div class="t">{{ item.label }}</div>
-                <div class="v">{{ item.count or 0 }}</div>
-                <div class="s">PG details</div>
-              </a>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
 
-      {% if selected_detail %}
-      <div class="cardx card-border-soft fade-in" id="stateDetailPanel">
-        <div class="hdr">
-          <div>
-            <div class="text-sm font-extrabold text-slate-900">{{ selected_detail.title }}</div>
-            <div class="text-xs muted">
-              {% if selected_detail.type == "cadres" %}
-                Cadre-wise assigned PG count and assigned PG names
-              {% else %}
-                PG-wise village, block and district details
-              {% endif %}
-            </div>
-          </div>
-          <a class="btnlink" href="{{ url_for('reports.state_dashboard') }}">Clear Details</a>
-        </div>
-        <div class="bd">
+      <div class="cardx card-border-soft fade-in" id="agriFfsCoverageSection">
+  <div class="hdr">
+    <div>
+      <div class="text-sm font-extrabold text-slate-900">Agri FFS Module Coverage</div>
+      <div class="text-xs muted">Each count shows unique PGs having at least one member mapped to that FFS module</div>
+    </div>
+    <span class="chip">FFS KPIs</span>
+  </div>
+  <div class="bd">
+    <div class="miniKpiGrid">
+      {% for item in ffs_summary %}
+        <a class="kpi kpi-link p-4 js-state-detail-link" href="{{ item.detail_url }}">
+          <div class="t">{{ item.label }}</div>
+          <div class="v">{{ item.count or 0 }}</div>
+          <div class="s">PG details</div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+      
+
+<div id="stateDetailPanelMount">
+{% if selected_detail %}
+  <div class="cardx card-border-soft fade-in" id="stateDetailPanel">
+    <div class="hdr">
+      <div>
+        <div class="text-sm font-extrabold text-slate-900">{{ selected_detail.title }}</div>
+        <div class="text-xs muted">
           {% if selected_detail.type == "cadres" %}
-            {% if selected_detail.rows %}
-              <div class="detail-table-wrap">
-                <table class="detail-table">
-                  <thead>
-                    <tr>
-                      <th>Cadre Name</th>
-                      <th>Username</th>
-                      <th>Contact</th>
-                      <th>Assigned PG Count</th>
-                      <th>Assigned PGs</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for row in selected_detail.rows %}
-                      <tr>
-                        <td>{{ row.name }}</td>
-                        <td>{{ row.username }}</td>
-                        <td>{{ row.contact }}</td>
-                        <td><b>{{ row.assigned_count }}</b></td>
-                        <td>
-                          {% if row.assigned_pgs %}
-                            <div class="pg-pill-list">
-                              {% for pg in row.assigned_pgs %}
-                                <span class="pg-pill">{{ pg.name }}</span>
-                              {% endfor %}
-                            </div>
-                          {% else %}
-                            -
-                          {% endif %}
-                        </td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            {% else %}
-              <div class="empty-state">No cadres found in this scope.</div>
-            {% endif %}
+            Cadre-wise assigned PG count and assigned PG names
           {% else %}
-            {% if selected_detail.rows %}
-              <div class="detail-table-wrap">
-                <table class="detail-table">
-                  <thead>
-                    <tr>
-                      <th>PG Name</th>
-                      <th>Sector</th>
-                      <th>District</th>
-                      <th>Block</th>
-                      <th>Village</th>
-                      <th>Gram Panchayat</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for row in selected_detail.rows %}
-                      <tr>
-                        <td><b>{{ row.name }}</b></td>
-                        <td>{{ row.sector }}</td>
-                        <td>{{ row.district }}</td>
-                        <td>{{ row.block }}</td>
-                        <td>{{ row.village }}</td>
-                        <td>{{ row.gp }}</td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            {% else %}
-              <div class="empty-state">No PG details found for this KPI in the current scope.</div>
-            {% endif %}
+            PG-wise village, block and district details
           {% endif %}
         </div>
       </div>
+
+      <a class="btnlink js-state-detail-clear" href="{{ url_for('reports.state_dashboard') }}">Clear Details</a>
+    </div>
+
+    <div class="bd">
+      <div class="detail-toolbar">
+        <form class="detail-search-form js-state-detail-search-form" method="GET" action="{{ url_for('reports.state_dashboard') }}">
+          <input type="hidden" name="detail" value="{{ selected_detail.detail_key or request.args.get('detail') or '' }}">
+
+          <input
+            class="detail-search-input"
+            type="search"
+            name="q"
+            value="{{ selected_detail.search_query or '' }}"
+            placeholder="Search by PG name, sector, district, block, village or gram panchayat"
+            autocomplete="off"
+          >
+
+          <button class="btnlink primary" type="submit">Search</button>
+
+          {% if selected_detail.search_query %}
+            <a class="btnlink js-state-detail-link" href="{{ url_for('reports.state_dashboard', detail=selected_detail.detail_key or request.args.get('detail')) }}">
+              Clear Search
+            </a>
+          {% endif %}
+        </form>
+
+        <div class="detail-result-meta">
+          Showing {{ selected_detail.shown_count or (selected_detail.rows|length) }} of {{ selected_detail.total_count or (selected_detail.rows|length) }}
+        </div>
+      </div>
+
+      {% if selected_detail.type == "cadres" %}
+        {% if selected_detail.rows %}
+          <div class="detail-table-wrap">
+            <table class="detail-table">
+              <thead>
+                <tr>
+                  <th>Cadre Name</th>
+                  <th>Username</th>
+                  <th>Contact</th>
+                  <th>Assigned PG Count</th>
+                  <th>Assigned PGs</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in selected_detail.rows %}
+                  <tr>
+                    <td>{{ row.name }}</td>
+                    <td>{{ row.username }}</td>
+                    <td>{{ row.contact }}</td>
+                    <td><b>{{ row.assigned_count }}</b></td>
+                    <td>
+                      {% if row.assigned_pgs %}
+                        <div class="pg-pill-list">
+                          {% for pg in row.assigned_pgs %}
+                            <span class="pg-pill">{{ pg.name }}</span>
+                          {% endfor %}
+                        </div>
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state">
+            {% if selected_detail.search_query %}
+              No cadres found for "{{ selected_detail.search_query }}".
+            {% else %}
+              No cadres found in this scope.
+            {% endif %}
+          </div>
+        {% endif %}
+      {% else %}
+        {% if selected_detail.rows %}
+          <div class="detail-table-wrap">
+            <table class="detail-table">
+              <thead>
+               <tr>
+  <th>PG Name</th>
+  <th>Sector</th>
+  <th>District</th>
+  <th>Block</th>
+  <th>Village</th>
+  <th>Gram Panchayat</th>
+  <th>Action</th>
+</tr>
+              </thead>
+              <tbody>
+                {% for row in selected_detail.rows %}
+                 <tr>
+  <td><b>{{ row.name }}</b></td>
+  <td>{{ row.sector }}</td>
+  <td>{{ row.district }}</td>
+  <td>{{ row.block }}</td>
+  <td>{{ row.village }}</td>
+  <td>{{ row.gp }}</td>
+  <td>
+    {% if row.member_details_url %}
+      <a class="table-action-link" href="{{ row.member_details_url }}">
+        View Details
+      </a>
+    {% else %}
+      -
+    {% endif %}
+  </td>
+</tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state">
+            {% if selected_detail.search_query %}
+              No PG details found for "{{ selected_detail.search_query }}" in this KPI.
+            {% else %}
+              No PG details found for this KPI in the current scope.
+            {% endif %}
+          </div>
+        {% endif %}
       {% endif %}
 
-      <!-- Charts Row -->
+      {% if selected_detail.has_more or (selected_detail.total_count or 0) > (selected_detail.shown_count or 0) %}
+        <div class="detail-footer-actions">
+          <div class="view-more-note">
+            Only preview data is shown here. Open full page to view all matching records.
+          </div>
+
+          <a class="btnlink primary" href="{{ selected_detail.full_url }}">
+            View More
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+</div>
+
+
+
+<!-- Charts Row -->
       <div class="gridA">
         <div class="cardx card-border-soft fade-in">
           <div class="hdr">
@@ -1288,6 +1460,154 @@
       makeBar('shgTopDistricts', shgLabels, shgValues, true);
     }
 
+    function scrollToStateDetailTarget(){
+      const detailPanel = document.getElementById('stateDetailPanel');
+      const detailMount = document.getElementById('stateDetailPanelMount');
+      const ffsSection = document.getElementById('agriFfsCoverageSection');
+
+      const target = detailPanel || detailMount || ffsSection;
+      if (!target) return;
+
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+
+        async function loadStateDetailWithoutRefresh(url, pushState){
+      const mount = document.getElementById('stateDetailPanelMount');
+
+      if (!mount) {
+        return;
+      }
+
+      const oldHtml = mount.innerHTML;
+
+      mount.innerHTML = `
+        <div class="cardx card-border-soft fade-in" id="stateDetailPanel">
+          <div class="bd">
+            <div class="empty-state">Loading details...</div>
+          </div>
+        </div>
+      `;
+
+      requestAnimationFrame(() => {
+        scrollToStateDetailTarget();
+      });
+
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Details request failed');
+        }
+
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const newMount = doc.getElementById('stateDetailPanelMount');
+
+        if (!newMount) {
+          throw new Error('Detail panel not found in response');
+        }
+
+        const newHtml = (newMount.innerHTML || '').trim();
+
+        if (!newHtml) {
+          mount.innerHTML = `
+            <div class="cardx card-border-soft fade-in" id="stateDetailPanel">
+              <div class="bd">
+                <div class="empty-state">No PG details found for this selection.</div>
+              </div>
+            </div>
+          `;
+        } else {
+          mount.innerHTML = newHtml;
+        }
+
+        if (pushState) {
+          window.history.pushState({ stateDashboardDetail: true }, '', url);
+        }
+
+        requestAnimationFrame(() => {
+          scrollToStateDetailTarget();
+        });
+
+      } catch (error) {
+        console.error('State detail AJAX failed:', error);
+
+        mount.innerHTML = oldHtml || `
+          <div class="cardx card-border-soft fade-in" id="stateDetailPanel">
+            <div class="bd">
+              <div class="empty-state">Unable to load details without refresh. Please try again.</div>
+            </div>
+          </div>
+        `;
+
+        requestAnimationFrame(() => {
+          scrollToStateDetailTarget();
+        });
+      }
+    }
+
+    document.addEventListener('submit', function(event){
+      const form = event.target.closest('.js-state-detail-search-form');
+
+      if (!form) return;
+
+      event.preventDefault();
+
+      const formData = new FormData(form);
+      const params = new URLSearchParams();
+
+      for (const [key, value] of formData.entries()) {
+        const cleanValue = String(value || '').trim();
+
+        if (cleanValue) {
+          params.set(key, cleanValue);
+        }
+      }
+
+      const url = form.action + (params.toString() ? '?' + params.toString() : '');
+
+      loadStateDetailWithoutRefresh(url, true);
+    });
+
+       document.addEventListener('click', function(event){
+      const link = event.target.closest('.js-state-detail-link, .js-state-detail-clear');
+
+      if (!link) return;
+
+      if (
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        event.altKey ||
+        link.target === '_blank'
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const url = link.getAttribute('href');
+
+      if (!url) return;
+
+      loadStateDetailWithoutRefresh(url, true);
+    });
+
+    window.addEventListener('popstate', function(){
+      loadStateDetailWithoutRefresh(window.location.href, false);
+    });
+
     document.addEventListener('DOMContentLoaded', async function(){
       try { document.documentElement.classList.remove('no-js'); } catch(e){}
       __closeStateGate();
@@ -1296,6 +1616,10 @@
       __openStateGate();
 
       initStateCharts();
+
+      if (document.getElementById('stateDetailPanel')) {
+        setTimeout(scrollToStateDetailTarget, 120);
+      }
     });
   })();
 </script>

@@ -1,0 +1,672 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {{ selected_detail.title if selected_detail else "Dashboard Details" }}
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .state-detail-page{
+    width:100%;
+    max-width:80rem;
+    margin:18px auto 28px;
+    padding:0 24px;
+    color:#0b2a23;
+  }
+
+  .detail-shell{
+    border-radius:22px;
+    border:1.5px solid rgba(191,230,210,0.95);
+    background:rgba(255,255,255,0.94);
+    box-shadow:0 22px 60px rgba(6,95,70,0.14);
+    overflow:hidden;
+  }
+
+  .detail-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    padding:22px 24px;
+    border-bottom:1px solid rgba(216,239,227,0.95);
+    background:
+      radial-gradient(120% 120% at 10% 0%, rgba(15,118,110,0.10), transparent 55%),
+      rgba(255,255,255,0.94);
+  }
+
+  .detail-kicker{
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:#0f766e;
+    margin-bottom:6px;
+  }
+
+  .detail-title{
+    font-size:28px;
+    line-height:1.1;
+    font-weight:900;
+    color:#0b2a23;
+    margin:0;
+  }
+
+  .detail-subtitle{
+    margin-top:8px;
+    color:#4c7468;
+    font-size:14px;
+    font-weight:600;
+  }
+
+  .detail-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .btnlink{
+    font-family:inherit;
+line-height:1.2;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:14px;
+    padding:10px 14px;
+    font-weight:900;
+    border:1px solid rgba(191,230,210,0.95);
+    background:rgba(255,255,255,0.88);
+    color:#0b2a23;
+    text-decoration:none;
+    box-shadow:0 10px 22px rgba(6,95,70,.10);
+    transition:all .25s ease;
+    cursor:pointer;
+  }
+
+  .btnlink.primary{
+    background:rgba(15,118,110,.10);
+    border-color:rgba(15,118,110,.25);
+    color:#0f766e;
+  }
+
+  .btnlink:hover{
+    transform:translateY(-1px);
+    box-shadow:0 14px 30px rgba(6,95,70,.16);
+  }
+
+  .detail-body{
+    padding:22px 24px 24px;
+  }
+
+  .detail-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+  }
+
+  .detail-search-form{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:1 1 460px;
+    min-width:260px;
+  }
+
+  .detail-search-input{
+    width:100%;
+    border:1px solid rgba(191,230,210,0.95);
+    background:rgba(255,255,255,0.94);
+    color:#0b2a23;
+    border-radius:14px;
+    padding:11px 13px;
+    font-size:14px;
+    font-weight:600;
+    outline:none;
+    box-shadow:0 8px 18px rgba(6,95,70,0.07);
+  }
+
+  .detail-search-input:focus{
+    border-color:rgba(15,118,110,0.55);
+    box-shadow:0 0 0 4px rgba(15,118,110,0.12);
+  }
+
+  .detail-count-chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid rgba(191,230,210,0.95);
+    background:#f1fbf5;
+    color:#0f766e;
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:13px;
+    font-weight:900;
+    white-space:nowrap;
+  }
+
+  .detail-table-wrap{
+    width:100%;
+    overflow-x:auto;
+    border:1px solid rgba(191,230,210,0.95);
+    border-radius:16px;
+    background:#fff;
+  }
+
+  .detail-table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:760px;
+    font-size:13px;
+  }
+
+  .detail-table th{
+    text-align:left;
+    padding:13px 14px;
+    background:#e9f8f0;
+    color:#0b2a23;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    border-bottom:1px solid rgba(191,230,210,0.95);
+    white-space:nowrap;
+  }
+
+  .detail-table td{
+    padding:13px 14px;
+    border-bottom:1px solid rgba(216,239,227,0.95);
+    color:#2f5b4f;
+    vertical-align:top;
+  }
+
+  .detail-table tr:last-child td{
+    border-bottom:0;
+  }
+
+  .pg-pill-list{
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+    max-width:620px;
+  }
+
+  .pg-pill{
+    display:inline-flex;
+    align-items:center;
+    border:1px solid rgba(191,230,210,0.95);
+    background:#f1fbf5;
+    color:#0f766e;
+    border-radius:999px;
+    padding:5px 9px;
+    font-size:12px;
+    font-weight:700;
+  }
+
+  .empty-state{
+    padding:18px;
+    color:#5b8376;
+    background:#f8fffb;
+    border:1px dashed rgba(191,230,210,0.95);
+    border-radius:16px;
+    font-size:14px;
+    font-weight:700;
+  }
+
+  .table-action-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  padding:8px 11px;
+  font-size:12px;
+  font-weight:900;
+  color:#0f766e;
+  background:rgba(15,118,110,.10);
+  border:1px solid rgba(15,118,110,.25);
+  text-decoration:none;
+  white-space:nowrap;
+  box-shadow:0 8px 18px rgba(6,95,70,.08);
+  transition:all .22s ease;
+}
+
+.table-action-link:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 24px rgba(6,95,70,.14);
+}
+
+   .pagination-top-select{
+    display:flex;
+    justify-content:flex-end;
+    margin:0 0 16px;
+  }
+
+  .pagination-top-select form{
+    margin:0;
+  }
+
+  .pagination-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+    margin:16px 0 0;
+  }
+
+  .pagination-info{
+    color:#4c7468;
+    font-size:13px;
+    font-weight:800;
+  }
+
+  .pagination-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .pagination-select{
+    border:1px solid rgba(191,230,210,0.95);
+    background:rgba(255,255,255,0.94);
+    color:#0b2a23;
+    border-radius:12px;
+    padding:9px 11px;
+    font-size:13px;
+    font-weight:800;
+    outline:none;
+    box-shadow:0 8px 18px rgba(6,95,70,0.07);
+  }
+
+  .btnlink.disabled{
+    opacity:.45;
+    pointer-events:none;
+    cursor:not-allowed;
+  }
+
+  @media (max-width:768px){
+    .state-detail-page{
+      padding:0 14px;
+      margin-top:14px;
+    }
+
+    .detail-header,
+    .detail-body{
+      padding:18px 14px;
+    }
+
+    .detail-title{
+      font-size:22px;
+    }
+
+    .detail-actions{
+      width:100%;
+    }
+
+    .detail-actions .btnlink{
+      width:100%;
+    }
+
+    .detail-toolbar{
+      align-items:stretch;
+    }
+
+    .detail-search-form{
+      flex-direction:column;
+      align-items:stretch;
+      min-width:100%;
+    }
+
+    .detail-search-form .btnlink{
+      width:100%;
+    }
+
+    .detail-count-chip{
+      width:100%;
+    }
+
+    .detail-table-wrap{
+      width:100%;
+      max-width:100%;
+      overflow-x:auto;
+      overflow-y:visible;
+      border:0;
+      border-radius:0;
+      background:transparent;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch;
+      padding:0 0 12px;
+    }
+
+    .detail-table{
+      display:block;
+      width:100%;
+      min-width:0;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:13px;
+    }
+
+    .detail-table thead{
+      display:none;
+    }
+
+    .detail-table tbody{
+      display:flex;
+      width:100%;
+      max-width:100%;
+      gap:14px;
+      overflow:visible;
+    }
+
+    .detail-table tr{
+      display:flex;
+      flex-direction:column;
+      flex:0 0 100%;
+      width:100%;
+      min-width:100%;
+      max-width:100%;
+      scroll-snap-align:start;
+      border:1.5px solid rgba(191,230,210,0.95);
+      border-radius:18px;
+      background:rgba(255,255,255,0.96);
+      box-shadow:0 14px 30px rgba(6,95,70,0.12);
+      overflow:hidden;
+      box-sizing:border-box;
+    }
+
+    .detail-table td{
+      display:grid;
+      grid-template-columns:minmax(112px, 38%) minmax(0, 1fr);
+      align-items:start;
+      gap:12px;
+      width:100%;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(216,239,227,0.95);
+      color:#2f5b4f;
+      white-space:normal;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+      box-sizing:border-box;
+      text-align:right;
+    }
+
+    .detail-table td:last-child{
+      border-bottom:0;
+    }
+
+    .detail-table td::before{
+      content:attr(data-label);
+      color:#0b2a23;
+      font-size:11px;
+      font-weight:900;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      text-align:left;
+      white-space:normal;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+    }
+
+    .detail-table td b{
+      color:#0b2a23;
+      word-break:break-word;
+      overflow-wrap:anywhere;
+    }
+
+    .pg-pill-list{
+      justify-content:flex-end;
+      max-width:100%;
+      min-width:0;
+    }
+
+    .pg-pill{
+      word-break:break-word;
+      overflow-wrap:anywhere;
+    }
+
+    .pagination-top-select{
+      justify-content:flex-start;
+      width:100%;
+    }
+
+    .pagination-top-select form,
+    .pagination-top-select .pagination-select{
+      width:100%;
+    }
+
+    .pagination-bar{
+      align-items:stretch;
+    }
+
+    .pagination-actions{
+      width:100%;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+    }
+
+    .pagination-actions .btnlink{
+      width:100%;
+    }
+
+    .pagination-info{
+      width:100%;
+      text-align:center;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="state-detail-page">
+  <div class="detail-shell">
+    <div class="detail-header">
+      <div>
+        <div class="detail-kicker">State Dashboard Details</div>
+
+        <h1 class="detail-title">
+          {{ selected_detail.title if selected_detail else "Dashboard Details" }}
+        </h1>
+
+        <div class="detail-subtitle">
+          {% if selected_detail and selected_detail.type == "cadres" %}
+            Full cadre-wise assigned PG details.
+          {% else %}
+            Full PG-wise village, block, district and gram panchayat details.
+          {% endif %}
+        </div>
+      </div>
+
+         <div class="detail-actions">
+  <button
+    type="button"
+    class="btnlink primary"
+    onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='{{ url_for('reports.state_dashboard', detail=detail_key, q=search_query) }}'; }"
+  >
+    ← Back
+  </button>
+
+  <a class="btnlink" href="{{ url_for('reports.state_dashboard', detail=detail_key, q=search_query) }}">
+    Back to Dashboard
+  </a>
+</div>
+    </div>
+
+    <div class="detail-body">
+      <div class="detail-toolbar">
+        <form class="detail-search-form" method="GET" action="{{ url_for('reports.state_dashboard_detail_full') }}">
+          <input type="hidden" name="detail" value="{{ detail_key or '' }}">
+
+          <input
+            class="detail-search-input"
+            type="search"
+            name="q"
+            value="{{ search_query or '' }}"
+            placeholder="Search by PG name, sector, district, block, village or gram panchayat"
+            autocomplete="off"
+          >
+
+          <button class="btnlink primary" type="submit">Search</button>
+
+          {% if search_query %}
+            <a class="btnlink" href="{{ url_for('reports.state_dashboard_detail_full', detail=detail_key) }}">
+              Clear Search
+            </a>
+          {% endif %}
+        </form>
+
+                <div class="detail-count-chip">
+          Total Records: {{ selected_detail.total_count if selected_detail else 0 }}
+        </div>
+      </div>
+
+           {% if pagination and pagination.total_records > 0 %}
+        <div class="pagination-top-select">
+          <form method="GET" action="{{ url_for('reports.state_dashboard_detail_full') }}">
+            <input type="hidden" name="detail" value="{{ detail_key or '' }}">
+            <input type="hidden" name="q" value="{{ search_query or '' }}">
+            <input type="hidden" name="page" value="1">
+
+            <select class="pagination-select" name="per_page" onchange="this.form.submit()">
+              {% for option in pagination.allowed_per_page %}
+                <option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>
+                  {{ option }} / page
+                </option>
+              {% endfor %}
+            </select>
+          </form>
+        </div>
+      {% endif %}
+
+      {% if selected_detail and selected_detail.type == "cadres" %}
+        {% if selected_detail.rows %}
+          <div class="detail-table-wrap">
+            <table class="detail-table">
+              <thead>
+               <tr>
+  <th>Sl. No.</th>
+  <th>Cadre Name</th>
+  <th>Username</th>
+  <th>Contact</th>
+  <th>Assigned PG Count</th>
+  <th>Assigned PGs</th>
+</tr>
+              </thead>
+
+                           <tbody>
+                {% for row in selected_detail.rows %}
+                  <tr>
+                    <td data-label="Sl. No."><b>{{ (pagination.start_index if pagination else 0) + loop.index }}</b></td>
+                    <td data-label="Cadre Name"><b>{{ row.name }}</b></td>
+                    <td data-label="Username">{{ row.username }}</td>
+                    <td data-label="Contact">{{ row.contact }}</td>
+                    <td data-label="Assigned Count"><b>{{ row.assigned_count }}</b></td>
+                    <td data-label="Assigned PGs">
+                      {% if row.assigned_pgs %}
+                        <div class="pg-pill-list">
+                          {% for pg in row.assigned_pgs %}
+                            <span class="pg-pill">{{ pg.name }}</span>
+                          {% endfor %}
+                        </div>
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state">
+            {% if search_query %}
+              No cadres found for "{{ search_query }}".
+            {% else %}
+              No cadres found in this scope.
+            {% endif %}
+          </div>
+        {% endif %}
+      {% else %}
+        {% if selected_detail and selected_detail.rows %}
+          <div class="detail-table-wrap">
+            <table class="detail-table">
+              <thead>
+      <tr>
+  <th>Sl. No.</th>
+  <th>PG Name</th>
+  <th>Sector</th>
+  <th>District</th>
+  <th>Block</th>
+  <th>Village</th>
+  <th>Gram Panchayat</th>
+  <th>Action</th>
+</tr>
+              </thead>
+
+              <tbody>
+                {% for row in selected_detail.rows %}
+    <tr>
+  <td data-label="Sl. No."><b>{{ (pagination.start_index if pagination else 0) + loop.index }}</b></td>
+  <td data-label="PG Name"><b>{{ row.name }}</b></td>
+  <td data-label="Sector">{{ row.sector }}</td>
+  <td data-label="District">{{ row.district }}</td>
+  <td data-label="Block">{{ row.block }}</td>
+  <td data-label="Village">{{ row.village }}</td>
+  <td data-label="Gram Panchayat">{{ row.gp }}</td>
+  <td data-label="Action">
+    {% if row.member_details_url %}
+      <a class="table-action-link" href="{{ row.member_details_url }}">
+        View Details
+      </a>
+    {% else %}
+      -
+    {% endif %}
+  </td>
+</tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state">
+            {% if search_query %}
+              No PG details found for "{{ search_query }}" in this KPI.
+            {% else %}
+              No PG details found for this KPI in the current scope.
+            {% endif %}
+          </div>
+                {% endif %}
+      {% endif %}
+
+      {% if pagination and pagination.total_records > 0 %}
+        <div class="pagination-bar">
+          <div class="pagination-info">
+            Showing {{ pagination.start_index + 1 }} - {{ pagination.end_index }}
+            of {{ pagination.total_records }}
+            · Page {{ pagination.page }} of {{ pagination.total_pages }}
+          </div>
+
+          <div class="pagination-actions">
+            <a
+              class="btnlink {% if not pagination.has_prev %}disabled{% endif %}"
+              href="{{ url_for('reports.state_dashboard_detail_full', detail=detail_key, q=search_query, page=pagination.prev_page, per_page=pagination.per_page) }}"
+            >
+              Previous
+            </a>
+
+            <a
+              class="btnlink primary {% if not pagination.has_next %}disabled{% endif %}"
+              href="{{ url_for('reports.state_dashboard_detail_full', detail=detail_key, q=search_query, page=pagination.next_page, per_page=pagination.per_page) }}"
+            >
+              Next
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

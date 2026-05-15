@@ -628,6 +628,70 @@ def pg_home():
     return redirect(url_for("reports.hierarchy_dashboard"))
 
 
+
+@pg_bp.route("/dashboard/live-data", methods=["GET"])
+@login_required
+@roles_required("PG_DATA_ENTRY", "CADRE_CC", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+def pg_dashboard_live_data():
+    db = current_app.mongo_db
+
+    role = getattr(g, "role", None) or session.get("role")
+
+    requested_pg_id = (
+        request.args.get("pg_id")
+        or request.args.get("pgId")
+        or request.headers.get("X-PG-ID")
+        or getattr(g, "pg_id", None)
+        or session.get("pg_id")
+        or session.get("active_pg_id")
+    )
+
+    if not requested_pg_id or not ObjectId.is_valid(str(requested_pg_id)):
+        return jsonify({
+            "ok": False,
+            "error": "Valid PG ID is required."
+        }), 400
+
+    pg_obj_id = ObjectId(str(requested_pg_id))
+    pg_doc = db.pgs.find_one({"_id": pg_obj_id})
+
+    if not pg_doc:
+        return jsonify({
+            "ok": False,
+            "error": "PG not found."
+        }), 404
+
+    if role == "PG_DATA_ENTRY":
+        session_pg_id = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
+        if session_pg_id and session_pg_id != str(requested_pg_id):
+            return jsonify({
+                "ok": False,
+                "error": "You cannot access this PG."
+            }), 403
+
+    if role == "CADRE_CC":
+        assigned_pg_ids = session.get("assigned_pg_ids") or []
+        assigned_pg_ids = {str(x) for x in assigned_pg_ids}
+
+        if assigned_pg_ids and str(requested_pg_id) not in assigned_pg_ids:
+            return jsonify({
+                "ok": False,
+                "error": "This PG is not assigned to you."
+            }), 403
+
+    metrics = _pg_metrics(db, str(requested_pg_id))
+
+    return jsonify({
+        "ok": True,
+        "pg": {
+            "_id": str(pg_doc.get("_id")),
+            "name": pg_doc.get("name") or pg_doc.get("pg_name") or "",
+        },
+        "metrics": metrics,
+        "updated_at": datetime.utcnow().isoformat(),
+    }), 200
+
+
 @pg_bp.route("/profile")
 @login_required
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN", "SUPER_ADMIN")
@@ -657,6 +721,7 @@ def pg_view(pg_id):
 
     - PG_DATA_ENTRY users can only open their own PG.
     - Other roles can open PGs within their jurisdiction.
+    - Higher roles also get active_pg_id set so CLF/BLOCK sidebar modules unlock.
     """
     db = current_app.mongo_db
     role = session.get("role")
@@ -671,7 +736,13 @@ def pg_view(pg_id):
         if str(pg_id) not in allowed_pg_ids:
             flash("You cannot access this PG.", "danger")
             return redirect(url_for("pg.pg_home"))
-        metrics = _pg_metrics(db, pg_id)
+
+        if role == "CADRE_CC":
+            session["active_pg_id"] = str(pg_doc.get("_id"))
+            session["active_pg_name"] = pg_doc.get("name") or pg_doc.get("pg_name") or pg_doc.get("PG Name") or str(pg_doc.get("_id"))
+            session["pg_id"] = str(pg_doc.get("_id"))
+
+        metrics = _pg_metrics(db, str(pg_doc.get("_id")))
         return render_template("dashboard_pg.html", pg=pg_doc, metrics=metrics)
 
     # Scope check for other roles
@@ -688,9 +759,12 @@ def pg_view(pg_id):
         flash("This PG is not under your State.", "danger")
         return redirect(url_for("reports.hierarchy_dashboard"))
 
-    metrics = _pg_metrics(db, pg_id)
-    return render_template("dashboard_pg.html", pg=pg_doc, metrics=metrics)
+    # Important: set active PG context for CLF/BLOCK/District/Admin sidebar unlock
+    session["active_pg_id"] = str(pg_doc.get("_id"))
+    session["active_pg_name"] = pg_doc.get("name") or pg_doc.get("pg_name") or pg_doc.get("PG Name") or str(pg_doc.get("_id"))
 
+    metrics = _pg_metrics(db, str(pg_doc.get("_id")))
+    return render_template("dashboard_pg.html", pg=pg_doc, metrics=metrics)
  
 
 @pg_bp.route("/registration/<pg_id>", methods=["GET", "POST"])

@@ -865,6 +865,24 @@ function __closeGate(){
       produceStock: null
     };
 
+    const __INITIAL_METRICS = {{ (metrics if metrics is defined else {})|tojson|safe }};
+let __liveMetrics = Object.assign({}, __INITIAL_METRICS || {});
+
+const __PG_LIVE_DATA_URL = "{{ url_for('pg.pg_dashboard_live_data', pg_id=PGID) }}";
+
+function __num(value){
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+
+  const cleaned = String(value).replace(/[^0-9.\-]/g, '');
+  const parsed = parseFloat(cleaned);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function __arr(value){
+  return Array.isArray(value) ? value : [];
+}
+
     function __destroyCharts(){
       try { if (__charts.cashFlow) { __charts.cashFlow.destroy(); __charts.cashFlow = null; } } catch(e){}
       try { if (__charts.membership) { __charts.membership.destroy(); __charts.membership = null; } } catch(e){}
@@ -1028,44 +1046,115 @@ function __closeGate(){
 }
 
     function getCashFlowData(){
-      return {
-        labels: [],
-        datasets: [
-          { label: __t('ds_income'), data: [], borderColor: '#0f766e', backgroundColor: '#0f766e', borderWidth: 3, tension: 0.4, pointRadius: 6, pointHoverRadius: 8, pointBackgroundColor: '#0f766e', pointBorderColor: '#fff', pointBorderWidth: 2 },
-          { label: __t('ds_expense'), data: [], borderColor: '#b45309', backgroundColor: '#b45309', borderWidth: 3, tension: 0.4, pointRadius: 6, pointHoverRadius: 8, pointBackgroundColor: '#b45309', pointBorderColor: '#fff', pointBorderWidth: 2 },
-          { label: __t('ds_net_balance'), data: [], borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', borderWidth: 3, tension: 0.4, pointRadius: 6, pointHoverRadius: 8, pointBackgroundColor: '#0ea5e9', pointBorderColor: '#fff', pointBorderWidth: 2 },
-        ]
-      };
-    }
+  const rows = __arr(__liveMetrics.chart_cash_flow);
 
-    function getMembershipData(){
-      return {
-        labels: [],
-        datasets: [
-          { label: __t('ds_total_members'), data: [], borderColor: '#0f766e', backgroundColor: 'rgba(15, 118, 110, 0.12)', borderWidth: 3, fill: true, tension: 0.4 },
-        ]
-      };
-    }
+  return {
+    labels: rows.map(row => row.label || ''),
+    datasets: [
+      {
+        label: __t('ds_income'),
+        data: rows.map(row => __num(row.income)),
+        borderColor: '#0f766e',
+        backgroundColor: '#0f766e',
+        borderWidth: 3,
+        tension: 0.4,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointBackgroundColor: '#0f766e',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2
+      },
+      {
+        label: __t('ds_expense'),
+        data: rows.map(row => __num(row.expense)),
+        borderColor: '#b45309',
+        backgroundColor: '#b45309',
+        borderWidth: 3,
+        tension: 0.4,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointBackgroundColor: '#b45309',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2
+      },
+      {
+        label: __t('ds_net_balance'),
+        data: rows.map(row => __num(row.net)),
+        borderColor: '#0ea5e9',
+        backgroundColor: '#0ea5e9',
+        borderWidth: 3,
+        tension: 0.4,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointBackgroundColor: '#0ea5e9',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2
+      },
+    ]
+  };
+}
 
-    function getLoanDistributionData(){
-      return {
-        labels: [],
-        datasets: [
-          { label: __t('ds_disbursed'), data: [], backgroundColor: 'rgba(15, 118, 110, 0.75)', borderRadius: 8 },
-          { label: __t('ds_recovered'), data: [], backgroundColor: 'rgba(21, 128, 61, 0.55)', borderRadius: 8 },
-          { label: __t('ds_outstanding'), data: [], backgroundColor: 'rgba(245, 158, 11, 0.65)', borderRadius: 8 },
-        ]
-      };
-    }
+function getMembershipData(){
+  const rows = __arr(__liveMetrics.chart_membership_growth);
 
-    function getProduceStockData(){
+  return {
+    labels: rows.map(row => row.label || ''),
+    datasets: [
+      {
+        label: __t('ds_total_members'),
+        data: rows.map(row => __num(row.members)),
+        borderColor: '#0f766e',
+        backgroundColor: 'rgba(15, 118, 110, 0.12)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4
+      },
+    ]
+  };
+}
+
+function getLoanDistributionData(){
+  const rows = __arr(__liveMetrics.chart_loan_distribution);
+  const colors = [
+    'rgba(15, 118, 110, 0.75)',
+    'rgba(21, 128, 61, 0.55)',
+    'rgba(245, 158, 11, 0.65)'
+  ];
+
+  return {
+    labels: ['Amount'],
+    datasets: rows.map((row, index) => {
+      let label = row.label || '';
+
+      if (String(label).toLowerCase() === 'disbursed') label = __t('ds_disbursed');
+      if (String(label).toLowerCase() === 'recovered') label = __t('ds_recovered');
+      if (String(label).toLowerCase() === 'outstanding') label = __t('ds_outstanding');
+
       return {
-        labels: [],
-        datasets: [
-          { data: [], backgroundColor: ['#0f766e'], borderWidth: 2, borderColor: '#fff' },
-        ]
+        label: label,
+        data: [__num(row.value)],
+        backgroundColor: colors[index] || 'rgba(15, 118, 110, 0.65)',
+        borderRadius: 8
       };
-    }
+    })
+  };
+}
+
+function getProduceStockData(){
+  const rows = __arr(__liveMetrics.chart_output_stock);
+
+  return {
+    labels: rows.map(row => row.label || ''),
+    datasets: [
+      {
+        data: rows.map(row => __num(row.value)),
+        backgroundColor: ['#0f766e', '#15803d', '#f59e0b', '#0ea5e9', '#65a30d'],
+        borderWidth: 2,
+        borderColor: '#fff'
+      },
+    ]
+  };
+}
 
     // ============================================================
     // Renderers
@@ -1555,30 +1644,46 @@ function __closeGate(){
         </div>
       `;
     }
-  async function initDashboard() {
-    // Always render non-chart sections first (never blank)
-    try { renderQuickStats(); } catch(e){ console.warn("quickStats failed", e); }
-    try { renderDashboardOverview(); } catch(e){ console.warn("overview failed", e); }
-    try { renderRecentTransactions(); } catch(e){ console.warn("recentTx failed", e); }
+ async function initChartsAsync(){
+  safeChartsFallback();
 
-    // Wait for Chart.js CDN OR local fallback
-    let chartOk = false;
-    try {
-      chartOk = await (window.__chartReady || Promise.resolve(!!window.Chart));
-    } catch(e){ chartOk = !!window.Chart; }
-
-    if (!chartOk || !window.Chart) {
-      safeChartsFallback();
-      return;
-    }
-
-    // Charts safe render
-    try { __destroyCharts(); } catch(e){}
-    try { renderCashFlowChart(); } catch(e){ console.warn("cashFlow chart failed", e); }
-    try { renderMembershipChart(); } catch(e){ console.warn("membership chart failed", e); }
-    try { renderLoanDistributionChart(); } catch(e){ console.warn("loanDist chart failed", e); }
-    try { renderProduceStockChart(); } catch(e){ console.warn("produceStock chart failed", e); }
+  let chartOk = false;
+  try {
+    chartOk = await (window.__chartReady || Promise.resolve(!!window.Chart));
+  } catch(e){
+    chartOk = !!window.Chart;
   }
+
+  if (!chartOk || !window.Chart) return;
+
+  try {
+    const response = await fetch(__PG_LIVE_DATA_URL, {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+
+    if (response.ok) {
+      const payload = await response.json();
+      if (payload && payload.ok && payload.metrics) {
+        __liveMetrics = Object.assign({}, __liveMetrics || {}, payload.metrics || {});
+      }
+    }
+  } catch(e) {
+    console.warn('PG live dashboard data fetch failed. Using server-rendered metrics.', e);
+  }
+
+  try { __destroyCharts(); } catch(e){}
+
+  try { renderCashFlowChart(); } catch(e){ console.warn("cashFlow chart failed", e); }
+  try { renderMembershipChart(); } catch(e){ console.warn("membership chart failed", e); }
+  try { renderLoanDistributionChart(); } catch(e){ console.warn("loanDist chart failed", e); }
+  try { renderProduceStockChart(); } catch(e){ console.warn("produceStock chart failed", e); }
+}
 
   function safeChartsFallback(){
     const ids = ["cashFlowChart","membershipChart","loanDistributionChart","produceStockChart"];
@@ -1606,6 +1711,10 @@ function __closeGate(){
 
     // re-render charts async
     initChartsAsync();
+
+    setInterval(() => {
+  initChartsAsync();
+}, 30000);
   }
   document.addEventListener('DOMContentLoaded', async () => {
     try { document.documentElement.classList.remove('no-js'); } catch(e){}

@@ -621,30 +621,83 @@ def _state_dashboard_pg_row(db, pg):
             pass
         return ""
 
+    pg_id = str(pg.get("_id") or "")
+
     return {
-        "id": str(pg.get("_id") or ""),
+        "id": pg_id,
         "name": pg.get("name") or pg.get("pg_name") or "-",
         "sector": pg.get("sector") or "-",
         "district": pg.get("District") or _name("districts", pg.get("district_id")) or "-",
         "block": pg.get("Block") or _name("blocks", pg.get("block_id")) or "-",
         "village": pg.get("Village") or pg.get("village") or "-",
         "gp": pg.get("Gram Panchayat") or pg.get("gp") or "-",
+        "member_details_url": url_for("reports.state_dashboard_pg_members", pg_id=pg_id) if pg_id else "",
     }
 
 
-def _state_dashboard_build_details(db, pg_match, pg_ids, detail_key):
-    """Build click-through details for new State Dashboard KPI cards."""
+def _state_dashboard_build_details(db, pg_match, pg_ids, detail_key, search_query="", preview_limit=None):
+    """Build click-through details for State Dashboard KPI cards.
+
+    search_query:
+      Optional search text for PG details.
+
+    preview_limit:
+      - None = show all rows
+      - 1 = show only first row in dashboard preview
+    """
     detail_key = (detail_key or "").strip()
+    search_query = (search_query or "").strip()
+
     if not detail_key:
         return None
 
     pg_projection = {
-        "name": 1, "pg_name": 1, "sector": 1, "District": 1, "Block": 1,
-        "Village": 1, "Gram Panchayat": 1, "district_id": 1, "block_id": 1,
+        "name": 1,
+        "pg_name": 1,
+        "sector": 1,
+        "District": 1,
+        "Block": 1,
+        "Village": 1,
+        "Gram Panchayat": 1,
+        "district_id": 1,
+        "block_id": 1,
     }
+
+    def _pg_search_filter():
+        if not search_query:
+            return None
+
+        safe_q = re.escape(search_query)
+        return {
+            "$or": [
+                {"name": {"$regex": safe_q, "$options": "i"}},
+                {"pg_name": {"$regex": safe_q, "$options": "i"}},
+                {"sector": {"$regex": safe_q, "$options": "i"}},
+                {"District": {"$regex": safe_q, "$options": "i"}},
+                {"Block": {"$regex": safe_q, "$options": "i"}},
+                {"Village": {"$regex": safe_q, "$options": "i"}},
+                {"Gram Panchayat": {"$regex": safe_q, "$options": "i"}},
+            ]
+        }
+
+    def _apply_preview(rows):
+        total_count = len(rows)
+        limited_rows = rows
+
+        if preview_limit is not None:
+            try:
+                limit_value = int(preview_limit)
+            except Exception:
+                limit_value = 1
+
+            if limit_value > 0:
+                limited_rows = rows[:limit_value]
+
+        return limited_rows, total_count
 
     if detail_key == "cadres":
         cadre_match = {"role": "CADRE_CC"}
+
         if pg_match.get("state_id"):
             cadre_match["state_id"] = pg_match["state_id"]
         if pg_match.get("district_id"):
@@ -652,11 +705,25 @@ def _state_dashboard_build_details(db, pg_match, pg_ids, detail_key):
         if pg_match.get("block_id"):
             cadre_match["block_id"] = pg_match["block_id"]
 
-        cadres = list(db.users.find(cadre_match, {"name": 1, "username": 1, "phone": 1, "contact": 1, "assigned_pg_ids": 1}).sort("name", 1))
+        cadres = list(
+            db.users.find(
+                cadre_match,
+                {
+                    "name": 1,
+                    "username": 1,
+                    "phone": 1,
+                    "contact": 1,
+                    "assigned_pg_ids": 1,
+                },
+            ).sort("name", 1)
+        )
+
         rows = []
         pg_id_set = {str(x) for x in pg_ids}
+
         for c in cadres:
             assigned_ids = []
+
             for raw_id in (c.get("assigned_pg_ids") or []):
                 try:
                     oid = raw_id if isinstance(raw_id, ObjectId) else ObjectId(str(raw_id))
@@ -664,7 +731,13 @@ def _state_dashboard_build_details(db, pg_match, pg_ids, detail_key):
                         assigned_ids.append(oid)
                 except Exception:
                     pass
-            assigned_pgs = list(db.pgs.find({"_id": {"$in": assigned_ids}}, pg_projection).sort("name", 1)) if assigned_ids else []
+
+            assigned_pgs = (
+                list(db.pgs.find({"_id": {"$in": assigned_ids}}, pg_projection).sort("name", 1))
+                if assigned_ids
+                else []
+            )
+
             rows.append({
                 "name": c.get("name") or c.get("username") or "-",
                 "username": c.get("username") or "-",
@@ -672,31 +745,112 @@ def _state_dashboard_build_details(db, pg_match, pg_ids, detail_key):
                 "assigned_count": len(assigned_pgs),
                 "assigned_pgs": [_state_dashboard_pg_row(db, pg) for pg in assigned_pgs],
             })
-        return {"type": "cadres", "title": "Cadre Details", "rows": rows}
+
+        limited_rows, total_count = _apply_preview(rows)
+
+        return {
+            "type": "cadres",
+            "title": "Cadre Details",
+            "rows": limited_rows,
+            "total_count": total_count,
+            "shown_count": len(limited_rows),
+            "has_more": total_count > len(limited_rows),
+            "search_query": search_query,
+            "detail_key": detail_key,
+            "full_url": url_for("reports.state_dashboard_detail_full", detail=detail_key, q=search_query),
+        }
 
     if detail_key.startswith("sector:"):
         sector = detail_key.split(":", 1)[1].strip()
+
         q = dict(pg_match)
         q["sector"] = sector
-        pgs = list(db.pgs.find(q, pg_projection).sort([("District", 1), ("Block", 1), ("Village", 1), ("name", 1)]))
+
+        search_filter = _pg_search_filter()
+        if search_filter:
+            q["$and"] = [search_filter]
+
+        pgs = list(
+            db.pgs.find(q, pg_projection).sort([
+                ("District", 1),
+                ("Block", 1),
+                ("Village", 1),
+                ("name", 1),
+            ])
+        )
+
+        rows = [_state_dashboard_pg_row(db, pg) for pg in pgs]
+        limited_rows, total_count = _apply_preview(rows)
+
         return {
             "type": "pgs",
             "title": f"{sector} Based PG Details",
-            "rows": [_state_dashboard_pg_row(db, pg) for pg in pgs],
+            "rows": limited_rows,
+            "total_count": total_count,
+            "shown_count": len(limited_rows),
+            "has_more": total_count > len(limited_rows),
+            "search_query": search_query,
+            "detail_key": detail_key,
+            "full_url": url_for("reports.state_dashboard_detail_full", detail=detail_key, q=search_query),
         }
 
     if detail_key.startswith("ffs:"):
         module = detail_key.split(":", 1)[1].strip()
-        module_pg_ids = db.pg_members.distinct("pg_id", {"pg_id": {"$in": pg_ids}, "agri_ffs_module": module}) if pg_ids else []
-        pgs = list(db.pgs.find({"_id": {"$in": module_pg_ids}}, pg_projection).sort([("District", 1), ("Block", 1), ("Village", 1), ("name", 1)])) if module_pg_ids else []
+
+        agri_pg_match = dict(pg_match)
+        agri_pg_match["sector"] = "Agri"
+
+        agri_pg_ids = [p["_id"] for p in db.pgs.find(agri_pg_match, {"_id": 1})]
+
+        module_pg_ids = (
+            db.pg_members.distinct(
+                "pg_id",
+                {
+                    "pg_id": {"$in": agri_pg_ids},
+                    "agri_ffs_module": module,
+                },
+            )
+            if agri_pg_ids
+            else []
+        )
+
+        if module_pg_ids:
+            q = {
+                "_id": {"$in": module_pg_ids},
+                "sector": "Agri",
+            }
+
+            search_filter = _pg_search_filter()
+            if search_filter:
+                q["$and"] = [search_filter]
+
+            pgs = list(
+                db.pgs.find(q, pg_projection).sort([
+                    ("District", 1),
+                    ("Block", 1),
+                    ("Village", 1),
+                    ("name", 1),
+                ])
+            )
+        else:
+            pgs = []
+
+        rows = [_state_dashboard_pg_row(db, pg) for pg in pgs]
+        limited_rows, total_count = _apply_preview(rows)
+
         return {
             "type": "pgs",
             "title": f"PGs Following {module}",
-            "rows": [_state_dashboard_pg_row(db, pg) for pg in pgs],
+            "rows": limited_rows,
+            "total_count": total_count,
+            "shown_count": len(limited_rows),
+            "has_more": total_count > len(limited_rows),
+            "search_query": search_query,
+            "detail_key": detail_key,
+            "full_url": url_for("reports.state_dashboard_detail_full", detail=detail_key, q=search_query),
         }
 
     return None
-
 
 @reports_bp.route("/state_dashboard")
 @login_required
@@ -814,9 +968,10 @@ def state_dashboard():
     except Exception:
         lakhpati_total = 0
 
-    # New State Dashboard KPI groups: PG sector and FFS module distribution
+      # New State Dashboard KPI groups: PG sector and FFS module distribution
     sector_options = ["Agri", "ARDD", "Fishery"]
     sector_summary = []
+
     for sector in sector_options:
         q = dict(pg_match)
         q["sector"] = sector
@@ -829,12 +984,28 @@ def state_dashboard():
 
     ffs_modules = ["FFS Module 1", "FFS Module 2", "FFS Module 3", "FFS Module 4", "FFS Module 5"]
     ffs_summary = []
+
+    agri_pg_match = dict(pg_match)
+    agri_pg_match["sector"] = "Agri"
+
+    agri_pg_ids = [p["_id"] for p in db.pgs.find(agri_pg_match, {"_id": 1})]
+
     for module in ffs_modules:
         cnt = 0
+
         try:
-            cnt = len(db.pg_members.distinct("pg_id", {"pg_id": {"$in": pg_ids}, "agri_ffs_module": module})) if pg_ids else 0
+            cnt = len(
+                db.pg_members.distinct(
+                    "pg_id",
+                    {
+                        "pg_id": {"$in": agri_pg_ids},
+                        "agri_ffs_module": module,
+                    },
+                )
+            ) if agri_pg_ids else 0
         except Exception:
             cnt = 0
+
         ffs_summary.append({
             "key": module,
             "label": module,
@@ -842,7 +1013,14 @@ def state_dashboard():
             "detail_url": url_for("reports.state_dashboard", detail=f"ffs:{module}"),
         })
 
-    selected_detail = _state_dashboard_build_details(db, pg_match, pg_ids, request.args.get("detail"))
+    selected_detail = _state_dashboard_build_details(
+        db,
+        pg_match,
+        pg_ids,
+        request.args.get("detail"),
+        search_query=request.args.get("q") or "",
+        preview_limit=1,
+    )
 
     # Top districts by SHG count (within scope if applicable)
     pipe = []
@@ -895,6 +1073,211 @@ def state_dashboard():
         shg_active=shg_active,
         shg_top_districts=top_districts,
         charts=charts,
+    )
+
+
+
+@reports_bp.route("/state_dashboard/details")
+@login_required
+@roles_required("SUPER_ADMIN", "ADMIN", "DISTRICT_ADMIN", "BLOCK_ADMIN", "CADRE_CC")
+def state_dashboard_detail_full():
+    db = current_app.mongo_db
+
+    pg_match = _pg_match_from_session(session)
+    pg_ids = [p["_id"] for p in db.pgs.find(pg_match, {"_id": 1})]
+
+    detail_key = request.args.get("detail") or ""
+    search_query = request.args.get("q") or ""
+
+    selected_detail = _state_dashboard_build_details(
+        db,
+        pg_match,
+        pg_ids,
+        detail_key,
+        search_query=search_query,
+        preview_limit=None,
+    )
+
+    if not selected_detail:
+        flash("No detail section selected.", "warning")
+        return redirect(url_for("reports.state_dashboard"))
+
+    try:
+        page = int(request.args.get("page") or 1)
+    except Exception:
+        page = 1
+
+    try:
+        per_page = int(request.args.get("per_page") or 10)
+    except Exception:
+        per_page = 10
+
+    if page < 1:
+        page = 1
+
+    allowed_per_page = [10, 25, 50, 100]
+    if per_page not in allowed_per_page:
+        per_page = 10
+
+    all_rows = selected_detail.get("rows") or []
+    total_records = len(all_rows)
+    total_pages = max(1, (total_records + per_page - 1) // per_page)
+
+    if page > total_pages:
+        page = total_pages
+
+    start_index = (page - 1) * per_page
+    end_index = start_index + per_page
+
+    selected_detail["rows"] = all_rows[start_index:end_index]
+    selected_detail["total_count"] = total_records
+    selected_detail["shown_count"] = len(selected_detail["rows"])
+
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total_records": total_records,
+        "total_pages": total_pages,
+        "start_index": start_index,
+        "end_index": min(end_index, total_records),
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+        "prev_page": page - 1,
+        "next_page": page + 1,
+        "allowed_per_page": allowed_per_page,
+    }
+
+    return render_template(
+        "dashboard_state_detail_full.html",
+        selected_detail=selected_detail,
+        search_query=search_query,
+        detail_key=detail_key,
+        pagination=pagination,
+    )
+
+
+@reports_bp.route("/state_dashboard/pg-members/<pg_id>")
+@login_required
+@roles_required("SUPER_ADMIN", "ADMIN", "DISTRICT_ADMIN", "BLOCK_ADMIN", "CADRE_CC")
+def state_dashboard_pg_members(pg_id):
+    db = current_app.mongo_db
+
+    if not pg_id or not ObjectId.is_valid(str(pg_id)):
+        flash("Invalid PG selected.", "danger")
+        return redirect(url_for("reports.state_dashboard"))
+
+    pg_obj_id = ObjectId(str(pg_id))
+
+    pg_match = _pg_match_from_session(session)
+    pg_query = {"_id": pg_obj_id}
+
+    if pg_match:
+        pg_query.update(pg_match)
+
+    pg = db.pgs.find_one(pg_query)
+
+    if not pg:
+        flash("PG not found or not available in your scope.", "danger")
+        return redirect(url_for("reports.state_dashboard"))
+
+    role = session.get("role")
+
+    if role == "CADRE_CC":
+        assigned_pg_ids = session.get("assigned_pg_ids") or []
+        assigned_pg_ids = {str(x) for x in assigned_pg_ids}
+
+        if assigned_pg_ids and str(pg_obj_id) not in assigned_pg_ids:
+            flash("This PG is not assigned to you.", "danger")
+            return redirect(url_for("reports.state_dashboard"))
+
+    search_query = (request.args.get("q") or "").strip()
+
+    raw_sector = str(pg.get("sector") or "").strip()
+    sector_map = {
+        "agri": "Agri",
+        "ardd": "ARDD",
+        "arrd": "ARDD",
+        "fishery": "Fishery",
+    }
+    current_sector = sector_map.get(raw_sector.lower(), raw_sector)
+
+    member_match = {
+        "pg_id": pg_obj_id,
+        "$or": [
+            {"is_active": True},
+            {"is_active": {"$exists": False}},
+        ],
+    }
+
+    if search_query:
+        safe_q = re.escape(search_query)
+
+        search_fields = [
+            {"name": {"$regex": safe_q, "$options": "i"}},
+            {"spouse_name": {"$regex": safe_q, "$options": "i"}},
+            {"category": {"$regex": safe_q, "$options": "i"}},
+            {"shg_name": {"$regex": safe_q, "$options": "i"}},
+            {"contact": {"$regex": safe_q, "$options": "i"}},
+        ]
+
+        if current_sector == "Agri":
+            search_fields.extend([
+                {"agri_crop": {"$regex": safe_q, "$options": "i"}},
+                {"agri_ffs_module": {"$regex": safe_q, "$options": "i"}},
+            ])
+        elif current_sector == "ARDD":
+            search_fields.extend([
+                {"ardd_activity": {"$regex": safe_q, "$options": "i"}},
+                {"ardd_unit": {"$regex": safe_q, "$options": "i"}},
+            ])
+        elif current_sector == "Fishery":
+            search_fields.append({
+                "fishery_activity": {"$regex": safe_q, "$options": "i"}
+            })
+
+        member_match["$and"] = [{"$or": search_fields}]
+
+    members = list(
+        db.pg_members.find(
+            member_match,
+            {
+                "name": 1,
+                "spouse_name": 1,
+                "category": 1,
+                "shg_name": 1,
+                "contact": 1,
+                "photo_id_number": 1,
+                "membership_fee_paid": 1,
+                "lakh_pati_didi": 1,
+                "agri_crop": 1,
+                "agri_ffs_module": 1,
+                "ardd_activity": 1,
+                "ardd_unit": 1,
+                "fishery_activity": 1,
+                "created_at": 1,
+                "updated_at": 1,
+            },
+        ).sort([("name", 1)])
+    )
+
+    for member in members:
+        if current_sector != "Agri":
+            member["agri_crop"] = ""
+            member["agri_ffs_module"] = ""
+
+        if current_sector != "ARDD":
+            member["ardd_activity"] = ""
+            member["ardd_unit"] = ""
+
+        if current_sector != "Fishery":
+            member["fishery_activity"] = ""
+
+    return render_template(
+        "dashboard_state_pg_members.html",
+        pg=pg,
+        members=members,
+        search_query=search_query,
+        current_sector=current_sector,
     )
 
 
