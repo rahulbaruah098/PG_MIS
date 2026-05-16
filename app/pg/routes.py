@@ -290,25 +290,15 @@ def _pg_metrics(db, pg_id):
     except Exception:
         lakhpati_count = 0
 
-    # Loans (legacy + new lifecycle)
-    legacy_loans = list(db.pg_loans.find({"pg_id": oid}))
-    new_pg_loans = list(db.pg_loan_accounts.find({"pg_id": oid}))
-    new_mb_loans = list(db.pg_member_loan_accounts.find({"pg_id": oid}))
+    # Loans lifecycle
+    # Source of truth: PG loans = pg_loan_accounts, member loans = pg_member_loan_accounts.
+    pg_loan_accounts = list(db.pg_loan_accounts.find({"pg_id": oid}))
+    member_loan_accounts = list(db.pg_member_loan_accounts.find({"pg_id": oid}))
 
-    loans_count = len(legacy_loans) + len(new_pg_loans) + len(new_mb_loans)
+    loans_count = len(pg_loan_accounts) + len(member_loan_accounts)
     outstanding = 0.0
 
-    # legacy
-    for ln in legacy_loans:
-        for k in ("outstanding_amount", "outstanding", "balance", "amount"):
-            if k in ln and ln.get(k) not in (None, ""):
-                try:
-                    outstanding += float(ln.get(k) or 0)
-                except Exception:
-                    pass
-
-    # new lifecycle
-    for ln in (new_pg_loans + new_mb_loans):
+    for ln in (pg_loan_accounts + member_loan_accounts):
         try:
             outstanding += float(ln.get("outstanding_amount") or 0)
         except Exception:
@@ -474,19 +464,16 @@ def _pg_metrics(db, pg_id):
         disbursed = 0.0
         outstanding_total = 0.0
 
-        for ln in legacy_loans + new_pg_loans + new_mb_loans:
+        for ln in pg_loan_accounts + member_loan_accounts:
             disbursed += float(
-                ln.get("loan_amount")
-                or ln.get("amount")
+                ln.get("disbursed_amount")
+                or ln.get("sanction_amount")
+                or ln.get("principal")
+                or ln.get("loan_amount")
                 or ln.get("principal_amount")
                 or 0
             )
-            outstanding_total += float(
-                ln.get("outstanding_amount")
-                or ln.get("outstanding")
-                or ln.get("balance")
-                or 0
-            )
+            outstanding_total += float(ln.get("outstanding_amount") or 0)
 
         recovered = max(0, disbursed - outstanding_total)
 
@@ -627,8 +614,6 @@ def pg_home():
 
     return redirect(url_for("reports.hierarchy_dashboard"))
 
-
-
 @pg_bp.route("/dashboard/live-data", methods=["GET"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CADRE_CC", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
@@ -691,7 +676,6 @@ def pg_dashboard_live_data():
         "updated_at": datetime.utcnow().isoformat(),
     }), 200
 
-
 @pg_bp.route("/profile")
 @login_required
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN", "SUPER_ADMIN")
@@ -721,7 +705,6 @@ def pg_view(pg_id):
 
     - PG_DATA_ENTRY users can only open their own PG.
     - Other roles can open PGs within their jurisdiction.
-    - Higher roles also get active_pg_id set so CLF/BLOCK sidebar modules unlock.
     """
     db = current_app.mongo_db
     role = session.get("role")
@@ -736,13 +719,7 @@ def pg_view(pg_id):
         if str(pg_id) not in allowed_pg_ids:
             flash("You cannot access this PG.", "danger")
             return redirect(url_for("pg.pg_home"))
-
-        if role == "CADRE_CC":
-            session["active_pg_id"] = str(pg_doc.get("_id"))
-            session["active_pg_name"] = pg_doc.get("name") or pg_doc.get("pg_name") or pg_doc.get("PG Name") or str(pg_doc.get("_id"))
-            session["pg_id"] = str(pg_doc.get("_id"))
-
-        metrics = _pg_metrics(db, str(pg_doc.get("_id")))
+        metrics = _pg_metrics(db, pg_id)
         return render_template("dashboard_pg.html", pg=pg_doc, metrics=metrics)
 
     # Scope check for other roles
@@ -759,12 +736,9 @@ def pg_view(pg_id):
         flash("This PG is not under your State.", "danger")
         return redirect(url_for("reports.hierarchy_dashboard"))
 
-    # Important: set active PG context for CLF/BLOCK/District/Admin sidebar unlock
-    session["active_pg_id"] = str(pg_doc.get("_id"))
-    session["active_pg_name"] = pg_doc.get("name") or pg_doc.get("pg_name") or pg_doc.get("PG Name") or str(pg_doc.get("_id"))
-
-    metrics = _pg_metrics(db, str(pg_doc.get("_id")))
+    metrics = _pg_metrics(db, pg_id)
     return render_template("dashboard_pg.html", pg=pg_doc, metrics=metrics)
+
  
 
 @pg_bp.route("/registration/<pg_id>", methods=["GET", "POST"])

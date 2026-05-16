@@ -2,7 +2,11 @@ from services.audit_engine import AuditLogger
 import os
 from flask import render_template, request, redirect, url_for, flash, current_app, session, jsonify
 from app.services.guards import require_unlocked_period
+from bson import ObjectId
+from datetime import datetime
 
+from . import finance_bp
+from ..rbac import login_required, roles_required
 
 def _sanitize_loan_payload(payload: dict) -> dict:
     """Backend enforcement of manual rules:
@@ -21,11 +25,6 @@ def _sanitize_loan_payload(payload: dict) -> dict:
         return {k: v for k, v in payload.items() if k in keep}
     return payload
 
-from bson import ObjectId
-from datetime import datetime
-
-from . import finance_bp
-from ..rbac import login_required, roles_required
 
 @finance_bp.route("/pg_funds/<pg_id>", methods=["GET", "POST"])
 @login_required
@@ -66,39 +65,16 @@ def pg_funds(pg_id):
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def pg_loans(pg_id):
-    db = current_app.mongo_db
-    pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
-    if not pg:
-        flash("PG not found.", "danger")
-        return redirect(url_for("pg.pg_home"))
+    """Compatibility redirect for the removed old Loans page.
 
+    The old single-document Loans module is retired. PG loan records must now
+    be created and maintained only through PG Loan Accounts.
+    """
     if request.method == "POST":
-        loan_doc = {
-            "pg_id": ObjectId(pg_id),
-            "business_plan_submitted": request.form.get("business_plan_submitted") == "yes",
-            "business_plan_date": request.form.get("business_plan_date"),
-            "estimated_amount": float(request.form.get("estimated_amount") or 0),
-            "sanction_amount": float(request.form.get("sanction_amount") or 0),
-            "status": request.form.get("status"),
-            "roi": float(request.form.get("roi") or 0),
-            "tenure_months": int(request.form.get("tenure_months") or 0),
-            "moratorium_period": int(request.form.get("moratorium_period") or 0),
-            "principal_repaid": float(request.form.get("principal_repaid") or 0),
-            "interest_paid": float(request.form.get("interest_paid") or 0),
-            "total_utilized_loan_amount": float(request.form.get("total_utilized_loan_amount") or 0),
-            "reason_discontinued": request.form.get("reason_discontinued"),
-            "updated_at": datetime.utcnow(),
-        }
-        db.pg_loans.update_one(
-            {"pg_id": ObjectId(pg_id)},
-            {"$set": loan_doc},
-            upsert=True,
-        )
-        flash("Loan details saved.", "success")
-        return redirect(url_for("finance.pg_loans", pg_id=pg_id))
-
-    loan = db.pg_loans.find_one({"pg_id": ObjectId(pg_id)})
-    return render_template("pg_loans.html", pg=pg, loan=loan)
+        flash("The old Loans page has been removed. Use PG Loan Accounts to create or update PG loans.", "warning")
+    else:
+        flash("Loans has been replaced by PG Loan Accounts.", "info")
+    return redirect(url_for("finance.loan_accounts", pg_id=pg_id))
 
 
 
@@ -113,7 +89,7 @@ def cashbook():
 
 # ============================================================
 # NEW: LOAN LIFECYCLE (PG + MEMBER) + REPAYMENTS + DASHBOARD
-# - Does NOT remove existing /pg_loans route (kept for legacy)
+# - Uses PG Loan Accounts as the single source of truth for PG loans
 # - Adds multiple loan accounts, disbursement, EMI schedule,
 #   repayment tracking, overdue logic, and status (active/closed/NPA)
 # ============================================================
@@ -170,6 +146,70 @@ def _amort_schedule(principal: float, annual_roi: float, tenure_months: int, sta
             "paid_amount": 0.0,
         })
     return schedule
+
+def _serialize_pg_loan_doc(l, i=1, source="pg_loan_accounts"):
+    """
+    Normalizes PG loan account documents for web/API responses.
+    Source of truth: pg_loan_accounts.
+    """
+    def _dt(v):
+        if not v:
+            return None
+        try:
+            return v.isoformat()
+        except Exception:
+            return str(v)
+
+    sanction_amount = float(l.get("sanction_amount") or l.get("sanctioned_amount") or 0)
+    estimated_amount = float(l.get("estimated_amount") or 0)
+    disbursed_amount = float(l.get("disbursed_amount") or l.get("amount_received") or sanction_amount or 0)
+
+    principal_repaid = float(l.get("principal_repaid") or 0)
+    interest_paid = float(l.get("interest_paid") or 0)
+    total_paid = float(l.get("total_paid") or (principal_repaid + interest_paid) or 0)
+
+    outstanding_amount = float(
+        l.get("outstanding_amount")
+        if l.get("outstanding_amount") is not None
+        else max(disbursed_amount - principal_repaid, 0)
+    )
+
+    return {
+        "_id": str(l.get("_id")),
+        "id": str(l.get("_id")),
+        "source": source,
+        "sl": i,
+        "loan_no": l.get("loan_no") or l.get("loan_account_no") or f"PG-LOAN-{i}",
+        "lender": l.get("lender") or l.get("source") or l.get("bank_name") or "Block Released Loan",
+        "purpose": l.get("purpose") or l.get("loan_purpose") or "",
+        "status": (l.get("status") or l.get("loan_status") or "active").lower(),
+
+        "business_plan_submitted": bool(l.get("business_plan_submitted")),
+        "business_plan_date": l.get("business_plan_date"),
+
+        "estimated_amount": estimated_amount,
+        "sanction_amount": sanction_amount,
+        "disbursed_amount": disbursed_amount,
+
+        "roi": float(l.get("roi") or 0),
+        "tenure_months": int(l.get("tenure_months") or 0),
+        "moratorium_months": int(l.get("moratorium_months") or l.get("moratorium_period") or 0),
+
+        "principal_repaid": principal_repaid,
+        "interest_paid": interest_paid,
+        "total_paid": total_paid,
+
+        "outstanding_amount": outstanding_amount,
+        "overdue_amount": float(l.get("overdue_amount") or 0),
+
+        "installments_total": int(l.get("installments_total") or 0),
+        "installments_paid": int(l.get("installments_paid") or 0),
+        "installments_pending": int(l.get("installments_pending") or 0),
+
+        "next_due_date": _dt(l.get("next_due_date")),
+        "created_at": _dt(l.get("created_at")),
+        "updated_at": _dt(l.get("updated_at")),
+    }
 
 def _loan_summary_from_schedule(schedule):
     """Compute loan KPIs required by the manual.
@@ -354,36 +394,14 @@ def loan_accounts(pg_id):
         flash("Loan account created.", "success")
         return redirect(url_for("finance.loan_accounts", pg_id=pg_id))
 
-    loans_raw = list(
+    loan_accounts_raw = list(
         db.pg_loan_accounts.find({"pg_id": pg_obj_id}).sort([("created_at", -1)])
     )
 
-    loans = []
-    for i, l in enumerate(loans_raw, start=1):
-        loans.append({
-            "_id": str(l.get("_id")),
-            "id": str(l.get("_id")),
-            "sl": i,
-            "loan_no": l.get("loan_no") or "",
-            "lender": l.get("lender") or "",
-            "purpose": l.get("purpose") or "",
-            "status": (l.get("status") or "active").lower(),
-            "estimated_amount": float(l.get("estimated_amount") or 0),
-            "sanction_amount": float(l.get("sanction_amount") or 0),
-            "disbursed_amount": float(l.get("disbursed_amount") or 0),
-            "roi": float(l.get("roi") or 0),
-            "tenure_months": int(l.get("tenure_months") or 0),
-            "moratorium_months": int(l.get("moratorium_months") or 0),
-            "outstanding_amount": float(l.get("outstanding_amount") or 0),
-            "overdue_amount": float(l.get("overdue_amount") or 0),
-            "total_paid": float(l.get("total_paid") or 0),
-            "installments_total": int(l.get("installments_total") or 0),
-            "installments_paid": int(l.get("installments_paid") or 0),
-            "installments_pending": int(l.get("installments_pending") or 0),
-            "next_due_date": serialize_dt(l.get("next_due_date")),
-            "created_at": serialize_dt(l.get("created_at")),
-            "updated_at": serialize_dt(l.get("updated_at")),
-        })
+    loans = [
+        _serialize_pg_loan_doc(l, i=i, source="pg_loan_accounts")
+        for i, l in enumerate(loan_accounts_raw, start=1)
+    ]
 
     if is_json_request():
         return jsonify({
@@ -396,7 +414,7 @@ def loan_accounts(pg_id):
             "can_create": session.get("role") != "PG_DATA_ENTRY",
         })
 
-    return render_template("loan_accounts.html", pg=pg, loans=loans_raw)
+    return render_template("loan_accounts.html", pg=pg, loans=loans)
 
 # changes made by atlanta
 @finance_bp.route("/loan_account/<loan_id>", methods=["GET", "POST"])
@@ -430,6 +448,8 @@ def loan_account_view(loan_id):
         return redirect(url_for("pg.pg_home"))
 
     loan = db.pg_loan_accounts.find_one({"_id": loan_obj_id})
+    loan_source = "pg_loan_accounts"
+
     if not loan:
         if is_json_request():
             return jsonify({"ok": False, "message": "Loan not found"}), 404
@@ -535,26 +555,7 @@ def loan_account_view(loan_id):
                 "pg_name": (pg.get("pg_name") or pg.get("name") or "") if pg else "",
             },
             "loan": {
-                "_id": str(loan.get("_id")),
-                "loan_no": loan.get("loan_no") or "",
-                "lender": loan.get("lender") or "",
-                "purpose": loan.get("purpose") or "",
-                "status": (loan.get("status") or "active").lower(),
-                "estimated_amount": float(loan.get("estimated_amount") or 0),
-                "sanction_amount": float(loan.get("sanction_amount") or 0),
-                "disbursed_amount": float(loan.get("disbursed_amount") or 0),
-                "roi": float(loan.get("roi") or 0),
-                "tenure_months": int(loan.get("tenure_months") or 0),
-                "moratorium_months": int(loan.get("moratorium_months") or 0),
-                "outstanding_amount": float(loan.get("outstanding_amount") or 0),
-                "overdue_amount": float(loan.get("overdue_amount") or 0),
-                "total_paid": float(loan.get("total_paid") or 0),
-                "installments_total": int(loan.get("installments_total") or 0),
-                "installments_paid": int(loan.get("installments_paid") or 0),
-                "installments_pending": int(loan.get("installments_pending") or 0),
-                "next_due_date": serialize_dt(loan.get("next_due_date")),
-                "created_at": serialize_dt(loan.get("created_at")),
-                "updated_at": serialize_dt(loan.get("updated_at")),
+                **_serialize_pg_loan_doc(loan, i=1, source=loan_source),
                 "schedule": schedule_json,
             },
             "repayments": repayments,

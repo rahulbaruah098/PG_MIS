@@ -205,10 +205,9 @@ def generate_mpr_snapshot(db, *, level: str, ref_id, year: int, month: int, user
     if level == "pg":
         metrics = calc_turnover_and_stock(db, str(ref_obj), y, m)
 
-        # Legacy loan summary (kept for backward compatibility)
-        loan = db.pg_loans.find_one({"pg_id": ref_obj}) or {}
+        # Loan lifecycle summary
+        # Source of truth: pg_loan_accounts + pg_member_loan_accounts.
 
-        # New loan lifecycle summary (preferred)
         loan_outstanding = 0.0
         loan_overdue = 0.0
         active_loans = 0
@@ -240,8 +239,8 @@ def generate_mpr_snapshot(db, *, level: str, ref_id, year: int, month: int, user
         snapshot["closing_stock_value"] = float(metrics.get("closing_stock_value") or 0)
         snapshot["metrics"] = {
             **metrics,
-            "loan_status": loan.get("status") or loan.get("loan_status"),
-            "loan_estimated_amount": loan.get("estimated_amount", loan.get("loan_amount", 0)),
+            "loan_status": None,
+            "loan_estimated_amount": 0,
             "loan_outstanding_total": round(loan_outstanding, 2),
             "loan_overdue_total": round(loan_overdue, 2),
             "loan_active_count": active_loans,

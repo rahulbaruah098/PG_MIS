@@ -102,7 +102,7 @@ def init_indexes(db):
     # PG-related
     db.pg_members.create_index("pg_id")
     db.pg_funds.create_index("pg_id")
-    db.pg_loans.create_index("pg_id")
+    # db.pg_loans.create_index("pg_id")
     db.pg_member_loans.create_index([("pg_id", ASCENDING), ("member_id", ASCENDING)])
     db.pg_business_monthly.create_index([("pg_id", ASCENDING), ("year", ASCENDING), ("month", ASCENDING)], unique=True)
     db.pg_market_transactions.create_index([("pg_id", ASCENDING), ("year", ASCENDING), ("month", ASCENDING)], unique=True)
