@@ -2,6 +2,33 @@
 {% block title %}Grants & Infrastructure Funds{% endblock %}
 {% block content %}
 
+{% macro indian_number(value) -%}
+  {%- set n = (value or 0)|float -%}
+  {%- set s = "%.2f"|format(n) -%}
+  {%- set parts = s.split('.') -%}
+  {%- set intpart = parts[0] -%}
+  {%- set decpart = parts[1] -%}
+  {%- set sign = '-' if intpart.startswith('-') else '' -%}
+  {%- set intpart = intpart[1:] if intpart.startswith('-') else intpart -%}
+
+  {%- if intpart|length > 3 -%}
+    {%- set last3 = intpart[-3:] -%}
+    {%- set rest = intpart[:-3] -%}
+    {%- set ns = namespace(out='') -%}
+
+    {%- for i in range(rest|length) -%}
+      {%- if i > 0 and ((rest|length - i) % 2 == 0) -%}
+        {%- set ns.out = ns.out ~ ',' -%}
+      {%- endif -%}
+      {%- set ns.out = ns.out ~ rest[i] -%}
+    {%- endfor -%}
+
+    {{- sign ~ ns.out ~ ',' ~ last3 ~ '.' ~ decpart -}}
+  {%- else -%}
+    {{- sign ~ intpart ~ '.' ~ decpart -}}
+  {%- endif -%}
+{%- endmacro %}
+
 <style>
   /* ============================================================
      GRANTS / INFRASTRUCTURE FUNDS — LEDGER LOOK + RESPONSIVE + TRANSLATION
@@ -840,9 +867,9 @@
                 <td class="gif-cell-cat" data-label="Category">{{ g.category }}</td>
                 <td class="gif-cell-source" data-label="Source">{{ g.source }}</td>
                 <td class="gif-cell-release" data-label="Release">{{ g.release_date or '' }}</td>
-                <td data-label="Received">₹{{ "{:,.2f}".format(g.amount_received or 0) }}</td>
-                <td data-label="Utilized">₹{{ "{:,.2f}".format(g.utilized_amount or 0) }}</td>
-                <td data-label="Balance">₹{{ "{:,.2f}".format(g.balance_amount or 0) }}</td>
+               <td data-label="Received">₹{{ indian_number(g.amount_received) }}</td>
+<td data-label="Utilized">₹{{ indian_number(g.utilized_amount) }}</td>
+<td data-label="Balance">₹{{ indian_number(g.balance_amount) }}</td>
                 <td class="gif-cell-uc" data-label="UC">{{ (g.uc_status or 'pending')|upper }}</td>
 
                 <td data-label="Action">

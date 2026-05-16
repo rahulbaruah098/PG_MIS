@@ -388,12 +388,14 @@ flex-direction:column}
       </div>
 
       <div class="header-controls">
-        <a class="control-button" href="{{ url_for('reports.hierarchy_dashboard') }}" title="Pick a PG / switch context">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 3h18v18H3z"></path><path d="M7 7h10"></path><path d="M7 12h10"></path><path d="M7 17h10"></path>
-          </svg>
-          <span>Select PG</span>
-        </a>
+        {#
+<a class="control-button" href="{{ url_for('reports.hierarchy_dashboard') }}" title="Pick a PG / switch context">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 3h18v18H3z"></path><path d="M7 7h10"></path><path d="M7 12h10"></path><path d="M7 17h10"></path>
+  </svg>
+  <span>Select PG</span>
+</a>
+#}
 
         <a class="control-button danger" href="{{ url_for('auth.logout') }}" title="Logout">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -557,15 +559,17 @@ flex-direction:column}
             </svg>
             <span>PG Gradation</span>
           </a>
-      <a class="nav-item {% if request.endpoint == 'reports.lakhpati_report' %}active{% endif %}" data-page="lakhpati-report" href="{{ url_for('reports.lakhpati_report') }}">
-            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 21s8-4.5 8-11V5l-8-3-8 3v5c0 6.5 8 11 8 11z"></path>
-              <path d="M8 12h8"></path>
-              <path d="M10 8h4"></path>
-            </svg>
-            <span class="nav-text">Lakhpati Didi</span>
-          </a>
+      {#
+<a class="nav-item {% if request.endpoint == 'reports.lakhpati_report' %}active{% endif %}" data-page="lakhpati-report" href="{{ url_for('reports.lakhpati_report') }}">
+  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 21s8-4.5 8-11V5l-8-3-8 3v5c0 6.5 8 11 8 11z"></path>
+    <path d="M8 12h8"></path>
+    <path d="M10 8h4"></path>
+  </svg>
+  <span class="nav-text">Lakhpati Didi</span>
+</a>
+#}
 
           <a class="nav-item {% if request.endpoint == 'reports.grants_report' %}active{% endif %}" data-page="grants-report" href="{{ url_for('reports.grants_report') }}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"

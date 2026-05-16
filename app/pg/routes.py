@@ -704,39 +704,65 @@ def pg_view(pg_id):
     """Open a PG dashboard by id.
 
     - PG_DATA_ENTRY users can only open their own PG.
-    - Other roles can open PGs within their jurisdiction.
+    - CADRE_CC users can only open assigned PGs.
+    - CLF/BLOCK/District/State/Admin users can open PGs within scope.
+    - Opening a PG also sets active_pg_id so PG module/sidebar links unlock.
     """
     db = current_app.mongo_db
-    role = session.get("role")
+    role = getattr(g, "role", None) or session.get("role")
 
-    pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))})
+    pg_obj_id = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
+    pg_doc = db.pgs.find_one({"_id": pg_obj_id}) if pg_obj_id else None
+
     if not pg_doc:
         flash("PG not found.", "danger")
         return redirect(url_for("reports.hierarchy_dashboard"))
 
+    current_pg_id = str(pg_doc.get("_id"))
+
     if role in ("PG_DATA_ENTRY", "CADRE_CC"):
-        allowed_pg_ids = _assigned_pg_ids_for_session() if role == "CADRE_CC" else {str(session.get("pg_id") or "")}
-        if str(pg_id) not in allowed_pg_ids:
+        allowed_pg_ids = (
+            _assigned_pg_ids_for_session()
+            if role == "CADRE_CC"
+            else {str(session.get("pg_id") or "")}
+        )
+
+        if current_pg_id not in allowed_pg_ids and str(pg_id) not in allowed_pg_ids:
             flash("You cannot access this PG.", "danger")
             return redirect(url_for("pg.pg_home"))
-        metrics = _pg_metrics(db, pg_id)
+
+        session["active_pg_id"] = current_pg_id
+        session["active_pg_name"] = pg_doc.get("name") or pg_doc.get("pg_name") or pg_doc.get("PG Name") or current_pg_id
+
+        if role == "CADRE_CC":
+            session["pg_id"] = current_pg_id
+
+        metrics = _pg_metrics(db, current_pg_id)
         return render_template("dashboard_pg.html", pg=pg_doc, metrics=metrics)
 
     # Scope check for other roles
-    if session.get("clf_id") and str(pg_doc.get("clf_id")) != session.get("clf_id"):
+    if session.get("clf_id") and str(pg_doc.get("clf_id")) != str(session.get("clf_id")):
         flash("This PG is not under your CLF.", "danger")
         return redirect(url_for("reports.hierarchy_dashboard"))
-    if session.get("block_id") and str(pg_doc.get("block_id")) != session.get("block_id"):
+
+    if session.get("block_id") and str(pg_doc.get("block_id")) != str(session.get("block_id")):
         flash("This PG is not under your Block.", "danger")
         return redirect(url_for("reports.hierarchy_dashboard"))
-    if session.get("district_id") and str(pg_doc.get("district_id")) != session.get("district_id"):
+
+    if session.get("district_id") and str(pg_doc.get("district_id")) != str(session.get("district_id")):
         flash("This PG is not under your District.", "danger")
         return redirect(url_for("reports.hierarchy_dashboard"))
-    if session.get("state_id") and str(pg_doc.get("state_id")) != session.get("state_id"):
+
+    if session.get("state_id") and str(pg_doc.get("state_id")) != str(session.get("state_id")):
         flash("This PG is not under your State.", "danger")
         return redirect(url_for("reports.hierarchy_dashboard"))
 
-    metrics = _pg_metrics(db, pg_id)
+    # IMPORTANT FIX:
+    # This unlocks PG sidebar/module links for Block/CLF/Admin PG viewing.
+    session["active_pg_id"] = current_pg_id
+    session["active_pg_name"] = pg_doc.get("name") or pg_doc.get("pg_name") or pg_doc.get("PG Name") or current_pg_id
+
+    metrics = _pg_metrics(db, current_pg_id)
     return render_template("dashboard_pg.html", pg=pg_doc, metrics=metrics)
 
  

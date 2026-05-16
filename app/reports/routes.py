@@ -1007,7 +1007,7 @@ def _state_dashboard_chart_pack(
 
 @reports_bp.route("/state_dashboard")
 @login_required
-@roles_required("SUPER_ADMIN", "ADMIN", "DISTRICT_ADMIN", "BLOCK_ADMIN", "CADRE_CC")
+@roles_required("SUPER_ADMIN", "ADMIN")
 def state_dashboard():
     db = current_app.mongo_db
     role = session.get("role")

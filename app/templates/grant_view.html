@@ -2,6 +2,33 @@
 {% block title %}Grant Utilization{% endblock %}
 {% block content %}
 
+{% macro indian_number(value) -%}
+  {%- set n = (value or 0)|float -%}
+  {%- set s = "%.2f"|format(n) -%}
+  {%- set parts = s.split('.') -%}
+  {%- set intpart = parts[0] -%}
+  {%- set decpart = parts[1] -%}
+  {%- set sign = '-' if intpart.startswith('-') else '' -%}
+  {%- set intpart = intpart[1:] if intpart.startswith('-') else intpart -%}
+
+  {%- if intpart|length > 3 -%}
+    {%- set last3 = intpart[-3:] -%}
+    {%- set rest = intpart[:-3] -%}
+    {%- set ns = namespace(out='') -%}
+
+    {%- for i in range(rest|length) -%}
+      {%- if i > 0 and ((rest|length - i) % 2 == 0) -%}
+        {%- set ns.out = ns.out ~ ',' -%}
+      {%- endif -%}
+      {%- set ns.out = ns.out ~ rest[i] -%}
+    {%- endfor -%}
+
+    {{- sign ~ ns.out ~ ',' ~ last3 ~ '.' ~ decpart -}}
+  {%- else -%}
+    {{- sign ~ intpart ~ '.' ~ decpart -}}
+  {%- endif -%}
+{%- endmacro %}
+
 <style>
   /* ============================================================
      GRANT UTILIZATION — LEDGER LOOK + RESPONSIVE + TRANSLATION
@@ -766,15 +793,15 @@
     <div class="gu-kpis">
       <div class="gu-kpi">
         <div class="k" id="guKReceivedK">Received</div>
-        <div class="v">₹{{ "{:,.2f}".format(grant.amount_received or 0) }}</div>
+<div class="v">₹{{ indian_number(grant.amount_received) }}</div>
       </div>
       <div class="gu-kpi">
         <div class="k" id="guKUtilizedK">Utilized</div>
-        <div class="v">₹{{ "{:,.2f}".format(utilized_total) }}</div>
+<div class="v">₹{{ indian_number(utilized_total) }}</div>
       </div>
       <div class="gu-kpi">
         <div class="k" id="guKBalanceK">Balance</div>
-        <div class="v">₹{{ "{:,.2f}".format(balance) }}</div>
+<div class="v">₹{{ indian_number(balance) }}</div>
       </div>
     </div>
 
@@ -924,7 +951,7 @@
                     <td data-label="SL.No" class="gu-sl">1</td>
                     <td data-label="Date">{{ u.utilized_at.strftime('%Y-%m-%d') if u.utilized_at else '' }}</td>
                     <td data-label="Head">{{ u.head }}</td>
-                    <td data-label="Amount">₹{{ "{:,.2f}".format(u.amount or 0) }}</td>
+                    <td data-label="Amount">₹{{ indian_number(u.amount) }}</td>
 
                     <td data-label="Status">
                       <span class="gu-status {% if st == 'APPROVED' %}approved{% elif st == 'REJECTED' %}rejected{% else %}pending{% endif %}">
@@ -997,7 +1024,7 @@
                   </div>
                   <div class="gu-mobile-row">
                     <div class="gu-mobile-label" id="guMLblAmount{{ loop.index }}">Amount</div>
-                    <div class="gu-mobile-value">₹{{ "{:,.2f}".format(u.amount or 0) }}</div>
+<div class="gu-mobile-value">₹{{ indian_number(u.amount) }}</div>
                   </div>
                   <div class="gu-mobile-row">
                     <div class="gu-mobile-label" id="guMLblStatus{{ loop.index }}">Status</div>

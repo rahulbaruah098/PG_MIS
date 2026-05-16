@@ -119,27 +119,6 @@
   border-bottom:1.5px solid var(--line2);
   background:rgba(255,255,255,.92);
 }
-.cc-field{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  min-width:0;
-}
-.cc-label{
-  font-weight:900;
-  font-size:12px;
-  white-space:nowrap;
-  color:var(--ink);
-}
-.cc-muted{
-  font-size:12px;
-  font-weight:800;
-  color:rgba(15,23,42,.72);
-  min-width:0;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
 
 /* two panels */
 .cc-panels{
@@ -461,12 +440,7 @@
   font-weight:950;
   line-height:1.35;
 }
-.cc-pgid{
-  font-size:12px;
-  color:var(--muted);
-  font-weight:800;
-  margin-top:3px;
-}
+
 .cc-act-wrap{
   display:flex;
   gap:8px;
@@ -696,10 +670,6 @@
         <div class="cc-label">Selected Period</div>
         <div class="cc-muted">{{ month }}/{{ year }}</div>
       </div>
-      <div class="cc-field">
-        <div class="cc-label">Page</div>
-        <div class="cc-muted">CLF Official Console</div>
-      </div>
     </div>
 
     <!-- Panels -->
@@ -755,7 +725,7 @@
     <!-- Search / Tools -->
     <div class="cc-tools">
       <div class="cc-search-wrap">
-        <input type="text" class="cc-search" id="ccSearch" placeholder="Search by PG, PG ID, module or status..." autocomplete="off">
+<input type="text" class="cc-search" id="ccSearch" placeholder="Search by PG name, module or status..." autocomplete="off">
       </div>
       <div class="cc-rows-wrap">
         <div class="cc-rows-chip">
@@ -798,9 +768,8 @@
               <td data-label="SL" class="cc-sl-cell">{{ loop.index }}</td>
 
               <td data-label="PG">
-                <div class="cc-pgname">{{ row.pg_name }}</div>
-                <div class="cc-pgid">PG ID: {{ row.pg_id }}</div>
-              </td>
+  <div class="cc-pgname">{{ row.pg_name }}</div>
+</td>
 
               <td data-label="Module">
                 <span class="cc-badge cc-badge-light">{{ row.module|upper }}</span>

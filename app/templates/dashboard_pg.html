@@ -541,7 +541,8 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
       #recentTransactions .p-6{ padding: 14px !important; }
       #recentTransactions h2{ font-size: 16px !important; line-height: 1.2 !important; }
       #recentTransactions p.text-sm{ font-size: 12.5px !important; }
-      #recentTransactions button{ padding: 10px 14px !important; border-radius: 14px !important; }
+#recentTransactions button,
+#recentTransactions a{ padding: 10px 14px !important; border-radius: 14px !important; }
       #recentTransactions .mob-swipe{
         display:grid !important;
         grid-template-columns: 1fr !important;
@@ -565,7 +566,8 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
 
 @media (min-width: 1024px) {
 
-  #recentTransactions button{
+ #recentTransactions button,
+#recentTransactions a{
       padding: 12px 22px !important;
       font-size: 16px !important;
       font-weight: 800 !important;
@@ -786,6 +788,10 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
     <!-- Quick Stats -->
     <div id="quickStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5"></div>
 
+
+<!-- Dashboard Overview -->
+<div id="dashboardOverview"></div>
+
     <!-- ✅ PG KPI GRAPHS -->
 <div id="pgKpiGraphSection" class="space-y-6">
   <div class="pg-kpi-graph-card">
@@ -879,9 +885,6 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
     </div>
   </div>
 </div>
-
-    <!-- Dashboard Overview -->
-    <div id="dashboardOverview"></div>
 
     <!-- ✅ Charts Section (ALL 4 in SAME GRID) -->
     <div class="mob-swipe grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1130,6 +1133,7 @@ function __closeGate(){
 let __liveMetrics = Object.assign({}, __INITIAL_METRICS || {});
 
 const __PG_LIVE_DATA_URL = "{{ url_for('pg.pg_dashboard_live_data', pg_id=PGID) }}";
+const __PG_LEDGER_BOOK_URL = "{{ url_for('pg.ledger_book', pg_id=PGID) }}";
 
 function __num(value){
   if (value === null || value === undefined) return 0;
@@ -1161,7 +1165,9 @@ function __arr(value){
     function getStatsData(){
       return [
         { title: __t('stat_total_members'), value: '{{ (metrics.members_count if metrics is defined else 0) }}', change: __t('stat_from_membership_register'), icon: 'Users', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
-        { title: __t('stat_lakhpati'), value: '{{ (metrics.lakhpati_count if metrics is defined and metrics.lakhpati_count is defined else 0) }}', change: __t('stat_lakhpati_change'), icon: 'BadgeCheck', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
+/*
+{ title: __t('stat_lakhpati'), value: '{{ (metrics.lakhpati_count if metrics is defined and metrics.lakhpati_count is defined else 0) }}', change: __t('stat_lakhpati_change'), icon: 'BadgeCheck', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
+*/
         { title: __t('stat_active_loans'), value: '{{ (metrics.loans_count if metrics is defined else 0) }}', change: __t('stat_from_loan_ledger'), icon: 'Wallet', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-teal-700' },
         { title: __t('stat_loan_outstanding'), value: '{{ (metrics.outstanding_loans_amount if metrics is defined else "₹0") }}', change: __t('stat_sum_outstanding_loans'), icon: 'IndianRupee', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-green-700' },
         { title: __t('stat_turnover_latest'), value: '{{ (metrics.turnover_latest if metrics is defined and metrics.turnover_latest is defined else "₹0") }}', change: '{{ (metrics.turnover_period if metrics is defined and metrics.turnover_period is defined else "") }}', icon: 'TrendingUp', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-emerald-700' },
@@ -1188,17 +1194,19 @@ function __arr(value){
       borderColor: 'border-slate-200'
     },
 
-    {
-      title: __t('mod_lakhpati'),
-      description: __t('mod_lakhpati_desc'),
-      icon: 'BadgeCheck',
-      count: '{{ (metrics.lakhpati_count if metrics is defined and metrics.lakhpati_count is defined else 0) }}',
-      href: "{{ url_for('pg.pg_lakhpati', pg_id=PGID) }}",
-      bgColor: 'bg-white/90',
-      iconColor: 'text-emerald-700',
-      hoverBg: 'hover:bg-white',
-      borderColor: 'border-slate-200'
-    },
+    /*
+{
+  title: __t('mod_lakhpati'),
+  description: __t('mod_lakhpati_desc'),
+  icon: 'BadgeCheck',
+  count: '{{ (metrics.lakhpati_count if metrics is defined and metrics.lakhpati_count is defined else 0) }}',
+  href: "{{ url_for('pg.pg_lakhpati', pg_id=PGID) }}",
+  bgColor: 'bg-white/90',
+  iconColor: 'text-emerald-700',
+  hoverBg: 'hover:bg-white',
+  borderColor: 'border-slate-200'
+},
+*/
 
     {
       title: __t('mod_cash_book'),
@@ -2193,10 +2201,12 @@ function renderPgKpiGraphs(){
               </div>
             </div>
 
-            <button class="w-full md:w-auto px-5 py-2.5 rounded-xl transition-all text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-              style="background:#0f766e; color:#fff;">
-              ${__t('tx_view_all')}
-            </button>
+           <a
+  href="${__PG_LEDGER_BOOK_URL}"
+  class="px-5 py-2.5 rounded-xl transition-all text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+  style="background:#0f766e; color:#fff; text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">
+  ${__t('tx_view_all')}
+</a>
           </div>
 
           <div class="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white/80">

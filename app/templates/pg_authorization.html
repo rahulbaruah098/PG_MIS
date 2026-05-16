@@ -1,60 +1,965 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-  <h4 class="mb-0">State Authorization</h4>
-  <span class="badge bg-secondary">State Admin</span>
-</div>
 
-<div class="card">
-  <div class="card-body p-0">
-    <table class="table table-striped mb-0">
-      <thead>
-        <tr>
-          <th style="width: 60px;">#</th>
-          <th>PG</th>
-          <th>Sector</th>
-          <th>Status</th>
-          <th style="width: 340px;">Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for pg in pgs %}
-          <tr>
-            <td>{{ loop.index }}</td>
-            <td>
-              <div class="fw-semibold">{{ pg.name }}</div>
-              <div class="small text-muted">Updated: {{ pg.updated_at.strftime('%Y-%m-%d') if pg.updated_at else '-' }}</div>
-            </td>
-            <td>{{ pg.sector or '-' }}</td>
-            <td><span class="badge bg-secondary">{{ pg.status or 'draft' }}</span></td>
-            <td>
-              <div class="d-flex flex-wrap gap-2">
-                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('pg.pg_view', pg_id=pg._id|string) }}">Review</a>
+<style>
+  /* ============================================================
+     STATE AUTHORIZATION — PGMIS LEDGER STYLE
+     ✅ Frontend/UI only
+     ✅ Existing forms/routes/hidden inputs kept intact
+     ✅ Search + rows selector + pagination added client-side
+     ✅ Mobile/app table becomes horizontal swipe cards
+     ✅ Fully responsive for web/tablet/mobile/app
+     ============================================================ */
 
-                <form method="post" class="d-inline">
-                  <input type="hidden" name="pg_id" value="{{ pg._id|string }}">
-                  <input type="hidden" name="action" value="approve">
-                  <button class="btn btn-sm btn-success" type="submit">Approve</button>
-                </form>
+  .sa-wrap{
+    width:100%;
+    padding:clamp(12px, 2.2vw, 22px);
 
-                <form method="post" class="d-inline">
-                  <input type="hidden" name="pg_id" value="{{ pg._id|string }}">
-                  <input type="hidden" name="action" value="reject">
-                  <input class="form-control form-control-sm" name="reason" placeholder="Rejection reason (optional)" style="min-width: 180px; display:inline-block;">
-                  <button class="btn btn-sm btn-outline-danger" type="submit">Reject</button>
-                </form>
-              </div>
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.18);
+    --line2:rgba(15,23,42,.10);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+    --accent2:#0f766e;
 
-              {% if pg.rejection_reason %}
-                <div class="small text-danger mt-1">Reason: {{ pg.rejection_reason }}</div>
-              {% endif %}
-            </td>
-          </tr>
-        {% else %}
-          <tr><td colspan="5" class="text-muted p-3">No PGs found.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    max-width:1200px;
+    margin:0 auto;
+    color:var(--ink);
+  }
+
+  .sa-wrap *{
+    box-sizing:border-box;
+  }
+
+  .sa-sheet{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 18px 34px -26px rgba(15,23,42,.35);
+  }
+
+  .sa-head{
+    padding:16px 18px 14px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom:1.5px solid var(--line2);
+  }
+
+  .sa-head-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+
+  .sa-title{
+    margin:0;
+    font-weight:950;
+    font-size:clamp(18px, 2vw, 24px);
+    letter-spacing:.2px;
+    color:var(--ink);
+    line-height:1.15;
+  }
+
+  .sa-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    font-weight:800;
+    color:rgba(15,23,42,.62);
+  }
+
+  .sa-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:9px 13px;
+    border-radius:999px;
+    border:1px solid rgba(11,77,58,.20);
+    background:rgba(16,185,129,.10);
+    color:#0b4d3a;
+    font-size:12px;
+    font-weight:950;
+    white-space:nowrap;
+  }
+
+  .sa-body{
+    padding:14px 16px 16px;
+    background:rgba(255,255,255,.96);
+  }
+
+  .sa-tools{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    padding:12px;
+    margin-bottom:12px;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:14px;
+    background:rgba(247,250,249,.62);
+  }
+
+  .sa-search-wrap{
+    flex:1 1 420px;
+    min-width:260px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+
+  .sa-search{
+    width:100%;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:999px;
+    padding:12px 15px;
+    background:rgba(255,255,255,.88);
+    color:var(--ink);
+    font-size:13px;
+    font-weight:800;
+    outline:none;
+    box-shadow:0 8px 18px rgba(6,95,70,.06);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+
+  .sa-search::placeholder{
+    color:rgba(15,23,42,.45);
+  }
+
+  .sa-search:focus{
+    background:#fff;
+    border-color:rgba(11,77,58,.38);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+  }
+
+  .sa-tools-right{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .sa-chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:42px;
+    padding:9px 13px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.13);
+    background:rgba(255,255,255,.82);
+    color:rgba(15,23,42,.78);
+    font-size:12px;
+    font-weight:950;
+    white-space:nowrap;
+  }
+
+  .sa-select{
+    border:0;
+    outline:none;
+    background:transparent;
+    color:var(--ink);
+    font-size:12px;
+    font-weight:950;
+    cursor:pointer;
+  }
+
+  .sa-table-card{
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:16px;
+    overflow:hidden;
+    background:#fff;
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+  }
+
+  .sa-table-scroll{
+    width:100%;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .sa-table-scroll::-webkit-scrollbar{
+    height:9px;
+  }
+
+  .sa-table-scroll::-webkit-scrollbar-thumb{
+    background:rgba(15,23,42,.18);
+    border-radius:999px;
+  }
+
+  table.sa-table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:920px;
+    margin:0;
+  }
+
+  .sa-table th{
+    padding:13px 14px;
+    background:rgba(240,253,244,.92);
+    color:#0b4d3a;
+    border-bottom:1px solid rgba(15,23,42,.10);
+    font-size:12px;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    white-space:nowrap;
+    vertical-align:middle;
+  }
+
+  .sa-table td{
+    padding:13px 14px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    color:rgba(15,23,42,.86);
+    font-size:13px;
+    font-weight:750;
+    vertical-align:top;
+  }
+
+  .sa-table tbody tr:last-child td{
+    border-bottom:none;
+  }
+
+  .sa-table tbody tr:hover td{
+    background:rgba(16,185,129,.04);
+  }
+
+  .sa-sl{
+    width:70px;
+    color:rgba(15,23,42,.62);
+    font-weight:950;
+  }
+
+  .sa-pg-name{
+    font-weight:950;
+    color:var(--ink);
+    line-height:1.35;
+  }
+
+  .sa-date{
+    margin-top:4px;
+    font-size:12px;
+    font-weight:800;
+    color:rgba(100,116,139,.95);
+  }
+
+  .sa-status{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    padding:6px 10px;
+    font-size:11px;
+    font-weight:950;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(100,116,139,.12);
+    color:#334155;
+    white-space:nowrap;
+  }
+
+  .sa-status.approved{
+    background:rgba(16,185,129,.12);
+    border-color:rgba(16,185,129,.28);
+    color:#0b4d3a;
+  }
+
+  .sa-status.rejected{
+    background:rgba(239,68,68,.10);
+    border-color:rgba(239,68,68,.28);
+    color:#991b1b;
+  }
+
+  .sa-status.pending,
+  .sa-status.draft{
+    background:rgba(245,158,11,.12);
+    border-color:rgba(245,158,11,.28);
+    color:#92400e;
+  }
+
+  .sa-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .sa-actions form{
+    margin:0;
+  }
+
+  .sa-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    min-height:38px;
+    border-radius:999px;
+    padding:9px 13px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.84);
+    color:var(--ink);
+    font-size:12px;
+    font-weight:950;
+    text-decoration:none;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    font-family:inherit;
+  }
+
+  .sa-btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 14px 22px -18px rgba(15,23,42,.24);
+    text-decoration:none;
+  }
+
+  .sa-btn.review{
+    border-color:rgba(59,130,246,.25);
+    background:rgba(59,130,246,.08);
+    color:#1d4ed8;
+  }
+
+  .sa-btn.approve{
+    border-color:rgba(16,185,129,.32);
+    background:rgba(16,185,129,.13);
+    color:#0b4d3a;
+  }
+
+  .sa-btn.reject{
+    border-color:rgba(239,68,68,.28);
+    background:rgba(239,68,68,.08);
+    color:#991b1b;
+  }
+
+  .sa-reject-form{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .sa-reason{
+    min-width:200px;
+    max-width:260px;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:999px;
+    padding:9px 12px;
+    background:rgba(247,250,249,.80);
+    color:var(--ink);
+    font-size:12px;
+    font-weight:800;
+    outline:none;
+  }
+
+  .sa-reason:focus{
+    background:#fff;
+    border-color:rgba(11,77,58,.38);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+  }
+
+  .sa-rejection{
+    margin-top:8px;
+    color:#991b1b;
+    font-size:12px;
+    font-weight:850;
+  }
+
+  .sa-empty{
+    padding:18px;
+    color:rgba(100,116,139,.95);
+    font-size:13px;
+    font-weight:850;
+  }
+
+  .sa-empty-filter{
+    display:none;
+    padding:16px;
+    color:rgba(100,116,139,.95);
+    font-size:13px;
+    font-weight:850;
+    background:rgba(247,250,249,.65);
+    border-top:1px solid rgba(15,23,42,.08);
+  }
+
+  .sa-empty-filter.show{
+    display:block;
+  }
+
+  .sa-pager{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:12px;
+    border-top:1px solid rgba(15,23,42,.10);
+    background:rgba(255,255,255,.94);
+  }
+
+  .sa-page-info{
+    font-size:12px;
+    font-weight:900;
+    color:rgba(15,23,42,.72);
+  }
+
+  .sa-page-controls{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .sa-page-btn{
+    min-width:42px;
+    min-height:38px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.84);
+    color:var(--ink);
+    font-size:12px;
+    font-weight:950;
+    cursor:pointer;
+    padding:0 13px;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  }
+
+  .sa-page-btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 14px 22px -18px rgba(15,23,42,.22);
+  }
+
+  .sa-page-btn[disabled]{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+
+  .sa-page-btn.is-active{
+    background:rgba(11,77,58,.10);
+    border-color:rgba(11,77,58,.24);
+    color:#0b4d3a;
+  }
+
+  .sa-hidden-row{
+    display:none !important;
+  }
+
+  @media(max-width:900px){
+    .sa-tools{
+      align-items:stretch;
+    }
+
+    .sa-search-wrap{
+      min-width:100%;
+    }
+
+    .sa-tools-right{
+      width:100%;
+      justify-content:space-between;
+    }
+
+    .sa-chip{
+      flex:1 1 auto;
+    }
+  }
+
+  @media(max-width:720px){
+    .sa-wrap{
+      padding:10px;
+    }
+
+    .sa-head{
+      padding:14px 12px 12px;
+    }
+
+    .sa-head-row{
+      align-items:flex-start;
+    }
+
+    .sa-title{
+      font-size:18px;
+    }
+
+    .sa-body{
+      padding:12px;
+    }
+
+    .sa-table-card{
+      border-radius:16px;
+    }
+
+    .sa-table-scroll{
+      overflow-x:auto;
+      overflow-y:hidden;
+      padding:12px;
+      scroll-snap-type:x mandatory;
+      scroll-padding-left:12px;
+      background:rgba(255,255,255,.98);
+    }
+
+    table.sa-table{
+      min-width:0;
+      width:100%;
+      display:block;
+      border-collapse:separate;
+      border-spacing:0;
+    }
+
+    .sa-table thead{
+      display:none;
+    }
+
+    .sa-table tbody{
+      display:grid;
+      grid-auto-flow:column;
+      grid-auto-columns:90%;
+      gap:12px;
+      align-items:stretch;
+    }
+
+    .sa-table tbody tr{
+      display:flex;
+      flex-direction:column;
+      scroll-snap-align:start;
+      border:1px solid rgba(15,23,42,.12);
+      border-radius:16px;
+      background:#fff;
+      box-shadow:0 14px 24px -22px rgba(15,23,42,.30);
+      overflow:hidden;
+      min-width:0;
+    }
+
+    .sa-table tbody td{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding:11px 12px;
+      border-bottom:1px solid rgba(15,23,42,.08);
+      min-width:0;
+      white-space:normal;
+      text-align:right;
+      font-weight:800;
+      word-break:break-word;
+    }
+
+    .sa-table tbody td:last-child{
+      border-bottom:none;
+    }
+
+    .sa-table tbody td::before{
+      content:attr(data-label);
+      font-weight:950;
+      color:#0b4d3a;
+      font-size:12px;
+      line-height:1.3;
+      flex:0 0 38%;
+      max-width:42%;
+      text-align:left;
+    }
+
+    .sa-table tbody tr.sa-empty-row{
+      display:block;
+      min-height:auto;
+      grid-column:auto;
+    }
+
+    .sa-table tbody tr.sa-empty-row td{
+      display:block;
+      text-align:left;
+      padding:14px 12px;
+      border-bottom:none;
+    }
+
+    .sa-table tbody tr.sa-empty-row td::before{
+      display:none;
+      content:none;
+    }
+
+    .sa-actions{
+      width:100%;
+      flex-direction:column;
+      align-items:stretch;
+    }
+
+    .sa-actions form,
+    .sa-actions a,
+    .sa-actions button{
+      width:100%;
+    }
+
+    .sa-btn{
+      width:100%;
+      min-height:42px;
+    }
+
+    .sa-reject-form{
+      width:100%;
+      flex-direction:column;
+      align-items:stretch;
+    }
+
+    .sa-reason{
+      width:100%;
+      max-width:none;
+      min-width:0;
+    }
+
+    .sa-pager{
+      flex-direction:column;
+      align-items:stretch;
+    }
+
+    .sa-page-controls{
+      justify-content:center;
+    }
+
+    .sa-page-controls .sa-page-btn{
+      flex:1 1 auto;
+    }
+  }
+
+  @media(max-width:420px){
+    .sa-table tbody{
+      grid-auto-columns:94%;
+    }
+
+    .sa-tools-right{
+      flex-direction:column;
+      align-items:stretch;
+    }
+
+    .sa-chip{
+      width:100%;
+    }
+  }
+</style>
+
+<div class="sa-wrap">
+  <div class="sa-sheet">
+
+    <!-- Header -->
+    <div class="sa-head">
+      <div class="sa-head-row">
+        <div>
+          <h2 class="sa-title">State Authorization</h2>
+          <p class="sa-sub">Review, approve or reject Producer Group authorization requests.</p>
+        </div>
+
+        <span class="sa-badge">State Admin</span>
+      </div>
+    </div>
+
+    <div class="sa-body">
+
+      <!-- Search / tools -->
+      <div class="sa-tools">
+        <div class="sa-search-wrap">
+          <input
+            type="text"
+            class="sa-search"
+            id="saSearch"
+            placeholder="Search by PG name, sector, status or updated date..."
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="sa-tools-right">
+          <div class="sa-chip">
+            <span>View</span>
+            <select class="sa-select" id="saRowsPerPage" aria-label="Rows per page">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+
+          <div class="sa-chip" id="saCountPill">Showing 0 / 0</div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="sa-table-card">
+        <div class="sa-table-scroll">
+          <table class="sa-table" id="saTable">
+            <thead>
+              <tr>
+                <th style="width: 70px;">SL</th>
+                <th>PG</th>
+                <th>Sector</th>
+                <th>Status</th>
+                <th style="width: 390px;">Action</th>
+              </tr>
+            </thead>
+
+            <tbody id="saTbody">
+              {% for pg in pgs %}
+                {% set pg_status = pg.status or 'draft' %}
+                {% set updated_text = pg.updated_at.strftime('%Y-%m-%d') if pg.updated_at else '-' %}
+
+                <tr
+                  class="sa-row"
+                  data-sa-row
+                  data-sa-search="{{ loop.index }} {{ (pg.name or '')|lower }} {{ (pg.sector or '-')|lower }} {{ (pg_status or '')|lower }} {{ updated_text|lower }}"
+                >
+                  <td class="sa-sl" data-label="SL">{{ loop.index }}</td>
+
+                  <td data-label="PG">
+                    <div class="sa-pg-name">{{ pg.name }}</div>
+                    <div class="sa-date">Updated: {{ updated_text }}</div>
+                  </td>
+
+                  <td data-label="Sector">{{ pg.sector or '-' }}</td>
+
+                  <td data-label="Status">
+                    <span class="sa-status {{ (pg_status|string)|lower }}">
+                      {{ pg_status }}
+                    </span>
+                  </td>
+
+                  <td data-label="Action">
+                    <div class="sa-actions">
+                      <a class="sa-btn review" href="{{ url_for('pg.pg_view', pg_id=pg._id|string) }}">
+                        Review
+                      </a>
+
+                      <form method="post" class="d-inline">
+                        <input type="hidden" name="pg_id" value="{{ pg._id|string }}">
+                        <input type="hidden" name="action" value="approve">
+                        <button class="sa-btn approve" type="submit">
+                          Approve
+                        </button>
+                      </form>
+
+                      <form method="post" class="d-inline sa-reject-form">
+                        <input type="hidden" name="pg_id" value="{{ pg._id|string }}">
+                        <input type="hidden" name="action" value="reject">
+                        <input
+                          class="sa-reason"
+                          name="reason"
+                          placeholder="Rejection reason (optional)"
+                        >
+                        <button class="sa-btn reject" type="submit">
+                          Reject
+                        </button>
+                      </form>
+                    </div>
+
+                    {% if pg.rejection_reason %}
+                      <div class="sa-rejection">Reason: {{ pg.rejection_reason }}</div>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% else %}
+                <tr class="sa-empty-row">
+                  <td colspan="5" class="sa-empty">No PGs found.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="sa-empty-filter" id="saEmptyFilter">
+          No PGs match your search.
+        </div>
+
+        {% if pgs %}
+          <div class="sa-pager" id="saPager">
+            <div class="sa-page-info" id="saPageInfo">Showing 0–0 of 0</div>
+
+            <div class="sa-page-controls">
+              <button type="button" class="sa-page-btn" id="saPrevBtn">Prev</button>
+              <div class="sa-page-controls" id="saPageNumberWrap"></div>
+              <button type="button" class="sa-page-btn" id="saNextBtn">Next</button>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
   </div>
 </div>
+
+<script>
+(function(){
+  const table = document.getElementById('saTable');
+  const searchInput = document.getElementById('saSearch');
+  const rowsSelect = document.getElementById('saRowsPerPage');
+  const prevBtn = document.getElementById('saPrevBtn');
+  const nextBtn = document.getElementById('saNextBtn');
+  const pageInfo = document.getElementById('saPageInfo');
+  const pageWrap = document.getElementById('saPageNumberWrap');
+  const countPill = document.getElementById('saCountPill');
+  const emptyFilter = document.getElementById('saEmptyFilter');
+
+  if(!table || !searchInput || !rowsSelect){
+    return;
+  }
+
+  const tbody = table.querySelector('tbody');
+  const allRows = Array.from(tbody.querySelectorAll('tr.sa-row')).filter(row => row.hasAttribute('data-sa-row'));
+
+  if(!allRows.length){
+    if(countPill){
+      countPill.textContent = 'Showing 0 / 0';
+    }
+    return;
+  }
+
+  let currentPage = 1;
+  let filteredRows = allRows.slice();
+
+  function getRowsPerPage(){
+    const value = parseInt(rowsSelect.value || '25', 10);
+    return Number.isFinite(value) && value > 0 ? value : 25;
+  }
+
+  function updateSerials(rows, startIndex){
+    rows.forEach((row, index) => {
+      const sl = row.querySelector('.sa-sl');
+      if(sl){
+        sl.textContent = startIndex + index + 1;
+      }
+    });
+  }
+
+  function renderPageButtons(pageCount){
+    if(!pageWrap) return;
+
+    pageWrap.innerHTML = '';
+
+    const maxButtons = 5;
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(pageCount, start + maxButtons - 1);
+
+    if(end - start + 1 < maxButtons){
+      start = Math.max(1, end - maxButtons + 1);
+    }
+
+    for(let i = start; i <= end; i++){
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sa-page-btn' + (i === currentPage ? ' is-active' : '');
+      btn.textContent = String(i);
+      btn.setAttribute('aria-label', 'Page ' + i);
+      btn.addEventListener('click', function(){
+        currentPage = i;
+        render();
+      });
+      pageWrap.appendChild(btn);
+    }
+  }
+
+  function render(){
+    const rowsPerPage = getRowsPerPage();
+    const totalFiltered = filteredRows.length;
+    const totalAll = allRows.length;
+    const pageCount = Math.max(1, Math.ceil(totalFiltered / rowsPerPage));
+
+    if(currentPage > pageCount) currentPage = pageCount;
+    if(currentPage < 1) currentPage = 1;
+
+    allRows.forEach(row => row.classList.add('sa-hidden-row'));
+
+    if(totalFiltered === 0){
+      if(emptyFilter) emptyFilter.classList.add('show');
+      if(pageInfo) pageInfo.textContent = 'Showing 0–0 of 0';
+      if(countPill) countPill.textContent = 'Showing 0 / ' + totalAll;
+      if(prevBtn) prevBtn.disabled = true;
+      if(nextBtn) nextBtn.disabled = true;
+      if(pageWrap) pageWrap.innerHTML = '';
+      return;
+    }
+
+    if(emptyFilter) emptyFilter.classList.remove('show');
+
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const visibleRows = filteredRows.slice(startIndex, endIndex);
+
+    visibleRows.forEach(row => row.classList.remove('sa-hidden-row'));
+    updateSerials(visibleRows, startIndex);
+
+    const shownFrom = startIndex + 1;
+    const shownTo = Math.min(startIndex + visibleRows.length, totalFiltered);
+
+    if(pageInfo){
+      pageInfo.textContent = 'Showing ' + shownFrom + '–' + shownTo + ' of ' + totalFiltered;
+    }
+
+    if(countPill){
+      countPill.textContent = 'Showing ' + visibleRows.length + ' / ' + totalAll;
+    }
+
+    if(prevBtn){
+      prevBtn.disabled = currentPage <= 1;
+    }
+
+    if(nextBtn){
+      nextBtn.disabled = currentPage >= pageCount;
+    }
+
+    renderPageButtons(pageCount);
+
+    const scrollWrap = table.closest('.sa-table-scroll');
+    if(scrollWrap){
+      scrollWrap.scrollLeft = 0;
+    }
+  }
+
+  function applySearch(){
+    const q = String(searchInput.value || '').trim().toLowerCase();
+
+    filteredRows = allRows.filter(row => {
+      const hay = String(row.getAttribute('data-sa-search') || '').toLowerCase();
+      return !q || hay.includes(q);
+    });
+
+    currentPage = 1;
+    render();
+  }
+
+  searchInput.addEventListener('input', applySearch);
+
+  rowsSelect.addEventListener('change', function(){
+    currentPage = 1;
+    render();
+  });
+
+  if(prevBtn){
+    prevBtn.addEventListener('click', function(){
+      if(currentPage > 1){
+        currentPage -= 1;
+        render();
+      }
+    });
+  }
+
+  if(nextBtn){
+    nextBtn.addEventListener('click', function(){
+      const pageCount = Math.max(1, Math.ceil(filteredRows.length / getRowsPerPage()));
+      if(currentPage < pageCount){
+        currentPage += 1;
+        render();
+      }
+    });
+  }
+
+  render();
+})();
+</script>
+
 {% endblock %}

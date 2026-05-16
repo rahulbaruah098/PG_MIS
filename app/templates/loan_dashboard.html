@@ -1,93 +1,1156 @@
 {% extends "base.html" %}
 {% block title %}Loan Dashboard{% endblock %}
 {% block content %}
+
 <style>
-  .ld-wrap{max-width:1200px;margin:0 auto;padding:18px;}
-  .ld-hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18);}
-  .ld-hero h1{margin:0;font-weight:950;font-size:clamp(1.2rem,2.2vw,1.7rem);}
-  .ld-hero p{margin:.35rem 0 0;color:#d1fae5;font-weight:800}
-  .ld-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
-  .ld-kpi{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:10px 12px}
-  .ld-kpi .t{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;font-weight:900;color:#eafff4}
-  .ld-kpi .v{font-size:1.25rem;font-weight:950;margin-top:4px}
-  .card{margin-top:14px;background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
-  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:999px;border:1px solid rgba(5,150,105,.25);background:#ecfdf5;color:#065f46;font-weight:900;text-decoration:none}
-  .btn:hover{filter:brightness(.98)}
-  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:10px;overflow:hidden;border-radius:14px}
-  th,td{padding:10px 10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-size:.92rem}
-  th{background:#f0fdf4;color:#065f46;font-weight:950}
-  tr:hover td{background:#fbfffd}
-  .pill{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-weight:900;font-size:.78rem;border:1px solid rgba(15,23,42,.12);background:#fff}
-  .p-active{border-color:rgba(5,150,105,.25);background:#ecfdf5;color:#065f46}
-  .p-closed{border-color:rgba(2,132,199,.25);background:#e0f2fe;color:#075985}
-  .p-npa{border-color:rgba(220,38,38,.25);background:#fee2e2;color:#991b1b}
-  @media(max-width:900px){.ld-kpis{grid-template-columns:1fr}}
+  /* ============================================================
+     LOAN DASHBOARD — PGMIS LEDGER STYLE + SECTION TOGGLE
+     ✅ No backend route changes
+     ✅ No variable name changes
+     ✅ Existing links/routes kept intact
+     ✅ Adds PG Loan / Member Loan section toggle
+     ✅ Search + pagination + rows selector for both sections
+     ✅ Mobile/app horizontal swipe-card table layout
+     ✅ Back icon visible in web + app view
+     ============================================================ */
+
+  .ld-wrap{
+    width:100%;
+    padding:clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.18);
+    --line2:rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    max-width:1200px;
+    margin:0 auto;
+    color:var(--ink);
+  }
+
+  .ld-wrap *{
+    box-sizing:border-box;
+  }
+
+  .ld-sheet{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 18px 34px -26px rgba(15,23,42,.35);
+  }
+
+  /* Header */
+  .ld-head{
+    padding:14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom:1.5px solid var(--line2);
+  }
+
+  .ld-head-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .ld-leftslot,
+  .ld-rightslot{
+    flex:0 0 42px;
+    width:42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .ld-back{
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    box-shadow:0 12px 20px -16px rgba(15,23,42,.38);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color:rgba(11,77,58,.98);
+    user-select:none;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+
+  .ld-back:hover{
+    transform:translateX(-1px);
+    box-shadow:0 16px 26px -18px rgba(15,23,42,.46);
+    background:rgba(255,255,255,.98);
+  }
+
+  .ld-back:active{
+    transform:scale(.98);
+  }
+
+  .ld-back svg{
+    width:18px;
+    height:18px;
+    display:block;
+  }
+
+  .ld-title-wrap{
+    flex:1 1 auto;
+    min-width:0;
+    text-align:center;
+  }
+
+  .ld-title{
+    margin:0;
+    font-weight:950;
+    font-size:clamp(16px, 1.8vw, 20px);
+    letter-spacing:.2px;
+    line-height:1.15;
+    word-break:normal;
+    overflow-wrap:anywhere;
+  }
+
+  .ld-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color:rgba(15,23,42,.62);
+    font-weight:800;
+  }
+
+  /* Top fields */
+  .ld-topfields{
+    padding:10px 16px 14px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px 14px;
+    border-bottom:1.5px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+
+  .ld-field{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  }
+
+  .ld-label{
+    font-weight:900;
+    font-size:12px;
+    white-space:nowrap;
+    color:var(--ink);
+  }
+
+  .ld-muted{
+    font-size:12px;
+    font-weight:800;
+    color:rgba(15,23,42,.72);
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  /* KPI strip */
+  .ld-kpis{
+    padding:12px 16px 14px;
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+    border-bottom:1.5px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+
+  .ld-kpi{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:14px;
+    background:rgba(247,250,249,.70);
+    box-shadow:0 10px 20px -18px rgba(15,23,42,.25);
+    padding:11px 12px;
+    min-width:0;
+  }
+
+  .ld-kpi .k{
+    font-weight:950;
+    font-size:12px;
+    color:rgba(15,23,42,.72);
+    white-space:nowrap;
+  }
+
+  .ld-kpi .v{
+    margin-top:6px;
+    font-weight:950;
+    font-size:15px;
+    color:#0b4d3a;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .ld-body{
+    padding:12px 16px 16px;
+    background:rgba(255,255,255,.96);
+  }
+
+  /* Section tabs */
+  .ld-section-tabs{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:12px;
+    margin-bottom:12px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:14px;
+    background:rgba(247,250,249,.62);
+    box-shadow:0 14px 26px -24px rgba(15,23,42,.28);
+  }
+
+  .ld-tab-btn{
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.82);
+    color:var(--ink);
+    border-radius:999px;
+    padding:10px 16px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    user-select:none;
+    white-space:nowrap;
+    min-width:170px;
+  }
+
+  .ld-tab-btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  .ld-tab-btn.active{
+    border-color:rgba(16,185,129,.35);
+    background:rgba(16,185,129,.14);
+    color:#0b4d3a;
+  }
+
+  .ld-section-page{
+    display:none;
+  }
+
+  .ld-section-page.active{
+    display:block;
+    animation:ldFadeIn .18s ease-out;
+  }
+
+  @keyframes ldFadeIn{
+    from{
+      opacity:0;
+      transform:translateY(4px);
+    }
+    to{
+      opacity:1;
+      transform:translateY(0);
+    }
+  }
+
+  .ld-card{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:14px;
+    background:rgba(255,255,255,.92);
+    overflow:hidden;
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+    margin-bottom:12px;
+  }
+
+  .ld-card-head{
+    padding:12px 12px 10px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(247,250,249,.66);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .ld-card-title{
+    margin:0;
+    font-weight:950;
+    font-size:13px;
+    letter-spacing:.15px;
+    color:var(--ink);
+  }
+
+  .ld-card-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color:rgba(15,23,42,.62);
+    font-weight:750;
+  }
+
+  .ld-btn{
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.8);
+    color:var(--ink);
+    border-radius:999px;
+    padding:10px 14px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    user-select:none;
+    white-space:nowrap;
+    text-decoration:none;
+    font-family:inherit;
+  }
+
+  .ld-btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  .ld-btn.primary{
+    border-color:rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+
+  .ld-btn.primary:hover{
+    background:rgba(16,185,129,.16);
+  }
+
+  .ld-btn:disabled{
+    opacity:.55;
+    cursor:not-allowed;
+    transform:none !important;
+    box-shadow:none !important;
+  }
+
+  /* Toolbar */
+  .ld-toolbar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 12px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+
+  .ld-toolbar-left,
+  .ld-toolbar-right{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .ld-toolbar-right{
+    justify-content:flex-end;
+  }
+
+  .ld-search{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:260px;
+  }
+
+  .ld-input,
+  .ld-select{
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:12px;
+    padding:10px 12px;
+    background:rgba(247,250,249,.75);
+    font-weight:800;
+    font-size:12px;
+    outline:none;
+    color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+
+  .ld-input{
+    width:min(420px, 60vw);
+  }
+
+  .ld-input:focus,
+  .ld-select:focus{
+    border-color:rgba(11,77,58,.40);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  .ld-pill{
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.75);
+    font-weight:900;
+    font-size:12px;
+    color:rgba(15,23,42,.78);
+  }
+
+  .ld-tablewrap{
+    width:100%;
+    overflow-x:auto;
+    border-top:1px solid var(--line2);
+  }
+
+  table.ld-table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:900px;
+  }
+
+  .ld-table th,
+  .ld-table td{
+    padding:10px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    text-align:left;
+    font-size:12px;
+    white-space:nowrap;
+    vertical-align:top;
+  }
+
+  .ld-table th{
+    position:sticky;
+    top:0;
+    background:rgba(240,253,244,.92);
+    color:#065f46;
+    font-weight:950;
+    z-index:1;
+  }
+
+  .ld-table tr:hover td{
+    background:rgba(247,250,249,.60);
+  }
+
+  .ld-sl{
+    width:64px;
+    color:rgba(15,23,42,.72);
+    font-weight:900;
+  }
+
+  .ld-empty{
+    color:#64748b;
+    font-size:12px;
+    font-weight:800;
+  }
+
+  .ld-status{
+    display:inline-flex;
+    align-items:center;
+    padding:5px 10px;
+    border-radius:999px;
+    font-weight:950;
+    font-size:11px;
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    white-space:nowrap;
+  }
+
+  .ld-status.active,
+  .ld-status.ongoing{
+    border-color:rgba(5,150,105,.25);
+    background:#ecfdf5;
+    color:#065f46;
+  }
+
+  .ld-status.closed{
+    border-color:rgba(2,132,199,.25);
+    background:#e0f2fe;
+    color:#075985;
+  }
+
+  .ld-status.npa{
+    border-color:rgba(220,38,38,.25);
+    background:#fee2e2;
+    color:#991b1b;
+  }
+
+  .ld-row-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:flex-start;
+    flex-wrap:wrap;
+  }
+
+  .ld-pager{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px;
+    border-top:1px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+
+  .ld-pager-left,
+  .ld-pager-right{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  @media(max-width:980px){
+    .ld-topfields,
+    .ld-kpis{
+      grid-template-columns:1fr;
+    }
+
+    .ld-search{
+      min-width:100%;
+    }
+
+    .ld-input{
+      width:100%;
+    }
+  }
+
+  @media(max-width:720px){
+        .ld-back{
+      display:flex;
+    }
+    .ld-body{
+      padding:12px;
+    }
+
+    .ld-section-tabs{
+      align-items:stretch;
+      justify-content:stretch;
+    }
+
+    .ld-tab-btn{
+      width:100%;
+      min-width:0;
+    }
+
+    .ld-card-head{
+      align-items:flex-start;
+    }
+
+    .ld-card-head .ld-btn{
+      width:100%;
+    }
+
+    .ld-toolbar{
+      align-items:stretch;
+    }
+
+    .ld-toolbar-left,
+    .ld-toolbar-right,
+    .ld-search{
+      width:100%;
+    }
+
+    .ld-search{
+      flex-direction:column;
+      align-items:stretch;
+    }
+
+    .ld-search .ld-btn{
+      width:100%;
+    }
+
+    .ld-toolbar-right{
+      justify-content:space-between;
+    }
+
+    .ld-select{
+      flex:1 1 auto;
+    }
+
+    .ld-tablewrap{
+      overflow:hidden;
+    }
+
+    table.ld-table{
+      min-width:0;
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      display:block;
+    }
+
+    .ld-table thead{
+      display:none;
+    }
+
+    .ld-table tbody{
+      display:flex;
+      gap:12px;
+      overflow-x:auto;
+      padding:12px;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    .ld-table tbody::-webkit-scrollbar{
+      height:8px;
+    }
+
+    .ld-table tbody::-webkit-scrollbar-thumb{
+      background:rgba(15,23,42,.18);
+      border-radius:999px;
+    }
+
+    .ld-table tr.ld-row{
+      display:block;
+      min-width:88%;
+      max-width:88%;
+      scroll-snap-align:start;
+      background:rgba(255,255,255,.96);
+      border:1px solid rgba(15,23,42,.14);
+      border-radius:16px;
+      box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+      overflow:hidden;
+      padding:10px 12px;
+    }
+
+    .ld-table tr.ld-row td{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      justify-content:space-between;
+      padding:8px 0 !important;
+      border-bottom:1px dashed rgba(15,23,42,.10);
+      white-space:normal;
+      text-align:right;
+    }
+
+    .ld-table tr.ld-row td:last-child{
+      border-bottom:none;
+    }
+
+    .ld-table tr.ld-row td::before{
+      content:attr(data-label);
+      font-weight:950;
+      color:rgba(15,23,42,.72);
+      flex:0 0 auto;
+      min-width:110px;
+      text-align:left;
+    }
+
+    .ld-table tr.ld-row td[data-label="Action"]{
+      border-bottom:none;
+      padding-top:10px !important;
+    }
+
+    .ld-row-actions{
+      width:100%;
+      flex-direction:column;
+      align-items:stretch;
+      gap:10px;
+    }
+
+    .ld-row-actions .ld-btn{
+      width:100%;
+      min-height:44px;
+    }
+
+    .ld-pager{
+      align-items:stretch;
+      flex-direction:column;
+    }
+
+    .ld-pager-left,
+    .ld-pager-right{
+      width:100%;
+      justify-content:center;
+    }
+
+    .ld-pager-right .ld-btn{
+      flex:1;
+    }
+  }
+
+  @media(max-width:420px){
+    .ld-head{
+      padding:12px 12px 10px;
+    }
+
+    .ld-topfields,
+    .ld-kpis{
+      padding:10px 12px 12px;
+    }
+
+    .ld-table tr.ld-row{
+      min-width:92%;
+      max-width:92%;
+    }
+  }
 </style>
 
-<div class="ld-wrap">
-  <div class="ld-hero">
-    <h1>Loan Dashboard — {{ pg.pg_name or pg.name }}</h1>
-    <p>PG loans + member loans • repayment tracking • overdue • status</p>
+<div class="ld-wrap" id="ldWrap">
+  <div class="ld-sheet">
+
+    <!-- Header -->
+    <div class="ld-head">
+      <div class="ld-head-row">
+        <div class="ld-leftslot">
+          <a class="ld-back" href="javascript:history.back()" aria-label="Go Back">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"></path>
+            </svg>
+          </a>
+        </div>
+
+        <div class="ld-title-wrap">
+          <h2 class="ld-title">
+            Loan Dashboard — {{ pg.pg_name or pg.name }}
+          </h2>
+          <div class="ld-sub">
+            PG loans, member loans, repayment tracking, overdue and status summary.
+          </div>
+        </div>
+
+        <div class="ld-rightslot" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <!-- Top fields -->
+    <div class="ld-topfields">
+      <div class="ld-field">
+        <div class="ld-label">Producer Group</div>
+        <div class="ld-muted">{{ pg.pg_name or pg.name or '—' }}</div>
+      </div>
+
+      <div class="ld-field">
+        <div class="ld-label">Page</div>
+        <div class="ld-muted">Loan Dashboard</div>
+      </div>
+    </div>
+
+    <!-- KPI strip -->
     <div class="ld-kpis">
-      <div class="ld-kpi"><div class="t">Active Loans</div><div class="v">{{ kpi.active }}</div></div>
-      <div class="ld-kpi"><div class="t">Total Outstanding</div><div class="v">₹{{ "{:,.2f}".format(kpi.outstanding) }}</div></div>
-      <div class="ld-kpi"><div class="t">Total Overdue</div><div class="v">₹{{ "{:,.2f}".format(kpi.overdue) }}</div></div>
-    </div>
-  </div>
+      <div class="ld-kpi">
+        <div class="k">Active Loans</div>
+        <div class="v">{{ kpi.active }}</div>
+      </div>
 
-  <div class="card">
-    <div class="row">
-      <div style="font-weight:950;color:#065f46">PG Loan Accounts</div>
-      <a class="btn" href="{{ url_for('finance.loan_accounts', pg_id=pg._id) }}">+ Add / Manage PG Loans</a>
-    </div>
-    <table>
-      <thead><tr><th>Loan No</th><th>Sanctioned</th><th>Outstanding</th><th>Overdue</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-      {% for l in loans %}
-        <tr>
-          <td>{{ l.loan_no }}</td>
-          <td>₹{{ "{:,.2f}".format(l.sanction_amount or 0) }}</td>
-          <td>₹{{ "{:,.2f}".format(l.outstanding_amount or 0) }}</td>
-          <td>₹{{ "{:,.2f}".format(l.overdue_amount or 0) }}</td>
-          <td>
-            {% set st = (l.status or 'active')|lower %}
-            <span class="pill {{ 'p-npa' if st=='npa' else ('p-closed' if st=='closed' else 'p-active') }}">{{ st|upper }}</span>
-          </td>
-          <td><a class="btn" href="{{ url_for('finance.loan_account_view', loan_id=l._id) }}">Open</a></td>
-        </tr>
-      {% else %}
-        <tr><td colspan="6" style="color:#64748b">No PG loans yet.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
+      <div class="ld-kpi">
+        <div class="k">Total Outstanding</div>
+        <div class="v">₹{{ "{:,.2f}".format(kpi.outstanding) }}</div>
+      </div>
 
-  <div class="card">
-    <div class="row">
-      <div style="font-weight:950;color:#065f46">Member Loan Accounts</div>
-      <a class="btn" href="{{ url_for('finance.member_loan_accounts', pg_id=pg._id) }}">+ Add / Manage Member Loans</a>
+      <div class="ld-kpi">
+        <div class="k">Total Overdue</div>
+        <div class="v">₹{{ "{:,.2f}".format(kpi.overdue) }}</div>
+      </div>
     </div>
-    <table>
-      <thead><tr><th>Loan No</th><th>Principal</th><th>Outstanding</th><th>Overdue</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-      {% for l in mloans %}
-        <tr>
-          <td>{{ l.loan_no }}</td>
-          <td>₹{{ "{:,.2f}".format(l.principal or 0) }}</td>
-          <td>₹{{ "{:,.2f}".format(l.outstanding_amount or 0) }}</td>
-          <td>₹{{ "{:,.2f}".format(l.overdue_amount or 0) }}</td>
-          <td>
-            {% set st = (l.status or 'active')|lower %}
-            <span class="pill {{ 'p-npa' if st=='npa' else ('p-closed' if st=='closed' else 'p-active') }}">{{ st|upper }}</span>
-          </td>
-          <td><a class="btn" href="{{ url_for('finance.member_loan_view', loan_id=l._id) }}">Open</a></td>
-        </tr>
-      {% else %}
-        <tr><td colspan="6" style="color:#64748b">No member loans yet.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
+
+    <div class="ld-body">
+
+      <!-- Section switch buttons -->
+      <div class="ld-section-tabs" role="tablist" aria-label="Loan account sections">
+        <button class="ld-tab-btn active" type="button" data-ld-tab="pg" role="tab" aria-selected="true">
+          PG Loan Accounts
+        </button>
+
+        <button class="ld-tab-btn" type="button" data-ld-tab="member" role="tab" aria-selected="false">
+          Member Loan Accounts
+        </button>
+      </div>
+
+      <!-- ============================================================
+           SECTION PAGE 1: PG Loan Accounts
+           ============================================================ -->
+      <div class="ld-section-page active" id="ldSectionPG" data-ld-section="pg">
+
+        <div class="ld-card">
+          <div class="ld-card-head">
+            <div>
+              <h3 class="ld-card-title">PG Loan Accounts</h3>
+              <p class="ld-card-sub">Manage and track PG-level loan accounts.</p>
+            </div>
+
+            <a class="ld-btn primary" href="{{ url_for('finance.loan_accounts', pg_id=pg._id) }}">
+              + Add / Manage PG Loans
+            </a>
+          </div>
+
+          <div class="ld-toolbar">
+            <div class="ld-toolbar-left">
+              <div class="ld-search">
+                <input class="ld-input" type="text" data-search="pg" placeholder="Search PG loans...">
+                <button class="ld-btn" type="button" data-search-btn="pg">Search</button>
+              </div>
+
+              <span class="ld-pill" data-count="pg">Current PG Loans - 0</span>
+            </div>
+
+            <div class="ld-toolbar-right">
+              <label class="ld-label" style="margin:0;">Rows</label>
+              <select class="ld-select" data-per-page="pg">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ld-tablewrap">
+            <table class="ld-table" data-table="pg">
+              <thead>
+                <tr>
+                  <th class="ld-sl">SL No</th>
+                  <th>Loan No</th>
+                  <th>Sanctioned</th>
+                  <th>Outstanding</th>
+                  <th>Overdue</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for l in loans %}
+                  {% set st = (l.status or 'active')|lower %}
+                  <tr class="ld-row"
+                      data-row="pg"
+                      data-search-text="{{ loop.index }} {{ l.loan_no }} {{ l.sanction_amount }} {{ l.outstanding_amount }} {{ l.overdue_amount }} {{ st }}">
+                    <td class="ld-sl" data-label="SL No">{{ loop.index }}</td>
+                    <td data-label="Loan No">{{ l.loan_no or '—' }}</td>
+                    <td data-label="Sanctioned">₹{{ "{:,.2f}".format(l.sanction_amount or 0) }}</td>
+                    <td data-label="Outstanding">₹{{ "{:,.2f}".format(l.outstanding_amount or 0) }}</td>
+                    <td data-label="Overdue">₹{{ "{:,.2f}".format(l.overdue_amount or 0) }}</td>
+                    <td data-label="Status">
+                      <span class="ld-status {{ st }}">{{ st|upper }}</span>
+                    </td>
+                    <td data-label="Action">
+                      <div class="ld-row-actions">
+                        <a class="ld-btn" href="{{ url_for('finance.loan_account_view', loan_id=l._id) }}">
+                          Open
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="7" class="ld-empty">No PG loans yet.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="ld-pager">
+            <div class="ld-pager-left">
+              <span class="ld-pill" data-page-info="pg">Page 1</span>
+            </div>
+
+            <div class="ld-pager-right">
+              <button class="ld-btn" type="button" data-prev="pg">Prev</button>
+              <button class="ld-btn" type="button" data-next="pg">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           SECTION PAGE 2: Member Loan Accounts
+           ============================================================ -->
+      <div class="ld-section-page" id="ldSectionMember" data-ld-section="member">
+
+        <div class="ld-card">
+          <div class="ld-card-head">
+            <div>
+              <h3 class="ld-card-title">Member Loan Accounts</h3>
+              <p class="ld-card-sub">Manage and track member-level loan accounts.</p>
+            </div>
+
+            <a class="ld-btn primary" href="{{ url_for('finance.member_loan_accounts', pg_id=pg._id) }}">
+              + Add / Manage Member Loans
+            </a>
+          </div>
+
+          <div class="ld-toolbar">
+            <div class="ld-toolbar-left">
+              <div class="ld-search">
+                <input class="ld-input" type="text" data-search="member" placeholder="Search member loans...">
+                <button class="ld-btn" type="button" data-search-btn="member">Search</button>
+              </div>
+
+              <span class="ld-pill" data-count="member">Current Member Loans - 0</span>
+            </div>
+
+            <div class="ld-toolbar-right">
+              <label class="ld-label" style="margin:0;">Rows</label>
+              <select class="ld-select" data-per-page="member">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ld-tablewrap">
+            <table class="ld-table" data-table="member">
+              <thead>
+                <tr>
+                  <th class="ld-sl">SL No</th>
+                  <th>Loan No</th>
+                  <th>Principal</th>
+                  <th>Outstanding</th>
+                  <th>Overdue</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for l in mloans %}
+                  {% set st = (l.status or 'active')|lower %}
+                  <tr class="ld-row"
+                      data-row="member"
+                      data-search-text="{{ loop.index }} {{ l.loan_no }} {{ l.principal }} {{ l.outstanding_amount }} {{ l.overdue_amount }} {{ st }}">
+                    <td class="ld-sl" data-label="SL No">{{ loop.index }}</td>
+                    <td data-label="Loan No">{{ l.loan_no or '—' }}</td>
+                    <td data-label="Principal">₹{{ "{:,.2f}".format(l.principal or 0) }}</td>
+                    <td data-label="Outstanding">₹{{ "{:,.2f}".format(l.outstanding_amount or 0) }}</td>
+                    <td data-label="Overdue">₹{{ "{:,.2f}".format(l.overdue_amount or 0) }}</td>
+                    <td data-label="Status">
+                      <span class="ld-status {{ st }}">{{ st|upper }}</span>
+                    </td>
+                    <td data-label="Action">
+                      <div class="ld-row-actions">
+                        <a class="ld-btn" href="{{ url_for('finance.member_loan_view', loan_id=l._id) }}">
+                          Open
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="7" class="ld-empty">No member loans yet.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="ld-pager">
+            <div class="ld-pager-left">
+              <span class="ld-pill" data-page-info="member">Page 1</span>
+            </div>
+
+            <div class="ld-pager-right">
+              <button class="ld-btn" type="button" data-prev="member">Prev</button>
+              <button class="ld-btn" type="button" data-next="member">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
+
+<script>
+  (function(){
+    const state = {
+      pg: {
+        page: 1,
+        perPage: 10,
+        query: ''
+      },
+      member: {
+        page: 1,
+        perPage: 10,
+        query: ''
+      }
+    };
+
+    function normalize(value){
+      return (value || '').toString().toLowerCase().trim();
+    }
+
+    function rows(type){
+      return Array.from(document.querySelectorAll('[data-row="' + type + '"]'));
+    }
+
+    function filteredRows(type){
+      const q = normalize(state[type].query);
+
+      return rows(type).filter(row => {
+        if(!q) return true;
+
+        const text = normalize(row.getAttribute('data-search-text') || row.textContent || '');
+        return text.includes(q);
+      });
+    }
+
+    function render(type){
+      const allRows = rows(type);
+      const visible = filteredRows(type);
+
+      const total = visible.length;
+      let maxPage = Math.max(1, Math.ceil(total / state[type].perPage));
+
+      if(state[type].page > maxPage) state[type].page = maxPage;
+      if(state[type].page < 1) state[type].page = 1;
+
+      const start = (state[type].page - 1) * state[type].perPage;
+      const end = start + state[type].perPage;
+      const pageRows = new Set(visible.slice(start, end));
+
+      allRows.forEach(row => {
+        row.style.display = pageRows.has(row) ? '' : 'none';
+      });
+
+      visible.forEach((row, index) => {
+        const sl = row.querySelector('.ld-sl');
+        if(sl) sl.textContent = index + 1;
+      });
+
+      const count = document.querySelector('[data-count="' + type + '"]');
+      if(count){
+        count.textContent = type === 'pg'
+          ? 'Current PG Loans - ' + total
+          : 'Current Member Loans - ' + total;
+      }
+
+      const pageInfo = document.querySelector('[data-page-info="' + type + '"]');
+      if(pageInfo){
+        pageInfo.textContent = 'Page ' + state[type].page + ' / ' + maxPage;
+      }
+
+      const prev = document.querySelector('[data-prev="' + type + '"]');
+      const next = document.querySelector('[data-next="' + type + '"]');
+
+      if(prev) prev.disabled = state[type].page <= 1;
+      if(next) next.disabled = state[type].page >= maxPage;
+    }
+
+    function initSection(type){
+      const searchInput = document.querySelector('[data-search="' + type + '"]');
+      const searchBtn = document.querySelector('[data-search-btn="' + type + '"]');
+      const perPage = document.querySelector('[data-per-page="' + type + '"]');
+      const prev = document.querySelector('[data-prev="' + type + '"]');
+      const next = document.querySelector('[data-next="' + type + '"]');
+
+      if(searchInput){
+        searchInput.addEventListener('input', function(){
+          state[type].query = this.value || '';
+          state[type].page = 1;
+          render(type);
+        });
+      }
+
+      if(searchBtn){
+        searchBtn.addEventListener('click', function(){
+          state[type].query = searchInput ? searchInput.value || '' : '';
+          state[type].page = 1;
+          render(type);
+        });
+      }
+
+      if(perPage){
+        perPage.addEventListener('change', function(){
+          const selected = parseInt(this.value || '10', 10);
+          state[type].perPage = [10, 25, 50, 100].includes(selected) ? selected : 10;
+          state[type].page = 1;
+          render(type);
+        });
+      }
+
+      if(prev){
+        prev.addEventListener('click', function(){
+          state[type].page -= 1;
+          render(type);
+        });
+      }
+
+      if(next){
+        next.addEventListener('click', function(){
+          state[type].page += 1;
+          render(type);
+        });
+      }
+
+      render(type);
+    }
+
+    function switchTab(tabName){
+      const tabs = document.querySelectorAll('[data-ld-tab]');
+      const sections = document.querySelectorAll('[data-ld-section]');
+
+      tabs.forEach(tab => {
+        const isActive = tab.getAttribute('data-ld-tab') === tabName;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+
+      sections.forEach(section => {
+        const isActive = section.getAttribute('data-ld-section') === tabName;
+        section.classList.toggle('active', isActive);
+      });
+
+      try{
+        sessionStorage.setItem('ld_active_section', tabName);
+      }catch(_){}
+
+      if(tabName === 'pg'){
+        render('pg');
+      }
+
+      if(tabName === 'member'){
+        render('member');
+      }
+    }
+
+    function initTabs(){
+      document.querySelectorAll('[data-ld-tab]').forEach(tab => {
+        tab.addEventListener('click', function(){
+          switchTab(this.getAttribute('data-ld-tab') || 'pg');
+        });
+      });
+
+      let saved = 'pg';
+
+      try{
+        const existing = sessionStorage.getItem('ld_active_section');
+        if(existing === 'pg' || existing === 'member'){
+          saved = existing;
+        }
+      }catch(_){}
+
+      switchTab(saved);
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      initSection('pg');
+      initSection('member');
+      initTabs();
+    });
+  })();
+</script>
+
 {% endblock %}

@@ -846,7 +846,7 @@
 
     <header class="header">
       <div class="header-left">
-        <a id="brandHome" class="header-logo" href="{{ url_for('reports.hierarchy_dashboard') }}" title="Go to Admin Dashboard">
+<a id="brandHome" class="header-logo" href="{{ url_for('reports.state_dashboard') }}" title="Go to State Dashboard">
           <div class="brand-mark" aria-hidden="true">
             <img
               class="brand-logo"
@@ -906,12 +906,20 @@
 
           <ul class="nav-item-group">
             <li>
-              <a class="nav-item" data-page="dashboard-main" href="{{ url_for('reports.hierarchy_dashboard') }}">
+<a class="nav-item" data-page="dashboard-main" href="{{ url_for('reports.hierarchy_dashboard') }}">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M3 12l9-9 9 9"></path>
                   <path d="M9 21V9h6v12"></path>
                 </svg>
-                <span class="nav-text">Dashboard</span>
+               <span class="nav-text">
+  {% if session.get('role') == 'BLOCK_ADMIN' %}
+    Block Dashboard
+  {% elif session.get('role') in ['CLF_ADMIN', 'CLF_MANAGER'] %}
+    CLF Dashboard
+  {% else %}
+    Dashboard
+  {% endif %}
+</span>
               </a>
             </li>
           </ul>
@@ -919,14 +927,17 @@
           <div class="nav-section">Reports</div>
           <ul class="nav-item-group">
             <li>
-              <a class="nav-item" data-page="lakhpati-report" href="{{ url_for('reports.lakhpati_report') }}">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M12 21s8-4.5 8-11V5l-8-3-8 3v5c0 6.5 8 11 8 11z"></path>
-                  <path d="M8 12h8"></path>
-                  <path d="M10 8h4"></path>
-                </svg>
-                <span class="nav-text">Lakhpati Didi</span>
-              </a>
+             {#
+<a class="nav-item {% if request.endpoint == 'reports.lakhpati_report' %}active{% endif %}" data-page="lakhpati-report" href="{{ url_for('reports.lakhpati_report') }}">
+  <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 21s8-4.5 8-11V5l-8-3-8 3v5c0 6.5 8 11 8 11z"></path>
+    <path d="M8 12h8"></path>
+    <path d="M10 8h4"></path>
+  </svg>
+  <span class="nav-text">Lakhpati Didi</span>
+</a>
+#}
             </li>
             <li>
               <a class="nav-item" data-page="grants-report" href="{{ url_for('reports.grants_report') }}">
@@ -1077,29 +1088,49 @@
 
           {% else %}
 
-          <ul class="nav-item-group">
-            <li>
-              <a class="nav-item" data-page="dashboard-main" href="{{ url_for('reports.hierarchy_dashboard') }}">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M3 12l9-9 9 9"></path>
-                  <path d="M9 21V9h6v12"></path>
-                </svg>
-                <span class="nav-text">Dashboard</span>
-              </a>
-            </li>
-          </ul>
+{% if session.get('role') in ['SUPER_ADMIN', 'ADMIN'] %}
+<ul class="nav-item-group">
+  <li>
+    <a class="nav-item" data-page="dashboard-reports" href="{{ url_for('reports.state_dashboard') }}">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 12l9-9 9 9"></path>
+        <path d="M9 21V9h6v12"></path>
+      </svg>
+      <span class="nav-text">
+        {% if session.get('role') == 'SUPER_ADMIN' %}
+          Super Admin Dashboard
+        {% else %}
+          State Dashboard
+        {% endif %}
+      </span>
+    </a>
+  </li>
+</ul>
+{% endif %}
 
           <div class="nav-section">Reports</div>
           <ul class="nav-item-group">
             <li>
-              <a class="nav-item" data-page="dashboard-reports" href="{{ url_for('reports.state_dashboard') }}">
+<a class="nav-item" data-page="admin-dashboard" href="{{ url_for('reports.hierarchy_dashboard') }}">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <rect x="3" y="3" width="7" height="9"></rect>
                   <rect x="14" y="3" width="7" height="5"></rect>
                   <rect x="14" y="12" width="7" height="9"></rect>
                   <rect x="3" y="16" width="7" height="5"></rect>
                 </svg>
-                <span class="nav-text">Dashboard</span>
+<span class="nav-text">
+  {% if session.get('role') in ['SUPER_ADMIN', 'ADMIN'] %}
+    Hierarchy Dashboard
+  {% elif session.get('role') == 'DISTRICT_ADMIN' %}
+    District Dashboard
+  {% elif session.get('role') == 'PG_DATA_ENTRY' %}
+    PG Dashboard
+  {% elif session.get('role') == 'CADRE_CC' %}
+    Cadre Dashboard
+  {% else %}
+    Dashboard
+  {% endif %}
+</span>
               </a>
             </li>
             <li>
@@ -1116,16 +1147,18 @@
                 <span class="nav-text">Reports Hub</span>
               </a>
             </li>
-            <li>
-              <a class="nav-item" data-page="lakhpati-report" href="{{ url_for('reports.lakhpati_report') }}">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M12 21s8-4.5 8-11V5l-8-3-8 3v5c0 6.5 8 11 8 11z"></path>
-                  <path d="M8 12h8"></path>
-                  <path d="M10 8h4"></path>
-                </svg>
-                <span class="nav-text">Lakhpati Didi</span>
-              </a>
-            </li>
+           {#
+<li>
+  <a class="nav-item" data-page="lakhpati-report" href="{{ url_for('reports.lakhpati_report') }}">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 21s8-4.5 8-11V5l-8-3-8 3v5c0 6.5 8 11 8 11z"></path>
+      <path d="M8 12h8"></path>
+      <path d="M10 8h4"></path>
+    </svg>
+    <span class="nav-text">Lakhpati Didi</span>
+  </a>
+</li>
+#}
             <li>
               <a class="nav-item" data-page="grants-report" href="{{ url_for('reports.grants_report') }}">
                  <svg class="nav-icon" viewBox="0 0 24 24" fill="none">
@@ -1529,8 +1562,8 @@
 
       const brandHome = document.getElementById('brandHome');
       brandHome?.addEventListener('click', function(){
-        sessionStorage.setItem(ACTIVE_KEY, "{{ url_for('reports.hierarchy_dashboard') }}");
-      });
+  sessionStorage.setItem(ACTIVE_KEY, "{{ url_for('reports.state_dashboard') }}");
+});
 
       initActiveNav();
       setTimeout(restoreSidebarScroll, 0);

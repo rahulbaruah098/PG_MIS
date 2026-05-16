@@ -378,6 +378,19 @@
   overflow-y: hidden;
   width:100%;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior:smooth;
+  cursor:grab;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+}
+
+.pmd-table-scroll.is-dragging{
+  cursor:grabbing;
+}
+
+.pmd-table-scroll.is-dragging *{
+  cursor:grabbing !important;
+  user-select:none !important;
 }
 .pmd-table{
   width:100%;
@@ -710,6 +723,19 @@
   height: 100%;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior:smooth;
+  cursor:grab;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+}
+
+.pmd-fullScroll.is-dragging{
+  cursor:grabbing;
+}
+
+.pmd-fullScroll.is-dragging *{
+  cursor:grabbing !important;
+  user-select:none !important;
 }
 
 #pmdViewModal .pmd-table{
@@ -829,7 +855,9 @@
                   <th class="pmd-col-branch" id="thBranch">Branch</th>
                   <th class="pmd-col-account" id="thAccount">Account</th>
                   <th class="pmd-col-fee" id="thFee">Fee</th>
-                  <th class="pmd-col-lakhpati" id="thLakhpati">Lakhpati Didi?</th>
+{#
+<th class="pmd-col-lakhpati" id="thLakhpati">Lakhpati Didi?</th>
+#}
                   <th class="pmd-col-action" style="text-align:right;" id="thAction">Action</th>
                 </tr>
               </thead>
@@ -922,12 +950,14 @@
                     <input class="pmd-input" name="membership_fee_paid" value="{{ r.membership_fee_paid or '' }}" placeholder="0" inputmode="decimal" data-field="membership_fee_paid" form="{{ fid }}">
                   </td>
 
-                  <td class="pmd-col-lakhpati" style="vertical-align:top;" data-label="Lakhpati Didi?">
-                    <select class="pmd-input" data-field="lakh_pati_didi" name="lakh_pati_didi" form="{{ fid }}" style="font-weight:800;">
-                      <option value="no" {% if not r.lakh_pati_didi %}selected{% endif %}>No</option>
-                      <option value="yes" {% if r.lakh_pati_didi %}selected{% endif %}>Yes</option>
-                    </select>
-                  </td>
+                  {#
+<td class="pmd-col-lakhpati" style="vertical-align:top;" data-label="Lakhpati Didi?">
+  <select class="pmd-input" data-field="lakh_pati_didi" name="lakh_pati_didi" form="{{ fid }}" style="font-weight:800;">
+    <option value="no" {% if not r.lakh_pati_didi %}selected{% endif %}>No</option>
+    <option value="yes" {% if r.lakh_pati_didi %}selected{% endif %}>Yes</option>
+  </select>
+</td>
+#}
 
                   <td class="pmd-col-action" style="vertical-align:top; text-align:right;" data-label="Action">
                     <form method="POST" class="m-0 p-0 pmd-editForm" id="{{ fid }}">
@@ -1021,7 +1051,9 @@
                   <th class="pmd-col-branch" id="thBranchV">Branch</th>
                   <th class="pmd-col-account" id="thAccountV">Account</th>
                   <th class="pmd-col-fee" id="thFeeV">Fee</th>
-                  <th class="pmd-col-lakhpati" id="thLakhpatiV">Lakhpati Didi?</th>
+{#
+<th class="pmd-col-lakhpati" id="thLakhpatiV">Lakhpati Didi?</th>
+#}
                 </tr>
               </thead>
 
@@ -1048,7 +1080,9 @@
                   <td class="pmd-col-branch" data-label="Branch"><div class="pmd"><span data-field="branch">{{ r.branch or '-' }}</span></div></td>
                   <td class="pmd-col-account" data-label="Account"><div class="pmd"><span data-field="account_number">{{ r.account_number or '-' }}</span></div></td>
                   <td class="pmd-col-fee" data-label="Fee"><div class="pmd"><span data-field="membership_fee_paid">{{ r.membership_fee_paid or '-' }}</span></div></td>
-                  <td class="pmd-col-lakhpati" data-label="Lakhpati Didi?"><div class="pmd"><span data-field="lakh_pati_didi">{{ 'Yes' if r.lakh_pati_didi else 'No' }}</span></div></td>
+                {#
+<td class="pmd-col-lakhpati" data-label="Lakhpati Didi?"><div class="pmd"><span data-field="lakh_pati_didi">{{ 'Yes' if r.lakh_pati_didi else 'No' }}</span></div></td>
+#}
                 </tr>
                 {% endfor %}
               </tbody>
@@ -1903,6 +1937,101 @@
     activity.addEventListener('change', () => syncRow(formId));
     syncRow(formId);
   });
+})();
+</script>
+
+
+<script>
+/* ============================================================
+   ✅ Horizontal drag/swipe scroll for Edit, View and Full View tables
+   ✅ UI only — no backend/form/save/pagination logic changed
+============================================================ */
+(function(){
+  function enableHorizontalDragScroll(box){
+    if(!box || box.dataset.pmdDragScroll === "1") return;
+
+    box.dataset.pmdDragScroll = "1";
+
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+    let moved = false;
+
+    function isInteractiveTarget(target){
+      return !!target.closest('input, select, textarea, button, a, label');
+    }
+
+    box.addEventListener('pointerdown', function(e){
+      if(e.button !== undefined && e.button !== 0) return;
+      if(isInteractiveTarget(e.target)) return;
+
+      isDown = true;
+      moved = false;
+      startX = e.clientX;
+      scrollLeft = box.scrollLeft;
+      box.classList.add('is-dragging');
+
+      try{
+        box.setPointerCapture(e.pointerId);
+      }catch(_){}
+    });
+
+    box.addEventListener('pointermove', function(e){
+      if(!isDown) return;
+
+      const walk = e.clientX - startX;
+
+      if(Math.abs(walk) > 4){
+        moved = true;
+        e.preventDefault();
+      }
+
+      box.scrollLeft = scrollLeft - walk;
+    });
+
+    function stopDrag(e){
+      if(!isDown) return;
+
+      isDown = false;
+      box.classList.remove('is-dragging');
+
+      try{
+        box.releasePointerCapture(e.pointerId);
+      }catch(_){}
+    }
+
+    box.addEventListener('pointerup', stopDrag);
+    box.addEventListener('pointercancel', stopDrag);
+    box.addEventListener('pointerleave', stopDrag);
+
+    box.addEventListener('click', function(e){
+      if(moved){
+        e.preventDefault();
+        e.stopPropagation();
+        moved = false;
+      }
+    }, true);
+  }
+
+  function initPmdDragScroll(){
+    document.querySelectorAll('.pmd-table-scroll, .pmd-fullScroll').forEach(enableHorizontalDragScroll);
+  }
+
+  initPmdDragScroll();
+
+  const modalHost = document.getElementById('pmdModalTableHost');
+  if(modalHost){
+    const observer = new MutationObserver(function(){
+      initPmdDragScroll();
+    });
+
+    observer.observe(modalHost, {
+      childList:true,
+      subtree:true
+    });
+  }
+
+  window.addEventListener('resize', initPmdDragScroll);
 })();
 </script>
 

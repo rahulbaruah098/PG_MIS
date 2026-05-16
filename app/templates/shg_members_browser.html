@@ -317,10 +317,23 @@
   }
 
   .pg-table-wrap{
-    width:100%;
-    overflow:auto;
-    max-height:62vh;
-  }
+  width:100%;
+  overflow:auto;
+  max-height:62vh;
+  -webkit-overflow-scrolling:touch;
+  cursor:grab;
+  scroll-behavior:smooth;
+  user-select:none;
+}
+
+.pg-table-wrap.is-dragging{
+  cursor:grabbing;
+}
+
+.pg-table-wrap.is-dragging *{
+  cursor:grabbing !important;
+  user-select:none !important;
+}
   table.pg-table{
     width:100%;
     min-width:1620px;
@@ -403,11 +416,13 @@
 
   /* Mobile card blocks */
   .pg-mobile-list{
-    display:none;
-    padding:12px;
-    gap:12px;
-    flex-direction:column;
-  }
+  display:none;
+  padding:12px;
+  gap:12px;
+  flex-direction:column;
+  -webkit-overflow-scrolling:touch;
+  scroll-behavior:smooth;
+}
   .pg-mcard{
     border:1px solid rgba(15,23,42,.14);
     border-radius:16px;
@@ -557,7 +572,30 @@
     }
 
     .pg-table-wrap{ display:none; }
-    .pg-mobile-list{ display:flex; }
+
+.pg-mobile-list{
+  display:flex;
+  flex-direction:row;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  cursor:grab;
+}
+
+.pg-mobile-list.is-dragging{
+  cursor:grabbing;
+}
+
+.pg-mobile-list.is-dragging *{
+  cursor:grabbing !important;
+  user-select:none !important;
+}
+
+.pg-mcard{
+  flex:0 0 min(88vw, 520px);
+  scroll-snap-align:start;
+}
 
     .pg-table-topbar,
     .pg-pager{
@@ -1117,7 +1155,70 @@
   el('shg_gp').addEventListener('change', async () => { await refreshVillages(); doSearch(1); });
   el('shg_village').addEventListener('change', () => doSearch(1));
 
-  init().then(() => doSearch(1));
+    function enableHorizontalDragScroll(selector){
+    const box = document.querySelector(selector);
+    if(!box) return;
+
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+    let moved = false;
+
+    box.addEventListener('pointerdown', function(e){
+      if(e.button !== undefined && e.button !== 0) return;
+
+      isDown = true;
+      moved = false;
+      box.classList.add('is-dragging');
+      startX = e.clientX;
+      scrollLeft = box.scrollLeft;
+
+      try{
+        box.setPointerCapture(e.pointerId);
+      }catch(_){}
+    });
+
+    box.addEventListener('pointermove', function(e){
+      if(!isDown) return;
+
+      const walk = e.clientX - startX;
+      if(Math.abs(walk) > 4){
+        moved = true;
+        e.preventDefault();
+      }
+
+      box.scrollLeft = scrollLeft - walk;
+    });
+
+    function stopDrag(e){
+      if(!isDown) return;
+
+      isDown = false;
+      box.classList.remove('is-dragging');
+
+      try{
+        box.releasePointerCapture(e.pointerId);
+      }catch(_){}
+    }
+
+    box.addEventListener('pointerup', stopDrag);
+    box.addEventListener('pointercancel', stopDrag);
+    box.addEventListener('pointerleave', stopDrag);
+
+    box.addEventListener('click', function(e){
+      if(moved){
+        e.preventDefault();
+        e.stopPropagation();
+        moved = false;
+      }
+    }, true);
+  }
+
+  init().then(() => {
+    doSearch(1);
+    enableHorizontalDragScroll('.pg-table-wrap');
+    enableHorizontalDragScroll('#pg_mobile_list');
+  });
 </script>
 
 {% endblock %}
