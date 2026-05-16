@@ -19,6 +19,7 @@ from app.services.filter_engine import FilterEngine
 from app.services.report_service import ReportService
 from app.services.kpi_service import KPIService
 from app.utils import safe_objectid
+from app.services.submissions import submit_to_clf, approve, reject, get_submission
 
 
 
@@ -2707,34 +2708,229 @@ def sector_analytics():
 
 
 
+
+# ============================================================
+# MONTHLY MODULE WORKFLOW SUBMISSION / APPROVAL
+# Flow:
+#   SUBMITTED -> CLF -> BLOCK -> DISTRICT -> STATE/COMPLETE
+# Stored in:
+#   monthly_module_submissions
+# ============================================================
+
+def _workflow_wants_json():
+    return (
+        request.args.get("format") == "json"
+        or request.args.get("mobile") == "1"
+        or request.is_json
+        or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or "application/json" in (request.headers.get("Accept") or "")
+    )
+
+
+def _workflow_payload_value(key, default=""):
+    data = request.get_json(silent=True) if request.is_json else None
+    if isinstance(data, dict) and key in data:
+        return data.get(key, default)
+    return request.form.get(key, request.args.get(key, default))
+
+
 @reports_bp.route("/workflow/submit/<pg_id>/<int:year>/<int:month>/<module>", methods=["POST"])
+@login_required
+@roles_required(
+    "PG_DATA_ENTRY",
+    "CADRE_CC",
+    "CLF_MANAGER",
+    "CLF_ADMIN",
+    "BLOCK_ADMIN",
+    "DISTRICT_ADMIN",
+    "ADMIN",
+    "SUPER_ADMIN",
+)
 def submit_monthly(pg_id, year, month, module):
-    """PG Data Entry submits a month's module data to CLF."""
-    note = request.form.get("note","").strip()
-    submit_to_clf(pg_id, year, month, module, note=note)
-    flash(f"Submitted {module.upper()} for {month:02d}/{year} to CLF.", "success")
-    return redirect(request.referrer or url_for("reports.pg_mpr", pg_id=pg_id))
+    wants_json = _workflow_wants_json()
+
+    try:
+        result = submit_to_clf(
+            pg_id=pg_id,
+            year=year,
+            month=month,
+            module=module,
+            submitted_by=session.get("user_id") or session.get("email") or session.get("username"),
+            remarks=_workflow_payload_value("remarks", "") or _workflow_payload_value("note", ""),
+        )
+
+        if wants_json:
+            return jsonify({
+                "success": True,
+                "message": result.get("message", "Monthly module submitted successfully."),
+                "already_submitted": result.get("already_submitted", False),
+                "submission": result.get("submission"),
+            })
+
+        flash(result.get("message", "Monthly module submitted successfully."), "success")
+        return redirect(request.referrer or url_for("reports.pg_mpr", pg_id=pg_id))
+
+    except Exception as e:
+        if wants_json:
+            return jsonify({
+                "success": False,
+                "message": str(e),
+            }), 400
+
+        flash(str(e), "danger")
+        return redirect(request.referrer or url_for("pg.pg_home"))
+
 
 @reports_bp.route("/workflow/approve/<pg_id>/<int:year>/<int:month>/<module>/<level>", methods=["POST"])
+@login_required
+@roles_required(
+    "CLF_MANAGER",
+    "CLF_ADMIN",
+    "BLOCK_ADMIN",
+    "DISTRICT_ADMIN",
+    "STATE_ADMIN",
+    "ADMIN",
+    "SUPER_ADMIN",
+)
 def approve_monthly(pg_id, year, month, module, level):
-    """CLF/Block/District approve a submission."""
-    remark = request.form.get("remark","").strip()
-    approve(pg_id, year, month, module, level=level, remark=remark)
-    flash(f"Approved {module.upper()} for {month:02d}/{year} at {level.upper()} level.", "success")
-    return redirect(request.referrer or url_for("reports.hierarchy_dashboard"))
+    wants_json = _workflow_wants_json()
+
+    try:
+        result = approve(
+            pg_id=pg_id,
+            year=year,
+            month=month,
+            module=module,
+            level=level,
+            approved_by=session.get("user_id") or session.get("email") or session.get("username"),
+            remarks=_workflow_payload_value("remarks", "") or _workflow_payload_value("remark", ""),
+        )
+
+        if wants_json:
+            return jsonify({
+                "success": True,
+                "message": result.get("message", "Monthly module approved successfully."),
+                "already_approved": result.get("already_approved", False),
+                "submission": result.get("submission"),
+            })
+
+        flash(result.get("message", "Monthly module approved successfully."), "success")
+        return redirect(request.referrer or url_for("reports.hierarchy_dashboard"))
+
+    except Exception as e:
+        if wants_json:
+            return jsonify({
+                "success": False,
+                "message": str(e),
+            }), 400
+
+        flash(str(e), "danger")
+        return redirect(request.referrer or url_for("pg.pg_home"))
+
 
 @reports_bp.route("/workflow/reject/<pg_id>/<int:year>/<int:month>/<module>/<level>", methods=["POST"])
+@login_required
+@roles_required(
+    "CLF_MANAGER",
+    "CLF_ADMIN",
+    "BLOCK_ADMIN",
+    "DISTRICT_ADMIN",
+    "STATE_ADMIN",
+    "ADMIN",
+    "SUPER_ADMIN",
+)
 def reject_monthly(pg_id, year, month, module, level):
-    remark = request.form.get("remark","").strip()
-    reject(pg_id, year, month, module, level=level, remark=remark)
-    flash(f"Rejected {module.upper()} for {month:02d}/{year} at {level.upper()} level.", "warning")
-    return redirect(request.referrer or url_for("reports.hierarchy_dashboard"))
+    wants_json = _workflow_wants_json()
 
-@reports_bp.route("/workflow/status/<pg_id>/<int:year>/<int:month>/<module>")
+    try:
+        reason = (
+            _workflow_payload_value("reason", "")
+            or _workflow_payload_value("remarks", "")
+            or _workflow_payload_value("remark", "")
+            or "Rejected"
+        )
+
+        result = reject(
+            pg_id=pg_id,
+            year=year,
+            month=month,
+            module=module,
+            level=level,
+            reason=reason,
+            rejected_by=session.get("user_id") or session.get("email") or session.get("username"),
+        )
+
+        if wants_json:
+            return jsonify({
+                "success": True,
+                "message": result.get("message", "Monthly module rejected successfully."),
+                "submission": result.get("submission"),
+            })
+
+        flash(result.get("message", "Monthly module rejected successfully."), "warning")
+        return redirect(request.referrer or url_for("reports.hierarchy_dashboard"))
+
+    except Exception as e:
+        if wants_json:
+            return jsonify({
+                "success": False,
+                "message": str(e),
+            }), 400
+
+        flash(str(e), "danger")
+        return redirect(request.referrer or url_for("pg.pg_home"))
+
+
+@reports_bp.route("/workflow/status/<pg_id>/<int:year>/<int:month>/<module>", methods=["GET"])
+@login_required
+@roles_required(
+    "PG_DATA_ENTRY",
+    "CADRE_CC",
+    "CLF_MANAGER",
+    "CLF_ADMIN",
+    "BLOCK_ADMIN",
+    "DISTRICT_ADMIN",
+    "STATE_ADMIN",
+    "ADMIN",
+    "SUPER_ADMIN",
+)
 def workflow_status(pg_id, year, month, module):
-    doc = get_submission(pg_id, year, month, module) or {}
-    return jsonify({"ok": True, "submission": doc})
+    wants_json = _workflow_wants_json()
 
+    try:
+        submission = get_submission(
+            pg_id=pg_id,
+            year=year,
+            month=month,
+            module=module,
+        )
+
+        if wants_json:
+            return jsonify({
+                "success": True,
+                "pg_id": pg_id,
+                "year": year,
+                "month": month,
+                "module": module,
+                "submission": submission,
+            })
+
+        if not submission:
+            flash("No workflow submission found for this module and period.", "info")
+        else:
+            flash(f"Current workflow status: {submission.get('status')}", "info")
+
+        return redirect(request.referrer or url_for("pg.pg_home"))
+
+    except Exception as e:
+        if wants_json:
+            return jsonify({
+                "success": False,
+                "message": str(e),
+            }), 400
+
+        flash(str(e), "danger")
+        return redirect(request.referrer or url_for("pg.pg_home"))
 
 
 @reports_bp.route("/clf/console")
