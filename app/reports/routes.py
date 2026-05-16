@@ -1896,81 +1896,596 @@ def export_pg_mpr(pg_id):
 
 
 # ============================================================
-# NEW: PG GRADATION SYSTEM (Quarterly scoring)
-# - Governance + Financial + Business + Meetings
-# - Stored snapshot per quarter (year+quarter)
+# PG GRADATION SYSTEM - Manual Compliant Quarterly Scoring
+# As per PG MIS Manual Chapter 5: PG Gradation Format
+# Total Marks: 100
+# Grade:
+#   A / Excellent: >= 75, but turnover condition must also satisfy 75%
+#   B / Average: 60 to 74.9
+#   C / Poor: < 60
 # ============================================================
 
-def _compute_gradation(db, pg_id: str, year: int, quarter: int):
-    pg_oid = ObjectId(pg_id)
-    # Governance: meetings count in quarter
-    q_months = {1:(1,3),2:(4,6),3:(7,9),4:(10,12)}.get(int(quarter),(1,3))
-    m_start, m_end = q_months
-    meetings = list(db.pg_meetings.find({"pg_id": pg_oid, "meeting_date": {"$regex": f"^{year}-"}}))
-    meet_q = 0
-    for m in meetings:
+def _gradation_float(value, default=0.0):
+    try:
+        if value is None or value == "":
+            return float(default)
+        return float(value)
+    except Exception:
+        return float(default)
+
+
+def _gradation_int(value, default=0):
+    try:
+        if value is None or value == "":
+            return int(default)
+        return int(float(value))
+    except Exception:
+        return int(default)
+
+
+def _gradation_bool(value):
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in ("1", "yes", "true", "on", "y")
+
+
+def _gradation_quarter_months(quarter):
+    return {
+        1: (1, 3),
+        2: (4, 6),
+        3: (7, 9),
+        4: (10, 12),
+    }.get(int(quarter or 1), (1, 3))
+
+
+def _gradation_pg_query(pg_oid):
+    return {"pg_id": {"$in": [pg_oid, str(pg_oid)]}}
+
+
+def _gradation_period_query(pg_oid, year, start_month, end_month):
+    return {
+        "$and": [
+            _gradation_pg_query(pg_oid),
+            {
+                "$or": [
+                    {
+                        "year": int(year),
+                        "month": {
+                            "$gte": int(start_month),
+                            "$lte": int(end_month),
+                        },
+                    },
+                    {
+                        "meeting_date": {
+                            "$regex": f"^{int(year)}-"
+                        }
+                    },
+                ]
+            }
+        ]
+    }
+
+
+def _gradation_get_month_from_doc(doc):
+    try:
+        if doc.get("month"):
+            return int(doc.get("month"))
+
+        meeting_date = str(doc.get("meeting_date") or "")
+        if len(meeting_date) >= 7 and "-" in meeting_date:
+            return int(meeting_date.split("-")[1])
+
+        data = doc.get("data") or {}
+        minutes = data.get("minutes") or {}
+        date_iso = str(minutes.get("dateISO") or "")
+        if len(date_iso) >= 7 and "-" in date_iso:
+            return int(date_iso.split("-")[1])
+    except Exception:
+        return None
+
+    return None
+
+
+def _gradation_get_date_key(doc):
+    meeting_date = str(doc.get("meeting_date") or "").strip()
+    if meeting_date:
+        return meeting_date
+
+    data = doc.get("data") or {}
+    minutes = data.get("minutes") or {}
+    date_iso = str(minutes.get("dateISO") or "").strip()
+    if date_iso:
+        return date_iso[:10]
+
+    return str(doc.get("_id") or "")
+
+
+def _gradation_attendance_count(doc):
+    count = _gradation_int(doc.get("attendance_count"), 0)
+    if count > 0:
+        return count
+
+    attendance = doc.get("attendance")
+    if isinstance(attendance, list):
+        return len(attendance)
+
+    data = doc.get("data") or {}
+    members = data.get("members")
+    if isinstance(members, list):
+        return len(members)
+
+    return 0
+
+
+def _gradation_collection_count(db, collection_name, query):
+    try:
+        return db[collection_name].count_documents(query)
+    except Exception:
+        return 0
+
+
+def _gradation_sum_turnover(db, pg_oid, year, start_month, end_month):
+    """
+    Turnover source:
+    1. pg_market_transactions.total_turnover
+    2. pg_market_transactions.turnover
+    3. pg_business_monthly.turnover / total_turnover if available
+    """
+
+    total = 0.0
+
+    try:
+        rows = list(db.pg_market_transactions.find({
+            **_gradation_pg_query(pg_oid),
+            "year": int(year),
+            "month": {
+                "$gte": int(start_month),
+                "$lte": int(end_month),
+            }
+        }))
+
+        for row in rows:
+            total += _gradation_float(
+                row.get("total_turnover")
+                or row.get("turnover")
+                or row.get("market_total")
+                or 0
+            )
+    except Exception:
+        pass
+
+    try:
+        rows = list(db.pg_business_monthly.find({
+            **_gradation_pg_query(pg_oid),
+            "year": int(year),
+            "month": {
+                "$gte": int(start_month),
+                "$lte": int(end_month),
+            }
+        }))
+
+        for row in rows:
+            total += _gradation_float(
+                row.get("total_turnover")
+                or row.get("turnover")
+                or 0
+            )
+    except Exception:
+        pass
+
+    return round(total, 2)
+
+
+def _gradation_meeting_metrics(db, pg_oid, year, start_month, end_month):
+    """
+    Calculates:
+    - unique meetings held in the quarter
+    - total attendance count in those meetings
+    """
+
+    meetings_by_date = {}
+
+    for collection_name in ("pg_meetings", "pg_meeting_minutes"):
         try:
-            mo = int(str(m.get("meeting_date") or "").split("-")[1])
-            if m_start <= mo <= m_end:
-                meet_q += 1
+            docs = list(db[collection_name].find(_gradation_period_query(
+                pg_oid,
+                year,
+                start_month,
+                end_month
+            )))
         except Exception:
-            pass
+            docs = []
 
-    # Financial: overdue loans / repayment regularity
-    loans = list(db.pg_loan_accounts.find({"pg_id": pg_oid}))
-    overdue = sum(float(l.get("overdue_amount") or 0) for l in loans)
-    outstanding = sum(float(l.get("outstanding_amount") or 0) for l in loans)
+        for doc in docs:
+            month = _gradation_get_month_from_doc(doc)
+            if not month or not (int(start_month) <= int(month) <= int(end_month)):
+                continue
 
-    # Business: turnover in quarter (from market transactions monthly)
-    agg = list(db.pg_market_transactions.aggregate([
-        {"$match": {"pg_id": pg_oid, "year": int(year), "month": {"$gte": m_start, "$lte": m_end}}},
-        {"$group": {"_id": None, "turnover": {"$sum": "$total_turnover"}}}
-    ]))
-    turnover = float(agg[0]["turnover"] if agg else 0)
+            key = _gradation_get_date_key(doc)
+            if not key:
+                continue
 
-    # Simple scoring rules (can be tuned later)
-    score = 0
-    breakdown = {}
+            existing = meetings_by_date.get(key) or {}
+            old_attendance = _gradation_attendance_count(existing)
+            new_attendance = _gradation_attendance_count(doc)
 
-    # meetings (0-25)
-    breakdown["meetings"] = min(meet_q, 5) * 5  # 5 meetings => 25
-    # financial (0-35)
-    breakdown["financial"] = 35 if overdue <= 0 else max(0, 35 - min(35, int(overdue/1000)))
-    # business (0-30)
-    breakdown["business"] = 0
-    if turnover >= 500000:
-        breakdown["business"] = 30
-    elif turnover >= 200000:
-        breakdown["business"] = 22
-    elif turnover >= 50000:
-        breakdown["business"] = 14
-    elif turnover > 0:
-        breakdown["business"] = 8
-    # governance placeholder (0-10) — later link to resolutions, attendance avg, etc.
-    breakdown["governance"] = 10 if meet_q >= 1 else 4
+            if new_attendance >= old_attendance:
+                meetings_by_date[key] = doc
 
-    score = sum(breakdown.values())
-    grade = "D"
-    if score >= 80: grade = "A"
-    elif score >= 65: grade = "B"
-    elif score >= 50: grade = "C"
+    meetings_held = len(meetings_by_date)
+    attendance_total = sum(_gradation_attendance_count(doc) for doc in meetings_by_date.values())
 
     return {
-        "year": int(year),
-        "quarter": int(quarter),
-        "score": score,
-        "grade": grade,
-        "breakdown": breakdown,
-        "metrics": {"meetings": meet_q, "overdue": overdue, "outstanding": outstanding, "turnover": turnover}
+        "meetings_held": meetings_held,
+        "attendance_total": attendance_total,
     }
+
+
+def _gradation_manual_inputs_from_request():
+    """
+    Manual fields needed because the PG MIS manual has indicators that
+    may not be fully derivable from existing transaction tables.
+    """
+
+    data = request.get_json(silent=True) if request.is_json else None
+    src = data if isinstance(data, dict) else request.form
+
+    return {
+        "subcommittee_meetings": _gradation_int(src.get("subcommittee_meetings"), 0),
+        "standard_pop_members": _gradation_int(src.get("standard_pop_members"), 0),
+        "office_infrastructure_status": str(src.get("office_infrastructure_status") or "not_possessing_operating").strip(),
+        "business_plan_status": str(src.get("business_plan_status") or "functioning_not_as_per_plan").strip(),
+        "training_conducted": _gradation_bool(src.get("training_conducted")),
+        "grievance_disposal_days": _gradation_int(src.get("grievance_disposal_days"), 0),
+
+        # Optional override. If not submitted, backend auto-detects record keeping.
+        "record_keeping": str(src.get("record_keeping") or "").strip().lower(),
+
+        # Optional remarks for future audit/history display.
+        "remarks": str(src.get("remarks") or "").strip(),
+    }
+
+
+def _gradation_subcommittee_marks(count):
+    count = _gradation_int(count, 0)
+
+    if count >= 5:
+        return 10
+    if count == 4:
+        return 8
+    if count == 3:
+        return 6
+    if count == 2:
+        return 4
+    if count == 1:
+        return 2
+
+    return 0
+
+
+def _gradation_office_marks(status):
+    status = str(status or "").strip().lower()
+
+    mapping = {
+        "functional": 5,
+        "possessing_functional": 5,
+        "possessing_and_functional": 5,
+
+        "possessing_not_operational": 4,
+        "not_operational": 4,
+
+        "not_possessing_operating": 3,
+        "no_office_but_operating": 3,
+
+        "irregular": 0,
+        "irregular_operation": 0,
+    }
+
+    return mapping.get(status, 0)
+
+
+def _gradation_business_plan_marks(status):
+    status = str(status or "").strip().lower()
+
+    if status in ("as_per_plan", "operating_as_per_plan", "yes"):
+        return 10
+
+    if status in ("not_as_per_plan", "functioning_not_as_per_plan", "partial"):
+        return 8
+
+    return 0
+
+
+def _gradation_grievance_marks(days):
+    days = _gradation_int(days, 0)
+
+    if days <= 0:
+        return 0
+    if days <= 7:
+        return 10
+    if days <= 10:
+        return 8
+    if days <= 15:
+        return 6
+
+    return 0
+
+
+def _compute_gradation(db, pg_id: str, year: int, quarter: int, manual_inputs=None):
+    """
+    Manual-compliant PG Gradation.
+
+    Indicator total:
+    1. Regularity of Meeting - 10
+    2. Member Attendance - 10
+    3. Sub-committee Meeting - 10
+    4. Record Keeping - 10
+    5. Turnover - 20
+    6. Standard PoP Members - 5
+    7. Office & Infrastructure - 5
+    8. Business Plan - 10
+    9. Training / Exposure Visit - 10
+    10. Grievance Redressal - 10
+    """
+
+    pg_oid = ObjectId(pg_id)
+    year = int(year)
+    quarter = int(quarter)
+    start_month, end_month = _gradation_quarter_months(quarter)
+
+    manual_inputs = manual_inputs or {}
+
+    total_members = db.pg_members.count_documents({
+        **_gradation_pg_query(pg_oid),
+        "$or": [
+            {"is_active": True},
+            {"is_active": {"$exists": False}},
+        ]
+    })
+
+    meeting_metrics = _gradation_meeting_metrics(
+        db=db,
+        pg_oid=pg_oid,
+        year=year,
+        start_month=start_month,
+        end_month=end_month,
+    )
+
+    meetings_held = _gradation_int(meeting_metrics.get("meetings_held"), 0)
+    attendance_total = _gradation_int(meeting_metrics.get("attendance_total"), 0)
+
+    expected_meetings = 6
+    expected_attendance = total_members * meetings_held
+
+    meeting_regular_percent = 0.0
+    if expected_meetings > 0:
+        meeting_regular_percent = min((meetings_held / expected_meetings) * 100, 100)
+
+    attendance_percent = 0.0
+    if expected_attendance > 0:
+        attendance_percent = min((attendance_total / expected_attendance) * 100, 100)
+
+    turnover = _gradation_sum_turnover(
+        db=db,
+        pg_oid=pg_oid,
+        year=year,
+        start_month=start_month,
+        end_month=end_month,
+    )
+
+    turnover_target = 300000.0
+    turnover_percent = 0.0
+    if turnover_target > 0:
+        turnover_percent = min((turnover / turnover_target) * 100, 100)
+
+    standard_pop_members = _gradation_int(manual_inputs.get("standard_pop_members"), 0)
+    standard_pop_percent = 0.0
+    if total_members > 0:
+        standard_pop_percent = min((standard_pop_members / total_members) * 100, 100)
+
+    subcommittee_meetings = _gradation_int(manual_inputs.get("subcommittee_meetings"), 0)
+
+    record_override = str(manual_inputs.get("record_keeping") or "").strip().lower()
+    if record_override in ("yes", "1", "true", "recorded"):
+        record_keeping_done = True
+    elif record_override in ("no", "0", "false", "not_recorded"):
+        record_keeping_done = False
+    else:
+        transaction_count = 0
+        period_query = {
+            **_gradation_pg_query(pg_oid),
+            "year": year,
+            "month": {
+                "$gte": start_month,
+                "$lte": end_month,
+            }
+        }
+
+        for collection_name in (
+            "pg_market_transactions",
+            "pg_business_monthly",
+            "pg_receipt_vouchers",
+            "pg_input_registers",
+            "pg_output_registers",
+            "pg_asset_registers",
+            "pg_stocks_monthly",
+        ):
+            transaction_count += _gradation_collection_count(db, collection_name, period_query)
+
+        record_keeping_done = transaction_count > 0
+
+    office_status = manual_inputs.get("office_infrastructure_status")
+    business_plan_status = manual_inputs.get("business_plan_status")
+    training_conducted = _gradation_bool(manual_inputs.get("training_conducted"))
+    grievance_days = _gradation_int(manual_inputs.get("grievance_disposal_days"), 0)
+
+    indicators = [
+        {
+            "key": "meeting_regularity",
+            "sl_no": 1,
+            "indicator": "Regularity of Meeting (Monthly twice)",
+            "max_marks": 10,
+            "formula": "(Total meetings held during the period / Total meetings to be held during the period) × 100",
+            "metric": f"{meetings_held} of {expected_meetings} meetings",
+            "percentage": round(meeting_regular_percent, 2),
+            "marks_obtained": round(min((meeting_regular_percent * 10) / 100, 10), 2),
+        },
+        {
+            "key": "member_attendance",
+            "sl_no": 2,
+            "indicator": "Regularity of Members Attendance",
+            "max_marks": 10,
+            "formula": "(Total members attended meetings / Total PG members × meetings held) × 100",
+            "metric": f"{attendance_total} attendance out of {expected_attendance}",
+            "percentage": round(attendance_percent, 2),
+            "marks_obtained": round(min((attendance_percent * 10) / 100, 10), 2),
+        },
+        {
+            "key": "subcommittee_meeting",
+            "sl_no": 3,
+            "indicator": "Sub-committee Meeting Regularity",
+            "max_marks": 10,
+            "formula": ">=5 meetings = 10, 4 = 8, 3 = 6, 2 = 4, 1 = 2, else 0",
+            "metric": f"{subcommittee_meetings} sub-committee meetings",
+            "percentage": None,
+            "marks_obtained": _gradation_subcommittee_marks(subcommittee_meetings),
+        },
+        {
+            "key": "record_keeping",
+            "sl_no": 4,
+            "indicator": "Record Keeping",
+            "max_marks": 10,
+            "formula": "If transactions are recorded in the period = 10, else 0",
+            "metric": "Transactions recorded" if record_keeping_done else "No transaction record found",
+            "percentage": None,
+            "marks_obtained": 10 if record_keeping_done else 0,
+        },
+        {
+            "key": "turnover",
+            "sl_no": 5,
+            "indicator": "Turnover",
+            "max_marks": 20,
+            "formula": "Total turnover in 3 months / 300000 × 100",
+            "metric": f"₹{turnover:,.2f} of ₹3,00,000 target",
+            "percentage": round(turnover_percent, 2),
+            "marks_obtained": round(min((turnover_percent * 20) / 100, 20), 2),
+        },
+        {
+            "key": "standard_pop",
+            "sl_no": 6,
+            "indicator": "% of PG Members linked with Standard PoP",
+            "max_marks": 5,
+            "formula": "(PG members practicing standard PoP / Total PG members) × 100",
+            "metric": f"{standard_pop_members} of {total_members} members",
+            "percentage": round(standard_pop_percent, 2),
+            "marks_obtained": round(min((standard_pop_percent * 5) / 100, 5), 2),
+        },
+        {
+            "key": "office_infrastructure",
+            "sl_no": 7,
+            "indicator": "PG having its own functional office & infrastructure",
+            "max_marks": 5,
+            "formula": "Functional = 5, available but not operational = 4, no office but operating = 3, irregular = 0",
+            "metric": str(office_status or ""),
+            "percentage": None,
+            "marks_obtained": _gradation_office_marks(office_status),
+        },
+        {
+            "key": "business_plan",
+            "sl_no": 8,
+            "indicator": "Business Plan",
+            "max_marks": 10,
+            "formula": "Operating as per business plan = 10, functioning but not as per business plan = 8",
+            "metric": str(business_plan_status or ""),
+            "percentage": None,
+            "marks_obtained": _gradation_business_plan_marks(business_plan_status),
+        },
+        {
+            "key": "training_exposure",
+            "sl_no": 9,
+            "indicator": "Training programme / exposure visit conducted",
+            "max_marks": 10,
+            "formula": "Training programme and exposure conducted = 10",
+            "metric": "Conducted" if training_conducted else "Not conducted",
+            "percentage": None,
+            "marks_obtained": 10 if training_conducted else 0,
+        },
+        {
+            "key": "grievance_redressal",
+            "sl_no": 10,
+            "indicator": "Grievance Redressal Mechanism in place for PG Members",
+            "max_marks": 10,
+            "formula": "7 days = 10, 10 days = 8, 15 days = 6, more than 15 days = 0",
+            "metric": f"{grievance_days} days" if grievance_days else "Not entered",
+            "percentage": None,
+            "marks_obtained": _gradation_grievance_marks(grievance_days),
+        },
+    ]
+
+    total_score = round(sum(_gradation_float(i.get("marks_obtained")) for i in indicators), 2)
+
+    turnover_condition_met = turnover_percent >= 75
+
+    if total_score >= 75 and turnover_condition_met:
+        grade = "A"
+        grade_label = "Excellent"
+    elif total_score >= 60:
+        grade = "B"
+        grade_label = "Average"
+    else:
+        grade = "C"
+        grade_label = "Poor"
+
+    breakdown = {
+        item["key"]: item["marks_obtained"]
+        for item in indicators
+    }
+
+    return {
+        "year": year,
+        "quarter": quarter,
+        "quarter_label": f"Q{quarter}",
+        "period": {
+            "start_month": start_month,
+            "end_month": end_month,
+        },
+        "score": total_score,
+        "total_score": total_score,
+        "grade": grade,
+        "grade_label": grade_label,
+        "turnover_condition_met": turnover_condition_met,
+        "turnover_percent": round(turnover_percent, 2),
+        "breakdown": breakdown,
+        "indicators": indicators,
+        "manual_inputs": manual_inputs,
+        "metrics": {
+            "total_members": total_members,
+            "meetings_held": meetings_held,
+            "expected_meetings": expected_meetings,
+            "attendance_total": attendance_total,
+            "expected_attendance": expected_attendance,
+            "meeting_regular_percent": round(meeting_regular_percent, 2),
+            "attendance_percent": round(attendance_percent, 2),
+            "turnover": turnover,
+            "turnover_target": turnover_target,
+            "turnover_percent": round(turnover_percent, 2),
+            "standard_pop_members": standard_pop_members,
+            "standard_pop_percent": round(standard_pop_percent, 2),
+            "subcommittee_meetings": subcommittee_meetings,
+            "record_keeping_done": record_keeping_done,
+            "office_infrastructure_status": office_status,
+            "business_plan_status": business_plan_status,
+            "training_conducted": training_conducted,
+            "grievance_disposal_days": grievance_days,
+        }
+    }
+
 
 @reports_bp.route("/gradation/<pg_id>", methods=["GET", "POST"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN", "CADRE_CC")
 @require_unlocked_period(scope='pg')
 def gradation(pg_id):
-    from flask import jsonify
-
     db = current_app.mongo_db
 
     wants_json = (
@@ -1978,6 +2493,7 @@ def gradation(pg_id):
         or request.args.get("mobile") == "1"
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
         or "application/json" in (request.headers.get("Accept") or "")
+        or request.is_json
     )
 
     if not ObjectId.is_valid(pg_id):
@@ -1986,15 +2502,29 @@ def gradation(pg_id):
         flash("Invalid PG id.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
+    pg_oid = ObjectId(pg_id)
+    pg = db.pgs.find_one({"_id": pg_oid})
+
     if not pg:
         if wants_json:
             return jsonify({"success": False, "message": "PG not found"}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    year = int(request.values.get("year") or datetime.utcnow().year)
-    quarter = int(request.values.get("quarter") or ((datetime.utcnow().month - 1) // 3 + 1))
+    year = _gradation_int(request.values.get("year"), datetime.utcnow().year)
+    quarter = _gradation_int(
+        request.values.get("quarter"),
+        ((datetime.utcnow().month - 1) // 3 + 1)
+    )
+
+    if quarter not in (1, 2, 3, 4):
+        quarter = ((datetime.utcnow().month - 1) // 3 + 1)
+
+    existing_snap = db.pg_gradation_snapshots.find_one({
+        "pg_id": pg_oid,
+        "year": year,
+        "quarter": quarter
+    })
 
     if request.method == "POST" and session.get("role") in ("PG_DATA_ENTRY", "CADRE_CC"):
         if wants_json:
@@ -2002,78 +2532,119 @@ def gradation(pg_id):
                 "success": False,
                 "message": "Gradation can only be submitted by CLF/Block authorities."
             }), 403
+
         flash("Gradation can only be submitted by CLF/Block authorities.", "warning")
         return redirect(url_for("reports.gradation", pg_id=pg_id, year=year, quarter=quarter))
 
     if request.method == "POST":
-        snap = _compute_gradation(db, pg_id, year, quarter)
+        manual_inputs = _gradation_manual_inputs_from_request()
+
+        snap = _compute_gradation(
+            db=db,
+            pg_id=pg_id,
+            year=year,
+            quarter=quarter,
+            manual_inputs=manual_inputs
+        )
+
+        now = datetime.utcnow()
+
         snap.update({
-            "pg_id": ObjectId(pg_id),
-            "updated_at": datetime.utcnow(),
-            "created_at": datetime.utcnow()
+            "pg_id": pg_oid,
+            "pg_name": pg.get("name") or pg.get("pg_name") or "",
+            "updated_at": now,
         })
 
+        if not existing_snap:
+            snap["created_at"] = now
+
         db.pg_gradation_snapshots.update_one(
-            {"pg_id": ObjectId(pg_id), "year": year, "quarter": quarter},
-            {"$set": snap},
+            {
+                "pg_id": pg_oid,
+                "year": year,
+                "quarter": quarter,
+            },
+            {
+                "$set": snap,
+                "$setOnInsert": {
+                    "created_at": now,
+                }
+            },
             upsert=True
         )
 
         if wants_json:
             return jsonify({
                 "success": True,
-                "message": "Gradation computed and saved.",
+                "message": "PG Gradation saved successfully as per manual format.",
                 "pg_id": pg_id,
-                "pg_name": pg.get("name") or "",
+                "pg_name": pg.get("name") or pg.get("pg_name") or "",
                 "year": year,
                 "quarter": quarter,
                 "snapshot": {
                     "year": snap.get("year"),
                     "quarter": snap.get("quarter"),
                     "score": snap.get("score"),
+                    "total_score": snap.get("total_score"),
                     "grade": snap.get("grade"),
+                    "grade_label": snap.get("grade_label"),
+                    "turnover_condition_met": snap.get("turnover_condition_met"),
+                    "turnover_percent": snap.get("turnover_percent"),
                     "breakdown": snap.get("breakdown", {}),
+                    "indicators": snap.get("indicators", []),
                     "metrics": snap.get("metrics", {}),
+                    "manual_inputs": snap.get("manual_inputs", {}),
                     "updated_at": snap.get("updated_at").isoformat() if snap.get("updated_at") else None,
                 }
             })
 
-        flash("Gradation computed and saved.", "success")
+        flash("PG Gradation saved successfully as per manual format.", "success")
         return redirect(url_for("reports.gradation", pg_id=pg_id, year=year, quarter=quarter))
 
-    snap = db.pg_gradation_snapshots.find_one({
-        "pg_id": ObjectId(pg_id),
-        "year": year,
-        "quarter": quarter
-    })
-    computed = _compute_gradation(db, pg_id, year, quarter)
-    src = snap or computed
+    manual_inputs = (existing_snap or {}).get("manual_inputs") or {}
+
+    computed = _compute_gradation(
+        db=db,
+        pg_id=pg_id,
+        year=year,
+        quarter=quarter,
+        manual_inputs=manual_inputs
+    )
+
+    src = existing_snap or computed
 
     if wants_json:
         return jsonify({
             "success": True,
             "pg_id": pg_id,
-            "pg_name": pg.get("name") or "",
+            "pg_name": pg.get("name") or pg.get("pg_name") or "",
             "year": year,
             "quarter": quarter,
-            "has_saved_snapshot": bool(snap),
+            "has_saved_snapshot": bool(existing_snap),
             "can_compute": session.get("role") not in ("PG_DATA_ENTRY", "CADRE_CC"),
             "snapshot": {
                 "year": src.get("year"),
                 "quarter": src.get("quarter"),
-                "score": src.get("score"),
+                "score": src.get("score") or src.get("total_score"),
+                "total_score": src.get("total_score") or src.get("score"),
                 "grade": src.get("grade"),
+                "grade_label": src.get("grade_label"),
+                "turnover_condition_met": src.get("turnover_condition_met"),
+                "turnover_percent": src.get("turnover_percent"),
                 "breakdown": src.get("breakdown", {}),
+                "indicators": src.get("indicators", []),
                 "metrics": src.get("metrics", {}),
-                "updated_at": snap.get("updated_at").isoformat() if snap and snap.get("updated_at") else None,
+                "manual_inputs": src.get("manual_inputs", {}),
+                "updated_at": src.get("updated_at").isoformat() if src.get("updated_at") else None,
             }
         })
 
     return render_template(
         "gradation.html",
         pg=pg,
-        snap=snap,
+        snap=existing_snap,
         computed=computed,
+        src=src,
         year=year,
         quarter=quarter
     )
