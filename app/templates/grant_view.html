@@ -317,6 +317,55 @@
   }
   .gu-btn.danger:hover{ background: rgba(239,68,68,.14); }
 
+    /* Inline action popup below Save/Clear buttons */
+  .gu-inline-alert{
+    display:none;
+    width:100%;
+    margin-top:10px;
+    border-radius:14px;
+    padding:11px 13px;
+    font-size:12px;
+    font-weight:900;
+    line-height:1.35;
+    border:1px solid rgba(15,23,42,.14);
+    box-shadow:0 12px 20px -18px rgba(15,23,42,.35);
+    cursor:pointer;
+  }
+
+  .gu-inline-alert.show{
+    display:block;
+    animation: guAlertIn .18s ease-out;
+  }
+
+  .gu-inline-alert.success{
+    background:rgba(16,185,129,.12);
+    border-color:rgba(16,185,129,.30);
+    color:#0b4d3a;
+  }
+
+  .gu-inline-alert.error{
+    background:rgba(239,68,68,.10);
+    border-color:rgba(239,68,68,.30);
+    color:#991b1b;
+  }
+
+  .gu-inline-alert.warning{
+    background:rgba(245,158,11,.12);
+    border-color:rgba(245,158,11,.32);
+    color:#92400e;
+  }
+
+  @keyframes guAlertIn{
+    from{
+      opacity:0;
+      transform:translateY(-4px);
+    }
+    to{
+      opacity:1;
+      transform:translateY(0);
+    }
+  }
+
   .gu-pill{
     padding: 6px 10px;
     border-radius: 999px;
@@ -672,7 +721,12 @@
   }
 </style>
 
-<div class="gu-wrap" id="guWrap">
+{% set gu_flash_messages = get_flashed_messages(with_categories=true) %}
+<div
+  class="gu-wrap"
+  id="guWrap"
+  data-flash='{{ gu_flash_messages|tojson|safe }}'
+>
   <div class="gu-sheet">
 
     <!-- Header -->
@@ -737,7 +791,14 @@
           </div>
 
           <div class="gu-card-body">
-            <form method="POST" enctype="multipart/form-data" class="gu-formgrid" id="guUtilForm">
+<form
+  method="POST"
+  action="{{ url_for('finance.grant_view', grant_id=grant._id) }}"
+  enctype="multipart/form-data"
+  class="gu-formgrid"
+  id="guUtilForm"
+>
+  <input type="hidden" name="action" value="utilize">
               <div class="gu-stack gu-col-4">
                 <label id="guLblDate">Date</label>
                 <input name="utilized_at" type="date" class="gu-input">
@@ -763,7 +824,7 @@
                 <textarea name="remarks" class="gu-textarea"></textarea>
               </div>
 
-              <div class="gu-col-12 gu-actions">
+                            <div class="gu-col-12 gu-actions">
                 <button class="gu-btn primary" type="submit" id="guBtnSaveUtil">
                   Save Utilization
                 </button>
@@ -771,6 +832,14 @@
                 <button class="gu-btn ghost" type="button" id="guBtnClearUtil">
                   Clear
                 </button>
+
+                <div
+                  class="gu-inline-alert"
+                  id="guUtilAlert"
+                  role="alert"
+                  aria-live="polite"
+                  title="Click to close"
+                ></div>
               </div>
             </form>
           </div>
@@ -1306,11 +1375,81 @@
       if(lang === 'en' || lang === 'bn') applyLang(lang);
     });
 
-    document.addEventListener('DOMContentLoaded', ()=>{
+        document.addEventListener('DOMContentLoaded', ()=>{
       applyLang(getStoredLang());
 
       const form = document.getElementById('guUtilForm');
       const clearBtn = document.getElementById('guBtnClearUtil');
+      const alertBox = document.getElementById('guUtilAlert');
+
+      let alertTimer = null;
+
+      function hideUtilAlert(){
+        if(!alertBox) return;
+        alertBox.classList.remove('show', 'success', 'error', 'warning');
+        alertBox.textContent = '';
+        if(alertTimer){
+          clearTimeout(alertTimer);
+          alertTimer = null;
+        }
+      }
+
+      function showUtilAlert(type, message){
+        if(!alertBox) return;
+
+        hideUtilAlert();
+
+        alertBox.textContent = message;
+        alertBox.classList.add('show', type || 'warning');
+
+        alertTimer = setTimeout(()=>{
+          hideUtilAlert();
+        }, 3500);
+      }
+
+      window.__showGrantUtilAlert = showUtilAlert;
+
+      if(alertBox){
+        alertBox.addEventListener('click', hideUtilAlert);
+      }
+
+      document.addEventListener('click', function(e){
+        if(!alertBox || !alertBox.classList.contains('show')) return;
+
+        const clickedInsideAlert = alertBox.contains(e.target);
+        const clickedSubmit = e.target && e.target.closest && e.target.closest('#guBtnSaveUtil');
+
+        if(!clickedInsideAlert && !clickedSubmit){
+          hideUtilAlert();
+        }
+      });
+
+      if(form){
+        form.addEventListener('submit', function(e){
+          const head = form.querySelector('[name="head"]');
+          const amount = form.querySelector('[name="amount"]');
+
+          const headValue = (head?.value || '').trim();
+          const amountValue = parseFloat(amount?.value || '0');
+
+          if(!headValue){
+            e.preventDefault();
+            showUtilAlert('warning', 'Please fill the Head field before saving utilization.');
+            if(head) head.focus();
+            return;
+          }
+
+          if(!amount?.value || !Number.isFinite(amountValue) || amountValue <= 0){
+            e.preventDefault();
+            showUtilAlert('warning', 'Please enter a valid Amount greater than 0 before saving utilization.');
+            if(amount) amount.focus();
+            return;
+          }
+
+          showUtilAlert('success', 'Saving utilization... Please wait.');
+        });
+      }
+
       if(form && clearBtn){
         clearBtn.addEventListener('click', ()=>{
           form.reset();
@@ -1318,9 +1457,32 @@
           if(fi) fi.value = "";
           const first = form.querySelector('input[name="utilized_at"]');
           if(first) first.focus();
+          showUtilAlert('warning', 'Form cleared.');
         });
       }
+
+      try{
+        const wrap = document.getElementById('guWrap');
+        const rawFlash = wrap ? wrap.getAttribute('data-flash') : '';
+        const flashMessages = rawFlash ? JSON.parse(rawFlash) : [];
+
+        if(Array.isArray(flashMessages) && flashMessages.length){
+          const latest = flashMessages[flashMessages.length - 1];
+          const category = String(latest[0] || '').toLowerCase();
+          const message = String(latest[1] || '');
+
+          let type = 'warning';
+          if(category.includes('success')) type = 'success';
+          if(category.includes('danger') || category.includes('error')) type = 'error';
+
+          if(message){
+            showUtilAlert(type, message);
+          }
+        }
+      }catch(_){}
     });
+      
+    
   })();
 </script>
 
