@@ -852,6 +852,158 @@ def _state_dashboard_build_details(db, pg_match, pg_ids, detail_key, search_quer
 
     return None
 
+
+def _num(value):
+    """
+    Safe number converter for dashboard charts.
+    Keeps chart rendering safe even if MongoDB returns None/string values.
+    """
+    try:
+        if value is None:
+            return 0
+        return float(value)
+    except Exception:
+        return 0
+
+
+def _state_dashboard_chart_pack(
+    states_total=0,
+    districts_total=0,
+    blocks_total=0,
+    cadre_count=0,
+    pg_count=0,
+    member_count=0,
+    total_turnover=0,
+    total_profit=0,
+    total_loss=0,
+    pgs_with_grants=0,
+    grants_total=0,
+    lakhpati_total=0,
+    shg_total=0,
+    shg_active=0,
+    sector_summary=None,
+    ffs_summary=None,
+):
+    """
+    Builds all chart datasets for State Dashboard KPI graphs.
+
+    This only prepares data for frontend charts.
+    It does not modify any existing KPI calculation or database logic.
+    """
+
+    sector_summary = sector_summary or []
+    ffs_summary = ffs_summary or []
+
+    kpi_labels = [
+        "States",
+        "Districts",
+        "Blocks",
+        "Cadres",
+        "PGs",
+        "Members",
+        "Turnover",
+        "Profit",
+        "Loss",
+        "PGs with Grants",
+        "Grants Received",
+        "Lakhpati Didi",
+        "SHG Total",
+        "SHG Active",
+    ]
+
+    kpi_values = [
+        _num(states_total),
+        _num(districts_total),
+        _num(blocks_total),
+        _num(cadre_count),
+        _num(pg_count),
+        _num(member_count),
+        _num(total_turnover),
+        _num(total_profit),
+        _num(total_loss),
+        _num(pgs_with_grants),
+        _num(grants_total),
+        _num(lakhpati_total),
+        _num(shg_total),
+        _num(shg_active),
+    ]
+
+    geography_labels = ["States", "Districts", "Blocks"]
+    geography_values = [
+        _num(states_total),
+        _num(districts_total),
+        _num(blocks_total),
+    ]
+
+    people_labels = ["Cadres", "PGs", "Members", "Lakhpati Didi"]
+    people_values = [
+        _num(cadre_count),
+        _num(pg_count),
+        _num(member_count),
+        _num(lakhpati_total),
+    ]
+
+    finance_labels = ["Latest Turnover", "Total Profit", "Total Loss", "Grants Received"]
+    finance_values = [
+        _num(total_turnover),
+        _num(total_profit),
+        _num(total_loss),
+        _num(grants_total),
+    ]
+
+    grant_labels = ["PGs with Grants", "Total PGs"]
+    grant_values = [
+        _num(pgs_with_grants),
+        _num(pg_count),
+    ]
+
+    shg_labels = ["SHG Total", "SHG Active"]
+    shg_values = [
+        _num(shg_total),
+        _num(shg_active),
+    ]
+
+    sector_labels = [str(item.get("label") or item.get("key") or "Unknown") for item in sector_summary]
+    sector_values = [_num(item.get("count")) for item in sector_summary]
+
+    ffs_labels = [str(item.get("label") or item.get("key") or "Unknown") for item in ffs_summary]
+    ffs_values = [_num(item.get("count")) for item in ffs_summary]
+
+    return {
+        "all_kpis": {
+            "labels": kpi_labels,
+            "values": kpi_values,
+        },
+        "geography": {
+            "labels": geography_labels,
+            "values": geography_values,
+        },
+        "people": {
+            "labels": people_labels,
+            "values": people_values,
+        },
+        "finance": {
+            "labels": finance_labels,
+            "values": finance_values,
+        },
+        "grants": {
+            "labels": grant_labels,
+            "values": grant_values,
+        },
+        "shg": {
+            "labels": shg_labels,
+            "values": shg_values,
+        },
+        "sectors": {
+            "labels": sector_labels,
+            "values": sector_values,
+        },
+        "ffs": {
+            "labels": ffs_labels,
+            "values": ffs_values,
+        },
+    }
+
 @reports_bp.route("/state_dashboard")
 @login_required
 @roles_required("SUPER_ADMIN", "ADMIN", "DISTRICT_ADMIN", "BLOCK_ADMIN", "CADRE_CC")
@@ -1033,11 +1185,45 @@ def state_dashboard():
     ]
     top_districts = list(db.shg_master.aggregate(pipe))
 
+    state_kpi_charts = _state_dashboard_chart_pack(
+        states_total=states_total,
+        districts_total=districts_total,
+        blocks_total=blocks_total,
+        cadre_count=cadre_count,
+        pg_count=pg_count,
+        member_count=member_count,
+        total_turnover=total_turnover_latest,
+        total_profit=total_profit,
+        total_loss=total_loss,
+        pgs_with_grants=pgs_with_grants,
+        grants_total=grants_total,
+        lakhpati_total=lakhpati_total,
+        shg_total=shg_total,
+        shg_active=shg_active,
+        sector_summary=sector_summary,
+        ffs_summary=ffs_summary,
+    )
+
     charts = {
-        "pg_by_state": {"labels": [x["name"] for x in pg_by_state], "values": [x["count"] for x in pg_by_state]},
-        "pg_by_district": {"labels": [x["name"] for x in pg_by_district], "values": [x["count"] for x in pg_by_district]},
-        "pg_by_block": {"labels": [x["name"] for x in pg_by_block], "values": [x["count"] for x in pg_by_block]},
-        "turnover_ts": {"labels": turnover_ts.get("labels", []), "values": turnover_ts.get("values", [])},
+        "pg_by_state": {
+            "labels": [x["name"] for x in pg_by_state],
+            "values": [x["count"] for x in pg_by_state],
+        },
+        "pg_by_district": {
+            "labels": [x["name"] for x in pg_by_district],
+            "values": [x["count"] for x in pg_by_district],
+        },
+        "pg_by_block": {
+            "labels": [x["name"] for x in pg_by_block],
+            "values": [x["count"] for x in pg_by_block],
+        },
+        "turnover_ts": {
+            "labels": turnover_ts.get("labels", []),
+            "values": turnover_ts.get("values", []),
+        },
+
+        # New chart data for all State Dashboard KPIs
+        "state_kpis": state_kpi_charts,
     }
 
     # Title label based on role/scope

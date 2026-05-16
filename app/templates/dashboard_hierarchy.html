@@ -485,6 +485,148 @@
 @media (max-width: 420px){
   .rd-btn{ padding: 9px 10px !important; }
 }
+
+/* ============================================================
+   ✅ NEW HIERARCHY DASHBOARD KPI GRAPHS
+   - Uses existing KPI values
+   - No backend/database logic changed
+============================================================ */
+
+.rd-graph-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:14px;
+  margin-top: 12px;
+}
+
+.rd-graph-card{
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(15,23,42,.12);
+  border-radius:18px;
+  background:
+    radial-gradient(100% 100% at 0% 0%, rgba(16,185,129,.12), transparent 42%),
+    linear-gradient(135deg, #f8fafc, #ffffff);
+  box-shadow:
+    0 20px 34px -28px rgba(15,23,42,.38),
+    inset 0 1px 0 rgba(255,255,255,.88);
+}
+
+.rd-graph-card::after{
+  content:"";
+  position:absolute;
+  left:18px;
+  right:18px;
+  bottom:8px;
+  height:18px;
+  border-radius:999px;
+  background:rgba(11,77,58,.14);
+  filter:blur(13px);
+  pointer-events:none;
+}
+
+.rd-graph-head{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  padding:14px 14px 10px;
+  border-bottom:1px solid rgba(15,23,42,.08);
+}
+
+.rd-graph-title{
+  margin:0;
+  font-size:13px;
+  font-weight:950;
+  color:rgba(15,23,42,.95);
+}
+
+.rd-graph-sub{
+  margin-top:4px;
+  font-size:12px;
+  font-weight:750;
+  color:rgba(100,116,139,.95);
+}
+
+.rd-graph-pill{
+  border:1px solid rgba(16,185,129,.28);
+  background:rgba(16,185,129,.11);
+  color:#0b4d3a;
+  border-radius:999px;
+  padding:7px 10px;
+  font-size:10px;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  white-space:nowrap;
+}
+
+.rd-graph-body{
+  position:relative;
+  z-index:1;
+  padding:14px;
+}
+
+.rd-chart-box{
+  height:315px;
+  min-height:250px;
+  border-radius:16px;
+  padding:10px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.82), rgba(247,250,249,.72));
+  border:1px solid rgba(15,23,42,.08);
+  box-shadow:
+    inset 0 16px 24px rgba(11,77,58,.04),
+    0 12px 22px -20px rgba(15,23,42,.45);
+}
+
+.rd-chart-box canvas{
+  display:block;
+  width:100% !important;
+  height:100% !important;
+}
+
+.rd-graph-wide{
+  grid-column:1 / -1;
+}
+
+@media (max-width: 1100px){
+  .rd-graph-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+@media (max-width: 720px){
+  .rd-chart-box{
+    height:270px;
+    min-height:230px;
+  }
+
+  .rd-graph-head{
+    padding:12px 12px 9px;
+  }
+
+  .rd-graph-body{
+    padding:12px;
+  }
+}
+
+@media (max-width: 420px){
+  .rd-chart-box{
+    height:235px;
+    min-height:215px;
+  }
+
+  .rd-graph-head{
+    flex-direction:column;
+  }
+
+  .rd-graph-pill{
+    width:max-content;
+  }
+}
 </style>
 
 <div class="rd-wrap">
@@ -671,6 +813,111 @@
         </div>
       </div>
 
+            <!-- ✅ HIERARCHY KPI GRAPHS -->
+      <div class="rd-section">
+        <div class="rd-section-title">
+          <div class="rd-left-title">
+            <span class="rd-dot"></span>
+            <h6 class="rd-h6">KPI Graphs</h6>
+          </div>
+          <div class="rd-mini">Working visual graphs from current login scope</div>
+        </div>
+
+        <div class="rd-graph-grid">
+
+          <div class="rd-graph-card rd-graph-wide">
+            <div class="rd-graph-head">
+              <div>
+                <h6 class="rd-graph-title">All Main KPIs</h6>
+                <div class="rd-graph-sub">PG, members, turnover, profit, grants and SHG values</div>
+              </div>
+              <span class="rd-graph-pill">3D Bar</span>
+            </div>
+            <div class="rd-graph-body">
+              <div class="rd-chart-box">
+                <canvas id="rdHierarchyAllKpiChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="rd-graph-card">
+            <div class="rd-graph-head">
+              <div>
+                <h6 class="rd-graph-title">People Coverage</h6>
+                <div class="rd-graph-sub">Cadres, PGs, members and Lakhpati Didi</div>
+              </div>
+              <span class="rd-graph-pill">Radar</span>
+            </div>
+            <div class="rd-graph-body">
+              <div class="rd-chart-box">
+                <canvas id="rdHierarchyPeopleChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="rd-graph-card">
+            <div class="rd-graph-head">
+              <div>
+                <h6 class="rd-graph-title">Finance Summary</h6>
+                <div class="rd-graph-sub">Turnover, profit, loss and grants received</div>
+              </div>
+              <span class="rd-graph-pill">3D Bar</span>
+            </div>
+            <div class="rd-graph-body">
+              <div class="rd-chart-box">
+                <canvas id="rdHierarchyFinanceChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="rd-graph-card">
+            <div class="rd-graph-head">
+              <div>
+                <h6 class="rd-graph-title">Grant Coverage</h6>
+                <div class="rd-graph-sub">PGs with grants vs PGs without grants</div>
+              </div>
+              <span class="rd-graph-pill">Doughnut</span>
+            </div>
+            <div class="rd-graph-body">
+              <div class="rd-chart-box">
+                <canvas id="rdHierarchyGrantChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="rd-graph-card">
+            <div class="rd-graph-head">
+              <div>
+                <h6 class="rd-graph-title">SHG Master Status</h6>
+                <div class="rd-graph-sub">Total SHGs and active SHGs in scope</div>
+              </div>
+              <span class="rd-graph-pill">Polar</span>
+            </div>
+            <div class="rd-graph-body">
+              <div class="rd-chart-box">
+                <canvas id="rdHierarchyShgChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="rd-graph-card rd-graph-wide">
+            <div class="rd-graph-head">
+              <div>
+                <h6 class="rd-graph-title">PG Sector Distribution</h6>
+                <div class="rd-graph-sub">Sector-wise PG count from current PG list</div>
+              </div>
+              <span class="rd-graph-pill">Horizontal Bar</span>
+            </div>
+            <div class="rd-graph-body">
+              <div class="rd-chart-box">
+                <canvas id="rdHierarchySectorChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <!-- ✅ PG QUICK ACTIONS (NOW ABOVE SHG SECTION) -->
       <div class="rd-section">
         <div class="card rd-table-card">
@@ -785,6 +1032,409 @@
 </div>
 
 <script>
+
+    // =========================
+  // Hierarchy Dashboard KPI Graphs
+  // =========================
+  (function(){
+    const chartUrl = "{{ url_for('static', filename='vendor/chart.min.js') }}";
+    const createdCharts = [];
+
+    function loadChartJs(){
+      return new Promise((resolve) => {
+        if (window.Chart) {
+          resolve(true);
+          return;
+        }
+
+        const old = document.querySelector('script[data-rd-chartjs="1"]');
+        if (old) {
+          old.addEventListener('load', () => resolve(!!window.Chart));
+          old.addEventListener('error', () => resolve(false));
+          return;
+        }
+
+        const s = document.createElement('script');
+        s.src = chartUrl;
+        s.async = true;
+        s.dataset.rdChartjs = "1";
+        s.onload = () => resolve(!!window.Chart);
+        s.onerror = () => resolve(false);
+        document.head.appendChild(s);
+      });
+    }
+
+    function n(value){
+      const x = Number(value || 0);
+      return Number.isFinite(x) ? x : 0;
+    }
+
+    function palette(){
+      return [
+        'rgba(11,77,58,.88)',
+        'rgba(16,185,129,.78)',
+        'rgba(21,128,61,.78)',
+        'rgba(59,130,246,.76)',
+        'rgba(245,158,11,.78)',
+        'rgba(124,58,237,.72)',
+        'rgba(220,38,38,.72)',
+        'rgba(8,145,178,.76)',
+        'rgba(132,204,22,.72)'
+      ];
+    }
+
+    function borderPalette(){
+      return [
+        'rgba(11,77,58,1)',
+        'rgba(16,185,129,1)',
+        'rgba(21,128,61,1)',
+        'rgba(59,130,246,1)',
+        'rgba(245,158,11,1)',
+        'rgba(124,58,237,1)',
+        'rgba(220,38,38,1)',
+        'rgba(8,145,178,1)',
+        'rgba(132,204,22,1)'
+      ];
+    }
+
+    function destroyOldCharts(){
+      while(createdCharts.length){
+        const ch = createdCharts.pop();
+        try { ch.destroy(); } catch(e){}
+      }
+    }
+
+    function values(list){
+      return (list || []).map(v => n(v));
+    }
+
+    function make3DBar(id, labels, dataValues, label, horizontal=false){
+      const el = document.getElementById(id);
+      if(!el || !window.Chart) return;
+
+      const ctx = el.getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 0, 330);
+      gradient.addColorStop(0, 'rgba(16,185,129,.95)');
+      gradient.addColorStop(.45, 'rgba(11,77,58,.80)');
+      gradient.addColorStop(1, 'rgba(11,77,58,.38)');
+
+      const yScale = horizontal ? 'x' : 'y';
+      const xScale = horizontal ? 'y' : 'x';
+
+      const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: label || 'Value',
+            data: values(dataValues),
+            backgroundColor: gradient,
+            borderColor: 'rgba(11,77,58,.95)',
+            borderWidth: 2,
+            borderRadius: 14,
+            borderSkipped: false,
+            maxBarThickness: horizontal ? 30 : 46
+          }]
+        },
+        options: {
+          responsive:true,
+          maintainAspectRatio:false,
+          indexAxis: horizontal ? 'y' : 'x',
+          animation:{
+            duration:650,
+            easing:'easeOutQuart'
+          },
+          plugins:{
+            legend:{ display:false },
+            tooltip:{
+              backgroundColor:'#ffffff',
+              titleColor:'#0f172a',
+              bodyColor:'#0f172a',
+              borderColor:'rgba(11,77,58,.45)',
+              borderWidth:2,
+              padding:12,
+              cornerRadius:12
+            }
+          },
+          scales:{
+            [xScale]:{
+              ticks:{
+                color:'rgba(15,23,42,.78)',
+                font:{ size:11, weight:700 },
+                maxRotation: horizontal ? 0 : 35,
+                autoSkip:false
+              },
+              grid:{ display:false }
+            },
+            [yScale]:{
+              beginAtZero:true,
+              ticks:{
+                precision:0,
+                color:'rgba(15,23,42,.70)',
+                font:{ size:11, weight:700 }
+              },
+              grid:{ color:'rgba(15,23,42,.08)' }
+            }
+          }
+        }
+      });
+
+      createdCharts.push(chart);
+    }
+
+    function makeDoughnut(id, labels, dataValues, label){
+      const el = document.getElementById(id);
+      if(!el || !window.Chart) return;
+
+      const chart = new Chart(el.getContext('2d'), {
+        type:'doughnut',
+        data:{
+          labels:labels,
+          datasets:[{
+            label:label || 'Value',
+            data:values(dataValues),
+            backgroundColor:palette(),
+            borderColor:'#ffffff',
+            borderWidth:3,
+            hoverOffset:10
+          }]
+        },
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          cutout:'58%',
+          plugins:{
+            legend:{
+              position:'bottom',
+              labels:{
+                color:'rgba(15,23,42,.78)',
+                font:{ size:11, weight:700 },
+                boxWidth:12,
+                padding:12
+              }
+            },
+            tooltip:{
+              backgroundColor:'#ffffff',
+              titleColor:'#0f172a',
+              bodyColor:'#0f172a',
+              borderColor:'rgba(11,77,58,.45)',
+              borderWidth:2,
+              padding:12,
+              cornerRadius:12
+            }
+          }
+        }
+      });
+
+      createdCharts.push(chart);
+    }
+
+    function makeRadar(id, labels, dataValues, label){
+      const el = document.getElementById(id);
+      if(!el || !window.Chart) return;
+
+      const chart = new Chart(el.getContext('2d'), {
+        type:'radar',
+        data:{
+          labels:labels,
+          datasets:[{
+            label:label || 'Value',
+            data:values(dataValues),
+            backgroundColor:'rgba(16,185,129,.16)',
+            borderColor:'rgba(11,77,58,.95)',
+            borderWidth:3,
+            pointBackgroundColor:'rgba(16,185,129,.95)',
+            pointBorderColor:'#ffffff',
+            pointBorderWidth:2,
+            pointRadius:5
+          }]
+        },
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{
+            legend:{ display:false },
+            tooltip:{
+              backgroundColor:'#ffffff',
+              titleColor:'#0f172a',
+              bodyColor:'#0f172a',
+              borderColor:'rgba(11,77,58,.45)',
+              borderWidth:2,
+              padding:12,
+              cornerRadius:12
+            }
+          },
+          scales:{
+            r:{
+              beginAtZero:true,
+              ticks:{
+                precision:0,
+                backdropColor:'rgba(255,255,255,.8)',
+                color:'rgba(15,23,42,.65)',
+                font:{ size:10, weight:700 }
+              },
+              pointLabels:{
+                color:'rgba(15,23,42,.78)',
+                font:{ size:11, weight:800 }
+              },
+              grid:{ color:'rgba(15,23,42,.10)' },
+              angleLines:{ color:'rgba(15,23,42,.10)' }
+            }
+          }
+        }
+      });
+
+      createdCharts.push(chart);
+    }
+
+    function makePolar(id, labels, dataValues, label){
+      const el = document.getElementById(id);
+      if(!el || !window.Chart) return;
+
+      const chart = new Chart(el.getContext('2d'), {
+        type:'polarArea',
+        data:{
+          labels:labels,
+          datasets:[{
+            label:label || 'Value',
+            data:values(dataValues),
+            backgroundColor:palette(),
+            borderColor:borderPalette(),
+            borderWidth:2
+          }]
+        },
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{
+            legend:{
+              position:'bottom',
+              labels:{
+                color:'rgba(15,23,42,.78)',
+                font:{ size:11, weight:700 },
+                boxWidth:12,
+                padding:12
+              }
+            },
+            tooltip:{
+              backgroundColor:'#ffffff',
+              titleColor:'#0f172a',
+              bodyColor:'#0f172a',
+              borderColor:'rgba(11,77,58,.45)',
+              borderWidth:2,
+              padding:12,
+              cornerRadius:12
+            }
+          },
+          scales:{
+            r:{
+              beginAtZero:true,
+              ticks:{
+                precision:0,
+                backdropColor:'rgba(255,255,255,.8)',
+                color:'rgba(15,23,42,.65)'
+              },
+              grid:{ color:'rgba(15,23,42,.10)' }
+            }
+          }
+        }
+      });
+
+      createdCharts.push(chart);
+    }
+
+    function buildSectorCounts(sectorList){
+      const counts = {};
+      (sectorList || []).forEach(name => {
+        const key = String(name || 'Unknown').trim() || 'Unknown';
+        counts[key] = (counts[key] || 0) + 1;
+      });
+
+      return {
+        labels: Object.keys(counts),
+        values: Object.values(counts)
+      };
+    }
+
+    async function initHierarchyCharts(){
+      const ok = await loadChartJs();
+      if(!ok || !window.Chart) return;
+
+      destroyOldCharts();
+
+      const pgCount = n({{ pg_count|default(0)|tojson }});
+      const memberCount = n({{ member_count|default(0)|tojson }});
+      const cadreCount = n({{ cadre_count|default(0)|tojson }});
+      const turnoverTotal = n({{ turnover_total|default(0)|tojson }});
+      const profitTotal = n({{ profit_total|default(0)|tojson }});
+      const lossTotal = n({{ loss_total|default(0)|tojson }});
+      const grantsTotal = n({{ grants_total|default(0)|tojson }});
+      const pgsWithGrants = n({{ pgs_with_grants|default(0)|tojson }});
+      const lakhpatiTotal = n({{ lakhpati_total|default(0)|tojson }});
+      const shgTotal = n({{ shg_total|default(0)|tojson }});
+      const shgActive = n({{ shg_active|default(0)|tojson }});
+
+      const sectorRaw = [
+        {% for pg in pgs %}
+          {{ (pg.sector or 'Unknown')|tojson }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ];
+
+      const sectorData = buildSectorCounts(sectorRaw);
+
+      make3DBar(
+        'rdHierarchyAllKpiChart',
+        ['PGs', 'Members', 'Cadres', 'Turnover', 'Profit', 'Loss', 'Grants', 'Lakhpati', 'SHG Total', 'SHG Active'],
+        [pgCount, memberCount, cadreCount, turnoverTotal, profitTotal, lossTotal, grantsTotal, lakhpatiTotal, shgTotal, shgActive],
+        'KPI Value',
+        false
+      );
+
+      makeRadar(
+        'rdHierarchyPeopleChart',
+        ['Cadres', 'PGs', 'Members', 'Lakhpati Didi'],
+        [cadreCount, pgCount, memberCount, lakhpatiTotal],
+        'People Coverage'
+      );
+
+      make3DBar(
+        'rdHierarchyFinanceChart',
+        ['Turnover', 'Profit', 'Loss', 'Grants'],
+        [turnoverTotal, profitTotal, lossTotal, grantsTotal],
+        'Financial Value',
+        false
+      );
+
+      makeDoughnut(
+        'rdHierarchyGrantChart',
+        ['PGs With Grants', 'PGs Without Grants'],
+        [pgsWithGrants, Math.max(pgCount - pgsWithGrants, 0)],
+        'Grant Coverage'
+      );
+
+      makePolar(
+        'rdHierarchyShgChart',
+        ['SHG Total', 'SHG Active'],
+        [shgTotal, shgActive],
+        'SHG Status'
+      );
+
+      make3DBar(
+        'rdHierarchySectorChart',
+        sectorData.labels,
+        sectorData.values,
+        'PG Count',
+        true
+      );
+    }
+
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', initHierarchyCharts);
+    }else{
+      initHierarchyCharts();
+    }
+  })();
+
   (function(){
     // =========================
     // PG Quick Actions: Search + Pagination (client-side)

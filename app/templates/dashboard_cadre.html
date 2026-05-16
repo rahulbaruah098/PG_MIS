@@ -816,6 +816,194 @@
     font-size:15px;
   }
 }
+
+/* ============================================================
+   ✅ CADRE DASHBOARD KPI GRAPHS
+   - Uses existing assigned PG data
+   - No backend/database logic changed
+============================================================ */
+
+.cd-graph-section{
+  margin-bottom:24px;
+}
+
+.cd-graph-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+
+.cd-graph-head h3{
+  font-size:22px;
+  line-height:1.2;
+  font-weight:900;
+  color:#0b2a23;
+  margin:0;
+}
+
+.cd-graph-head p{
+  margin-top:6px;
+  color:#4c7468;
+  font-weight:700;
+  font-size:14px;
+}
+
+.cd-graph-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:16px;
+}
+
+.cd-graph-card{
+  position:relative;
+  overflow:hidden;
+  border-radius:22px;
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(15,118,110,0.12), transparent 42%),
+    radial-gradient(120% 120% at 100% 0%, rgba(21,128,61,0.10), transparent 44%),
+    rgba(255,255,255,0.94);
+  border:1.5px solid rgba(191,230,210,0.95);
+  box-shadow:
+    0 18px 42px rgba(6,95,70,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.92);
+}
+
+.cd-graph-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background-image:radial-gradient(rgba(6,95,70,0.08) 0.7px, transparent 0.7px);
+  background-size:18px 18px;
+  opacity:.20;
+}
+
+.cd-graph-card::after{
+  content:"";
+  position:absolute;
+  left:18px;
+  right:18px;
+  bottom:8px;
+  height:18px;
+  border-radius:999px;
+  background:rgba(6,95,70,0.16);
+  filter:blur(14px);
+  pointer-events:none;
+}
+
+.cd-graph-card > *{
+  position:relative;
+  z-index:1;
+}
+
+.cd-graph-titlebar{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px 18px;
+  border-bottom:1px solid rgba(216,239,227,0.95);
+}
+
+.cd-graph-title{
+  color:#0b2a23;
+  font-size:15px;
+  font-weight:900;
+  line-height:1.25;
+}
+
+.cd-graph-sub{
+  color:#4c7468;
+  font-size:12px;
+  margin-top:4px;
+  font-weight:700;
+  line-height:1.35;
+}
+
+.cd-graph-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:7px 10px;
+  border-radius:999px;
+  background:rgba(15,118,110,0.10);
+  border:1px solid rgba(15,118,110,0.24);
+  color:#0f766e;
+  font-size:11px;
+  font-weight:900;
+  white-space:nowrap;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.cd-graph-body{
+  padding:16px 18px 18px;
+}
+
+.cd-chart-box{
+  position:relative;
+  width:100%;
+  height:320px;
+  min-height:250px;
+  border-radius:18px;
+  padding:12px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.78), rgba(241,251,245,0.64)),
+    rgba(255,255,255,0.55);
+  border:1px solid rgba(191,230,210,0.70);
+  box-shadow:
+    inset 0 16px 28px rgba(6,95,70,0.06),
+    0 10px 22px rgba(6,95,70,0.08);
+}
+
+.cd-chart-box canvas{
+  display:block;
+  width:100% !important;
+  height:100% !important;
+}
+
+.cd-graph-wide{
+  grid-column:1 / -1;
+}
+
+@media (max-width:900px){
+  .cd-graph-grid{
+    grid-template-columns:1fr;
+  }
+
+  .cd-chart-box{
+    height:280px;
+  }
+}
+
+@media (max-width:520px){
+  .cd-graph-head h3{
+    font-size:18px;
+  }
+
+  .cd-graph-titlebar{
+    flex-direction:column;
+    padding:14px;
+  }
+
+  .cd-graph-body{
+    padding:14px;
+  }
+
+  .cd-chart-box{
+    height:240px;
+    min-height:220px;
+    padding:8px;
+  }
+
+  .cd-graph-pill{
+    width:max-content;
+  }
+}
+
 </style>
 
 <div class="cd-page">
@@ -872,6 +1060,79 @@
         </div>
         <div class="cd-kpi-value" style="font-size:28px;">CADRE_CC</div>
         <div class="cd-kpi-sub">Cadre-level login and PG access view</div>
+      </div>
+    </div>
+
+        <!-- ✅ CADRE KPI GRAPHS -->
+    <div class="cd-graph-section">
+      <div class="cd-graph-head">
+        <div>
+          <h3>Cadre KPI Graphs</h3>
+          <p>Working graphs generated from the PGs assigned to this cadre account.</p>
+        </div>
+        <div class="cd-chip">Live Assigned PG Data</div>
+      </div>
+
+      <div class="cd-graph-grid">
+        <div class="cd-graph-card">
+          <div class="cd-graph-titlebar">
+            <div>
+              <div class="cd-graph-title">Assigned PG Overview</div>
+              <div class="cd-graph-sub">Total assigned PG count for this cadre login</div>
+            </div>
+            <span class="cd-graph-pill">3D Bar</span>
+          </div>
+          <div class="cd-graph-body">
+            <div class="cd-chart-box">
+              <canvas id="cdAssignedPgChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="cd-graph-card">
+          <div class="cd-graph-titlebar">
+            <div>
+              <div class="cd-graph-title">Sector-wise Assigned PGs</div>
+              <div class="cd-graph-sub">Distribution of assigned PGs by sector</div>
+            </div>
+            <span class="cd-graph-pill">Doughnut</span>
+          </div>
+          <div class="cd-graph-body">
+            <div class="cd-chart-box">
+              <canvas id="cdSectorChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="cd-graph-card cd-graph-wide">
+          <div class="cd-graph-titlebar">
+            <div>
+              <div class="cd-graph-title">Block-wise Assigned PGs</div>
+              <div class="cd-graph-sub">Assigned PG count grouped by block</div>
+            </div>
+            <span class="cd-graph-pill">Horizontal 3D Bar</span>
+          </div>
+          <div class="cd-graph-body">
+            <div class="cd-chart-box">
+              <canvas id="cdBlockChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="cd-graph-card cd-graph-wide">
+          <div class="cd-graph-titlebar">
+            <div>
+              <div class="cd-graph-title">PG Access Graph</div>
+              <div class="cd-graph-sub">Each assigned PG represented as one access unit</div>
+            </div>
+            <span class="cd-graph-pill">Line</span>
+          </div>
+          <div class="cd-graph-body">
+            <div class="cd-chart-box">
+              <canvas id="cdPgAccessLineChart"></canvas>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -982,6 +1243,340 @@
 
 
 <script>
+
+  // =========================
+// Cadre Dashboard KPI Graphs
+// =========================
+(function(){
+  const chartUrl = "{{ url_for('static', filename='vendor/chart.min.js') }}";
+  const createdCharts = [];
+
+  function loadChartJs(){
+    return new Promise(function(resolve){
+      if(window.Chart){
+        resolve(true);
+        return;
+      }
+
+      const existing = document.querySelector('script[data-cd-chartjs="1"]');
+      if(existing){
+        existing.addEventListener('load', function(){ resolve(!!window.Chart); });
+        existing.addEventListener('error', function(){ resolve(false); });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = chartUrl;
+      script.async = true;
+      script.dataset.cdChartjs = "1";
+      script.onload = function(){ resolve(!!window.Chart); };
+      script.onerror = function(){ resolve(false); };
+      document.head.appendChild(script);
+    });
+  }
+
+  function n(value){
+    const x = Number(value || 0);
+    return Number.isFinite(x) ? x : 0;
+  }
+
+  function palette(){
+    return [
+      'rgba(15,118,110,0.86)',
+      'rgba(21,128,61,0.78)',
+      'rgba(101,163,13,0.78)',
+      'rgba(3,105,161,0.78)',
+      'rgba(217,119,6,0.78)',
+      'rgba(126,34,206,0.72)',
+      'rgba(220,38,38,0.72)',
+      'rgba(8,145,178,0.76)',
+      'rgba(22,163,74,0.76)',
+      'rgba(13,148,136,0.76)'
+    ];
+  }
+
+  function destroyOldCharts(){
+    while(createdCharts.length){
+      const ch = createdCharts.pop();
+      try { ch.destroy(); } catch(e){}
+    }
+  }
+
+  function buildCounts(list){
+    const counts = {};
+    (list || []).forEach(function(item){
+      const key = String(item || 'Unknown').trim() || 'Unknown';
+      counts[key] = (counts[key] || 0) + 1;
+    });
+
+    return {
+      labels: Object.keys(counts),
+      values: Object.values(counts)
+    };
+  }
+
+  function make3DBar(id, labels, values, label, horizontal){
+    const el = document.getElementById(id);
+    if(!el || !window.Chart) return;
+
+    const ctx = el.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 330);
+    gradient.addColorStop(0, 'rgba(15,118,110,0.94)');
+    gradient.addColorStop(0.45, 'rgba(21,128,61,0.78)');
+    gradient.addColorStop(1, 'rgba(6,95,70,0.42)');
+
+    const yScale = horizontal ? 'x' : 'y';
+    const xScale = horizontal ? 'y' : 'x';
+
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels || [],
+        datasets: [{
+          label: label || 'Value',
+          data: (values || []).map(n),
+          backgroundColor: gradient,
+          borderColor: 'rgba(6,95,70,0.95)',
+          borderWidth: 2,
+          borderRadius: 14,
+          borderSkipped: false,
+          maxBarThickness: horizontal ? 32 : 52
+        }]
+      },
+      options: {
+        responsive:true,
+        maintainAspectRatio:false,
+        indexAxis: horizontal ? 'y' : 'x',
+        animation:{
+          duration:650,
+          easing:'easeOutQuart'
+        },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            backgroundColor:'#ffffff',
+            titleColor:'#0b2a23',
+            bodyColor:'#0b2a23',
+            borderColor:'rgba(15,118,110,0.50)',
+            borderWidth:2,
+            padding:12,
+            cornerRadius:14
+          }
+        },
+        scales:{
+          [xScale]:{
+            ticks:{
+              color:'#2f5b4f',
+              font:{ size:11, weight:700 },
+              maxRotation: horizontal ? 0 : 35,
+              autoSkip:false
+            },
+            grid:{ display:false }
+          },
+          [yScale]:{
+            beginAtZero:true,
+            ticks:{
+              precision:0,
+              color:'#2f5b4f',
+              font:{ size:11, weight:700 }
+            },
+            grid:{ color:'rgba(191,230,210,0.60)' }
+          }
+        }
+      }
+    });
+
+    createdCharts.push(chart);
+  }
+
+  function makeDoughnut(id, labels, values, label){
+    const el = document.getElementById(id);
+    if(!el || !window.Chart) return;
+
+    const chart = new Chart(el.getContext('2d'), {
+      type:'doughnut',
+      data:{
+        labels:labels || [],
+        datasets:[{
+          label:label || 'Value',
+          data:(values || []).map(n),
+          backgroundColor:palette(),
+          borderColor:'#ffffff',
+          borderWidth:3,
+          hoverOffset:12
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:'58%',
+        plugins:{
+          legend:{
+            position:'bottom',
+            labels:{
+              color:'#2f5b4f',
+              font:{ size:11, weight:700 },
+              boxWidth:12,
+              padding:12
+            }
+          },
+          tooltip:{
+            backgroundColor:'#ffffff',
+            titleColor:'#0b2a23',
+            bodyColor:'#0b2a23',
+            borderColor:'rgba(15,118,110,0.50)',
+            borderWidth:2,
+            padding:12,
+            cornerRadius:14
+          }
+        }
+      }
+    });
+
+    createdCharts.push(chart);
+  }
+
+  function makeLine(id, labels, values, label){
+    const el = document.getElementById(id);
+    if(!el || !window.Chart) return;
+
+    const ctx = el.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+    gradient.addColorStop(0, 'rgba(15,118,110,0.28)');
+    gradient.addColorStop(1, 'rgba(15,118,110,0.02)');
+
+    const chart = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels:labels || [],
+        datasets:[{
+          label:label || 'Value',
+          data:(values || []).map(n),
+          borderColor:'rgba(15,118,110,0.95)',
+          backgroundColor:gradient,
+          borderWidth:3,
+          fill:true,
+          tension:.38,
+          pointRadius:4,
+          pointHoverRadius:6,
+          pointBackgroundColor:'rgba(21,128,61,0.95)',
+          pointBorderColor:'#ffffff',
+          pointBorderWidth:2
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        animation:{
+          duration:650,
+          easing:'easeOutQuart'
+        },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            backgroundColor:'#ffffff',
+            titleColor:'#0b2a23',
+            bodyColor:'#0b2a23',
+            borderColor:'rgba(15,118,110,0.50)',
+            borderWidth:2,
+            padding:12,
+            cornerRadius:14
+          }
+        },
+        scales:{
+          x:{
+            ticks:{
+              color:'#2f5b4f',
+              font:{ size:11, weight:700 },
+              maxRotation:35,
+              autoSkip:true
+            },
+            grid:{ display:false }
+          },
+          y:{
+            beginAtZero:true,
+            ticks:{
+              precision:0,
+              color:'#2f5b4f',
+              font:{ size:11, weight:700 }
+            },
+            grid:{ color:'rgba(191,230,210,0.60)' }
+          }
+        }
+      }
+    });
+
+    createdCharts.push(chart);
+  }
+
+  async function initCadreCharts(){
+    const ok = await loadChartJs();
+    if(!ok || !window.Chart) return;
+
+    destroyOldCharts();
+
+    const assignedPgCount = n({{ assigned_pg_count|default(0)|tojson }});
+
+    const pgNames = [
+      {% for pg in pgs %}
+        {{ (pg.name or ('PG ' ~ loop.index))|tojson }}{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    const pgSectors = [
+      {% for pg in pgs %}
+        {{ (pg.sector or 'Unknown')|tojson }}{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    const pgBlocks = [
+      {% for pg in pgs %}
+        {{ (pg.Block or pg.block_name or 'Unknown')|tojson }}{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    const sectorData = buildCounts(pgSectors);
+    const blockData = buildCounts(pgBlocks);
+    const accessValues = pgNames.map(function(){ return 1; });
+
+    make3DBar(
+      'cdAssignedPgChart',
+      ['Assigned PGs'],
+      [assignedPgCount],
+      'Assigned PG Count',
+      false
+    );
+
+    makeDoughnut(
+      'cdSectorChart',
+      sectorData.labels,
+      sectorData.values,
+      'Sector-wise PGs'
+    );
+
+    make3DBar(
+      'cdBlockChart',
+      blockData.labels,
+      blockData.values,
+      'Block-wise PGs',
+      true
+    );
+
+    makeLine(
+      'cdPgAccessLineChart',
+      pgNames,
+      accessValues,
+      'Assigned PG Access Unit'
+    );
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initCadreCharts);
+  }else{
+    initCadreCharts();
+  }
+})();
+
 document.addEventListener('DOMContentLoaded', function () {
   var searchInput = document.getElementById('cdPgSearch');
   var toggleBtn = document.getElementById('cdPgToggle');

@@ -788,6 +788,217 @@
         padding:7px 10px !important;
       }
     }
+
+        /* ============================================================
+       ✅ NEW 3D KPI GRAPH SECTION
+       - Frontend only
+       - Does not affect old KPI cards or existing charts
+       ============================================================ */
+
+    .kpiGraphGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:16px;
+      margin-top:16px;
+      margin-bottom:16px;
+    }
+
+    @media (max-width:1100px){
+      .kpiGraphGrid{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .kpiGraphCard{
+      position:relative;
+      overflow:hidden;
+      border-radius:24px;
+      border:1.5px solid rgba(191,230,210,0.95);
+      background:
+        radial-gradient(120% 120% at 0% 0%, rgba(15,118,110,0.12), transparent 42%),
+        radial-gradient(120% 120% at 100% 0%, rgba(21,128,61,0.10), transparent 44%),
+        rgba(255,255,255,0.94);
+      box-shadow:
+        0 22px 48px rgba(6,95,70,0.14),
+        0 2px 0 rgba(255,255,255,0.95) inset,
+        0 -8px 18px rgba(15,118,110,0.04) inset;
+      min-width:0;
+      transform-style:preserve-3d;
+    }
+
+    .kpiGraphCard::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.85), transparent 36%),
+        radial-gradient(rgba(6,95,70,0.08) 0.7px, transparent 0.7px);
+      background-size:auto, 18px 18px;
+      opacity:0.35;
+    }
+
+    .kpiGraphCard::after{
+      content:"";
+      position:absolute;
+      left:18px;
+      right:18px;
+      bottom:8px;
+      height:18px;
+      border-radius:999px;
+      background:rgba(6,95,70,0.16);
+      filter:blur(14px);
+      z-index:0;
+    }
+
+    .kpiGraphCard > *{
+      position:relative;
+      z-index:1;
+    }
+
+    .kpiGraphHead{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      padding:16px 18px;
+      border-bottom:1px solid rgba(216,239,227,0.95);
+    }
+
+    .kpiGraphTitle{
+      color:#0b2a23;
+      font-size:15px;
+      font-weight:900;
+      line-height:1.25;
+    }
+
+    .kpiGraphSub{
+      color:#4c7468;
+      font-size:12px;
+      margin-top:4px;
+      font-weight:650;
+      line-height:1.35;
+    }
+
+    .graphTypePill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:7px 10px;
+      border-radius:999px;
+      background:rgba(15,118,110,0.10);
+      border:1px solid rgba(15,118,110,0.24);
+      color:#0f766e;
+      font-size:11px;
+      font-weight:900;
+      white-space:nowrap;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+    }
+
+    .kpiGraphBody{
+      padding:16px 18px 18px;
+    }
+
+    .kpiChartBox{
+      position:relative;
+      width:100%;
+      height:340px;
+      min-height:260px;
+      border-radius:18px;
+      padding:12px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.78), rgba(241,251,245,0.64)),
+        rgba(255,255,255,0.55);
+      border:1px solid rgba(191,230,210,0.70);
+      box-shadow:
+        0 16px 32px rgba(6,95,70,0.08) inset,
+        0 10px 22px rgba(6,95,70,0.08);
+    }
+
+    .kpiChartBox canvas{
+      display:block;
+      width:100% !important;
+      height:100% !important;
+    }
+
+    .kpiGraphWide{
+      grid-column:1 / -1;
+    }
+
+    .kpiGraphMiniGrid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap:12px;
+      margin-top:12px;
+    }
+
+    .kpiGraphMini{
+      padding:12px;
+      border-radius:16px;
+      background:rgba(255,255,255,0.78);
+      border:1px solid rgba(191,230,210,0.80);
+      box-shadow:0 10px 22px rgba(6,95,70,0.08);
+    }
+
+    .kpiGraphMini .label{
+      color:#4c7468;
+      font-size:11px;
+      font-weight:850;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+    }
+
+    .kpiGraphMini .value{
+      color:#0b2a23;
+      font-size:22px;
+      font-weight:950;
+      margin-top:5px;
+      word-break:break-word;
+    }
+
+    @media (max-width:768px){
+      .kpiGraphGrid{
+        gap:14px;
+      }
+
+      .kpiGraphHead{
+        padding:14px;
+      }
+
+      .kpiGraphBody{
+        padding:14px;
+      }
+
+      .kpiChartBox{
+        height:280px;
+        min-height:240px;
+        padding:8px;
+      }
+
+      .kpiGraphMiniGrid{
+        grid-template-columns: repeat(2, minmax(0,1fr));
+      }
+    }
+
+    @media (max-width:420px){
+      .kpiChartBox{
+        height:240px;
+        min-height:220px;
+      }
+
+      .kpiGraphHead{
+        flex-direction:column;
+      }
+
+      .graphTypePill{
+        width:max-content;
+      }
+
+      .kpiGraphMiniGrid{
+        grid-template-columns:1fr;
+      }
+    }
   </style>
 {% endblock %}
 
@@ -909,6 +1120,163 @@
           <div class="t">Lakhpati Didi (Members)</div>
           <div class="v">{{ lakhpati_total or 0 }}</div>
           <div class="s">Members marked across PGs</div>
+        </div>
+      </div>
+
+              <!-- New 3D KPI Graphs -->
+      <div class="cardx card-border-soft fade-in">
+        <div class="hdr">
+          <div>
+            <div class="text-sm font-extrabold text-slate-900">State Dashboard KPI Graphs</div>
+            <div class="text-xs muted">Visual summary of all major KPI values currently shown above</div>
+          </div>
+          <span class="chip">3D Graphs</span>
+        </div>
+
+        <div class="bd">
+          <div class="kpiGraphMiniGrid">
+            <div class="kpiGraphMini">
+              <div class="label">Total PGs</div>
+              <div class="value">{{ pg_count or 0 }}</div>
+            </div>
+
+            <div class="kpiGraphMini">
+              <div class="label">Total Members</div>
+              <div class="value">{{ member_count or 0 }}</div>
+            </div>
+
+            <div class="kpiGraphMini">
+              <div class="label">Latest Turnover</div>
+              <div class="value">{{ total_turnover or 0 }}</div>
+            </div>
+
+            <div class="kpiGraphMini">
+              <div class="label">Total Grants</div>
+              <div class="value">{{ grants_total or 0 }}</div>
+            </div>
+          </div>
+
+          <div class="kpiGraphGrid">
+            <div class="kpiGraphCard kpiGraphWide">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">All State Dashboard KPIs</div>
+                  <div class="kpiGraphSub">Combined 3D-style bar graph for all KPI cards</div>
+                </div>
+                <span class="graphTypePill">3D Bar</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateAllKpi3dBox">
+                  <canvas id="stateAllKpi3dChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">Geographical Coverage</div>
+                  <div class="kpiGraphSub">States, districts and blocks in current scope</div>
+                </div>
+                <span class="graphTypePill">Doughnut</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateGeoDoughnutBox">
+                  <canvas id="stateGeoDoughnutChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">People and PG Coverage</div>
+                  <div class="kpiGraphSub">Cadres, PGs, members and Lakhpati Didi coverage</div>
+                </div>
+                <span class="graphTypePill">Radar</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="statePeopleRadarBox">
+                  <canvas id="statePeopleRadarChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">Financial KPIs</div>
+                  <div class="kpiGraphSub">Turnover, profit, loss and grant amount</div>
+                </div>
+                <span class="graphTypePill">3D Bar</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateFinance3dBox">
+                  <canvas id="stateFinance3dChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">Grant Coverage</div>
+                  <div class="kpiGraphSub">PGs with grants compared with total PG count</div>
+                </div>
+                <span class="graphTypePill">Pie</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateGrantPieBox">
+                  <canvas id="stateGrantPieChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">SHG Master Status</div>
+                  <div class="kpiGraphSub">Total SHGs and active SHGs from master data</div>
+                </div>
+                <span class="graphTypePill">Polar</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateShgPolarBox">
+                  <canvas id="stateShgPolarChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">PG Sector Distribution</div>
+                  <div class="kpiGraphSub">Sector-wise PG classification</div>
+                </div>
+                <span class="graphTypePill">Doughnut</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateSectorDoughnutBox">
+                  <canvas id="stateSectorDoughnutChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">Agri FFS Module Coverage</div>
+                  <div class="kpiGraphSub">Unique PGs mapped against each FFS module</div>
+                </div>
+                <span class="graphTypePill">Horizontal Bar</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateFfsBarBox">
+                  <canvas id="stateFfsBarChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1370,13 +1738,385 @@
       return chart;
     }
 
+        function chartPalette(){
+      return [
+        'rgba(15, 118, 110, 0.82)',
+        'rgba(21, 128, 61, 0.78)',
+        'rgba(101, 163, 13, 0.78)',
+        'rgba(3, 105, 161, 0.78)',
+        'rgba(217, 119, 6, 0.78)',
+        'rgba(126, 34, 206, 0.72)',
+        'rgba(220, 38, 38, 0.72)',
+        'rgba(8, 145, 178, 0.76)',
+        'rgba(22, 163, 74, 0.76)',
+        'rgba(13, 148, 136, 0.76)',
+        'rgba(132, 204, 22, 0.76)',
+        'rgba(2, 132, 199, 0.76)',
+        'rgba(245, 158, 11, 0.76)',
+        'rgba(124, 58, 237, 0.70)'
+      ];
+    }
+
+    function chartBorderPalette(){
+      return [
+        'rgba(15, 118, 110, 1)',
+        'rgba(21, 128, 61, 1)',
+        'rgba(101, 163, 13, 1)',
+        'rgba(3, 105, 161, 1)',
+        'rgba(217, 119, 6, 1)',
+        'rgba(126, 34, 206, 1)',
+        'rgba(220, 38, 38, 1)',
+        'rgba(8, 145, 178, 1)',
+        'rgba(22, 163, 74, 1)',
+        'rgba(13, 148, 136, 1)',
+        'rgba(132, 204, 22, 1)',
+        'rgba(2, 132, 199, 1)',
+        'rgba(245, 158, 11, 1)',
+        'rgba(124, 58, 237, 1)'
+      ];
+    }
+
+    function normalizeChartValues(values){
+      return (values || []).map(v => {
+        const n = Number(v || 0);
+        return Number.isFinite(n) ? n : 0;
+      });
+    }
+
+    function make3DBar(id, labels, values, labelText, horizontal=false){
+      const el = document.getElementById(id);
+      if(!el || !window.Chart) return;
+
+      const ctx = el.getContext('2d');
+      const cleanValues = normalizeChartValues(values);
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, 360);
+      gradient.addColorStop(0, 'rgba(15,118,110,0.92)');
+      gradient.addColorStop(0.45, 'rgba(21,128,61,0.78)');
+      gradient.addColorStop(1, 'rgba(6,95,70,0.42)');
+
+      const yScaleKey = horizontal ? 'x' : 'y';
+      const xScaleKey = horizontal ? 'y' : 'x';
+
+      const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels || [],
+          datasets: [{
+            label: labelText || 'Value',
+            data: cleanValues,
+            backgroundColor: gradient,
+            borderColor: 'rgba(6,95,70,0.95)',
+            borderWidth: 2,
+            borderRadius: 14,
+            borderSkipped: false,
+            maxBarThickness: horizontal ? 32 : 50,
+            categoryPercentage: 0.72,
+            barPercentage: 0.86
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: horizontal ? 'y' : 'x',
+          animation: {
+            duration: 650,
+            easing: 'easeOutQuart'
+          },
+          plugins: {
+            legend: { display:false },
+            tooltip: {
+              backgroundColor: '#ffffff',
+              titleColor: '#0b2a23',
+              bodyColor: '#0b2a23',
+              borderColor: 'rgba(15,118,110,0.50)',
+              borderWidth: 2,
+              padding: 12,
+              cornerRadius: 14,
+              displayColors: true
+            }
+          },
+          scales: {
+            [xScaleKey]: {
+              ticks: {
+                maxRotation: horizontal ? 0 : 42,
+                minRotation: 0,
+                autoSkip: false,
+                color: '#2f5b4f',
+                font: { size: 11, weight: 700 }
+              },
+              grid: { display:false, drawBorder:false }
+            },
+            [yScaleKey]: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0,
+                color: '#2f5b4f',
+                font: { size: 11, weight: 700 }
+              },
+              grid: { color: 'rgba(191,230,210,0.55)', drawBorder:false }
+            }
+          }
+        }
+      });
+
+      __stateCharts.push(chart);
+      return chart;
+    }
+
+    function makeDoughnut(id, labels, values, labelText){
+      const el = document.getElementById(id);
+      if(!el || !window.Chart) return;
+
+      const ctx = el.getContext('2d');
+      const chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels || [],
+          datasets: [{
+            label: labelText || 'Value',
+            data: normalizeChartValues(values),
+            backgroundColor: chartPalette(),
+            borderColor: '#ffffff',
+            borderWidth: 3,
+            hoverOffset: 12
+          }]
+        },
+        options: {
+          responsive:true,
+          maintainAspectRatio:false,
+          cutout: '58%',
+          animation: {
+            duration: 650,
+            easing: 'easeOutQuart'
+          },
+          plugins:{
+            legend:{
+              position:'bottom',
+              labels:{
+                color:'#2f5b4f',
+                font:{ size:11, weight:700 },
+                boxWidth:12,
+                padding:12
+              }
+            },
+            tooltip:{
+              backgroundColor:'#ffffff',
+              titleColor:'#0b2a23',
+              bodyColor:'#0b2a23',
+              borderColor:'rgba(15,118,110,0.50)',
+              borderWidth:2,
+              padding:12,
+              cornerRadius:14
+            }
+          }
+        }
+      });
+
+      __stateCharts.push(chart);
+      return chart;
+    }
+
+    function makePie(id, labels, values, labelText){
+      const el = document.getElementById(id);
+      if(!el || !window.Chart) return;
+
+      const ctx = el.getContext('2d');
+      const chart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels || [],
+          datasets: [{
+            label: labelText || 'Value',
+            data: normalizeChartValues(values),
+            backgroundColor: chartPalette(),
+            borderColor: '#ffffff',
+            borderWidth: 3,
+            hoverOffset: 12
+          }]
+        },
+        options: {
+          responsive:true,
+          maintainAspectRatio:false,
+          animation: {
+            duration: 650,
+            easing: 'easeOutQuart'
+          },
+          plugins:{
+            legend:{
+              position:'bottom',
+              labels:{
+                color:'#2f5b4f',
+                font:{ size:11, weight:700 },
+                boxWidth:12,
+                padding:12
+              }
+            },
+            tooltip:{
+              backgroundColor:'#ffffff',
+              titleColor:'#0b2a23',
+              bodyColor:'#0b2a23',
+              borderColor:'rgba(15,118,110,0.50)',
+              borderWidth:2,
+              padding:12,
+              cornerRadius:14
+            }
+          }
+        }
+      });
+
+      __stateCharts.push(chart);
+      return chart;
+    }
+
+    function makeRadar(id, labels, values, labelText){
+      const el = document.getElementById(id);
+      if(!el || !window.Chart) return;
+
+      const ctx = el.getContext('2d');
+      const chart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: labels || [],
+          datasets: [{
+            label: labelText || 'Value',
+            data: normalizeChartValues(values),
+            backgroundColor: 'rgba(15,118,110,0.18)',
+            borderColor: 'rgba(15,118,110,0.95)',
+            borderWidth: 3,
+            pointBackgroundColor: 'rgba(21,128,61,0.95)',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 5
+          }]
+        },
+        options: {
+          responsive:true,
+          maintainAspectRatio:false,
+          animation: {
+            duration: 650,
+            easing: 'easeOutQuart'
+          },
+          plugins:{
+            legend:{ display:false },
+            tooltip:{
+              backgroundColor:'#ffffff',
+              titleColor:'#0b2a23',
+              bodyColor:'#0b2a23',
+              borderColor:'rgba(15,118,110,0.50)',
+              borderWidth:2,
+              padding:12,
+              cornerRadius:14
+            }
+          },
+          scales:{
+            r:{
+              beginAtZero:true,
+              ticks:{
+                precision:0,
+                color:'#4c7468',
+                backdropColor:'rgba(255,255,255,0.75)',
+                font:{ size:10, weight:700 }
+              },
+              pointLabels:{
+                color:'#2f5b4f',
+                font:{ size:11, weight:800 }
+              },
+              grid:{
+                color:'rgba(191,230,210,0.80)'
+              },
+              angleLines:{
+                color:'rgba(191,230,210,0.80)'
+              }
+            }
+          }
+        }
+      });
+
+      __stateCharts.push(chart);
+      return chart;
+    }
+
+    function makePolar(id, labels, values, labelText){
+      const el = document.getElementById(id);
+      if(!el || !window.Chart) return;
+
+      const ctx = el.getContext('2d');
+      const chart = new Chart(ctx, {
+        type: 'polarArea',
+        data: {
+          labels: labels || [],
+          datasets: [{
+            label: labelText || 'Value',
+            data: normalizeChartValues(values),
+            backgroundColor: chartPalette(),
+            borderColor: chartBorderPalette(),
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive:true,
+          maintainAspectRatio:false,
+          animation: {
+            duration: 650,
+            easing: 'easeOutQuart'
+          },
+          plugins:{
+            legend:{
+              position:'bottom',
+              labels:{
+                color:'#2f5b4f',
+                font:{ size:11, weight:700 },
+                boxWidth:12,
+                padding:12
+              }
+            },
+            tooltip:{
+              backgroundColor:'#ffffff',
+              titleColor:'#0b2a23',
+              bodyColor:'#0b2a23',
+              borderColor:'rgba(15,118,110,0.50)',
+              borderWidth:2,
+              padding:12,
+              cornerRadius:14
+            }
+          },
+          scales:{
+            r:{
+              beginAtZero:true,
+              ticks:{
+                precision:0,
+                color:'#4c7468',
+                backdropColor:'rgba(255,255,255,0.75)'
+              },
+              grid:{
+                color:'rgba(191,230,210,0.75)'
+              }
+            }
+          }
+        }
+      });
+
+      __stateCharts.push(chart);
+      return chart;
+    }
+
     function safeStateChartsFallback(){
       const mapping = {
         turnoverTrendBox: 'Turnover Trend (Last 12 Months)',
         shgTopDistrictsBox: 'SHG Master (LokOS)',
         pgByStateBox: 'PGs by State',
         pgByDistrictBox: 'PGs by District',
-        pgByBlockBox: 'PGs by Block'
+        pgByBlockBox: 'PGs by Block',
+
+        stateAllKpi3dBox: 'All State Dashboard KPIs',
+        stateGeoDoughnutBox: 'Geographical Coverage',
+        statePeopleRadarBox: 'People and PG Coverage',
+        stateFinance3dBox: 'Financial KPIs',
+        stateGrantPieBox: 'Grant Coverage',
+        stateShgPolarBox: 'SHG Master Status',
+        stateSectorDoughnutBox: 'PG Sector Distribution',
+        stateFfsBarBox: 'Agri FFS Module Coverage'
       };
 
       Object.keys(mapping).forEach(boxId => {
@@ -1427,6 +2167,14 @@
       ensureChartCanvas('pgByStateBox', 'pgByState');
       ensureChartCanvas('pgByDistrictBox', 'pgByDistrict');
       ensureChartCanvas('pgByBlockBox', 'pgByBlock');
+      ensureChartCanvas('stateAllKpi3dBox', 'stateAllKpi3dChart');
+      ensureChartCanvas('stateGeoDoughnutBox', 'stateGeoDoughnutChart');
+      ensureChartCanvas('statePeopleRadarBox', 'statePeopleRadarChart');
+      ensureChartCanvas('stateFinance3dBox', 'stateFinance3dChart');
+      ensureChartCanvas('stateGrantPieBox', 'stateGrantPieChart');
+      ensureChartCanvas('stateShgPolarBox', 'stateShgPolarChart');
+      ensureChartCanvas('stateSectorDoughnutBox', 'stateSectorDoughnutChart');
+      ensureChartCanvas('stateFfsBarBox', 'stateFfsBarChart');
 
       makeLine(
         'turnoverTrend',
@@ -1458,6 +2206,74 @@
       const shgLabels = (shgTop || []).map(x => x._id || 'Unknown');
       const shgValues = (shgTop || []).map(x => x.count || 0);
       makeBar('shgTopDistricts', shgLabels, shgValues, true);
+            const stateKpis = (charts.state_kpis || {});
+      const allKpis = stateKpis.all_kpis || {};
+      const geography = stateKpis.geography || {};
+      const people = stateKpis.people || {};
+      const finance = stateKpis.finance || {};
+      const grants = stateKpis.grants || {};
+      const shg = stateKpis.shg || {};
+      const sectors = stateKpis.sectors || {};
+      const ffs = stateKpis.ffs || {};
+
+      make3DBar(
+        'stateAllKpi3dChart',
+        allKpis.labels || [],
+        allKpis.values || [],
+        'KPI Value',
+        false
+      );
+
+      makeDoughnut(
+        'stateGeoDoughnutChart',
+        geography.labels || [],
+        geography.values || [],
+        'Coverage'
+      );
+
+      makeRadar(
+        'statePeopleRadarChart',
+        people.labels || [],
+        people.values || [],
+        'People / PG Coverage'
+      );
+
+      make3DBar(
+        'stateFinance3dChart',
+        finance.labels || [],
+        finance.values || [],
+        'Financial Value',
+        false
+      );
+
+      makePie(
+        'stateGrantPieChart',
+        grants.labels || [],
+        grants.values || [],
+        'Grant Coverage'
+      );
+
+      makePolar(
+        'stateShgPolarChart',
+        shg.labels || [],
+        shg.values || [],
+        'SHG Status'
+      );
+
+      makeDoughnut(
+        'stateSectorDoughnutChart',
+        sectors.labels || [],
+        sectors.values || [],
+        'Sector PGs'
+      );
+
+      make3DBar(
+        'stateFfsBarChart',
+        ffs.labels || [],
+        ffs.values || [],
+        'FFS PGs',
+        true
+      );
     }
 
     function scrollToStateDetailTarget(){

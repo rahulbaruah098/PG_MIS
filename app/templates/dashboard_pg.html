@@ -576,6 +576,167 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
   }
 
 }
+
+/* ============================================================
+   ✅ PG DASHBOARD KPI GRAPHS
+   - Uses existing PG metrics + live metrics
+   - No backend/database logic changed
+============================================================ */
+
+#pgKpiGraphSection{
+  position:relative;
+  z-index:1;
+}
+
+.pg-kpi-graph-card{
+  position:relative;
+  overflow:hidden;
+  border-radius:22px;
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(15,118,110,0.12), transparent 42%),
+    radial-gradient(120% 120% at 100% 0%, rgba(21,128,61,0.10), transparent 44%),
+    rgba(255,255,255,0.94);
+  border:1.5px solid rgba(191,230,210,0.95);
+  box-shadow:
+    0 18px 42px rgba(6,95,70,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.92);
+}
+
+.pg-kpi-graph-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background-image:radial-gradient(rgba(6,95,70,0.08) 0.7px, transparent 0.7px);
+  background-size:18px 18px;
+  opacity:.20;
+}
+
+.pg-kpi-graph-card::after{
+  content:"";
+  position:absolute;
+  left:18px;
+  right:18px;
+  bottom:8px;
+  height:18px;
+  border-radius:999px;
+  background:rgba(6,95,70,0.16);
+  filter:blur(14px);
+  pointer-events:none;
+}
+
+.pg-kpi-graph-card > *{
+  position:relative;
+  z-index:1;
+}
+
+.pg-kpi-graph-titlebar{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px 18px;
+  border-bottom:1px solid rgba(216,239,227,0.95);
+}
+
+.pg-kpi-graph-title{
+  color:#0b2a23;
+  font-size:15px;
+  font-weight:900;
+  line-height:1.25;
+}
+
+.pg-kpi-graph-sub{
+  color:#4c7468;
+  font-size:12px;
+  margin-top:4px;
+  font-weight:700;
+  line-height:1.35;
+}
+
+.pg-kpi-graph-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:7px 10px;
+  border-radius:999px;
+  background:rgba(15,118,110,0.10);
+  border:1px solid rgba(15,118,110,0.24);
+  color:#0f766e;
+  font-size:11px;
+  font-weight:900;
+  white-space:nowrap;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.pg-kpi-graph-body{
+  padding:16px 18px 18px;
+}
+
+.pg-kpi-chart-box{
+  position:relative;
+  width:100%;
+  height:320px;
+  min-height:250px;
+  border-radius:18px;
+  padding:12px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.78), rgba(241,251,245,0.64)),
+    rgba(255,255,255,0.55);
+  border:1px solid rgba(191,230,210,0.70);
+  box-shadow:
+    inset 0 16px 28px rgba(6,95,70,0.06),
+    0 10px 22px rgba(6,95,70,0.08);
+}
+
+.pg-kpi-chart-box canvas{
+  display:block;
+  width:100% !important;
+  height:100% !important;
+}
+
+.pg-kpi-graph-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:16px;
+}
+
+.pg-kpi-graph-wide{
+  grid-column:1 / -1;
+}
+
+@media (max-width:900px){
+  .pg-kpi-graph-grid{
+    grid-template-columns:1fr;
+  }
+
+  .pg-kpi-chart-box{
+    height:280px;
+  }
+}
+
+@media (max-width:520px){
+  .pg-kpi-graph-titlebar{
+    flex-direction:column;
+    padding:14px;
+  }
+
+  .pg-kpi-graph-body{
+    padding:14px;
+  }
+
+  .pg-kpi-chart-box{
+    height:240px;
+    min-height:220px;
+    padding:8px;
+  }
+
+  .pg-kpi-graph-pill{
+    width:max-content;
+  }
+}
+
   </style>
 {% endblock %}
 
@@ -624,6 +785,100 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
   <main class="max-w-7xl mx-auto px-6 py-6 space-y-6">
     <!-- Quick Stats -->
     <div id="quickStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+
+    <!-- ✅ PG KPI GRAPHS -->
+<div id="pgKpiGraphSection" class="space-y-6">
+  <div class="pg-kpi-graph-card">
+    <div class="pg-kpi-graph-titlebar">
+      <div>
+        <div class="pg-kpi-graph-title">PG KPI Graphs</div>
+        <div class="pg-kpi-graph-sub">Working visual summary of all PG dashboard KPI values</div>
+      </div>
+      <span class="pg-kpi-graph-pill">Live PG Metrics</span>
+    </div>
+
+    <div class="pg-kpi-graph-body">
+      <div class="pg-kpi-graph-grid">
+
+        <div class="pg-kpi-graph-card pg-kpi-graph-wide">
+          <div class="pg-kpi-graph-titlebar">
+            <div>
+              <div class="pg-kpi-graph-title">All PG KPI Values</div>
+              <div class="pg-kpi-graph-sub">Members, loans, turnover, profit, loss, grants and stock</div>
+            </div>
+            <span class="pg-kpi-graph-pill">3D Bar</span>
+          </div>
+          <div class="pg-kpi-graph-body">
+            <div class="pg-kpi-chart-box">
+              <canvas id="pgAllKpi3dChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="pg-kpi-graph-card">
+          <div class="pg-kpi-graph-titlebar">
+            <div>
+              <div class="pg-kpi-graph-title">Member Coverage</div>
+              <div class="pg-kpi-graph-sub">Total members, new members and Lakhpati Didi</div>
+            </div>
+            <span class="pg-kpi-graph-pill">Radar</span>
+          </div>
+          <div class="pg-kpi-graph-body">
+            <div class="pg-kpi-chart-box">
+              <canvas id="pgMemberRadarChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="pg-kpi-graph-card">
+          <div class="pg-kpi-graph-titlebar">
+            <div>
+              <div class="pg-kpi-graph-title">Finance KPI Summary</div>
+              <div class="pg-kpi-graph-sub">Turnover, profit, loss, grants and loan outstanding</div>
+            </div>
+            <span class="pg-kpi-graph-pill">3D Bar</span>
+          </div>
+          <div class="pg-kpi-graph-body">
+            <div class="pg-kpi-chart-box">
+              <canvas id="pgFinanceKpiChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="pg-kpi-graph-card">
+          <div class="pg-kpi-graph-titlebar">
+            <div>
+              <div class="pg-kpi-graph-title">Loan Status</div>
+              <div class="pg-kpi-graph-sub">Active loans and outstanding amount</div>
+            </div>
+            <span class="pg-kpi-graph-pill">Doughnut</span>
+          </div>
+          <div class="pg-kpi-graph-body">
+            <div class="pg-kpi-chart-box">
+              <canvas id="pgLoanKpiChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="pg-kpi-graph-card">
+          <div class="pg-kpi-graph-titlebar">
+            <div>
+              <div class="pg-kpi-graph-title">Grant and Stock Status</div>
+              <div class="pg-kpi-graph-sub">Grant amount, grant count, stock and categories</div>
+            </div>
+            <span class="pg-kpi-graph-pill">Polar</span>
+          </div>
+          <div class="pg-kpi-graph-body">
+            <div class="pg-kpi-chart-box">
+              <canvas id="pgGrantStockChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
 
     <!-- Dashboard Overview -->
     <div id="dashboardOverview"></div>
@@ -862,7 +1117,13 @@ function __closeGate(){
       cashFlow: null,
       membership: null,
       loanDist: null,
-      produceStock: null
+      produceStock: null,
+
+      pgAllKpi: null,
+      pgMemberRadar: null,
+      pgFinanceKpi: null,
+      pgLoanKpi: null,
+      pgGrantStock: null
     };
 
     const __INITIAL_METRICS = {{ (metrics if metrics is defined else {})|tojson|safe }};
@@ -884,10 +1145,14 @@ function __arr(value){
 }
 
     function __destroyCharts(){
-      try { if (__charts.cashFlow) { __charts.cashFlow.destroy(); __charts.cashFlow = null; } } catch(e){}
-      try { if (__charts.membership) { __charts.membership.destroy(); __charts.membership = null; } } catch(e){}
-      try { if (__charts.loanDist) { __charts.loanDist.destroy(); __charts.loanDist = null; } } catch(e){}
-      try { if (__charts.produceStock) { __charts.produceStock.destroy(); __charts.produceStock = null; } } catch(e){}
+      Object.keys(__charts).forEach(function(key){
+        try {
+          if (__charts[key]) {
+            __charts[key].destroy();
+            __charts[key] = null;
+          }
+        } catch(e){}
+      });
     }
 
     // ============================================================
@@ -1154,6 +1419,350 @@ function getProduceStockData(){
       },
     ]
   };
+}
+
+  function __pgChartPalette(){
+  return [
+    'rgba(15,118,110,0.86)',
+    'rgba(21,128,61,0.78)',
+    'rgba(101,163,13,0.78)',
+    'rgba(3,105,161,0.78)',
+    'rgba(217,119,6,0.78)',
+    'rgba(126,34,206,0.72)',
+    'rgba(220,38,38,0.72)',
+    'rgba(8,145,178,0.76)',
+    'rgba(22,163,74,0.76)',
+    'rgba(13,148,136,0.76)'
+  ];
+}
+
+function __pgChartBorderPalette(){
+  return [
+    'rgba(15,118,110,1)',
+    'rgba(21,128,61,1)',
+    'rgba(101,163,13,1)',
+    'rgba(3,105,161,1)',
+    'rgba(217,119,6,1)',
+    'rgba(126,34,206,1)',
+    'rgba(220,38,38,1)',
+    'rgba(8,145,178,1)',
+    'rgba(22,163,74,1)',
+    'rgba(13,148,136,1)'
+  ];
+}
+
+function __pgMetricValue(key){
+  return __num((__liveMetrics || {})[key]);
+}
+
+function makePg3DBar(chartKey, canvasId, labels, values, labelText, horizontal){
+  const el = document.getElementById(canvasId);
+  if(!el || !window.Chart) return;
+
+  const ctx = el.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 330);
+  gradient.addColorStop(0, 'rgba(15,118,110,0.94)');
+  gradient.addColorStop(0.45, 'rgba(21,128,61,0.78)');
+  gradient.addColorStop(1, 'rgba(6,95,70,0.42)');
+
+  const yScale = horizontal ? 'x' : 'y';
+  const xScale = horizontal ? 'y' : 'x';
+
+  __charts[chartKey] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels || [],
+      datasets: [{
+        label: labelText || 'Value',
+        data: (values || []).map(__num),
+        backgroundColor: gradient,
+        borderColor: 'rgba(6,95,70,0.95)',
+        borderWidth: 2,
+        borderRadius: 14,
+        borderSkipped: false,
+        maxBarThickness: horizontal ? 32 : 52
+      }]
+    },
+    options: {
+      responsive:true,
+      maintainAspectRatio:false,
+      indexAxis: horizontal ? 'y' : 'x',
+      animation:{
+        duration:650,
+        easing:'easeOutQuart'
+      },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          backgroundColor:'#ffffff',
+          titleColor:'#0b2a23',
+          bodyColor:'#0b2a23',
+          borderColor:'rgba(15,118,110,0.50)',
+          borderWidth:2,
+          padding:12,
+          cornerRadius:14
+        }
+      },
+      scales:{
+        [xScale]:{
+          ticks:{
+            color:'#2f5b4f',
+            font:{ size:11, weight:700 },
+            maxRotation: horizontal ? 0 : 35,
+            autoSkip:false
+          },
+          grid:{ display:false }
+        },
+        [yScale]:{
+          beginAtZero:true,
+          ticks:{
+            precision:0,
+            color:'#2f5b4f',
+            font:{ size:11, weight:700 }
+          },
+          grid:{ color:'rgba(191,230,210,0.60)' }
+        }
+      }
+    }
+  });
+}
+
+function makePgRadar(chartKey, canvasId, labels, values, labelText){
+  const el = document.getElementById(canvasId);
+  if(!el || !window.Chart) return;
+
+  __charts[chartKey] = new Chart(el.getContext('2d'), {
+    type:'radar',
+    data:{
+      labels:labels || [],
+      datasets:[{
+        label:labelText || 'Value',
+        data:(values || []).map(__num),
+        backgroundColor:'rgba(15,118,110,0.18)',
+        borderColor:'rgba(15,118,110,0.95)',
+        borderWidth:3,
+        pointBackgroundColor:'rgba(21,128,61,0.95)',
+        pointBorderColor:'#ffffff',
+        pointBorderWidth:2,
+        pointRadius:5
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          backgroundColor:'#ffffff',
+          titleColor:'#0b2a23',
+          bodyColor:'#0b2a23',
+          borderColor:'rgba(15,118,110,0.50)',
+          borderWidth:2,
+          padding:12,
+          cornerRadius:14
+        }
+      },
+      scales:{
+        r:{
+          beginAtZero:true,
+          ticks:{
+            precision:0,
+            backdropColor:'rgba(255,255,255,.8)',
+            color:'#4c7468',
+            font:{ size:10, weight:700 }
+          },
+          pointLabels:{
+            color:'#2f5b4f',
+            font:{ size:11, weight:800 }
+          },
+          grid:{ color:'rgba(191,230,210,0.80)' },
+          angleLines:{ color:'rgba(191,230,210,0.80)' }
+        }
+      }
+    }
+  });
+}
+
+function makePgDoughnut(chartKey, canvasId, labels, values, labelText){
+  const el = document.getElementById(canvasId);
+  if(!el || !window.Chart) return;
+
+  __charts[chartKey] = new Chart(el.getContext('2d'), {
+    type:'doughnut',
+    data:{
+      labels:labels || [],
+      datasets:[{
+        label:labelText || 'Value',
+        data:(values || []).map(__num),
+        backgroundColor:__pgChartPalette(),
+        borderColor:'#ffffff',
+        borderWidth:3,
+        hoverOffset:12
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      cutout:'58%',
+      plugins:{
+        legend:{
+          position:'bottom',
+          labels:{
+            color:'#2f5b4f',
+            font:{ size:11, weight:700 },
+            boxWidth:12,
+            padding:12
+          }
+        },
+        tooltip:{
+          backgroundColor:'#ffffff',
+          titleColor:'#0b2a23',
+          bodyColor:'#0b2a23',
+          borderColor:'rgba(15,118,110,0.50)',
+          borderWidth:2,
+          padding:12,
+          cornerRadius:14
+        }
+      }
+    }
+  });
+}
+
+function makePgPolar(chartKey, canvasId, labels, values, labelText){
+  const el = document.getElementById(canvasId);
+  if(!el || !window.Chart) return;
+
+  __charts[chartKey] = new Chart(el.getContext('2d'), {
+    type:'polarArea',
+    data:{
+      labels:labels || [],
+      datasets:[{
+        label:labelText || 'Value',
+        data:(values || []).map(__num),
+        backgroundColor:__pgChartPalette(),
+        borderColor:__pgChartBorderPalette(),
+        borderWidth:2
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{
+          position:'bottom',
+          labels:{
+            color:'#2f5b4f',
+            font:{ size:11, weight:700 },
+            boxWidth:12,
+            padding:12
+          }
+        },
+        tooltip:{
+          backgroundColor:'#ffffff',
+          titleColor:'#0b2a23',
+          bodyColor:'#0b2a23',
+          borderColor:'rgba(15,118,110,0.50)',
+          borderWidth:2,
+          padding:12,
+          cornerRadius:14
+        }
+      },
+      scales:{
+        r:{
+          beginAtZero:true,
+          ticks:{
+            precision:0,
+            backdropColor:'rgba(255,255,255,.8)',
+            color:'#4c7468'
+          },
+          grid:{ color:'rgba(191,230,210,0.75)' }
+        }
+      }
+    }
+  });
+}
+
+function renderPgKpiGraphs(){
+  const members = __pgMetricValue('members_count');
+  const lakhpati = __pgMetricValue('lakhpati_count');
+  const newMembers = __pgMetricValue('new_members_month');
+  const activeLoans = __pgMetricValue('loans_count');
+  const outstanding = __pgMetricValue('outstanding_loans_amount');
+  const turnover = __pgMetricValue('turnover_latest');
+  const profit = __pgMetricValue('profit_latest');
+  const loss = __pgMetricValue('loss_latest');
+  const grantsAmount = __pgMetricValue('grants_received_total');
+  const grantsCount = __pgMetricValue('grants_count');
+  const categories = __pgMetricValue('categories_count');
+  const stockKg = __pgMetricValue('total_stock_kg');
+
+  makePg3DBar(
+    'pgAllKpi',
+    'pgAllKpi3dChart',
+    [
+      'Members',
+      'Lakhpati',
+      'New Members',
+      'Active Loans',
+      'Outstanding',
+      'Turnover',
+      'Profit',
+      'Loss',
+      'Grants',
+      'Grant Count',
+      'Categories',
+      'Stock'
+    ],
+    [
+      members,
+      lakhpati,
+      newMembers,
+      activeLoans,
+      outstanding,
+      turnover,
+      profit,
+      loss,
+      grantsAmount,
+      grantsCount,
+      categories,
+      stockKg
+    ],
+    'PG KPI Value',
+    false
+  );
+
+  makePgRadar(
+    'pgMemberRadar',
+    'pgMemberRadarChart',
+    ['Total Members', 'New Members', 'Lakhpati Didi'],
+    [members, newMembers, lakhpati],
+    'Member Coverage'
+  );
+
+  makePg3DBar(
+    'pgFinanceKpi',
+    'pgFinanceKpiChart',
+    ['Turnover', 'Profit', 'Loss', 'Grants', 'Outstanding Loan'],
+    [turnover, profit, loss, grantsAmount, outstanding],
+    'Financial KPI',
+    false
+  );
+
+  makePgDoughnut(
+    'pgLoanKpi',
+    'pgLoanKpiChart',
+    ['Active Loans', 'Outstanding Amount'],
+    [activeLoans, outstanding],
+    'Loan Status'
+  );
+
+  makePgPolar(
+    'pgGrantStock',
+    'pgGrantStockChart',
+    ['Grant Amount', 'Grant Count', 'Stock Kg', 'Categories'],
+    [grantsAmount, grantsCount, stockKg, categories],
+    'Grant and Stock Status'
+  );
 }
 
     // ============================================================
@@ -1485,10 +2094,12 @@ function getProduceStockData(){
 
   try { __destroyCharts(); } catch(e){}
 
-  try { renderCashFlowChart(); } catch(e){ console.warn("cashFlow chart failed", e); }
-  try { renderMembershipChart(); } catch(e){ console.warn("membership chart failed", e); }
-  try { renderLoanDistributionChart(); } catch(e){ console.warn("loanDist chart failed", e); }
-  try { renderProduceStockChart(); } catch(e){ console.warn("produceStock chart failed", e); }
+    try { renderPgKpiGraphs(); } catch(e){ console.warn("PG KPI graphs failed", e); }
+
+    try { renderCashFlowChart(); } catch(e){ console.warn("cashFlow chart failed", e); }
+    try { renderMembershipChart(); } catch(e){ console.warn("membership chart failed", e); }
+    try { renderLoanDistributionChart(); } catch(e){ console.warn("loanDist chart failed", e); }
+    try { renderProduceStockChart(); } catch(e){ console.warn("produceStock chart failed", e); }
 }
 
     function renderRecentTransactions() {
