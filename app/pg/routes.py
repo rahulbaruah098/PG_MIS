@@ -2437,31 +2437,325 @@ def api_loan_ledger(loan_id):
 # ---------- Receipt Voucher ----------
 @pg_bp.route("/receipt-voucher/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg', pg_id_param="pg_id")
 def api_receipt_voucher(pg_id):
     db = current_app.mongo_db
     _load_pg_or_404(db, pg_id)
+
     year, month = _get_period_from_args()
     coll = "pg_receipt_vouchers"
 
+    pg_oid = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
+    pg_doc = db.pgs.find_one({"_id": pg_oid}, {"name": 1}) or {}
+    current_pg_name = pg_doc.get("name", "")
+
+    def _num(v):
+        try:
+            if v in ("", None):
+                return 0
+            return float(v)
+        except Exception:
+            return 0
+
+    def _clean_entries(entries):
+        cleaned = []
+        if not isinstance(entries, list):
+            return cleaned
+
+        for row in entries:
+            if not isinstance(row, dict):
+                continue
+
+            commodity = str(row.get("commodity", "") or "").strip()
+            grade = str(row.get("grade", "") or "").strip()
+            rate = _num(row.get("rate"))
+            volume = _num(row.get("volume"))
+            value = _num(row.get("value"))
+
+            if not commodity and not grade and not rate and not volume and not value:
+                continue
+
+            cleaned.append({
+                "commodity": commodity,
+                "grade": grade,
+                "rate": rate,
+                "volume": volume,
+                "value": value,
+            })
+
+        return cleaned
+
+    def _clean_signatures(signatures):
+        if not isinstance(signatures, dict):
+            signatures = {}
+        return {
+            "member": signatures.get("member", "") or "",
+            "udyog": signatures.get("udyog", "") or "",
+        }
+
+    def _has_signature(signatures):
+        signatures = signatures or {}
+        return bool(signatures.get("member") or signatures.get("udyog"))
+
+    def _has_member_data(member):
+        if not isinstance(member, dict):
+            return False
+
+        entries = _clean_entries(member.get("entries", []))
+        signatures = _clean_signatures(member.get("signatures", {}))
+
+        return bool(
+            entries
+            or str(member.get("txn_date", "") or "").strip()
+            or str(member.get("details", "") or "").strip()
+            or _has_signature(signatures)
+        )
+
+    def _member_identity(member):
+        code = str(member.get("member_code", "") or "").strip()
+        name = str(member.get("member_name", "") or "").strip()
+        return code or name
+
+    def _split_legacy_member_key(key):
+        key = str(key or "").strip()
+        if not key or key == "__no_member__":
+            return "", ""
+
+        if "__" in key:
+            code, name = key.split("__", 1)
+            return code.strip(), name.strip()
+
+        return "", key
+
+    def _make_member(raw, fallback_code="", fallback_name=""):
+        if not isinstance(raw, dict):
+            raw = {}
+
+        member = {
+            "member_code": str(raw.get("member_code", fallback_code) or fallback_code or "").strip(),
+            "member_name": str(raw.get("member_name", fallback_name) or fallback_name or "").strip(),
+            "txn_date": str(raw.get("txn_date", "") or "").strip(),
+            "details": str(raw.get("details", "") or "").strip(),
+            "entries": _clean_entries(raw.get("entries", [])),
+            "signatures": _clean_signatures(raw.get("signatures", {})),
+        }
+
+        return member
+
+    def _members_from_payload_section(section):
+        """
+        Accepts both new and old frontend shapes.
+
+        New supported:
+        {
+          "members": [...]
+        }
+
+        or:
+        {
+          "member": {...}
+        }
+
+        Old supported:
+        {
+          "member_tables": {
+            "300001__Name": {...}
+          },
+          "member_code": "...",
+          "member_name": "...",
+          "entries": [...]
+        }
+        """
+        members = []
+
+        if not isinstance(section, dict):
+            return members
+
+        # New format: members array
+        if isinstance(section.get("members"), list):
+            for item in section.get("members", []):
+                member = _make_member(item)
+                if _member_identity(member) and _has_member_data(member):
+                    members.append(member)
+
+        # New format: single member object
+        if isinstance(section.get("member"), dict):
+            member = _make_member(section.get("member"))
+            if _member_identity(member) and _has_member_data(member):
+                members.append(member)
+
+        # Old format: member_tables object
+        member_tables = section.get("member_tables", {})
+        if isinstance(member_tables, dict):
+            for key, table_data in member_tables.items():
+                fallback_code, fallback_name = _split_legacy_member_key(key)
+                member = _make_member(table_data, fallback_code=fallback_code, fallback_name=fallback_name)
+
+                if _member_identity(member) and _has_member_data(member):
+                    members.append(member)
+
+        # Old format: top-level section fields
+        top_level_member = _make_member(section)
+        if _member_identity(top_level_member) and _has_member_data(top_level_member):
+            members.append(top_level_member)
+
+        # Deduplicate by member_code/name, keeping last version
+        deduped = {}
+        for member in members:
+            key = _member_identity(member)
+            if key:
+                deduped[key] = member
+
+        return list(deduped.values())
+
+    def _normalize_section_from_doc(section):
+        """
+        Converts old or new stored structure into clean structure:
+        {
+          pg_name: "...",
+          members: [...]
+        }
+        """
+        normalized = {
+            "pg_name": current_pg_name,
+            "members": [],
+        }
+
+        if not isinstance(section, dict):
+            return normalized
+
+        if isinstance(section.get("members"), list):
+            for item in section.get("members", []):
+                member = _make_member(item)
+                if _member_identity(member) and _has_member_data(member):
+                    normalized["members"].append(member)
+
+        legacy_members = _members_from_payload_section(section)
+        if legacy_members:
+            by_key = {_member_identity(m): m for m in normalized["members"] if _member_identity(m)}
+            for member in legacy_members:
+                by_key[_member_identity(member)] = member
+            normalized["members"] = list(by_key.values())
+
+        return normalized
+
+    def _merge_members(existing_section, incoming_members):
+        existing_section = existing_section if isinstance(existing_section, dict) else {}
+        existing_members = existing_section.get("members", [])
+        if not isinstance(existing_members, list):
+            existing_members = []
+
+        merged = {}
+
+        for item in existing_members:
+            member = _make_member(item)
+            key = _member_identity(member)
+            if key and _has_member_data(member):
+                merged[key] = member
+
+        for item in incoming_members:
+            member = _make_member(item)
+            key = _member_identity(member)
+            if key and _has_member_data(member):
+                merged[key] = member
+
+        return {
+            "pg_name": current_pg_name,
+            "members": list(merged.values()),
+        }
+
+    def _legacy_section_for_frontend(clean_section):
+        """
+        Temporary backward-compatible response for current receipt_voucher.html.
+        After frontend update, this can be removed later.
+        """
+        clean_section = clean_section if isinstance(clean_section, dict) else {}
+        members = clean_section.get("members", [])
+        if not isinstance(members, list):
+            members = []
+
+        member_tables = {}
+        first_member = {}
+
+        for member in members:
+            member = _make_member(member)
+            if not _member_identity(member):
+                continue
+
+            key = f'{member.get("member_code", "")}__{member.get("member_name", "")}'.strip("_")
+            member_tables[key] = {
+                "entries": member.get("entries", []),
+                "details": member.get("details", ""),
+                "txn_date": member.get("txn_date", ""),
+                "signatures": member.get("signatures", {"member": "", "udyog": ""}),
+            }
+
+            if not first_member:
+                first_member = member
+
+        return {
+            "pg_name": current_pg_name,
+            "txn_date": first_member.get("txn_date", "") if first_member else "",
+            "member_name": first_member.get("member_name", "") if first_member else "",
+            "member_code": first_member.get("member_code", "") if first_member else "",
+            "details": first_member.get("details", "") if first_member else "",
+            "signatures": first_member.get("signatures", {"member": "", "udyog": ""}) if first_member else {"member": "", "udyog": ""},
+            "entries": first_member.get("entries", []) if first_member else [],
+            "member_tables": member_tables,
+        }
+
+    base_q = {"pg_id": pg_oid}
+
     if request.method == "GET":
-        base_q = {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}
         if request.args.get("history") in ("1", "true", "yes"):
             return jsonify({"history": _period_history(db, coll, base_q)})
-        doc = db[coll].find_one({**base_q, "year": year, "month": month}) if (year and month) else db[coll].find_one(base_q, sort=[("updated_at", -1)])
-        pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
-        current_pg_name = pg_doc.get("name", "")
+
+        if year and month:
+            doc = db[coll].find_one({**base_q, "year": year, "month": month})
+        else:
+            doc = db[coll].find_one(base_q, sort=[("updated_at", -1)])
+
         if not doc:
-            return jsonify({"pg_section": {"pg_name": current_pg_name}, "member_section": {"pg_name": current_pg_name}, "year": year, "month": month})
+            clean_pg_group = {
+                "pg_name": current_pg_name,
+                "members": [],
+            }
+            clean_group_member = {
+                "pg_name": current_pg_name,
+                "members": [],
+            }
+
+            return jsonify({
+                "pg_group_receipt": clean_pg_group,
+                "group_member_receipt": clean_group_member,
+
+                # backward-compatible response for current frontend
+                "pg_section": _legacy_section_for_frontend(clean_pg_group),
+                "member_section": _legacy_section_for_frontend(clean_group_member),
+
+                "year": year,
+                "month": month,
+            })
+
+        clean_pg_group = _normalize_section_from_doc(
+            doc.get("pg_group_receipt") or doc.get("pg_section") or {}
+        )
+
+        clean_group_member = _normalize_section_from_doc(
+            doc.get("group_member_receipt") or doc.get("member_section") or {}
+        )
+
         doc["_id"] = str(doc["_id"])
         doc["pg_id"] = str(doc["pg_id"])
-        if not isinstance(doc.get("pg_section"), dict):
-            doc["pg_section"] = {}
-        if not isinstance(doc.get("member_section"), dict):
-            doc["member_section"] = {}
-        doc["pg_section"]["pg_name"] = current_pg_name
-        doc["member_section"]["pg_name"] = current_pg_name
+
+        doc["pg_group_receipt"] = clean_pg_group
+        doc["group_member_receipt"] = clean_group_member
+
+        # backward-compatible response for current frontend
+        doc["pg_section"] = _legacy_section_for_frontend(clean_pg_group)
+        doc["member_section"] = _legacy_section_for_frontend(clean_group_member)
+
         return jsonify(doc)
 
     role = getattr(g, "role", None) or session.get("role")
@@ -2469,19 +2763,62 @@ def api_receipt_voucher(pg_id):
         abort(403)
 
     payload = request.get_json(silent=True) or {}
-    pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
-    current_pg_name = pg_doc.get("name", "")
-    pg_section = dict(payload.get("pg_section", {}) or {})
-    member_section = dict(payload.get("member_section", {}) or {})
-    pg_section["pg_name"] = current_pg_name
-    member_section["pg_name"] = current_pg_name
-    _upsert_pg_period_doc(db, collection=coll, pg_id=pg_id, year=year, month=month, payload={
-        "pg_section": pg_section,
-        "member_section": member_section,
-        "meta": payload.get("meta", {}),
-    }, user=_current_user_dict())
-    return jsonify({"ok": True, "message": "Saved successfully"})
 
+    existing_doc = db[coll].find_one({**base_q, "year": year, "month": month}) or {}
+
+    existing_pg_group = _normalize_section_from_doc(
+        existing_doc.get("pg_group_receipt") or existing_doc.get("pg_section") or {}
+    )
+
+    existing_group_member = _normalize_section_from_doc(
+        existing_doc.get("group_member_receipt") or existing_doc.get("member_section") or {}
+    )
+
+    incoming_pg_members = []
+    incoming_member_members = []
+
+    # New frontend keys
+    incoming_pg_members.extend(_members_from_payload_section(payload.get("pg_group_receipt", {})))
+    incoming_member_members.extend(_members_from_payload_section(payload.get("group_member_receipt", {})))
+
+    # Old frontend keys, for current receipt_voucher.html compatibility
+    incoming_pg_members.extend(_members_from_payload_section(payload.get("pg_section", {})))
+    incoming_member_members.extend(_members_from_payload_section(payload.get("member_section", {})))
+
+    clean_pg_group = _merge_members(existing_pg_group, incoming_pg_members)
+    clean_group_member = _merge_members(existing_group_member, incoming_member_members)
+
+    _upsert_pg_period_doc(
+        db,
+        collection=coll,
+        pg_id=pg_id,
+        year=year,
+        month=month,
+        payload={
+            "pg_group_receipt": clean_pg_group,
+            "group_member_receipt": clean_group_member,
+            "meta": payload.get("meta", {}),
+        },
+        user=_current_user_dict()
+    )
+
+    # Remove old messy top-level fields from MongoDB after saving clean structure.
+    db[coll].update_one(
+        {**base_q, "year": year, "month": month},
+        {
+            "$unset": {
+                "pg_section": "",
+                "member_section": "",
+            }
+        }
+    )
+
+    return jsonify({
+        "ok": True,
+        "message": "Saved successfully",
+        "pg_group_receipt_members": len(clean_pg_group.get("members", [])),
+        "group_member_receipt_members": len(clean_group_member.get("members", [])),
+    })
 
 #changes by atlanta
 # ---------- Receipt Voucher Member Options ----------
