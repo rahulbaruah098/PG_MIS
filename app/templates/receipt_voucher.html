@@ -52,24 +52,39 @@
     border-bottom: 1px solid var(--line2);
   }
 
-  .ll-head-top{
-    position: relative;
-    min-height: 108px;
-    padding: 18px 18px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
+ .ll-head-top{
+  position:relative;
+  min-height:108px;
+  padding:18px 18px;
+  display:grid;
+  grid-template-columns:56px 1fr auto;
+  align-items:center;
+  gap:14px;
+}
 
-  .ll-title{
-    margin: 0;
-    font-weight: 850;
-    font-size: 18px;
-    line-height: 1.2;
-    letter-spacing: .2px;
-    text-align: center;
-    color: #0f172a;
-  }
+.ll-title{
+  grid-column:2;
+  justify-self:center;
+  margin:0;
+  font-weight:850;
+  font-size:18px;
+  line-height:1.2;
+  letter-spacing:.2px;
+  text-align:center;
+  color:#0f172a;
+}
+
+/* ✅ Header-right Edit / Save / Cancel placement */
+.ll-header-actions{
+  grid-column:3;
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+  min-width:0;
+}
 
   .ll-app-back,
   .ll-app-back-spacer{
@@ -381,54 +396,152 @@
     background: rgba(247,250,249,.55);
   }
 
-  /* ===== Action bar that docks ABOVE TABLE ===== */
-  .ll-action-dock{
-    padding: 10px 16px 2px;
-    background: rgba(255,255,255,.92);
-  }
-  .ll-actionbar{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
+/* ===== Header action bar + table action toolbar ===== */
+
+/* ✅ Header actionbar: only Edit / Save / Cancel */
+.ll-actionbar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  width:auto;
+}
+
+.ll-actionbar #llCancelBtn,
+.ll-actionbar #llEditSaveBtn{
+  min-width:112px;
+}
+
+/* ✅ The table dock must stay above table */
+.ll-action-dock{
+  display:block;
+  padding:12px 16px 4px;
+  background:rgba(255,255,255,.92);
+}
+
+/* ✅ Table toolbar hidden before Edit */
+.ll-table-actionbar{
+  display:none;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  width:100%;
+}
+
+/* ✅ Table toolbar visible only in Edit mode */
+.ll-wrap.ll-editing .ll-table-actionbar{
+  display:flex;
+}
+
+/* ✅ Delete/Add toolbar sizing like reference */
+.ll-table-actionbar #llDeleteAllTop{
+  min-width:168px;
+}
+
+.ll-table-actionbar #llAddRowTop{
+  min-width:132px;
+}
+
+/* ✅ Cancel hidden before edit */
+.ll-wrap:not(.ll-editing) #llCancelBtn{
+  display:none !important;
+}
+
+.ll-wrap.ll-editing #llCancelBtn{
+  display:inline-flex !important;
+}
 
   .ll-btn{
-    border: 1px solid rgba(15,23,42,.14);
-    background: rgba(247,250,249,.8);
-    color: var(--ink);
-    border-radius: 999px;
-    padding: 10px 14px;
-    font-weight: 950;
-    font-size: 12px;
-    cursor: pointer;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
-    display:inline-flex;
-    align-items:center;
-    gap: 8px;
-    user-select: none;
-    white-space: nowrap;
-  }
-  .ll-btn:hover{
-    transform: translateY(-1px);
-    background: #fff;
-    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
-  }
-  .ll-btn:disabled{
-    opacity: .45;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-  .ll-btn.danger{
-    border-color: rgba(220,38,38,.30);
-    background: rgba(220,38,38,.08);
-    color: #991b1b;
-  }
-  .ll-btn.danger:hover{
-    background: rgba(220,38,38,.12);
-  }
+  border:1px solid rgba(15,23,42,.12);
+  background:#fff;
+  color:var(--ink);
+  border-radius:999px;
+  padding:11px 18px;
+  font-weight:950;
+  font-size:12.8px;
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease, border-color .2s ease;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  user-select:none;
+  white-space:nowrap;
+  min-height:44px;
+  line-height:1;
+  flex:0 0 auto;
+}
+
+.ll-btn:hover{
+  transform:translateY(-1px);
+  background:#fff;
+  box-shadow:0 14px 24px -22px rgba(15,23,42,.25);
+}
+
+.ll-btn:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
+}
+
+/* ✅ Top main buttons: Edit / Cancel = red, Save = green */
+.ll-btn.ll-red{
+  background:linear-gradient(180deg, #ef4444, #dc2626) !important;
+  border-color:rgba(185,28,28,.58) !important;
+  color:#ffffff !important;
+  box-shadow:0 16px 28px -18px rgba(220,38,38,.75) !important;
+}
+
+.ll-btn.ll-red:hover{
+  background:linear-gradient(180deg, #f87171, #dc2626) !important;
+  border-color:rgba(185,28,28,.72) !important;
+  color:#ffffff !important;
+}
+
+.ll-btn.ll-green{
+  background:linear-gradient(180deg, #22c55e, #16a34a) !important;
+  border-color:rgba(21,128,61,.58) !important;
+  color:#ffffff !important;
+  box-shadow:0 16px 28px -18px rgba(22,163,74,.75) !important;
+}
+
+.ll-btn.ll-green:hover{
+  background:linear-gradient(180deg, #4ade80, #16a34a) !important;
+  border-color:rgba(21,128,61,.72) !important;
+  color:#ffffff !important;
+}
+
+/* ✅ Table toolbar buttons: Delete = soft red, Add = soft green */
+.ll-btn.ll-soft-red{
+  border:1.5px solid rgba(220,38,38,.20) !important;
+  background:rgba(220,38,38,.045) !important;
+  color:#b42318 !important;
+  box-shadow:none !important;
+}
+
+.ll-btn.ll-soft-red:hover{
+  background:rgba(220,38,38,.075) !important;
+  border-color:rgba(220,38,38,.32) !important;
+  color:#991b1b !important;
+  box-shadow:0 14px 22px -20px rgba(220,38,38,.25) !important;
+}
+
+.ll-btn.ll-soft-green{
+  border:1.5px solid rgba(11,77,58,.16) !important;
+  background:rgba(16,185,129,.065) !important;
+  color:#0b4d3a !important;
+  box-shadow:none !important;
+}
+
+.ll-btn.ll-soft-green:hover{
+  background:rgba(16,185,129,.10) !important;
+  border-color:rgba(11,77,58,.26) !important;
+  color:#064e3b !important;
+  box-shadow:0 14px 22px -20px rgba(11,77,58,.25) !important;
+}
 
   /* ===== Table section ===== */
   .ll-table-card{
@@ -937,20 +1050,48 @@
   }
 
   /* ===== Responsive ===== */
-  @media (max-width: 880px){
-    .ll-topfields{ grid-template-columns: 1fr; }
-    .ll-actionbar{ justify-content: center; }
+ @media (max-width: 880px){
+  .ll-topfields{ grid-template-columns: 1fr; }
+
+  .ll-header-actions .ll-actionbar{
+    justify-content:flex-end;
   }
+}
 
   @media (max-width: 720px){
     .ll-head-top{
-      display:grid;
-      grid-template-columns: 56px 1fr 56px;
-      align-items:center;
-      gap: 8px;
-      min-height: 112px;
-      padding: 18px 16px;
-    }
+  display:grid;
+  grid-template-columns:44px 1fr;
+  align-items:center;
+  gap:8px;
+  min-height:auto;
+  padding:16px;
+}
+
+.ll-title{
+  grid-column:2;
+  justify-self:start;
+  text-align:left;
+  font-size:16px;
+}
+
+.ll-header-actions{
+  grid-column:1 / -1;
+  justify-self:stretch;
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:8px;
+}
+
+.ll-header-actions .ll-actionbar{
+  width:100%;
+  justify-content:flex-end;
+}
+
+.ll-header-actions .ll-btn{
+  min-height:44px;
+}
     .ll-app-back,
     .ll-app-back-spacer{
       display:flex;
@@ -958,15 +1099,6 @@
     .ll-app-back-spacer{
            width:38px;
       height:38px;
-    }
-     .ll-title{
-      margin: 0;
-      font-weight: 850;
-      font-size: 16px;
-      line-height: 1.2;
-      letter-spacing: .2px;
-      text-align: center;
-      color: #0f172a;
     }
 
     .ll-search{ min-width: 100%; }
@@ -1083,21 +1215,49 @@
 <div class="ll-wrap ll-readonly" id="llWrap">
   <div class="ll-sheet">
     <div class="ll-head">
-      <div class="ll-head-top">
-     <button class="ll-app-back" id="llBackBtn" type="button" aria-label="Go back">
-  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M19 12H5M5 12l6 6M5 12l6-6"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"></path>
-  </svg>
-</button>
+    <div class="ll-head-top">
+  <button class="ll-app-back" id="llBackBtn" type="button" aria-label="Go back">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M19 12H5M5 12l6 6M5 12l6-6"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+    </svg>
+  </button>
 
-        <h2 class="ll-title" id="llTitle">Receipt Voucher</h2>
+  <h2 class="ll-title" id="llTitle">Receipt Voucher</h2>
 
-        <div class="ll-app-back-spacer" aria-hidden="true"></div>
-      </div>
+  <div class="ll-header-actions">
+    <div class="ll-actionbar ll-hidden" id="llActionBar">
+      <button class="ll-btn ll-red ll-hidden" id="llCancelBtn" type="button">
+        <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18"></path>
+          <path d="M6 6l12 12"></path>
+        </svg>
+        <span id="llCancelText">Cancel</span>
+      </button>
+
+      <button class="ll-btn ll-red" id="llEditSaveBtn" type="button">
+        <svg id="llEditIcon" class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+
+        <svg id="llSaveIcon" class="ll-icon ll-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+
+        <span id="llEditSaveText">Edit</span>
+      </button>
+    </div>
+  </div>
+</div>
     </div>
 
     <div class="ll-tabs">
@@ -1453,47 +1613,28 @@
       </div>
     </div>
 
-    <div class="ll-actionbar ll-hidden" id="llActionBar">
-      <button class="ll-btn ll-hidden" id="llCancelBtn" type="button">
-        <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 6 6 18"></path>
-          <path d="M6 6l12 12"></path>
-        </svg>
-        <span id="llCancelText">Cancel</span>
-      </button>
+    <div class="ll-table-actionbar" id="llTableActionBar">
+  <button class="ll-btn ll-soft-red" id="llDeleteAllTop" type="button" disabled>
+    <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="3 6 5 6 21 6"></polyline>
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+      <path d="M10 11v6"></path>
+      <path d="M14 11v6"></path>
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+    </svg>
+    <span id="llDeleteAllText">Delete All</span>
+  </button>
 
-      <button class="ll-btn danger" id="llDeleteAllTop" type="button" disabled>
-        <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-          <path d="M10 11v6"></path>
-          <path d="M14 11v6"></path>
-          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
-        </svg>
-        <span id="llDeleteAllText">Delete All</span>
-      </button>
-
-      <button class="ll-btn" id="llAddRowTop" type="button" disabled>
-        <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 5v14"></path>
-          <path d="M5 12h14"></path>
-        </svg>
-        <span id="llAddRowText">+ Add Row</span>
-      </button>
-
-      <button class="ll-btn" id="llEditSaveBtn" type="button">
-        <svg id="llEditIcon" class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-        </svg>
-        <svg id="llSaveIcon" class="ll-icon ll-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-          <polyline points="17 21 17 13 7 13 7 21"></polyline>
-          <polyline points="7 3 7 8 15 8"></polyline>
-        </svg>
-        <span id="llEditSaveText">Edit</span>
-      </button>
-    </div>
+  <button class="ll-btn ll-soft-green" id="llAddRowTop" type="button" disabled>
+    <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 5v14"></path>
+      <path d="M5 12h14"></path>
+    </svg>
+    <span id="llAddRowText">+ Add Row</span>
+  </button>
+</div>
 
   </div>
 </div>
@@ -2400,17 +2541,34 @@ function loadMemberTable(sectionKey){
   }
 
   function setEditingUI(){
-    const t = T[lang];
-    $("llEditIcon").classList.toggle("ll-hidden", isEditing);
-    $("llSaveIcon").classList.toggle("ll-hidden", !isEditing);
-    $("llEditSaveText").textContent = isEditing ? t.saveButton : t.editButton;
-    $("llCancelBtn").classList.toggle("ll-hidden", !isEditing);
-    $("llCancelText").textContent = t.cancelButton;
-    $("llAddRowTop").disabled = !isEditing;
-    $("llDeleteAllTop").disabled = !isEditing;
-    syncDeleteAllLabel();
-    $("llActionBar").classList.remove("ll-hidden");
-  }
+  const t = T[lang];
+
+  $("llEditIcon").classList.toggle("ll-hidden", isEditing);
+  $("llSaveIcon").classList.toggle("ll-hidden", !isEditing);
+  $("llEditSaveText").textContent = isEditing ? t.saveButton : t.editButton;
+
+  /* ✅ Edit = red, Save = green */
+  $("llEditSaveBtn").classList.toggle("ll-red", !isEditing);
+  $("llEditSaveBtn").classList.toggle("ll-green", isEditing);
+
+  /* ✅ Cancel always red */
+  $("llCancelBtn").classList.add("ll-red");
+  $("llCancelBtn").classList.remove("ll-green");
+  $("llCancelBtn").classList.toggle("ll-hidden", !isEditing);
+  $("llCancelText").textContent = t.cancelButton;
+
+  /* ✅ Table toolbar buttons */
+  $("llDeleteAllTop").classList.add("ll-soft-red");
+  $("llAddRowTop").classList.add("ll-soft-green");
+
+  $("llAddRowTop").disabled = !isEditing;
+  $("llDeleteAllTop").disabled = !isEditing;
+
+  syncDeleteAllLabel();
+
+  /* ✅ Keep actionbar visible because Edit button must show before editing */
+  $("llActionBar").classList.remove("ll-hidden");
+}
 
   function setAllEditable(on){
     $("llWrap").classList.toggle("ll-readonly", !on);
@@ -2434,22 +2592,25 @@ function loadMemberTable(sectionKey){
   }
 
   function setEditMode(on){
-    isEditing = !!on;
+  isEditing = !!on;
 
-    setEditingUI();
-    setAllEditable(isEditing);
-    syncDeleteAllLabel();
-    dockActionBar();
+  /* ✅ Required for CSS show/hide of Cancel/Delete/Add buttons */
+  $("llWrap").classList.toggle("ll-editing", isEditing);
 
-    // Hidden tab canvases need a size refresh after edit/readonly changes.
-    requestAnimationFrame(() => {
-      refreshSignaturePads();
-    });
+  setEditingUI();
+  setAllEditable(isEditing);
+  syncDeleteAllLabel();
+  dockActionBar();
 
-    setTimeout(() => {
-      refreshSignaturePads();
-    }, 150);
-  }
+  // Hidden tab canvases need a size refresh after edit/readonly changes.
+  requestAnimationFrame(() => {
+    refreshSignaturePads();
+  });
+
+  setTimeout(() => {
+    refreshSignaturePads();
+  }, 150);
+}
 
   const signMap = {
     pg_member: { file:"llSignFilePgMember", img:"llSignImgPgMember", empty:"llSignEmptyPgMember", upload:"llSignUploadPgMember", capture:"llSignCapturePgMember", replace:"llSignReplacePgMember", remove:"llSignRemovePgMember", sectionKey:"pg", role:"member", pad:"llPadPgMember", padLabel:"llPadLabelPgMember", padClear:"llPadClearPgMember", padUse:"llPadUsePgMember" },
@@ -3341,14 +3502,16 @@ async function loadReceiptMembers(){
 
   const track = $("llTrack");
 
-  function dockActionBar(){
-    const bar = $("llActionBar");
-    if (!bar) return;
-    const dock = (activePanel === "pg") ? $("llDockPg") : $("llDockM");
-    if (dock && bar.parentNode !== dock){
-      dock.appendChild(bar);
-    }
+ function dockActionBar(){
+  const bar = $("llTableActionBar");
+  if (!bar) return;
+
+  const dock = (activePanel === "pg") ? $("llDockPg") : $("llDockM");
+
+  if (dock && bar.parentNode !== dock){
+    dock.appendChild(bar);
   }
+}
 
   function setActivePanel(which, skipFocus){
     activePanel = (which === "member") ? "member" : "pg";

@@ -367,8 +367,8 @@
   box-shadow:none !important;
 }
 
- .nav-logout:hover{
-  background: linear-gradient(180deg, #d64c4c, #b93a3a);
+.nav-logout:hover{
+  background:linear-gradient(180deg, #d64c4c, #b93a3a);
   transform:none !important;
   box-shadow:none !important;
 }
@@ -2065,185 +2065,305 @@
   </script>
 
   <script>
-    // ------------------------------------------------------------
-    // MENU (mobile)
-    // ------------------------------------------------------------
-    const sidebar = document.getElementById('sidebar');
-    const menuButton = document.getElementById('menuButton');
-    const menuOverlay = document.getElementById('menuOverlay');
+   // ------------------------------------------------------------
+// ✅ MENU + SIDEBAR LOGIC — fixed like reference base
+// ------------------------------------------------------------
+const sidebar = document.getElementById('sidebar');
+const menuButton = document.getElementById('menuButton');
+const menuOverlay = document.getElementById('menuOverlay');
+const sidebarToggle = document.getElementById('sidebarToggle');
+const sidebarNav = document.getElementById('sidebarNav');
 
-    function isMobile(){ return window.matchMedia && window.matchMedia('(max-width: 768px)').matches; }
+const SIDEBAR_KEY = 'PGMIS_SIDEBAR_COLLAPSED';
+const ACTIVE_KEY = 'PGMIS_ACTIVE_SIDEBAR_HREF';
+const NAV_SCROLL_KEY = 'PGMIS_SIDEBAR_SCROLLTOP';
 
-    function openMenu(){
-      if(!isMobile()) return;
-      sidebar.classList.add('open');
-      menuOverlay.classList.add('show');
-      menuOverlay.setAttribute('aria-hidden','false');
-      document.body.classList.add('menu-open');
-    }
-    function closeMenu(){
-      sidebar.classList.remove('open');
-      menuOverlay.classList.remove('show');
-      menuOverlay.setAttribute('aria-hidden','true');
-      document.body.classList.remove('menu-open');
-    }
-    function toggleMenu(){
-      if(!isMobile()) return;
-      sidebar.classList.contains('open') ? closeMenu() : openMenu();
-    }
-    menuButton?.addEventListener('click', toggleMenu);
-    menuOverlay?.addEventListener('click', closeMenu);
+function isMobile(){
+  return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+}
 
-    window.addEventListener('resize', ()=>{ if(!isMobile()) closeMenu(); });
-    document.addEventListener('keydown', (e)=>{ if(isMobile() && e.key === 'Escape') closeMenu(); });
+function openMenu(){
+  if(!isMobile() || !sidebar) return;
 
-    // ------------------------------------------------------------
-    // SIDEBAR COLLAPSE (desktop) + localStorage
-    // ------------------------------------------------------------
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const SIDEBAR_KEY = 'PGMIS_SIDEBAR_COLLAPSED';
+  sidebar.classList.add('open');
+  menuOverlay?.classList.add('show');
+  menuOverlay?.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('menu-open');
+}
 
-    function applySidebarCollapsedState(){
-      const saved = localStorage.getItem(SIDEBAR_KEY);
-      if(saved === '1') sidebar.classList.add('collapsed');
-      else sidebar.classList.remove('collapsed');
-    }
-    function toggleSidebarCollapsed(){
-      sidebar.classList.toggle('collapsed');
-      localStorage.setItem(SIDEBAR_KEY, sidebar.classList.contains('collapsed') ? '1' : '0');
-    }
+function closeMenu(){
+  sidebar?.classList.remove('open');
+  menuOverlay?.classList.remove('show');
+  menuOverlay?.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('menu-open');
+}
 
+function toggleMenu(){
+  if(!isMobile()) return;
+  sidebar?.classList.contains('open') ? closeMenu() : openMenu();
+}
+
+menuButton?.addEventListener('click', toggleMenu);
+menuOverlay?.addEventListener('click', closeMenu);
+
+window.addEventListener('resize', function(){
+  if(!isMobile()){
+    closeMenu();
     applySidebarCollapsedState();
-    sidebarToggle?.addEventListener('click', toggleSidebarCollapsed);
-
-    // ------------------------------------------------------------
-    // ✅ SIDEBAR ACTIVE ITEM (persist after refresh)
-    // ------------------------------------------------------------
-    const ACTIVE_KEY = 'PGMIS_ACTIVE_SIDEBAR_HREF';
-
-    function clearActiveNav(){
-      document.querySelectorAll('#sidebarNav .nav-item').forEach(a => a.classList.remove('active'));
-    }
-
-    function normalizePath(p){
-      try{
-        const u = new URL(p, window.location.origin);
-        return (u.pathname || '/').replace(/\/+$/, '') || '/';
-      }catch(_){
-        return (p || '/').replace(/\/+$/, '') || '/';
-      }
-    }
-
-    function applyActiveByUrl(){
-      const currentPath = normalizePath(window.location.pathname);
-      const links = Array.from(document.querySelectorAll('#sidebarNav .nav-item[href]'))
-        .filter(a => !a.classList.contains('nav-logout'));
-
-      let match = links.find(a => normalizePath(a.getAttribute('href')) === currentPath);
-
-      if(!match){
-        match = links.find(a => {
-          const hp = normalizePath(a.getAttribute('href'));
-          if(hp === '/' || hp.length < 2) return false;
-          return currentPath.startsWith(hp + '/') || currentPath.startsWith(hp);
-        });
-      }
-
-      if(match){
-        clearActiveNav();
-        match.classList.add('active');
-        sessionStorage.setItem(ACTIVE_KEY, match.getAttribute('href'));
-        return true;
-      }
-      return false;
-    }
-
-    function applyActiveByStored(){
-      const stored = sessionStorage.getItem(ACTIVE_KEY);
-      if(!stored) return false;
-
-      const links = Array.from(document.querySelectorAll('#sidebarNav .nav-item[href]'))
-        .filter(a => !a.classList.contains('nav-logout'));
-
-      const match = links.find(a => a.getAttribute('href') === stored);
-      if(match){
-        clearActiveNav();
-        match.classList.add('active');
-        return true;
-      }
-      return false;
-    }
-
-    function initActiveNav(){
-      if(applyActiveByUrl()) return;
-      applyActiveByStored();
-    }
-
-    // ------------------------------------------------------------
-    // ✅ SIDEBAR SCROLL POSITION (persist after refresh/reload)
-    // ------------------------------------------------------------
-    const sidebarNav = document.getElementById('sidebarNav');
-    const NAV_SCROLL_KEY = 'PGMIS_SIDEBAR_SCROLLTOP';
-
-    function saveSidebarScroll(){
-      if(!sidebarNav) return;
-      sessionStorage.setItem(NAV_SCROLL_KEY, String(sidebarNav.scrollTop || 0));
-    }
-
-    function restoreSidebarScroll(){
-      if(!sidebarNav) return;
-      const v = sessionStorage.getItem(NAV_SCROLL_KEY);
-      if(v == null) return;
-      const n = parseInt(v, 10);
-      if(!Number.isFinite(n)) return;
-      sidebarNav.scrollTop = Math.max(0, n);
-    }
-
-    let _scrollT = null;
-    sidebarNav?.addEventListener('scroll', ()=>{
-      if(_scrollT) return;
-      _scrollT = setTimeout(()=>{
-        _scrollT = null;
-        saveSidebarScroll();
-      }, 120);
-    }, {passive:true});
-
-    document.querySelectorAll('#sidebarNav .nav-item[href]').forEach(a => {
-      if(a.classList.contains('nav-logout')) return;
-      a.addEventListener('click', () => {
-        saveSidebarScroll();
-        sessionStorage.setItem(ACTIVE_KEY, a.getAttribute('href'));
-        clearActiveNav();
-        a.classList.add('active');
-      });
-    });
-
-    initActiveNav();
-    setTimeout(restoreSidebarScroll, 0);
-
-    // ------------------------------------------------------------
-    // BRAND HOME (go dashboard)
-    // ------------------------------------------------------------
-    document.getElementById('brandHome')?.addEventListener('click', ()=>{
-      if(isProfileView) toggleProfileView(false);
-      window.location.href = "{{ url_for('reports.cadre_dashboard') if session.get('role') == 'CADRE_CC' else url_for('pg.pg_home') }}";
-    });
-
-    // ------------------------------------------------------------
-// ------------------------------------------------------------
-// LOGOUT TOP BUTTON
-// ------------------------------------------------------------
-document.getElementById('logoutTopBtn')?.addEventListener('click', ()=>{
-  try{
-    sessionStorage.removeItem(`cashbook_selected_period__{{ session.get('pg_id') or 'default' }}`);
-  }catch(_){}
-  window.location.href = "{{ url_for('auth.logout') }}";
+  }
 });
 
-document.getElementById('menuLogout')?.addEventListener('click', function(){
+document.addEventListener('keydown', function(e){
+  if(isMobile() && e.key === 'Escape'){
+    closeMenu();
+  }
+});
+
+// ------------------------------------------------------------
+// ✅ SIDEBAR COLLAPSE — desktop only + persistent
+// ------------------------------------------------------------
+function applySidebarCollapsedState(){
+  if(!sidebar) return;
+
+  if(isMobile()){
+    sidebar.classList.remove('collapsed');
+    return;
+  }
+
+  const saved = localStorage.getItem(SIDEBAR_KEY);
+  sidebar.classList.toggle('collapsed', saved === '1');
+}
+
+function toggleSidebarCollapsed(){
+  if(!sidebar || isMobile()) return;
+
+  sidebar.classList.toggle('collapsed');
+  localStorage.setItem(
+    SIDEBAR_KEY,
+    sidebar.classList.contains('collapsed') ? '1' : '0'
+  );
+}
+
+applySidebarCollapsedState();
+sidebarToggle?.addEventListener('click', toggleSidebarCollapsed);
+
+// ------------------------------------------------------------
+// ✅ ACTIVE SIDEBAR ITEM — persists after refresh/navigation
+// ------------------------------------------------------------
+function clearActiveNav(){
+  document.querySelectorAll('#sidebarNav .nav-item').forEach(function(a){
+    a.classList.remove('active');
+  });
+}
+
+function normalizePath(p){
   try{
-    sessionStorage.removeItem(`cashbook_selected_period__{{ session.get('pg_id') or 'default' }}`);
+    const u = new URL(p, window.location.origin);
+    return (u.pathname || '/').replace(/\/+$/, '') || '/';
+  }catch(_){
+    return (p || '/').replace(/\/+$/, '') || '/';
+  }
+}
+
+function applyActiveByUrl(){
+  const currentPath = normalizePath(window.location.pathname);
+
+  const links = Array.from(document.querySelectorAll('#sidebarNav .nav-item[href]'))
+    .filter(function(a){
+      return !a.classList.contains('nav-logout');
+    });
+
+  let match = links.find(function(a){
+    return normalizePath(a.getAttribute('href')) === currentPath;
+  });
+
+  if(!match){
+    match = links.find(function(a){
+      const hp = normalizePath(a.getAttribute('href'));
+
+      if(
+        hp === '/' ||
+        hp === '#' ||
+        hp.length < 2
+      ){
+        return false;
+      }
+
+      return currentPath.startsWith(hp + '/') || currentPath.startsWith(hp);
+    });
+  }
+
+  if(match){
+    clearActiveNav();
+    match.classList.add('active');
+    sessionStorage.setItem(ACTIVE_KEY, match.getAttribute('href'));
+    return true;
+  }
+
+  return false;
+}
+
+function applyActiveByStored(){
+  const stored = sessionStorage.getItem(ACTIVE_KEY);
+  if(!stored) return false;
+
+  const links = Array.from(document.querySelectorAll('#sidebarNav .nav-item[href]'))
+    .filter(function(a){
+      return !a.classList.contains('nav-logout');
+    });
+
+  const match = links.find(function(a){
+    return a.getAttribute('href') === stored;
+  });
+
+  if(match){
+    clearActiveNav();
+    match.classList.add('active');
+    return true;
+  }
+
+  return false;
+}
+
+function initActiveNav(){
+  if(applyActiveByUrl()) return;
+  applyActiveByStored();
+}
+
+// ------------------------------------------------------------
+// ✅ SIDEBAR SCROLL POSITION — only menu scroll remembers
+// ------------------------------------------------------------
+function saveSidebarScroll(){
+  if(!sidebarNav) return;
+  sessionStorage.setItem(NAV_SCROLL_KEY, String(sidebarNav.scrollTop || 0));
+}
+
+function restoreSidebarScroll(){
+  if(!sidebarNav) return;
+
+  const saved = sessionStorage.getItem(NAV_SCROLL_KEY);
+  if(saved === null) return;
+
+  const n = parseInt(saved, 10);
+  if(!Number.isFinite(n)) return;
+
+  sidebarNav.scrollTop = Math.max(0, n);
+}
+
+let sidebarScrollTimer = null;
+
+sidebarNav?.addEventListener('scroll', function(){
+  if(sidebarScrollTimer) return;
+
+  sidebarScrollTimer = setTimeout(function(){
+    sidebarScrollTimer = null;
+    saveSidebarScroll();
+  }, 120);
+}, { passive:true });
+
+document.querySelectorAll('#sidebarNav .nav-item[href]').forEach(function(link){
+  if(link.classList.contains('nav-logout')) return;
+
+  link.addEventListener('click', function(){
+    saveSidebarScroll();
+
+    sessionStorage.setItem(ACTIVE_KEY, link.getAttribute('href'));
+    clearActiveNav();
+    link.classList.add('active');
+
+    if(isMobile()){
+      closeMenu();
+    }
+  });
+});
+
+initActiveNav();
+setTimeout(restoreSidebarScroll, 0);
+
+// ------------------------------------------------------------
+// ✅ BRAND HOME
+// ------------------------------------------------------------
+document.getElementById('brandHome')?.addEventListener('click', function(){
+  try{
+    if(typeof isProfileView !== 'undefined' && isProfileView && typeof toggleProfileView === 'function'){
+      toggleProfileView(false);
+    }
   }catch(_){}
+
+  window.location.href = "{{ url_for('reports.cadre_dashboard') if session.get('role') == 'CADRE_CC' else url_for('pg.pg_home') }}";
+});
+
+// ------------------------------------------------------------
+// ✅ LOGOUT — clear saved UI state before logout
+// ------------------------------------------------------------
+function clearBaseMenuSessionState(){
+  try{
+    const exactKeys = [
+      SIDEBAR_KEY,
+      ACTIVE_KEY,
+      NAV_SCROLL_KEY,
+      'PGMIS_LANG_SESSION'
+    ];
+
+    exactKeys.forEach(function(key){
+      sessionStorage.removeItem(key);
+    });
+
+    const prefixes = [
+      'cashbook_selected_period__',
+      'cadre_dashboard_state:',
+      'cadre_dashboard_scroll:',
+      'receipt_voucher_active_panel:',
+      'receipt_voucher_data:',
+      'member_ledger_',
+      'loan_ledger_',
+      'meeting_minute_',
+      'input_register_',
+      'output_register_',
+      'asset_register_',
+      'ledger_book_'
+    ];
+
+    for(let i = sessionStorage.length - 1; i >= 0; i--){
+      const key = sessionStorage.key(i) || '';
+
+      if(prefixes.some(function(prefix){
+        return key.indexOf(prefix) === 0;
+      })){
+        sessionStorage.removeItem(key);
+      }
+    }
+  }catch(_){}
+}
+
+function goLogout(){
+  clearBaseMenuSessionState();
+  window.location.href = "{{ url_for('auth.logout') }}";
+}
+
+document.getElementById('logoutTopBtn')?.addEventListener('click', function(e){
+  e.preventDefault();
+  goLogout();
+});
+
+document.getElementById('menuLogout')?.addEventListener('click', function(e){
+  e.preventDefault();
+  goLogout();
+});
+
+// ------------------------------------------------------------
+// ✅ Touch feedback for mobile/app menu
+// ------------------------------------------------------------
+document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
+  item.addEventListener('touchstart', function(){
+    item.classList.add('is-pressed');
+  }, { passive:true });
+
+  ['touchend', 'touchcancel'].forEach(function(evt){
+    item.addEventListener(evt, function(){
+      item.classList.remove('is-pressed');
+    }, { passive:true });
+  });
 });
 
     // ------------------------------------------------------------

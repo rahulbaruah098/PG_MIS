@@ -140,17 +140,23 @@
     }
 
     .sidebar{
-      width:280px;background:#fff;border-right:1px solid rgba(4,120,87,.10);
-      box-shadow:2px 0 12px rgba(0,0,0,.06);
-      display:flex;flex-direction:column;
-      position:sticky;
-      top: var(--header-h);
-      height:calc(100vh - var(--header-h));
-      overflow-y:auto;
-      overscroll-behavior:contain;
-      display:flex;
-flex-direction:column;
-    }
+  width:280px;
+  background:#fff;
+  border-right:1px solid rgba(4,120,87,.10);
+  box-shadow:2px 0 12px rgba(0,0,0,.06);
+  display:flex;
+  flex-direction:column;
+  position:sticky;
+  top:var(--header-h);
+  height:calc(100vh - var(--header-h));
+  max-height:calc(100vh - var(--header-h));
+  min-height:calc(100vh - var(--header-h));
+  overflow:hidden;
+  overscroll-behavior:contain;
+  flex:0 0 auto;
+  z-index:20;
+  transition:none !important;
+}
 
     .sidebar-header{
       padding:1.25rem 1rem;
@@ -165,9 +171,31 @@ flex-direction:column;
     .sidebar-sub a{color:#047857;text-decoration:none}
     .sidebar-sub a:hover{text-decoration:underline}
 
-    .sidebar-nav{flex:1;padding:.75rem 0;flex:1;
-display:flex;
-flex-direction:column}
+    .sidebar-nav{
+  flex:1 1 auto;
+  padding:.75rem 0;
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(16,185,129,.55) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar{
+  width:8px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb{
+  background:rgba(16,185,129,.55);
+  border-radius:999px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track{
+  background:transparent;
+}
 
     .nav-item{
       display:flex;align-items:center;gap:.75rem;
@@ -175,7 +203,12 @@ flex-direction:column}
       cursor:pointer;transition:all .2s ease;color:#0f172a;font-size:.95rem;font-weight:800;
       border:1px solid transparent;user-select:none;text-decoration:none;
     }
-    .nav-item:hover{background:rgba(5,150,105,.08);border-color:rgba(5,150,105,.15);transform:translateX(4px)}
+.nav-item:hover{
+  background:rgba(5,150,105,.08);
+  border-color:rgba(5,150,105,.15);
+  transform:none !important;
+  box-shadow:none !important;
+}
     .nav-item.active{background:linear-gradient(to right,rgba(5,150,105,.12),rgba(16,185,129,.10));border-color:rgba(5,150,105,.25);color:#047857}
     .nav-item.disabled{opacity:.5;pointer-events:none;transform:none}
     .nav-icon{width:1.25rem;height:1.25rem;color:#059669;flex-shrink:0}
@@ -246,52 +279,46 @@ flex-direction:column}
     }
 
 
-
-
-
-    .logout-wrap{
-  margin-top:auto;
-  padding:14px;
+/* ✅ Separate fixed logout section below scrollable menu */
+.sidebar-logout-section{
+  flex:0 0 auto;
+  padding:12px 14px 14px;
+  border-top:1px solid rgba(15,23,42,.10);
+  background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(247,250,249,.98));
+  box-shadow:0 -14px 24px -24px rgba(15,23,42,.35);
 }
 
-.logout-btn{
+.nav-logout{
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:10px;
-
+  gap:.6rem;
   width:100%;
+  min-height:58px;
   padding:14px;
-
   border-radius:18px;
   text-decoration:none !important;
-
   font-weight:950;
   font-size:15px;
-
-  color:#fff;
-
-  background:linear-gradient(180deg,#dc2626,#b91c1c);
-  border:1px solid rgba(0,0,0,.08);
-
-  box-shadow:0 14px 24px -16px rgba(220,38,38,.6);
-
-  transition:all .2s ease;
+  color:#fff !important;
+  background:linear-gradient(180deg, #e05656, #c84343);
+  border:1px solid rgba(255,255,255,.28);
+  box-shadow:0 14px 24px -18px rgba(200,67,67,.55);
+  transform:none !important;
+  transition:none !important;
 }
 
-.logout-btn svg{
+.nav-logout svg{
   width:18px;
   height:18px;
+  color:#fff !important;
 }
 
-.logout-btn:hover{
-  transform:translateY(-1px);
-  box-shadow:0 18px 28px -16px rgba(220,38,38,.7);
-  background:linear-gradient(180deg,#ef4444,#dc2626);
-}
-
-.logout-btn:active{
-  transform:scale(.98);
+.nav-logout:hover{
+  background:linear-gradient(180deg, #d64c4c, #b93a3a);
+  transform:none !important;
+  box-shadow:none !important;
+  color:#fff !important;
 }
 
     /* ============================================================
@@ -317,16 +344,32 @@ flex-direction:column}
       }
 
       /* ✅ Sidebar becomes off-canvas as you had (unchanged behavior) */
-      .sidebar{
-        position:fixed;
-        left:-300px;
-        top: var(--header-h);
-        height:calc(100vh - var(--header-h));
-        z-index:95;
-        transition:left .25s ease;
-      }
-      .sidebar.open{left:0}
-      #menuOverlay.open{display:block}
+     .sidebar{
+  position:fixed;
+  left:-300px;
+  top:var(--header-h);
+  height:calc(100vh - var(--header-h));
+  max-height:calc(100vh - var(--header-h));
+  min-height:calc(100vh - var(--header-h));
+  z-index:95;
+  transition:none !important;
+  overflow:hidden;
+}
+.sidebar.open{left:0}
+#menuOverlay.open{display:block}
+
+.sidebar-logout-section{
+  padding:12px 14px 14px;
+  border-top:1px solid rgba(15,23,42,.10);
+  background:rgba(255,255,255,.96);
+}
+
+.nav-logout{
+  position:relative;
+  bottom:auto;
+  margin-top:0;
+  width:100%;
+}
 
       /* ✅ keep content padded but compact */
       .content-area{padding: 12px}
@@ -585,20 +628,19 @@ flex-direction:column}
           </a>
 
 
-          <div class="nav-section">Account</div>
-
-<div class="logout-wrap">
-  <a href="{{ url_for('auth.logout') }}" class="logout-btn">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-      <polyline points="16 17 21 12 16 7"></polyline>
-      <line x1="21" y1="12" x2="9" y2="12"></line>
-    </svg>
-    <span>Logout</span>
-  </a>
-</div>
         </nav>
+
+        <div class="sidebar-logout-section">
+          <a id="menuLogout" href="{{ url_for('auth.logout') }}" class="nav-logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Logout</span>
+          </a>
+        </div>
       </aside>
 
       <main class="content-area">
@@ -625,51 +667,197 @@ flex-direction:column}
 
   </div>
 
-  <script>
+ <script>
   (function(){
     const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('menuOverlay');
-    const SCROLL_KEY = 'clf_sidebar_scroll_top';
+    const sidebarNav = document.querySelector('.sidebar-nav');
 
-    function close(){
-      if (sidebar) sidebar.classList.remove('open');
-      if (overlay) overlay.classList.remove('open');
+    const ACTIVE_KEY = 'PGMIS_CLF_BASE_ACTIVE_SIDEBAR_HREF';
+    const NAV_SCROLL_KEY = 'PGMIS_CLF_BASE_SIDEBAR_SCROLLTOP';
+
+    function isMobile(){
+      return window.matchMedia && window.matchMedia('(max-width: 980px)').matches;
     }
 
-    function toggle(){
-      if (sidebar) sidebar.classList.toggle('open');
-      if (overlay) overlay.classList.toggle('open');
+    function openMenu(){
+      if(!isMobile() || !sidebar) return;
+      sidebar.classList.add('open');
+      overlay?.classList.add('open');
+      overlay?.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('menu-open');
     }
 
-    if (menuBtn) {
-      menuBtn.addEventListener('click', toggle);
+    function closeMenu(){
+      sidebar?.classList.remove('open');
+      overlay?.classList.remove('open');
+      overlay?.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('menu-open');
     }
 
-    if (overlay) {
-      overlay.addEventListener('click', close);
+    function toggleMenu(){
+      if(!isMobile()) return;
+      sidebar?.classList.contains('open') ? closeMenu() : openMenu();
     }
 
-    window.addEventListener('keydown', function(e){
-      if (e.key === 'Escape') close();
+    menuBtn?.addEventListener('click', toggleMenu);
+    overlay?.addEventListener('click', closeMenu);
+
+    window.addEventListener('resize', function(){
+      if(!isMobile()) closeMenu();
     });
 
-    if (sidebar) {
-      const savedScroll = sessionStorage.getItem(SCROLL_KEY);
-      if (savedScroll !== null) {
-        sidebar.scrollTop = parseInt(savedScroll, 10) || 0;
-      }
+    document.addEventListener('keydown', function(e){
+      if(isMobile() && e.key === 'Escape') closeMenu();
+    });
 
-      sidebar.addEventListener('scroll', function(){
-        sessionStorage.setItem(SCROLL_KEY, sidebar.scrollTop);
-      });
-
-      sidebar.querySelectorAll('.nav-item').forEach(function(link){
-        link.addEventListener('click', function(){
-          sessionStorage.setItem(SCROLL_KEY, sidebar.scrollTop);
-        });
+    function clearActiveNav(){
+      document.querySelectorAll('.sidebar-nav .nav-item').forEach(function(a){
+        a.classList.remove('active');
       });
     }
+
+    function normalizePath(p){
+      try{
+        const u = new URL(p, window.location.origin);
+        return (u.pathname || '/').replace(/\/+$/, '') || '/';
+      }catch(_){
+        return (p || '/').replace(/\/+$/, '') || '/';
+      }
+    }
+
+    function applyActiveByUrl(){
+      const currentPath = normalizePath(window.location.pathname);
+      const links = Array.from(document.querySelectorAll('.sidebar-nav .nav-item[href]'))
+        .filter(function(a){ return !a.classList.contains('nav-logout'); });
+
+      let match = links.find(function(a){
+        return normalizePath(a.getAttribute('href')) === currentPath;
+      });
+
+      if(!match){
+        match = links.find(function(a){
+          const hp = normalizePath(a.getAttribute('href'));
+          if(hp === '/' || hp.length < 2 || hp === '#') return false;
+          return currentPath.startsWith(hp + '/') || currentPath.startsWith(hp);
+        });
+      }
+
+      if(match){
+        clearActiveNav();
+        match.classList.add('active');
+        sessionStorage.setItem(ACTIVE_KEY, match.getAttribute('href'));
+        return true;
+      }
+
+      return false;
+    }
+
+    function applyActiveByStored(){
+      const stored = sessionStorage.getItem(ACTIVE_KEY);
+      if(!stored) return false;
+
+      const links = Array.from(document.querySelectorAll('.sidebar-nav .nav-item[href]'))
+        .filter(function(a){ return !a.classList.contains('nav-logout'); });
+
+      const match = links.find(function(a){
+        return a.getAttribute('href') === stored;
+      });
+
+      if(match){
+        clearActiveNav();
+        match.classList.add('active');
+        return true;
+      }
+
+      return false;
+    }
+
+    function initActiveNav(){
+      if(applyActiveByUrl()) return;
+      applyActiveByStored();
+    }
+
+    function saveSidebarScroll(){
+      if(!sidebarNav) return;
+      sessionStorage.setItem(NAV_SCROLL_KEY, String(sidebarNav.scrollTop || 0));
+    }
+
+    function restoreSidebarScroll(){
+      if(!sidebarNav) return;
+
+      const saved = sessionStorage.getItem(NAV_SCROLL_KEY);
+      if(saved === null) return;
+
+      const n = parseInt(saved, 10);
+      if(!Number.isFinite(n)) return;
+
+      sidebarNav.scrollTop = Math.max(0, n);
+    }
+
+    let scrollTimer = null;
+
+    sidebarNav?.addEventListener('scroll', function(){
+      if(scrollTimer) return;
+
+      scrollTimer = setTimeout(function(){
+        scrollTimer = null;
+        saveSidebarScroll();
+      }, 120);
+    }, { passive:true });
+
+    document.querySelectorAll('.sidebar-nav .nav-item[href]').forEach(function(link){
+      link.addEventListener('click', function(){
+        saveSidebarScroll();
+        sessionStorage.setItem(ACTIVE_KEY, link.getAttribute('href'));
+        clearActiveNav();
+        link.classList.add('active');
+
+        if(isMobile()) closeMenu();
+      });
+    });
+
+    /* ✅ Logout should clear saved menu/page display state */
+    document.querySelectorAll('a[href*="/logout"], a[href*="logout"]').forEach(function(link){
+      link.addEventListener('click', function(){
+        try{
+          const prefixes = [
+            'PGMIS_CLF_BASE_ACTIVE_SIDEBAR_HREF',
+            'PGMIS_CLF_BASE_SIDEBAR_SCROLLTOP',
+            'cadre_dashboard_state:',
+            'cadre_dashboard_scroll:',
+            'receipt_voucher_active_panel:',
+            'receipt_voucher_data:'
+          ];
+
+          for(let i = sessionStorage.length - 1; i >= 0; i--){
+            const key = sessionStorage.key(i) || '';
+
+            if(prefixes.some(function(prefix){
+              return key.indexOf(prefix) === 0;
+            })){
+              sessionStorage.removeItem(key);
+            }
+          }
+        }catch(e){}
+      });
+    });
+
+    initActiveNav();
+    setTimeout(restoreSidebarScroll, 0);
+
+    document.querySelectorAll('.sidebar-nav .nav-item').forEach(function(item){
+      item.addEventListener('touchstart', function(){
+        item.classList.add('is-pressed');
+      }, { passive:true });
+
+      ['touchend', 'touchcancel'].forEach(function(evt){
+        item.addEventListener(evt, function(){
+          item.classList.remove('is-pressed');
+        }, { passive:true });
+      });
+    });
   })();
 </script>
 
