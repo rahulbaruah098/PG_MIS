@@ -2300,11 +2300,14 @@ function renderPgKpiGraphs(){
 
   try { __destroyCharts(); } catch(e){}
 
+  /* ✅ FIX: render the 5 PG KPI graphs also */
+  try { renderPgKpiGraphs(); } catch(e){ console.warn("PG KPI graphs failed", e); }
+
   try { renderCashFlowChart(); } catch(e){ console.warn("cashFlow chart failed", e); }
   try { renderMembershipChart(); } catch(e){ console.warn("membership chart failed", e); }
   try { renderLoanDistributionChart(); } catch(e){ console.warn("loanDist chart failed", e); }
   try { renderProduceStockChart(); } catch(e){ console.warn("produceStock chart failed", e); }
-}
+  }
 
   function safeChartsFallback(){
     const ids = ["cashFlowChart","membershipChart","loanDistributionChart","produceStockChart"];
