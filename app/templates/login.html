@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -21,7 +21,7 @@
     --brand:#0d6f45;
     --brand-2:#0a5d3a;
 
-    /* ✅ professional footer tone */
+    /*  professional footer tone */
     --footerInk:#1f4b3a;
     --footerMuted:#3a6b59;
 
@@ -29,7 +29,7 @@
     --shadow-soft:0 10px 22px rgba(6,40,26,.14);
     --r:22px;
 
-    /* ✅ adapt bands + gaps to short height screens */
+    /*  adapt bands + gaps to short height screens */
     --bandH: clamp(56px, 9.5svh, 120px);
     --gapTop: clamp(10px, 2.6svh, 40px);
     --gapBottom: clamp(10px, 2.6svh, 40px);
@@ -39,7 +39,7 @@
 
     --vH: 1vh;
 
-    /* ✅ Fit vars */
+    /*  Fit vars */
     --fit: 1;
   }
 
@@ -260,7 +260,7 @@ body.has-flash .stage{
   .band-svg.is-desktop{ display:block; }
   .band-svg.is-mobile{ display:none; }
 
-  /* ✅ Stage between bands (true centering) */
+  /*  Stage between bands (true centering) */
   .stage{
     min-height: calc(var(--vH) * 100);
     height: calc(var(--vH) * 100);
@@ -364,7 +364,7 @@ body.has-flash .stage{
   .subline .as{ font-weight:700; }
 
   /* ==========================
-     ✅ TOP-RIGHT TOAST FLASHES
+      TOP-RIGHT TOAST FLASHES
      ========================== */
 .flash-wrap{
   position: fixed;
@@ -536,7 +536,7 @@ body.has-flash .stage{
     outline-offset: 3px;
   }
 
-  /* ✅ Powered by (professional) */
+  /*  Powered by (professional) */
   .powered-link{
     margin-top: 6px;
     text-align:center;
@@ -569,7 +569,7 @@ body.has-flash .stage{
     opacity:.98;
   }
 
-  /* ✅ MOBILE */
+  /*  MOBILE */
   @media (max-width:720px){
     .band-svg.is-desktop{ display:none; }
     .band-svg.is-mobile{ display:block; }
@@ -791,7 +791,7 @@ body.has-flash .stage{
       </svg>
     </div>
 
-    <!-- ✅ Flash Messages moved here so they can be fixed top-right -->
+    <!--  Flash Messages moved here so they can be fixed top-right -->
     <div class="flash-wrap" aria-label="Flash Messages" id="flashWrap">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -888,7 +888,7 @@ body.has-flash .stage{
 
   function px(n){ return Number(String(n || "0").replace("px","")) || 0; }
 
-  // ✅ Fit system (scale-only; stays centered)
+  //  Fit system (scale-only; stays centered)
   function fit(){
     if(!wrap || !stage) return;
 
@@ -968,12 +968,12 @@ body.has-flash .stage{
       return false;
     }
 
-    // ✅ refresh should show
+    //  refresh should show
     if(navType === 'reload'){
       return true;
     }
 
-    // ✅ first fresh entry only
+    //  first fresh entry only
     if(navType === 'navigate' && !seen){
       return true;
     }
@@ -1039,7 +1039,7 @@ function initSplash(){
   }
 }
 
-  // ✅ mark logout before browser leaves this page
+  //  mark logout before browser leaves this page
   document.addEventListener('click', (e) => {
     const logoutLink = e.target && e.target.closest && e.target.closest('a[href*="/logout"], a[href*="logout"]');
     if(logoutLink){

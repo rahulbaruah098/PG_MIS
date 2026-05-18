@@ -2,15 +2,6 @@
 {% block content %}
 
 <style>
-/* ============================================================
-   CLF OFFICIAL CONSOLE — RESKIN TO MATCH OTHER PAGES
-   ✅ ONLY UI/CSS/UX changed
-   ✅ ALL existing routes / forms / row data / actions kept intact
-   ✅ Added: back button, search, serial no, pagination, rows-per-page
-   ✅ Mobile/app: table becomes swipe card blocks
-   ✅ Fully responsive for web/tablet/mobile/app
-   ✅ Scoped under .cc-wrap only
-   ============================================================ */
 
 .cc-wrap{
   width:100%;
@@ -103,6 +94,16 @@
   display:none;
 }
 
+.cc-period-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.cc-period-actions .cc-btn{
+  width:100%;
+}
+
 /* Show back button only on tablet/mobile/app view */
 @media (max-width: 980px){
   .cc-back{
@@ -118,6 +119,65 @@
   gap:10px 14px;
   border-bottom:1.5px solid var(--line2);
   background:rgba(255,255,255,.92);
+}
+/* Selected Period card */
+.cc-field{
+  position:relative;
+  overflow:hidden;
+  min-height:82px;
+  border:1px solid rgba(15,23,42,.14);
+  border-radius:16px;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(16,185,129,.15), transparent 42%),
+    linear-gradient(135deg, rgba(240,253,244,.96), rgba(255,255,255,.94));
+  box-shadow:0 14px 26px -22px rgba(15,23,42,.30);
+  padding:14px 16px 14px 58px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+.cc-field::before{
+  content:"";
+  position:absolute;
+  left:16px;
+  top:50%;
+  width:28px;
+  height:28px;
+  border-radius:12px;
+  transform:translateY(-50%);
+  background:rgba(16,185,129,.13);
+  border:1px solid rgba(16,185,129,.24);
+  box-shadow:0 0 0 5px rgba(16,185,129,.08);
+}
+
+.cc-field::after{
+  content:"📅";
+  position:absolute;
+  left:21px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:17px;
+  line-height:1;
+}
+
+.cc-label{
+  margin:0;
+  font-size:12px;
+  font-weight:950;
+  color:rgba(11,77,58,.92);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  line-height:1.25;
+}
+
+.cc-muted{
+  margin-top:7px;
+  color:var(--ink);
+  font-size:22px;
+  font-weight:950;
+  line-height:1.1;
+  letter-spacing:.2px;
 }
 
 /* two panels */
@@ -361,6 +421,12 @@
   -webkit-overflow-scrolling:touch;
   max-height:68vh;
 }
+
+@media (min-width: 721px){
+  .cc-table{
+    min-width:920px;
+  }
+}
 .cc-table-scroll::-webkit-scrollbar{ height:10px; width:10px; }
 .cc-table-scroll::-webkit-scrollbar-thumb{
   background:rgba(15,23,42,.18);
@@ -370,25 +436,69 @@
   width:100%;
   border-collapse:separate;
   border-spacing:0;
+  table-layout:fixed;
 }
+
 .cc-table thead th{
-  background:rgba(247,250,249,.76);
+  background:rgba(247,250,249,.88);
   color:rgba(11,77,58,.98);
   font-weight:950;
   font-size:12px;
-  padding:10px;
+  padding:12px 14px;
   border-bottom:1px solid rgba(15,23,42,.10);
   position:sticky;
   top:0;
   z-index:1;
   white-space:nowrap;
+  text-align:left;
+  vertical-align:middle;
 }
+
 .cc-table td{
-  padding:10px;
+  padding:13px 14px;
   border-bottom:1px solid rgba(15,23,42,.08);
   font-size:12.5px;
   color:rgba(15,23,42,.88);
-  vertical-align:top;
+  vertical-align:middle;
+  text-align:left;
+}
+
+.cc-table th:nth-child(1),
+.cc-table td:nth-child(1){
+  width:70px;
+  text-align:center;
+}
+
+.cc-table th:nth-child(2),
+.cc-table td:nth-child(2){
+  width:180px;
+}
+
+.cc-table th:nth-child(3),
+.cc-table td:nth-child(3){
+  width:170px;
+}
+
+.cc-table th:nth-child(4),
+.cc-table td:nth-child(4){
+  width:170px;
+  text-align:center;
+}
+
+.cc-table th:nth-child(5),
+.cc-table td:nth-child(5){
+  width:330px;
+  text-align:right;
+}
+
+.cc-table .text-end{
+  text-align:right !important;
+}
+
+.cc-table .cc-sl-cell{
+  text-align:center;
+  font-weight:850;
+  color:rgba(15,23,42,.75);
 }
 .cc-table tr:last-child td{ border-bottom:none; }
 .cc-table tbody tr:hover{ background:rgba(16,185,129,.04); }
@@ -402,13 +512,15 @@
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:28px;
-  padding:.42rem .72rem;
+  min-height:30px;
+  padding:.44rem .78rem;
   border-radius:999px;
   font-size:11px;
   font-weight:950;
   letter-spacing:.15px;
   white-space:nowrap;
+  line-height:1;
+  vertical-align:middle;
 }
 .cc-badge-light{
   background:rgba(15,23,42,.06);
@@ -444,10 +556,22 @@
 .cc-act-wrap{
   display:flex;
   gap:8px;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
+  align-items:center;
   justify-content:flex-end;
+  width:100%;
 }
-.cc-act-wrap form{ margin:0; }
+
+.cc-act-wrap form{
+  margin:0;
+  display:inline-flex;
+}
+
+.cc-act-wrap .cc-btn{
+  min-width:86px;
+  min-height:38px;
+  padding:9px 13px;
+}
 
 .cc-pagination{
   margin:0 16px 16px;
@@ -527,6 +651,20 @@
     padding-right:8px;
     font-size:17px;
   }
+
+  .cc-period-actions{
+  grid-template-columns:1fr;
+}
+
+  .cc-field{
+  min-height:76px;
+  border-radius:15px;
+  padding:13px 14px 13px 54px;
+}
+
+.cc-muted{
+  font-size:20px;
+}
   .cc-sub{
     text-align:left;
     padding-left:54px;
@@ -541,15 +679,15 @@
     overflow:hidden;
   }
 
-  .cc-table-scroll{
-    overflow-x:auto;
-    overflow-y:hidden;
-    padding:12px;
-    scroll-snap-type:x mandatory;
-    scroll-padding-left:12px;
-    background:rgba(255,255,255,.98);
-    max-height:none;
-  }
+ .cc-table-scroll{
+  overflow-x:auto;
+  overflow-y:visible;
+  padding:12px;
+  scroll-snap-type:x mandatory;
+  scroll-padding-left:12px;
+  background:rgba(255,255,255,.98);
+  max-height:none;
+}
 
   .cc-table{
     width:100%;
@@ -562,13 +700,13 @@
     display:none;
   }
 
-  .cc-table tbody{
-    display:grid;
-    grid-auto-flow:column;
-    grid-auto-columns:88%;
-    gap:12px;
-    align-items:stretch;
-  }
+ .cc-table tbody{
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:94%;
+  gap:12px;
+  align-items:stretch;
+}
 
   .cc-table tbody tr{
     display:flex;
@@ -633,9 +771,55 @@
     content:none;
   }
 
-  .cc-act-wrap{
-    justify-content:flex-start;
-  }
+ .cc-table tbody td[data-label="Actions"]{
+  display:block !important;
+  width:100% !important;
+  text-align:left !important;
+  padding:12px !important;
+  overflow:visible !important;
+}
+
+.cc-table tbody td[data-label="Actions"]::before{
+  display:block !important;
+  content:attr(data-label);
+  margin-bottom:10px;
+  max-width:100%;
+  font-weight:950;
+  font-size:12px;
+  color:rgba(11,77,58,.92);
+  text-align:left;
+}
+
+.cc-act-wrap{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:8px !important;
+  width:100% !important;
+  min-width:0 !important;
+  justify-content:flex-start !important;
+  align-items:stretch !important;
+}
+
+.cc-act-wrap form{
+  width:100% !important;
+  display:block !important;
+  margin:0 !important;
+}
+
+.cc-act-wrap .cc-btn,
+.cc-act-wrap a.cc-btn{
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  min-height:44px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:11px 12px !important;
+  border-radius:999px !important;
+  white-space:nowrap !important;
+  text-align:center !important;
+}
 }
 
 @media (max-width: 520px){
@@ -660,17 +844,22 @@
         </svg>
       </a>
 
-      <h2 class="cc-title">CLF Official Console</h2>
-      <p class="cc-sub">Approve monthly submissions from PGs under your CLF and lock approved periods.</p>
+      <h2 class="cc-title">MPR (Monthly Progress Report)</h2>
     </div>
 
     <!-- Top fields -->
-    <div class="cc-topfields">
-      <div class="cc-field">
-        <div class="cc-label">Selected Period</div>
-        <div class="cc-muted">{{ month }}/{{ year }}</div>
-      </div>
-    </div>
+<div class="cc-topfields">
+  <div class="cc-field">
+    <div class="cc-label">Selected Period</div>
+    <div class="cc-muted">
+  {% if is_all_time %}
+    All Time
+  {% else %}
+    {{ "%02d"|format(month|int) }}/{{ year }}
+  {% endif %}
+</div>
+  </div>
+</div>
 
     <!-- Panels -->
     <div class="cc-panels">
@@ -679,21 +868,51 @@
       <section class="cc-block">
         <div class="cc-block-head">
           <h3 class="cc-block-title">Select Period</h3>
-          <p class="cc-block-sub">Load PG-wise module statuses for the selected year and month.</p>
+         
         </div>
         <div class="cc-block-body">
-          <form class="cc-grid" method="get">
-            <div class="cc-stack cc-col-6">
-              <label>Year</label>
-              <input name="year" class="cc-input" value="{{ year }}" type="number" min="2000" max="2100">
-            </div>
-            <div class="cc-stack cc-col-6">
-              <label>Month</label>
-              <input name="month" class="cc-input" value="{{ month }}" type="number" min="1" max="12">
-            </div>
-            <div class="cc-col-12 cc-actions">
-              <button class="cc-btn cc-primary w-100" style="width:100%;" type="submit">Load</button>
-            </div>
+<form class="cc-grid" method="get" action="{{ url_for('reports.clf_console') }}">
+  <input type="hidden" name="view" value="period">
+           <div class="cc-stack cc-col-6">
+  <label>Year</label>
+  <select name="year" class="cc-input">
+    {% set current_year = year|int if year else 2026 %}
+    {% for y in range(2020, 2036) %}
+      <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>
+        {{ y }}
+      </option>
+    {% endfor %}
+  </select>
+</div>
+
+<div class="cc-stack cc-col-6">
+  <label>Month</label>
+  <select name="month" class="cc-input">
+    {% set current_month = month|int if month else 1 %}
+
+    <option value="1" {% if current_month == 1 %}selected{% endif %}>January</option>
+    <option value="2" {% if current_month == 2 %}selected{% endif %}>February</option>
+    <option value="3" {% if current_month == 3 %}selected{% endif %}>March</option>
+    <option value="4" {% if current_month == 4 %}selected{% endif %}>April</option>
+    <option value="5" {% if current_month == 5 %}selected{% endif %}>May</option>
+    <option value="6" {% if current_month == 6 %}selected{% endif %}>June</option>
+    <option value="7" {% if current_month == 7 %}selected{% endif %}>July</option>
+    <option value="8" {% if current_month == 8 %}selected{% endif %}>August</option>
+    <option value="9" {% if current_month == 9 %}selected{% endif %}>September</option>
+    <option value="10" {% if current_month == 10 %}selected{% endif %}>October</option>
+    <option value="11" {% if current_month == 11 %}selected{% endif %}>November</option>
+    <option value="12" {% if current_month == 12 %}selected{% endif %}>December</option>
+  </select>
+</div>
+            <div class="cc-col-12 cc-actions cc-period-actions">
+  <button class="cc-btn cc-primary" type="submit">
+    Load Selected Period
+  </button>
+
+  <a class="cc-btn cc-secondary" href="{{ url_for('reports.clf_console', view='all') }}">
+    View All Time
+  </a>
+</div>
           </form>
         </div>
       </section>
@@ -711,9 +930,6 @@
             <li>Open <b>View PG</b> to verify entries.</li>
             <li>Use <b>Approve</b> / <b>Reject</b> for modules that are <b>submitted_to_clf</b>.</li>
           </ol>
-          <div style="margin-top:10px; padding:10px 12px; border-radius:14px; background:rgba(16,185,129,.08); border:1px solid rgba(16,185,129,.16); color:#064e3b; font-weight:900;">
-            Tip: After District approval, lock the period to freeze edits for that month.
-          </div>
           <div class="cc-actions" style="margin-top:12px;">
             <a class="cc-btn cc-secondary" href="{{ url_for('reports.hierarchy_dashboard') }}">Open Hierarchy Dashboard</a>
           </div>
@@ -789,16 +1005,34 @@
 
               <td data-label="Actions" class="text-end">
                 <div class="cc-act-wrap">
-                  <form method="post" action="{{ url_for('reports.approve_monthly', pg_id=row.pg_id, year=year, month=month, module=row.module, level='clf') }}">
-                    <button class="cc-btn cc-success" {% if row.status != 'submitted_to_clf' %}disabled{% endif %}>Approve</button>
-                  </form>
+                 {% if is_all_time %}
+  <button class="cc-btn cc-success" disabled title="Approval is available only for selected month/year">
+    Approve
+  </button>
 
-                  <form method="post" action="{{ url_for('reports.reject_monthly', pg_id=row.pg_id, year=year, month=month, module=row.module, level='clf') }}">
-                    <input type="hidden" name="remark" value="Rejected by CLF">
-                    <button class="cc-btn cc-danger" {% if row.status != 'submitted_to_clf' %}disabled{% endif %}>Reject</button>
-                  </form>
+  <button class="cc-btn cc-danger" disabled title="Rejection is available only for selected month/year">
+    Reject
+  </button>
+{% else %}
+  <form method="post" action="{{ url_for('reports.approve_monthly', pg_id=row.pg_id, year=year, month=month, module=row.module, level='clf') }}">
+    <button class="cc-btn cc-success" {% if row.status != 'submitted_to_clf' %}disabled{% endif %}>Approve</button>
+  </form>
 
-                  <a class="cc-btn cc-view" href="{{ url_for('reports.pg_mpr', pg_id=row.pg_id) }}">View PG</a>
+  <form method="post" action="{{ url_for('reports.reject_monthly', pg_id=row.pg_id, year=year, month=month, module=row.module, level='clf') }}">
+    <input type="hidden" name="remark" value="Rejected by CLF">
+    <button class="cc-btn cc-danger" {% if row.status != 'submitted_to_clf' %}disabled{% endif %}>Reject</button>
+  </form>
+{% endif %}
+
+{% if is_all_time %}
+  <a class="cc-btn cc-view" href="{{ url_for('reports.pg_mpr', pg_id=row.pg_id, view='all') }}">
+    View PG
+  </a>
+{% else %}
+<a class="cc-btn cc-view" href="{{ url_for('reports.pg_mpr', pg_id=row.pg_id, year=year, month=month, view='period') }}">
+    View PG
+  </a>
+{% endif %}
                 </div>
               </td>
             </tr>
@@ -824,10 +1058,6 @@
       </div>
     </div>
     {% endif %}
-
-    <div class="cc-tip">
-      Tip: After District approval, lock the period to freeze edits for that month.
-    </div>
 
   </div>
 </div>

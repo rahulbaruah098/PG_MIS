@@ -2,15 +2,6 @@
 {% block content %}
 
 <style>
-  /* ============================================================
-     PG LIST / CREATE PAGE — BUSINESS MODEL STYLE + SEARCH/PAGINATION
-     ✅ ONLY UI/CSS + client-side search/pagination added
-     ✅ ALL existing form names, ids, routes, JS logic kept intact
-     ✅ Back button kept
-     ✅ Mobile/app PG list becomes horizontal swipe cards
-     ✅ Scoped styling only
-     ============================================================ */
-
   .pgb-wrap{
     width:100%;
     max-width:1100px;
@@ -284,6 +275,20 @@
   }
 
   /* Legacy create area */
+
+  .pgb-legacy-collapse[hidden]{
+  display:none !important;
+}
+
+.pgb-legacy-collapse{
+  display:block;
+}
+
+#legacyPgCreateToggle.is-open{
+  background:rgba(16,185,129,.16);
+  border-color:rgba(16,185,129,.40);
+  color:#0b4d3a;
+}
   .pgb-legacy{
     padding-top:12px;
     margin-top:12px;
@@ -689,11 +694,11 @@
         <div class="pgb-block-head">
           <div>
             <h3 class="pgb-block-title">Create PG (from SHG Master)</h3>
-            <p class="pgb-block-sub">Excel-driven cascading dropdown. Creates PG + auto generates PG Login (UserID/Password).</p>
+          
           </div>
 
-          <button class="pgb-btn" type="button" data-bs-toggle="collapse" data-bs-target="#legacyPgCreate" aria-expanded="false">
-            Legacy Create
+          <button class="pgb-btn" type="button" id="legacyPgCreateToggle" aria-expanded="false" aria-controls="legacyPgCreate">
+          Legacy Create
           </button>
         </div>
 
@@ -756,13 +761,13 @@
             </div>
           </form>
 
-          <div class="collapse" id="legacyPgCreate">
+          <div class="pgb-legacy-collapse" id="legacyPgCreate" hidden>
             <div class="pgb-legacy">
               <div class="pgb-block" style="margin-top:0;">
                 <div class="pgb-block-head">
                   <div>
                     <h3 class="pgb-block-title">Legacy: Manual PG Create</h3>
-                    <p class="pgb-block-sub">This does not auto-bind SHG details or auto-create PG login.</p>
+
                   </div>
                 </div>
 
@@ -814,7 +819,7 @@
         <div class="pgb-block-head">
           <div>
             <h3 class="pgb-block-title">Producer Group List</h3>
-            <p class="pgb-block-sub">Open any PG record from the list below.</p>
+           
           </div>
         </div>
 
@@ -903,6 +908,30 @@
 <script>
   (function(){
     const $ = id => document.getElementById(id);
+
+    /* ============================================================
+   Legacy Create toggle
+============================================================ */
+const legacyBtn = $('legacyPgCreateToggle');
+const legacyBox = $('legacyPgCreate');
+
+if (legacyBtn && legacyBox) {
+  legacyBtn.addEventListener('click', function(){
+    const isHidden = legacyBox.hasAttribute('hidden');
+
+    if (isHidden) {
+      legacyBox.removeAttribute('hidden');
+      legacyBtn.classList.add('is-open');
+      legacyBtn.setAttribute('aria-expanded', 'true');
+      legacyBtn.textContent = 'Hide Legacy Create';
+    } else {
+      legacyBox.setAttribute('hidden', 'hidden');
+      legacyBtn.classList.remove('is-open');
+      legacyBtn.setAttribute('aria-expanded', 'false');
+      legacyBtn.textContent = 'Legacy Create';
+    }
+  });
+}
 
     const el = {
       state: $('shg_state'),
@@ -1039,8 +1068,8 @@
 
     /* ============================================================
        PG LIST SEARCH + PAGINATION
-       ✅ client-side only
-       ✅ no backend/data logic changed
+        client-side only
+        no backend/data logic changed
        ============================================================ */
     let currentPage = 1;
     let perPage = 25;

@@ -1,4 +1,4 @@
-from services.audit_engine import AuditLogger
+﻿from services.audit_engine import AuditLogger
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
 from app.services.guards import require_unlocked_period
 from flask import render_template, request, redirect, url_for, flash, current_app, session,jsonify, abort,g
@@ -731,7 +731,7 @@ def _set_pg_status(db, pg_id, status, extra=None):
     )
 
 def _current_user_dict():
-    # ✅ MOBILE FIX: prefer g (set by JWT in rbac.py) over session (web-only)
+    #  MOBILE FIX: prefer g (set by JWT in rbac.py) over session (web-only)
     return {
         "user_id": getattr(g, "user_id", None) or session.get("user_id"),
         "username": getattr(g, "username", None) or session.get("username"),
@@ -899,7 +899,7 @@ def _pg_metrics(db, pg_id):
    
 
     # ------------------------------------------------------------
-    # ✅ ONLY ACTIVE MEMBERS SHOULD COUNT IN LIVE DASHBOARD
+    #  ONLY ACTIVE MEMBERS SHOULD COUNT IN LIVE DASHBOARD
     # - old rows without is_active are treated as active for backward compatibility
     # ------------------------------------------------------------
     active_member_filter = {
@@ -2015,7 +2015,7 @@ def pg_submit_for_authorization(pg_id):
     db = current_app.mongo_db
     pg = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))})
 
-    # ✅ MOBILE FIX: helper to detect mobile/JSON requests
+    #  MOBILE FIX: helper to detect mobile/JSON requests
     def _wants_json():
         return bool(
             request.headers.get("Authorization")
@@ -2029,7 +2029,7 @@ def pg_submit_for_authorization(pg_id):
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    # ✅ MOBILE FIX: read role from g (JWT) with session fallback
+    #  MOBILE FIX: read role from g (JWT) with session fallback
     role       = getattr(g, "role",   None) or session.get("role")
     token_pg   = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
 
@@ -2146,7 +2146,7 @@ def pg_members(pg_id):
             master_by_id[str(doc["_id"])] = doc
 
     # ------------------------------------------------------------
-    # ✅ Load only current/active PG member docs for display
+    #  Load only current/active PG member docs for display
     # ------------------------------------------------------------
     existing_by_member = {}
     for doc in db.pg_members.find({
@@ -2212,7 +2212,7 @@ def pg_members(pg_id):
         return None
 
     # ============================================================
-    # ✅ INDIVIDUAL SAVE (Row-wise)
+    #  INDIVIDUAL SAVE (Row-wise)
     # ============================================================
     if request.method == "POST":
         _is_mobile = _wants_json()
@@ -2238,7 +2238,7 @@ def pg_members(pg_id):
             return redirect(url_for("pg.pg_members", pg_id=pg_id))
 
         # ------------------------------------------------------------
-        # ✅ Save allowed only if member is still selected in current PG
+        #  Save allowed only if member is still selected in current PG
         # ------------------------------------------------------------
         if str(mid_obj) not in selected_id_set:
             return _deny("This member is no longer active in the current PG selection.", 403)
@@ -2332,7 +2332,7 @@ def pg_members(pg_id):
             "updated_at": datetime.utcnow(),
         }
 
-        # ✅ Do NOT overwrite with blank:
+        #  Do NOT overwrite with blank:
         # Only set when user typed something. Otherwise keep previous/master fallback.
         if contact != "":
             update_set["contact"] = contact
@@ -2363,7 +2363,7 @@ def pg_members(pg_id):
         if membership_fee_paid is not None:
             update_set["membership_fee_paid"] = membership_fee_paid
 
-        # ✅ Lakhpati Didi flag
+        #  Lakhpati Didi flag
         update_set["lakh_pati_didi"] = True if lakh_raw in ("1", "true", "on", "yes") else False
 
         update_set["agri_crop"] = agri_crop if current_sector == "Agri" else ""
@@ -2636,7 +2636,7 @@ def submit_for_authorization(pg_id):
     db = current_app.mongo_db
     pg = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))})
 
-    # ✅ MOBILE FIX: helper to detect mobile/JSON requests
+    #  MOBILE FIX: helper to detect mobile/JSON requests
     def _wants_json():
         return bool(
             request.headers.get("Authorization")
@@ -2651,7 +2651,7 @@ def submit_for_authorization(pg_id):
         return redirect(url_for("reports.hierarchy_dashboard"))
 
     # PG_DATA_ENTRY can only submit their own PG.
-    # ✅ MOBILE FIX: read role/pg_id from g (JWT) with session fallback
+    #  MOBILE FIX: read role/pg_id from g (JWT) with session fallback
     role     = getattr(g, "role",   None) or session.get("role")
     token_pg = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
 
@@ -2753,7 +2753,7 @@ def pg_upload_document(pg_id):
 @login_required
 @roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
 def meeting_minute_book():
-    # ✅ MOBILE FIX: use g.pg_id (JWT) with session fallback
+    #  MOBILE FIX: use g.pg_id (JWT) with session fallback
     pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
     if request.headers.get("Authorization") or request.is_json:
         return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "meeting-minutes"})
@@ -3642,7 +3642,7 @@ def _ctx_pg_id():
     Mobile JWT => g.pg_id (decoded from token by rbac._authenticate_request)
     Fallback => query-string / form field 'pg_id'
     """
-    # ✅ MOBILE FIX: g.pg_id is populated by JWT decode in rbac.py
+    #  MOBILE FIX: g.pg_id is populated by JWT decode in rbac.py
     return (
         getattr(g, "pg_id", None)
         or session.get("pg_id")
@@ -3655,11 +3655,11 @@ def _ctx_pg_id():
 
 def _enforce_pg_scope(pg_doc):
     """Abort with 403 if current user is not allowed to access this PG document.
-    ✅ MOBILE FIX: reads from g (JWT) with session fallback so mobile JWT users
+     MOBILE FIX: reads from g (JWT) with session fallback so mobile JWT users
     are scoped exactly the same as web session users.
     """
 
-    # ✅ MOBILE FIX: use g first (JWT), fall back to session (web)
+    #  MOBILE FIX: use g first (JWT), fall back to session (web)
     role     = getattr(g, "role",        None) or session.get("role")
     pg_id_s  = str(getattr(g, "pg_id",  None) or session.get("pg_id") or "")
     clf_id   = getattr(g, "clf_id",      None) or session.get("clf_id")
@@ -3829,7 +3829,7 @@ def api_cashbook(pg_id):
 
     payload = request.get_json(silent=True) or {}
 
-    # ✅ Validation: Cash Book must balance before saving
+    #  Validation: Cash Book must balance before saving
     # If receipts grand total != payments grand total, do not accept/save.
     receipts = payload.get("receipts", [])
     payments = payload.get("payments", [])

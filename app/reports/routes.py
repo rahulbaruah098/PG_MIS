@@ -1,4 +1,4 @@
-from services.audit_engine import AuditLogger
+﻿from services.audit_engine import AuditLogger
 import os
 import re
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app, send_file
@@ -1226,7 +1226,7 @@ def state_dashboard():
     # IDs of PGs in current scope (for cross-collection aggregation)
     pg_ids = [p["_id"] for p in db.pgs.find(pg_match, {"_id": 1})]
 
-    # ✅ Profit + Loss (cumulative) from Income–Expenditure (separate)
+    #  Profit + Loss (cumulative) from Income–Expenditure (separate)
     total_profit = 0.0
     total_loss = 0.0
     if pg_ids:
@@ -1242,7 +1242,7 @@ def state_dashboard():
             total_profit = float(profit_data[0].get("profit") or 0)
             total_loss = float(profit_data[0].get("loss") or 0)
 
-    # ✅ Grants (cumulative) + number of PGs that received any grants
+    #  Grants (cumulative) + number of PGs that received any grants
     grants_total = 0.0
     pgs_with_grants = 0
     if pg_ids:
@@ -1254,7 +1254,7 @@ def state_dashboard():
             grants_total = float(grants_data[0].get("grants_total") or 0)
             pgs_with_grants = len(grants_data[0].get("pgs_with_grants") or [])
 
-    # ✅ Lakhpati Didi total (members)
+    #  Lakhpati Didi total (members)
     lakhpati_total = 0
     try:
         if pg_ids:
@@ -1649,7 +1649,7 @@ def hierarchy_dashboard():
     pg_count = len(pg_ids)
     member_count = db.pg_members.count_documents({"pg_id": {"$in": pg_ids}}) if pg_ids else 0
 
-    # ✅ Turnover / Profit-Loss / Grants / Lakhpati (scope)
+    #  Turnover / Profit-Loss / Grants / Lakhpati (scope)
     turnover_total = 0.0
     profit_total = 0.0
     loss_total = 0.0
@@ -1883,10 +1883,29 @@ def pg_mpr(pg_id):
 
     db = current_app.mongo_db
 
+    selected_year = request.args.get("year")
+    selected_month = request.args.get("month")
+    view_mode = (request.args.get("view") or "period").strip().lower()
+
+    query = {
+        "level": "pg",
+        "ref_id": pg_id
+    }
+
+    if view_mode == "all":
+        # View All Time button only
+        pass
+    else:
+        # Selected period mode must NEVER fall back to all data
+        try:
+            query["year"] = int(selected_year)
+            query["month"] = int(selected_month)
+        except Exception:
+            query["year"] = -1
+            query["month"] = -1
+
     snapshots = list(
-        db.mpr_snapshots.find(
-            {"level": "pg", "ref_id": pg_id}
-        ).sort([("year", -1), ("month", -1)])
+        db.mpr_snapshots.find(query).sort([("year", -1), ("month", -1)])
     )
 
     def _safe_num(v):
@@ -1940,11 +1959,20 @@ def pg_mpr(pg_id):
         return jsonify({
             "success": True,
             "pg_id": pg_id,
+            "view": view_mode,
+            "year": query.get("year"),
+            "month": query.get("month"),
             "count": len(normalized),
             "snapshots": normalized
         })
 
-    return render_template("pg_mpr.html", snapshots=snapshots)
+    return render_template(
+        "pg_mpr.html",
+        snapshots=snapshots,
+        selected_year=query.get("year"),
+        selected_month=query.get("month"),
+        view_mode=view_mode,
+    )
 
 
 @reports_bp.route("/pending_changes")
@@ -3089,14 +3117,24 @@ def clf_console():
 
     year = request.args.get("year")
     month = request.args.get("month")
+    view_mode = (request.args.get("view") or "period").strip().lower()
+
+    is_all_time = view_mode == "all"
 
     try:
         now = datetime.utcnow()
-        year = int(year) if year else now.year
-        month = int(month) if month else now.month
+
+        if is_all_time:
+            year = None
+            month = None
+        else:
+            year = int(year) if year else now.year
+            month = int(month) if month else now.month
+
     except Exception:
         now = datetime.utcnow()
         year, month = now.year, now.month
+        is_all_time = False
 
     # =========================
     # Resolve PG scope
@@ -3116,33 +3154,251 @@ def clf_console():
 
     rows = []
 
+    def _has_period_data(pg_oid, pg_id, module, year, month):
+        """
+        Checks real module collections also, not only db.submissions.
+        This prevents the console from becoming blank when data exists
+        but submission row is not created yet.
+        """
+        pg_match_or = [
+            {"pg_id": pg_oid},
+            {"pg_id": pg_id},
+            {"ref_id": pg_id},
+            {"ref_id": pg_oid},
+        ]
+
+        base_q = {
+            "$or": pg_match_or,
+            "year": year,
+            "month": month,
+        }
+
+        try:
+            y_int = int(year)
+            m_int = int(month)
+
+            period_start = datetime(y_int, m_int, 1)
+
+            if m_int == 12:
+                period_end = datetime(y_int + 1, 1, 1)
+            else:
+                period_end = datetime(y_int, m_int + 1, 1)
+
+            date_q = {
+                "$or": pg_match_or,
+                "created_at": {
+                    "$gte": period_start,
+                    "$lt": period_end,
+                }
+            }
+
+            updated_q = {
+                "$or": pg_match_or,
+                "updated_at": {
+                    "$gte": period_start,
+                    "$lt": period_end,
+                }
+            }
+
+        except Exception:
+            date_q = None
+            updated_q = None
+
+        try:
+            if module == "mpr":
+                return bool(
+                    db.mpr_snapshots.find_one({
+                        "$or": [
+                            {"ref_id": pg_id},
+                            {"ref_id": pg_oid},
+                            {"pg_id": pg_id},
+                            {"pg_id": pg_oid},
+                        ],
+                        "year": year,
+                        "month": month,
+                    })
+                )
+
+            if module == "business":
+                return bool(
+                    db.pg_business_monthly.find_one(base_q)
+                    or db.pg_market_transactions.find_one(base_q)
+
+                    or (date_q and db.pg_business_monthly.find_one(date_q))
+                    or (date_q and db.pg_market_transactions.find_one(date_q))
+
+                    or (updated_q and db.pg_business_monthly.find_one(updated_q))
+                    or (updated_q and db.pg_market_transactions.find_one(updated_q))
+                )
+
+            if module == "loans":
+                return bool(
+                    db.pg_loan_accounts.find_one(base_q)
+                    or db.pg_member_loan_accounts.find_one(base_q)
+                    or db.pg_loans.find_one(base_q)
+
+                    or (date_q and db.pg_loan_accounts.find_one(date_q))
+                    or (date_q and db.pg_member_loan_accounts.find_one(date_q))
+                    or (date_q and db.pg_loans.find_one(date_q))
+
+                    or (updated_q and db.pg_loan_accounts.find_one(updated_q))
+                    or (updated_q and db.pg_member_loan_accounts.find_one(updated_q))
+                    or (updated_q and db.pg_loans.find_one(updated_q))
+                )
+
+            if module == "stock":
+                return bool(
+                    db.pg_input_procurement.find_one(base_q)
+                    or db.pg_output_marketing.find_one(base_q)
+                    or db.pg_stock_register.find_one(base_q)
+
+                    or (date_q and db.pg_input_procurement.find_one(date_q))
+                    or (date_q and db.pg_output_marketing.find_one(date_q))
+                    or (date_q and db.pg_stock_register.find_one(date_q))
+
+                    or (updated_q and db.pg_input_procurement.find_one(updated_q))
+                    or (updated_q and db.pg_output_marketing.find_one(updated_q))
+                    or (updated_q and db.pg_stock_register.find_one(updated_q))
+                )
+
+            if module == "finance":
+                return bool(
+                    db.pg_cashbooks.find_one(base_q)
+                    or db.pg_receipt_vouchers.find_one(base_q)
+                    or db.pg_payment_vouchers.find_one(base_q)
+                    or db.pg_income_expenditure.find_one(base_q)
+
+                    or (date_q and db.pg_cashbooks.find_one(date_q))
+                    or (date_q and db.pg_receipt_vouchers.find_one(date_q))
+                    or (date_q and db.pg_payment_vouchers.find_one(date_q))
+                    or (date_q and db.pg_income_expenditure.find_one(date_q))
+
+                    or (updated_q and db.pg_cashbooks.find_one(updated_q))
+                    or (updated_q and db.pg_receipt_vouchers.find_one(updated_q))
+                    or (updated_q and db.pg_payment_vouchers.find_one(updated_q))
+                    or (updated_q and db.pg_income_expenditure.find_one(updated_q))
+                )
+
+        except Exception:
+            return False
+
+        return False
+
+    def _has_any_data(pg_oid, pg_id, module):
+        """
+        All Time mode helper. Shows rows if any real module data exists,
+        even if db.submissions is not available.
+        """
+        pg_match_or = [
+            {"pg_id": pg_oid},
+            {"pg_id": pg_id},
+            {"ref_id": pg_id},
+            {"ref_id": pg_oid},
+        ]
+
+        try:
+            if module == "mpr":
+                return bool(
+                    db.mpr_snapshots.find_one({
+                        "$or": [
+                            {"ref_id": pg_id},
+                            {"ref_id": pg_oid},
+                            {"pg_id": pg_id},
+                            {"pg_id": pg_oid},
+                        ]
+                    })
+                )
+
+            if module == "business":
+                return bool(
+                    db.pg_business_monthly.find_one({"$or": pg_match_or})
+                    or db.pg_market_transactions.find_one({"$or": pg_match_or})
+                )
+
+            if module == "loans":
+                return bool(
+                    db.pg_loan_accounts.find_one({"$or": pg_match_or})
+                    or db.pg_member_loan_accounts.find_one({"$or": pg_match_or})
+                    or db.pg_loans.find_one({"$or": pg_match_or})
+                )
+
+            if module == "stock":
+                return bool(
+                    db.pg_input_procurement.find_one({"$or": pg_match_or})
+                    or db.pg_output_marketing.find_one({"$or": pg_match_or})
+                    or db.pg_stock_register.find_one({"$or": pg_match_or})
+                )
+
+            if module == "finance":
+                return bool(
+                    db.pg_cashbooks.find_one({"$or": pg_match_or})
+                    or db.pg_receipt_vouchers.find_one({"$or": pg_match_or})
+                    or db.pg_payment_vouchers.find_one({"$or": pg_match_or})
+                    or db.pg_income_expenditure.find_one({"$or": pg_match_or})
+                )
+
+        except Exception:
+            return False
+
+        return False
+
     for pg in pgs:
 
         pg_id = str(pg["_id"])
+        pg_oid = pg["_id"]
 
         for module in modules:
 
-            sub = db.submissions.find_one({
-                "pg_id": pg_id,
-                "year": year,
-                "month": month,
-                "module": module
-            }) or {}
+            submission_query = {
+                "$or": [
+                    {"pg_id": pg_id},
+                    {"pg_id": pg_oid},
+                ],
+                "module": {
+                    "$in": [
+                        module,
+                        module.upper(),
+                        module.lower(),
+                    ]
+                }
+            }
+
+            if not is_all_time:
+                submission_query["year"] = year
+                submission_query["month"] = month
+
+            sub = (
+                db.submissions
+                .find_one(
+                    submission_query,
+                    sort=[("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)]
+                )
+                or {}
+            )
+
+            if not is_all_time:
+                has_data = bool(sub) or _has_period_data(pg_oid, pg_id, module, year, month)
+                if not has_data:
+                    continue
+            else:
+                has_data = bool(sub) or _has_any_data(pg_oid, pg_id, module)
+                if not has_data:
+                    continue
 
             rows.append({
                 "pg_id": pg_id,
                 "pg_name": pg.get("name","(PG)"),
                 "module": module,
-                "status": sub.get("status","—")
+                "status": sub.get("status","Data Available" if not sub else "—")
             })
 
     return render_template(
         "clf_console.html",
         rows=rows,
         year=year,
-        month=month
+        month=month,
+        is_all_time=is_all_time,
     )
-
 
 # === CORE ENGINE INTEGRATION ACTIVE ===
 # AuditLogger.log(action, user_id, entity, entity_id) available

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -6,12 +6,6 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <style>
-  /* ============================================================
-     PG REGISTRATION (SCOPED) — keep ALL data + logic same
-     ✅ ONLY UI/Design/Coloring updated to match Ledger Book style
-     ✅ No changes to ids/names/inputs/data bindings/JS logic
-     ✅ NEW: Validation popups + success popup + saving indicator
-     ============================================================ */
 
   .pgr-wrap{
     width: 100%;
@@ -610,7 +604,7 @@
 }
 </style>
 
-<!-- ✅ Toast container (scoped, no backend dependency) -->
+<!--  Toast container (scoped, no backend dependency) -->
 <div class="pgr-toast" id="pgrToast" aria-live="polite" aria-atomic="true">
   <div class="pgr-toastTop">
     <p class="pgr-toastTitle" id="pgrToastTitle">Notice</p>
@@ -625,9 +619,9 @@
   <div class="pgr-hero">
     <div class="pgr-hero-top">
        
-<!-- ✅ Mobile/Tablet back button (hidden on web) -->
+<!--  Mobile/Tablet back button (hidden on web) -->
     <button type="button" class="pgr-back" aria-label="Back" onclick="history.back()">
-      <!-- ✅ Use the 2nd icon style (arrow with line) -->
+      <!--  Use the 2nd icon style (arrow with line) -->
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M10 6L4 12l6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M4 12h16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
@@ -1071,12 +1065,12 @@ $(document).ready(function() {
       updateSelect2Placeholder(t.selectPlaceholder);
     }
 
-    // ✅ Hook method called by base.html (compat)
+    //  Hook method called by base.html (compat)
     window.updatePageLanguage = function(lang /*, baseT */){
       applyPgrLanguage(lang);
     };
 
-    // ✅ Event-based connectivity from base.html
+    //  Event-based connectivity from base.html
     window.addEventListener('pgmis:language-change', (e)=>{
       const lang = (e && e.detail && e.detail.lang) ? e.detail.lang : getLang();
       applyPgrLanguage(lang);

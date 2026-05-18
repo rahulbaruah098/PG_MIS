@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -11,10 +11,10 @@
     *{margin:0;padding:0;box-sizing:border-box}
 
     :root{
-      /* ✅ Header height token (desktop stays same) */
+      /*  Header height token (desktop stays same) */
       --header-h: 70px;
 
-      /* ✅ New mint header colors (from your 2nd image vibe) */
+      /*  New mint header colors (from your 2nd image vibe) */
       --mint-1:#EAF7F3;
       --mint-2:#DFF3EE;
       --brand:#0B4D3A;
@@ -37,7 +37,7 @@
     .app-container{display:flex;flex-direction:column;min-height:100vh;width:100%}
 
     /* ============================================================
-       HEADER (✅ recolored to mint like your 2nd image)
+       HEADER ( recolored to mint like your 2nd image)
        Desktop layout unchanged; only styles improved.
        ============================================================ */
     .header{
@@ -73,7 +73,7 @@
 
     .header-controls{
       display:flex;align-items:center;gap:.75rem;
-      flex-wrap:nowrap; /* ✅ stop random wrap on small widths */
+      flex-wrap:nowrap; /*  stop random wrap on small widths */
       justify-content:flex-end;
       min-width: 0;
     }
@@ -98,7 +98,7 @@
     }
     .control-button svg{flex:0 0 auto}
 
-    /* ✅ Logout button like your 2nd image: red ring/cue */
+    /*  Logout button like your 2nd image: red ring/cue */
     .control-button.danger{
       background: rgba(255,255,255,.70);
       border-color: rgba(220, 38, 38, .40);
@@ -221,10 +221,22 @@
     }
 
     .content-area{
-      flex:1;
-      padding: clamp(14px, 2vw, 22px); /* ✅ better for any laptop size */
-      min-width:0;
-    }
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  min-height:0;
+  background:var(--bg);
+}
+
+.content-main{
+  flex:1 1 auto;
+  min-height:0;
+  padding:clamp(14px, 2vw, 22px);
+  overflow:auto;
+  min-width:0;
+  background:var(--bg);
+}
     .content-inner{
       max-width: 1200px;
       margin:0 auto;
@@ -234,7 +246,7 @@
     #menuOverlay{
       display:none;
       position:fixed;
-      inset: var(--header-h) 0 0 0; /* ✅ always matches header height */
+      inset: var(--header-h) 0 0 0; /*  always matches header height */
       background:rgba(15,23,42,.45);
       z-index:90;
     }
@@ -279,7 +291,7 @@
     }
 
 
-/* ✅ Separate fixed logout section below scrollable menu */
+/*  Separate fixed logout section below scrollable menu */
 .sidebar-logout-section{
   flex:0 0 auto;
   padding:12px 14px 14px;
@@ -322,28 +334,28 @@
 }
 
     /* ============================================================
-       ✅ RESPONSIVE (only affects tablet/mobile; desktop intact)
+        RESPONSIVE (only affects tablet/mobile; desktop intact)
        Fixes "random here and there" by:
        - preventing header wrap
        - switching to icon-only buttons on small widths
        - stable sticky offsets via --header-h
        ============================================================ */
     @media (min-width: 1280px){
-      .content-inner{max-width: 1320px;}
-      .content-area{padding: 24px;}
+     .content-inner{max-width:1320px;}
+.content-main{padding:24px;}
     }
 
     @media (max-width: 980px){
       .menu-button{display:inline-flex}
 
-      /* ✅ slightly smaller header for tablet/mobile */
+      /*  slightly smaller header for tablet/mobile */
       :root{ --header-h: 64px; }
 
       .header{
         padding: 0 12px;
       }
 
-      /* ✅ Sidebar becomes off-canvas as you had (unchanged behavior) */
+      /*  Sidebar becomes off-canvas as you had (unchanged behavior) */
      .sidebar{
   position:fixed;
   left:-300px;
@@ -371,13 +383,13 @@
   width:100%;
 }
 
-      /* ✅ keep content padded but compact */
-      .content-area{padding: 12px}
+      /*  keep content padded but compact */
+     .content-main{padding:12px}
 
-      /* ✅ Stop header buttons from wrapping; make them compact */
+      /*  Stop header buttons from wrapping; make them compact */
       .header-controls{gap: 10px}
 
-      /* ✅ Icon-only pills on tablet/mobile (organized like your 2nd image) */
+      /*  Icon-only pills on tablet/mobile (organized like your 2nd image) */
       .control-button{
         padding: 0;
         width: 42px;
@@ -389,7 +401,7 @@
       .control-button span{display:none}
       .control-button svg{width:18px;height:18px}
 
-      /* ✅ logo stays readable without pushing controls down */
+      /*  logo stays readable without pushing controls down */
       .header-logo{
         font-size: 1.05rem;
         letter-spacing: 1px;
@@ -406,7 +418,7 @@
       .menu-button{width:40px;height:40px}
       .control-button{width:40px;height:40px}
       .header-logo{font-size: 1rem}
-      .role-pill{display:none} /* ✅ prevents cramped/random stacking on very small screens */
+      .role-pill{display:none} /*  prevents cramped/random stacking on very small screens */
     }
   </style>
 </head>
@@ -643,27 +655,29 @@
         </div>
       </aside>
 
-      <main class="content-area">
-        <div class="content-inner">
-          {% block content %}{% endblock %}
-        </div>
-      </main>
-    </div>
+            <div class="content-area">
+        <main class="content-main">
+          <div class="content-inner">
+            {% block content %}{% endblock %}
+          </div>
+        </main>
 
-    <!-- FOOTER -->
-    <footer class="footer">
-      <div class="footer-content footer-2line">
-        <div class="footer-row">
-          <span>© 2026 PGMIS™ All rights reserved.</span>
-        </div>
-        <div class="footer-row">
-          <span>Powered by —</span>
-          <a href="https://sayanant.com/" target="_blank" rel="noopener noreferrer" class="footer-link">
-            Sayanant Group, Guwahati Assam
-          </a>
-        </div>
+        <!-- FOOTER -->
+        <footer class="footer">
+          <div class="footer-content footer-2line">
+            <div class="footer-row">
+              <span>© 2026 PGMIS™ All rights reserved.</span>
+            </div>
+            <div class="footer-row">
+              <span>Powered by —</span>
+              <a href="https://sayanant.com/" target="_blank" rel="noopener noreferrer" class="footer-link">
+                Sayanant Group, Guwahati Assam
+              </a>
+            </div>
+          </div>
+        </footer>
       </div>
-    </footer>
+    </div>
 
   </div>
 
@@ -818,7 +832,7 @@
       });
     });
 
-    /* ✅ Logout should clear saved menu/page display state */
+    /*  Logout should clear saved menu/page display state */
     document.querySelectorAll('a[href*="/logout"], a[href*="logout"]').forEach(function(link){
       link.addEventListener('click', function(){
         try{

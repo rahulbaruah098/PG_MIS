@@ -1,12 +1,12 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}State Dashboard{% endblock %}
 
 {% block head_extra %}
 
-  <!-- ✅ Removed Tailwind dependency (matches PG dashboard approach) -->
+  <!--  Removed Tailwind dependency (matches PG dashboard approach) -->
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- ✅ Fallback if CDN fails -->
+  <!--  Fallback if CDN fails -->
   <script>
     window.__stateChartReady = new Promise((resolve) => {
       function done(){ resolve(true); }
@@ -33,7 +33,7 @@
 
   <style>
     /* ============================================================
-       ✅ STATE DASHBOARD — PG DASHBOARD MATCHED UI LANGUAGE
+        STATE DASHBOARD — PG DASHBOARD MATCHED UI LANGUAGE
        - ONLY design updated
        - ALL routes / Jinja data / chart logic preserved
        - No backend/data/URL changes
@@ -70,7 +70,7 @@
     }
 
     /* ============================================================
-       ✅ SAFE GATE
+        SAFE GATE
        ============================================================ */
     .sd-gate{
       opacity: 0;
@@ -84,7 +84,7 @@
     html.no-js .sd-gate{ opacity:1 !important; transform:none !important; }
 
     /* ============================================================
-       ✅ Minimal utility classes used in this page
+        Minimal utility classes used in this page
        ============================================================ */
     .max-w-7xl{ width:100%; max-width:80rem; }
     .mx-auto{ margin-left:auto; margin-right:auto; }
@@ -223,7 +223,7 @@
     .backdrop-blur-sm { backdrop-filter: blur(4px); }
 
     /* ============================================================
-       ✅ Shared skin from PG dashboard
+        Shared skin from PG dashboard
        ============================================================ */
     .card-border-soft{
       border: 1.5px solid rgba(191,230,210,0.95) !important;
@@ -238,7 +238,7 @@
     .human-subtitle{ color: #2f5b4f !important; }
 
     /* ============================================================
-       ✅ Header / welcome strip
+        Header / welcome strip
        ============================================================ */
     .state-welcome-strip{
       width: 100%;
@@ -298,7 +298,7 @@
     }
 
     /* ============================================================
-       ✅ Main panel
+        Main panel
        ============================================================ */
     .state-main{
       position: relative;
@@ -329,7 +329,7 @@
     }
 
     /* ============================================================
-       ✅ Dashboard-specific blocks
+        Dashboard-specific blocks
        ============================================================ */
     .sdx{ width:100%; }
 
@@ -726,7 +726,7 @@
     .fade-in { animation: fadeIn 0.55s cubic-bezier(.2,.8,.2,1); }
 
     /* ============================================================
-       ✅ Mobile / tablet tuning
+        Mobile / tablet tuning
        ============================================================ */
     @media (max-width:1024px){
       .state-welcome-card{
@@ -796,7 +796,7 @@
     }
 
         /* ============================================================
-       ✅ NEW 3D KPI GRAPH SECTION
+        NEW 3D KPI GRAPH SECTION
        - Frontend only
        - Does not affect old KPI cards or existing charts
        ============================================================ */
@@ -1011,7 +1011,7 @@
 {% block content %}
 {% set role = session.get('role') %}
 <div id="stateDashboardGate" class="sd-gate">
-  <!-- ✅ Welcome heading under navbar -->
+  <!--  Welcome heading under navbar -->
   <section class="state-welcome-strip">
     <div class="state-welcome-card card-border-soft fade-in">
       <div class="state-welcome-inner">
@@ -1576,7 +1576,7 @@
 {% block scripts %}
 <script>
   // ============================================================
-  // ✅ Gate helpers
+  //  Gate helpers
   // ============================================================
   function __stateGateEl(){
     return document.getElementById('stateDashboardGate');
@@ -2221,7 +2221,7 @@
       const sectors = stateKpis.sectors || {};
       const ffs = stateKpis.ffs || {};
 
-      // ✅ Commented out / hidden Lakhpati from graph datasets without deleting backend data
+      //  Commented out / hidden Lakhpati from graph datasets without deleting backend data
 function removeLakhpatiFromChart(labels, values){
   const cleanLabels = [];
   const cleanValues = [];

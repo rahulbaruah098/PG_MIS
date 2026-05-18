@@ -1,15 +1,8 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 
 <style>
-  /* ============================================================
-     BLOCKS PAGE — UI RESKIN ONLY
-     ✅ Existing form method, field names, loop data, and logic kept intact
-     ✅ Added same back button style/position logic
-     ✅ Fully web responsive + app responsive
-     ✅ Scoped styling only
-     ============================================================ */
-
+  
   .blk-wrap{
     width:100%;
     max-width:1100px;
@@ -223,6 +216,141 @@
     box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
   }
 
+    /* Tools: search + rows selector */
+  .blk-tools{
+    margin-bottom:14px;
+    padding:12px;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:12px;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:14px;
+    background:rgba(255,255,255,.96);
+  }
+  .blk-search-wrap{ min-width:0; }
+  .blk-search{
+    width:100%;
+    height:46px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background:rgba(247,250,249,.85);
+    padding:0 16px;
+    font-size:13px;
+    font-weight:850;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .blk-search::placeholder{ color:rgba(15,23,42,.46); }
+  .blk-search:focus{
+    border-color:rgba(11,77,58,.36);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+  .blk-rows-wrap{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:fit-content;
+  }
+  .blk-rows-chip{
+    height:46px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:0 16px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background:rgba(247,250,249,.85);
+    font-weight:950;
+    font-size:13px;
+  }
+  .blk-rows-chip select{
+    border:0;
+    outline:none;
+    background:transparent;
+    font-weight:950;
+    color:var(--ink);
+    font-size:13px;
+    cursor:pointer;
+  }
+
+  .blk-meta{
+    margin-bottom:14px;
+    padding:10px 12px;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:12px;
+    background:rgba(247,250,249,.58);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .blk-meta-text{
+    font-size:12px;
+    font-weight:850;
+    color:rgba(15,23,42,.72);
+  }
+
+  .blk-pagination{
+    margin-top:14px;
+    padding:12px 14px 14px;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:14px;
+    background:rgba(255,255,255,.96);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .blk-page-info{
+    font-size:12px;
+    font-weight:850;
+    color:rgba(15,23,42,.72);
+  }
+  .blk-page-controls{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .blk-page-btn{
+    min-width:42px;
+    height:40px;
+    padding:0 12px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.84);
+    color:var(--ink);
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  }
+  .blk-page-btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 14px 22px -18px rgba(15,23,42,.22);
+  }
+  .blk-page-btn[disabled]{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+  .blk-page-btn.is-active{
+    background:rgba(11,77,58,.10);
+    border-color:rgba(11,77,58,.25);
+    color:rgba(11,77,58,.98);
+  }
+
+  .blk-hidden-row,
+  .blk-hidden-card{
+    display:none !important;
+  }
+
   /* Table */
   .blk-table-shell{
     border:1px solid rgba(15,23,42,.14);
@@ -400,6 +528,25 @@
       grid-template-columns:1fr;
       gap:12px;
     }
+
+        .blk-tools{
+      grid-template-columns:1fr;
+      padding:10px;
+    }
+
+    .blk-pagination{
+      align-items:stretch;
+    }
+
+    .blk-page-controls{
+      width:100%;
+      justify-content:center;
+    }
+
+    .blk-page-info{
+      width:100%;
+      text-align:center;
+    }
     .blk-col-8,
     .blk-col-4,
     .blk-col-12{
@@ -495,6 +642,38 @@
         </div>
 
         <div class="blk-card-body">
+
+          {% if blocks %}
+          <!-- Search / Tools -->
+          <div class="blk-tools">
+            <div class="blk-search-wrap">
+              <input
+                type="text"
+                class="blk-search"
+                id="blkSearch"
+                placeholder="Search by block name..."
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="blk-rows-wrap">
+              <div class="blk-rows-chip">
+                <span>Rows</span>
+                <select id="blkRowsPerPage" aria-label="Rows per page">
+                  <option value="10" selected>10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="blk-meta">
+            <div class="blk-meta-text" id="blkMetaText">Showing block records</div>
+          </div>
+          {% endif %}
+
           <!-- Desktop / tablet table -->
           <div class="blk-table-shell">
             <div class="blk-table-wrap">
@@ -506,8 +685,11 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {% for b in blocks %}
-                    <tr>
+                                   {% for b in blocks %}
+                    <tr
+                      data-blk-row
+                      data-blk-search="{{ loop.index }} {{ (b.name or '')|lower }}"
+                    >
                       <td class="blk-sl">{{ loop.index }}</td>
                       <td class="blk-name">{{ b.name }}</td>
                     </tr>
@@ -523,8 +705,12 @@
 
           <!-- Mobile / app cards -->
           <div class="blk-mobile-list">
-            {% for b in blocks %}
-              <div class="blk-mcard">
+                        {% for b in blocks %}
+              <div
+                class="blk-mcard"
+                data-blk-card
+                data-blk-search="{{ loop.index }} {{ (b.name or '')|lower }}"
+              >
                 <div class="blk-mcard-head">
                   <h4 class="blk-mcard-title">{{ b.name }}</h4>
                   <div class="blk-mcard-sl">{{ loop.index }}</div>
@@ -547,7 +733,18 @@
                 </div>
               </div>
             {% endfor %}
+                   </div>
+
+          {% if blocks %}
+          <div class="blk-pagination" id="blkPagination">
+            <div class="blk-page-info" id="blkPageInfo">Showing 0–0 of 0</div>
+            <div class="blk-page-controls">
+              <button type="button" class="blk-page-btn" id="blkPrevBtn">Prev</button>
+              <div id="blkPageNumberWrap" class="blk-page-controls"></div>
+              <button type="button" class="blk-page-btn" id="blkNextBtn">Next</button>
+            </div>
           </div>
+          {% endif %}
 
         </div>
       </div>
@@ -555,5 +752,159 @@
     </div>
   </div>
 </div>
+
+<script>
+(function(){
+  const searchInput = document.getElementById('blkSearch');
+  const rowsSelect = document.getElementById('blkRowsPerPage');
+  const prevBtn = document.getElementById('blkPrevBtn');
+  const nextBtn = document.getElementById('blkNextBtn');
+  const pageInfo = document.getElementById('blkPageInfo');
+  const pageWrap = document.getElementById('blkPageNumberWrap');
+  const metaText = document.getElementById('blkMetaText');
+
+  const tableRows = Array.from(document.querySelectorAll('[data-blk-row]'));
+  const mobileCards = Array.from(document.querySelectorAll('[data-blk-card]'));
+
+  if(!searchInput || !rowsSelect || !prevBtn || !nextBtn || !pageInfo || !pageWrap){
+    return;
+  }
+
+  if(!tableRows.length && !mobileCards.length){
+    return;
+  }
+
+  let currentPage = 1;
+  let filteredIndexes = tableRows.map((_, index) => index);
+
+  function getRowsPerPage(){
+    const n = parseInt(rowsSelect.value, 10);
+    return Number.isFinite(n) && n > 0 ? n : 10;
+  }
+
+  function setSerials(visibleIndexes, startIndex){
+    visibleIndexes.forEach((originalIndex, idx) => {
+      const serial = startIndex + idx + 1;
+
+      const row = tableRows[originalIndex];
+      if(row){
+        const sl = row.querySelector('.blk-sl');
+        if(sl) sl.textContent = serial;
+      }
+
+      const card = mobileCards[originalIndex];
+      if(card){
+        const cardSl = card.querySelector('.blk-mcard-sl');
+        if(cardSl) cardSl.textContent = serial;
+
+       const slValue = card.querySelector('.blk-mrow:first-child .blk-mval');
+if(slValue) slValue.textContent = serial;
+      }
+    });
+  }
+
+  function renderPageButtons(pageCount){
+    pageWrap.innerHTML = '';
+
+    for(let i = 1; i <= pageCount; i++){
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'blk-page-btn' + (i === currentPage ? ' is-active' : '');
+      btn.textContent = String(i);
+      btn.setAttribute('aria-label', 'Page ' + i);
+
+      btn.addEventListener('click', function(){
+        currentPage = i;
+        render();
+      });
+
+      pageWrap.appendChild(btn);
+    }
+  }
+
+  function render(){
+    const rowsPerPage = getRowsPerPage();
+    const total = filteredIndexes.length;
+    const pageCount = Math.max(1, Math.ceil(total / rowsPerPage));
+
+    if(currentPage > pageCount) currentPage = pageCount;
+    if(currentPage < 1) currentPage = 1;
+
+    tableRows.forEach(row => row.classList.add('blk-hidden-row'));
+    mobileCards.forEach(card => card.classList.add('blk-hidden-card'));
+
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const visibleIndexes = filteredIndexes.slice(startIndex, endIndex);
+
+    visibleIndexes.forEach(originalIndex => {
+      if(tableRows[originalIndex]){
+        tableRows[originalIndex].classList.remove('blk-hidden-row');
+      }
+
+      if(mobileCards[originalIndex]){
+        mobileCards[originalIndex].classList.remove('blk-hidden-card');
+      }
+    });
+
+    setSerials(visibleIndexes, startIndex);
+
+    const showingStart = total ? startIndex + 1 : 0;
+    const showingEnd = total ? Math.min(endIndex, total) : 0;
+
+    pageInfo.textContent = 'Showing ' + showingStart + '–' + showingEnd + ' of ' + total;
+
+    if(metaText){
+      metaText.textContent = total
+        ? 'Showing block records'
+        : 'No matching block records found';
+    }
+
+    renderPageButtons(pageCount);
+
+    prevBtn.disabled = currentPage <= 1 || total === 0;
+    nextBtn.disabled = currentPage >= pageCount || total === 0;
+  }
+
+  function applySearch(){
+    const q = String(searchInput.value || '').trim().toLowerCase();
+
+    filteredIndexes = tableRows
+      .map((row, index) => ({ row, index }))
+      .filter(item => {
+        const hay = String(item.row.getAttribute('data-blk-search') || '').toLowerCase();
+        return !q || hay.includes(q);
+      })
+      .map(item => item.index);
+
+    currentPage = 1;
+    render();
+  }
+
+  searchInput.addEventListener('input', applySearch);
+
+  rowsSelect.addEventListener('change', function(){
+    currentPage = 1;
+    render();
+  });
+
+  prevBtn.addEventListener('click', function(){
+    if(currentPage > 1){
+      currentPage -= 1;
+      render();
+    }
+  });
+
+  nextBtn.addEventListener('click', function(){
+    const pageCount = Math.max(1, Math.ceil(filteredIndexes.length / getRowsPerPage()));
+    if(currentPage < pageCount){
+      currentPage += 1;
+      render();
+    }
+  });
+
+  render();
+})();
+</script>
 
 {% endblock %}

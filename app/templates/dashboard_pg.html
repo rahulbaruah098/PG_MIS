@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}PGMIS Dashboard - Producer Group Management Information System{% endblock %}
 
 {% block head_extra %}
@@ -17,10 +17,10 @@
 })();
 </script>
 
-  <!-- ✅ Removed Tailwind dependency (fixes “sometimes not loading”) -->
+  <!--  Removed Tailwind dependency (fixes “sometimes not loading”) -->
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- ✅ Fallback if CDN fails (add chart.umd.min.js into /static/vendor/) -->
+<!--  Fallback if CDN fails (add chart.umd.min.js into /static/vendor/) -->
 <script>
   window.__chartReady = new Promise((resolve) => {
     function done(){ resolve(true); }
@@ -50,7 +50,7 @@
 
   <style>
 
-    /* ✅ Hide whole page before first paint when restoring saved dashboard section */
+    /*  Hide whole page before first paint when restoring saved dashboard section */
 html.pg-restore-pending,
 html.pg-restore-pending body {
   scroll-behavior: auto !important;
@@ -61,7 +61,7 @@ html.pg-restore-pending body {
 }
 
 /* ============================================================
-   ✅ SAFE DASHBOARD GATE (Web + App WebView friendly)
+    SAFE DASHBOARD GATE (Web + App WebView friendly)
    - Never hides full body (prevents permanent blank)
    - Hides only dashboard parts until first render
 ============================================================ */
@@ -81,7 +81,7 @@ html.pg-restore-pending body {
 html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
 
     /* ============================================================
-      ✅ TAILWIND-REMOVAL PATCH (PAGE-ONLY)
+       TAILWIND-REMOVAL PATCH (PAGE-ONLY)
       - Keeps SAME UI/LOOK by providing minimal utility CSS used here
       - NO route/data/logic changes
       - Fixes app/mobile overlap + modules layout
@@ -101,7 +101,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
     }
     html { scroll-behavior: smooth; }
 
-    /* ✅ Cursor rules (as requested) */
+    /*  Cursor rules (as requested) */
     body, body * { cursor: pointer; }
     #quickStats, #dashboardOverview, #cashFlowChart, #membershipChart, #loanDistributionChart, #produceStockChart, #recentTransactions,
     #quickStats *, #dashboardOverview *, #cashFlowChart *, #membershipChart *, #loanDistributionChart *, #produceStockChart *, #recentTransactions * {
@@ -111,7 +111,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
     canvas { cursor: grab !important; }
 
     /* ============================================================
-      ✅ MINIMAL "TAILWIND-LIKE" UTILITIES USED IN THIS PAGE
+       MINIMAL "TAILWIND-LIKE" UTILITIES USED IN THIS PAGE
       (Only what this template needs)
       ============================================================ */
     .max-w-7xl{ width:100%; max-width:80rem; }
@@ -121,7 +121,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
     .space-y-6 > * + *{ margin-top:24px; }
 
     .grid{ display:grid; }
-    .grid-cols-1{ grid-template-columns:repeat(1,minmax(0,1fr)); }  /* ✅ ADD THIS LINE */
+    .grid-cols-1{ grid-template-columns:repeat(1,minmax(0,1fr)); }  /*  ADD THIS LINE */
     .grid-cols-2{ grid-template-columns:repeat(2,minmax(0,1fr)); }
 
 @media (min-width: 768px){
@@ -281,7 +281,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
     }
 
     /* ============================================================
-      ✅ Welcome strip under navbar (width + alignment fixed)
+       Welcome strip under navbar (width + alignment fixed)
       - Fixes web view mismatch: header now equals below section width
       - Fixes app overlap by forcing predictable spacing
       ============================================================ */
@@ -289,11 +289,11 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
   width: 100%;
   max-width: 80rem;      /* same as max-w-7xl */
   margin: 18px auto 16px;
-  padding: 0;            /* ✅ IMPORTANT: remove padding so card is full width */
+  padding: 0;            /*  IMPORTANT: remove padding so card is full width */
 }
 
  .welcome-card{
-  width: 100%;           /* ✅ makes it exactly equal to main panel width */
+  width: 100%;           /*  makes it exactly equal to main panel width */
   position: relative;
   border-radius: 22px;
   background: rgba(255,255,255,0.92);
@@ -315,7 +315,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
    .welcome-inner{
   position: relative;
   z-index: 1;
-  padding: 18px 24px;    /* ✅ matches main px-6 */
+  padding: 18px 24px;    /*  matches main px-6 */
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
@@ -354,7 +354,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
       box-shadow: 0 22px 60px rgba(6, 95, 70, 0.14);
       overflow: clip;
       backdrop-filter: blur(6px);
-      margin-top: 0; /* ✅ avoid accidental overlap */
+      margin-top: 0; /*  avoid accidental overlap */
     }
     main.max-w-7xl::before{
       content:"";
@@ -389,7 +389,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
     }
     .fade-in { animation: fadeIn 0.55s cubic-bezier(.2,.8,.2,1); }
 
-    /* ✅ Card skin closer to your other pages */
+    /*  Card skin closer to your other pages */
     .card-border-soft{
       border: 1.5px solid rgba(191,230,210,0.95) !important;
       box-shadow: 0 14px 30px rgba(6,95,70,0.12) !important;
@@ -403,7 +403,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
     .human-subtitle{ color: #2f5b4f !important; }
 
     /* ============================================================
-      ✅ FIX 1: APP/MOBILE Modules Overview should be 2x2 grid
+       FIX 1: APP/MOBILE Modules Overview should be 2x2 grid
       (No horizontal slider; prevents “meshy/overlap” too)
       ============================================================ */
     .modules-grid{
@@ -422,7 +422,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
     }
 
     /* ============================================================
-      ✅ MOBILE/TABLET ONLY FIXES
+       MOBILE/TABLET ONLY FIXES
       - gap between welcome and main
       - prevent any overlap by using consistent spacing
       ============================================================ */
@@ -460,7 +460,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
     }
 
     /* ============================================================
-      ✅ MOBILE / APP VIEW — keep your previous mobile rules
+       MOBILE / APP VIEW — keep your previous mobile rules
       + ensure consistent paddings now that Tailwind is removed
       ============================================================ */
     @media (max-width: 768px) {
@@ -605,7 +605,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
 }
 
 /* ============================================================
-   ✅ PG DASHBOARD KPI GRAPHS
+    PG DASHBOARD KPI GRAPHS
    - Uses existing PG metrics + live metrics
    - No backend/database logic changed
 ============================================================ */
@@ -770,7 +770,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
 {% set PGID = (pg['_id']|string if pg and pg['_id'] else (session.get('pg_id') or session.get('active_pg_id'))) %}
 {% block content %}
  <div id="pgDashboardGate" class="pg-gate">
-  <!-- ✅ Welcome Heading under navbar -->
+  <!--  Welcome Heading under navbar -->
   <section class="welcome-strip">
     <div class="welcome-card card-border-soft fade-in">
       <div class="welcome-inner">
@@ -817,7 +817,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
 <!-- Dashboard Overview -->
 <div id="dashboardOverview"></div>
 
-    <!-- ✅ PG KPI GRAPHS -->
+    <!--  PG KPI GRAPHS -->
 <div id="pgKpiGraphSection" class="space-y-6">
   <div class="pg-kpi-graph-card">
     <div class="pg-kpi-graph-titlebar">
@@ -911,7 +911,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
   </div>
 </div>
 
-    <!-- ✅ Charts Section (ALL 4 in SAME GRID) -->
+    <!--  Charts Section (ALL 4 in SAME GRID) -->
     <div class="mob-swipe grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div id="cashFlowChart"></div>
       <div id="membershipChart"></div>
@@ -929,7 +929,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
   <script>
 
     // ============================================================
-// ✅ Gate helpers (prevents blank flashes on Web + WebView)
+//  Gate helpers (prevents blank flashes on Web + WebView)
 // ============================================================
 function __gateEl(){
   return document.getElementById('pgDashboardGate');
@@ -948,9 +948,9 @@ function __closeGate(){
 }
     
     // ============================================================
-    // ✅ Language wiring (SYNC with base navbar language toggle)
-    // ✅ Arrays rebuilt on every render.
-    // ✅ Charts destroyed before re-create (prevents stacking).
+    //  Language wiring (SYNC with base navbar language toggle)
+    //  Arrays rebuilt on every render.
+    //  Charts destroyed before re-create (prevents stacking).
     // ============================================================
 
     const __I18N = {
@@ -971,7 +971,7 @@ function __closeGate(){
       stat_sum_outstanding_loans: { en: "Sum of outstanding loans", bn: "বকেয়া ঋণের মোট যোগফল" },
       stat_from_pg_master: { en: "From PG master data", bn: "পিজি মাস্টার ডেটা থেকে" },
 
-      // ✅ Added missing translations (Lakhpati + new KPIs)
+      //  Added missing translations (Lakhpati + new KPIs)
       stat_lakhpati: { en: "Lakhpati Didi", bn: "লাখপতি দিদি" },
       stat_lakhpati_change: { en: "Members marked as Lakhpati Didi", bn: "লাখপতি দিদি হিসাবে চিহ্নিত সদস্য" },
 
@@ -1105,13 +1105,13 @@ tx_view_all: { en: "View All Transactions", bn: "সব লেনদেন দ�
       PackageCheck: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 2 2 4-4"></path><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="M7.5 4.27l9 5.15"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" x2="12" y1="22" y2="12"></line></svg>',
       BookOpen: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>',
 
-      /* ✅ Added missing icons used by your cards (no logic change) */
+      /*  Added missing icons used by your cards (no logic change) */
       BadgeCheck: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"></path><path d="M12 2l1.5 3 3.3.4-2.4 2.3.6 3.3L12 9.8 9 11.3l.6-3.3L7.2 5.4 10.5 5z"></path><path d="M8 21l4-2 4 2"></path></svg>',
       TrendingDown: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>',
       Landmark: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="21" y2="22"></line><line x1="6" y1="18" x2="6" y2="11"></line><line x1="10" y1="18" x2="10" y2="11"></line><line x1="14" y1="18" x2="14" y2="11"></line><line x1="18" y1="18" x2="18" y2="11"></line><polygon points="12 2 20 7 4 7"></polygon></svg>',
       Download: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>',
 
-      // ✅ Receipt icon (kept)
+      //  Receipt icon (kept)
       Receipt: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
         '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z"></path>' +
         '<path d="M7 6h10"></path>' +
@@ -1154,7 +1154,7 @@ function getTransactionsData(){
 }
 
     // ============================================================
-    // ✅ Chart instances registry (prevents chart stacking on re-render)
+    //  Chart instances registry (prevents chart stacking on re-render)
     // ============================================================
     const __charts = {
       cashFlow: null,
@@ -1189,7 +1189,7 @@ function __arr(value){
 }
 
 // ============================================================
-// ✅ Dashboard scroll memory - no visible top-to-section jump
+//  Dashboard scroll memory - no visible top-to-section jump
 // ============================================================
 const __DASHBOARD_SECTION_IDS = [
   'quickStats',
@@ -1335,7 +1335,7 @@ function __setupDashboardScrollMemory(){
     }
 
     // ============================================================
-    // ✅ FACTORIES (rebuild each render so language updates reflect)
+    //  FACTORIES (rebuild each render so language updates reflect)
     // ============================================================
     function getStatsData(){
       return [
@@ -1591,7 +1591,7 @@ function getLoanDistributionData(){
 function getProduceStockData(){
   const rows = __arr(__liveMetrics.chart_output_stock);
 
-  // ✅ Supports BOTH backend formats:
+  //  Supports BOTH backend formats:
   // OLD format:
   // [
   //   {label:"Input Stock", value:10},
@@ -1705,8 +1705,8 @@ function makePg3DBar(chartKey, canvasId, labels, values, labelText, horizontal){
 
   const ctx = el.getContext('2d');
 
-  // ✅ Remove only zero / empty values from the chart.
-  // ✅ Keep small positive values like 1, 2, 5, 7 visible.
+  //  Remove only zero / empty values from the chart.
+  //  Keep small positive values like 1, 2, 5, 7 visible.
   const rawLabels = labels || [];
   const rawValues = values || [];
 
@@ -1781,8 +1781,8 @@ function makePg3DBar(chartKey, canvasId, labels, values, labelText, horizontal){
         borderRadius: 14,
         borderSkipped: false,
 
-        // ✅ Small positive values remain visible.
-        // ✅ Zero values are already removed above.
+        //  Small positive values remain visible.
+        //  Zero values are already removed above.
         minBarLength: horizontal ? 18 : 18,
 
         maxBarThickness: horizontal ? 32 : 52
@@ -2350,14 +2350,14 @@ const inputStockValue = __num(stockTotals.inputStock);
 const outputSoldValue = __num(stockTotals.outputSold);
 const availableStockValue = __num(stockTotals.available);
 
-// ✅ Total Stock card should not remain 0 when graph has real stock movement.
+//  Total Stock card should not remain 0 when graph has real stock movement.
 // Prefer available stock. If available is 0, show input stock. If input is also 0, show output sold.
 const totalStock =
   availableStockValue > 0
     ? availableStockValue
     : (inputStockValue > 0 ? inputStockValue : outputSoldValue);
 
-// ✅ Category should show 1 when this Stock chart has any real value.
+//  Category should show 1 when this Stock chart has any real value.
 const categoriesCount =
   (inputStockValue > 0 || outputSoldValue > 0 || availableStockValue > 0) ? 1 : 0;
 

@@ -1,4 +1,4 @@
-from services.audit_engine import AuditLogger
+﻿from services.audit_engine import AuditLogger
 from flask import render_template, request, redirect, url_for, flash, current_app, session, jsonify
 from bson import ObjectId
 from datetime import datetime
@@ -337,7 +337,7 @@ def shg_members_search():
             {"SHG Code": {"$regex": re.escape(qtxt), "$options": "i"}},
         ]
 
-    # ✅ page + page_size (25/50/100)
+    #  page + page_size (25/50/100)
     page = max(int(request.args.get("page", 1)), 1)
     page_size = int(request.args.get("page_size", request.args.get("limit", 100)))
     page_size = 25 if page_size not in (25, 50, 100) else page_size
@@ -352,7 +352,7 @@ def shg_members_search():
         "Disability": 1, "Is head of Family": 1, "Father/Mother/Spouse Name": 1,
     }
 
-    # ✅ total count for pagination
+    #  total count for pagination
     total = db.shg_members_master.count_documents(q)
     pages = max((total + page_size - 1) // page_size, 1)
 
@@ -361,7 +361,7 @@ def shg_members_search():
         page = pages
         skip = (page - 1) * page_size
 
-    # ✅ stable sort so paging is consistent (avoid random ordering)
+    #  stable sort so paging is consistent (avoid random ordering)
     cursor = (
         db.shg_members_master
         .find(q, projection)

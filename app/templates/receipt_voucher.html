@@ -1,19 +1,9 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}Receipt voucher{% endblock %}
 
 {% block content %}
 <script>window.PG_ID = "{{ pg_id|default('') }}";</script>
 <style>
-  /* ============================================================
-     Receipt voucher (SCOPED) — under .ll-wrap only
-     ✅ Header title centered and resized like reference
-     ✅ App/mobile-only back button added
-     ✅ Swipe text + swipe functionality removed
-     ✅ Empty table on first load (no blank seeded rows)
-     ✅ Active section persists after refresh/reload
-     ✅ Mobile/app section buttons stacked vertically
-     ✅ Existing functionality / logic / backend connectivity preserved
-     ============================================================ */
 
   .ll-wrap{
     width:100%;
@@ -74,7 +64,7 @@
   color:#0f172a;
 }
 
-/* ✅ Header-right Edit / Save / Cancel placement */
+/*  Header-right Edit / Save / Cancel placement */
 .ll-header-actions{
   grid-column:3;
   justify-self:end;
@@ -398,7 +388,7 @@
 
 /* ===== Header action bar + table action toolbar ===== */
 
-/* ✅ Header actionbar: only Edit / Save / Cancel */
+/*  Header actionbar: only Edit / Save / Cancel */
 .ll-actionbar{
   display:flex;
   align-items:center;
@@ -413,14 +403,14 @@
   min-width:112px;
 }
 
-/* ✅ The table dock must stay above table */
+/*  The table dock must stay above table */
 .ll-action-dock{
   display:block;
   padding:12px 16px 4px;
   background:rgba(255,255,255,.92);
 }
 
-/* ✅ Table toolbar hidden before Edit */
+/*  Table toolbar hidden before Edit */
 .ll-table-actionbar{
   display:none;
   align-items:center;
@@ -430,12 +420,12 @@
   width:100%;
 }
 
-/* ✅ Table toolbar visible only in Edit mode */
+/*  Table toolbar visible only in Edit mode */
 .ll-wrap.ll-editing .ll-table-actionbar{
   display:flex;
 }
 
-/* ✅ Delete/Add toolbar sizing like reference */
+/*  Delete/Add toolbar sizing like reference */
 .ll-table-actionbar #llDeleteAllTop{
   min-width:168px;
 }
@@ -444,7 +434,7 @@
   min-width:132px;
 }
 
-/* ✅ Cancel hidden before edit */
+/*  Cancel hidden before edit */
 .ll-wrap:not(.ll-editing) #llCancelBtn{
   display:none !important;
 }
@@ -487,7 +477,7 @@
   box-shadow:none;
 }
 
-/* ✅ Top main buttons: Edit / Cancel = red, Save = green */
+/*  Top main buttons: Edit / Cancel = red, Save = green */
 .ll-btn.ll-red{
   background:linear-gradient(180deg, #ef4444, #dc2626) !important;
   border-color:rgba(185,28,28,.58) !important;
@@ -514,7 +504,7 @@
   color:#ffffff !important;
 }
 
-/* ✅ Table toolbar buttons: Delete = soft red, Add = soft green */
+/*  Table toolbar buttons: Delete = soft red, Add = soft green */
 .ll-btn.ll-soft-red{
   border:1.5px solid rgba(220,38,38,.20) !important;
   background:rgba(220,38,38,.045) !important;
@@ -1842,7 +1832,7 @@
       msgSignFirst: "Please sign first.",
       msgCaptureFirst: "Please Capture first.",
       msgCouldNotLoadImage: "Could not load image.",
-      msgSavedLocal: "✅ Saved locally (backend not connected)"
+      msgSavedLocal: " Saved locally (backend not connected)"
     },
     bn: {
       title: "রসিদ ভাউচার",
@@ -1926,7 +1916,7 @@
       msgSignFirst: "অনুগ্রহ করে আগে স্বাক্ষর করুন।",
       msgCaptureFirst: "অনুগ্রহ করে আগে ক্যাপচার করুন।",
       msgCouldNotLoadImage: "ছবি লোড করা যায়নি।",
-      msgSavedLocal: "✅ লোকালি সংরক্ষণ হয়েছে (ব্যাকএন্ড সংযুক্ত নয়)"
+      msgSavedLocal: " লোকালি সংরক্ষণ হয়েছে (ব্যাকএন্ড সংযুক্ত নয়)"
     }
   };
 
@@ -2547,17 +2537,17 @@ function loadMemberTable(sectionKey){
   $("llSaveIcon").classList.toggle("ll-hidden", !isEditing);
   $("llEditSaveText").textContent = isEditing ? t.saveButton : t.editButton;
 
-  /* ✅ Edit = red, Save = green */
+  /*  Edit = red, Save = green */
   $("llEditSaveBtn").classList.toggle("ll-red", !isEditing);
   $("llEditSaveBtn").classList.toggle("ll-green", isEditing);
 
-  /* ✅ Cancel always red */
+  /*  Cancel always red */
   $("llCancelBtn").classList.add("ll-red");
   $("llCancelBtn").classList.remove("ll-green");
   $("llCancelBtn").classList.toggle("ll-hidden", !isEditing);
   $("llCancelText").textContent = t.cancelButton;
 
-  /* ✅ Table toolbar buttons */
+  /*  Table toolbar buttons */
   $("llDeleteAllTop").classList.add("ll-soft-red");
   $("llAddRowTop").classList.add("ll-soft-green");
 
@@ -2566,7 +2556,7 @@ function loadMemberTable(sectionKey){
 
   syncDeleteAllLabel();
 
-  /* ✅ Keep actionbar visible because Edit button must show before editing */
+  /*  Keep actionbar visible because Edit button must show before editing */
   $("llActionBar").classList.remove("ll-hidden");
 }
 
@@ -2594,7 +2584,7 @@ function loadMemberTable(sectionKey){
   function setEditMode(on){
   isEditing = !!on;
 
-  /* ✅ Required for CSS show/hide of Cancel/Delete/Add buttons */
+  /*  Required for CSS show/hide of Cancel/Delete/Add buttons */
   $("llWrap").classList.toggle("ll-editing", isEditing);
 
   setEditingUI();

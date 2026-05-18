@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 {% set sector = (current_sector or (pg.sector or "")) %}
 
@@ -10,21 +10,6 @@
 {% endblock %}
 
 <style>
-/* ============================================================
-   PG MEMBER DETAILS — UI POLISH (SCOPED)
-   ✅ Toggle (Edit / View) + Read-only table section
-   ✅ Option 1 sync: Edit inputs mirror into View instantly (no refresh)
-   ✅ Save uses fetch enhancement (no backend change) + updates View row
-   ✅ View "Full Window" modal with Close icon (top-right)
-   ✅ FULL VIEW: proper table WITH headings (desktop) + horizontal swipe (mobile)
-   ✅ Fully responsive: web + tablet + mobile
-   ✅ NEW: Search + Pagination (Edit + View + Full View) with per-page 10/20/30/50/100 (default 30)
-   ✅ CHANGE: Pagination bar moved BELOW tables (all sections)
-   ✅ CHANGE: Mobile/tablet is horizontal swipe grid (no vertical messy stacking)
-   ✅ RESTORED: Lakhpati Didi? field (Edit + View + Language + Full View)
-   ⚠️ NO data/logic changes (same fields, same POST endpoint)
-   Scope: .pmd-wrap
-============================================================ */
 
 .pmd-wrap{
   width: 100%;
@@ -556,7 +541,7 @@
 .pmd-section.is-active{ display:block; }
 
 /* ============================================================
-   ✅ MOBILE/TABLET: Horizontal swipe grid (instead of vertical stacking)
+    MOBILE/TABLET: Horizontal swipe grid (instead of vertical stacking)
 ============================================================ */
 @media (max-width: 860px){
   .pmd-table{ min-width: 0; width: 100%; }
@@ -620,7 +605,7 @@
 }
 
 /* ============================================================
-   ✅ MODAL (FULL SCREEN)
+    MODAL (FULL SCREEN)
 ============================================================ */
 .pmd-modal{
   position: fixed;
@@ -816,11 +801,11 @@
         <div class="pmd-cardTitle" id="pmdEditTitle">PG Member Details (Edit)</div>
 
         <div class="pmd-note" id="pmdEditNote">
-          ✅ Name/SHG/Category/Spouse are coming from master + PG Registration selection.
+           Name/SHG/Category/Spouse are coming from master + PG Registration selection.
           Fill bank/account/fee and save member-wise (no overwriting).
         </div>
 
-        <!-- ✅ Search ABOVE table -->
+        <!--  Search ABOVE table -->
         <div class="pmd-controls" id="pmdEditControls">
           <div class="pmd-search">
             <div class="pmd-searchBox">
@@ -978,7 +963,7 @@
           </div>
         </div>
 
-        <!-- ✅ Pagination BELOW table -->
+        <!--  Pagination BELOW table -->
         <div class="pmd-paginationBar" id="pmdEditPagerBar">
           <div class="pmd-pageControls">
             <select class="pmd-select" id="pmdEditPerPage" aria-label="Rows per page">
@@ -1016,7 +1001,7 @@
           👁️ This section shows the current values. It updates instantly while you edit (no refresh).
         </div>
 
-        <!-- ✅ Search ABOVE table -->
+        <!--  Search ABOVE table -->
         <div class="pmd-controls" id="pmdViewControls">
           <div class="pmd-search">
             <div class="pmd-searchBox">
@@ -1090,7 +1075,7 @@
           </div>
         </div>
 
-        <!-- ✅ Pagination BELOW table -->
+        <!--  Pagination BELOW table -->
         <div class="pmd-paginationBar" id="pmdViewPagerBar">
           <div class="pmd-pageControls">
             <select class="pmd-select" id="pmdViewPerPage" aria-label="Rows per page">
@@ -1190,7 +1175,7 @@
       view: "View Mode",
       noMembers: 'No members found for this PG. First select members inside <b>PG Registration</b>, then come back here.',
       editTitle: "PG Member Details (Edit)",
-      editNote: "✅ Name/SHG/Category/Spouse are coming from master + PG Registration selection. Fill bank/account/fee and save member-wise (no overwriting).",
+      editNote: " Name/SHG/Category/Spouse are coming from master + PG Registration selection. Fill bank/account/fee and save member-wise (no overwriting).",
       viewTitle: "PG Member Details (View)",
       fullViewBtn: "Full View",
       viewNote: "👁️ This section shows the current values. It updates instantly while you edit (no refresh).",
@@ -1235,7 +1220,7 @@
       view: "ভিউ মোড",
       noMembers: 'এই পিজিতে কোনো সদস্য পাওয়া যায়নি। আগে <b>PG Registration</b> এ সদস্য নির্বাচন করুন, তারপর এখানে আসুন।',
       editTitle: "পিজি সদস্য বিবরণ (এডিট)",
-      editNote: "✅ নাম/SHG/ক্যাটাগরি/স্বামী/পিতা/মাতা মাস্টার + পিজি রেজিস্ট্রেশন নির্বাচন থেকে এসেছে। ব্যাংক/অ্যাকাউন্ট/ফি পূরণ করে সদস্য অনুযায়ী সেভ করুন (ওভাররাইট হবে না)।",
+      editNote: " নাম/SHG/ক্যাটাগরি/স্বামী/পিতা/মাতা মাস্টার + পিজি রেজিস্ট্রেশন নির্বাচন থেকে এসেছে। ব্যাংক/অ্যাকাউন্ট/ফি পূরণ করে সদস্য অনুযায়ী সেভ করুন (ওভাররাইট হবে না)।",
       viewTitle: "পিজি সদস্য বিবরণ (ভিউ)",
       fullViewBtn: "ফুল ভিউ",
       viewNote: "👁️ এই অংশে বর্তমান ভ্যালু দেখায়। আপনি এডিট করলে সাথে সাথে আপডেট হয় (রিফ্রেশ ছাড়া)।",
@@ -1625,7 +1610,7 @@
 
 <script>
 /* ============================================================
-   ✅ Search + Pagination engine (Edit + View) — updated for lakhpati column
+    Search + Pagination engine (Edit + View) — updated for lakhpati column
 ============================================================ */
 (function(){
   function normalizeText(s){
@@ -1749,7 +1734,7 @@
 
 <script>
 /* ============================================================
-   ✅ Full View Modal — Build + Search + Pagination (includes lakhpati column)
+    Full View Modal — Build + Search + Pagination (includes lakhpati column)
 ============================================================ */
 (function(){
   const modal = document.getElementById('pmdViewModal');
@@ -1902,7 +1887,7 @@
 
 <script>
 /* ============================================================
-   ✅ Keep Lakhpati Didi labels correct on initial load (for mobile card labels)
+    Keep Lakhpati Didi labels correct on initial load (for mobile card labels)
    - Your i18n already sets data-labels, but this ensures it includes lakhpati.
 ============================================================ */
 (function(){
@@ -1943,8 +1928,8 @@
 
 <script>
 /* ============================================================
-   ✅ Horizontal drag/swipe scroll for Edit, View and Full View tables
-   ✅ UI only — no backend/form/save/pagination logic changed
+    Horizontal drag/swipe scroll for Edit, View and Full View tables
+    UI only — no backend/form/save/pagination logic changed
 ============================================================ */
 (function(){
   function enableHorizontalDragScroll(box){

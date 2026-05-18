@@ -3,22 +3,6 @@
 {% block content %}
 
 <style>
-  /* ============================================================
-     LOAN ACCOUNT VIEW — TWO SECTION PAGE/TAB LAYOUT
-     ✅ No backend route changes
-     ✅ No form field name changes
-     ✅ Keeps SAME repayment POST workflow:
-        instalment_no, paid_amount, paid_at
-     ✅ Keeps PG_DATA_ENTRY view-only logic
-     ✅ Adds top section toggle buttons:
-        Repayment Details / Loan Schedule
-     ✅ Repayment section contains Add Repayment + Repayment History
-     ✅ Schedule section contains only Schedule
-     ✅ Search + pagination + rows selector for both tables
-     ✅ Mobile/app: horizontal swipe-card table layout
-     ✅ Back icon only in app/mobile view, hidden in web view
-     ============================================================ */
-
   .lav-wrap{
     width:100%;
     padding:clamp(12px, 2.2vw, 22px);
@@ -201,7 +185,6 @@
     background:rgba(255,255,255,.96);
   }
 
-  /* Top section toggle */
   .lav-section-tabs{
     display:flex;
     align-items:center;
@@ -232,7 +215,7 @@
     gap:8px;
     user-select:none;
     white-space:nowrap;
-    min-width:160px;
+    min-width:170px;
   }
 
   .lav-tab-btn:hover{
@@ -524,6 +507,10 @@
     font-weight:800;
   }
 
+  .lav-empty-dynamic{
+    display:none;
+  }
+
   .lav-status{
     display:inline-flex;
     align-items:center;
@@ -586,10 +573,6 @@
   }
 
   @media(max-width:720px){
-    .lav-back{
-      display:flex;
-    }
-
     .lav-body{
       padding:12px;
     }
@@ -746,7 +729,6 @@
 <div class="lav-wrap" id="lavWrap">
   <div class="lav-sheet">
 
-    <!-- Header -->
     <div class="lav-head">
       <div class="lav-head-row">
         <div class="lav-leftslot">
@@ -766,7 +748,7 @@
             Loan {{ loan.loan_no }} — {{ pg.pg_name or pg.name }}
           </h2>
           <div class="lav-sub">
-            Track repayment entries, schedule status, outstanding amount and overdue amount.
+            Status: {{ (loan.status or 'active')|upper }} • Outstanding: ₹{{ "{:,.2f}".format(loan.outstanding_amount or 0) }} • Overdue: ₹{{ "{:,.2f}".format(loan.overdue_amount or 0) }}
           </div>
         </div>
 
@@ -774,7 +756,6 @@
       </div>
     </div>
 
-    <!-- Top fields -->
     <div class="lav-topfields">
       <div class="lav-field">
         <div class="lav-label">Producer Group</div>
@@ -787,7 +768,6 @@
       </div>
     </div>
 
-    <!-- KPI strip -->
     <div class="lav-kpis">
       <div class="lav-kpi">
         <div class="k">Status</div>
@@ -807,7 +787,6 @@
 
     <div class="lav-body">
 
-      <!-- Section switch buttons -->
       <div class="lav-section-tabs" role="tablist" aria-label="Loan sections">
         <button class="lav-tab-btn active" type="button" data-lav-tab="repayment" role="tab" aria-selected="true">
           Repayment Details
@@ -818,12 +797,8 @@
         </button>
       </div>
 
-      <!-- ============================================================
-           SECTION PAGE 1: Repayment Details
-           ============================================================ -->
       <div class="lav-section-page active" id="lavSectionRepayment" data-lav-section="repayment">
 
-        <!-- Add Repayment -->
         <div class="lav-card">
           <div class="lav-card-head">
             <div>
@@ -864,12 +839,11 @@
           </div>
         </div>
 
-        <!-- Repayment History -->
         <div class="lav-card">
           <div class="lav-card-head">
             <div>
               <h3 class="lav-card-title">Repayment History</h3>
-              <p class="lav-card-sub">Latest saved repayment rows for this loan.</p>
+              <p class="lav-card-sub">Saved repayment rows for this loan account.</p>
             </div>
           </div>
 
@@ -920,6 +894,10 @@
                     <td colspan="4" class="lav-empty">No repayments yet.</td>
                   </tr>
                 {% endfor %}
+
+                <tr class="lav-empty-dynamic" data-empty-row="repayments">
+                  <td colspan="4" class="lav-empty">No matching repayments found.</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -937,16 +915,13 @@
         </div>
       </div>
 
-      <!-- ============================================================
-           SECTION PAGE 2: Loan Schedule
-           ============================================================ -->
       <div class="lav-section-page" id="lavSectionSchedule" data-lav-section="schedule">
 
         <div class="lav-card">
           <div class="lav-card-head">
             <div>
               <h3 class="lav-card-title">Schedule</h3>
-              <p class="lav-card-sub">Paid rows are marked. Overdue is based on due date and current date.</p>
+              <p class="lav-card-sub">Paid rows are marked. Overdue is based on due date & current date.</p>
             </div>
           </div>
 
@@ -1007,6 +982,10 @@
                     <td colspan="6" class="lav-empty">No schedule.</td>
                   </tr>
                 {% endfor %}
+
+                <tr class="lav-empty-dynamic" data-empty-row="schedule">
+                  <td colspan="6" class="lav-empty">No matching schedule rows found.</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -1066,6 +1045,7 @@
     function render(type){
       const allRows = rows(type);
       const visible = filteredRows(type);
+      const emptyRow = document.querySelector('[data-empty-row="' + type + '"]');
 
       const total = visible.length;
       let maxPage = Math.max(1, Math.ceil(total / state[type].perPage));
@@ -1080,6 +1060,10 @@
       allRows.forEach(row => {
         row.style.display = pageRows.has(row) ? '' : 'none';
       });
+
+      if(emptyRow){
+        emptyRow.style.display = total === 0 && allRows.length > 0 ? '' : 'none';
+      }
 
       visible.forEach((row, index) => {
         const sl = row.querySelector('.lav-sl');
@@ -1101,8 +1085,8 @@
       const prev = document.querySelector('[data-prev="' + type + '"]');
       const next = document.querySelector('[data-next="' + type + '"]');
 
-      if(prev) prev.disabled = state[type].page <= 1;
-      if(next) next.disabled = state[type].page >= maxPage;
+      if(prev) prev.disabled = state[type].page <= 1 || total === 0;
+      if(next) next.disabled = state[type].page >= maxPage || total === 0;
     }
 
     function initSection(type){
@@ -1170,7 +1154,7 @@
       });
 
       try{
-        sessionStorage.setItem('lav_active_section', tabName);
+        sessionStorage.setItem('loan_account_active_section', tabName);
       }catch(_){}
 
       if(tabName === 'repayment'){
@@ -1192,7 +1176,7 @@
       let saved = 'repayment';
 
       try{
-        const existing = sessionStorage.getItem('lav_active_section');
+        const existing = sessionStorage.getItem('loan_account_active_section');
         if(existing === 'repayment' || existing === 'schedule'){
           saved = existing;
         }

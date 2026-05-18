@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Input Purchase/Sale/Stock Register{% endblock %}
 
@@ -172,7 +172,7 @@
     color: rgba(15,23,42,.78);
   }
 
-  /* ✅ Top buttons: Edit / Save / Cancel = strong highlighted colours */
+  /*  Top buttons: Edit / Save / Cancel = strong highlighted colours */
 .input-register-page .btn.btn-red{
   background:linear-gradient(180deg, #ef4444, #dc2626) !important;
   border-color:rgba(185,28,28,.58) !important;
@@ -199,7 +199,7 @@
   color:#ffffff !important;
 }
 
-/* ✅ Bottom row/table action buttons = soft outlined colours */
+/*  Bottom row/table action buttons = soft outlined colours */
 .input-register-page .btn.btn-soft-red{
   border:1.5px solid rgba(220,38,38,.20) !important;
   background:rgba(220,38,38,.045) !important;
@@ -1348,7 +1348,7 @@ body.force-desktop-print .input-register-page table.input-register{
       toastSale:"Sale",
       toastStock:"Stock",
 
-      // ✅ NEW: page lock message
+      //  NEW: page lock message
       lockToast:"Edit mode active — navigation/refresh is locked. Save or Cancel to unlock.",
       lockConfirmTitle:"Edit mode is ON",
       lockConfirmMsg:"Please Save or Cancel your edits before leaving this page.",
@@ -1448,7 +1448,7 @@ body.force-desktop-print .input-register-page table.input-register{
       toastSale:"বিক্রয়",
       toastStock:"স্টক",
 
-      // ✅ NEW: page lock message
+      //  NEW: page lock message
       lockToast:"এডিট মোড চালু — ন্যাভিগেশন/রিফ্রেশ লক। সেভ বা বাতিল করলে আনলক হবে।",
       lockConfirmTitle:"এডিট মোড চালু আছে",
       lockConfirmMsg:"এই পেজ ছাড়ার আগে সেভ বা বাতিল করুন।",
@@ -1522,7 +1522,7 @@ body.force-desktop-print .input-register-page table.input-register{
     renderMobile();
   }
 
-  /* ✅ Global translation hook (navbar) — robust */
+  /*  Global translation hook (navbar) — robust */
   function detectGlobalLang(){
     const g = (localStorage.getItem("pgmis_lang") || localStorage.getItem("pg_lang") || localStorage.getItem("lang") || "en").toLowerCase();
     return (g === "bn" || g === "bangla") ? "bn" : "en";
@@ -1588,7 +1588,7 @@ body.force-desktop-print .input-register-page table.input-register{
     });
   }
 
-    // ✅ Alert modal (OK only) — for edit-lock warning
+    //  Alert modal (OK only) — for edit-lock warning
   function alertBox(title, msg){
     return new Promise((resolve)=>{
       els.confirmTitle.textContent = title || "Info";
@@ -1597,7 +1597,7 @@ body.force-desktop-print .input-register-page table.input-register{
       // show modal
       els.confirmWrap.style.display = "flex";
 
-      // ✅ make it OK-only
+      //  make it OK-only
       els.confirmNo.style.display = "none";
       document.getElementById("t_yes").textContent = (lang === "bn") ? "ঠিক আছে" : "OK";
 
@@ -1607,7 +1607,7 @@ body.force-desktop-print .input-register-page table.input-register{
         els.confirmNo.onclick = null;
         document.removeEventListener("keydown", onKey);
 
-        // ✅ restore defaults for normal confirm dialogs
+        //  restore defaults for normal confirm dialogs
         els.confirmNo.style.display = "";
         document.getElementById("t_yes").textContent = T[lang].yes;
       };
@@ -1644,7 +1644,7 @@ body.force-desktop-print .input-register-page table.input-register{
     return Math.round((v + Number.EPSILON) * 100) / 100;
   }
 
-  /* ===================== ✅ NEW: Page Lock While Edit Mode ===================== */
+  /* =====================  NEW: Page Lock While Edit Mode ===================== */
   let _lock = {
     on: false,
     isHandlingPop: false,
@@ -1666,7 +1666,7 @@ body.force-desktop-print .input-register-page table.input-register{
 
    async function showLockedNotice(){
     toast(T[lang].lockToast || "Edit mode active — navigation/refresh is locked. Save or Cancel to unlock.");
-    await alertBox(lockTitle(), lockMsg()); // ✅ OK only
+    await alertBox(lockTitle(), lockMsg()); //  OK only
   }
 
 
@@ -1823,11 +1823,11 @@ body.force-desktop-print .input-register-page table.input-register{
   els.editSaveText.textContent = editMode ? T[lang].save : T[lang].edit;
   els.editSaveIcon.setAttribute("name", editMode ? "save" : "create");
 
-  // ✅ Edit = strong red, Save = strong green
+  //  Edit = strong red, Save = strong green
   els.editSaveBtn.classList.toggle("btn-red", !editMode);
   els.editSaveBtn.classList.toggle("btn-green", editMode);
 
-  // ✅ Cancel = strong red
+  //  Cancel = strong red
   els.cancelBtn.classList.add("btn-red");
 
   els.cancelBtn.style.display = editMode ? "inline-flex" : "none";
@@ -2590,7 +2590,7 @@ function doActualPrint(){
     if(!ok) return;
 
     els.tbody.innerHTML = "";
-    // ✅ keep at least one blank row always
+    //  keep at least one blank row always
     addRow();
     recalcTotals();
     renderMobile();
@@ -2929,7 +2929,7 @@ function doActualPrint(){
       editMode = true;
       applyEditModeUI();
 
-      // ✅ enable page lock now
+      //  enable page lock now
       enablePageLock();
 
       toast(t.toastEditOn);
@@ -2949,7 +2949,7 @@ function doActualPrint(){
     editMode = false;
     applyEditModeUI();
 
-    // ✅ unlock page now
+    //  unlock page now
     disablePageLock();
 
     toast(t.toastSaved);
@@ -2967,7 +2967,7 @@ function doActualPrint(){
     editMode = false;
     applyEditModeUI();
 
-    // ✅ unlock page now
+    //  unlock page now
     disablePageLock();
 
     toast(t.toastCanceled);
@@ -2986,7 +2986,7 @@ function doActualPrint(){
     editMode = false;
     applyEditModeUI();
 
-    // ✅ unlock page now
+    //  unlock page now
     disablePageLock();
 
     toast(t.toastCanceled);
@@ -3085,11 +3085,11 @@ function doActualPrint(){
 
   /* ---------------- Init ---------------- */
   async function init(){
-    // ✅ default to GLOBAL language (navbar), fallback English
+    //  default to GLOBAL language (navbar), fallback English
     setLang(detectGlobalLang());
     startLangPoll();
 
-    // ✅ start rows: keep 1 blank row by default (not 3)
+    //  start rows: keep 1 blank row by default (not 3)
     els.tbody.innerHTML = "";
     await loadInputHistoryFromServer();
     await loadFromServer();
@@ -3099,7 +3099,7 @@ function doActualPrint(){
     editMode = false;
     applyEditModeUI();
 
-    // ✅ restore last active tab on refresh
+    //  restore last active tab on refresh
     activeTab = loadPersistedTab();
     setTabsUI();
     renderMobile();
@@ -3107,7 +3107,7 @@ function doActualPrint(){
 
     setStatus(T[lang].statusReady, true);
 
-    // ✅ if somehow page restored with editMode true, ensure lock
+    //  if somehow page restored with editMode true, ensure lock
     if(editMode) enablePageLock(); else disablePageLock();
   }
 

@@ -1,78 +1,1196 @@
 {% extends "base.html" %}
 {% block title %}Member Loan{% endblock %}
 {% block content %}
+
 <style>
-  .wrap{max-width:1200px;margin:0 auto;padding:18px}
-  .hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18)}
-  .hero h1{margin:0;font-weight:950}
-  .hero .sub{margin-top:.35rem;color:#d1fae5;font-weight:800}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
-  .card{background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
-  table{width:100%;border-collapse:separate;border-spacing:0;margin-top:10px;border-radius:14px;overflow:hidden}
-  th,td{padding:10px;border-bottom:1px solid rgba(15,23,42,.08);text-align:left;font-size:.92rem}
-  th{background:#f0fdf4;color:#065f46;font-weight:950}
-  .f{display:flex;flex-direction:column;gap:6px}
-  .f label{font-size:.78rem;color:#059669;font-weight:900}
-  input{background:#f0fdf4;border:1px solid rgba(5,150,105,.22);border-radius:12px;padding:10px 12px;outline:none}
-  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(5,150,105,.28);background:#059669;color:#fff;font-weight:950;cursor:pointer;text-decoration:none}
-  .btn2{background:#ecfdf5;color:#065f46}
-  @media(max-width:980px){.grid2{grid-template-columns:1fr}}
+  .lav-wrap{
+    width:100%;
+    padding:clamp(12px, 2.2vw, 22px);
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.18);
+    --line2:rgba(15,23,42,.12);
+    --paper:#ffffff;
+    --soft:#f7faf9;
+    --accent:#0b4d3a;
+
+    max-width:1200px;
+    margin:0 auto;
+    color:var(--ink);
+  }
+
+  .lav-wrap *{
+    box-sizing:border-box;
+  }
+
+  .lav-sheet{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 18px 34px -26px rgba(15,23,42,.35);
+  }
+
+  .lav-head{
+    padding:14px 16px 12px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+    border-bottom:1.5px solid var(--line2);
+  }
+
+  .lav-head-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .lav-leftslot,
+  .lav-rightslot{
+    flex:0 0 42px;
+    width:42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .lav-back{
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    box-shadow:0 12px 20px -16px rgba(15,23,42,.38);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color:rgba(11,77,58,.98);
+    user-select:none;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+
+  .lav-back:hover{
+    transform:translateX(-1px);
+    box-shadow:0 16px 26px -18px rgba(15,23,42,.46);
+    background:rgba(255,255,255,.98);
+  }
+
+  .lav-back:active{
+    transform:scale(.98);
+  }
+
+  .lav-back svg{
+    width:18px;
+    height:18px;
+    display:block;
+  }
+
+  .lav-title-wrap{
+    flex:1 1 auto;
+    min-width:0;
+    text-align:center;
+  }
+
+  .lav-title{
+    margin:0;
+    font-weight:950;
+    font-size:clamp(16px, 1.8vw, 20px);
+    letter-spacing:.2px;
+    line-height:1.15;
+    word-break:normal;
+    overflow-wrap:anywhere;
+  }
+
+  .lav-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color:rgba(15,23,42,.62);
+    font-weight:800;
+  }
+
+  .lav-topfields{
+    padding:10px 16px 14px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px 14px;
+    border-bottom:1.5px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+
+  .lav-field{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  }
+
+  .lav-label{
+    font-weight:900;
+    font-size:12px;
+    white-space:nowrap;
+    color:var(--ink);
+  }
+
+  .lav-muted{
+    font-size:12px;
+    font-weight:800;
+    color:rgba(15,23,42,.72);
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .lav-kpis{
+    padding:12px 16px 14px;
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+    border-bottom:1.5px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+
+  .lav-kpi{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:14px;
+    background:rgba(247,250,249,.70);
+    box-shadow:0 10px 20px -18px rgba(15,23,42,.25);
+    padding:11px 12px;
+    min-width:0;
+  }
+
+  .lav-kpi .k{
+    font-weight:950;
+    font-size:12px;
+    color:rgba(15,23,42,.72);
+    white-space:nowrap;
+  }
+
+  .lav-kpi .v{
+    margin-top:6px;
+    font-weight:950;
+    font-size:15px;
+    color:#0b4d3a;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .lav-body{
+    padding:12px 16px 16px;
+    background:rgba(255,255,255,.96);
+  }
+
+  .lav-section-tabs{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:12px;
+    margin-bottom:12px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:14px;
+    background:rgba(247,250,249,.62);
+    box-shadow:0 14px 26px -24px rgba(15,23,42,.28);
+  }
+
+  .lav-tab-btn{
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(255,255,255,.82);
+    color:var(--ink);
+    border-radius:999px;
+    padding:10px 16px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    user-select:none;
+    white-space:nowrap;
+    min-width:170px;
+  }
+
+  .lav-tab-btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  .lav-tab-btn.active{
+    border-color:rgba(16,185,129,.35);
+    background:rgba(16,185,129,.14);
+    color:#0b4d3a;
+  }
+
+  .lav-section-page{
+    display:none;
+  }
+
+  .lav-section-page.active{
+    display:block;
+    animation:lavFadeIn .18s ease-out;
+  }
+
+  @keyframes lavFadeIn{
+    from{
+      opacity:0;
+      transform:translateY(4px);
+    }
+    to{
+      opacity:1;
+      transform:translateY(0);
+    }
+  }
+
+  .lav-card{
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:14px;
+    background:rgba(255,255,255,.92);
+    overflow:hidden;
+    box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+    margin-bottom:12px;
+  }
+
+  .lav-card-head{
+    padding:12px 12px 10px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(247,250,249,.66);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .lav-card-title{
+    margin:0;
+    font-weight:950;
+    font-size:13px;
+    letter-spacing:.15px;
+    color:var(--ink);
+  }
+
+  .lav-card-sub{
+    margin:6px 0 0;
+    font-size:12px;
+    color:rgba(15,23,42,.62);
+    font-weight:750;
+  }
+
+  .lav-card-body{
+    padding:12px;
+  }
+
+  .lav-formgrid{
+    display:grid;
+    grid-template-columns:repeat(12, 1fr);
+    gap:10px 14px;
+    align-items:start;
+  }
+
+  .lav-col-4{
+    grid-column:span 4;
+  }
+
+  .lav-col-12{
+    grid-column:span 12;
+  }
+
+  .lav-stack{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:0;
+  }
+
+  .lav-stack label{
+    font-weight:900;
+    font-size:12px;
+    color:var(--ink);
+  }
+
+  .lav-input{
+    width:100%;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:12px;
+    padding:10px 12px;
+    background:rgba(247,250,249,.75);
+    font-weight:800;
+    font-size:12px;
+    outline:none;
+    color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+
+  .lav-input:focus{
+    border-color:rgba(11,77,58,.40);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  .lav-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .lav-btn{
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.8);
+    color:var(--ink);
+    border-radius:999px;
+    padding:10px 14px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    user-select:none;
+    white-space:nowrap;
+    text-decoration:none;
+    font-family:inherit;
+  }
+
+  .lav-btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  .lav-btn.primary{
+    border-color:rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+
+  .lav-btn.primary:hover{
+    background:rgba(16,185,129,.16);
+  }
+
+  .lav-btn:disabled{
+    opacity:.55;
+    cursor:not-allowed;
+    transform:none !important;
+    box-shadow:none !important;
+  }
+
+  .lav-viewonly{
+    border:1px solid rgba(16,185,129,.22);
+    background:rgba(16,185,129,.08);
+    color:#0b4d3a;
+    border-radius:14px;
+    padding:12px;
+    font-size:12px;
+    font-weight:900;
+    line-height:1.4;
+  }
+
+  .lav-toolbar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 12px;
+    border-bottom:1px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+
+  .lav-toolbar-left,
+  .lav-toolbar-right{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .lav-toolbar-right{
+    justify-content:flex-end;
+  }
+
+  .lav-search{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:260px;
+  }
+
+  .lav-search .lav-input{
+    width:min(420px, 60vw);
+  }
+
+  .lav-select{
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:12px;
+    padding:10px 12px;
+    background:rgba(247,250,249,.75);
+    font-weight:800;
+    font-size:12px;
+    outline:none;
+    color:var(--ink);
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+
+  .lav-select:focus{
+    border-color:rgba(11,77,58,.40);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
+  }
+
+  .lav-pill{
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.75);
+    font-weight:900;
+    font-size:12px;
+    color:rgba(15,23,42,.78);
+  }
+
+  .lav-tablewrap{
+    width:100%;
+    overflow-x:auto;
+    border-top:1px solid var(--line2);
+  }
+
+  table.lav-table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:760px;
+  }
+
+  .lav-table th,
+  .lav-table td{
+    padding:10px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    text-align:left;
+    font-size:12px;
+    white-space:nowrap;
+    vertical-align:top;
+  }
+
+  .lav-table th{
+    position:sticky;
+    top:0;
+    background:rgba(240,253,244,.92);
+    color:#065f46;
+    font-weight:950;
+    z-index:1;
+  }
+
+  .lav-table tr:hover td{
+    background:rgba(247,250,249,.60);
+  }
+
+  .lav-sl{
+    width:64px;
+    color:rgba(15,23,42,.72);
+    font-weight:900;
+  }
+
+  .lav-empty{
+    color:#64748b;
+    font-size:12px;
+    font-weight:800;
+  }
+
+  .lav-empty-dynamic{
+    display:none;
+  }
+
+  .lav-status{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    padding:5px 10px;
+    font-size:11px;
+    font-weight:950;
+    border:1px solid rgba(15,23,42,.14);
+    background:#fff;
+  }
+
+  .lav-status.yes{
+    border-color:rgba(16,185,129,.28);
+    background:rgba(16,185,129,.12);
+    color:#0b4d3a;
+  }
+
+  .lav-status.no{
+    border-color:rgba(245,158,11,.28);
+    background:rgba(245,158,11,.12);
+    color:#92400e;
+  }
+
+  .lav-pager{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px;
+    border-top:1px solid var(--line2);
+    background:rgba(255,255,255,.92);
+  }
+
+  .lav-pager-left,
+  .lav-pager-right{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  @media(max-width:980px){
+    .lav-topfields,
+    .lav-kpis{
+      grid-template-columns:1fr;
+    }
+
+    .lav-col-4{
+      grid-column:span 12;
+    }
+
+    .lav-search{
+      min-width:100%;
+    }
+
+    .lav-search .lav-input{
+      width:100%;
+    }
+  }
+
+  @media(max-width:720px){
+    .lav-body{
+      padding:12px;
+    }
+
+    .lav-section-tabs{
+      align-items:stretch;
+      justify-content:stretch;
+    }
+
+    .lav-tab-btn{
+      width:100%;
+      min-width:0;
+    }
+
+    .lav-card-head{
+      align-items:flex-start;
+    }
+
+    .lav-actions .lav-btn{
+      width:100%;
+    }
+
+    .lav-toolbar{
+      align-items:stretch;
+    }
+
+    .lav-toolbar-left,
+    .lav-toolbar-right,
+    .lav-search{
+      width:100%;
+    }
+
+    .lav-search{
+      flex-direction:column;
+      align-items:stretch;
+    }
+
+    .lav-search .lav-btn{
+      width:100%;
+    }
+
+    .lav-toolbar-right{
+      justify-content:space-between;
+    }
+
+    .lav-select{
+      flex:1 1 auto;
+    }
+
+    .lav-tablewrap{
+      overflow:hidden;
+    }
+
+    table.lav-table{
+      min-width:0;
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      display:block;
+    }
+
+    .lav-table thead{
+      display:none;
+    }
+
+    .lav-table tbody{
+      display:flex;
+      gap:12px;
+      overflow-x:auto;
+      padding:12px;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch;
+    }
+
+    .lav-table tbody::-webkit-scrollbar{
+      height:8px;
+    }
+
+    .lav-table tbody::-webkit-scrollbar-thumb{
+      background:rgba(15,23,42,.18);
+      border-radius:999px;
+    }
+
+    .lav-table tr.lav-row{
+      display:block;
+      min-width:88%;
+      max-width:88%;
+      scroll-snap-align:start;
+      background:rgba(255,255,255,.96);
+      border:1px solid rgba(15,23,42,.14);
+      border-radius:16px;
+      box-shadow:0 14px 26px -22px rgba(15,23,42,.28);
+      overflow:hidden;
+      padding:10px 12px;
+    }
+
+    .lav-table tr.lav-row td{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      justify-content:space-between;
+      padding:8px 0 !important;
+      border-bottom:1px dashed rgba(15,23,42,.10);
+      white-space:normal;
+      text-align:right;
+    }
+
+    .lav-table tr.lav-row td:last-child{
+      border-bottom:none;
+    }
+
+    .lav-table tr.lav-row td::before{
+      content:attr(data-label);
+      font-weight:950;
+      color:rgba(15,23,42,.72);
+      flex:0 0 auto;
+      min-width:110px;
+      text-align:left;
+    }
+
+    .lav-pager{
+      align-items:stretch;
+      flex-direction:column;
+    }
+
+    .lav-pager-left,
+    .lav-pager-right{
+      width:100%;
+      justify-content:center;
+    }
+
+    .lav-pager-right .lav-btn{
+      flex:1;
+    }
+  }
+
+  @media(max-width:420px){
+    .lav-head{
+      padding:12px 12px 10px;
+    }
+
+    .lav-topfields,
+    .lav-kpis{
+      padding:10px 12px 12px;
+    }
+
+    .lav-table tr.lav-row{
+      min-width:92%;
+      max-width:92%;
+    }
+  }
 </style>
 
-<div class="wrap">
-  <div class="hero">
-    <h1>Member Loan {{ loan.loan_no }} — {{ pg.pg_name or pg.name }}</h1>
-    <div class="sub">Member: {{ member.name or member.member_name if member else '—' }} • Status: {{ (loan.status or 'active')|upper }} • Outstanding: ₹{{ "{:,.2f}".format(loan.outstanding_amount or 0) }}</div>
-    <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
-      <a class="btn btn2" href="{{ url_for('finance.member_loan_accounts', pg_id=pg._id) }}">Back</a>
-    </div>
-  </div>
+<div class="lav-wrap" id="lavWrap">
+  <div class="lav-sheet">
 
-  <div class="grid2">
-    <div class="card">
-      <div style="font-weight:950;color:#065f46">Add Repayment</div>
-      {% if session.get('role') != 'PG_DATA_ENTRY' %}
-<form method="POST" style="margin-top:10px;display:grid;grid-template-columns:repeat(12,1fr);gap:10px">
-        <div class="f" style="grid-column:span 4"><label>Instalment No</label><input name="instalment_no" type="number" required></div>
-        <div class="f" style="grid-column:span 4"><label>Paid Amount</label><input name="paid_amount" type="number" step="0.01" required></div>
-        <div class="f" style="grid-column:span 4"><label>Paid Date</label><input name="paid_at" type="date"></div>
-        <div style="grid-column:span 12"><button class="btn" type="submit">Save Repayment</button></div>
-      </form>
-{% else %}
-<div class="card" style="margin-top:14px;"><p style="margin:0;color:#065f46;font-weight:800;">View only: Loan entry/updates are handled by CLF/Block.</p></div>
-{% endif %}
+    <div class="lav-head">
+      <div class="lav-head-row">
+        <div class="lav-leftslot">
+          <a class="lav-back" href="{{ url_for('finance.member_loan_accounts', pg_id=pg._id) }}" aria-label="Go Back">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M19 12H5M5 12l6 6M5 12l6-6"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"></path>
+            </svg>
+          </a>
+        </div>
 
-      <table>
-        <thead><tr><th>Date</th><th>Instalment</th><th>Amount</th></tr></thead>
-        <tbody>
-        {% for r in repayments %}
-          <tr><td>{{ r.paid_at.strftime('%Y-%m-%d') if r.paid_at else '' }}</td><td>{{ r.instalment_no }}</td><td>₹{{ "{:,.2f}".format(r.paid_amount or 0) }}</td></tr>
-        {% else %}
-          <tr><td colspan="3" style="color:#64748b">No repayments yet.</td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
+        <div class="lav-title-wrap">
+          <h2 class="lav-title">
+            Member Loan {{ loan.loan_no }} — {{ pg.pg_name or pg.name }}
+          </h2>
+          <div class="lav-sub">
+            Member: {{ member.name or member.member_name if member else '—' }} • Status: {{ (loan.status or 'active')|upper }} • Outstanding: ₹{{ "{:,.2f}".format(loan.outstanding_amount or 0) }}
+          </div>
+        </div>
+
+        <div class="lav-rightslot" aria-hidden="true"></div>
+      </div>
     </div>
 
-    <div class="card">
-      <div style="font-weight:950;color:#065f46">Schedule</div>
-      <table>
-        <thead><tr><th>#</th><th>Due</th><th>EMI</th><th>Paid?</th><th>Paid Amt</th></tr></thead>
-        <tbody>
-        {% for s in loan.schedule %}
-          <tr>
-            <td>{{ s.instalment_no }}</td>
-            <td>{{ s.due_date.strftime('%Y-%m-%d') if s.due_date else '' }}</td>
-            <td>₹{{ "{:,.2f}".format(s.emi or 0) }}</td>
-            <td>{{ 'YES' if s.is_paid else 'NO' }}</td>
-            <td>₹{{ "{:,.2f}".format(s.paid_amount or 0) }}</td>
-          </tr>
-        {% else %}
-          <tr><td colspan="5" style="color:#64748b">No schedule.</td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
+    <div class="lav-topfields">
+      <div class="lav-field">
+        <div class="lav-label">Producer Group</div>
+        <div class="lav-muted">{{ pg.pg_name or pg.name or '—' }}</div>
+      </div>
+
+      <div class="lav-field">
+        <div class="lav-label">Member</div>
+        <div class="lav-muted">{{ member.name or member.member_name if member else '—' }}</div>
+      </div>
     </div>
+
+    <div class="lav-kpis">
+      <div class="lav-kpi">
+        <div class="k">Loan No</div>
+        <div class="v">{{ loan.loan_no or '—' }}</div>
+      </div>
+
+      <div class="lav-kpi">
+        <div class="k">Status</div>
+        <div class="v">{{ (loan.status or 'active')|upper }}</div>
+      </div>
+
+      <div class="lav-kpi">
+        <div class="k">Outstanding</div>
+        <div class="v">₹{{ "{:,.2f}".format(loan.outstanding_amount or 0) }}</div>
+      </div>
+    </div>
+
+    <div class="lav-body">
+
+      <div class="lav-section-tabs" role="tablist" aria-label="Member loan sections">
+        <button class="lav-tab-btn active" type="button" data-lav-tab="repayment" role="tab" aria-selected="true">
+          Repayment Details
+        </button>
+
+        <button class="lav-tab-btn" type="button" data-lav-tab="schedule" role="tab" aria-selected="false">
+          Loan Schedule
+        </button>
+      </div>
+
+      <div class="lav-section-page active" id="lavSectionRepayment" data-lav-section="repayment">
+
+        <div class="lav-card">
+          <div class="lav-card-head">
+            <div>
+              <h3 class="lav-card-title">Add Repayment</h3>
+              <p class="lav-card-sub">Enter instalment repayment details for this member loan.</p>
+            </div>
+          </div>
+
+          <div class="lav-card-body">
+            {% if session.get('role') != 'PG_DATA_ENTRY' %}
+              <form method="POST" class="lav-formgrid">
+                <div class="lav-stack lav-col-4">
+                  <label>Instalment No</label>
+                  <input class="lav-input" name="instalment_no" type="number" required>
+                </div>
+
+                <div class="lav-stack lav-col-4">
+                  <label>Paid Amount</label>
+                  <input class="lav-input" name="paid_amount" type="number" step="0.01" required>
+                </div>
+
+                <div class="lav-stack lav-col-4">
+                  <label>Paid Date</label>
+                  <input class="lav-input" name="paid_at" type="date">
+                </div>
+
+                <div class="lav-col-12 lav-actions">
+                  <button class="lav-btn primary" type="submit">
+                    Save Repayment
+                  </button>
+                </div>
+              </form>
+            {% else %}
+              <div class="lav-viewonly">
+                View only: Loan entry/updates are handled by CLF/Block.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="lav-card">
+          <div class="lav-card-head">
+            <div>
+              <h3 class="lav-card-title">Repayment History</h3>
+              <p class="lav-card-sub">Saved repayment rows for this member loan.</p>
+            </div>
+          </div>
+
+          <div class="lav-toolbar">
+            <div class="lav-toolbar-left">
+              <div class="lav-search">
+                <input class="lav-input" type="text" data-search="repayments" placeholder="Search repayments...">
+                <button class="lav-btn" type="button" data-search-btn="repayments">Search</button>
+              </div>
+
+              <span class="lav-pill" data-count="repayments">Current Repayments - 0</span>
+            </div>
+
+            <div class="lav-toolbar-right">
+              <label class="lav-label" style="margin:0;">Rows</label>
+              <select class="lav-select" data-per-page="repayments">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="lav-tablewrap">
+            <table class="lav-table" data-table="repayments">
+              <thead>
+                <tr>
+                  <th class="lav-sl">SL No</th>
+                  <th>Date</th>
+                  <th>Instalment</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for r in repayments %}
+                  <tr class="lav-row"
+                      data-row="repayments"
+                      data-search-text="{{ loop.index }} {{ r.paid_at.strftime('%Y-%m-%d') if r.paid_at else '' }} {{ r.instalment_no }} {{ r.paid_amount }}">
+                    <td class="lav-sl" data-label="SL No">{{ loop.index }}</td>
+                    <td data-label="Date">{{ r.paid_at.strftime('%Y-%m-%d') if r.paid_at else '' }}</td>
+                    <td data-label="Instalment">{{ r.instalment_no }}</td>
+                    <td data-label="Amount">₹{{ "{:,.2f}".format(r.paid_amount or 0) }}</td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="4" class="lav-empty">No repayments yet.</td>
+                  </tr>
+                {% endfor %}
+
+                <tr class="lav-empty-dynamic" data-empty-row="repayments">
+                  <td colspan="4" class="lav-empty">No matching repayments found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="lav-pager">
+            <div class="lav-pager-left">
+              <span class="lav-pill" data-page-info="repayments">Page 1</span>
+            </div>
+
+            <div class="lav-pager-right">
+              <button class="lav-btn" type="button" data-prev="repayments">Prev</button>
+              <button class="lav-btn" type="button" data-next="repayments">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lav-section-page" id="lavSectionSchedule" data-lav-section="schedule">
+
+        <div class="lav-card">
+          <div class="lav-card-head">
+            <div>
+              <h3 class="lav-card-title">Schedule</h3>
+              <p class="lav-card-sub">Paid rows are marked as per the existing loan schedule data.</p>
+            </div>
+          </div>
+
+          <div class="lav-toolbar">
+            <div class="lav-toolbar-left">
+              <div class="lav-search">
+                <input class="lav-input" type="text" data-search="schedule" placeholder="Search schedule...">
+                <button class="lav-btn" type="button" data-search-btn="schedule">Search</button>
+              </div>
+
+              <span class="lav-pill" data-count="schedule">Current Schedule - 0</span>
+            </div>
+
+            <div class="lav-toolbar-right">
+              <label class="lav-label" style="margin:0;">Rows</label>
+              <select class="lav-select" data-per-page="schedule">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="lav-tablewrap">
+            <table class="lav-table" data-table="schedule">
+              <thead>
+                <tr>
+                  <th class="lav-sl">SL No</th>
+                  <th>#</th>
+                  <th>Due</th>
+                  <th>EMI</th>
+                  <th>Paid?</th>
+                  <th>Paid Amt</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for s in loan.schedule %}
+                  <tr class="lav-row"
+                      data-row="schedule"
+                      data-search-text="{{ loop.index }} {{ s.instalment_no }} {{ s.due_date.strftime('%Y-%m-%d') if s.due_date else '' }} {{ s.emi }} {{ 'YES' if s.is_paid else 'NO' }} {{ s.paid_amount }}">
+                    <td class="lav-sl" data-label="SL No">{{ loop.index }}</td>
+                    <td data-label="#">{{ s.instalment_no }}</td>
+                    <td data-label="Due">{{ s.due_date.strftime('%Y-%m-%d') if s.due_date else '' }}</td>
+                    <td data-label="EMI">₹{{ "{:,.2f}".format(s.emi or 0) }}</td>
+                    <td data-label="Paid?">
+                      {% if s.is_paid %}
+                        <span class="lav-status yes">YES</span>
+                      {% else %}
+                        <span class="lav-status no">NO</span>
+                      {% endif %}
+                    </td>
+                    <td data-label="Paid Amt">₹{{ "{:,.2f}".format(s.paid_amount or 0) }}</td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="6" class="lav-empty">No schedule.</td>
+                  </tr>
+                {% endfor %}
+
+                <tr class="lav-empty-dynamic" data-empty-row="schedule">
+                  <td colspan="6" class="lav-empty">No matching schedule rows found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="lav-pager">
+            <div class="lav-pager-left">
+              <span class="lav-pill" data-page-info="schedule">Page 1</span>
+            </div>
+
+            <div class="lav-pager-right">
+              <button class="lav-btn" type="button" data-prev="schedule">Prev</button>
+              <button class="lav-btn" type="button" data-next="schedule">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 </div>
+
+<script>
+  (function(){
+    const state = {
+      repayments: {
+        page: 1,
+        perPage: 10,
+        query: ''
+      },
+      schedule: {
+        page: 1,
+        perPage: 10,
+        query: ''
+      }
+    };
+
+    function normalize(value){
+      return (value || '').toString().toLowerCase().trim();
+    }
+
+    function rows(type){
+      return Array.from(document.querySelectorAll('[data-row="' + type + '"]'));
+    }
+
+    function filteredRows(type){
+      const q = normalize(state[type].query);
+
+      return rows(type).filter(row => {
+        if(!q) return true;
+
+        const text = normalize(row.getAttribute('data-search-text') || row.textContent || '');
+        return text.includes(q);
+      });
+    }
+
+    function render(type){
+      const allRows = rows(type);
+      const visible = filteredRows(type);
+      const emptyRow = document.querySelector('[data-empty-row="' + type + '"]');
+
+      const total = visible.length;
+      let maxPage = Math.max(1, Math.ceil(total / state[type].perPage));
+
+      if(state[type].page > maxPage) state[type].page = maxPage;
+      if(state[type].page < 1) state[type].page = 1;
+
+      const start = (state[type].page - 1) * state[type].perPage;
+      const end = start + state[type].perPage;
+      const pageRows = new Set(visible.slice(start, end));
+
+      allRows.forEach(row => {
+        row.style.display = pageRows.has(row) ? '' : 'none';
+      });
+
+      if(emptyRow){
+        emptyRow.style.display = total === 0 && allRows.length > 0 ? '' : 'none';
+      }
+
+      visible.forEach((row, index) => {
+        const sl = row.querySelector('.lav-sl');
+        if(sl) sl.textContent = index + 1;
+      });
+
+      const count = document.querySelector('[data-count="' + type + '"]');
+      if(count){
+        count.textContent = type === 'repayments'
+          ? 'Current Repayments - ' + total
+          : 'Current Schedule - ' + total;
+      }
+
+      const pageInfo = document.querySelector('[data-page-info="' + type + '"]');
+      if(pageInfo){
+        pageInfo.textContent = 'Page ' + state[type].page + ' / ' + maxPage;
+      }
+
+      const prev = document.querySelector('[data-prev="' + type + '"]');
+      const next = document.querySelector('[data-next="' + type + '"]');
+
+      if(prev) prev.disabled = state[type].page <= 1 || total === 0;
+      if(next) next.disabled = state[type].page >= maxPage || total === 0;
+    }
+
+    function initSection(type){
+      const searchInput = document.querySelector('[data-search="' + type + '"]');
+      const searchBtn = document.querySelector('[data-search-btn="' + type + '"]');
+      const perPage = document.querySelector('[data-per-page="' + type + '"]');
+      const prev = document.querySelector('[data-prev="' + type + '"]');
+      const next = document.querySelector('[data-next="' + type + '"]');
+
+      if(searchInput){
+        searchInput.addEventListener('input', function(){
+          state[type].query = this.value || '';
+          state[type].page = 1;
+          render(type);
+        });
+      }
+
+      if(searchBtn){
+        searchBtn.addEventListener('click', function(){
+          state[type].query = searchInput ? searchInput.value || '' : '';
+          state[type].page = 1;
+          render(type);
+        });
+      }
+
+      if(perPage){
+        perPage.addEventListener('change', function(){
+          const selected = parseInt(this.value || '10', 10);
+          state[type].perPage = [10, 25, 50, 100].includes(selected) ? selected : 10;
+          state[type].page = 1;
+          render(type);
+        });
+      }
+
+      if(prev){
+        prev.addEventListener('click', function(){
+          state[type].page -= 1;
+          render(type);
+        });
+      }
+
+      if(next){
+        next.addEventListener('click', function(){
+          state[type].page += 1;
+          render(type);
+        });
+      }
+
+      render(type);
+    }
+
+    function switchTab(tabName){
+      const tabs = document.querySelectorAll('[data-lav-tab]');
+      const sections = document.querySelectorAll('[data-lav-section]');
+
+      tabs.forEach(tab => {
+        const isActive = tab.getAttribute('data-lav-tab') === tabName;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+
+      sections.forEach(section => {
+        const isActive = section.getAttribute('data-lav-section') === tabName;
+        section.classList.toggle('active', isActive);
+      });
+
+      try{
+        sessionStorage.setItem('member_loan_active_section', tabName);
+      }catch(_){}
+
+      if(tabName === 'repayment'){
+        render('repayments');
+      }
+
+      if(tabName === 'schedule'){
+        render('schedule');
+      }
+    }
+
+    function initTabs(){
+      document.querySelectorAll('[data-lav-tab]').forEach(tab => {
+        tab.addEventListener('click', function(){
+          switchTab(this.getAttribute('data-lav-tab') || 'repayment');
+        });
+      });
+
+      let saved = 'repayment';
+
+      try{
+        const existing = sessionStorage.getItem('member_loan_active_section');
+        if(existing === 'repayment' || existing === 'schedule'){
+          saved = existing;
+        }
+      }catch(_){}
+
+      switchTab(saved);
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      initSection('repayments');
+      initSection('schedule');
+      initTabs();
+    });
+  })();
+</script>
+
 {% endblock %}

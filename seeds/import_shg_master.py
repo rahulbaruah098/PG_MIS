@@ -1,7 +1,7 @@
-"""
+﻿"""
 Import TRESP SHG Members master data (16-field sheet) into MongoDB.
 
-✅ Goal (as per your instruction):
+ Goal (as per your instruction):
 - Insert EVERY Excel row into MongoDB (1 row = 1 document) so the final count becomes EXACTLY 140322.
 - Do NOT skip blank Member Code rows.
 - Do NOT collapse duplicates via (SHG Code, Member Code) upsert.
@@ -169,7 +169,7 @@ def main(xlsx_path: str):
         if state and district and block:
             geo_blocks.add((state, district, block))
 
-        # ✅ Unique per row import key (guarantees exact row count in DB)
+        #  Unique per row import key (guarantees exact row count in DB)
         # row_number alone guarantees uniqueness, but we add shg/member for readability.
         import_key = f"TRESP|row={excel_row_number}|shg={shg_code or 'BLANK'}|mem={member_code or 'BLANK'}"
 
@@ -195,7 +195,7 @@ def main(xlsx_path: str):
             "source": "TRESP",
         }
 
-        # ✅ Upsert by _import_key (NOT by SHG+Member)
+        #  Upsert by _import_key (NOT by SHG+Member)
         member_ops.append(
             UpdateOne(
                 {"_import_key": import_key},

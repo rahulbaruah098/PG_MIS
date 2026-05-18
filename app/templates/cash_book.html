@@ -1,24 +1,10 @@
-{# templates/cash_book.html #}
+﻿{# templates/cash_book.html #}
 {% extends "base.html" %}
 
 {% block title %}Cash Book{% endblock %}
 
 {% block content %}
 <style>
-  /* ============================================================
-     CASHBOOK (SCOPED) — UPDATED UI SKIN
-     ✅ ONLY UI/CSS + UX enhancements added
-     ✅ No existing business logic/routes changed
-     ✅ Mobile/app: back button on gate + view pages
-     ✅ Mobile/app: horizontal swipe cards instead of table
-     ✅ Add/Delete controls only visible in Edit mode
-     ✅ Delete All + Delete Selected added
-     ✅ Cancel confirm modal added
-     ✅ Period persists on refresh
-     ✅ Change Period button added near Edit
-     ✅ Change period has extra confirm step
-     ✅ Responsive for web/mobile/tablet
-     ============================================================ */
 
   .cb-wrap{ color:#0f172a; }
   .cb-wrap *{ box-sizing:border-box; }
@@ -140,7 +126,7 @@
   }
   .cb-btn:active{ transform: translateY(0); }
 
-  /* ✅ Highlight top action buttons */
+  /*  Highlight top action buttons */
 .cb-btn.cb-red{
   background: linear-gradient(180deg, #ef4444, #dc2626) !important;
   border-color: rgba(185, 28, 28, .55) !important;
@@ -2246,7 +2232,7 @@ function loadActiveTab(){
   cbEditSaveText.textContent = cbIsEditing ? t.saveButton : t.editButton;
   cbCancelText.textContent = cbIsEditing ? t.cancelButton : t.cancelButton;
 
-  // ✅ Edit = red, Save = green, Cancel = red
+  //  Edit = red, Save = green, Cancel = red
   cbEditSaveBtn.classList.toggle("cb-red", !cbIsEditing);
   cbEditSaveBtn.classList.toggle("cb-green", cbIsEditing);
   cbCancelBtn.classList.add("cb-red");
@@ -3391,7 +3377,7 @@ cbPaymentsTab.addEventListener("click", ()=>{
     ensureRows();
     await cbLoadServer();
 
-    setTabUI();      // ✅ this is the missing part
+    setTabUI();      //  this is the missing part
     setEditingUI();
     renderAll();
     return;
@@ -3400,7 +3386,7 @@ cbPaymentsTab.addEventListener("click", ()=>{
   fillGateSelects();
   showGate();
 
-  setTabUI();        // ✅ keep UI synced even before app opens
+  setTabUI();        //  keep UI synced even before app opens
   setEditingUI();
   renderAll();
 }

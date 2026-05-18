@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" class="no-js">
 <head>
   <meta charset="UTF-8" />
@@ -122,7 +122,7 @@
       z-index:0;
     }
 
-    /* ✅ Logo image placeholder inside green box (replace later) */
+    /*  Logo image placeholder inside green box (replace later) */
     .brand-logo{
       position:absolute;
       inset:0;
@@ -405,7 +405,7 @@
   display:none;
 }
 
-/* ✅ Separate fixed logout section below scrollable menu */
+/*  Separate fixed logout section below scrollable menu */
 .sidebar-logout-section{
   flex:0 0 auto;
   padding:12px var(--sidebar-pad) 14px;
@@ -557,12 +557,22 @@
        CONTENT
        ============================================================ */
     .content-area{
-      flex:1;
-      padding:1.35rem;
-      overflow:auto;
-      background:#eef6f2;
-      min-width:0;
-    }
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  min-height:0;
+  background:#eef6f2;
+}
+
+.content-main{
+  flex:1 1 auto;
+  min-height:0;
+  padding:1.35rem;
+  overflow:auto;
+  min-width:0;
+  background:#eef6f2;
+}
     .content-inner{
       max-width:1400px;
       margin:0 auto;
@@ -645,7 +655,7 @@
     }
 
     /* ============================================================
-       ✅ GLOBAL CONFIRM MODAL
+        GLOBAL CONFIRM MODAL
        ============================================================ */
     .pg-modal-overlay{
       position:fixed;
@@ -752,14 +762,14 @@
     }
 
     /* ============================================================
-       ✅ PROFILE EMBED VISIBILITY
+        PROFILE EMBED VISIBILITY
        ============================================================ */
     #profilePageContainer{ display:none; }
     #profilePageContainer.show{ display:block; }
     #dashboardContainer.hide{ display:none; }
 
     /* ============================================================
-       ✅ PROFILE PAGE STYLES (SCOPED) — COPIED DESIGN/COLORS ONLY
+        PROFILE PAGE STYLES (SCOPED) — COPIED DESIGN/COLORS ONLY
        ============================================================ */
     .pg-profile-page{ color:#0f172a; }
     .pg-profile-page *{ box-sizing:border-box; }
@@ -1002,7 +1012,7 @@
       transform: translateY(-1px);
     }
 
-    /* ✅ View-only: make it feel like read-only (no caret focus / no typing) */
+    /*  View-only: make it feel like read-only (no caret focus / no typing) */
     .pg-profile-page input[disabled]{
       opacity: 1;
       -webkit-text-fill-color: #0f172a;
@@ -1098,7 +1108,7 @@
        ============================================================ */
     @media (max-width: 1024px){
       .sidebar{ width:260px; }
-      .content-area{ padding:1.05rem; }
+      .content-main{ padding:1.05rem; }
     }
 
     @media (max-width: 860px){
@@ -1235,10 +1245,10 @@
         touch-action:none;
       }
 
-      .content-area{ padding:0.95rem; }
+      .content-main{ padding:0.95rem; }
     }
 
-    /* ✅ App/WebView: logout stays in separate fixed bottom section */
+    /*  App/WebView: logout stays in separate fixed bottom section */
 @media (max-width: 768px){
   body.app-webview .sidebar{
     height:100vh;
@@ -1276,7 +1286,7 @@
       .control-button{ padding:0.55rem 0.65rem; }
       .header-controls{ gap:0.45rem; }
 
-      /* ✅ Mobile language toggle stays visible + plain text */
+      /*  Mobile language toggle stays visible + plain text */
       #languageToggle span,
       #languageToggle #languageText{ display:inline !important; }
       #languageToggle.control-button{
@@ -1313,7 +1323,7 @@
       .brand-mark{ width:32px; height:32px; }
     }
 
-    /* ✅ APP/WEBVIEW TOUCH FIX: replace hover with touch-active feedback only */
+    /*  APP/WEBVIEW TOUCH FIX: replace hover with touch-active feedback only */
 @media (max-width: 768px){
   body.app-webview #sidebarNav .nav-item{
     -webkit-tap-highlight-color: transparent;
@@ -1345,7 +1355,7 @@
   }
 }
 
-/* ✅ Touch devices: NO hover, use active/pressed instead */
+/*  Touch devices: NO hover, use active/pressed instead */
 @media (hover: none) and (pointer: coarse){
   .nav-item:hover{
     background: transparent !important;
@@ -1383,7 +1393,7 @@
       <div class="header-left">
         <div id="brandHome" class="header-logo" title="Go to Dashboard (Home)">
           <div class="brand-mark" aria-hidden="true">
-            <!-- ✅ Replace this path later with your real logo file -->
+            <!--  Replace this path later with your real logo file -->
             <img
               class="brand-logo"
               src="{{ url_for('static', filename='images/loginlogo.JPEG') }}"
@@ -1408,12 +1418,12 @@
           </svg>
         </button>
 
-        <!-- ✅ Language toggle shows CURRENT language label EN/BN -->
+        <!--  Language toggle shows CURRENT language label EN/BN -->
         <button id="languageToggle" class="control-button" type="button" title="Toggle Language" aria-label="Toggle Language">
           <span id="languageText">EN</span>
         </button>
 
-        <!-- ✅ Profile toggle (EMBEDDED) -->
+        <!--  Profile toggle (EMBEDDED) -->
         <button id="profileToggle" class="control-button" type="button" title="View Profile">
           <svg id="profileIcon" class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1430,7 +1440,7 @@
           <span id="profileToggleText">Profile</span>
         </button>
 
-        <!-- ✅ Top right logout (RED) -->
+        <!--  Top right logout (RED) -->
         <button id="logoutTopBtn" class="control-button logout-top" type="button" title="Logout">
           <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1602,7 +1612,7 @@
             <span class="nav-text" id="navOutputRegister">Output on produce (Purchase/Sale/Stock) Register</span>
           </a>
 
-          <!-- ✅ Manual-required modules (added) -->
+          <!--  Manual-required modules (added) -->
           <div class="nav-section" id="navSectionBusiness">Business & Finance</div>
 
           <a class="nav-item" data-page="monthly-business" href="{{ url_for('business.monthly_business', pg_id=session.get('pg_id')) }}">
@@ -1623,7 +1633,7 @@
             <span class="nav-text" id="navStockRegister">Stock / Inventory Register</span>
           </a>
 
-          <!-- ✅ ₹ icon (replaces $) — 1 -->
+          <!--  ₹ icon (replaces $) — 1 -->
           <a class="nav-item" data-page="income-expenditure" href="{{ url_for('business.income_expenditure', pg_id=session.get('pg_id')) }}">
           <svg class="nav-icon"
      width="20"
@@ -1657,7 +1667,7 @@
             <span class="nav-text" id="navIncomeExpenditureYearly">Income & Expenditure (Yearly)</span>
           </a>
 
-          <!-- ✅ ₹ icon (replaces $) — 2 -->
+          <!--  ₹ icon (replaces $) — 2 -->
           <a class="nav-item" data-page="loan-accounts" href="{{ url_for('finance.loan_accounts', pg_id=session.get('pg_id')) }}">
           <svg class="nav-icon"
      width="20"
@@ -1760,7 +1770,7 @@
 </a>
 #}
 
-          <!-- ✅ ₹ icon (replaces $) — 3 -->
+          <!--  ₹ icon (replaces $) — 3 -->
           <a class="nav-item" data-page="grants-report" href="{{ url_for('reports.grants_report') }}">
            <svg class="nav-icon"
      width="20"
@@ -1798,233 +1808,41 @@
 </div>
 </aside>
 
-      <!-- MAIN CONTENT -->
-      <main class="content-area">
+      <!-- MAIN CONTENT + FOOTER RIGHT SIDE ONLY -->
+      <div class="content-area">
+        <main class="content-main">
 
-        <!-- Normal page content -->
-        <div id="dashboardContainer" class="content-inner">
-          {% block content %}{% endblock %}
-        </div>
+          <!-- Normal page content -->
+          <div id="dashboardContainer" class="content-inner">
+            {% block content %}{% endblock %}
+          </div>
 
-        <!-- ✅ Embedded Profile panel (VIEW-ONLY now) -->
-        <div id="profilePageContainer" class="pg-profile-page">
-          <!-- (UNCHANGED) ... your profile page HTML continues exactly as you provided ... -->
-          <!-- ✅ I kept your entire profile section exactly the same. -->
-          <div class="content-wrapper">
-            <!-- HERO -->
-            <div class="profile-hero">
-              <div class="hero-top" id="headerTop">
-                <div class="hero-title">
-                  <div class="hero-icon" aria-hidden="true">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                      <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                  </div>
-                  <div class="hero-text">
-                    <div class="hero-kicker">PROFILE</div>
-                    <div class="hero-title-line" id="headerTitle">Producer Group Profile</div>
-                  </div>
-                </div>
+          <!--  Embedded Profile panel (VIEW-ONLY now) -->
+          <div id="profilePageContainer" class="pg-profile-page">
+            ...
+          </div>
 
-                <div class="hero-actions">
-                  <button id="editSaveButton" class="pill-btn hidden" type="button" disabled aria-hidden="true" tabindex="-1">
-                    <svg id="editIcon" class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
+        </main>
 
-                    <svg id="saveIcon" class="icon-small hidden" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                      <polyline points="7 3 7 8 15 8"></polyline>
-                    </svg>
-
-                    <span id="editSaveText">Edit</span>
-                  </button>
-                </div>
-              </div>
-
-              <div class="hero-fields">
-                <div class="mini-card">
-                  <div class="mini-label" id="labelPgName">PG Name</div>
-                  <input type="text" id="inputPgName" class="hero-input" placeholder="Enter PG Name" value="{{ current_pg_name }}" disabled />
-                </div>
-
-                <div class="mini-card">
-                  <div class="mini-label" id="labelActivity">Activity</div>
-                  <input type="text" id="inputActivity" class="hero-input" placeholder="Enter Activity" value="" disabled />
-                </div>
-              </div>
+        <!-- FOOTER -->
+        <footer class="footer">
+          <div class="footer-content footer-2line">
+            <div class="footer-row">
+              <span>© 2026 PGMIS™ All rights reserved.</span>
             </div>
-
-            <!-- MAIN CARD -->
-            <div class="profile-card">
-              <!-- (UNCHANGED profile content continues...) -->
-              <!-- Address -->
-              <div class="section">
-                <div class="section-head">
-                  <svg class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                  </svg>
-                  <div class="section-title" id="labelAddress">Address</div>
-                </div>
-
-                <div class="grid">
-                  <div class="field">
-                    <div class="field-label" id="labelVillage">Village</div>
-                    <input type="text" id="inputVillage" class="field-input" placeholder="Enter Village" value="" disabled />
-                  </div>
-
-                  <div class="field">
-                    <div class="field-label" id="labelBlock">Block</div>
-                    <input type="text" id="inputBlock" class="field-input" placeholder="Enter Block" value="" disabled />
-                  </div>
-
-                  <div class="field">
-                    <div class="field-label" id="labelDistrict">District</div>
-                    <input type="text" id="inputDistrict" class="field-input" placeholder="Enter District" value="" disabled />
-                  </div>
-
-                  <div class="field">
-                    <div class="field-label" id="labelState">State</div>
-                    <input type="text" id="inputState" class="field-input" placeholder="Enter State" value="" disabled />
-                  </div>
-                </div>
-              </div>
-
-              <div class="divider"></div>
-
-              <!-- Formation Date -->
-              <div class="section">
-                <div class="section-head">
-                  <svg class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                  </svg>
-                  <div class="section-title" id="labelFormationDate">Date of Formation</div>
-                </div>
-
-                <div class="date-row">
-                  <div>
-                    <input type="text" id="inputFormationDateText" class="single-input"
-                           placeholder="DD/MM/YYYY (manual entry)" value="" inputmode="numeric" autocomplete="off" disabled />
-                    <div class="date-help">You can type date OR pick from calendar.</div>
-                    <div class="date-error" id="dateError">Invalid date. Use DD/MM/YYYY (e.g., 05/02/2026).</div>
-                  </div>
-
-                  <div>
-                    <input type="date" id="inputFormationDatePicker" class="single-input" value="" disabled />
-                  </div>
-                </div>
-              </div>
-
-              <div class="divider"></div>
-
-              <!-- Total Members -->
-              <div class="section">
-                <div class="section-head">
-                  <svg class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                  </svg>
-                  <div class="section-title" id="labelTotalMembers">Total Members in PG</div>
-                </div>
-
-                <input type="number" id="inputTotalMembers" class="single-input"
-                       placeholder="Enter Total Members" min="0" step="1" value="" disabled />
-              </div>
-
-              <div class="divider"></div>
-
-              <!-- CLF Name -->
-              <div class="section">
-                <div class="section-head">
-                  <svg class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                  </svg>
-                  <div class="section-title" id="labelClfName">Name of CLF under which PG belongs to</div>
-                </div>
-
-                <input type="text" id="inputClfName" class="single-input" placeholder="Enter CLF Name" value="{{ current_clf_name }}" disabled />
-              </div>
-
-              <div class="divider"></div>
-
-              <!-- Bank Details -->
-              <div class="section">
-                <div class="section-head">
-                  <svg class="icon-small" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                    <line x1="1" y1="10" x2="23" y2="10"></line>
-                  </svg>
-                  <div class="section-title" id="labelBankDetails">Bank Details</div>
-                </div>
-
-                <div class="bank-grid">
-                  <div class="field">
-                    <div class="field-label" id="labelAccountNo">Account Number</div>
-                    <input type="text" id="inputAccountNo" class="field-input" placeholder="Enter Account Number" value="" disabled />
-                  </div>
-
-                  <div class="field">
-                    <div class="field-label" id="labelIfsc">IFSC Code</div>
-                    <input type="text" id="inputIfsc" class="field-input" placeholder="Enter IFSC Code" value="" disabled />
-                  </div>
-
-                  <div class="field">
-                    <div class="field-label" id="labelBankName">Bank Name</div>
-                    <input type="text" id="inputBankName" class="field-input" placeholder="Enter Bank Name" value="" disabled />
-                  </div>
-
-                  <div class="field">
-                    <div class="field-label" id="labelBranch">Branch</div>
-                    <input type="text" id="inputBranch" class="field-input" placeholder="Enter Branch" value="" disabled />
-                  </div>
-                </div>
-              </div>
-
-              <div class="card-foot">
-                <div class="card-foot-line" aria-hidden="true"></div>
-              </div>
+            <div class="footer-row">
+              <span>Powered by —</span>
+              <a href="https://sayanant.com/" target="_blank" rel="noopener noreferrer" class="footer-link">
+                Sayanant Group, Guwahati Assam
+              </a>
             </div>
           </div>
-        </div>
-
-      </main>
-    </div>
-
-    <!-- FOOTER -->
-    <footer class="footer">
-      <div class="footer-content footer-2line">
-        <div class="footer-row">
-          <span>© 2026 PGMIS™ All rights reserved.</span>
-        </div>
-        <div class="footer-row">
-          <span>Powered by —</span>
-          <a href="https://sayanant.com/" target="_blank" rel="noopener noreferrer" class="footer-link">
-            Sayanant Group, Guwahati Assam
-          </a>
-        </div>
+        </footer>
       </div>
-    </footer>
+    </div>
   </div>
 
-  <!-- ✅ GLOBAL CONFIRM MODAL -->
+  <!--  GLOBAL CONFIRM MODAL -->
   <div id="confirmOverlay" class="pg-modal-overlay" aria-hidden="true">
     <div class="pg-modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
       <div class="pg-modal-head">
@@ -2051,7 +1869,7 @@
   </div>
 
   <script>
-    // ✅ App/WebView detection (only used to fix the logout sticky overlap in app view)
+    //  App/WebView detection (only used to fix the logout sticky overlap in app view)
     (function(){
       try{
         const ua = (navigator.userAgent || "").toLowerCase();
@@ -2066,7 +1884,7 @@
 
   <script>
    // ------------------------------------------------------------
-// ✅ MENU + SIDEBAR LOGIC — fixed like reference base
+//  MENU + SIDEBAR LOGIC — fixed like reference base
 // ------------------------------------------------------------
 const sidebar = document.getElementById('sidebar');
 const menuButton = document.getElementById('menuButton');
@@ -2120,7 +1938,7 @@ document.addEventListener('keydown', function(e){
 });
 
 // ------------------------------------------------------------
-// ✅ SIDEBAR COLLAPSE — desktop only + persistent
+//  SIDEBAR COLLAPSE — desktop only + persistent
 // ------------------------------------------------------------
 function applySidebarCollapsedState(){
   if(!sidebar) return;
@@ -2148,7 +1966,7 @@ applySidebarCollapsedState();
 sidebarToggle?.addEventListener('click', toggleSidebarCollapsed);
 
 // ------------------------------------------------------------
-// ✅ ACTIVE SIDEBAR ITEM — persists after refresh/navigation
+//  ACTIVE SIDEBAR ITEM — persists after refresh/navigation
 // ------------------------------------------------------------
 function clearActiveNav(){
   document.querySelectorAll('#sidebarNav .nav-item').forEach(function(a){
@@ -2231,7 +2049,7 @@ function initActiveNav(){
 }
 
 // ------------------------------------------------------------
-// ✅ SIDEBAR SCROLL POSITION — only menu scroll remembers
+//  SIDEBAR SCROLL POSITION — only menu scroll remembers
 // ------------------------------------------------------------
 function saveSidebarScroll(){
   if(!sidebarNav) return;
@@ -2281,7 +2099,7 @@ initActiveNav();
 setTimeout(restoreSidebarScroll, 0);
 
 // ------------------------------------------------------------
-// ✅ BRAND HOME
+//  BRAND HOME
 // ------------------------------------------------------------
 document.getElementById('brandHome')?.addEventListener('click', function(){
   try{
@@ -2294,7 +2112,7 @@ document.getElementById('brandHome')?.addEventListener('click', function(){
 });
 
 // ------------------------------------------------------------
-// ✅ LOGOUT — clear saved UI state before logout
+//  LOGOUT — clear saved UI state before logout
 // ------------------------------------------------------------
 function clearBaseMenuSessionState(){
   try{
@@ -2352,7 +2170,7 @@ document.getElementById('menuLogout')?.addEventListener('click', function(e){
 });
 
 // ------------------------------------------------------------
-// ✅ Touch feedback for mobile/app menu
+//  Touch feedback for mobile/app menu
 // ------------------------------------------------------------
 document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
   item.addEventListener('touchstart', function(){
@@ -2367,7 +2185,7 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
 });
 
     // ------------------------------------------------------------
-    // LANGUAGE (single source) + ✅ RESTORED CONNECTIVITY FOR OTHER PAGES
+    // LANGUAGE (single source) +  RESTORED CONNECTIVITY FOR OTHER PAGES
     // ------------------------------------------------------------
     const LANG_KEY = 'PGMIS_LANG_SESSION';
     let currentLanguage = sessionStorage.getItem(LANG_KEY) || 'en';
@@ -2739,7 +2557,7 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
       safeSetText('navLedgerBook', t.navLedgerBook);
       safeSetText('navOutputRegister', t.navOutputRegister);
 
-      // ✅ Added missing new menu item labels
+      //  Added missing new menu item labels
       safeSetText('navMonthlyBusiness', t.navMonthlyBusiness);
       safeSetText('navStockRegister', t.navStockRegister);
       safeSetText('navIncomeExpenditureMonthly', t.navIncomeExpenditureMonthly);
@@ -2847,7 +2665,7 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
 
 
 <script>
-  // ✅ Touch feedback for sidebar items ONLY in app/webview (fix hover malfunction)
+  //  Touch feedback for sidebar items ONLY in app/webview (fix hover malfunction)
   (function(){
     if(!document.body.classList.contains("app-webview")) return;
 

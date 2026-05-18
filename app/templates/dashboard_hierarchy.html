@@ -1,16 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-/* ============================================================
-   ROLE DASHBOARD — LEDGER BOOK LOOK (SCOPED)
-   ✅ ONLY UI/Design updated
-   ✅ Re-ordered sections + proper gaps
-   ✅ Dashboard header + Overview in different containers
-   ✅ Overview KPI cards copied to match your 2nd image style (icon + card grid)
-   ✅ SHG section compact (no empty chart space)
-   ✅ PG quick actions: search + pagination + page-size (10/25/50/100), default 25
-   Scope: .rd-wrap
-============================================================ */
 
 .rd-wrap{
   width: 100%;
@@ -39,7 +29,7 @@
   margin: 0 auto;
   display:flex;
   flex-direction:column;
-  gap: 14px; /* ✅ proper gaps between containers */
+  gap: 14px; 
 }
 
 /* Sheet */
@@ -54,10 +44,9 @@
 
 /* Header (separate container) */
 .rd-head{
-  padding: 18px 18px 16px;
-  background:
-   background: linear-gradient(135deg, #f8fafc, #ffffff);
-  border-bottom: 0;
+  padding:18px 18px 16px;
+  background:linear-gradient(135deg, #f8fafc, #ffffff);
+  border-bottom:0;
 }
 .rd-title{
   margin: 0;
@@ -115,10 +104,6 @@
 }
 .rd-muted{ color: var(--muted) !important; }
 
-/* ============================================================
-   ✅ OVERVIEW KPI UI (match your 2nd image)
-   - icon tile + soft card + grid row (desktop)
-============================================================ */
 .rd-ov-grid{
   display:grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -487,7 +472,7 @@
 }
 
 /* ============================================================
-   ✅ NEW HIERARCHY DASHBOARD KPI GRAPHS
+    NEW HIERARCHY DASHBOARD KPI GRAPHS
    - Uses existing KPI values
    - No backend/database logic changed
 ============================================================ */
@@ -525,15 +510,9 @@
   pointer-events:none;
 }
 
+/*  Hide graph title/name area because graph names are not needed for users */
 .rd-graph-head{
-  position:relative;
-  z-index:1;
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:10px;
-  padding:14px 14px 10px;
-  border-bottom:1px solid rgba(15,23,42,.08);
+  display:none !important;
 }
 
 .rd-graph-title{
@@ -632,15 +611,14 @@
 <div class="rd-wrap">
   <div class="rd-stack">
 
-    <!-- ✅ CONTAINER 1: DASHBOARD HEADER (separate) -->
+    <!--  CONTAINER 1: DASHBOARD HEADER (separate) -->
     <div class="rd-sheet">
       <div class="rd-head">
         <h3 class="rd-title">{{ role }} Dashboard</h3>
-        <p class="rd-sub">Quick snapshot + actions for your jurisdiction.</p>
       </div>
     </div>
 
-    <!-- ✅ CONTAINER 2: OVERVIEW + MODULES (separate) -->
+    <!--  CONTAINER 2: OVERVIEW + MODULES (separate) -->
     <div class="rd-sheet">
 
       <!-- OVERVIEW -->
@@ -653,7 +631,7 @@
           
         </div>
 
-        <!-- ✅ Copy your 2nd image style (icon cards, horizontal grid) -->
+        
         <div class="rd-ov-grid">
 
           <!-- Card 1 -->
@@ -812,7 +790,7 @@
       </div>
 
 
-        <!-- ✅ PG QUICK ACTIONS (NOW ABOVE SHG SECTION) -->
+        <!--  PG QUICK ACTIONS (NOW ABOVE SHG SECTION) -->
       <div class="rd-section">
         <div class="card rd-table-card">
           <div class="card-body">
@@ -823,7 +801,7 @@
                   <span class="rd-dot"></span>
                   <h6 class="rd-h6">PGs (quick actions)</h6>
                 </div>
-                <div class="rd-mini">Open modules directly for a PG</div>
+              
               </div>
 
               <div class="rd-tools">
@@ -881,36 +859,29 @@
               </div>
             </div>
 
-            <!-- ✅ Pagination -->
+            <!--  Pagination -->
             <div class="rd-pager" id="rdPgPager" style="display:none;">
               <div class="rd-pager-left">
-                <div class="rd-page-info" id="rdPgPageInfo">Page 1 of 1</div>
-                <div class="rd-mini" id="rdPgRangeInfo" style="margin:0;">Showing 0–0</div>
+                <div class="rd-page-info" id="rdPgPageInfo">Page 1 of 1</div>   
               </div>
               <div class="rd-pager-right">
                 <button class="btn rd-btn rd-btn-ghost" id="rdPgPrev" type="button">Prev</button>
                 <button class="btn rd-btn rd-btn-ghost" id="rdPgNext" type="button">Next</button>
               </div>
             </div>
-
-            <div class="rd-mini" style="margin:0;">
-              Tip: “Open” sets active PG and takes you to PG view; “Funds/Loans” jump into Finance modules.
-            </div>
-
           </div>
         </div>
       </div>
 
-      <!-- ✅ SHG SECTION (COMPACT, NO EMPTY SPACE) -->
+      <!--  SHG SECTION (COMPACT, NO EMPTY SPACE) -->
       <div class="rd-section">
         <div class="rd-compact">
           <div class="rd-compact-row">
             <div>
               <div class="rd-compact-title">
                 <span class="rd-dot"></span>
-                <h6>SHG distribution (Top 12)</h6>
+                <h6>SHG Distribution</h6>
               </div>
-              <p>Browse the SHG Master to verify mapped SHGs and view distribution details.</p>
             </div>
 
             <a href="{{ url_for('master_data.shg_browser') }}" class="btn rd-btn rd-btn-primary">
@@ -920,14 +891,13 @@
         </div>
       </div>
 
-            <!-- ✅ HIERARCHY KPI GRAPHS -->
+            <!--  HIERARCHY KPI GRAPHS -->
       <div class="rd-section">
         <div class="rd-section-title">
           <div class="rd-left-title">
             <span class="rd-dot"></span>
             <h6 class="rd-h6">KPI Graphs</h6>
           </div>
-          <div class="rd-mini">Working visual graphs from current login scope</div>
         </div>
 
         <div class="rd-graph-grid">
@@ -1032,407 +1002,581 @@
 
 <script>
 
-    // =========================
-  // Hierarchy Dashboard KPI Graphs
-  // =========================
-  (function(){
-    const chartUrl = "{{ url_for('static', filename='vendor/chart.min.js') }}";
-    const createdCharts = [];
+   // =========================
+// Hierarchy Dashboard KPI Graphs
+//  Fully functional with local Chart.js + CDN fallback
+//  No graph title labels shown inside chart cards
+//  Safe no-data handling
+// =========================
+(function(){
+  const chartUrls = [
+    "{{ url_for('static', filename='vendor/chart.min.js') }}",
+    "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+  ];
 
-    function loadChartJs(){
-      return new Promise((resolve) => {
-        if (window.Chart) {
-          resolve(true);
-          return;
-        }
+  const createdCharts = [];
 
-        const old = document.querySelector('script[data-rd-chartjs="1"]');
-        if (old) {
-          old.addEventListener('load', () => resolve(!!window.Chart));
-          old.addEventListener('error', () => resolve(false));
+  function loadChartJs(){
+    return new Promise((resolve) => {
+      if (window.Chart) {
+        resolve(true);
+        return;
+      }
+
+      const old = document.querySelector('script[data-rd-chartjs="1"]');
+      if (old) {
+        old.addEventListener('load', () => resolve(!!window.Chart));
+        old.addEventListener('error', () => resolve(false));
+        return;
+      }
+
+      let index = 0;
+
+      function tryLoad(){
+        if(index >= chartUrls.length){
+          resolve(false);
           return;
         }
 
         const s = document.createElement('script');
-        s.src = chartUrl;
+        s.src = chartUrls[index];
         s.async = true;
         s.dataset.rdChartjs = "1";
-        s.onload = () => resolve(!!window.Chart);
-        s.onerror = () => resolve(false);
+
+        s.onload = function(){
+          if(window.Chart){
+            resolve(true);
+          }else{
+            index += 1;
+            s.remove();
+            tryLoad();
+          }
+        };
+
+        s.onerror = function(){
+          index += 1;
+          s.remove();
+          tryLoad();
+        };
+
         document.head.appendChild(s);
-      });
-    }
-
-    function n(value){
-      const x = Number(value || 0);
-      return Number.isFinite(x) ? x : 0;
-    }
-
-    function palette(){
-      return [
-        'rgba(11,77,58,.88)',
-        'rgba(16,185,129,.78)',
-        'rgba(21,128,61,.78)',
-        'rgba(59,130,246,.76)',
-        'rgba(245,158,11,.78)',
-        'rgba(124,58,237,.72)',
-        'rgba(220,38,38,.72)',
-        'rgba(8,145,178,.76)',
-        'rgba(132,204,22,.72)'
-      ];
-    }
-
-    function borderPalette(){
-      return [
-        'rgba(11,77,58,1)',
-        'rgba(16,185,129,1)',
-        'rgba(21,128,61,1)',
-        'rgba(59,130,246,1)',
-        'rgba(245,158,11,1)',
-        'rgba(124,58,237,1)',
-        'rgba(220,38,38,1)',
-        'rgba(8,145,178,1)',
-        'rgba(132,204,22,1)'
-      ];
-    }
-
-    function destroyOldCharts(){
-      while(createdCharts.length){
-        const ch = createdCharts.pop();
-        try { ch.destroy(); } catch(e){}
       }
+
+      tryLoad();
+    });
+  }
+
+  function n(value){
+    const x = Number(value || 0);
+    return Number.isFinite(x) ? x : 0;
+  }
+
+  function values(list){
+    return (list || []).map(v => n(v));
+  }
+
+  function hasAnyValue(list){
+    return values(list).some(v => v > 0);
+  }
+
+  function positiveChartData(labels, dataValues, fallbackLabel){
+  const outLabels = [];
+  const outValues = [];
+
+  (labels || []).forEach(function(label, index){
+    const val = n((dataValues || [])[index]);
+
+    //  Do not display 0-value graph items
+    if(val > 0){
+      outLabels.push(String(label || fallbackLabel || 'Value'));
+      outValues.push(val);
     }
+  });
 
-    function values(list){
-      return (list || []).map(v => n(v));
-    }
+  if(!outLabels.length){
+    return {
+      labels:[fallbackLabel || 'No Data'],
+      values:[],
+      hasData:false
+    };
+  }
 
-    function make3DBar(id, labels, dataValues, label, horizontal=false){
-      const el = document.getElementById(id);
-      if(!el || !window.Chart) return;
+  return {
+    labels:outLabels,
+    values:outValues,
+    hasData:true
+  };
+}
 
-      const ctx = el.getContext('2d');
-      const gradient = ctx.createLinearGradient(0, 0, 0, 330);
-      gradient.addColorStop(0, 'rgba(16,185,129,.95)');
-      gradient.addColorStop(.45, 'rgba(11,77,58,.80)');
-      gradient.addColorStop(1, 'rgba(11,77,58,.38)');
+function needsLogScale(dataValues){
+  const vals = values(dataValues).filter(v => v > 0);
+  if(vals.length < 2) return false;
 
-      const yScale = horizontal ? 'x' : 'y';
-      const xScale = horizontal ? 'y' : 'x';
+  const min = Math.min.apply(null, vals);
+  const max = Math.max.apply(null, vals);
 
-      const chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: label || 'Value',
-            data: values(dataValues),
-            backgroundColor: gradient,
-            borderColor: 'rgba(11,77,58,.95)',
-            borderWidth: 2,
-            borderRadius: 14,
-            borderSkipped: false,
-            maxBarThickness: horizontal ? 30 : 46
-          }]
-        },
-        options: {
-          responsive:true,
-          maintainAspectRatio:false,
-          indexAxis: horizontal ? 'y' : 'x',
-          animation:{
-            duration:650,
-            easing:'easeOutQuart'
-          },
-          plugins:{
-            legend:{ display:false },
-            tooltip:{
-              backgroundColor:'#ffffff',
-              titleColor:'#0f172a',
-              bodyColor:'#0f172a',
-              borderColor:'rgba(11,77,58,.45)',
-              borderWidth:2,
-              padding:12,
-              cornerRadius:12
-            }
-          },
-          scales:{
-            [xScale]:{
-              ticks:{
-                color:'rgba(15,23,42,.78)',
-                font:{ size:11, weight:700 },
-                maxRotation: horizontal ? 0 : 35,
-                autoSkip:false
-              },
-              grid:{ display:false }
-            },
-            [yScale]:{
-              beginAtZero:true,
-              ticks:{
-                precision:0,
-                color:'rgba(15,23,42,.70)',
-                font:{ size:11, weight:700 }
-              },
-              grid:{ color:'rgba(15,23,42,.08)' }
-            }
-          }
-        }
-      });
+  //  If one value is much larger than others, use log scale
+  return min > 0 && (max / min) >= 50;
+}
 
-      createdCharts.push(chart);
-    }
+function showNoPositiveData(canvasId){
+  const el = document.getElementById(canvasId);
+  if(!el) return;
 
-    function makeDoughnut(id, labels, dataValues, label){
-      const el = document.getElementById(id);
-      if(!el || !window.Chart) return;
+  const box = el.closest('.rd-chart-box');
+  if(!box) return;
 
-      const chart = new Chart(el.getContext('2d'), {
-        type:'doughnut',
-        data:{
-          labels:labels,
-          datasets:[{
-            label:label || 'Value',
-            data:values(dataValues),
-            backgroundColor:palette(),
-            borderColor:'#ffffff',
-            borderWidth:3,
-            hoverOffset:10
-          }]
-        },
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          cutout:'58%',
-          plugins:{
-            legend:{
-              position:'bottom',
-              labels:{
-                color:'rgba(15,23,42,.78)',
-                font:{ size:11, weight:700 },
-                boxWidth:12,
-                padding:12
-              }
-            },
-            tooltip:{
-              backgroundColor:'#ffffff',
-              titleColor:'#0f172a',
-              bodyColor:'#0f172a',
-              borderColor:'rgba(11,77,58,.45)',
-              borderWidth:2,
-              padding:12,
-              cornerRadius:12
-            }
-          }
-        }
-      });
+  box.innerHTML = `
+    <div style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;color:rgba(15,23,42,.62);padding:16px;">
+      No positive data available
+    </div>
+  `;
+}
 
-      createdCharts.push(chart);
-    }
+  function safeChartData(labels, dataValues, fallbackLabel){
+    const cleanLabels = (labels || []).map(v => String(v || '').trim()).filter(Boolean);
+    const cleanValues = values(dataValues);
 
-    function makeRadar(id, labels, dataValues, label){
-      const el = document.getElementById(id);
-      if(!el || !window.Chart) return;
-
-      const chart = new Chart(el.getContext('2d'), {
-        type:'radar',
-        data:{
-          labels:labels,
-          datasets:[{
-            label:label || 'Value',
-            data:values(dataValues),
-            backgroundColor:'rgba(16,185,129,.16)',
-            borderColor:'rgba(11,77,58,.95)',
-            borderWidth:3,
-            pointBackgroundColor:'rgba(16,185,129,.95)',
-            pointBorderColor:'#ffffff',
-            pointBorderWidth:2,
-            pointRadius:5
-          }]
-        },
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          plugins:{
-            legend:{ display:false },
-            tooltip:{
-              backgroundColor:'#ffffff',
-              titleColor:'#0f172a',
-              bodyColor:'#0f172a',
-              borderColor:'rgba(11,77,58,.45)',
-              borderWidth:2,
-              padding:12,
-              cornerRadius:12
-            }
-          },
-          scales:{
-            r:{
-              beginAtZero:true,
-              ticks:{
-                precision:0,
-                backdropColor:'rgba(255,255,255,.8)',
-                color:'rgba(15,23,42,.65)',
-                font:{ size:10, weight:700 }
-              },
-              pointLabels:{
-                color:'rgba(15,23,42,.78)',
-                font:{ size:11, weight:800 }
-              },
-              grid:{ color:'rgba(15,23,42,.10)' },
-              angleLines:{ color:'rgba(15,23,42,.10)' }
-            }
-          }
-        }
-      });
-
-      createdCharts.push(chart);
-    }
-
-    function makePolar(id, labels, dataValues, label){
-      const el = document.getElementById(id);
-      if(!el || !window.Chart) return;
-
-      const chart = new Chart(el.getContext('2d'), {
-        type:'polarArea',
-        data:{
-          labels:labels,
-          datasets:[{
-            label:label || 'Value',
-            data:values(dataValues),
-            backgroundColor:palette(),
-            borderColor:borderPalette(),
-            borderWidth:2
-          }]
-        },
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          plugins:{
-            legend:{
-              position:'bottom',
-              labels:{
-                color:'rgba(15,23,42,.78)',
-                font:{ size:11, weight:700 },
-                boxWidth:12,
-                padding:12
-              }
-            },
-            tooltip:{
-              backgroundColor:'#ffffff',
-              titleColor:'#0f172a',
-              bodyColor:'#0f172a',
-              borderColor:'rgba(11,77,58,.45)',
-              borderWidth:2,
-              padding:12,
-              cornerRadius:12
-            }
-          },
-          scales:{
-            r:{
-              beginAtZero:true,
-              ticks:{
-                precision:0,
-                backdropColor:'rgba(255,255,255,.8)',
-                color:'rgba(15,23,42,.65)'
-              },
-              grid:{ color:'rgba(15,23,42,.10)' }
-            }
-          }
-        }
-      });
-
-      createdCharts.push(chart);
-    }
-
-    function buildSectorCounts(sectorList){
-      const counts = {};
-      (sectorList || []).forEach(name => {
-        const key = String(name || 'Unknown').trim() || 'Unknown';
-        counts[key] = (counts[key] || 0) + 1;
-      });
-
+    if(!cleanLabels.length || !cleanValues.length){
       return {
-        labels: Object.keys(counts),
-        values: Object.values(counts)
+        labels:[fallbackLabel || 'No Data'],
+        values:[0]
       };
     }
 
-    async function initHierarchyCharts(){
-      const ok = await loadChartJs();
-      if(!ok || !window.Chart) return;
+    return {
+      labels:cleanLabels,
+      values:cleanValues
+    };
+  }
 
-      destroyOldCharts();
+  function palette(){
+    return [
+      'rgba(11,77,58,.88)',
+      'rgba(16,185,129,.78)',
+      'rgba(21,128,61,.78)',
+      'rgba(59,130,246,.76)',
+      'rgba(245,158,11,.78)',
+      'rgba(124,58,237,.72)',
+      'rgba(220,38,38,.72)',
+      'rgba(8,145,178,.76)',
+      'rgba(132,204,22,.72)'
+    ];
+  }
 
-      const pgCount = n({{ pg_count|default(0)|tojson }});
-      const memberCount = n({{ member_count|default(0)|tojson }});
-      const cadreCount = n({{ cadre_count|default(0)|tojson }});
-      const turnoverTotal = n({{ turnover_total|default(0)|tojson }});
-      const profitTotal = n({{ profit_total|default(0)|tojson }});
-      const lossTotal = n({{ loss_total|default(0)|tojson }});
-      const grantsTotal = n({{ grants_total|default(0)|tojson }});
-      const pgsWithGrants = n({{ pgs_with_grants|default(0)|tojson }});
-      // const lakhpatiTotal = n({{ lakhpati_total|default(0)|tojson }});
-      const shgTotal = n({{ shg_total|default(0)|tojson }});
-      const shgActive = n({{ shg_active|default(0)|tojson }});
+  function borderPalette(){
+    return [
+      'rgba(11,77,58,1)',
+      'rgba(16,185,129,1)',
+      'rgba(21,128,61,1)',
+      'rgba(59,130,246,1)',
+      'rgba(245,158,11,1)',
+      'rgba(124,58,237,1)',
+      'rgba(220,38,38,1)',
+      'rgba(8,145,178,1)',
+      'rgba(132,204,22,1)'
+    ];
+  }
 
-      const sectorRaw = [
-        {% for pg in pgs %}
-          {{ (pg.sector or 'Unknown')|tojson }}{% if not loop.last %},{% endif %}
-        {% endfor %}
-      ];
+  function destroyOldCharts(){
+    while(createdCharts.length){
+      const ch = createdCharts.pop();
+      try { ch.destroy(); } catch(e){}
+    }
+  }
 
-      const sectorData = buildSectorCounts(sectorRaw);
+  function showChartError(message){
+    document.querySelectorAll('.rd-chart-box').forEach(function(box){
+      box.innerHTML = `
+        <div style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;color:#b91c1c;padding:16px;">
+          ${message || 'Chart failed to load'}
+        </div>
+      `;
+    });
+  }
 
-  make3DBar(
-  'rdHierarchyAllKpiChart',
-  ['PGs', 'Members', 'Cadres', 'Turnover', 'Profit', 'Loss', 'Grants', 'SHG Total', 'SHG Active'],
-  [pgCount, memberCount, cadreCount, turnoverTotal, profitTotal, lossTotal, grantsTotal, shgTotal, shgActive],
-  'KPI Value',
-  false
-);
+function make3DBar(id, labels, dataValues, horizontal=false){
+  const el = document.getElementById(id);
+  if(!el || !window.Chart) return;
 
-     makeRadar(
-  'rdHierarchyPeopleChart',
-  ['Cadres', 'PGs', 'Members'],
-  [cadreCount, pgCount, memberCount],
-  'People Coverage'
-);
+  const safe = positiveChartData(labels, dataValues, 'No Data');
 
-      make3DBar(
-        'rdHierarchyFinanceChart',
-        ['Turnover', 'Profit', 'Loss', 'Grants'],
-        [turnoverTotal, profitTotal, lossTotal, grantsTotal],
-        'Financial Value',
-        false
-      );
+  //  If all values are 0, do not draw a useless 0 graph
+  if(!safe.hasData){
+    showNoPositiveData(id);
+    return;
+  }
 
-      makeDoughnut(
-        'rdHierarchyGrantChart',
-        ['PGs With Grants', 'PGs Without Grants'],
-        [pgsWithGrants, Math.max(pgCount - pgsWithGrants, 0)],
-        'Grant Coverage'
-      );
+  const ctx = el.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 330);
+  gradient.addColorStop(0, 'rgba(16,185,129,.95)');
+  gradient.addColorStop(.45, 'rgba(11,77,58,.80)');
+  gradient.addColorStop(1, 'rgba(11,77,58,.38)');
 
-      makePolar(
-        'rdHierarchyShgChart',
-        ['SHG Total', 'SHG Active'],
-        [shgTotal, shgActive],
-        'SHG Status'
-      );
+  const valueScale = horizontal ? 'x' : 'y';
+  const labelScale = horizontal ? 'y' : 'x';
+  const useLogScale = needsLogScale(safe.values);
 
-      make3DBar(
-        'rdHierarchySectorChart',
-        sectorData.labels,
-        sectorData.values,
-        'PG Count',
-        true
-      );
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: safe.labels,
+      datasets: [{
+        data: safe.values,
+        backgroundColor: gradient,
+        borderColor: 'rgba(11,77,58,.95)',
+        borderWidth: 2,
+        borderRadius: 14,
+        borderSkipped: false,
+        maxBarThickness: horizontal ? 34 : 50,
+        minBarLength: 8
+      }]
+    },
+    options: {
+      responsive:true,
+      maintainAspectRatio:false,
+      indexAxis: horizontal ? 'y' : 'x',
+      animation:{
+        duration:650,
+        easing:'easeOutQuart'
+      },
+      plugins:{
+        legend:{ display:false },
+        title:{ display:false },
+        tooltip:{
+          backgroundColor:'#ffffff',
+          titleColor:'#0f172a',
+          bodyColor:'#0f172a',
+          borderColor:'rgba(11,77,58,.45)',
+          borderWidth:2,
+          padding:12,
+          cornerRadius:12,
+          callbacks:{
+            label:function(context){
+              const raw = context.raw || 0;
+              return Number(raw).toLocaleString('en-IN');
+            }
+          }
+        }
+      },
+      scales:{
+        [labelScale]:{
+          ticks:{
+            color:'rgba(15,23,42,.78)',
+            font:{ size:11, weight:700 },
+            maxRotation: horizontal ? 0 : 35,
+            autoSkip:false
+          },
+          grid:{ display:false }
+        },
+        [valueScale]:{
+          type: useLogScale ? 'logarithmic' : 'linear',
+          beginAtZero: !useLogScale,
+          min: useLogScale ? 1 : 0,
+          ticks:{
+            precision:0,
+            color:'rgba(15,23,42,.70)',
+            font:{ size:11, weight:700 },
+            callback:function(value){
+              return Number(value).toLocaleString('en-IN');
+            }
+          },
+          grid:{ color:'rgba(15,23,42,.08)' }
+        }
+      }
+    }
+  });
+
+  createdCharts.push(chart);
+}
+
+  function makeDoughnut(id, labels, dataValues){
+    const el = document.getElementById(id);
+    if(!el || !window.Chart) return;
+
+   let safe = positiveChartData(labels, dataValues, 'No Data');
+
+if(!safe.hasData){
+  showNoPositiveData(id);
+  return;
+}
+
+    const chart = new Chart(el.getContext('2d'), {
+      type:'doughnut',
+      data:{
+        labels:safe.labels,
+        datasets:[{
+          data:safe.values,
+          backgroundColor:palette(),
+          borderColor:'#ffffff',
+          borderWidth:3,
+          hoverOffset:10
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:'58%',
+        plugins:{
+          legend:{
+            position:'bottom',
+            labels:{
+              color:'rgba(15,23,42,.78)',
+              font:{ size:11, weight:700 },
+              boxWidth:12,
+              padding:12
+            }
+          },
+          title:{ display:false },
+          tooltip:{
+            backgroundColor:'#ffffff',
+            titleColor:'#0f172a',
+            bodyColor:'#0f172a',
+            borderColor:'rgba(11,77,58,.45)',
+            borderWidth:2,
+            padding:12,
+            cornerRadius:12
+          }
+        }
+      }
+    });
+
+    createdCharts.push(chart);
+  }
+
+  function makeRadar(id, labels, dataValues){
+    const el = document.getElementById(id);
+    if(!el || !window.Chart) return;
+
+    const safe = positiveChartData(labels, dataValues, 'No Data');
+
+if(!safe.hasData){
+  showNoPositiveData(id);
+  return;
+}
+
+    const chart = new Chart(el.getContext('2d'), {
+      type:'radar',
+      data:{
+        labels:safe.labels,
+        datasets:[{
+          data:safe.values,
+          backgroundColor:'rgba(16,185,129,.16)',
+          borderColor:'rgba(11,77,58,.95)',
+          borderWidth:3,
+          pointBackgroundColor:'rgba(16,185,129,.95)',
+          pointBorderColor:'#ffffff',
+          pointBorderWidth:2,
+          pointRadius:5
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{ display:false },
+          title:{ display:false },
+          tooltip:{
+            backgroundColor:'#ffffff',
+            titleColor:'#0f172a',
+            bodyColor:'#0f172a',
+            borderColor:'rgba(11,77,58,.45)',
+            borderWidth:2,
+            padding:12,
+            cornerRadius:12,
+            callbacks:{
+              label:function(context){
+                return String(context.raw || 0);
+              }
+            }
+          }
+        },
+        scales:{
+          r:{
+            beginAtZero:true,
+            suggestedMax: hasAnyValue(safe.values) ? undefined : 1,
+            ticks:{
+              precision:0,
+              backdropColor:'rgba(255,255,255,.8)',
+              color:'rgba(15,23,42,.65)',
+              font:{ size:10, weight:700 }
+            },
+            pointLabels:{
+              color:'rgba(15,23,42,.78)',
+              font:{ size:11, weight:800 }
+            },
+            grid:{ color:'rgba(15,23,42,.10)' },
+            angleLines:{ color:'rgba(15,23,42,.10)' }
+          }
+        }
+      }
+    });
+
+    createdCharts.push(chart);
+  }
+
+  function makePolar(id, labels, dataValues){
+    const el = document.getElementById(id);
+    if(!el || !window.Chart) return;
+
+   let safe = positiveChartData(labels, dataValues, 'No Data');
+
+if(!safe.hasData){
+  showNoPositiveData(id);
+  return;
+}
+
+    const chart = new Chart(el.getContext('2d'), {
+      type:'polarArea',
+      data:{
+        labels:safe.labels,
+        datasets:[{
+          data:safe.values,
+          backgroundColor:palette(),
+          borderColor:borderPalette(),
+          borderWidth:2
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{
+            position:'bottom',
+            labels:{
+              color:'rgba(15,23,42,.78)',
+              font:{ size:11, weight:700 },
+              boxWidth:12,
+              padding:12
+            }
+          },
+          title:{ display:false },
+          tooltip:{
+            backgroundColor:'#ffffff',
+            titleColor:'#0f172a',
+            bodyColor:'#0f172a',
+            borderColor:'rgba(11,77,58,.45)',
+            borderWidth:2,
+            padding:12,
+            cornerRadius:12
+          }
+        },
+        scales:{
+          r:{
+            beginAtZero:true,
+            ticks:{
+              precision:0,
+              backdropColor:'rgba(255,255,255,.8)',
+              color:'rgba(15,23,42,.65)'
+            },
+            grid:{ color:'rgba(15,23,42,.10)' }
+          }
+        }
+      }
+    });
+
+    createdCharts.push(chart);
+  }
+
+  function buildSectorCounts(sectorList){
+    const counts = {};
+
+    (sectorList || []).forEach(name => {
+      const key = String(name || 'Unknown').trim() || 'Unknown';
+      counts[key] = (counts[key] || 0) + 1;
+    });
+
+    const labels = Object.keys(counts);
+    const vals = Object.values(counts);
+
+    if(!labels.length){
+      return {
+        labels:['No Sector Data'],
+        values:[0]
+      };
     }
 
-    if(document.readyState === 'loading'){
-      document.addEventListener('DOMContentLoaded', initHierarchyCharts);
-    }else{
-      initHierarchyCharts();
+    return {
+      labels:labels,
+      values:vals
+    };
+  }
+
+  async function initHierarchyCharts(){
+    const ok = await loadChartJs();
+
+    if(!ok || !window.Chart){
+      showChartError('Chart library failed to load');
+      return;
     }
-  })();
+
+    destroyOldCharts();
+
+    const pgCount = n({{ pg_count|default(0)|tojson }});
+    const memberCount = n({{ member_count|default(0)|tojson }});
+    const cadreCount = n({{ cadre_count|default(0)|tojson }});
+    const turnoverTotal = n({{ turnover_total|default(0)|tojson }});
+    const profitTotal = n({{ profit_total|default(0)|tojson }});
+    const lossTotal = n({{ loss_total|default(0)|tojson }});
+    const grantsTotal = n({{ grants_total|default(0)|tojson }});
+    const pgsWithGrants = n({{ pgs_with_grants|default(0)|tojson }});
+    const shgTotal = n({{ shg_total|default(0)|tojson }});
+    const shgActive = n({{ shg_active|default(0)|tojson }});
+
+    const sectorRaw = [
+      {% for pg in pgs %}
+        {{ (pg.sector or 'Unknown')|tojson }}{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    const sectorData = buildSectorCounts(sectorRaw);
+
+    make3DBar(
+      'rdHierarchyAllKpiChart',
+      ['PGs', 'Members', 'Cadres', 'Turnover', 'Profit', 'Loss', 'Grants', 'SHG Total', 'SHG Active'],
+      [pgCount, memberCount, cadreCount, turnoverTotal, profitTotal, lossTotal, grantsTotal, shgTotal, shgActive],
+      false
+    );
+
+    makeRadar(
+      'rdHierarchyPeopleChart',
+      ['Cadres', 'PGs', 'Members'],
+      [cadreCount, pgCount, memberCount]
+    );
+
+    make3DBar(
+      'rdHierarchyFinanceChart',
+      ['Turnover', 'Profit', 'Loss', 'Grants'],
+      [turnoverTotal, profitTotal, lossTotal, grantsTotal],
+      false
+    );
+
+    makeDoughnut(
+      'rdHierarchyGrantChart',
+      ['PGs With Grants', 'PGs Without Grants'],
+      [pgsWithGrants, Math.max(pgCount - pgsWithGrants, 0)]
+    );
+
+    makePolar(
+      'rdHierarchyShgChart',
+      ['SHG Total', 'SHG Active'],
+      [shgTotal, shgActive]
+    );
+
+    make3DBar(
+      'rdHierarchySectorChart',
+      sectorData.labels,
+      sectorData.values,
+      true
+    );
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initHierarchyCharts);
+  }else{
+    initHierarchyCharts();
+  }
+})();
 
   (function(){
     // =========================

@@ -1,18 +1,7 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 
 <style>
-/* ============================================================
-   DOCUMENT UPLOAD PAGE (SCOPED) — SAME DESIGN LANGUAGE AS LEDGER BOOK
-   ✅ Only UI/CSS changed (no form fields / no loops / no data bindings changed)
-   ✅ Desktop: clean table inside sheet
-   ✅ Mobile: table becomes swipe cards (scroll-snap) for rows
-   ✅ UPDATE (as requested):
-      - Upload button sits inline with "Choose file" (same row)
-      - Back to PG becomes an icon-only back arrow
-      - Back arrow appears ONLY on app/mobile/tablet and is top-left
-   Scoped to .docs-wrap only
-============================================================ */
 
 .docs-wrap{
   width: 100%;
@@ -61,7 +50,7 @@
 
 /* ---------- HEADER (ledger-like) ---------- */
 .docs-head{
-  position: relative; /* ✅ needed for absolute back button */
+  position: relative; /*  needed for absolute back button */
   padding: 14px 16px 12px;
   background:
     radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
@@ -153,7 +142,7 @@
   background: #fff;
 }
 
-/* ✅ NEW: Choose file + Upload button inline (same row) */
+/*  NEW: Choose file + Upload button inline (same row) */
 .docs-fileRow{
   grid-column: span 9;
   display:flex;
@@ -341,7 +330,7 @@
   .docs-label{ grid-column: span 12; }
   .docs-input{ grid-column: span 12; }
 
-  /* ✅ file row becomes vertical stack on small screens, but Upload stays right after file */
+  /*  file row becomes vertical stack on small screens, but Upload stays right after file */
   .docs-fileRow{
     grid-column: span 12;
     flex-direction: column;
@@ -431,14 +420,14 @@
 
           <div class="docs-label">Choose file</div>
 
-          <!-- ✅ file input + upload button inline -->
+          <!--  file input + upload button inline -->
           <div class="docs-fileRow">
             <input class="docs-input" type="file" name="document" required>
             <button class="docs-uploadInline" type="submit">Upload</button>
           </div>
         </div>
 
-        <!-- ✅ keep actions wrapper but remove Back button text link from here (now icon-only on mobile) -->
+        <!--  keep actions wrapper but remove Back button text link from here (now icon-only on mobile) -->
         <div class="docs-actions">
           <!-- intentionally empty; kept to avoid affecting layout/logic elsewhere -->
         </div>

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}Grants & Infrastructure Funds{% endblock %}
 {% block content %}
 
@@ -32,25 +32,25 @@
 <style>
   /* ============================================================
      GRANTS / INFRASTRUCTURE FUNDS — LEDGER LOOK + RESPONSIVE + TRANSLATION
-     ✅ NO route renames / no form field name changes
-     ✅ Delete/Update are POST submissions to existing grant_view endpoint
-     ✅ Search + Pagination are client-side
-     ✅ Back button is MOBILE-ONLY (header)
-     ✅ Scoped under .gif-wrap only
-     ✅ Section-1 is ALWAYS editable + independent
-     ✅ Each row has its own Edit button (next to Delete)
-     ✅ Popups ONLY for per-row Save / Cancel actions
-     ✅ Mobile: horizontal swipe “cards” layout for rows
-     ✅ ✅ FIXED (BEST): Inline editor layout on mobile (no joined headings)
-     ✅ ✅ FIXED (BEST): Mobile actions now STACK (one below another) uniformly
-     ✅ ✅ FIXED (BEST): On mobile edit -> ONLY editor card shows (view cards hidden)
-     ✅ ✅ UPDATED: Added SL No column (web + mobile)
-     ✅ ✅ UPDATED: Editor shows SL No at top (so user knows which row editing)
-     ✅ ✅ UPDATED: After Cancel (and on desktop open/close), returns to the same row position (no jump to top)
-     ✅ ✅ UPDATED: Stores row position in sessionStorage, restores after page reload (Save/Delete) too
-     ✅ ✅ UPDATED: Result pill shows "Current Grants - X"
-     ✅ ✅ UPDATED: "Add Grant" header replaced by "Grant Details" only
-     ✅ ✅ NEW: Clear button near Add button (client-side reset only)
+      NO route renames / no form field name changes
+      Delete/Update are POST submissions to existing grant_view endpoint
+      Search + Pagination are client-side
+      Back button is MOBILE-ONLY (header)
+      Scoped under .gif-wrap only
+      Section-1 is ALWAYS editable + independent
+      Each row has its own Edit button (next to Delete)
+      Popups ONLY for per-row Save / Cancel actions
+      Mobile: horizontal swipe “cards” layout for rows
+       FIXED (BEST): Inline editor layout on mobile (no joined headings)
+       FIXED (BEST): Mobile actions now STACK (one below another) uniformly
+       FIXED (BEST): On mobile edit -> ONLY editor card shows (view cards hidden)
+       UPDATED: Added SL No column (web + mobile)
+       UPDATED: Editor shows SL No at top (so user knows which row editing)
+       UPDATED: After Cancel (and on desktop open/close), returns to the same row position (no jump to top)
+       UPDATED: Stores row position in sessionStorage, restores after page reload (Save/Delete) too
+       UPDATED: Result pill shows "Current Grants - X"
+       UPDATED: "Add Grant" header replaced by "Grant Details" only
+       NEW: Clear button near Add button (client-side reset only)
      ============================================================ */
 
   .gif-wrap{
@@ -396,7 +396,7 @@
   .gif-editor .gif-col-6{ grid-column: span 6; }
   .gif-editor .gif-col-12{ grid-column: span 12; }
 
-  /* ✅ SL line shown inside editor (mobile + desktop) */
+  /*  SL line shown inside editor (mobile + desktop) */
   .gif-edit-sl{
     display:flex;
     align-items:center;
@@ -448,7 +448,7 @@
   }
 
   /* ============================================================
-     ✅ MODAL
+      MODAL
      ============================================================ */
   .gif-modal{
     position: fixed;
@@ -548,7 +548,7 @@
   }
 
   /* =========================
-     ✅ Mobile Swipe Cards (Table -> horizontal grid cards)
+      Mobile Swipe Cards (Table -> horizontal grid cards)
      ========================= */
   @media (max-width: 720px){
     .gif-tablewrap{ overflow: hidden; }
@@ -617,7 +617,7 @@
       padding-top: 10px !important;
     }
 
-    /* ✅ FIX: Mobile actions STACK: Open / Edit / Delete (one below another) */
+    /*  FIX: Mobile actions STACK: Open / Edit / Delete (one below another) */
     .gif-row-actions{
       width: 100%;
       display:flex;
@@ -648,7 +648,7 @@
       border-bottom:none !important;
     }
 
-    /* ✅ Mobile editor fields must STACK full width */
+    /*  Mobile editor fields must STACK full width */
     .gif-editor-grid{ gap: 10px; }
     .gif-editor .gif-col-3,
     .gif-editor .gif-col-6,
@@ -664,7 +664,7 @@
       max-width: 92%;
     }
 
-    /* ✅ While editing on mobile: hide list view + toolbar + pager (only editor visible) */
+    /*  While editing on mobile: hide list view + toolbar + pager (only editor visible) */
     .gif-wrap.gif-editing .gif-toolbar,
     .gif-wrap.gif-editing .gif-pager{
       display:none !important;
@@ -736,7 +736,7 @@
     <div class="gif-body">
 
       <!-- ============================================================
-           ✅ SECTION 1: Grant Details (ALWAYS editable)
+            SECTION 1: Grant Details (ALWAYS editable)
            ============================================================ -->
       <div class="gif-card">
         <div class="gif-card-head">
@@ -796,7 +796,7 @@
                 Add Grant
               </button>
 
-              <!-- ✅ NEW: Clear button (does NOT submit, only resets form inputs) -->
+              <!--  NEW: Clear button (does NOT submit, only resets form inputs) -->
               <button class="gif-btn ghost" type="button" id="gifBtnClearAdd">
                 Clear
               </button>
@@ -806,7 +806,7 @@
       </div>
 
       <!-- ============================================================
-           ✅ SECTION 2: Existing Grants (NO global edit mode)
+            SECTION 2: Existing Grants (NO global edit mode)
            ============================================================ -->
       <div class="gif-card">
         <div class="gif-card-head">
@@ -901,7 +901,7 @@
                     <form method="POST" action="{{ url_for('finance.grant_view', grant_id=g._id) }}" data-row-update-form>
                       <input type="hidden" name="action" value="update">
 
-                      <!-- ✅ SL line inside editor -->
+                      <!--  SL line inside editor -->
                       <div class="gif-edit-sl" aria-label="Editing row">
                         <div class="gif-edit-sl-k" id="gifEditSlK_{{ g._id }}">SL No</div>
                         <div class="gif-edit-sl-v" id="gifEditSlV_{{ g._id }}">{{ loop.index }}</div>
@@ -992,7 +992,7 @@
   </div>
 </div>
 
-<!-- ✅ Modal (reusable) -->
+<!--  Modal (reusable) -->
 <div class="gif-modal" id="gifModal" aria-hidden="true">
   <div class="gif-modal-card" role="dialog" aria-modal="true" aria-labelledby="gifModalTitle">
     <div class="gif-modal-head">
@@ -1013,16 +1013,16 @@
 <script>
   // ============================================================
   // GRANTS / INFRA FUNDS — TRANSLATION + SEARCH + PAGINATION
-  // ✅ Add Grant: confirmation on submit
-  // ✅ NO global table edit mode
-  // ✅ Each row: Edit opens inline editor
-  // ✅ Popups ONLY for per-row Save / Cancel
-  // ✅ Delete/Update use POST to existing finance.grant_view (action=delete/update)
-  // ✅ Mobile edit: only editor card shows; list hides until save/cancel
-  // ✅ SL No column added (web + mobile)
-  // ✅ Editor shows SL No line (mobile + desktop)
-  // ✅ Return to same row position after cancel/save/delete (no jump top)
-  // ✅ NEW: Clear button for Add Grant form (client-side reset only)
+  //  Add Grant: confirmation on submit
+  //  NO global table edit mode
+  //  Each row: Edit opens inline editor
+  //  Popups ONLY for per-row Save / Cancel
+  //  Delete/Update use POST to existing finance.grant_view (action=delete/update)
+  //  Mobile edit: only editor card shows; list hides until save/cancel
+  //  SL No column added (web + mobile)
+  //  Editor shows SL No line (mobile + desktop)
+  //  Return to same row position after cancel/save/delete (no jump top)
+  //  NEW: Clear button for Add Grant form (client-side reset only)
   // ============================================================
 
   (function(){
@@ -1216,7 +1216,7 @@
       safeText('gifLblPage', t.page);
       safeText('gifLblPageValue', t.pageValue);
 
-      // ✅ "Grant Details" only
+      //  "Grant Details" only
       safeText('gifCreateTitle', t.grantDetailsTitle);
       const sub = document.getElementById('gifCreateSub');
       if(sub){
@@ -1279,7 +1279,7 @@
         if(map[dl]) td.setAttribute('data-label', map[dl]);
       });
 
-      // ✅ Update editor SL key text (all editors)
+      //  Update editor SL key text (all editors)
       document.querySelectorAll('[id^="gifEditSlK_"]').forEach(el=>{
         el.textContent = t.editSlKey;
       });
@@ -1352,10 +1352,10 @@
     let perPage = 10;
     let query = "";
 
-    // ✅ Mobile edit mode (only editor visible)
+    //  Mobile edit mode (only editor visible)
     let mobileEditingId = null;
 
-    // ✅ Remember row anchor (works for web + mobile, survives reload)
+    //  Remember row anchor (works for web + mobile, survives reload)
     const ANCHOR_KEY = "gif_grants_anchor";
     function setAnchor(id){
       try{
@@ -1556,7 +1556,7 @@
         }
       });
 
-      // ✅ Restore anchor after reload (Save/Delete triggers reload)
+      //  Restore anchor after reload (Save/Delete triggers reload)
       const anchorId = getAnchor();
       if(anchorId){
         setTimeout(()=>{
@@ -1602,7 +1602,7 @@
       if(prev) prev.addEventListener('click', ()=>{ currentPage--; closeAllEditors(); render(); });
       if(next) next.addEventListener('click', ()=>{ currentPage++; closeAllEditors(); render(); });
 
-      // ✅ Add Grant confirmation (unchanged)
+      //  Add Grant confirmation (unchanged)
       const addForm = document.getElementById('gifAddGrantForm');
       if(addForm){
         addForm.addEventListener('submit', (ev)=>{
@@ -1623,7 +1623,7 @@
         });
       }
 
-      // ✅ NEW: Clear Add Grant form (client-side reset only)
+      //  NEW: Clear Add Grant form (client-side reset only)
       const clearBtn = document.getElementById('gifBtnClearAdd');
       if(addForm && clearBtn){
         clearBtn.addEventListener('click', ()=>{
@@ -1633,7 +1633,7 @@
         });
       }
 
-      // ✅ Row Edit button opens editor
+      //  Row Edit button opens editor
       document.addEventListener('click', (ev)=>{
         const btn = ev.target.closest('[data-row-edit]');
         if(!btn) return;
@@ -1645,7 +1645,7 @@
         openEditor(tr);
       });
 
-      // ✅ Row Cancel (inline editor) — POPUP ONLY HERE
+      //  Row Cancel (inline editor) — POPUP ONLY HERE
       document.addEventListener('click', (ev)=>{
         const btn = ev.target.closest('[data-row-cancel]');
         if(!btn) return;
@@ -1678,7 +1678,7 @@
         };
       });
 
-      // ✅ Row Save (submit) — POPUP ONLY HERE
+      //  Row Save (submit) — POPUP ONLY HERE
       document.addEventListener('submit', (ev)=>{
         const upForm = ev.target.closest('[data-row-update-form]');
         if(!upForm) return;
@@ -1704,7 +1704,7 @@
         };
       });
 
-      // ✅ Single delete: confirm
+      //  Single delete: confirm
       document.addEventListener('submit', (ev)=>{
         const delForm = ev.target.closest('[data-row-delete-form]');
         if(!delForm) return;

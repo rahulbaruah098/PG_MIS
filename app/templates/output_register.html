@@ -1,4 +1,4 @@
-{# templates/output_produce_register.html #}
+﻿{# templates/output_produce_register.html #}
 {% extends "base.html" %}
 {% block title %}Output / Produce Register (Purchase/Sale/Stock){% endblock %}
 
@@ -10,23 +10,7 @@
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 
 <style>
-  /* ============================================================
-     OUTPUT / PRODUCE REGISTER (SCOPED) — CLEAN + SECTIONED
-     ✅ Bill No replaces SL (manual input)
-     ✅ Tabs active text RED
-     ✅ Mobile rows: horizontal swipe grid (scroll-snap)
-     ✅ Tabs on mobile: single-row scroll (no messy wrap)
-     ✅ Edit button toggles to Save
-     ✅ Clear removed (web + app)
-     ✅ Desktop uses available width better
-     ✅ Added: ALL tab (shows all data together)
-     ✅ Added: Edit-mode page lock (no navigation/refresh until Save/Cancel)
-     ✅ NEW: ALL is FIRST tab
-     ✅ NEW: Active tab persists after refresh
-     ✅ NEW: Edit-lock "Action blocked" popup matches provided design
-     ✅ NEW: Page content also translates EN <-> BN based on base navbar language
-     ✅ No backend/route changes (localStorage only)
-     ============================================================ */
+  
 
   .opr-wrap{
     width: 100%;
@@ -43,7 +27,7 @@
 
     --accent:#0b4d3a;
     --danger:#dc2626;
-    --activeRed:#b91c1c; /* ✅ active tab text */
+    --activeRed:#b91c1c; /*  active tab text */
 
     --shadow: 0 18px 34px -26px rgba(15,23,42,.35);
     --shadow2: 0 16px 22px -18px rgba(15,23,42,.25);
@@ -56,7 +40,7 @@
   }
   .opr-wrap *{ box-sizing:border-box; }
 
-  /* ✅ Fill available space better on desktop */
+  /*  Fill available space better on desktop */
   .opr-shell{
     width: 100%;
     max-width: 100%;
@@ -222,7 +206,7 @@
   .opr-btnDanger:hover{ background: rgba(239,68,68,.14); }
 
 
-/* ✅ TOP buttons: Edit / Save / Cancel = strong highlighted colours */
+/*  TOP buttons: Edit / Save / Cancel = strong highlighted colours */
 .opr-btn.opr-red{
   background:linear-gradient(180deg, #ef4444, #dc2626) !important;
   border-color:rgba(185,28,28,.58) !important;
@@ -249,7 +233,7 @@
   color:#ffffff !important;
 }
 
-/* ✅ BOTTOM table action buttons = soft outlined colours */
+/*  BOTTOM table action buttons = soft outlined colours */
 .opr-btn.opr-soft-red{
   border:1.5px solid rgba(220,38,38,.20) !important;
   background:rgba(220,38,38,.045) !important;
@@ -284,7 +268,7 @@
   color: rgba(15,23,42,.78);
 }
 
- /* ✅ Export/Print bar only */
+ /*  Export/Print bar only */
 .opr-actionsBar{
   padding:10px 16px;
   display:flex;
@@ -307,9 +291,9 @@
   display:none;
 }
 
-  /* ✅ Mobile/tablet: clean button placement (no messy wrap) */
+  /*  Mobile/tablet: clean button placement (no messy wrap) */
   @media (max-width: 760px){
-   /* ✅ Mobile/app header buttons */
+   /*  Mobile/app header buttons */
 .opr-head{
   grid-template-columns:1fr;
   align-items:stretch;
@@ -401,7 +385,7 @@
   grid-column:2;
   grid-row:1;
 }
-/* ✅ Export / Print responsive */
+/*  Export / Print responsive */
 .opr-actionsBar{
   align-items:stretch;
   justify-content:stretch;
@@ -519,7 +503,7 @@
   }
   .opr-tab:hover{ transform: translateY(-1px); background:#fff; box-shadow: var(--shadow2); }
 
-  /* ✅ Active tab: text red */
+  /*  Active tab: text red */
   .opr-tab[aria-selected="true"]{
     border-color: rgba(16,185,129,.35);
     background: rgba(16,185,129,.12);
@@ -527,7 +511,7 @@
   }
   .opr-tab ion-icon{ font-size: 18px; }
 
-  /* ✅ Mobile/app: keep ALL tabs on ONE line (scroll) */
+  /*  Mobile/app: keep ALL tabs on ONE line (scroll) */
   @media (max-width: 760px){
     .opr-tabs{
       flex-wrap: nowrap;
@@ -806,7 +790,7 @@
     padding: 12px;
   }
 
-  /* ✅ keep your design; just make container horizontal swipe */
+  /*  keep your design; just make container horizontal swipe */
   @media (max-width: 860px){
     .opr-tableWrap{ display:none; }
     .opr-mobileList{
@@ -897,7 +881,7 @@
     margin-bottom:8px;
   }
 }
-/* ✅ Saved Month Records fixed inside Output Register card */
+/*  Saved Month Records fixed inside Output Register card */
 .opr-history-slot{
   width:100%;
   padding:16px;
@@ -1033,7 +1017,7 @@
     justify-content: flex-end;
   }
 
-  /* ✅ Action-blocked modal — compact like screenshot */
+  /*  Action-blocked modal — compact like screenshot */
   .opr-block{
     position: fixed;
     inset: 0;
@@ -1373,7 +1357,7 @@
 
       <!-- Tabs -->
       <div class="opr-tabs" role="tablist" aria-label="Register Sections">
-        <!-- ✅ ALL FIRST -->
+        <!--  ALL FIRST -->
         <button class="opr-tab" id="tabAll" role="tab" aria-selected="true" data-tab="all">
           <ion-icon name="grid"></ion-icon> <span data-i18n="tab_all">All</span>
         </button>
@@ -1472,7 +1456,7 @@
     </div>
   </div>
 
-  <!-- ✅ Action-blocked modal (used during edit lock) -->
+  <!--  Action-blocked modal (used during edit lock) -->
   <div class="opr-block" id="oprBlocked">
     <div class="opr-blockCard" role="dialog" aria-modal="true" aria-labelledby="oprBlockedTitle">
       <div class="opr-blockHead">
@@ -1520,20 +1504,20 @@
 <script>
   /* ============================================================
      Output / Produce Register (Sectioned)
-     ✅ Bill No replaces SL (manual)
-     ✅ Edit <-> Save toggle (single button)
-     ✅ Clear removed
-     ✅ Mobile swipe cards
-     ✅ ALL tab FIRST
-     ✅ Active tab persists after refresh
-     ✅ Edit-mode page lock uses "Action blocked" popup design
-     ✅ Translation EN <-> BN follows base navbar toggle (localStorage / html attrs / base events)
+      Bill No replaces SL (manual)
+      Edit <-> Save toggle (single button)
+      Clear removed
+      Mobile swipe cards
+      ALL tab FIRST
+      Active tab persists after refresh
+      Edit-mode page lock uses "Action blocked" popup design
+      Translation EN <-> BN follows base navbar toggle (localStorage / html attrs / base events)
      ============================================================ */
 
   const STORAGE_KEY = `pgmis_output_register_v3_billno_swipe:${(window.PG_ID || "").trim() || "anon"}`;
 
   /* ===========================
-     ✅ i18n (EN / BN)
+      i18n (EN / BN)
      =========================== */
   const I18N = {
     en: {
@@ -1764,7 +1748,7 @@ let outputPrintPreviewOpen = false;
   let _lang = "en";
 
   /* ============================================================
-     ✅ FIX: Base sync priority + stable detection
+      FIX: Base sync priority + stable detection
      Problem you had:
      - Many bases keep <html lang="en"> always, but store actual UI lang in storage/attrs.
      - Old detectLang prioritized html lang too early, forcing EN always.
@@ -1905,7 +1889,7 @@ let outputPrintPreviewOpen = false;
   }
 
   /* ============================================================
-     ✅ FIX: robust base sync watcher
+      FIX: robust base sync watcher
      - Listens storage + attribute changes + custom events
      - Also reads after clicks on common toggle selectors
      - Interval slower to avoid over-render spam
@@ -2063,7 +2047,7 @@ let outputPrintPreviewOpen = false;
     });
   }
 
-  // ✅ Edit-lock popup: "Action blocked" design
+  //  Edit-lock popup: "Action blocked" design
   function blockedBox(msg){
     if(!editMode) return;
     els.blockedMsg.textContent = msg || t("blocked_msg");
@@ -2085,7 +2069,7 @@ let outputPrintPreviewOpen = false;
     return {
       id: String(Date.now()) + Math.random().toString(16).slice(2),
 
-      // ✅ Manual bill numbers (replacing SL)
+      //  Manual bill numbers (replacing SL)
       p_bill_no: "",
       s_bill_no: "",
       stk_ref_no: "",
@@ -2174,7 +2158,7 @@ let outputPrintPreviewOpen = false;
       els.kpi2Val.textContent = fmt(avgRate);
       els.kpi3Val.textContent = fmt(tstka);
     }else{
-      // ✅ ALL
+      //  ALL
       els.kpi1Label.textContent = t("kpi_pur_amt");
       els.kpi2Label.textContent = t("kpi_sale_amt");
       els.kpi3Label.textContent = t("kpi_stock_amt");
@@ -2223,7 +2207,7 @@ let outputPrintPreviewOpen = false;
 
   let el = document.getElementById('oprHistoryBox');
 
-  // ✅ If old/wrong instance exists anywhere, move it back into the fixed slot.
+  //  If old/wrong instance exists anywhere, move it back into the fixed slot.
   if(!el){
     el = document.createElement('section');
     el.id = 'oprHistoryBox';
@@ -2626,7 +2610,7 @@ cloned.querySelectorAll("tr").forEach(tr=>{
   let beforeEditSnapshot = null;
 
   /* ===========================
-     ✅ EDIT-MODE PAGE LOCK
+      EDIT-MODE PAGE LOCK
      =========================== */
   const _lock = {
     armed: false,
@@ -2731,7 +2715,7 @@ function setEditUI(){
   els.editSaveText.textContent = editMode ? t("btn_save") : t("btn_edit");
   els.editSaveIcon.setAttribute("name", editMode ? "save" : "create");
 
-  // ✅ Edit = strong red, Save = strong green, Cancel = strong red
+  //  Edit = strong red, Save = strong green, Cancel = strong red
   els.editSaveBtn.classList.toggle("opr-red", !editMode);
   els.editSaveBtn.classList.toggle("opr-green", editMode);
   els.cancelBtn.classList.add("opr-red");
@@ -3233,7 +3217,7 @@ function setEditUI(){
     );
   }
 
-  // ✅ Tabs
+  //  Tabs
   els.tabAll.addEventListener("click", ()=> setTab("all"));
   els.tabPurchases.addEventListener("click", ()=> setTab("purchases"));
   els.tabSales.addEventListener("click", ()=> setTab("sales"));
@@ -3255,7 +3239,7 @@ function setEditUI(){
       }
     });
   }
-  // ✅ Edit/Save toggle button
+  //  Edit/Save toggle button
   els.editSaveBtn.addEventListener("click", async ()=>{
     if(!editMode){
       beforeEditSnapshot = JSON.parse(JSON.stringify(state));
@@ -3293,7 +3277,7 @@ function setEditUI(){
     toast(t("toast_canceled"));
   });
 
-  // ✅ ESC is not allowed to exit edit mode
+  //  ESC is not allowed to exit edit mode
   document.addEventListener("keydown", (e)=>{
     if(e.key !== "Escape") return;
     if(!editMode) return;
