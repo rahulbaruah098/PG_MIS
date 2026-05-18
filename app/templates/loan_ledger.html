@@ -48,11 +48,11 @@
     radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
     linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
   border-bottom: 1.5px solid var(--line2);
-
-  display:flex;
+  display:grid;
+  grid-template-columns:44px 1fr auto;
   align-items:center;
-  justify-content:center;
-  position: relative;
+  gap:12px;
+  position:relative;
 }
 
   /* Header back button (mobile/app only) */
@@ -78,11 +78,6 @@
   .ll-back{ display:none; }
 }
 
-/* allow absolute button positioning */
-.ll-head{
-  position:relative;
-}
-
 .ll-title{
   margin:0;
   font-weight:850;
@@ -90,11 +85,8 @@
   letter-spacing:.2px;
   line-height:1.2;
   text-align:center;
-
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%, -50%);
+  min-width:0;
+  white-space:nowrap;
 }
 .ll-head-actions{
   display:flex;
@@ -105,34 +97,66 @@
 }
 
 @media (min-width: 721px){
+  .ll-head{
+    grid-template-columns:44px 1fr auto;
+  }
+
+  .ll-title{
+    grid-column:2;
+  }
+
   .ll-head-actions{
-    position:absolute;
-    right:16px;
-    top:50%;
-    transform:translateY(-50%);
-    margin-top:0;
+    grid-column:3;
+    justify-self:end;
   }
 }
 
-  .ll-actions-bar{
-    padding: 10px 16px;
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    gap: 10px;
-    border-bottom: 1.5px solid var(--line2);
-    background: rgba(255,255,255,.94);
-    flex-wrap: wrap;
-  }
+.ll-actions-bar{
+  padding:10px 16px;
+  display:none;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  border-bottom:1.5px solid var(--line2);
+  background:rgba(255,255,255,.94);
+  flex-wrap:wrap;
+}
 
-  .ll-actions-top{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    margin-left: auto;
-  }
+.ll-wrap.ll-editing .ll-actions-bar{
+  display:flex;
+}
+
+ .ll-actions-top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  margin-left:auto;
+}
+
+.ll-actions-top .ll-btn{
+  min-height:44px;
+  justify-content:center;
+  font-size:12.8px;
+  font-weight:950;
+  padding:11px 18px;
+  border-radius:999px;
+}
+
+.ll-actions-top #llDeleteSelectedTop,
+.ll-actions-top #llDeleteAllTop{
+  min-width:168px;
+}
+
+.ll-actions-top #llAddRowTop{
+  min-width:132px;
+}
+
+.ll-actions-top .ll-icon{
+  width:18px;
+  height:18px;
+}
 
   .ll-btn{
     border: 1px solid rgba(15,23,42,.14);
@@ -173,6 +197,62 @@
     color: rgba(127,29,29,.95);
   }
   .ll-btn.ll-danger:hover{ background: rgba(239,68,68,.14); }
+
+  /* ✅ TOP buttons: Edit / Save / Cancel = strong highlighted colours */
+.ll-btn.ll-red{
+  background:linear-gradient(180deg, #ef4444, #dc2626) !important;
+  border-color:rgba(185,28,28,.58) !important;
+  color:#ffffff !important;
+  box-shadow:0 16px 28px -18px rgba(220,38,38,.75) !important;
+}
+
+.ll-btn.ll-red:hover{
+  background:linear-gradient(180deg, #f87171, #dc2626) !important;
+  border-color:rgba(185,28,28,.72) !important;
+  color:#ffffff !important;
+}
+
+.ll-btn.ll-green{
+  background:linear-gradient(180deg, #22c55e, #16a34a) !important;
+  border-color:rgba(21,128,61,.58) !important;
+  color:#ffffff !important;
+  box-shadow:0 16px 28px -18px rgba(22,163,74,.75) !important;
+}
+
+.ll-btn.ll-green:hover{
+  background:linear-gradient(180deg, #4ade80, #16a34a) !important;
+  border-color:rgba(21,128,61,.72) !important;
+  color:#ffffff !important;
+}
+
+/* ✅ BOTTOM table action buttons: soft outlined style */
+.ll-btn.ll-soft-red{
+  background:rgba(239,68,68,.045) !important;
+  border:1.5px solid rgba(239,68,68,.22) !important;
+  color:#b42318 !important;
+  box-shadow:none !important;
+}
+
+.ll-btn.ll-soft-red:hover{
+  background:rgba(239,68,68,.075) !important;
+  border-color:rgba(239,68,68,.32) !important;
+  color:#991b1b !important;
+  box-shadow:0 14px 22px -20px rgba(220,38,38,.28) !important;
+}
+
+.ll-btn.ll-soft-green{
+  background:rgba(16,185,129,.065) !important;
+  border:1.5px solid rgba(11,77,58,.16) !important;
+  color:#0b4d3a !important;
+  box-shadow:none !important;
+}
+
+.ll-btn.ll-soft-green:hover{
+  background:rgba(16,185,129,.10) !important;
+  border-color:rgba(11,77,58,.26) !important;
+  color:#064e3b !important;
+  box-shadow:0 14px 22px -20px rgba(11,77,58,.25) !important;
+}
 
   .ll-icon{ width: 14px; height: 14px; flex-shrink: 0; }
   .ll-hidden{ display:none !important; }
@@ -469,9 +549,93 @@
   }
 
   @media (max-width: 720px){
-    .ll-topfields{ grid-template-columns: 1fr; }
+    .ll-topfields{
+  grid-template-columns:1fr;
+  padding:14px;
+  gap:14px;
+}
+
+.ll-field{
+  flex-direction:column;
+  align-items:stretch;
+  gap:7px;
+}
+
+.ll-label{
+  white-space:normal;
+  line-height:1.25;
+  font-size:12.5px;
+}
+
+.ll-input{
+  width:100%;
+  min-width:0;
+  min-height:52px;
+  font-size:13px;
+  border-radius:16px;
+  padding:12px 14px;
+}
     .ll-search{ min-width: 100%; }
     .ll-summary{ justify-content: flex-start; }
+
+    .ll-head{
+  grid-template-columns:44px 1fr 44px;
+  min-height:auto;
+  padding:14px;
+}
+
+.ll-back{
+  grid-column:1;
+  width:44px;
+  height:44px;
+  border-radius:14px;
+}
+
+.ll-title{
+  grid-column:2;
+  font-size:18px;
+  position:static;
+  transform:none;
+}
+
+.ll-head-actions{
+  grid-column:1 / -1;
+  width:100%;
+  justify-content:center;
+  margin-top:10px;
+}
+
+.ll-head-actions .ll-btn{
+  min-height:50px;
+  min-width:120px;
+  justify-content:center;
+}
+
+.ll-actions-bar{
+  padding:12px 14px;
+  justify-content:stretch;
+}
+
+.ll-actions-top{
+  width:100%;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+  margin-left:0;
+}
+
+.ll-actions-top .ll-btn{
+  width:100%;
+  min-width:0;
+  min-height:50px;
+  justify-content:center;
+  font-size:13.5px;
+  padding:12px 14px;
+}
+
+#llAddRowTop{
+  grid-column:auto;
+}
 
     .ll-table{ min-width: 0; }
     .ll-table-wrap{ overflow: visible; border-bottom:none; }
@@ -525,17 +689,10 @@
     .ll-cell[data-llcell="sel"]{ justify-content:flex-start; }
     .ll-cell[data-llcell="sl"]{ justify-content:flex-start; }
 
-    /* hide top action buttons on mobile while editing, use mobile action row above table */
-    .ll-wrap.ll-mobile-editing #llCancelBtn,
-    .ll-wrap.ll-mobile-editing #llAddRowTop,
-    .ll-wrap.ll-mobile-editing #llDeleteAllTop,
-    .ll-wrap.ll-mobile-editing #llDeleteSelectedTop{
-      display:none !important;
-    }
-
-    .ll-wrap.ll-mobile-editing #llEditSaveBtn{
-      display:none !important;
-    }
+    /*  Keep Save/Cancel visible on mobile; only duplicate mobilebar is hidden */
+.ll-mobilebar{
+  display:none !important;
+}
 
     .ll-footer-controls{ justify-content: center; }
   }
@@ -690,7 +847,7 @@
   <h2 class="ll-title" id="llTitle">Loan Ledger</h2>
 
       <div class="ll-head-actions">
-        <button class="ll-btn ll-hidden" id="llCancelBtn" type="button">
+<button class="ll-btn ll-red ll-hidden" id="llCancelBtn" type="button">
           <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 6 6 18"></path>
             <path d="M6 6l12 12"></path>
@@ -698,7 +855,7 @@
           <span id="llCancelText">Cancel</span>
         </button>
 
-        <button class="ll-btn" id="llEditSaveBtn" type="button">
+<button class="ll-btn ll-red" id="llEditSaveBtn" type="button">
           <svg id="llEditIcon" class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -771,48 +928,46 @@
     </div>
 
     <div class="ll-actions-bar">
-      <div style="font-weight:950; font-size:12px; color:rgba(15,23,42,.72);"></div>
+  <div class="ll-actions-top">
+    <button class="ll-btn ll-soft-red" id="llDeleteSelectedTop" type="button" disabled>
+      <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"></path>
+        <path d="M8 6V4h8v2"></path>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+        <path d="M10 11v6"></path>
+        <path d="M14 11v6"></path>
+      </svg>
+      <span id="llDeleteSelectedText">Delete Selected</span>
+    </button>
 
-      <div class="ll-actions-top">
-        <button class="ll-btn ll-primary" id="llAddRowTop" type="button" disabled>
-          <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 5v14"></path>
-            <path d="M5 12h14"></path>
-          </svg>
-          <span id="llAddRowText">+ Add Row</span>
-        </button>
+    <button class="ll-btn ll-soft-red" id="llDeleteAllTop" type="button" disabled>
+      <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"></path>
+        <path d="M8 6V4h8v2"></path>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+        <path d="M10 11v6"></path>
+        <path d="M14 11v6"></path>
+      </svg>
+      <span id="llDeleteAllText">Delete All</span>
+    </button>
 
-        <button class="ll-btn ll-danger" id="llDeleteSelectedTop" type="button" disabled>
-          <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 6h18"></path>
-            <path d="M8 6V4h8v2"></path>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-            <path d="M10 11v6"></path>
-            <path d="M14 11v6"></path>
-          </svg>
-          <span id="llDeleteSelectedText">Delete Selected</span>
-        </button>
-
-        <button class="ll-btn ll-danger" id="llDeleteAllTop" type="button" disabled>
-          <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 6h18"></path>
-            <path d="M8 6V4h8v2"></path>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-            <path d="M10 11v6"></path>
-            <path d="M14 11v6"></path>
-          </svg>
-          <span id="llDeleteAllText">Delete All</span>
-        </button>
-      </div>
-    </div>
+    <button class="ll-btn ll-soft-green" id="llAddRowTop" type="button" disabled>
+      <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 5v14"></path>
+        <path d="M5 12h14"></path>
+      </svg>
+      <span id="llAddRowText">Add Row</span>
+    </button>
+  </div>
+</div>
 
     <!-- Mobile action bar moved ABOVE table -->
     <div class="ll-mobilebar ll-hidden" id="llMobileBar">
-      <button class="ll-btn" id="llMobileCancel" type="button">Cancel</button>
-      <button class="ll-btn ll-primary" id="llMobileAddRow" type="button">+ Add Row</button>
-      <button class="ll-btn ll-danger" id="llMobileDeleteSelected" type="button" disabled>Delete Selected</button>
-      <button class="ll-btn ll-danger" id="llMobileDeleteAll" type="button" disabled>Delete All</button>
-      <button class="ll-btn ll-primary" id="llMobileSave" type="button">Save</button>
+     <button class="ll-btn ll-red" id="llMobileCancel" type="button">Cancel</button>
+<button class="ll-btn ll-soft-green" id="llMobileAddRow" type="button">Add Row</button>
+<button class="ll-btn ll-soft-red" id="llMobileDeleteSelected" type="button" disabled>Delete Selected</button>
+<button class="ll-btn ll-soft-red" id="llMobileDeleteAll" type="button" disabled>Delete All</button>
+<button class="ll-btn ll-green" id="llMobileSave" type="button">Save</button>
     </div>
 
     <div class="ll-table-wrap">
@@ -1549,11 +1704,16 @@
     const t = T[lang];
 
     $("llEditIcon").classList.toggle("ll-hidden", llIsEditing);
-    $("llSaveIcon").classList.toggle("ll-hidden", !llIsEditing);
-    $("llEditSaveText").textContent = llIsEditing ? t.saveButton : t.editButton;
+$("llSaveIcon").classList.toggle("ll-hidden", !llIsEditing);
+$("llEditSaveText").textContent = llIsEditing ? t.saveButton : t.editButton;
 
-    $("llCancelBtn").classList.toggle("ll-hidden", !llIsEditing);
-    $("llCancelText").textContent = t.cancelButton;
+/*  Edit = red, Save = green, Cancel = red */
+$("llEditSaveBtn").classList.toggle("ll-red", !llIsEditing);
+$("llEditSaveBtn").classList.toggle("ll-green", llIsEditing);
+$("llCancelBtn").classList.add("ll-red");
+
+$("llCancelBtn").classList.toggle("ll-hidden", !llIsEditing);
+$("llCancelText").textContent = t.cancelButton;
 
     $("llAddRowText").textContent = t.addRow;
     $("llDeleteSelectedText").textContent = t.deleteSelected;

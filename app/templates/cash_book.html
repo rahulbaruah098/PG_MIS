@@ -140,6 +140,31 @@
   }
   .cb-btn:active{ transform: translateY(0); }
 
+  /* ✅ Highlight top action buttons */
+.cb-btn.cb-red{
+  background: linear-gradient(180deg, #ef4444, #dc2626) !important;
+  border-color: rgba(185, 28, 28, .55) !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 28px -18px rgba(220, 38, 38, .75) !important;
+}
+
+.cb-btn.cb-red:hover{
+  background: linear-gradient(180deg, #f87171, #dc2626) !important;
+  border-color: rgba(185, 28, 28, .70) !important;
+}
+
+.cb-btn.cb-green{
+  background: linear-gradient(180deg, #22c55e, #16a34a) !important;
+  border-color: rgba(21, 128, 61, .55) !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 28px -18px rgba(22, 163, 74, .75) !important;
+}
+
+.cb-btn.cb-green:hover{
+  background: linear-gradient(180deg, #4ade80, #16a34a) !important;
+  border-color: rgba(21, 128, 61, .70) !important;
+}
+
   .cb-solid{
     display:inline-flex;
     align-items:center;
@@ -1404,7 +1429,7 @@
             <span id="cbChangePeriodText">Change Period</span>
           </button>
 
-          <button id="cbCancelBtn" class="cb-btn cb-hidden" type="button">
+<button id="cbCancelBtn" class="cb-btn cb-red cb-hidden" type="button">
             <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 6 6 18"></path>
               <path d="M6 6l12 12"></path>
@@ -1412,7 +1437,7 @@
             <span id="cbCancelText">Cancel</span>
           </button>
 
-          <button id="cbEditSaveBtn" class="cb-btn" type="button">
+<button id="cbEditSaveBtn" class="cb-btn cb-red" type="button">
             <svg id="cbEditIcon" class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -2214,15 +2239,20 @@ function loadActiveTab(){
   }
 
   function setEditingUI(){
-    const t = cashbookTranslations[cashbookLang];
+  const t = cashbookTranslations[cashbookLang];
 
-    cbEditIcon.classList.toggle("cb-hidden", cbIsEditing);
-    cbSaveIcon.classList.toggle("cb-hidden", !cbIsEditing);
-    cbEditSaveText.textContent = cbIsEditing ? t.saveButton : t.editButton;
-    cbCancelText.textContent = cbIsEditing ? t.cancelButton : t.cancelButton;
+  cbEditIcon.classList.toggle("cb-hidden", cbIsEditing);
+  cbSaveIcon.classList.toggle("cb-hidden", !cbIsEditing);
+  cbEditSaveText.textContent = cbIsEditing ? t.saveButton : t.editButton;
+  cbCancelText.textContent = cbIsEditing ? t.cancelButton : t.cancelButton;
 
-    cbCancelBtn.classList.toggle("cb-hidden", !cbIsEditing);
-    cbEditOnlyActions.classList.toggle("cb-hidden", !cbIsEditing);
+  // ✅ Edit = red, Save = green, Cancel = red
+  cbEditSaveBtn.classList.toggle("cb-red", !cbIsEditing);
+  cbEditSaveBtn.classList.toggle("cb-green", cbIsEditing);
+  cbCancelBtn.classList.add("cb-red");
+
+  cbCancelBtn.classList.toggle("cb-hidden", !cbIsEditing);
+  cbEditOnlyActions.classList.toggle("cb-hidden", !cbIsEditing);
 
     cbDeleteSelectedText.textContent = t.deleteSelected;
     cbDeleteAllText.textContent = t.deleteAll;

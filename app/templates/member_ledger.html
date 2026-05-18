@@ -5,17 +5,7 @@
 
 {% block head_extra %}
 <style>
-  /* ============================================================
-     MEMBER LEDGER — FULL UPDATED PAGE
-     ✅ Delete buttons fixed in web + app/mobile
-     ✅ Header reorganized for cleaner app/mobile view
-     ✅ Back button icon updated to provided SVG
-     ✅ Action buttons moved below header, above producer info
-     ✅ Active tab persists after refresh
-     ✅ Draft + final data persistence added (server + local fallback)
-     ✅ Existing UI/logic preserved
-     ============================================================ */
-
+ 
   .member-ledger-page *{ margin:0; padding:0; box-sizing:border-box; }
 
   .member-ledger-page{
@@ -88,20 +78,21 @@
     border-radius:24px;
     box-shadow:0 18px 30px -26px rgba(15,23,42,.18);
   }
-    .member-ledger-page .header-main{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:16px;
-    width:100%;
-    min-width:0;
-    position:relative;
-  }
+.member-ledger-page .header-main{
+  display:grid;
+  grid-template-columns:56px 1fr auto;
+  align-items:center;
+  gap:16px;
+  width:100%;
+  min-width:0;
+  position:relative;
+}
 
   .member-ledger-page .mobile-back-slot{
-    display:none;
-    flex:0 0 auto;
-  }
+  grid-column:1;
+  display:none;
+  flex:0 0 auto;
+}
 
   .member-ledger-page .mobile-back-btn{
     border:none;
@@ -133,14 +124,17 @@
   }
 
    .member-ledger-page .header-copy{
-    min-width:0;
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-    flex:1;
-    align-items:center;
-    text-align:center;
-  }
+  grid-column:2;
+  min-width:0;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  flex:1;
+  align-items:center;
+  text-align:center;
+  justify-self:center;
+}
    .member-ledger-page .header-title{
     text-align:center;
     font-size:18px;
@@ -161,15 +155,27 @@
     max-width:700px;
   }
 
-  /* Unified action panel placed BELOW header */
-  .member-ledger-page .action-panel{
-    margin-bottom:14px;
-    padding:14px;
-    border:1px solid var(--line);
-    border-radius:24px;
-    background:#fff;
-    box-shadow:var(--shadow-sm);
-  }
+  /*  Header right-side Edit/Save/Cancel, same placement idea as Loan Ledger */
+.member-ledger-page .header-actions{
+  grid-column:3;
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.member-ledger-page .header-actions .actionbar{
+  width:auto;
+  justify-content:flex-end;
+  gap:10px;
+}
+
+ /* ✅ Old action panel removed because buttons are now inside header */
+.member-ledger-page .action-panel{
+  display:contents;
+}
 
   .member-ledger-page .actionbar{
     display:flex;
@@ -214,6 +220,33 @@
   .member-ledger-page .btn:active{ transform:translateY(0); }
   .member-ledger-page .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
 
+  /*  Highlight main action buttons */
+.member-ledger-page .btn-red{
+  background: linear-gradient(180deg, #ef4444, #dc2626) !important;
+  border-color: rgba(185, 28, 28, .58) !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 28px -18px rgba(220, 38, 38, .75) !important;
+}
+
+.member-ledger-page .btn-red:hover{
+  background: linear-gradient(180deg, #f87171, #dc2626) !important;
+  border-color: rgba(185, 28, 28, .72) !important;
+  color: #ffffff !important;
+}
+
+.member-ledger-page .btn-green{
+  background: linear-gradient(180deg, #22c55e, #16a34a) !important;
+  border-color: rgba(21, 128, 61, .58) !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 28px -18px rgba(22, 163, 74, .75) !important;
+}
+
+.member-ledger-page .btn-green:hover{
+  background: linear-gradient(180deg, #4ade80, #16a34a) !important;
+  border-color: rgba(21, 128, 61, .72) !important;
+  color: #ffffff !important;
+}
+
   .member-ledger-page .btn svg.icon{
     width:18px;
     height:18px;
@@ -237,6 +270,35 @@
     background:rgba(220,38,38,.10);
     box-shadow:0 14px 22px -20px rgba(220,38,38,.22);
   }
+
+  /*  Bottom toolbar buttons: soft pill style like other pages */
+.member-ledger-page .btn-soft-red{
+  border:1.5px solid rgba(220,38,38,.20) !important;
+  background:rgba(220,38,38,.045) !important;
+  color:#b42318 !important;
+  box-shadow:none !important;
+}
+
+.member-ledger-page .btn-soft-red:hover{
+  background:rgba(220,38,38,.075) !important;
+  border-color:rgba(220,38,38,.32) !important;
+  color:#991b1b !important;
+  box-shadow:0 14px 22px -20px rgba(220,38,38,.25) !important;
+}
+
+.member-ledger-page .btn-soft-green{
+  border:1.5px solid rgba(11,77,58,.16) !important;
+  background:rgba(16,185,129,.065) !important;
+  color:#0b4d3a !important;
+  box-shadow:none !important;
+}
+
+.member-ledger-page .btn-soft-green:hover{
+  background:rgba(16,185,129,.10) !important;
+  border-color:rgba(11,77,58,.26) !important;
+  color:#064e3b !important;
+  box-shadow:0 14px 22px -20px rgba(11,77,58,.25) !important;
+}
 
   .member-ledger-page .btn-ghost{
     border-color:rgba(15,23,42,.12);
@@ -476,13 +538,62 @@
     background:#fbfcfe;
   }
 
-  .member-ledger-page .controls-left{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    align-items:center;
-    width:100%;
-  }
+ .member-ledger-page .controls-left{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  flex:1 1 auto;
+  min-width:0;
+}
+
+.member-ledger-page .controls-right{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-end;
+  flex:0 0 auto;
+}
+
+.member-ledger-page .toolbar-edit-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-end;
+}
+
+.member-ledger-page .toolbar-edit-actions .btn{
+  min-height:44px;
+  padding:11px 18px;
+  font-size:12.8px;
+}
+
+.member-ledger-page .toolbar-edit-actions .btn-delete-wide{
+  min-width:168px;
+}
+
+.member-ledger-page .toolbar-edit-actions #add-btn{
+  min-width:132px;
+}
+
+/*  Shared Add/Delete toolbar: hidden until Edit mode */
+.member-ledger-page .member-ledger-shared-toolbar{
+  margin:0 0 12px;
+  padding:12px 14px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:#fff;
+  box-shadow:var(--shadow-sm);
+  display:none !important;
+  justify-content:flex-end;
+  align-items:center;
+}
+
+.member-ledger-page.is-editing .member-ledger-shared-toolbar{
+  display:flex !important;
+}
 
   .member-ledger-page .search-wrap{
     display:flex !important;
@@ -534,10 +645,60 @@
     max-width:100%;
   }
 
-  .member-ledger-page .table-wrap{
-    overflow:auto;
-    -webkit-overflow-scrolling:touch;
-  }
+ .member-ledger-page .table-wrap{
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  touch-action: pan-x;
+  cursor: grab;
+  scroll-behavior:smooth;
+  overscroll-behavior-x: contain;
+  max-width:100%;
+  user-select:auto;
+}
+
+.member-ledger-page .table-wrap.is-swiping{
+  cursor: grabbing;
+  user-select:none;
+}
+
+.member-ledger-page .table-wrap.is-swiping *{
+  user-select:none !important;
+}
+
+.member-ledger-page .table-wrap:active{
+  cursor: grabbing;
+}
+
+.member-ledger-page .table-wrap::-webkit-scrollbar{
+  height: 8px;
+}
+
+.member-ledger-page .table-wrap::-webkit-scrollbar-thumb{
+  background: rgba(15,23,42,.22);
+  border-radius: 999px;
+}
+
+.member-ledger-page .table-wrap::-webkit-scrollbar-track{
+  background: rgba(15,23,42,.04);
+}
+
+.member-ledger-page .table-wrap:active{
+  cursor: grabbing;
+}
+
+.member-ledger-page .table-wrap::-webkit-scrollbar{
+  height: 8px;
+}
+
+.member-ledger-page .table-wrap::-webkit-scrollbar-thumb{
+  background: rgba(15,23,42,.22);
+  border-radius: 999px;
+}
+
+.member-ledger-page .table-wrap::-webkit-scrollbar-track{
+  background: rgba(15,23,42,.04);
+}
 
   .member-ledger-page table{
     width:100%;
@@ -881,6 +1042,50 @@
       border-radius:14px;
       background:#eaf1ee;
     }
+/*  App view: toolbar stays hidden until Edit, then appears after Search/Rows */
+.member-ledger-page .member-ledger-toolbar-slot{
+  width:100%;
+}
+
+.member-ledger-page .member-ledger-shared-toolbar{
+  margin:0;
+  padding:16px;
+  border-left:none;
+  border-right:none;
+  border-radius:0;
+  background:#fff;
+  box-shadow:none;
+  display:none !important;
+  justify-content:stretch;
+  align-items:stretch;
+}
+
+.member-ledger-page.is-editing .member-ledger-shared-toolbar{
+  display:flex !important;
+}
+
+.member-ledger-page .member-ledger-shared-toolbar .toolbar-edit-actions{
+  width:100%;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+
+.member-ledger-page .member-ledger-shared-toolbar .btn{
+  width:100%;
+  min-width:0 !important;
+  min-height:58px;
+  padding:14px 16px;
+  font-size:14px;
+  gap:8px;
+  justify-content:center;
+  border-radius:999px;
+}
+
+.member-ledger-page .member-ledger-shared-toolbar .btn svg.icon{
+  width:18px;
+  height:18px;
+}
     .member-ledger-page .ml-wrap{ padding:0; }
 
     .member-ledger-page .ml-header{
@@ -891,20 +1096,60 @@
       border-radius:22px;
     }
     .member-ledger-page .header-main{
-      align-items:flex-start;
-      gap:14px;
-    }
+  display:grid;
+  grid-template-columns:52px 1fr;
+  align-items:start;
+  gap:14px;
+}
+
+.member-ledger-page .header-actions{
+  grid-column:1 / -1;
+  width:100%;
+  justify-self:stretch;
+  margin-top:10px;
+}
+
+.member-ledger-page .header-actions .actionbar{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  width:100%;
+}
+
+.member-ledger-page .header-actions .actionbar .btn{
+  width:100%;
+  min-width:0;
+  min-height:52px;
+  font-size:14px;
+  padding:13px 12px;
+  justify-content:center;
+}
+
+.member-ledger-page .header-actions .actionbar #edit-btn{
+  grid-column:1 / -1;
+}
+
+.member-ledger-page.is-editing .header-actions .actionbar #save-btn{
+  grid-column:1;
+}
+
+.member-ledger-page.is-editing .header-actions .actionbar #cancel-btn{
+  grid-column:2;
+}
     .member-ledger-page .mobile-back-slot{
-      display:flex;
-      align-self:flex-start;
-    }
-       .member-ledger-page .header-copy{
-      align-items:flex-start;
-      text-align:left;
-      flex:1;
-      min-width:0;
-      padding-top:2px;
-    }
+  grid-column:1;
+  display:flex;
+  align-self:flex-start;
+}
+      .member-ledger-page .header-copy{
+  grid-column:2;
+  align-items:flex-start;
+  text-align:left;
+  flex:1;
+  min-width:0;
+  width:100%;
+  padding-top:2px;
+}
     .member-ledger-page .header-title{
       font-size:16px;
       font-weight:850;
@@ -917,36 +1162,6 @@
       text-align:left;
       line-height:1.35;
       max-width:none;
-    }
-
-    .member-ledger-page .action-panel{
-      padding:14px;
-      border-radius:20px;
-      margin-bottom:14px;
-    }
-    .member-ledger-page .actionbar{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:12px;
-    }
-    .member-ledger-page .actionbar .btn{
-      width:100%;
-      min-width:0;
-      min-height:54px;
-      font-size:14px;
-      padding:14px 12px;
-      justify-content:center;
-    }
-    .member-ledger-page .actionbar .btn-delete-wide{
-      min-width:0;
-    }
-    .member-ledger-page .actionbar .grow-break{
-      display:block;
-      grid-column:1 / -1;
-    }
-    .member-ledger-page .actionbar .btn-save-wide{
-      grid-column:1 / -1;
-      width:100%;
     }
 
     .member-ledger-page .content{ padding:0; }
@@ -968,10 +1183,28 @@
       padding:16px;
     }
     .member-ledger-page .controls-left{
-      flex-direction:column;
-      align-items:stretch;
-      gap:12px;
-    }
+  flex-direction:column;
+  align-items:stretch;
+  gap:12px;
+}
+
+.member-ledger-page .controls-right{
+  width:100%;
+  justify-content:flex-start;
+}
+
+.member-ledger-page .toolbar-edit-actions{
+  width:100%;
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+}
+
+.member-ledger-page .toolbar-edit-actions .btn{
+  width:100%;
+  min-width:0;
+  min-height:50px;
+}
 
     .member-ledger-page .search-wrap{
       min-width:0 !important;
@@ -1001,8 +1234,94 @@
       font-size:13px;
     }
 
-    .member-ledger-page .table-wrap{ display:none; }
-    .member-ledger-page .mobile-cards-wrap{ display:block; }
+/*  Mobile/app view: one full card per screen, compact enough to view easily */
+.member-ledger-page .table-wrap{
+  display:none;
+}
+
+.member-ledger-page .mobile-cards-wrap{
+  display:block;
+  width:100%;
+  overflow:hidden;
+  padding:10px 12px;
+  background:#fff;
+}
+
+.member-ledger-page .mobile-cards-rail{
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:100%;
+  gap:12px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-x;
+  padding:0 0 8px;
+}
+
+.member-ledger-page .ml-card{
+  width:100%;
+  min-width:100%;
+  max-width:100%;
+  flex:none;
+  scroll-snap-align:start;
+  border-radius:18px;
+}
+
+/*  Compact two-column card body so one card is visible without long scrolling */
+.member-ledger-page .ml-card-head{
+  padding:10px 12px;
+  min-height:42px;
+}
+
+.member-ledger-page .ml-card-body{
+  padding:10px 12px 12px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+.member-ledger-page .ml-field{
+  gap:4px;
+  min-width:0;
+}
+
+.member-ledger-page .ml-field-label{
+  font-size:10px;
+  line-height:1.1;
+  letter-spacing:.15px;
+}
+
+.member-ledger-page .ml-field .mini-input{
+  min-width:0;
+  width:100%;
+  min-height:38px;
+  height:38px;
+  padding:8px 10px;
+  border-radius:12px;
+  font-size:12px;
+}
+
+/* Date, Commodity/Item and Remarks need more width */
+.member-ledger-page .ml-field:nth-child(2),
+.member-ledger-page .ml-field:nth-child(4),
+.member-ledger-page .ml-field:nth-last-child(2){
+  grid-column:1 / -1;
+}
+
+.member-ledger-page .ml-card-actions{
+  grid-column:1 / -1;
+  padding-top:2px;
+  justify-content:flex-end;
+}
+
+.member-ledger-page .ml-card-actions .btn{
+  width:42px;
+  min-width:42px;
+  height:42px;
+  border-radius:14px;
+}
 
     .member-ledger-page .table-footer{
       gap:12px;
@@ -1055,20 +1374,45 @@
     .member-ledger-page .ml-solid{
       min-width:100%;
     }
-    .member-ledger-page .ml-card{
-      min-width:calc(100vw - 48px);
-      width:calc(100vw - 48px);
-    }
+   .member-ledger-page .ml-card{
+  min-width:100%;
+  width:100%;
+  max-width:100%;
+}
   }
 
   @media (max-width: 390px){
-    .member-ledger-page .actionbar{
-      grid-template-columns:1fr;
-    }
-    .member-ledger-page .actionbar .btn,
-    .member-ledger-page .actionbar .btn-save-wide{
-      grid-column:auto;
-    }
+.member-ledger-page .header-actions .actionbar{
+  grid-template-columns:1fr 1fr;
+}
+
+.member-ledger-page .header-actions .actionbar #edit-btn{
+  grid-column:1 / -1;
+}
+
+.member-ledger-page.is-editing .header-actions .actionbar #save-btn{
+  grid-column:1;
+}
+
+.member-ledger-page.is-editing .header-actions .actionbar #cancel-btn{
+  grid-column:2;
+}
+ .member-ledger-page .member-ledger-shared-toolbar .toolbar-edit-actions{
+  grid-template-columns:1fr;
+  gap:12px;
+}
+
+.member-ledger-page .member-ledger-shared-toolbar .btn{
+  min-height:56px;
+  font-size:13.5px;
+  padding:13px 14px;
+  gap:8px;
+}
+
+.member-ledger-page .member-ledger-shared-toolbar .btn svg.icon{
+  width:17px;
+  height:17px;
+}
     .member-ledger-page .actionbar .grow-break{
       display:none;
     }
@@ -1080,6 +1424,25 @@
       font-size:12px;
       padding:10px 10px;
     }
+    .member-ledger-page .ml-card-body{
+  gap:7px;
+  padding:9px 10px 10px;
+}
+
+.member-ledger-page .ml-field .mini-input{
+  min-height:36px;
+  height:36px;
+  font-size:11.5px;
+  padding:7px 9px;
+}
+
+.member-ledger-page .ml-field-label{
+  font-size:9.5px;
+}
+
+.member-ledger-page .ml-card-head{
+  padding:9px 10px;
+}
   }
 </style>
 {% endblock %}
@@ -1115,76 +1478,51 @@
                 </h1>
                 <div class="header-subtitle">Producer purchases, sales and member transaction details</div>
               </div>
+
+<div class="header-actions" aria-label="Actions">
+  <div class="actionbar">
+    <button id="edit-btn" class="btn btn-red hide-when-editing" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+      </svg>
+      <span id="edit-text">Edit</span>
+    </button>
+
+    <button id="save-btn" class="btn btn-green btn-save-wide show-when-editing" type="button">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+        <path d="M17 21v-8H7v8M7 3v5h8" />
+      </svg>
+      <span id="save-text">Save</span>
+    </button>
+
+    <button id="cancel-btn" class="btn btn-red show-when-editing" type="button">
+      <span id="cancel-text">Cancel</span>
+    </button>
+
+    <!-- Hidden mobile duplicates kept only for JS compatibility -->
+    <button id="m-edit-btn" class="btn btn-red hide-when-editing" type="button" style="display:none;">
+      <span id="m-edit-text">Edit</span>
+    </button>
+    <button id="m-add-btn" class="btn btn-primary show-when-editing" type="button" style="display:none;">
+      <span id="m-add-text">Add</span>
+    </button>
+    <button id="m-cancel-btn" class="btn btn-red show-when-editing" type="button" style="display:none;">
+      <span id="m-cancel-text">Cancel</span>
+    </button>
+    <button id="m-delete-selected-btn" class="btn btn-danger show-when-editing" type="button" style="display:none;">
+      <span id="m-delete-selected-text">Delete Selected</span>
+    </button>
+    <button id="m-delete-all-btn" class="btn btn-danger show-when-editing" type="button" style="display:none;">
+      <span id="m-delete-all-text">Delete All</span>
+    </button>
+    <button id="m-save-btn" class="btn btn-green show-when-editing" type="button" style="display:none;">
+      <span id="m-save-text">Save</span>
+    </button>
+  </div>
+</div>
+
             </div>
-          </div>
-        </div>
-
-        <!-- Action panel BELOW header and ABOVE producer info -->
-        <div class="action-panel" aria-label="Actions">
-          <div class="actionbar">
-            <button id="edit-btn" class="btn btn-ghost hide-when-editing" type="button">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-              </svg>
-              <span id="edit-text">Edit</span>
-            </button>
-
-            <button id="save-btn" class="btn btn-primary btn-save-wide show-when-editing" type="button">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-                <path d="M17 21v-8H7v8M7 3v5h8" />
-              </svg>
-              <span id="save-text">Save</span>
-            </button>
-
-            <button id="cancel-btn" class="btn btn-ghost show-when-editing" type="button">
-              <span id="cancel-text">Cancel</span>
-            </button>
-
-            <button id="add-btn" class="btn btn-primary show-when-editing" type="button" title="Add row to current tab">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14m-7-7h14" />
-              </svg>
-              <span id="add-text">Add</span>
-            </button>
-
-            <button id="delete-selected-btn" class="btn btn-danger btn-delete-wide show-when-editing" type="button" title="Delete selected rows in current tab">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-                <path d="M10 11v6M14 11v6"/>
-              </svg>
-              <span id="delete-selected-text">Delete Selected</span>
-            </button>
-
-            <button id="delete-all-btn" class="btn btn-danger btn-delete-wide show-when-editing" type="button" title="Delete all rows in current tab">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
-                <path d="M9 10h6M9 14h6"/>
-              </svg>
-              <span id="delete-all-text">Delete All</span>
-            </button>
-
-            <span class="grow-break show-when-editing"></span>
-
-            <!-- Hidden mobile duplicates kept only for JS compatibility -->
-            <button id="m-edit-btn" class="btn btn-ghost hide-when-editing" type="button" style="display:none;">
-              <span id="m-edit-text">Edit</span>
-            </button>
-            <button id="m-add-btn" class="btn btn-primary show-when-editing" type="button" style="display:none;">
-              <span id="m-add-text">Add</span>
-            </button>
-            <button id="m-cancel-btn" class="btn btn-ghost show-when-editing" type="button" style="display:none;">
-              <span id="m-cancel-text">Cancel</span>
-            </button>
-            <button id="m-delete-selected-btn" class="btn btn-danger show-when-editing" type="button" style="display:none;">
-              <span id="m-delete-selected-text">Delete Selected</span>
-            </button>
-            <button id="m-delete-all-btn" class="btn btn-danger show-when-editing" type="button" style="display:none;">
-              <span id="m-delete-all-text">Delete All</span>
-            </button>
-            <button id="m-save-btn" class="btn btn-primary show-when-editing" type="button" style="display:none;">
-              <span id="m-save-text">Save</span>
-            </button>
           </div>
         </div>
 
@@ -1240,6 +1578,37 @@
             </div>
           </div>
 
+<!-- Shared toolbar default slot for desktop/web -->
+<div id="member-ledger-toolbar-default-slot"></div>
+
+<!-- Shared toolbar like Cash Book: visible after Edit, works for active tab -->
+<div id="memberLedgerSharedToolbar" class="member-ledger-shared-toolbar show-when-editing">
+  <div class="toolbar-edit-actions">
+    <button id="delete-selected-btn" class="btn btn-soft-red btn-delete-wide" type="button" title="Delete selected rows in current tab">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+        <path d="M10 11v6M14 11v6"/>
+      </svg>
+      <span id="delete-selected-text">Delete Selected</span>
+    </button>
+
+<button id="delete-all-btn" class="btn btn-soft-red btn-delete-wide" type="button" title="Delete all rows in current tab">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+        <path d="M9 10h6M9 14h6"/>
+      </svg>
+      <span id="delete-all-text">Delete All</span>
+    </button>
+
+    <button id="add-btn" class="btn btn-soft-green" type="button" title="Add row to current tab">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14m-7-7h14" />
+      </svg>
+      <span id="add-text">Add</span>
+    </button>
+  </div>
+</div>
+
           <!-- Tab Content -->
           <div class="tab-content">
             <!-- Purchases Tab -->
@@ -1250,23 +1619,25 @@
 
               <div class="table-card">
                 <div class="table-controls">
-                  <div class="controls-left">
-                    <div class="search-wrap">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="7"></circle>
-                        <path d="M21 21l-4.3-4.3"></path>
-                      </svg>
-                      <input id="purchases-search" class="search-input" type="text" placeholder="Search..." />
-                    </div>
+  <div class="controls-left">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="M21 21l-4.3-4.3"></path>
+      </svg>
+      <input id="purchases-search" class="search-input" type="text" placeholder="Search..." />
+    </div>
 
-                    <select id="purchases-per-page" class="select-mini" aria-label="Rows per page">
-                      <option value="10">10</option>
-                      <option value="25" selected>25</option>
-                      <option value="50">50</option>
-                      <option value="100">100</option>
-                    </select>
-                  </div>
-                </div>
+    <select id="purchases-per-page" class="select-mini" aria-label="Rows per page">
+      <option value="10">10</option>
+      <option value="25" selected>25</option>
+      <option value="50">50</option>
+      <option value="100">100</option>
+    </select>
+  </div>
+</div>
+
+<div id="purchases-toolbar-slot" class="member-ledger-toolbar-slot"></div>
 
                 <div class="table-wrap">
                   <table aria-label="Purchases table">
@@ -1334,6 +1705,8 @@
                     </select>
                   </div>
                 </div>
+
+                <div id="sales-toolbar-slot" class="member-ledger-toolbar-slot"></div>
 
                 <div class="table-wrap">
                   <table aria-label="Sales table">
@@ -1952,6 +2325,7 @@
     updateEditableStates();
     renderPurchasesTable();
     renderSalesTable();
+    enableMemberLedgerTableSwipe();
   }
 
   function exitEditMode(commit){
@@ -1977,12 +2351,19 @@
     updateEditableStates();
     renderPurchasesTable();
     renderSalesTable();
+    enableMemberLedgerTableSwipe();
   }
 
   function updateEditableStates(){
-    const canEdit = !!state.editMode;
+  const canEdit = !!state.editMode;
 
-    const producerName = document.getElementById("producer-name");
+  //  Required for CSS: show/hide Save/Cancel and bottom Add/Delete toolbar
+  const root = document.getElementById("member-ledger-root");
+  if (root) root.classList.toggle("is-editing", canEdit);
+
+  // Toolbar placement is handled after load, tab switch, and resize.
+
+  const producerName = document.getElementById("producer-name");
     const stockingUnit = document.getElementById("stocking-unit");
 
     if (producerName){
@@ -2933,8 +3314,34 @@
       scheduleDraftSync();
     });
 
-    document.getElementById("tab-purchases")?.addEventListener("click", () => switchTab("purchases"));
-    document.getElementById("tab-sales")?.addEventListener("click", () => switchTab("sales"));
+  function placeMemberLedgerSharedToolbar(){
+  const toolbar = document.getElementById("memberLedgerSharedToolbar");
+  if (!toolbar) return;
+
+  const isMobile = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+
+  let target = document.getElementById("member-ledger-toolbar-default-slot");
+
+  if (isMobile) {
+    target = state.activeTab === "sales"
+      ? document.getElementById("sales-toolbar-slot")
+      : document.getElementById("purchases-toolbar-slot");
+  }
+
+  if (target && toolbar.parentElement !== target) {
+    target.appendChild(toolbar);
+  }
+}
+
+document.getElementById("tab-purchases")?.addEventListener("click", () => {
+  switchTab("purchases");
+  placeMemberLedgerSharedToolbar();
+});
+
+document.getElementById("tab-sales")?.addEventListener("click", () => {
+  switchTab("sales");
+  placeMemberLedgerSharedToolbar();
+});
 
     document.getElementById("purchases-search")?.addEventListener("input", (e)=>{
       state.ui.purchases.search = e.target.value || "";
@@ -3004,22 +3411,128 @@
     updateEditableStates();
     syncFormFieldsFromState();
 
-    restoreActiveTab();
-    renderPurchasesTable();
-    renderSalesTable();
+restoreActiveTab();
+renderPurchasesTable();
+renderSalesTable();
+placeMemberLedgerSharedToolbar();
+enableMemberLedgerTableSwipe();
 
-    await loadCurrentPgName();
-    await loadMemberLedger();
-    updateUI();
+await loadCurrentPgName();
+await loadMemberLedger();
+updateUI();
+placeMemberLedgerSharedToolbar();
+enableMemberLedgerTableSwipe();
+
+window.addEventListener("resize", () => {
+  placeMemberLedgerSharedToolbar();
+});
   });
 
   // ============================================================
   // Expose functions for inline handlers
   // ============================================================
-  window.updatePurchase = updatePurchase;
-  window.updateSale = updateSale;
-  window.deletePurchase = deletePurchase;
-  window.deleteSale = deleteSale;
-  window.toggleSelect = toggleSelect;
+window.updatePurchase = updatePurchase;
+window.updateSale = updateSale;
+window.deletePurchase = deletePurchase;
+window.deleteSale = deleteSale;
+window.toggleSelect = toggleSelect;
+
+
+// ============================================================
+// Desktop/web horizontal drag swipe for real tables only
+// Mobile remains card view because .table-wrap is hidden <=720px
+// ============================================================
+function enableMemberLedgerTableSwipe(){
+  const wrappers = document.querySelectorAll(".member-ledger-page .table-wrap");
+
+  wrappers.forEach((wrap) => {
+    if (wrap.dataset.swipeReady === "1") return;
+    wrap.dataset.swipeReady = "1";
+
+    let isDown = false;
+    let startX = 0;
+    let startY = 0;
+    let scrollLeft = 0;
+    let hasMoved = false;
+
+    wrap.addEventListener("pointerdown", function(e){
+      // Do not drag from real action controls
+      if (
+        e.target &&
+        e.target.closest &&
+        e.target.closest("button, a, select, input[type='checkbox']")
+      ) {
+        return;
+      }
+
+      // Only left mouse button for desktop mouse
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+
+      isDown = true;
+      hasMoved = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      scrollLeft = wrap.scrollLeft;
+
+      wrap.classList.add("is-swiping");
+
+      try {
+        wrap.setPointerCapture(e.pointerId);
+      } catch (_) {}
+    });
+
+    wrap.addEventListener("pointermove", function(e){
+      if (!isDown) return;
+
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      // If movement is mostly vertical, do not hijack normal page scroll
+      if (!hasMoved && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
+        return;
+      }
+
+      if (Math.abs(dx) > 3) {
+        hasMoved = true;
+        e.preventDefault();
+        wrap.scrollLeft = scrollLeft - dx;
+      }
+    });
+
+    function stopSwipe(e){
+      if (!isDown) return;
+
+      isDown = false;
+      wrap.classList.remove("is-swiping");
+
+      try {
+        wrap.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+    }
+
+    wrap.addEventListener("pointerup", stopSwipe);
+    wrap.addEventListener("pointercancel", stopSwipe);
+    wrap.addEventListener("pointerleave", stopSwipe);
+
+    // Extra support: mouse wheel / touchpad vertical wheel can move horizontally
+    wrap.addEventListener("wheel", function(e){
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        wrap.scrollLeft += e.deltaY;
+        e.preventDefault();
+      }
+    }, { passive:false });
+  });
+}
+
+enableMemberLedgerTableSwipe();
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  placeMemberLedgerSharedToolbar();
+
+  window.addEventListener("resize", () => {
+    placeMemberLedgerSharedToolbar();
+  });
+});
 </script>
 {% endblock %}

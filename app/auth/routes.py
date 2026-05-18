@@ -1140,9 +1140,19 @@ def create_pg_data_entry():
 @auth_bp.route("/users/password-reset", methods=["GET", "POST"])
 @roles_required("SUPER_ADMIN")
 def super_admin_password_reset():
-    """SUPER_ADMIN can reset password for any user account (any role)."""
+    """
+    SUPER_ADMIN Users panel.
+
+    New flow:
+    - First open: user dropdown + search + pagination + Continue button.
+    - After selecting user: selected user details display with Edit action.
+    - Password reset/status update now handled from edit page.
+
+    Existing endpoint name kept same so old menu url_for('auth.super_admin_password_reset') does not break.
+    """
     db = current_app.mongo_db
 
+    # Keep backward compatibility: if any old form still posts here, reset password safely.
     if request.method == "POST":
         try:
             user_id = request.form.get("user_id")
@@ -1150,6 +1160,8 @@ def super_admin_password_reset():
 
             if not user_id:
                 raise ValueError("Missing user_id.")
+            if not ObjectId.is_valid(user_id):
+                raise ValueError("Invalid user_id.")
             if not new_password or len(new_password) < 6:
                 raise ValueError("Password must be at least 6 characters.")
 
@@ -1159,25 +1171,225 @@ def super_admin_password_reset():
                     "password_hash": hash_password(new_password),
                     "password_reset_at": datetime.utcnow(),
                     "password_reset_by": ObjectId(session.get("user_id")) if session.get("user_id") else None,
+                    "updated_at": datetime.utcnow(),
                 }}
             )
+
             if res.matched_count == 0:
                 raise ValueError("User not found.")
 
             flash("Password reset successfully.", "success")
-            return redirect(url_for("auth.super_admin_password_reset"))
+            return redirect(url_for("auth.super_admin_password_reset", user_id=user_id))
+
         except Exception as e:
             flash(str(e), "danger")
+            return redirect(url_for("auth.super_admin_password_reset"))
+
+    
 
     users = list(db.users.find(
         {},
-        {"username": 1, "role": 1, "status": 1, "last_login": 1}
-    ).sort("role", 1))
+        {
+            "username": 1,
+            "role": 1,
+            "status": 1,
+            "last_login": 1,
+            "full_name": 1,
+            "email": 1,
+            "phone": 1,
+            "state_id": 1,
+            "district_id": 1,
+            "block_id": 1,
+            "clf_id": 1,
+            "pg_id": 1,
+            "created_at": 1,
+            "created_by": 1,
+            "password_reset_at": 1,
+        }
+    ).sort([("role", 1), ("username", 1)]))
+
     for u in users:
         u["_id"] = str(u["_id"])
+        u["status"] = u.get("status") or "active"
 
-    return render_template("user_reset_password.html", users=users)
+    
+    return render_template(
+    "user_reset_password.html",
+    users=users
 
+    )
+
+
+@auth_bp.route("/users/password-reset/<user_id>/edit", methods=["GET", "POST"])
+@roles_required("SUPER_ADMIN")
+def super_admin_user_edit(user_id):
+    """
+    SUPER_ADMIN user edit page.
+
+    Functional now:
+    - Reset password
+    - Enable/disable user status
+
+    Placeholder now:
+    - Activity log section
+    """
+    db = current_app.mongo_db
+
+    if not user_id or not ObjectId.is_valid(user_id):
+        flash("Invalid user.", "danger")
+        return redirect(url_for("auth.super_admin_password_reset"))
+
+    user_obj_id = ObjectId(user_id)
+    user = db.users.find_one(
+        {"_id": user_obj_id},
+        {
+            "username": 1,
+            "role": 1,
+            "status": 1,
+            "last_login": 1,
+            "full_name": 1,
+            "email": 1,
+            "phone": 1,
+            "state_id": 1,
+            "district_id": 1,
+            "block_id": 1,
+            "clf_id": 1,
+            "pg_id": 1,
+            "created_at": 1,
+            "created_by": 1,
+            "password_hash": 1,
+            "password_reset_at": 1,
+            "password_reset_by": 1,
+        }
+    )
+
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for("auth.super_admin_password_reset"))
+
+    if request.method == "POST":
+        try:
+            action = (request.form.get("action") or "").strip()
+
+            if action == "reset_password":
+                new_password = request.form.get("new_password", "")
+                confirm_password = request.form.get("confirm_password", "")
+
+                if not new_password or len(new_password) < 6:
+                    raise ValueError("Password must be at least 6 characters.")
+
+                if not confirm_password:
+                    raise ValueError("Please confirm the new password.")
+
+                if new_password != confirm_password:
+                    raise ValueError("New password and confirm password do not match.")
+
+                if user.get("password_hash") and verify_password(new_password, user.get("password_hash")):
+                    raise ValueError("New password cannot be the same as the current password.")
+
+                db.users.update_one(
+                    {"_id": user_obj_id},
+                    {"$set": {
+                        "password_hash": hash_password(new_password),
+                        "password_reset_at": datetime.utcnow(),
+                        "password_reset_by": ObjectId(session.get("user_id")) if session.get("user_id") else None,
+                        "updated_at": datetime.utcnow(),
+                    }}
+                )
+
+                flash("Password reset successfully.", "success")
+                return redirect(url_for("auth.super_admin_user_edit", user_id=user_id))
+
+            elif action == "toggle_status":
+                current_status = (user.get("status") or "active").lower()
+                new_status = "disabled" if current_status == "active" else "active"
+
+                db.users.update_one(
+                    {"_id": user_obj_id},
+                    {"$set": {
+                        "status": new_status,
+                        "status_updated_at": datetime.utcnow(),
+                        "status_updated_by": ObjectId(session.get("user_id")) if session.get("user_id") else None,
+                        "updated_at": datetime.utcnow(),
+                    }}
+                )
+
+                flash(f"User status changed to {new_status}.", "success")
+                return redirect(url_for("auth.super_admin_user_edit", user_id=user_id))
+
+            else:
+                raise ValueError("Invalid action.")
+
+        except Exception as e:
+            flash(str(e), "danger")
+            return redirect(url_for("auth.super_admin_user_edit", user_id=user_id))
+
+    user["_id"] = str(user["_id"])
+    user["status"] = user.get("status") or "active"
+
+    def _has_value(value):
+        return value not in (None, "", [], {})
+
+    def _fmt_value(value):
+        if isinstance(value, ObjectId):
+            return str(value)
+        return value
+
+    user_summary_fields = []
+
+    # Always useful identity fields
+    user_summary_fields.append({
+        "label": "Username",
+        "value": user.get("username") or "-",
+        "type": "text",
+    })
+
+    user_summary_fields.append({
+        "label": "Role",
+        "value": user.get("role") or "-",
+        "type": "role",
+    })
+
+    user_summary_fields.append({
+        "label": "Status",
+        "value": user.get("status") or "active",
+        "type": "status",
+    })
+
+    # Only show optional fields if they actually exist for this user
+    optional_fields = [
+        ("Full Name", "full_name"),
+        ("Email", "email"),
+        ("Phone", "phone"),
+        ("Last Login", "last_login"),
+        ("Created At", "created_at"),
+        ("Created By", "created_by"),
+        ("Password Reset At", "password_reset_at"),
+        ("State ID", "state_id"),
+        ("District ID", "district_id"),
+        ("Block ID", "block_id"),
+        ("CLF ID", "clf_id"),
+        ("PG ID", "pg_id"),
+    ]
+
+    for label, key in optional_fields:
+        value = user.get(key)
+        if _has_value(value):
+            user_summary_fields.append({
+                "label": label,
+                "value": _fmt_value(value),
+                "type": "text",
+            })
+
+    # Placeholder for now. Later we can connect this with real audit/activity collection.
+    activity_logs = []
+
+    return render_template(
+        "user_edit.html",
+        user=user,
+        user_summary_fields=user_summary_fields,
+        activity_logs=activity_logs
+    )
 
 @auth_bp.route("/notifications")
 @login_required

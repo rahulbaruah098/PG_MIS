@@ -11,13 +11,6 @@
 {% block content %}
 <script>window.PG_ID = "{{ pg_id|default('') }}";</script>
 <style>
-/* ============================================================
-   ASSET REGISTER — SCOPED under .ar-wrap
-   ✅ UI/UX skin copied from Ledger Book (compact + clean)
-   ✅ WebView: modals compact (not huge)
-   ✅ Mobile/WebView: inputs are BIG + values visible (no blank look)
-   ✅ NO changes to existing data contents / IDs / logic
-============================================================ */
 
 .ar-wrap{
   width: 100%;
@@ -65,20 +58,31 @@
 
 /* Header (Ledger style) */
 .ar-head{
-  padding: 14px 16px 12px;
+  padding:14px 16px 12px;
   background:
     radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
     linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
-  border-bottom: 1.5px solid var(--line2);
-  position: relative;
-  display:flex;
+  border-bottom:1.5px solid var(--line2);
+  position:relative;
+  display:grid;
+  grid-template-columns:44px 1fr auto;
   align-items:center;
-  gap: 10px;
+  gap:12px;
 }
 .ar-titleWrap{
-  flex: 1 1 auto;
-  min-width: 0;
+  grid-column:2;
+  min-width:0;
   text-align:center;
+}
+
+.ar-headActions{
+  grid-column:3;
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
 }
 .ar-title{
   margin:0;
@@ -173,22 +177,84 @@
   color: rgba(15,23,42,.84);
 }
 
+/* ✅ Top buttons: Edit / Save / Cancel = strong highlighted colours */
+.ar-btn.ar-red{
+  background:linear-gradient(180deg, #ef4444, #dc2626) !important;
+  border-color:rgba(185,28,28,.58) !important;
+  color:#ffffff !important;
+  box-shadow:0 16px 28px -18px rgba(220,38,38,.75) !important;
+}
+
+.ar-btn.ar-red:hover{
+  background:linear-gradient(180deg, #f87171, #dc2626) !important;
+  border-color:rgba(185,28,28,.72) !important;
+  color:#ffffff !important;
+}
+
+.ar-btn.ar-green{
+  background:linear-gradient(180deg, #22c55e, #16a34a) !important;
+  border-color:rgba(21,128,61,.58) !important;
+  color:#ffffff !important;
+  box-shadow:0 16px 28px -18px rgba(22,163,74,.75) !important;
+}
+
+.ar-btn.ar-green:hover{
+  background:linear-gradient(180deg, #4ade80, #16a34a) !important;
+  border-color:rgba(21,128,61,.72) !important;
+  color:#ffffff !important;
+}
+
+/* ✅ Bottom toolbar buttons: soft outlined style */
+.ar-btn.ar-soft-red{
+  border:1.5px solid rgba(220,38,38,.20) !important;
+  background:rgba(220,38,38,.045) !important;
+  color:#b42318 !important;
+  box-shadow:none !important;
+}
+
+.ar-btn.ar-soft-red:hover{
+  background:rgba(220,38,38,.075) !important;
+  border-color:rgba(220,38,38,.32) !important;
+  color:#991b1b !important;
+  box-shadow:0 14px 22px -20px rgba(220,38,38,.25) !important;
+}
+
+.ar-btn.ar-soft-green{
+  border:1.5px solid rgba(11,77,58,.16) !important;
+  background:rgba(16,185,129,.065) !important;
+  color:#0b4d3a !important;
+  box-shadow:none !important;
+}
+
+.ar-btn.ar-soft-green:hover{
+  background:rgba(16,185,129,.10) !important;
+  border-color:rgba(11,77,58,.26) !important;
+  color:#064e3b !important;
+  box-shadow:0 14px 22px -20px rgba(11,77,58,.25) !important;
+}
+
 /* Card body (Ledger-like sections) */
 .ar-card{
   padding: 0;
   background: rgba(255,255,255,.96);
 }
 
-/* Top action bar (Ledger actions-bar) */
+
+
+/* Table action toolbar: hidden until Edit mode */
 .ar-actions-bar{
-  padding: 10px 16px;
-  display:flex;
+  padding:12px 16px;
+  display:none;
   align-items:center;
-  justify-content: space-between;
-  gap: 10px;
-  border-bottom: 1.5px solid var(--line2);
-  background: rgba(255,255,255,.94);
-  flex-wrap: wrap;
+  justify-content:flex-end;
+  gap:10px;
+  border-bottom:1.5px solid var(--line2);
+  background:rgba(255,255,255,.94);
+  flex-wrap:wrap;
+}
+
+.ar-wrap.is-editing .ar-actions-bar{
+  display:flex;
 }
 .ar-cardTitle{
   margin:0;
@@ -200,29 +266,30 @@
 .ar-toolbar{
   display:flex;
   align-items:center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap:10px;
+  flex-wrap:wrap;
   justify-content:flex-end;
 }
 
-/* ✅ Make this toolbar section mobile-responsive (only layout improvement) */
+.ar-toolbar .ar-btn{
+  min-height:44px;
+  padding:11px 18px;
+  font-size:12.8px;
+}
+
+.ar-toolbar #arDeleteSelectedBtn,
+.ar-toolbar #arDeleteAllBtn{
+  min-width:168px;
+}
+
+.ar-toolbar #arAddRowBtn{
+  min-width:132px;
+}
+
+/*  Old mixed toolbar removed. Header and table actions now handle placement. */
 @media (max-width: 680px){
   .ar-actions-bar{
-    align-items:flex-start;
-  }
-  .ar-toolbar{
-    width: 100%;
-    justify-content:flex-start; /* looks better on mobile */
-  }
-  .ar-toolbar .ar-btn{
-    flex: 1 1 calc(50% - 10px); /* 2 buttons per row */
-    justify-content:center;
-    min-width: 0;
-  }
-}
-@media (max-width: 420px){
-  .ar-toolbar .ar-btn{
-    flex: 1 1 100%; /* stack */
+    align-items:stretch;
   }
 }
 
@@ -549,10 +616,72 @@
 
 
 /* ============================================================
-   ✅ Mobile/app: swipe row-cards + BIG inputs (like Ledger)
-   ✅ FIX: nothing should overflow / go out of card on small screens
+    Mobile/app: swipe row-cards + BIG inputs (like Ledger)
+  
 ============================================================ */
 @media (max-width: 860px){
+
+  /* ✅ Mobile/app header buttons */
+.ar-head{
+  grid-template-columns:44px 1fr;
+  align-items:start;
+}
+
+.ar-titleWrap{
+  grid-column:2;
+  text-align:left;
+  padding:0 8px;
+}
+
+.ar-headActions{
+  grid-column:1 / -1;
+  width:100%;
+  justify-self:stretch;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:10px;
+}
+
+.ar-headActions .ar-btn{
+  width:100%;
+  justify-content:center;
+  min-height:52px;
+}
+
+.ar-headActions #arEditBtn{
+  grid-column:1 / -1;
+}
+
+.ar-wrap.is-editing .ar-headActions #arSaveBtn{
+  grid-column:1;
+}
+
+.ar-wrap.is-editing .ar-headActions #arCancelBtn{
+  grid-column:2;
+}
+
+/*  Mobile/app table buttons */
+.ar-actions-bar{
+  padding:12px 14px;
+  justify-content:stretch;
+}
+
+.ar-toolbar{
+  width:100%;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+
+.ar-toolbar .ar-btn{
+  width:100%;
+  min-width:0 !important;
+  min-height:58px;
+  justify-content:center;
+  padding:14px 16px;
+  font-size:14px;
+}
   .ar-titleWrap{ text-align:left; }
   .ar-table{ min-width: 0; }
   .ar-table, .ar-table thead, .ar-table tbody{ display:block; width: 100%; }
@@ -653,6 +782,25 @@
   .ar-title{ font-size: 16px; }
   .ar-mactions{ justify-content: stretch; }
   .ar-ghostBtn, .ar-solidBtn{ min-width: 100%; }
+  .ar-headActions{
+  grid-template-columns:1fr 1fr;
+}
+
+.ar-headActions #arEditBtn{
+  grid-column:1 / -1;
+}
+
+.ar-wrap.is-editing .ar-headActions #arSaveBtn{
+  grid-column:1;
+}
+
+.ar-wrap.is-editing .ar-headActions #arCancelBtn{
+  grid-column:2;
+}
+
+.ar-toolbar{
+  grid-template-columns:1fr;
+}
 }
 
 /* ✅ Keep Select + checkbox on SAME LINE */
@@ -698,103 +846,98 @@
 
       <!-- Header -->
       <div class="ar-head">
-        <a class="ar-btn ar-btnBack" href="{{ url_for('pg.pg_home') }}" aria-label="Back">
-          <ion-icon name="arrow-back"></ion-icon>
+  <a class="ar-btn ar-btnBack" href="{{ url_for('pg.pg_home') }}" aria-label="Back">
+    <ion-icon name="arrow-back"></ion-icon>
+  </a>
 
-        </a>
+  <div class="ar-titleWrap">
+    <h1 class="ar-title ar-i18n">
+      <span data-lang="en">Asset Register</span>
+      <span data-lang="bn">সম্পদ খাতা</span>
+    </h1>
+    <div class="ar-sub ar-i18n">
+      <span data-lang="en">Register & track PG assets</span>
+      <span data-lang="bn">উৎপাদক দলের সম্পদ রেকর্ড ও ট্র্যাকিং</span>
+    </div>
+  </div>
 
-        <div class="ar-titleWrap">
-          <h1 class="ar-title ar-i18n">
-            <span data-lang="en">Asset Register</span>
-            <span data-lang="bn">সম্পদ খাতা</span>
-          </h1>
-          <div class="ar-sub ar-i18n">
-            <span data-lang="en">Register & track PG assets</span>
-            <span data-lang="bn">উৎপাদক দলের সম্পদ রেকর্ড ও ট্র্যাকিং</span>
-          </div>
-        </div>
+  <div class="ar-headActions">
+    <button type="button" class="ar-btn ar-red" id="arEditBtn">
+      <ion-icon name="create-outline"></ion-icon>
+      <span class="ar-i18n">
+        <span data-lang="en">Edit</span>
+        <span data-lang="bn">এডিট</span>
+      </span>
+    </button>
 
-        <div class="ar-actionsTop" aria-hidden="true"></div>
-      </div>
+    <button type="button" class="ar-btn ar-green" id="arSaveBtn" style="display:none;">
+      <ion-icon name="save-outline"></ion-icon>
+      <span class="ar-i18n">
+        <span data-lang="en">Save</span>
+        <span data-lang="bn">সেভ</span>
+      </span>
+    </button>
+
+    <button type="button" class="ar-btn ar-red" id="arCancelBtn" style="display:none;">
+      <ion-icon name="close-circle-outline"></ion-icon>
+      <span class="ar-i18n">
+        <span data-lang="en">Cancel</span>
+        <span data-lang="bn">বাতিল</span>
+      </span>
+    </button>
+  </div>
+</div>
 
       <!-- Main Card -->
       <div class="ar-card">
-        <div class="ar-actions-bar">
-          <!-- ✅ Removed duplicate "Asset Register" title (keep only header one) -->
+<div class="ar-topFields">
+  <div class="ar-labelLine">
+    <div class="ar-labelMain ar-i18n">
+      <span data-lang="en">Name of Producers Group</span>
+      <span data-lang="bn">উৎপাদক দলের নাম</span>
+    </div>
 
-          <div class="ar-toolbar" id="arToolbar">
-            <button type="button" class="ar-btn ar-primary" id="arEditBtn">
-              <ion-icon name="create-outline"></ion-icon>
-              <span class="ar-i18n">
-                <span data-lang="en">Edit</span>
-                <span data-lang="bn">এডিট</span>
-              </span>
-            </button>
+    <div class="ar-inputLine">
+      <input
+        class="ar-input ar-input-highlight"
+        name="pg_name_display"
+        id="arPgName"
+        value="{{ pg.name if pg is defined and pg and pg.name else (session.get('pg_name') or '') }}"
+        placeholder="Enter Producers Group name"
+        autocomplete="off"
+        disabled
+      />
+    </div>
+  </div>
+</div>
 
-            <button type="button" class="ar-btn ar-ghost" id="arAddRowBtn" style="display:none;">
-              <ion-icon name="add-circle-outline"></ion-icon>
-              <span class="ar-i18n">
-                <span data-lang="en">Add Row</span>
-                <span data-lang="bn">রো যোগ করুন</span>
-              </span>
-            </button>
+<div class="ar-actions-bar">
+  <div class="ar-toolbar" id="arToolbar">
+    <button type="button" class="ar-btn ar-soft-red" id="arDeleteSelectedBtn" style="display:none;">
+      <ion-icon name="trash-outline"></ion-icon>
+      <span class="ar-i18n">
+        <span data-lang="en">Delete Selected</span>
+        <span data-lang="bn">নির্বাচিত ডিলিট</span>
+      </span>
+    </button>
 
-            <button type="button" class="ar-btn ar-danger" id="arDeleteSelectedBtn" style="display:none;">
-              <ion-icon name="trash-outline"></ion-icon>
-              <span class="ar-i18n">
-                <span data-lang="en">Delete Selected</span>
-                <span data-lang="bn">নির্বাচিত ডিলিট</span>
-              </span>
-            </button>
+    <button type="button" class="ar-btn ar-soft-red" id="arDeleteAllBtn" style="display:none;">
+      <ion-icon name="trash-bin-outline"></ion-icon>
+      <span class="ar-i18n">
+        <span data-lang="en">Delete All</span>
+        <span data-lang="bn">সব ডিলিট</span>
+      </span>
+    </button>
 
-            <button type="button" class="ar-btn ar-danger" id="arDeleteAllBtn" style="display:none;">
-              <ion-icon name="trash-bin-outline"></ion-icon>
-              <span class="ar-i18n">
-                <span data-lang="en">Delete All</span>
-                <span data-lang="bn">সব ডিলিট</span>
-              </span>
-            </button>
-
-            <button type="button" class="ar-btn ar-primary" id="arSaveBtn" style="display:none;">
-              <ion-icon name="save-outline"></ion-icon>
-              <span class="ar-i18n">
-                <span data-lang="en">Save</span>
-                <span data-lang="bn">সেভ</span>
-              </span>
-            </button>
-
-            <button type="button" class="ar-btn ar-ghost" id="arCancelBtn" style="display:none;">
-              <ion-icon name="close-circle-outline"></ion-icon>
-              <span class="ar-i18n">
-                <span data-lang="en">Cancel</span>
-                <span data-lang="bn">বাতিল</span>
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <div class="ar-topFields">
-          <div class="ar-labelLine">
-            <div class="ar-labelMain ar-i18n">
-              <span data-lang="en">Name of Producers Group</span>
-              <span data-lang="bn">উৎপাদক দলের নাম</span>
-            </div>
-
-            <div class="ar-inputLine">
-              <input
-                class="ar-input ar-input-highlight"
-                name="pg_name_display"
-                id="arPgName"
-                value="{{ pg.name if pg is defined and pg and pg.name else (session.get('pg_name') or '') }}"
-                placeholder="Enter Producers Group name"
-                autocomplete="off"
-                disabled
-              />
-            </div>
-          </div>
-
-         
-        </div>
+    <button type="button" class="ar-btn ar-soft-green" id="arAddRowBtn" style="display:none;">
+      <ion-icon name="add-circle-outline"></ion-icon>
+      <span class="ar-i18n">
+        <span data-lang="en">Add Row</span>
+        <span data-lang="bn">রো যোগ করুন</span>
+      </span>
+    </button>
+  </div>
+</div>
 
         <form method="POST" id="arForm">
           <div class="ar-table-wrap">
@@ -1208,21 +1351,25 @@
   }
 
   function restoreRows(rows){
-    tbody.innerHTML = '';
-    (Array.isArray(rows) ? rows : []).forEach((row) => {
-      newRow();
-      const tr = tbody.lastElementChild;
-      if (!tr) return;
-      tr.querySelector('input[name="asset_name[]"]').value = row.asset_name || row.name || "";
-      tr.querySelector('input[name="quantity[]"]').value = row.quantity || row.qty || "";
-      tr.querySelector('input[name="purchase_date[]"]').value = row.purchase_date || row.date || "";
-      tr.querySelector('input[name="asset_no[]"]').value = row.asset_no || "";
-      tr.querySelector('input[name="asset_value[]"]').value = row.asset_value || row.value || "";
-      tr.querySelector('input[name="remarks[]"]').value = row.remarks || "";
-    });
-    ensureAtLeastOneRow();
-    renumber();
-  }
+  tbody.innerHTML = '';
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    newRow();
+    const tr = tbody.lastElementChild;
+    if (!tr) return;
+    tr.querySelector('input[name="asset_name[]"]').value = row.asset_name || row.name || "";
+    tr.querySelector('input[name="quantity[]"]').value = row.quantity || row.qty || "";
+    tr.querySelector('input[name="purchase_date[]"]').value = row.purchase_date || row.date || "";
+    tr.querySelector('input[name="asset_no[]"]').value = row.asset_no || "";
+    tr.querySelector('input[name="asset_value[]"]').value = row.asset_value || row.value || "";
+    tr.querySelector('input[name="remarks[]"]').value = row.remarks || "";
+  });
+
+  ensureAtLeastOneRow();
+  renumber();
+
+  //  Important: keep loaded rows locked unless Edit mode is active
+  setToolbarMode(isEditing);
+}
 
 
   async function hydrateAssetPgName(){
@@ -1296,11 +1443,12 @@
     tbody.querySelectorAll('.arRowCheck').forEach(ch => ch.style.display = show ? '' : 'none');
   }
 
-  function setToolbarMode(editing){
-    wrap.classList.toggle('is-view', !editing);
+ function setToolbarMode(editing){
+  wrap.classList.toggle('is-view', !editing);
+  wrap.classList.toggle('is-editing', !!editing);
 
-    editBtn.style.display = editing ? 'none' : '';
-    saveBtn.style.display = editing ? '' : 'none';
+  editBtn.style.display = editing ? 'none' : '';
+  saveBtn.style.display = editing ? '' : 'none';
 
     addBtn.style.display = editing ? '' : 'none';
     delSelBtn.style.display = editing ? '' : 'none';

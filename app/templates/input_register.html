@@ -10,40 +10,7 @@
 <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 
 <style>
-  /* ============================================================
-     INPUT (PURCHASE/SALE/STOCK) REGISTER — IMAGE-ACCURATE CONTENT
-     ✅ Table columns match the printed register image (1–17):
-        Purchase: 1 Date, 2 Bill No, 3 Supplier, 4 Qty, 5 Rate, 6 Total, 7 Cashbook Folio
-        Sale: 8 Date, 9 Bill No of PG, 10 Member farmer, 11 Qty, 12 Rate, 13 Amount, 14 Cashbook Folio
-        Stock: 15 Closing Stock Qty (15=4-11), 16 Rate, 17 Amount
-     ✅ NO extra “Date” field above the table (removed)
-     ✅ 4 sections: All / Purchase / Sale / Stock
-     ✅ IMPORTANT FIX:
-        - When viewing Purchase/Sale/Stock tabs, the unwanted group headers
-          “Sale of input to members” and “Stock” are REMOVED from that view
-          (no extra blank columns / no unnecessary group headers)
-     ✅ Stock tab shows "Closing Stock Qty" (NOT date) as the first stock field
-     ✅ Translate button REMOVED from this page (uses GLOBAL navbar translation)
-     ✅ Output-register features: Edit↔Save toggle, Cancel, confirmations,
-        select-all, delete selected, delete all, print, export CSV, funky top-right toast (not green),
-        mobile/tablet/app swipe cards view
 
-     ✅ FIXED NOW (per your requests):
-        - GLOBAL navbar language change now reliably updates this page (poll + event hooks + storage)
-        - Remove Save Draft + Load Draft buttons
-        - Default: keep at least 1 blank row always (never zero rows)
-        - Mobile title cropping fixed
-        - Back button: only arrow (no text) + shown ONLY on mobile/tablet/app (hidden on desktop/web)
-        - Remember active tab on refresh (stay on Sale/Stock/etc)
-        - Mobile buttons spacing improved (less messy)
-
-     ✅ NEW (your request):
-        - Page lock while Edit Mode is active:
-          • Block refresh/reload (browser refresh too) + closing tab
-          • Block internal/external navigation (links, back/forward, history navigation)
-          • Warn user; allow navigation again only after Save or Cancel
-
-     ============================================================ */
 
   .input-register-page{
     width: 100%;
@@ -93,16 +60,16 @@
 
   /* Header */
   .input-register-page .head{
-    padding: 14px 16px 12px;
-    background:
-      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
-      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
-    border-bottom: 1.5px solid var(--line2);
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    gap: 10px;
-  }
+  padding:14px 16px 12px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
+    linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
+  border-bottom:1.5px solid var(--line2);
+  display:grid;
+  grid-template-columns:44px 1fr auto;
+  align-items:center;
+  gap:12px;
+}
 
 /* Back button: hidden by default */
 .input-register-page .btn.backBtn{
@@ -116,11 +83,21 @@
 }
 
   .input-register-page .titleWrap{
-    flex: 1 1 auto;
-    min-width: 0;
-    text-align:center;
-    padding: 0 8px;
-  }
+  grid-column:2;
+  min-width:0;
+  text-align:center;
+  padding:0 8px;
+}
+
+.input-register-page .headActions{
+  grid-column:3;
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
 
   /* Title cropping fix on mobile: allow wrap + 2 lines */
   .input-register-page .title{
@@ -194,6 +171,62 @@
     background: rgba(241,245,249,.75);
     color: rgba(15,23,42,.78);
   }
+
+  /* ✅ Top buttons: Edit / Save / Cancel = strong highlighted colours */
+.input-register-page .btn.btn-red{
+  background:linear-gradient(180deg, #ef4444, #dc2626) !important;
+  border-color:rgba(185,28,28,.58) !important;
+  color:#ffffff !important;
+  box-shadow:0 16px 28px -18px rgba(220,38,38,.75) !important;
+}
+
+.input-register-page .btn.btn-red:hover{
+  background:linear-gradient(180deg, #f87171, #dc2626) !important;
+  border-color:rgba(185,28,28,.72) !important;
+  color:#ffffff !important;
+}
+
+.input-register-page .btn.btn-green{
+  background:linear-gradient(180deg, #22c55e, #16a34a) !important;
+  border-color:rgba(21,128,61,.58) !important;
+  color:#ffffff !important;
+  box-shadow:0 16px 28px -18px rgba(22,163,74,.75) !important;
+}
+
+.input-register-page .btn.btn-green:hover{
+  background:linear-gradient(180deg, #4ade80, #16a34a) !important;
+  border-color:rgba(21,128,61,.72) !important;
+  color:#ffffff !important;
+}
+
+/* ✅ Bottom row/table action buttons = soft outlined colours */
+.input-register-page .btn.btn-soft-red{
+  border:1.5px solid rgba(220,38,38,.20) !important;
+  background:rgba(220,38,38,.045) !important;
+  color:#b42318 !important;
+  box-shadow:none !important;
+}
+
+.input-register-page .btn.btn-soft-red:hover{
+  background:rgba(220,38,38,.075) !important;
+  border-color:rgba(220,38,38,.32) !important;
+  color:#991b1b !important;
+  box-shadow:0 14px 22px -20px rgba(220,38,38,.25) !important;
+}
+
+.input-register-page .btn.btn-soft-green{
+  border:1.5px solid rgba(11,77,58,.16) !important;
+  background:rgba(16,185,129,.065) !important;
+  color:#0b4d3a !important;
+  box-shadow:none !important;
+}
+
+.input-register-page .btn.btn-soft-green:hover{
+  background:rgba(16,185,129,.10) !important;
+  border-color:rgba(11,77,58,.26) !important;
+  color:#064e3b !important;
+  box-shadow:0 14px 22px -20px rgba(11,77,58,.25) !important;
+}
 
   /* Card */
   .input-register-page .card{
@@ -279,6 +312,65 @@
 
   /* Mobile buttons: less messy */
   @media (max-width: 760px){
+
+.input-register-page .head{
+  grid-template-columns:44px 1fr;
+  align-items:start;
+}
+
+.input-register-page .titleWrap{
+  grid-column:2;
+  text-align:left;
+}
+
+.input-register-page .headActions{
+  grid-column:1 / -1;
+  width:100%;
+  justify-self:stretch;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.input-register-page .headActions .btn{
+  width:100%;
+  justify-content:center;
+  min-height:52px;
+}
+
+.input-register-page .headActions #editSaveBtn{
+  grid-column:1 / -1;
+}
+
+.input-register-page.is-editing .headActions #editSaveBtn{
+  grid-column:1;
+}
+
+.input-register-page.is-editing .headActions #cancelBtn{
+  grid-column:2;
+}
+
+.input-register-page .table-actions{
+  padding:12px 16px;
+  justify-content:stretch;
+}
+
+.input-register-page .table-actions-inner{
+  width:100%;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+
+.input-register-page .table-actions-inner .btn{
+  width:100%;
+  min-width:0 !important;
+  min-height:58px;
+  padding:14px 16px;
+  font-size:14px;
+  justify-content:center;
+}
+
     .input-register-page .actions{
       flex-direction: column;
       align-items: stretch;
@@ -301,10 +393,25 @@
     .input-register-page .actions .btn ion-icon{ font-size: 18px; }
   }
   @media (max-width: 420px){
-    .input-register-page .actions .leftActions,
-    .input-register-page .actions .rightActions{
-      grid-template-columns: 1fr; /* stack on very small screens */
-    }
+   .input-register-page .headActions{
+  grid-template-columns:1fr 1fr;
+}
+
+.input-register-page .headActions #editSaveBtn{
+  grid-column:1 / -1;
+}
+
+.input-register-page.is-editing .headActions #editSaveBtn{
+  grid-column:1;
+}
+
+.input-register-page.is-editing .headActions #cancelBtn{
+  grid-column:2;
+}
+
+.input-register-page .table-actions-inner{
+  grid-template-columns:1fr;
+}
   }
 
   .input-register-page .status{
@@ -387,6 +494,44 @@
     justify-content: space-between;
     gap:10px;
   }
+
+.input-register-page .table-actions{
+  display:none;
+  width:100%;
+  padding:12px 16px;
+  border-bottom:1.5px solid var(--line2);
+  background:#fff;
+  justify-content:flex-end;
+  align-items:center;
+}
+
+.input-register-page.is-editing .table-actions{
+  display:flex;
+}
+
+.input-register-page .table-actions-inner{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  align-items:center;
+}
+
+.input-register-page .table-actions-inner .btn{
+  min-height:44px;
+  padding:11px 18px;
+  font-size:12.8px;
+}
+
+.input-register-page .table-actions-inner #deleteRowsBtn,
+.input-register-page .table-actions-inner #deleteAllBtn{
+  min-width:168px;
+}
+
+.input-register-page .table-actions-inner #addRowBtn{
+  min-width:132px;
+}
+
   .input-register-page .table-note{
     font-size: 12px;
     font-weight: 900;
@@ -828,62 +973,45 @@ body.force-desktop-print .input-register-page table.input-register{
 
       <!-- Header -->
       <div class="head">
-        <!-- Back button: only arrow, mobile/tablet only -->
-        <button class="btn primary backBtn" type="button" onclick="(window.history.length>1)?window.history.back():window.location.href='{{ url_for('pg.pg_home') }}'">
-          <ion-icon name="arrow-back"></ion-icon>
-        </button>
+  <!-- Back button: only arrow, mobile/tablet only -->
+  <button class="btn primary backBtn" type="button" onclick="(window.history.length>1)?window.history.back():window.location.href='{{ url_for('pg.pg_home') }}'">
+    <ion-icon name="arrow-back"></ion-icon>
+  </button>
 
-        <div class="titleWrap">
-          <h1 class="title" id="t_title">Input (Purchase/Sale/Stock) Register</h1>
-        </div>
+  <div class="titleWrap">
+    <h1 class="title" id="t_title">Input (Purchase/Sale/Stock) Register</h1>
+  </div>
 
-        <div style="width:92px;"></div>
-      </div>
+  <div class="headActions">
+    <button class="btn btn-red" type="button" id="editSaveBtn">
+      <ion-icon id="editSaveIcon" name="create"></ion-icon>
+      <span id="editSaveText">Edit</span>
+    </button>
+
+    <button class="btn btn-red" type="button" id="cancelBtn" style="display:none;">
+      <ion-icon name="close-circle"></ion-icon>
+      <span id="t_cancel">Cancel</span>
+    </button>
+  </div>
+</div>
 
       <!-- Meta -->
     <div class="card">
 
-  <!-- Actions FIRST -->
-  <div class="actions">
-    <div class="leftActions">
-      <button class="btn primary" type="button" id="editSaveBtn">
-        <ion-icon id="editSaveIcon" name="create"></ion-icon>
-        <span id="editSaveText">Edit</span>
-      </button>
+<!-- Export / Print actions only -->
+<div class="actions">
+  <div class="rightActions">
+    <button class="btn" type="button" id="exportCsvBtn">
+      <ion-icon name="download"></ion-icon>
+      <span id="t_export_csv">Export CSV</span>
+    </button>
 
-      <button class="btn muted" type="button" id="cancelBtn" style="display:none;">
-        <ion-icon name="close-circle"></ion-icon>
-        <span id="t_cancel">Cancel</span>
-      </button>
-
-      <button class="btn primary" type="button" id="addRowBtn" style="display:none;">
-        <ion-icon name="add-circle"></ion-icon>
-        <span id="t_add_row">Add Row</span>
-      </button>
-
-      <button class="btn danger" type="button" id="deleteRowsBtn" style="display:none;">
-        <ion-icon name="trash"></ion-icon>
-        <span id="t_delete_selected">Delete Selected</span>
-      </button>
-
-      <button class="btn danger" type="button" id="deleteAllBtn" style="display:none;">
-        <ion-icon name="trash-bin"></ion-icon>
-        <span id="t_delete_all">Delete All</span>
-      </button>
-    </div>
-
-    <div class="rightActions">
-      <button class="btn" type="button" id="exportCsvBtn">
-        <ion-icon name="download"></ion-icon>
-        <span id="t_export_csv">Export CSV</span>
-      </button>
-
-      <button class="btn" type="button" id="printBtn">
-        <ion-icon name="print"></ion-icon>
-        <span id="t_print">Print</span>
-      </button>
-    </div>
+    <button class="btn" type="button" id="printBtn">
+      <ion-icon name="print"></ion-icon>
+      <span id="t_print">Print</span>
+    </button>
   </div>
+</div>
 
   <!-- Inputs BELOW buttons (still editable via Edit/Save) -->
   <div class="top-grid" style="margin-top: 12px;">
@@ -924,12 +1052,31 @@ body.force-desktop-print .input-register-page table.input-register{
  
  
 </div>
-        <div class="table-top">
-          <div class="muted" id="sectionHint">Showing: All columns</div>
-        </div>
+       <div class="table-top">
+  <div class="muted" id="sectionHint">Showing: All columns</div>
+</div>
 
-        <!-- Desktop table -->
-        <div class="table-wrap" id="desktopTableWrap">
+<div class="table-actions" id="tableActions">
+  <div class="table-actions-inner">
+    <button class="btn btn-soft-red" type="button" id="deleteRowsBtn" style="display:none;">
+      <ion-icon name="trash"></ion-icon>
+      <span id="t_delete_selected">Delete Selected</span>
+    </button>
+
+    <button class="btn btn-soft-red" type="button" id="deleteAllBtn" style="display:none;">
+      <ion-icon name="trash-bin"></ion-icon>
+      <span id="t_delete_all">Delete All</span>
+    </button>
+
+    <button class="btn btn-soft-green" type="button" id="addRowBtn" style="display:none;">
+      <ion-icon name="add-circle"></ion-icon>
+      <span id="t_add_row">Add Row</span>
+    </button>
+  </div>
+</div>
+
+<!-- Desktop table -->
+<div class="table-wrap" id="desktopTableWrap">
           <table class="input-register" id="regTable">
             <thead>
               <tr class="group" id="groupRow">
@@ -1667,16 +1814,26 @@ body.force-desktop-print .input-register-page table.input-register{
 };
 
   function applyEditModeUI(){
-    els.inputName.readOnly = !editMode;
-    els.unit.readOnly = !editMode;
+  const root = document.querySelector(".input-register-page");
+  if (root) root.classList.toggle("is-editing", !!editMode);
 
-    els.editSaveText.textContent = editMode ? T[lang].save : T[lang].edit;
-    els.editSaveIcon.setAttribute("name", editMode ? "save" : "create");
+  els.inputName.readOnly = !editMode;
+  els.unit.readOnly = !editMode;
 
-    els.cancelBtn.style.display = editMode ? "inline-flex" : "none";
-    els.addRowBtn.style.display = editMode ? "inline-flex" : "none";
-    els.deleteRowsBtn.style.display = editMode ? "inline-flex" : "none";
-    els.deleteAllBtn.style.display = editMode ? "inline-flex" : "none";
+  els.editSaveText.textContent = editMode ? T[lang].save : T[lang].edit;
+  els.editSaveIcon.setAttribute("name", editMode ? "save" : "create");
+
+  // ✅ Edit = strong red, Save = strong green
+  els.editSaveBtn.classList.toggle("btn-red", !editMode);
+  els.editSaveBtn.classList.toggle("btn-green", editMode);
+
+  // ✅ Cancel = strong red
+  els.cancelBtn.classList.add("btn-red");
+
+  els.cancelBtn.style.display = editMode ? "inline-flex" : "none";
+  els.addRowBtn.style.display = editMode ? "inline-flex" : "none";
+  els.deleteRowsBtn.style.display = editMode ? "inline-flex" : "none";
+  els.deleteAllBtn.style.display = editMode ? "inline-flex" : "none";
 
     els.selectAll.disabled = !editMode;
 
