@@ -3,43 +3,27 @@
 
 {% block content %}
 <script>window.PG_ID = "{{ pg_id|default('') }}";</script>
-<style>
-  /* ============================================================
-     LOAN LEDGER (SCOPED) — under .ll-wrap only
-     ✅ Same design language as your Ledger Book page
-     ✅ Search + rows-per-page + pagination (ONLY bottom pager)
-     ✅ Edit/Save + Cancel + Add Row
-     ✅ Multi-select + Delete Selected + Delete All (edit-mode only)
-     ✅ Confirmation + warning popups (Save/Cancel/Delete/Lock)
-     ✅ Page lock while editing (prevents navigation/reload)
-     ✅ Auto-calculation:
-        Principal Outstanding, Interest Outstanding, Total Outstanding
-        (running: prev_out + due - paid)
-     ✅ Fully responsive: web + tablet + app/mobile swipe cards
-     ============================================================ */
 
+<style>
   .ll-wrap{
-    width: 100%;
-    padding: clamp(12px, 2.2vw, 22px);
+    width:100%;
+    padding:clamp(12px,2.2vw,22px);
     --ink:#0f172a;
     --muted:#64748b;
-
-    --line: rgba(15,23,42,.18);
-    --line2: rgba(15,23,42,.12);
-
-    --paper:#ffffff;
+    --line:rgba(15,23,42,.18);
+    --line2:rgba(15,23,42,.12);
+    --paper:#fff;
     --soft:#f7faf9;
     --accent:#0b4d3a;
-    color: var(--ink);
+    color:var(--ink);
   }
-  .ll-wrap *{ box-sizing:border-box; }
-
+  .ll-wrap *{box-sizing:border-box}
   .ll-sheet{
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 18px 34px -26px rgba(15,23,42,.35);
   }
 .ll-head{
   padding: 18px 16px;
@@ -108,6 +92,57 @@
   .ll-head-actions{
     grid-column:3;
     justify-self:end;
+  .ll-head{
+    padding:18px 16px;
+    min-height:92px;
+    background:
+      radial-gradient(circle at 15% 20%,rgba(11,77,58,.10),transparent 55%),
+      linear-gradient(135deg,rgba(240,253,244,.9),rgba(255,255,255,.92));
+    border-bottom:1.5px solid var(--line2);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+  }
+  .ll-back{
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    border:1px solid rgba(15,23,42,.14);
+    background:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    position:absolute;
+    left:16px;
+    top:50%;
+    transform:translateY(-50%);
+  }
+  .ll-back svg{width:18px;height:18px}
+  @media (min-width:721px){.ll-back{display:none}}
+  .ll-title{
+    margin:0;
+    font-weight:850;
+    font-size:18px;
+    letter-spacing:.2px;
+    line-height:1.2;
+    text-align:center;
+  }
+  .ll-head-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  @media (min-width:721px){
+    .ll-head-actions{
+      position:absolute;
+      right:16px;
+      top:50%;
+      transform:translateY(-50%);
+    }
   }
 }
 
@@ -159,42 +194,42 @@
 }
 
   .ll-btn{
-    border: 1px solid rgba(15,23,42,.14);
-    background: rgba(247,250,249,.8);
-    color: var(--ink);
-    border-radius: 999px;
-    padding: 10px 14px;
-    font-weight: 950;
-    font-size: 12px;
-    cursor: pointer;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.8);
+    color:var(--ink);
+    border-radius:999px;
+    padding:10px 14px;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
+    transition:transform .15s ease,box-shadow .2s ease,background .2s ease,opacity .2s ease;
     display:inline-flex;
     align-items:center;
-    gap: 8px;
-    user-select: none;
-    white-space: nowrap;
+    gap:8px;
+    user-select:none;
+    white-space:nowrap;
+    text-decoration:none;
   }
   .ll-btn:hover{
-    transform: translateY(-1px);
-    background: #fff;
-    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
   }
   .ll-btn:disabled{
-    opacity: .45;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
   }
   .ll-btn.ll-primary{
-    border-color: rgba(16,185,129,.35);
-    background: rgba(16,185,129,.12);
+    border-color:rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
     color:#0b4d3a;
   }
-  .ll-btn.ll-primary:hover{ background: rgba(16,185,129,.16); }
   .ll-btn.ll-danger{
-    border-color: rgba(239,68,68,.35);
-    background: rgba(239,68,68,.10);
-    color: rgba(127,29,29,.95);
+    border-color:rgba(239,68,68,.35);
+    background:rgba(239,68,68,.10);
+    color:rgba(127,29,29,.95);
   }
   .ll-btn.ll-danger:hover{ background: rgba(239,68,68,.14); }
 
@@ -258,283 +293,259 @@
   .ll-hidden{ display:none !important; }
 
   .ll-topfields{
-    padding: 10px 16px 14px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px 14px;
-    border-bottom: 1.5px solid var(--line2);
-    background: rgba(255,255,255,.92);
+    padding:10px 16px 14px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px 14px;
+    border-bottom:1.5px solid var(--line2);
+    background:rgba(255,255,255,.92);
   }
-
   .ll-field{
     display:flex;
     align-items:center;
-    gap: 10px;
-    min-width: 0;
+    gap:10px;
+    min-width:0;
   }
   .ll-label{
-    font-weight: 900;
-    font-size: 12px;
-    white-space: nowrap;
-    color: var(--ink);
+    font-weight:900;
+    font-size:12px;
+    white-space:nowrap;
+    color:var(--ink);
   }
   .ll-input{
-    flex: 1;
-    border: 1px solid rgba(15,23,42,.16);
-    border-radius: 12px;
-    padding: 8px 10px;
-    background: rgba(247,250,249,.75);
-    font-weight: 800;
-    font-size: 12px;
-    outline: none;
+    flex:1;
+    min-width:0;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:12px;
+    padding:8px 10px;
+    background:rgba(247,250,249,.75);
+    font-weight:800;
+    font-size:12px;
+    outline:none;
   }
   .ll-input:focus{
-    border-color: rgba(11,77,58,.40);
-    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
-    background: #fff;
+    border-color:rgba(11,77,58,.40);
+    box-shadow:0 0 0 3px rgba(11,77,58,.10);
+    background:#fff;
   }
   .ll-input[readonly]{
-    background: transparent;
-    border-color: rgba(15,23,42,.12);
+    background:transparent;
+    border-color:rgba(15,23,42,.12);
+    cursor:default;
   }
 
   .ll-controls{
-    padding: 10px 16px;
+    padding:10px 16px;
     display:flex;
     align-items:center;
-    justify-content: space-between;
-    gap: 10px;
-    border-bottom: 1.5px solid var(--line2);
-    background: rgba(255,255,255,.92);
-    flex-wrap: wrap;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom:1.5px solid var(--line2);
+    background:rgba(255,255,255,.92);
+    flex-wrap:wrap;
   }
   .ll-controls-left{
     display:flex;
     align-items:center;
-    gap: 10px;
-    flex-wrap: wrap;
+    gap:10px;
+    flex-wrap:wrap;
   }
-
   .ll-search{
     display:flex;
     align-items:center;
-    gap: 8px;
-    padding: 8px 10px;
-    border: 1px solid rgba(15,23,42,.16);
-    border-radius: 999px;
-    background: rgba(247,250,249,.75);
-    min-width: min(520px, 100%);
+    gap:8px;
+    padding:8px 10px;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:999px;
+    background:rgba(247,250,249,.75);
+    min-width:min(520px,100%);
   }
   .ll-search input{
     border:none;
     outline:none;
-    background: transparent;
-    width: 100%;
-    font-size: 12px;
-    font-weight: 800;
-    color: var(--ink);
+    background:transparent;
+    width:100%;
+    font-size:12px;
+    font-weight:800;
+    color:var(--ink);
   }
-
   .ll-pill{
     display:flex;
     align-items:center;
-    gap: 8px;
-    padding: 8px 12px;
-    border: 1px solid rgba(15,23,42,.16);
-    border-radius: 999px;
-    background: rgba(247,250,249,.75);
-    font-size: 12px;
-    font-weight: 950;
-    color: var(--ink);
-    white-space: nowrap;
+    gap:8px;
+    padding:8px 12px;
+    border:1px solid rgba(15,23,42,.16);
+    border-radius:999px;
+    background:rgba(247,250,249,.75);
+    font-size:12px;
+    font-weight:950;
+    color:var(--ink);
+    white-space:nowrap;
   }
   .ll-pill select{
     border:none;
     outline:none;
-    background: transparent;
-    font-weight: 950;
-    font-size: 12px;
-    cursor: pointer;
+    background:transparent;
+    font-weight:950;
+    font-size:12px;
+    cursor:pointer;
   }
 
-  /* table wrap */
+  .ll-actions-bar{
+    padding:10px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom:1.5px solid var(--line2);
+    background:rgba(255,255,255,.94);
+    flex-wrap:wrap;
+  }
+  .ll-actions-top{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+    margin-left:auto;
+  }
+
   .ll-table-wrap{
-    width: 100%;
-    overflow: auto;
-    background: #fff;
-    border-top: 1.5px solid var(--line2);
-    border-bottom: 1.5px solid var(--line2);
+    width:100%;
+    overflow:auto;
+    background:#fff;
+    border-top:1.5px solid var(--line2);
+    border-bottom:1.5px solid var(--line2);
   }
-  .ll-table{ min-width: 1500px; }
-
-  .ll-th-row,
-  .ll-row{
+  .ll-table{min-width:1500px}
+  .ll-th-row,.ll-row{
     display:grid;
-    grid-template-columns:
-      54px 64px
-      150px
-      130px 140px 150px
-      130px 130px 150px
-      170px
-      160px
-      74px;
+    grid-template-columns:54px 64px 150px 130px 140px 150px 130px 130px 150px 170px 160px 74px;
   }
-
   .ll-th-row{
-    background: var(--soft);
-    border-bottom: 1px solid var(--line);
+    background:var(--soft);
+    border-bottom:1px solid var(--line);
   }
-
   .ll-th{
-    padding: 10px 10px;
-    font-size: 12px;
-    font-weight: 950;
-    border-right: 1px solid var(--line2);
+    padding:10px;
+    font-size:12px;
+    font-weight:950;
+    border-right:1px solid var(--line2);
     display:flex;
     align-items:center;
     justify-content:center;
     text-align:center;
-    line-height: 1.15;
+    line-height:1.15;
   }
-  .ll-th:last-child{ border-right:none; }
-
-  .ll-body{
-    display:flex;
-    flex-direction: column;
-  }
-
-  .ll-row{
-    border-bottom: 1px solid rgba(15,23,42,.07);
-  }
-
+  .ll-th:last-child{border-right:none}
+  .ll-body{display:flex;flex-direction:column}
+  .ll-row{border-bottom:1px solid rgba(15,23,42,.07)}
   .ll-cell{
-    padding: 8px 10px;
-    border-right: 1px solid rgba(15,23,42,.07);
-    min-width: 0;
+    padding:8px 10px;
+    border-right:1px solid rgba(15,23,42,.07);
+    min-width:0;
     display:flex;
     align-items:center;
   }
-  .ll-cell:last-child{ border-right:none; justify-content:center; }
-
+  .ll-cell:last-child{border-right:none;justify-content:center}
   .ll-in{
     width:100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 12px;
-    font-weight: 800;
-    color: var(--ink);
+    border:none;
+    outline:none;
+    background:transparent;
+    font-size:12px;
+    font-weight:800;
+    color:var(--ink);
   }
-  .ll-in[readonly]{ opacity: .92; }
-
-  .ll-in.num{
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-
+  .ll-in.num{text-align:right;font-variant-numeric:tabular-nums}
+  .ll-in[readonly]{opacity:.92}
   .ll-check{
-    width: 18px;
-    height: 18px;
-    border-radius: 6px;
-    border: 1px solid rgba(15,23,42,.18);
-    background: rgba(247,250,249,.70);
-    accent-color: var(--accent);
-    cursor: pointer;
+    width:18px;
+    height:18px;
+    border-radius:6px;
+    border:1px solid rgba(15,23,42,.18);
+    background:rgba(247,250,249,.70);
+    accent-color:var(--accent);
+    cursor:pointer;
   }
   .ll-wrap:not(.ll-editing) .ll-check{
     cursor:not-allowed;
     opacity:.35;
     pointer-events:none;
   }
-
   .ll-slno{
-    width: 100%;
-    text-align: center;
-    font-weight: 950;
-    font-size: 12px;
-    color: rgba(15,23,42,.75);
-    font-variant-numeric: tabular-nums;
+    width:100%;
+    text-align:center;
+    font-weight:950;
+    font-size:12px;
+    color:rgba(15,23,42,.75);
+    font-variant-numeric:tabular-nums;
   }
-
   .ll-del{
-    width: 38px;
-    height: 34px;
-    border-radius: 12px;
-    border: 1px solid rgba(239,68,68,.28);
-    background: rgba(239,68,68,.08);
-    color: rgba(127,29,29,.95);
+    width:38px;
+    height:34px;
+    border-radius:12px;
+    border:1px solid rgba(239,68,68,.28);
+    background:rgba(239,68,68,.08);
+    color:rgba(127,29,29,.95);
     display:flex;
     align-items:center;
     justify-content:center;
-    cursor: pointer;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
-    user-select:none;
+    cursor:pointer;
   }
-  .ll-del:hover{
-    transform: translateY(-1px);
-    background: rgba(239,68,68,.12);
-    box-shadow: 0 16px 22px -18px rgba(15,23,42,.22);
-  }
-  .ll-del:disabled{
-    opacity:.35;
-    cursor:not-allowed;
-    transform:none;
-    box-shadow:none;
-  }
+  .ll-del:disabled{opacity:.35;cursor:not-allowed}
 
+  .ll-empty{
+    padding:18px 16px;
+    text-align:center;
+    color:rgba(15,23,42,.70);
+    font-weight:900;
+    font-size:12px;
+    display:none;
+  }
+  .ll-empty.show{display:block}
   .ll-summary{
-    padding: 10px 16px;
+    padding:10px 16px;
     display:flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    border-top: 1.5px solid var(--line2);
-    background: rgba(247,250,249,.72);
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    border-top:1.5px solid var(--line2);
+    background:rgba(247,250,249,.72);
   }
   .ll-kpi{
     display:flex;
     align-items:center;
-    gap: 8px;
-    padding: 8px 12px;
-    border: 1px solid rgba(15,23,42,.14);
-    border-radius: 999px;
-    background: rgba(255,255,255,.86);
-    font-weight: 950;
-    font-size: 12px;
+    gap:8px;
+    padding:8px 12px;
+    border:1px solid rgba(15,23,42,.14);
+    border-radius:999px;
+    background:rgba(255,255,255,.86);
+    font-weight:950;
+    font-size:12px;
   }
-  .ll-kpi b{ font-variant-numeric: tabular-nums; }
-
-  .ll-empty{
-    padding: 18px 16px;
-    text-align: center;
-    color: rgba(15,23,42,.70);
-    font-weight: 900;
-    font-size: 12px;
-    display:none;
-  }
-  .ll-empty.show{ display:block; }
-
+  .ll-kpi b{font-variant-numeric:tabular-nums}
   .ll-footer-controls{
-    padding: 12px 16px;
+    padding:12px 16px;
     display:flex;
-    justify-content: flex-end;
-    border-top: 1.5px solid var(--line2);
-    background: rgba(255,255,255,.94);
+    justify-content:flex-end;
+    border-top:1.5px solid var(--line2);
+    background:rgba(255,255,255,.94);
   }
   .ll-pager{
     display:flex;
     align-items:center;
-    gap: 8px;
-    flex-wrap: wrap;
+    gap:8px;
+    flex-wrap:wrap;
   }
   .ll-pageinfo{
-    font-size: 12px;
-    font-weight: 900;
-    color: rgba(15,23,42,.80);
-    padding: 8px 10px;
-    border: 1px solid rgba(15,23,42,.12);
-    border-radius: 999px;
-    background: rgba(247,250,249,.55);
+    font-size:12px;
+    font-weight:900;
+    color:rgba(15,23,42,.80);
+    padding:8px 10px;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:999px;
+    background:rgba(247,250,249,.55);
   }
 
   .ll-wrap:not(.ll-editing) input.ll-input,
@@ -710,145 +721,170 @@
     justify-content: space-between;
     flex-wrap: wrap;
   }
-  .ll-mobilebar .ll-btn{
-    flex: 1 1 140px;
-    justify-content:center;
+  .ll-history-card.active{
+    border-color:#10b981;
+    background:#ecfdf5;
   }
 
   .ll-modal-overlay{
-    position: fixed;
-    inset: 0;
+    position:fixed;
+    inset:0;
     display:none;
     align-items:center;
     justify-content:center;
-    z-index: 9999;
-    padding: 18px;
-    background: rgba(15, 23, 42, .28);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    z-index:9999;
+    padding:18px;
+    background:rgba(15,23,42,.28);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
   }
-  .ll-modal-overlay.ll-show{ display:flex; }
-
+  .ll-modal-overlay.ll-show{display:flex}
   .ll-modal{
-    width: 100%;
-    max-width: 520px;
-    background: #ffffff;
-    border-radius: 16px;
-    border: 1px solid rgba(15,23,42,.10);
-    box-shadow: 0 30px 60px -30px rgba(0,0,0,.45);
+    width:100%;
+    max-width:520px;
+    background:#fff;
+    border-radius:16px;
+    border:1px solid rgba(15,23,42,.10);
+    box-shadow:0 30px 60px -30px rgba(0,0,0,.45);
     overflow:hidden;
-    transform: translateY(6px);
-    animation: llModalIn .18s ease-out forwards;
   }
-  @keyframes llModalIn{
-    from{ opacity:0; transform: translateY(10px) scale(.98); }
-    to{ opacity:1; transform: translateY(0) scale(1); }
-  }
-
   .ll-mhead{
-    padding: 14px 16px;
+    padding:14px 16px;
     display:flex;
     align-items:center;
     gap:12px;
     background:
-      radial-gradient(circle at 20% 20%, rgba(16,185,129,.12), transparent 55%),
-      linear-gradient(to right, rgba(5,150,105,.10), rgba(16,185,129,.10));
-    border-bottom: 1px solid rgba(15,23,42,.08);
+      radial-gradient(circle at 20% 20%,rgba(16,185,129,.12),transparent 55%),
+      linear-gradient(to right,rgba(5,150,105,.10),rgba(16,185,129,.10));
+    border-bottom:1px solid rgba(15,23,42,.08);
   }
   .ll-dot{
-    width: 10px; height: 10px;
-    border-radius: 999px;
-    background: rgba(11,77,58,.90);
-    box-shadow: 0 0 0 6px rgba(16,185,129,.12);
-    flex: 0 0 auto;
+    width:10px;
+    height:10px;
+    border-radius:999px;
+    background:rgba(11,77,58,.90);
+    box-shadow:0 0 0 6px rgba(16,185,129,.12);
+    flex:0 0 auto;
   }
   .ll-mtitle{
-    font-weight: 950;
+    font-weight:950;
     color:#0b4d3a;
-    font-size: 15px;
+    font-size:15px;
     letter-spacing:.2px;
   }
   .ll-mbody{
-    padding: 14px 16px 6px;
+    padding:14px 16px 6px;
     color:#0f172a;
-    font-size: 14px;
-    font-weight: 850;
+    font-size:14px;
+    font-weight:850;
     line-height:1.35;
   }
   .ll-mactions{
-    padding: 12px 16px 16px;
+    padding:12px 16px 16px;
     display:flex;
     gap:10px;
     justify-content:flex-end;
-    flex-wrap: wrap;
+    flex-wrap:wrap;
+  }
+  .ll-ghost,.ll-solid{
+    min-width:120px;
+    border-radius:12px;
+    font-size:13.5px;
+    font-weight:950;
+    padding:10px 12px;
+    cursor:pointer;
   }
   .ll-ghost{
-    border: 1px solid rgba(15,23,42,.14);
+    border:1px solid rgba(15,23,42,.14);
     color:#0f172a;
     background:#fff;
-    min-width: 120px;
-    border-radius: 12px;
-    font-size: 13.5px;
-    font-weight: 950;
-    padding: 10px 12px;
-    cursor:pointer;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
-  }
-  .ll-ghost:hover{
-    transform: translateY(-1px);
-    box-shadow: 0 14px 22px -18px rgba(0,0,0,.20);
-    background: rgba(11,77,58,.06);
   }
   .ll-solid{
-    border: 1px solid rgba(16,185,129,.35);
-    background: rgba(16,185,129,.12);
+    border:1px solid rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
     color:#0b4d3a;
-    min-width: 120px;
-    border-radius: 12px;
-    font-size: 13.5px;
-    font-weight: 950;
-    padding: 10px 12px;
-    cursor:pointer;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
-  }
-  .ll-solid:hover{
-    transform: translateY(-1px);
-    box-shadow: 0 14px 22px -18px rgba(0,0,0,.20);
-    background: rgba(16,185,129,.16);
   }
   .ll-solid.ll-danger{
-    border-color: rgba(239,68,68,.35);
-    background: rgba(239,68,68,.10);
-    color: rgba(127,29,29,.95);
+    border-color:rgba(239,68,68,.35);
+    background:rgba(239,68,68,.10);
+    color:rgba(127,29,29,.95);
   }
-  .ll-solid.ll-danger:hover{ background: rgba(239,68,68,.14); }
 
-  @media (max-width: 420px){
-    .ll-mactions{ justify-content: stretch; }
-    .ll-ghost, .ll-solid{ min-width: 100%; }
+  @media (max-width:720px){
+    .ll-topfields{grid-template-columns:1fr}
+    .ll-search{min-width:100%}
+    .ll-summary{justify-content:flex-start}
+    .ll-table{min-width:0}
+    .ll-table-wrap{overflow:visible;border-bottom:none}
+    .ll-th-row{display:none}
+    .ll-body{
+      padding:12px;
+      display:grid;
+      grid-auto-flow:column;
+      grid-auto-columns:86%;
+      gap:12px;
+      overflow-x:auto;
+      overflow-y:hidden;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch;
+      scroll-padding-left:12px;
+      padding-bottom:16px;
+    }
+    .ll-row{
+      scroll-snap-align:start;
+      grid-template-columns:1fr;
+      border:1px solid rgba(15,23,42,.14);
+      border-radius:14px;
+      background:rgba(255,255,255,.96);
+      overflow:hidden;
+      box-shadow:0 14px 22px -22px rgba(15,23,42,.28);
+    }
+    .ll-cell{
+      border-right:none;
+      border-bottom:1px solid rgba(15,23,42,.08);
+      padding:10px 12px;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .ll-cell:last-child{border-bottom:none;justify-content:flex-end}
+    .ll-cell::before{
+      content:attr(data-label);
+      font-weight:950;
+      font-size:12px;
+      color:rgba(15,23,42,.70);
+      flex:0 0 auto;
+    }
+    .ll-cell .ll-in{text-align:right}
+    .ll-wrap.ll-mobile-editing #llCancelBtn,
+    .ll-wrap.ll-mobile-editing #llAddRowTop,
+    .ll-wrap.ll-mobile-editing #llDeleteAllTop,
+    .ll-wrap.ll-mobile-editing #llDeleteSelectedTop,
+    .ll-wrap.ll-mobile-editing #llEditSaveBtn{
+      display:none!important;
+    }
+    .ll-footer-controls{justify-content:center}
+  }
+  @media (max-width:420px){
+    .ll-body{grid-auto-columns:92%}
+    .ll-mactions{justify-content:stretch}
+    .ll-ghost,.ll-solid{min-width:100%}
   }
 </style>
 
 <div class="ll-wrap" id="llWrap">
   <div class="ll-sheet">
-
     <div class="ll-head">
+      <button class="ll-back" id="llBackBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M19 12H5M5 12l6 6M5 12l6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+      </button>
 
-  <button class="ll-back" id="llBackBtn" type="button">
-    <svg viewBox="0 0 24 24" fill="none">
-      <path d="M19 12H5M5 12l6 6M5 12l6-6"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path>
-    </svg>
-  </button>
-
-  <h2 class="ll-title" id="llTitle">Loan Ledger</h2>
+      <h2 class="ll-title" id="llTitle">Loan Ledger</h2>
 
       <div class="ll-head-actions">
 <button class="ll-btn ll-red ll-hidden" id="llCancelBtn" type="button">
-          <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 6 6 18"></path>
             <path d="M6 6l12 12"></path>
           </svg>
@@ -856,11 +892,11 @@
         </button>
 
 <button class="ll-btn ll-red" id="llEditSaveBtn" type="button">
-          <svg id="llEditIcon" class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg id="llEditIcon" class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
           </svg>
-          <svg id="llSaveIcon" class="ll-icon ll-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg id="llSaveIcon" class="ll-icon ll-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
             <polyline points="17 21 17 13 7 13 7 21"></polyline>
             <polyline points="7 3 7 8 15 8"></polyline>
@@ -872,8 +908,8 @@
 
     <div class="ll-topfields">
       <div class="ll-field">
-        <div class="ll-label" id="llPgNameLabel">Name of Producer Group</div>
-        <input class="ll-input" id="llPgName" type="text" value="{{ current_pg_name }}" readonly />
+        <div class="ll-label">Name of Producer Group</div>
+        <input class="ll-input" id="llPgName" type="text" value="{{ current_pg_name }}" readonly>
       </div>
 
       <div class="ll-field">
@@ -884,35 +920,42 @@
       </div>
 
       <div class="ll-field">
+        <div class="ll-label" id="llLoanAccountLabel">Loan Account</div>
+        <select class="ll-input" id="llLoanAccount">
+          <option value="">Select loan account</option>
+        </select>
+      </div>
+
+      <div class="ll-field">
         <div class="ll-label" id="llSpouseLabel">Father/Mother/Spouse</div>
-        <input class="ll-input" id="llSpouseName" type="text" placeholder="Father/Mother/Spouse name will appear automatically" readonly />
+        <input class="ll-input" id="llSpouseName" type="text" placeholder="Father/Mother/Spouse name will appear automatically" readonly>
       </div>
 
       <div class="ll-field">
         <div class="ll-label" id="llLoanAmountLabel">Loan Amount</div>
-        <input class="ll-input" id="llLoanAmount" type="text" placeholder="e.g., 40000 + 36500 + 2444 + 6900" />
+        <input class="ll-input" id="llLoanAmount" type="text" placeholder="Loan amount will appear automatically" readonly>
       </div>
 
       <div class="ll-field">
         <div class="ll-label" id="llLoanTenureLabel">Loan Tenure</div>
-        <input class="ll-input" id="llLoanTenure" type="text" placeholder="Write loan tenure…" />
+        <input class="ll-input" id="llLoanTenure" type="text" placeholder="Loan tenure will appear automatically" readonly>
       </div>
 
       <div class="ll-field">
         <div class="ll-label" id="llInstallmentLabel">No. of Installment</div>
-        <input class="ll-input" id="llInstallmentCount" type="text" placeholder="Write no. of installment…" />
+        <input class="ll-input" id="llInstallmentCount" type="text" placeholder="Installment count will appear automatically" readonly>
       </div>
 
       <div class="ll-field">
         <div class="ll-label" id="llPurposeLabel">Loan Purpose</div>
-        <input class="ll-input" id="llLoanPurpose" type="text" placeholder="e.g., PPU" />
+        <input class="ll-input" id="llLoanPurpose" type="text" placeholder="Loan purpose will appear automatically" readonly>
       </div>
     </div>
 
     <div class="ll-controls">
       <div class="ll-controls-left">
         <div class="ll-search" title="Search">
-          <input id="llSearch" type="text" placeholder="Search..." />
+          <input id="llSearch" type="text" placeholder="Search...">
         </div>
 
         <div class="ll-pill" title="Rows per page">
@@ -961,7 +1004,6 @@
   </div>
 </div>
 
-    <!-- Mobile action bar moved ABOVE table -->
     <div class="ll-mobilebar ll-hidden" id="llMobileBar">
      <button class="ll-btn ll-red" id="llMobileCancel" type="button">Cancel</button>
 <button class="ll-btn ll-soft-green" id="llMobileAddRow" type="button">Add Row</button>
@@ -972,25 +1014,18 @@
 
     <div class="ll-table-wrap">
       <div class="ll-table">
-
         <div class="ll-th-row">
-          <div class="ll-th" id="llHSel">
-            <input type="checkbox" class="ll-check" id="llSelectAll" title="Select all" />
-          </div>
+          <div class="ll-th"><input type="checkbox" class="ll-check" id="llSelectAll" title="Select all"></div>
           <div class="ll-th" id="llHSl">SL</div>
-
           <div class="ll-th" id="llHDateDisb">Date of disbursement</div>
           <div class="ll-th" id="llHPrDue">Principal due</div>
           <div class="ll-th" id="llHPrPaid">Principal Repaid</div>
           <div class="ll-th" id="llHPrOut">Principal Outstanding</div>
-
           <div class="ll-th" id="llHIntDue">Interest Due</div>
           <div class="ll-th" id="llHIntPaid">Interest Paid</div>
           <div class="ll-th" id="llHIntOut">Interest Outstanding</div>
-
           <div class="ll-th" id="llHTotalOut">Total Outstanding (Principal+Interest)</div>
           <div class="ll-th" id="llHNext">Date of Next Installment</div>
-
           <div class="ll-th" id="llHAction">Action</div>
         </div>
 
@@ -1000,9 +1035,9 @@
     </div>
 
     <div class="ll-summary">
-      <div class="ll-kpi" id="llKpiPrOut">Total Principal Outstanding: <b id="llTotalPrOut">0</b></div>
-      <div class="ll-kpi" id="llKpiIntOut">Total Interest Outstanding: <b id="llTotalIntOut">0</b></div>
-      <div class="ll-kpi" id="llKpiTotalOut">Total Outstanding: <b id="llTotalOut">0</b></div>
+      <div class="ll-kpi">Total Principal Outstanding: <b id="llTotalPrOut">0</b></div>
+      <div class="ll-kpi">Total Interest Outstanding: <b id="llTotalIntOut">0</b></div>
+      <div class="ll-kpi">Total Outstanding: <b id="llTotalOut">0</b></div>
     </div>
 
     <div class="ll-footer-controls">
@@ -1012,18 +1047,25 @@
         <button class="ll-btn" id="llNextBottom" type="button">Next</button>
       </div>
     </div>
-
   </div>
+
+  <section class="ll-history-box" id="loanHistoryBox">
+    <div class="ll-history-head">
+      <div>
+        <div class="ll-history-title">Saved Month Records</div>
+        <div class="ll-history-sub" id="loanCurrentPeriodText">Working month: -</div>
+      </div>
+      <div class="ll-history-cards" id="loanHistoryCards">
+        <div style="font-size:13px;color:#64748b">Select a member loan to view saved month records.</div>
+      </div>
+    </div>
+  </section>
 </div>
 
-<!-- SAVE CONFIRM MODAL -->
 <div id="llSaveOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
-    <div class="ll-mhead">
-      <span class="ll-dot"></span>
-      <div class="ll-mtitle" id="llSaveTitle">Confirm Save</div>
-    </div>
-    <div class="ll-mbody" id="llSaveMsg">Do you want to save these changes?</div>
+    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle">Confirm Save</div></div>
+    <div class="ll-mbody">Do you want to save these changes?</div>
     <div class="ll-mactions">
       <button id="llSaveCancel" class="ll-ghost" type="button">Cancel</button>
       <button id="llSaveYes" class="ll-solid" type="button">Confirm</button>
@@ -1031,14 +1073,10 @@
   </div>
 </div>
 
-<!-- CANCEL CONFIRM MODAL -->
 <div id="llCancelOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
-    <div class="ll-mhead">
-      <span class="ll-dot"></span>
-      <div class="ll-mtitle" id="llCancelTitle">Discard changes?</div>
-    </div>
-    <div class="ll-mbody" id="llCancelMsg">This will revert all unsaved changes.</div>
+    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle">Discard changes?</div></div>
+    <div class="ll-mbody">This will revert all unsaved changes.</div>
     <div class="ll-mactions">
       <button id="llCancelNo" class="ll-ghost" type="button">Cancel</button>
       <button id="llCancelYes" class="ll-solid" type="button">Discard</button>
@@ -1046,14 +1084,10 @@
   </div>
 </div>
 
-<!-- DELETE SINGLE CONFIRM MODAL -->
 <div id="llDeleteOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
-    <div class="ll-mhead">
-      <span class="ll-dot"></span>
-      <div class="ll-mtitle" id="llDeleteTitle">Delete row?</div>
-    </div>
-    <div class="ll-mbody" id="llDeleteMsg">This row will be removed. You can Save to confirm or Cancel to revert.</div>
+    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle">Delete row?</div></div>
+    <div class="ll-mbody">This row will be removed. Save to confirm or Cancel to revert.</div>
     <div class="ll-mactions">
       <button id="llDeleteNo" class="ll-ghost" type="button">Cancel</button>
       <button id="llDeleteYes" class="ll-solid ll-danger" type="button">Delete</button>
@@ -1061,14 +1095,10 @@
   </div>
 </div>
 
-<!-- DELETE MULTI CONFIRM MODAL -->
 <div id="llDeleteMultiOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
-    <div class="ll-mhead">
-      <span class="ll-dot"></span>
-      <div class="ll-mtitle" id="llDeleteMultiTitle">Delete Selected?</div>
-    </div>
-    <div class="ll-mbody" id="llDeleteMultiMsg">Selected rows will be removed. You can Save to confirm or Cancel to revert.</div>
+    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle">Delete Selected?</div></div>
+    <div class="ll-mbody" id="llDeleteMultiMsg">Selected rows will be removed.</div>
     <div class="ll-mactions">
       <button id="llDeleteMultiNo" class="ll-ghost" type="button">Cancel</button>
       <button id="llDeleteMultiYes" class="ll-solid ll-danger" type="button">Delete</button>
@@ -1076,14 +1106,10 @@
   </div>
 </div>
 
-<!-- DELETE ALL CONFIRM MODAL -->
 <div id="llDeleteAllOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
-    <div class="ll-mhead">
-      <span class="ll-dot"></span>
-      <div class="ll-mtitle" id="llDeleteAllTitle">Delete All?</div>
-    </div>
-    <div class="ll-mbody" id="llDeleteAllMsg">All rows will be removed. You can Save to confirm or Cancel to revert.</div>
+    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle">Delete All?</div></div>
+    <div class="ll-mbody">All rows will be removed. Save to confirm or Cancel to revert.</div>
     <div class="ll-mactions">
       <button id="llDeleteAllNo" class="ll-ghost" type="button">Cancel</button>
       <button id="llDeleteAllYes" class="ll-solid ll-danger" type="button">Delete All</button>
@@ -1091,16 +1117,12 @@
   </div>
 </div>
 
-<!-- EDIT-LOCK MODAL -->
-<div id="llLockOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
+<div id="llInfoOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
-    <div class="ll-mhead">
-      <span class="ll-dot"></span>
-      <div class="ll-mtitle" id="llLockTitle">Action blocked</div>
-    </div>
-    <div class="ll-mbody" id="llLockMsg">You are in Edit mode. Please Save or Cancel before leaving this page.</div>
+    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle" id="llInfoTitle">Message</div></div>
+    <div class="ll-mbody" id="llInfoMsg"></div>
     <div class="ll-mactions">
-      <button id="llLockOk" class="ll-solid" type="button">OK</button>
+      <button id="llInfoOk" class="ll-solid" type="button">OK</button>
     </div>
   </div>
 </div>
@@ -1111,486 +1133,145 @@
 
   const $ = (id) => document.getElementById(id);
 
-  const T = {
-    en: {
-      title: "Loan Ledger",
+  let memberLoans = [];
+  let memberMap = new Map();
+  let selectedLoanId = "";
+  let selectedPeriod = (() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  })();
 
-      memberLabel: "Name of Member",
-      spouseLabel: "Father/Mother/Spouse",
-      loanAmountLabel: "Loan Amount",
-      loanTenureLabel: "Loan Tenure",
-      installmentLabel: "No. of Installment",
-      purposeLabel: "Loan Purpose",
-
-      rowsLabel: "Rows",
-      searchPH: "Search...",
-
-      prev: "Prev",
-      next: "Next",
-      pageInfo: (a,b)=>`Page ${a} / ${b}`,
-      empty: "No rows found.",
-
-      hSel: "",
-      hSl: "SL",
-      hDateDisb: "Date of disbursement",
-      hPrDue: "Principal due",
-      hPrPaid: "Principal Repaid",
-      hPrOut: "Principal Outstanding",
-      hIntDue: "Interest Due",
-      hIntPaid: "Interest Paid",
-      hIntOut: "Interest Outstanding",
-      hTotalOut: "Total Outstanding (Principal+Interest)",
-      hNext: "Date of Next Installment",
-      hAction: "Action",
-
-      addRow: "Add Row",
-      editButton: "Edit",
-      saveButton: "Save",
-      cancelButton: "Cancel",
-
-      deleteSelected: "Delete Selected",
-      deleteAll: "Delete All",
-
-      kpiPrOut: "Total Principal Outstanding:",
-      kpiIntOut: "Total Interest Outstanding:",
-      kpiTotalOut: "Total Outstanding:",
-
-      phDate: "DD-MM-YYYY",
-      phNum: "0",
-      phNext: "DD-MM-YYYY",
-
-      confirmTitle: "Confirm Save",
-      confirmMsg: "Do you want to save these changes?",
-      confirmYes: "Confirm",
-      confirmNo: "Cancel",
-
-      cancelTitle: "Discard changes?",
-      cancelMsg: "This will revert all unsaved changes.",
-      cancelYes: "Discard",
-
-      deleteTitle: "Delete row?",
-      deleteMsg: "This row will be removed. You can Save to confirm or Cancel to revert.",
-      deleteYes: "Delete",
-      deleteNo: "Cancel",
-
-      deleteMultiTitle: "Delete Selected?",
-      deleteMultiMsg: (n)=>`Selected ${n} row(s) will be removed. You can Save to confirm or Cancel to revert.`,
-      deleteAllTitle: "Delete All?",
-      deleteAllMsg: "All rows will be removed. You can Save to confirm or Cancel to revert.",
-
-      lockTitle: "Action blocked",
-      lockMsg: "You are in Edit mode. Please Save or Cancel before leaving this page.",
-      lockOk: "OK",
-
-      selectAllTitle: "Select all",
-      deleteRowTitle: "Delete row",
-      selectRowAria: "Select row",
-      actionAria: "Delete row"
-    },
-    bn: {
-      title: "ঋণ এর খাতা",
-
-      memberLabel: "সদস্যের নাম",
-      spouseLabel: "পিতা/মাতা/স্বামী/স্ত্রীর নাম",
-      loanAmountLabel: "ঋণের পরিমাণ",
-      loanTenureLabel: "ঋণের সময়সীমা",
-      installmentLabel: "কিস্তির সংখ্যা",
-      purposeLabel: "ঋণের উদ্দেশ্য",
-
-      rowsLabel: "সারি",
-      searchPH: "খুঁজুন...",
-
-      prev: "পূর্বে",
-      next: "পরের",
-      pageInfo: (a,b)=>`পৃষ্ঠা ${a} / ${b}`,
-      empty: "কোনো সারি পাওয়া যায়নি।",
-
-      hSel: "",
-      hSl: "ক্রম",
-      hDateDisb: "বিতরণের তারিখ",
-      hPrDue: "বাকি আসল টাকা",
-      hPrPaid: "পরিশোধিত আসল টাকা",
-      hPrOut: "বাকি আসল",
-      hIntDue: "বাকি সুদ",
-      hIntPaid: "পরিশোধিত সুদ",
-      hIntOut: "বাকি সুদ (স্থগিত)",
-      hTotalOut: "মোট বাকি (আসল + সুদ)",
-      hNext: "পরবর্তী কিস্তির তারিখ",
-      hAction: "অ্যাকশন",
-
-      addRow: "সারি যোগ করুন",
-      editButton: "সম্পাদনা করুন",
-      saveButton: "সংরক্ষণ করুন",
-      cancelButton: "বাতিল",
-
-      deleteSelected: "নির্বাচিত মুছুন",
-      deleteAll: "সব মুছুন",
-
-      kpiPrOut: "মোট বাকি আসল:",
-      kpiIntOut: "মোট বাকি সুদ:",
-      kpiTotalOut: "মোট বাকি:",
-
-      phDate: "দিন-মাস-বছর",
-      phNum: "০",
-      phNext: "দিন-মাস-বছর",
-
-      confirmTitle: "সংরক্ষণ নিশ্চিত করুন",
-      confirmMsg: "আপনি কি পরিবর্তনগুলো সংরক্ষণ করতে চান?",
-      confirmYes: "নিশ্চিত",
-      confirmNo: "বাতিল",
-
-      cancelTitle: "পরিবর্তন বাতিল করবেন?",
-      cancelMsg: "এতে সব সংরক্ষণ না হওয়া পরিবর্তন ফিরে যাবে।",
-      cancelYes: "বাতিল করুন",
-
-      deleteTitle: "সারি মুছবেন?",
-      deleteMsg: "এই সারিটি মুছে যাবে। সংরক্ষণ করলে স্থায়ী হবে, বাতিল করলে ফিরে আসবে।",
-      deleteYes: "মুছুন",
-      deleteNo: "বাতিল",
-
-      deleteMultiTitle: "নির্বাচিত মুছবেন?",
-      deleteMultiMsg: (n)=>`নির্বাচিত ${n}টি সারি মুছে যাবে। সংরক্ষণ করলে স্থায়ী হবে, বাতিল করলে ফিরে আসবে।`,
-      deleteAllTitle: "সব মুছবেন?",
-      deleteAllMsg: "সব সারি মুছে যাবে। সংরক্ষণ করলে স্থায়ী হবে, বাতিল করলে ফিরে আসবে।",
-
-      lockTitle: "অ্যাকশন বন্ধ করা হয়েছে",
-      lockMsg: "আপনি এডিট মোডে আছেন। অনুগ্রহ করে সংরক্ষণ করুন অথবা বাতিল করুন, তারপর পেজ ছাড়ুন।",
-      lockOk: "ঠিক আছে",
-
-      selectAllTitle: "সব নির্বাচন",
-      deleteRowTitle: "সারি মুছুন",
-      selectRowAria: "সারি নির্বাচন",
-      actionAria: "সারি মুছুন"
-    }
-  };
-
-  let lang = "en";
   let llIsEditing = false;
   let llSnapshot = null;
-
   let allRows = [];
   let filteredRows = [];
   let page = 1;
   let perPage = 25;
   let query = "";
-
   let pendingDeleteRow = null;
-  let pendingDeleteMode = null;
 
-  function normalizeLang(v){
-    if (!v) return null;
-    const s = String(v).toLowerCase();
-    if (s === "bn" || s.includes("bangla") || s.includes("বাংলা")) return "bn";
-    if (s === "en" || s.includes("english")) return "en";
-    return null;
-  }
+  const monthNames = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
 
-  function readLangFromBase(){
-    try{
-      if (window.PGMIS && typeof window.PGMIS.getLanguage === "function"){
-        const l = normalizeLang(window.PGMIS.getLanguage());
-        if (l) return l;
-      }
-      if (window.currentLanguage){
-        const l = normalizeLang(window.currentLanguage);
-        if (l) return l;
-      }
-      if (window.PGMIS_LANG){
-        const l = normalizeLang(window.PGMIS_LANG);
-        if (l) return l;
-      }
-
-      const html = document.documentElement;
-      const a1 = normalizeLang(html && html.getAttribute && html.getAttribute("lang"));
-      if (a1) return a1;
-      const a2 = normalizeLang(html && html.dataset && (html.dataset.lang || html.dataset.language));
-      if (a2) return a2;
-
-      const keys = [
-        "pgmis_lang","pgmis_language","pgmisLanguage","pgmisLang",
-        "language","lang","app_lang","app_language"
-      ];
-      for (const k of keys){
-        try{
-          const v = localStorage.getItem(k) || sessionStorage.getItem(k);
-          const l = normalizeLang(v);
-          if (l) return l;
-        }catch(_){}
-      }
-    }catch(_){}
-    return null;
-  }
-
-  function setLang(next){
-    const n = normalizeLang(next);
-    if (!n) return;
-    if (lang === n) return;
-    lang = n;
-    applyLang();
-    recalcLoan();
+  function esc(value){
+    return String(value ?? "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;");
   }
 
   function n2(v){
     const x = parseFloat(String(v || "").replace(/[, ]+/g,""));
     return Number.isFinite(x) ? x : 0;
   }
+
   function fmt(v){
     const x = Number(v || 0);
     return (Math.round(x * 100) / 100).toString();
   }
 
-  function getRowText(rowEl){
-    const parts = [];
-    rowEl.querySelectorAll("input, select").forEach(el=>{
-      parts.push(el.value || el.placeholder || "");
-    });
-    return parts.join(" ").toLowerCase();
-  }
-
-  function isRowSelected(row){
-    const cb = row.querySelector("[data-ll='sel']");
-    return !!(cb && cb.checked);
-  }
-  function selectedRows(){
-    return allRows.filter(r => isRowSelected(r));
-  }
-
-  function updateSelectUI(){
-    const selCount = selectedRows().length;
-
-    const visible = filteredRows.slice((page-1)*perPage, (page-1)*perPage + perPage);
-    const visCount = visible.length;
-    const visSelected = visible.filter(r => isRowSelected(r)).length;
-
-    const head = $("llSelectAll");
-    if (head){
-      head.indeterminate = (visSelected > 0 && visSelected < visCount);
-      head.checked = (visCount > 0 && visSelected === visCount);
-    }
-
-    const canMulti = llIsEditing && selCount > 0;
-
-    $("llDeleteSelectedTop").disabled = !canMulti;
-    $("llDeleteAllTop").disabled = !(llIsEditing && allRows.length > 0);
-
-    const mobSel = $("llMobileDeleteSelected");
-    const mobAll = $("llMobileDeleteAll");
-    if (mobSel) mobSel.disabled = !canMulti;
-    if (mobAll) mobAll.disabled = !(llIsEditing && allRows.length > 0);
+  function monthLabel(month, year){
+    return `${monthNames[(Number(month) || 1) - 1] || "Month"} ${year || ""}`.trim();
   }
 
   function openOverlay(el){
+    if (!el) return;
     el.classList.add("ll-show");
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
   }
+
   function closeOverlay(el){
+    if (!el) return;
     el.classList.remove("ll-show");
     document.documentElement.style.overflow = "";
     document.body.style.overflow = "";
   }
 
-  function openSaveConfirm(){
-    const t = T[lang];
-    $("llSaveTitle").textContent = t.confirmTitle;
-    $("llSaveMsg").textContent = t.confirmMsg;
-    $("llSaveCancel").textContent = t.confirmNo;
-    $("llSaveYes").textContent = t.confirmYes;
-    openOverlay($("llSaveOverlay"));
-  }
-  function openCancelConfirm(){
-    const t = T[lang];
-    $("llCancelTitle").textContent = t.cancelTitle;
-    $("llCancelMsg").textContent = t.cancelMsg;
-    $("llCancelNo").textContent = t.confirmNo;
-    $("llCancelYes").textContent = t.cancelYes;
-    openOverlay($("llCancelOverlay"));
-  }
-  function openDeleteConfirm(){
-    const t = T[lang];
-    $("llDeleteTitle").textContent = t.deleteTitle;
-    $("llDeleteMsg").textContent = t.deleteMsg;
-    $("llDeleteNo").textContent = t.deleteNo;
-    $("llDeleteYes").textContent = t.deleteYes;
-    openOverlay($("llDeleteOverlay"));
-  }
-  function openDeleteMultiConfirm(n){
-    const t = T[lang];
-    $("llDeleteMultiTitle").textContent = t.deleteMultiTitle;
-    $("llDeleteMultiMsg").textContent = t.deleteMultiMsg(n);
-    $("llDeleteMultiNo").textContent = t.confirmNo;
-    $("llDeleteMultiYes").textContent = t.deleteYes;
-    openOverlay($("llDeleteMultiOverlay"));
-  }
-  function openDeleteAllConfirm(){
-    const t = T[lang];
-    $("llDeleteAllTitle").textContent = t.deleteAllTitle;
-    $("llDeleteAllMsg").textContent = t.deleteAllMsg;
-    $("llDeleteAllNo").textContent = t.confirmNo;
-    $("llDeleteAllYes").textContent = t.deleteAll;
-    openOverlay($("llDeleteAllOverlay"));
-  }
-  function openLockModal(){
-    const t = T[lang];
-    $("llLockTitle").textContent = t.lockTitle;
-    $("llLockMsg").textContent = t.lockMsg;
-    $("llLockOk").textContent = t.lockOk;
-    openOverlay($("llLockOverlay"));
+  function info(message, title="Loan Ledger"){
+    $("llInfoTitle").textContent = title;
+    $("llInfoMsg").textContent = message || "";
+    openOverlay($("llInfoOverlay"));
   }
 
-  function openInfoModal(message, title){
-    const t = T[lang];
-    const overlay = $("llLockOverlay");
-
-    $("llLockTitle").textContent = title || (t.title || "Message");
-    $("llLockMsg").textContent = message || "";
-    $("llLockOk").textContent = t.lockOk || "OK";
-
-    openOverlay(overlay);
+  function getSelectedLoan(){
+    return memberLoans.find(l => String(l.loan_id || l._id || "") === String(selectedLoanId || ""));
   }
 
-  $("llSaveCancel").addEventListener("click", ()=>closeOverlay($("llSaveOverlay")));
-  $("llSaveOverlay").addEventListener("click", (e)=>{ if (e.target === $("llSaveOverlay")) closeOverlay($("llSaveOverlay")); });
+  function getLoanId(loan){
+    return String((loan && (loan.loan_id || loan._id || loan.id)) || "");
+  }
 
-  $("llCancelNo").addEventListener("click", ()=>closeOverlay($("llCancelOverlay")));
-  $("llCancelOverlay").addEventListener("click", (e)=>{ if (e.target === $("llCancelOverlay")) closeOverlay($("llCancelOverlay")); });
+  function rowText(row){
+    const parts = [];
+    row.querySelectorAll("input").forEach(el => parts.push(el.value || el.placeholder || ""));
+    return parts.join(" ").toLowerCase();
+  }
 
-  $("llDeleteNo").addEventListener("click", ()=>{ pendingDeleteRow=null; closeOverlay($("llDeleteOverlay")); });
-  $("llDeleteOverlay").addEventListener("click", (e)=>{ if (e.target === $("llDeleteOverlay")) { pendingDeleteRow=null; closeOverlay($("llDeleteOverlay")); } });
+  function selectedRows(){
+    return allRows.filter(row => {
+      const cb = row.querySelector("[data-ll='sel']");
+      return cb && cb.checked;
+    });
+  }
 
-  $("llDeleteMultiNo").addEventListener("click", ()=>closeOverlay($("llDeleteMultiOverlay")));
-  $("llDeleteMultiOverlay").addEventListener("click", (e)=>{ if (e.target === $("llDeleteMultiOverlay")) closeOverlay($("llDeleteMultiOverlay")); });
-
-  $("llDeleteAllNo").addEventListener("click", ()=>closeOverlay($("llDeleteAllOverlay")));
-  $("llDeleteAllOverlay").addEventListener("click", (e)=>{ if (e.target === $("llDeleteAllOverlay")) closeOverlay($("llDeleteAllOverlay")); });
-
-  $("llLockOk").addEventListener("click", ()=>closeOverlay($("llLockOverlay")));
-  $("llLockOverlay").addEventListener("click", (e)=>{ if (e.target === $("llLockOverlay")) closeOverlay($("llLockOverlay")); });
-
-  let llLockActive = false;
-  let llLockPushed = false;
-  let llLockOpen = false;
-
-  function llSetLock(on){
-    llLockActive = !!on;
-    if (llLockActive && !llLockPushed){
-      try{
-        history.pushState({ ll_lock:true }, document.title, location.href);
-        llLockPushed = true;
-      }catch(_){}
+  function clearSelections(){
+    allRows.forEach(row => {
+      const cb = row.querySelector("[data-ll='sel']");
+      if (cb) cb.checked = false;
+    });
+    if ($("llSelectAll")){
+      $("llSelectAll").checked = false;
+      $("llSelectAll").indeterminate = false;
     }
-    if (!llLockActive){
-      llLockPushed = false;
-      llLockOpen = false;
-      closeOverlay($("llLockOverlay"));
+    updateSelectUI();
+  }
+
+  function updateSelectUI(){
+    const selCount = selectedRows().length;
+    const visible = filteredRows.slice((page - 1) * perPage, (page - 1) * perPage + perPage);
+    const visCount = visible.length;
+    const visSelected = visible.filter(row => {
+      const cb = row.querySelector("[data-ll='sel']");
+      return cb && cb.checked;
+    }).length;
+
+    const head = $("llSelectAll");
+    if (head){
+      head.indeterminate = visSelected > 0 && visSelected < visCount;
+      head.checked = visCount > 0 && visSelected === visCount;
+      head.disabled = !llIsEditing;
     }
+
+    const canMulti = llIsEditing && selCount > 0;
+    $("llDeleteSelectedTop").disabled = !canMulti;
+    $("llDeleteAllTop").disabled = !(llIsEditing && allRows.length > 0);
+    $("llMobileDeleteSelected").disabled = !canMulti;
+    $("llMobileDeleteAll").disabled = !(llIsEditing && allRows.length > 0);
   }
-
-  function llArmLockNow(){
-    llSetLock(true);
-    if (!llLockPushed){
-      try{
-        history.pushState({ ll_lock:true }, document.title, location.href);
-        llLockPushed = true;
-      }catch(_){}
-    }
-  }
-
-  function llTriggerLockModal(){
-    if (!llLockActive) return;
-    if (llLockOpen) return;
-    llLockOpen = true;
-    openLockModal();
-    setTimeout(()=>{ llLockOpen = false; }, 350);
-  }
-
-  window.addEventListener("popstate", ()=>{
-    if (!llLockActive) return;
-    try{ history.pushState({ ll_lock:true }, document.title, location.href); }catch(_){}
-    llTriggerLockModal();
-  });
-
-  function llIsInsideOpenModal(target){
-    return !!(target && target.closest && target.closest(".ll-modal-overlay.ll-show"));
-  }
-  function isNavigatingHref(href){
-    if (!href) return false;
-    const h = String(href).trim();
-    if (!h) return false;
-    if (h === "#") return false;
-    if (h.startsWith("#")) return false;
-    if (h.toLowerCase().startsWith("javascript:")) return false;
-    return true;
-  }
-
-  document.addEventListener("click", (e)=>{
-    if (!llLockActive) return;
-    if (llIsInsideOpenModal(e.target)) return;
-
-    const a = e.target && (e.target.closest ? e.target.closest("a[href]") : null);
-    if (!a) return;
-
-    const href = a.getAttribute("href");
-    if (!isNavigatingHref(href)) return;
-
-    const target = (a.getAttribute("target") || "").toLowerCase();
-    if (target === "_blank") return;
-    if (e.ctrlKey || e.metaKey || e.button === 1) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-    llTriggerLockModal();
-    return false;
-  }, true);
-
-  window.addEventListener("keydown", (e)=>{
-    if (!llLockActive) return;
-
-    const key = (e.key || "").toLowerCase();
-    const isF5 = (key === "f5") || (e.keyCode === 116);
-    const isCtrlF5 = (e.ctrlKey && isF5);
-    const isCtrlR = (e.ctrlKey || e.metaKey) && (key === "r");
-    const isHardReload = ((e.ctrlKey || e.metaKey) && e.shiftKey && key === "r") || isCtrlF5;
-
-    if (isF5 || isCtrlR || isHardReload){
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      llTriggerLockModal();
-      return false;
-    }
-  }, true);
-
-  window.addEventListener("beforeunload", (e)=>{
-    if (!llLockActive) return;
-    e.preventDefault();
-    e.returnValue = "";
-  });
 
   function recalcLoan(){
     let prevPrOut = 0;
     let prevIntOut = 0;
-
     let totalPrOut = 0;
     let totalIntOut = 0;
     let totalOut = 0;
 
-    allRows.forEach((row)=>{
+    allRows.forEach(row => {
       const prDue = n2(row.querySelector("[data-ll='pr_due']").value);
       const prPaid = n2(row.querySelector("[data-ll='pr_paid']").value);
       const intDue = n2(row.querySelector("[data-ll='int_due']").value);
       const intPaid = n2(row.querySelector("[data-ll='int_paid']").value);
 
-      let prOut = prevPrOut + prDue - prPaid;
-      let intOut = prevIntOut + intDue - intPaid;
-
-      prOut = Math.max(0, prOut);
-      intOut = Math.max(0, intOut);
+      let prOut = Math.max(0, prevPrOut + prDue - prPaid);
+      let intOut = Math.max(0, prevIntOut + intDue - intPaid);
+      const total = prOut + intOut;
 
       prevPrOut = prOut;
       prevIntOut = intOut;
-
-      const total = prOut + intOut;
 
       row.querySelector("[data-ll='pr_out']").value = prOut ? fmt(prOut) : "";
       row.querySelector("[data-ll='int_out']").value = intOut ? fmt(intOut) : "";
@@ -1604,100 +1285,76 @@
     $("llTotalPrOut").textContent = fmt(totalPrOut);
     $("llTotalIntOut").textContent = fmt(totalIntOut);
     $("llTotalOut").textContent = fmt(totalOut);
+    updateSelectUI();
+  }
 
+  function renderPage(){
+    const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
+    page = Math.min(Math.max(page, 1), totalPages);
+
+    const start = (page - 1) * perPage;
+    const slice = filteredRows.slice(start, start + perPage);
+    const body = $("llBody");
+    body.innerHTML = "";
+
+    slice.forEach((row, i) => {
+      body.appendChild(row);
+      const sl = row.querySelector("[data-ll='slno']");
+      if (sl) sl.textContent = String(start + i + 1);
+    });
+
+    $("llPageInfoBottom").textContent = `Page ${page} / ${totalPages}`;
+    $("llPrevBottom").disabled = page <= 1;
+    $("llNextBottom").disabled = page >= totalPages;
+
+    $("llEmpty").classList.toggle("show", filteredRows.length === 0);
     updateSelectUI();
   }
 
   function rebuildFiltered(){
-    const q = (query || "").trim().toLowerCase();
-    filteredRows = !q ? allRows.slice() : allRows.filter(r => getRowText(r).includes(q));
-
-    const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
-    page = Math.min(Math.max(page, 1), totalPages);
-
+    const q = query.trim().toLowerCase();
+    filteredRows = q ? allRows.filter(row => rowText(row).includes(q)) : allRows.slice();
     renderPage();
     recalcLoan();
   }
 
-  function renderPage(){
-    const t = T[lang];
-
-    const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
-    const start = (page - 1) * perPage;
-    const end = start + perPage;
-    const slice = filteredRows.slice(start, end);
-
-    const body = $("llBody");
-    body.innerHTML = "";
-    slice.forEach(r => body.appendChild(r));
-
-    slice.forEach((r, i) => {
-      const sl = r.querySelector("[data-ll='slno']");
-      if (sl) sl.textContent = String(start + i + 1);
-    });
-
-    $("llPageInfoBottom").textContent = t.pageInfo(page, totalPages);
-    $("llPrevBottom").disabled = (page <= 1);
-    $("llNextBottom").disabled = (page >= totalPages);
-
-    const empty = $("llEmpty");
-    if (filteredRows.length === 0) empty.classList.add("show");
-    else empty.classList.remove("show");
-
-    updateSelectUI();
-  }
-
   function setRowEditable(row, on){
-    row.querySelectorAll("input[data-ll]").forEach(el=>{
+    row.querySelectorAll("input[data-ll]").forEach(el => {
       const key = el.getAttribute("data-ll");
-      if (key === "sel" || key === "pr_out" || key === "int_out" || key === "total_out") return;
+      if (["sel","pr_out","int_out","total_out"].includes(key)) return;
       el.readOnly = !on;
     });
 
     const cb = row.querySelector("[data-ll='sel']");
-    if (cb){
-      cb.disabled = !on;
-      cb.style.pointerEvents = on ? "" : "none";
-    }
+    if (cb) cb.disabled = !on;
 
-    const delBtn = row.querySelector("[data-ll='delete']");
-    if (delBtn) delBtn.disabled = !on;
+    const del = row.querySelector("[data-ll='delete']");
+    if (del) del.disabled = !on;
   }
 
-  function updateMobileEditingClass(){
-    const isMobile = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+  function updateMobileBar(){
+    const isMobile = window.matchMedia && window.matchMedia("(max-width:720px)").matches;
+    $("llMobileBar").classList.toggle("ll-hidden", !(llIsEditing && isMobile));
     $("llWrap").classList.toggle("ll-mobile-editing", !!(llIsEditing && isMobile));
   }
-  function updateMobileBar(){
-    const isMobile = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
-    const bar = $("llMobileBar");
-    if (llIsEditing && isMobile) bar.classList.remove("ll-hidden");
-    else bar.classList.add("ll-hidden");
-    updateMobileEditingClass();
-  }
 
-  function setAllEditable(on){
-    $("llWrap").classList.toggle("ll-editing", !!on);
+  function setEditMode(on){
+    llIsEditing = !!on;
+    $("llWrap").classList.toggle("ll-editing", llIsEditing);
 
-    $("llMemberName").readOnly = !on;
-    $("llSpouseName").readOnly = !on;
-    $("llLoanAmount").readOnly = !on;
-    $("llLoanTenure").readOnly = !on;
-    $("llInstallmentCount").readOnly = !on;
-    $("llLoanPurpose").readOnly = !on;
+    $("llEditIcon").classList.toggle("ll-hidden", llIsEditing);
+    $("llSaveIcon").classList.toggle("ll-hidden", !llIsEditing);
+    $("llEditSaveText").textContent = llIsEditing ? "Save" : "Edit";
+    $("llCancelBtn").classList.toggle("ll-hidden", !llIsEditing);
 
-    allRows.forEach(r => setRowEditable(r, on));
+    $("llAddRowTop").disabled = !llIsEditing;
+    allRows.forEach(row => setRowEditable(row, llIsEditing));
 
-    $("llAddRowTop").disabled = !on;
-    $("llDeleteAllTop").disabled = !(on && allRows.length > 0);
-    $("llDeleteSelectedTop").disabled = !(on && selectedRows().length > 0);
-
-    $("llSelectAll").disabled = !on;
-
-    llSetLock(on);
+    if (!llIsEditing) clearSelections();
 
     updateMobileBar();
     updateSelectUI();
+    recalcLoan();
   }
 
   function setEditingUI(){
@@ -1733,796 +1390,558 @@ $("llCancelText").textContent = t.cancelButton;
       const cb = r.querySelector("[data-ll='sel']");
       if (cb) cb.checked = false;
     });
-    $("llSelectAll").checked = false;
-    $("llSelectAll").indeterminate = false;
-    updateSelectUI();
-  }
 
-  function takeSnapshot(){
-    return {
-      pg_name: $("llPgName").value || "{{ current_pg_name }}" || "",
-      member_name: $("llMemberName").value || "",
-      spouse_name: $("llSpouseName").value || "",
-      loan_amount: $("llLoanAmount").value || "",
-      loan_tenure: $("llLoanTenure").value || "",
-      installment_count: $("llInstallmentCount").value || "",
-      loan_purpose: $("llLoanPurpose").value || "",
-      entries: allRows.map(r => ({
-        _selected: !!(r.querySelector("[data-ll='sel']") && r.querySelector("[data-ll='sel']").checked),
-        date_disb: r.querySelector("[data-ll='date_disb']").value || "",
-        pr_due: n2(r.querySelector("[data-ll='pr_due']").value),
-        pr_paid: n2(r.querySelector("[data-ll='pr_paid']").value),
-        int_due: n2(r.querySelector("[data-ll='int_due']").value),
-        int_paid: n2(r.querySelector("[data-ll='int_paid']").value),
-        next_date: r.querySelector("[data-ll='next_date']").value || "",
-      }))
-    };
-  }
-
-  function restoreSnapshot(snap){
-    if (!snap) return;
-
-    $("llMemberName").value = snap.member_name || "";
-    $("llSpouseName").value = snap.spouse_name || "";
-    $("llLoanAmount").value = snap.loan_amount || "";
-    $("llLoanTenure").value = snap.loan_tenure || "";
-    $("llInstallmentCount").value = snap.installment_count || "";
-    $("llLoanPurpose").value = snap.loan_purpose || "";
-
-    allRows = [];
-    filteredRows = [];
-    $("llBody").innerHTML = "";
-
-    const entries = Array.isArray(snap.entries) ? snap.entries : [];
-    if (entries.length){
-      entries.forEach((e)=>{
-        const row = createRow();
-        row.querySelector("[data-ll='date_disb']").value = e.date_disb || "";
-        row.querySelector("[data-ll='pr_due']").value = e.pr_due ? String(e.pr_due) : "";
-        row.querySelector("[data-ll='pr_paid']").value = e.pr_paid ? String(e.pr_paid) : "";
-        row.querySelector("[data-ll='int_due']").value = e.int_due ? String(e.int_due) : "";
-        row.querySelector("[data-ll='int_paid']").value = e.int_paid ? String(e.int_paid) : "";
-        row.querySelector("[data-ll='next_date']").value = e.next_date || "";
-        const cb = row.querySelector("[data-ll='sel']");
-        if (cb) cb.checked = !!e._selected;
-        allRows.push(row);
-      });
-    } else {
-      allRows = [];
-    }
-
-    rebuildFiltered();
-    applyLang();
-    recalcLoan();
-    setAllEditable(false);
-  }
-
-  function updateRowLabels(row, t){
-    if (!row) return;
-
-    const setLabel = (cellSelector, label) => {
-      const cell = row.querySelector(cellSelector);
-      if (cell) cell.setAttribute("data-label", label);
-    };
-
-    setLabel("[data-llcell='sel']", t.hSel);
-    setLabel("[data-llcell='sl']", t.hSl);
-    setLabel("[data-llcell='date_disb']", t.hDateDisb);
-    setLabel("[data-llcell='pr_due']", t.hPrDue);
-    setLabel("[data-llcell='pr_paid']", t.hPrPaid);
-    setLabel("[data-llcell='pr_out']", t.hPrOut);
-    setLabel("[data-llcell='int_due']", t.hIntDue);
-    setLabel("[data-llcell='int_paid']", t.hIntPaid);
-    setLabel("[data-llcell='int_out']", t.hIntOut);
-    setLabel("[data-llcell='total_out']", t.hTotalOut);
-    setLabel("[data-llcell='next_date']", t.hNext);
-    setLabel("[data-llcell='action']", t.hAction);
-
-    const date = row.querySelector("[data-ll='date_disb']");
-    const next = row.querySelector("[data-ll='next_date']");
-    const nums = row.querySelectorAll("[data-ll='pr_due'],[data-ll='pr_paid'],[data-ll='int_due'],[data-ll='int_paid']");
-    if (date) date.placeholder = t.phDate;
-    if (next) next.placeholder = t.phNext;
-    nums.forEach(i => i.placeholder = t.phNum);
-
-    const cb = row.querySelector("[data-ll='sel']");
-    if (cb) cb.setAttribute("aria-label", t.selectRowAria);
-
-    const del = row.querySelector("[data-ll='delete']");
-    if (del){
-      del.setAttribute("title", t.deleteRowTitle);
-      del.setAttribute("aria-label", t.actionAria);
-    }
-  }
-
-  function applyLang(){
-    const t = T[lang];
-
-    $("llTitle").textContent = t.title;
-
-    $("llMemberLabel").textContent = t.memberLabel;
-    $("llSpouseLabel").textContent = t.spouseLabel;
-    $("llLoanAmountLabel").textContent = t.loanAmountLabel;
-    $("llLoanTenureLabel").textContent = t.loanTenureLabel;
-    $("llInstallmentLabel").textContent = t.installmentLabel;
-    $("llPurposeLabel").textContent = t.purposeLabel;
-
-    $("llRowsLabel").textContent = t.rowsLabel;
-    $("llSearch").placeholder = t.searchPH;
-
-    $("llPrevBottom").textContent = t.prev;
-    $("llNextBottom").textContent = t.next;
-    $("llEmpty").textContent = t.empty;
-
-    $("llHSl").textContent = t.hSl;
-    $("llHDateDisb").textContent = t.hDateDisb;
-    $("llHPrDue").textContent = t.hPrDue;
-    $("llHPrPaid").textContent = t.hPrPaid;
-    $("llHPrOut").textContent = t.hPrOut;
-    $("llHIntDue").textContent = t.hIntDue;
-    $("llHIntPaid").textContent = t.hIntPaid;
-    $("llHIntOut").textContent = t.hIntOut;
-    $("llHTotalOut").textContent = t.hTotalOut;
-    $("llHNext").textContent = t.hNext;
-    $("llHAction").textContent = t.hAction;
-
-    $("llKpiPrOut").childNodes[0].nodeValue = t.kpiPrOut + " ";
-    $("llKpiIntOut").childNodes[0].nodeValue = t.kpiIntOut + " ";
-    $("llKpiTotalOut").childNodes[0].nodeValue = t.kpiTotalOut + " ";
-
-    const head = $("llSelectAll");
-    if (head) head.setAttribute("title", t.selectAllTitle);
-
-    allRows.forEach(r => updateRowLabels(r, t));
-
-    $("llDeleteTitle").textContent = t.deleteTitle;
-    $("llDeleteMsg").textContent = t.deleteMsg;
-    $("llDeleteNo").textContent = t.deleteNo;
-    $("llDeleteYes").textContent = t.deleteYes;
-
-    setEditingUI();
-    renderPage();
-  }
-
-  $("llWrap").addEventListener("focusin", (e)=>{
-    if (llIsEditing) return;
-    const el = e.target;
-    if (!el) return;
-    if (el.matches && (el.matches("input.ll-in, input.ll-input"))){
-      try{ el.blur(); }catch(_){}
-    }
-  }, true);
-
-  function wireRow(row){
-    const onInput = () => recalcLoan();
-
-    row.querySelectorAll("input").forEach(el=>{
-      if (el.getAttribute("data-ll") === "sel"){
-        el.addEventListener("change", ()=>updateSelectUI());
-        return;
-      }
-      el.addEventListener("input", onInput);
-      el.addEventListener("change", onInput);
-    });
-
-    const del = row.querySelector("[data-ll='delete']");
-    if (del){
-      del.addEventListener("click", ()=>{
-        if (!llIsEditing) return;
-        pendingDeleteRow = row;
-        pendingDeleteMode = "single";
-        openDeleteConfirm();
-      });
-    }
-  }
-
-  function createRow(){
-    const t = T[lang];
-    const row = document.createElement("div");
-    row.className = "ll-row";
-
-    row.innerHTML = `
-      <div class="ll-cell" data-llcell="sel" data-label="${t.hSel}">
-        <input type="checkbox" class="ll-check" data-ll="sel" aria-label="${t.selectRowAria}" />
-      </div>
-
-      <div class="ll-cell" data-llcell="sl" data-label="${t.hSl}">
-        <div class="ll-slno" data-ll="slno">1</div>
-      </div>
-
-      <div class="ll-cell" data-llcell="date_disb" data-label="${t.hDateDisb}">
-        <input class="ll-in" data-ll="date_disb" type="date" placeholder="${t.phDate}" />
-      </div>
-
-      <div class="ll-cell" data-llcell="pr_due" data-label="${t.hPrDue}">
-        <input class="ll-in num" data-ll="pr_due" placeholder="${t.phNum}" inputmode="decimal" />
-      </div>
-
-      <div class="ll-cell" data-llcell="pr_paid" data-label="${t.hPrPaid}">
-        <input class="ll-in num" data-ll="pr_paid" placeholder="${t.phNum}" inputmode="decimal" />
-      </div>
-
-      <div class="ll-cell" data-llcell="pr_out" data-label="${t.hPrOut}">
-        <input class="ll-in num" data-ll="pr_out" readonly />
-      </div>
-
-      <div class="ll-cell" data-llcell="int_due" data-label="${t.hIntDue}">
-        <input class="ll-in num" data-ll="int_due" placeholder="${t.phNum}" inputmode="decimal" />
-      </div>
-
-      <div class="ll-cell" data-llcell="int_paid" data-label="${t.hIntPaid}">
-        <input class="ll-in num" data-ll="int_paid" placeholder="${t.phNum}" inputmode="decimal" />
-      </div>
-
-      <div class="ll-cell" data-llcell="int_out" data-label="${t.hIntOut}">
-        <input class="ll-in num" data-ll="int_out" readonly />
-      </div>
-
-      <div class="ll-cell" data-llcell="total_out" data-label="${t.hTotalOut}">
-        <input class="ll-in num" data-ll="total_out" readonly />
-      </div>
-
-      <div class="ll-cell" data-llcell="next_date" data-label="${t.hNext}">
-        <input class="ll-in" data-ll="next_date" type="date" placeholder="${t.phNext}" />
-      </div>
-
-      <div class="ll-cell" data-llcell="action" data-label="${t.hAction}">
-        <button class="ll-del" type="button" data-ll="delete" aria-label="${t.actionAria}" title="${t.deleteRowTitle}">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 6h18"></path>
-            <path d="M8 6V4h8v2"></path>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-            <path d="M10 11v6"></path>
-            <path d="M14 11v6"></path>
-          </svg>
-        </button>
-      </div>
-    `;
-
-    wireRow(row);
     setRowEditable(row, llIsEditing);
     return row;
   }
 
+  function valueOrBlank(v){
+    if (v === null || v === undefined || v === "" || Number(v) === 0) return "";
+    return String(v);
+  }
+
   function addRow(){
     if (!llIsEditing) return;
+    if (!selectedLoanId){
+      info("Please select member and loan account first.");
+      return;
+    }
+
     const row = createRow();
     allRows.push(row);
+    rebuildFiltered();
+  }
 
-    if ((query || "").trim()){
-      rebuildFiltered();
-    } else {
-      filteredRows = allRows.slice();
-      renderPage();
-      recalcLoan();
+  function takeSnapshot(){
+    return {
+      selectedLoanId,
+      member: $("llMemberName").value || "",
+      entries: allRows.map(row => ({
+        date_disb: row.querySelector("[data-ll='date_disb']").value || "",
+        principal_due: n2(row.querySelector("[data-ll='pr_due']").value),
+        principal_repaid: n2(row.querySelector("[data-ll='pr_paid']").value),
+        interest_due: n2(row.querySelector("[data-ll='int_due']").value),
+        interest_paid: n2(row.querySelector("[data-ll='int_paid']").value),
+        next_installment_date: row.querySelector("[data-ll='next_date']").value || ""
+      }))
+    };
+  }
+
+  function hydrateEntries(entries){
+    allRows = [];
+    filteredRows = [];
+    $("llBody").innerHTML = "";
+    clearSelections();
+
+    if (Array.isArray(entries)){
+      entries.forEach(e => allRows.push(createRow(e)));
     }
+
+    rebuildFiltered();
+    setEditMode(false);
+  }
+
+  function applyLoanToFields(loan){
+    if (!loan){
+      $("llSpouseName").value = "";
+      $("llLoanAmount").value = "";
+      $("llLoanTenure").value = "";
+      $("llInstallmentCount").value = "";
+      $("llLoanPurpose").value = "";
+      return;
+    }
+
+    $("llSpouseName").value = loan.father_mother_spouse || loan.spouse_name || "";
+    $("llLoanAmount").value = loan.loan_amount ?? loan.principal ?? "";
+    $("llLoanTenure").value = loan.tenure_months ?? "";
+    $("llInstallmentCount").value = loan.no_of_installments || loan.installments_total || "";
+    $("llLoanPurpose").value = loan.loan_purpose || loan.purpose || "";
+  }
+
+  function populateMembers(){
+    const select = $("llMemberName");
+    memberMap = new Map();
+
+    memberLoans.forEach(loan => {
+      const memberId = String(loan.member_id || loan.member_name || "");
+      if (!memberId) return;
+
+      if (!memberMap.has(memberId)){
+        memberMap.set(memberId, {
+          id: memberId,
+          name: loan.member_name || "Member"
+        });
+      }
+    });
+
+    select.innerHTML = '<option value="">Select member</option>';
+    Array.from(memberMap.values())
+      .sort((a,b) => a.name.localeCompare(b.name))
+      .forEach(member => {
+        select.insertAdjacentHTML(
+          "beforeend",
+          `<option value="${esc(member.id)}">${esc(member.name)}</option>`
+        );
+      });
+
+    const firstMember = Array.from(memberMap.values())[0];
+    if (firstMember){
+      select.value = firstMember.id;
+      populateLoanAccountsForMember(firstMember.id, true);
+    } else {
+      populateLoanAccountsForMember("", false);
+      info("No member loan found. Please ask CLF/Block/Admin to create a member loan first.");
+    }
+  }
+
+  function populateLoanAccountsForMember(memberId, autoLoad=false){
+    const loanSelect = $("llLoanAccount");
+    const loans = memberLoans.filter(loan => String(loan.member_id || loan.member_name || "") === String(memberId || ""));
+
+    loanSelect.innerHTML = '<option value="">Select loan account</option>';
+
+    loans.forEach(loan => {
+      const id = getLoanId(loan);
+      const label = [
+        loan.loan_no || "Loan",
+        loan.loan_purpose || loan.purpose || "",
+        loan.loan_amount ? `₹${loan.loan_amount}` : ""
+      ].filter(Boolean).join(" - ");
+
+      loanSelect.insertAdjacentHTML(
+        "beforeend",
+        `<option value="${esc(id)}">${esc(label)}</option>`
+      );
+    });
+
+    selectedLoanId = "";
+    applyLoanToFields(null);
+    hydrateEntries([]);
+    renderLoanHistory([]);
+
+    if (loans.length && autoLoad){
+      const id = getLoanId(loans[0]);
+      loanSelect.value = id;
+      selectedLoanId = id;
+      applyLoanToFields(loans[0]);
+      loadLoanHistoryAndCurrent();
+    } else if (!loans.length && memberId){
+      info("No active member loan found for this member. Please ask CLF/Block/Admin to create member loan first.");
+    }
+  }
+
+  async function loadMemberLoans(){
+    try{
+      const res = await fetch("/pg/loan-ledger/member-loans", {
+        method:"GET",
+        headers:{ "Accept":"application/json" }
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data || !data.ok){
+        throw new Error((data && (data.message || data.error)) || `HTTP ${res.status}`);
+      }
+
+      if (data.pg && data.pg.name){
+        $("llPgName").value = data.pg.name;
+      }
+
+      memberLoans = Array.isArray(data.loans) ? data.loans : [];
+      populateMembers();
+    } catch (err){
+      console.error(err);
+      memberLoans = [];
+      populateMembers();
+      info("Could not load member loans. Please check backend route /pg/loan-ledger/member-loans.");
+    }
+  }
+
+  async function loadLoanHistory(){
+    if (!selectedLoanId){
+      renderLoanHistory([]);
+      return [];
+    }
+
+    try{
+      const qs = new URLSearchParams({ history:"1" });
+      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(selectedLoanId)}?${qs.toString()}`, {
+        method:"GET",
+        headers:{ "Accept":"application/json" }
+      });
+
+      const data = await res.json().catch(() => null);
+      const history = res.ok && data && Array.isArray(data.history) ? data.history : [];
+      renderLoanHistory(history);
+      return history;
+    } catch (_){
+      renderLoanHistory([]);
+      return [];
+    }
+  }
+
+  async function loadLoanLedger(year=selectedPeriod.year, month=selectedPeriod.month){
+    if (!selectedLoanId){
+      hydrateEntries([]);
+      return;
+    }
+
+    try{
+      const qs = new URLSearchParams({
+        year:String(year),
+        month:String(month)
+      });
+
+      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(selectedLoanId)}?${qs.toString()}`, {
+        method:"GET",
+        headers:{ "Accept":"application/json" }
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data || !data.ok){
+        throw new Error((data && (data.message || data.error)) || `HTTP ${res.status}`);
+      }
+
+      if (data.pg_name) $("llPgName").value = data.pg_name;
+
+      const loan = data.loan || getSelectedLoan();
+      if (loan) applyLoanToFields(loan);
+
+      hydrateEntries(Array.isArray(data.entries) ? data.entries : []);
+      llSnapshot = takeSnapshot();
+    } catch (err){
+      console.error(err);
+      hydrateEntries([]);
+      llSnapshot = takeSnapshot();
+    }
+  }
+
+  async function loadLoanHistoryAndCurrent(){
+    await loadLoanHistory();
+    await loadLoanLedger(selectedPeriod.year, selectedPeriod.month);
+  }
+
+  function buildPayload(){
+    const loan = getSelectedLoan();
+
+    return {
+      pg_name: $("llPgName").value || "",
+      loan_id: selectedLoanId,
+      loan_type: "member",
+      loan_no: loan ? (loan.loan_no || "") : "",
+      member_id: loan ? (loan.member_id || "") : "",
+      member_name: loan ? (loan.member_name || "") : "",
+      spouse_name: $("llSpouseName").value || "",
+      father_mother_spouse: $("llSpouseName").value || "",
+      loan_amount: $("llLoanAmount").value || "",
+      loan_tenure: $("llLoanTenure").value || "",
+      installment_count: $("llInstallmentCount").value || "",
+      loan_purpose: $("llLoanPurpose").value || "",
+      entries: allRows.map(row => ({
+        date_disb: row.querySelector("[data-ll='date_disb']").value || "",
+        principal_due: n2(row.querySelector("[data-ll='pr_due']").value),
+        principal_repaid: n2(row.querySelector("[data-ll='pr_paid']").value),
+        interest_due: n2(row.querySelector("[data-ll='int_due']").value),
+        interest_paid: n2(row.querySelector("[data-ll='int_paid']").value),
+        next_installment_date: row.querySelector("[data-ll='next_date']").value || ""
+      }))
+    };
+  }
+
+  async function saveLoanLedger(){
+    if (!selectedLoanId){
+      info("Please select a member loan account first.");
+      return;
+    }
+
+    const payload = buildPayload();
+
+    try{
+      const qs = new URLSearchParams({
+        year:String(selectedPeriod.year),
+        month:String(selectedPeriod.month)
+      });
+
+      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(selectedLoanId)}?${qs.toString()}`, {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "Accept":"application/json"
+        },
+        body:JSON.stringify(payload)
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok || !data || !data.ok){
+        throw new Error((data && (data.message || data.error)) || `HTTP ${res.status}`);
+      }
+
+      if (data.loan){
+        const idx = memberLoans.findIndex(l => getLoanId(l) === selectedLoanId);
+        if (idx >= 0) memberLoans[idx] = { ...memberLoans[idx], ...data.loan };
+        applyLoanToFields(memberLoans[idx] || data.loan);
+      }
+
+      setEditMode(false);
+      llSnapshot = takeSnapshot();
+      await loadLoanHistory();
+      info(data.message || "Saved successfully.");
+    } catch (err){
+      console.error(err);
+      info(`Save failed: ${err.message || err}`);
+    }
+  }
+
+  function renderLoanHistory(history){
+    const current = $("loanCurrentPeriodText");
+    const cards = $("loanHistoryCards");
+    const loan = getSelectedLoan();
+
+    if (current){
+      current.textContent = `${loan && loan.member_name ? `Member: ${loan.member_name} • ` : ""}Working month: ${monthLabel(selectedPeriod.month, selectedPeriod.year)}`;
+    }
+
+    if (!cards) return;
+
+    if (!selectedLoanId){
+      cards.innerHTML = '<div style="font-size:13px;color:#64748b">Select a member loan to view saved month records.</div>';
+      return;
+    }
+
+    if (!Array.isArray(history) || !history.length){
+      cards.innerHTML = '<div style="font-size:13px;color:#64748b">No saved month records yet for the selected member loan.</div>';
+      return;
+    }
+
+    cards.innerHTML = history.map(item => {
+      const active = Number(item.year) === Number(selectedPeriod.year) && Number(item.month) === Number(selectedPeriod.month);
+      return `<button type="button" class="ll-history-card ${active ? "active" : ""}" data-year="${esc(item.year)}" data-month="${esc(item.month)}">${esc(monthLabel(item.month, item.year))}</button>`;
+    }).join("");
+
+    cards.querySelectorAll(".ll-history-card").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (llIsEditing){
+          info("Please Save or Cancel before changing month.");
+          return;
+        }
+
+        selectedPeriod = {
+          year:Number(btn.dataset.year),
+          month:Number(btn.dataset.month)
+        };
+
+        await loadLoanLedger(selectedPeriod.year, selectedPeriod.month);
+        await loadLoanHistory();
+      });
+    });
   }
 
   function doDeleteRow(row){
     if (!row) return;
     const idx = allRows.indexOf(row);
     if (idx >= 0) allRows.splice(idx, 1);
-
-    if ((query || "").trim()){
-      rebuildFiltered();
-    } else {
-      filteredRows = allRows.slice();
-      const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
-      page = Math.min(page, totalPages);
-      renderPage();
-      recalcLoan();
-    }
+    rebuildFiltered();
   }
 
   function doDeleteSelected(){
-    const sel = selectedRows();
-    if (!sel.length) return;
-
-    sel.forEach(r=>{
-      const idx = allRows.indexOf(r);
+    selectedRows().forEach(row => {
+      const idx = allRows.indexOf(row);
       if (idx >= 0) allRows.splice(idx, 1);
     });
-
-    clearAllSelections();
-
-    if ((query || "").trim()){
-      rebuildFiltered();
-    } else {
-      filteredRows = allRows.slice();
-      const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
-      page = Math.min(page, totalPages);
-      renderPage();
-      recalcLoan();
-    }
+    clearSelections();
+    rebuildFiltered();
   }
 
   function doDeleteAll(){
     allRows = [];
     filteredRows = [];
     $("llBody").innerHTML = "";
-    clearAllSelections();
+    clearSelections();
     rebuildFiltered();
-  }
-
-  $("llDeleteYes").addEventListener("click", ()=>{
-    closeOverlay($("llDeleteOverlay"));
-    if (pendingDeleteMode === "single"){
-      doDeleteRow(pendingDeleteRow);
-    }
-    pendingDeleteRow = null;
-    pendingDeleteMode = null;
-  });
-
-  $("llDeleteMultiYes").addEventListener("click", ()=>{
-    closeOverlay($("llDeleteMultiOverlay"));
-    doDeleteSelected();
-  });
-
-  $("llDeleteAllYes").addEventListener("click", ()=>{
-    closeOverlay($("llDeleteAllOverlay"));
-    doDeleteAll();
-  });
-
-  function getLoanId(){
-    return window.LOAN_ID || window.PG_ID || ($("llMemberName").value || "loan_demo");
-  }
-
-  function storageKey(loan_id){
-    return `loan_ledger:${loan_id}`;
-  }
-
-
-  let llMembers = [];
-
-  async function loadPgMembers(){
-    const pgId = (window.PG_ID || "").trim();
-    const memberSelect = $("llMemberName");
-    if (!pgId || !memberSelect) return;
-    const currentValue = memberSelect.value || "";
-    try{
-      const res = await fetch(`/pg/api/members/${encodeURIComponent(pgId)}`, { headers:{ "Accept":"application/json" } });
-      const data = await res.json().catch(()=>null);
-      if (!res.ok || !data || !Array.isArray(data.members)) return;
-      llMembers = data.members.map(m => ({
-        id: String(m._id || ""),
-        name: String(m.name || "").trim(),
-        spouse_name: String(m.spouse_name || "").trim(),
-        member_code: String(m.member_code || "").trim()
-      }));
-      memberSelect.innerHTML = '<option value="">Select member</option>' + llMembers.map(m => {
-        const safeName = m.name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        return `<option value="${safeName}">${safeName}</option>`;
-      }).join('');
-      if (currentValue) memberSelect.value = currentValue;
-      syncSpouseFromSelectedMember(false);
-    }catch(_e){}
-  }
-
-  function syncSpouseFromSelectedMember(force = false){
-    const memberSelect = $("llMemberName");
-    const spouseInput = $("llSpouseName");
-    if (!memberSelect || !spouseInput) return;
-    const selectedName = String(memberSelect.value || "").trim();
-    if (!selectedName){
-      if (force) spouseInput.value = "";
-      return;
-    }
-    const found = llMembers.find(m => m.name === selectedName);
-    if (found && (force || !String(spouseInput.value || "").trim())){
-      spouseInput.value = found.spouse_name || "";
-    }
-  }
-
-  function buildPayload(){
-    return {
-      pg_name: $("llPgName").value || "{{ current_pg_name }}" || "",
-      member_name: $("llMemberName").value || "",
-      spouse_name: $("llSpouseName").value || "",
-      loan_amount: $("llLoanAmount").value || "",
-      loan_tenure: $("llLoanTenure").value || "",
-      installment_count: $("llInstallmentCount").value || "",
-      loan_purpose: $("llLoanPurpose").value || "",
-      entries: allRows.map(r => ({
-        date_disb: r.querySelector("[data-ll='date_disb']").value || "",
-        principal_due: n2(r.querySelector("[data-ll='pr_due']").value),
-        principal_repaid: n2(r.querySelector("[data-ll='pr_paid']").value),
-        interest_due: n2(r.querySelector("[data-ll='int_due']").value),
-        interest_paid: n2(r.querySelector("[data-ll='int_paid']").value),
-        next_installment_date: r.querySelector("[data-ll='next_date']").value || ""
-      }))
-    };
-  }
-
-  let selectedPeriod = (() => {
-    const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth() + 1 };
-  })();
-  let loanHistory = [];
-
-  function monthLabel(month, year){
-    const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    return `${names[(Number(month) || 1) - 1] || "Month"} ${year || ""}`.trim();
-  }
-
-  function currentMemberName(){
-    return String($("llMemberName")?.value || "").trim();
-  }
-
-  function ensureLoanHistoryBox(){
-    let el = document.getElementById('loanHistoryBox');
-    if(el) return el;
-    el = document.createElement('section');
-    el.id = 'loanHistoryBox';
-    el.style.marginTop = '16px';
-    el.style.padding = '16px';
-    el.style.background = '#fff';
-    el.style.border = '1px solid rgba(15,23,42,.08)';
-    el.style.borderRadius = '18px';
-    el.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div style="font-size:18px;font-weight:800;color:#0f172a">Saved Month Records</div><div id="loanCurrentPeriodText" style="font-size:13px;color:#64748b;margin-top:4px"></div></div><div id="loanHistoryCards" style="display:flex;gap:10px;flex-wrap:wrap"></div></div>';
-    const target = document.querySelector('.ll-wrap, .ll-page, main') || document.body;
-    target.appendChild(el);
-    return el;
-  }
-
-  function renderLoanHistoryBox(){
-    ensureLoanHistoryBox();
-    const current = document.getElementById('loanCurrentPeriodText');
-    const cards = document.getElementById('loanHistoryCards');
-    const member = currentMemberName();
-    if(current) current.textContent = `${member ? `Member: ${member} • ` : ''}Working month: ${monthLabel(selectedPeriod.month, selectedPeriod.year)}`;
-    if(!cards) return;
-    if(!loanHistory.length){
-      cards.innerHTML = '<div style="font-size:13px;color:#64748b">No saved month records yet for the selected member.</div>';
-      return;
-    }
-    cards.innerHTML = loanHistory.map(item => {
-      const active = Number(item.year) === Number(selectedPeriod.year) && Number(item.month) === Number(selectedPeriod.month);
-      return `<button type="button" class="loan-history-card" data-year="${item.year}" data-month="${item.month}" style="border:1px solid ${active ? '#10b981' : 'rgba(15,23,42,.08)'};background:${active ? '#ecfdf5' : '#f8fafc'};color:#0f172a;border-radius:14px;padding:10px 14px;font-weight:700;cursor:pointer">${monthLabel(item.month, item.year)}</button>`;
-    }).join('');
-    cards.querySelectorAll('.loan-history-card').forEach(btn => {
-      btn.addEventListener('click', async ()=>{
-        selectedPeriod = { year: Number(btn.dataset.year), month: Number(btn.dataset.month) };
-        await loadLoanLedger(selectedPeriod.year, selectedPeriod.month);
-        renderLoanHistoryBox();
-      });
-    });
-  }
-
-  async function loadLoanHistory(){
-    const loan_id = getLoanId();
-    const member = currentMemberName();
-    try{
-      const qs = new URLSearchParams({ history: '1' });
-      if(member) qs.set('member_name', member);
-      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(loan_id)}?${qs.toString()}`, { method:'GET' });
-      if(!res.ok) return [];
-      const data = await res.json().catch(()=>null);
-      loanHistory = Array.isArray(data && data.history) ? data.history : [];
-      return loanHistory;
-    }catch(_){
-      loanHistory = [];
-      return [];
-    }
-  }
-
-  async function saveLoanLedger(){
-    const loan_id = getLoanId();
-    const payload = buildPayload();
-
-    try{ localStorage.setItem(storageKey(loan_id), JSON.stringify(payload)); }catch(_){}
-
-    try{
-      const qs = new URLSearchParams({ year: String(selectedPeriod.year), month: String(selectedPeriod.month) });
-      if(payload.member_name) qs.set('member_name', payload.member_name);
-      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(loan_id)}?${qs.toString()}`,{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      let data = null;
-      try{ data = await res.json(); }catch(_){}
-
-      if (!res.ok){
-        const msg = (data && data.message) ? data.message : (res.status ? `HTTP ${res.status}` : "Save failed");
-        llSnapshot = takeSnapshot();
-        setEditMode(false);
-        openInfoModal(`Saved locally. Server save failed (${msg}).`, (T[lang].title || "Loan Ledger"));
-        return;
-      }
-
-      await loadLoanHistory();
-      renderLoanHistoryBox();
-      llSnapshot = takeSnapshot();
-      setEditMode(false);
-      await loadLoanHistory();
-      renderLoanHistoryBox();
-      openInfoModal((data && data.message) ? data.message : "Saved successfully", (T[lang].title || "Loan Ledger"));
-    }catch(err){
-      console.warn("Server save skipped:", err);
-      llSnapshot = takeSnapshot();
-      setEditMode(false);
-      openInfoModal("Saved locally (offline).", (T[lang].title || "Loan Ledger"));
-    }
-  }
-
-
-  async function loadCurrentPgName(){
-    const pgId = (window.PG_ID || "").trim();
-    const pgEl = $("llPgName");
-    if (!pgId || !pgEl || (pgEl.value || "").trim()) return;
-    try{
-      const res = await fetch(`/pg/profile/${encodeURIComponent(pgId)}/data`, { headers:{ "Accept":"application/json" } });
-      const data = await res.json().catch(()=>null);
-      if (res.ok && data && data.data && data.data.pg_name) pgEl.value = data.data.pg_name;
-    }catch(_){}
-  }
-
-  async function loadLoanLedger(year = selectedPeriod.year, month = selectedPeriod.month){
-    const loan_id = getLoanId();
-    const member = currentMemberName();
-
-    try{
-      const qs = new URLSearchParams({ year: String(year), month: String(month) });
-      if(member) qs.set('member_name', member);
-      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(loan_id)}?${qs.toString()}`, { method:"GET" });
-      if (res.ok){
-        const data = await res.json().catch(()=>null);
-        if (data){
-          hydrateFromData(data);
-          if (!llIsEditing){
-            llSnapshot = takeSnapshot();
-            setEditMode(false);
-          }
-          renderLoanHistoryBox();
-          return;
-        }
-      }
-    }catch(_){}
-
-    try{
-      const raw = localStorage.getItem(storageKey(loan_id));
-      if (raw){
-        const data = JSON.parse(raw);
-        hydrateFromData(data);
-        renderLoanHistoryBox();
-        if (!llIsEditing){
-          llSnapshot = takeSnapshot();
-          setEditMode(false);
-        }
-      }
-    }catch(_){}
-  }
-
-  function hydrateFromData(data){
-    if (data.pg_name) $("llPgName").value = data.pg_name;
-    if (data.member_name) $("llMemberName").value = data.member_name;
-    syncSpouseFromSelectedMember(false);
-    if (data.spouse_name) $("llSpouseName").value = data.spouse_name;
-    if (data.loan_amount) $("llLoanAmount").value = data.loan_amount;
-    if (data.loan_tenure) $("llLoanTenure").value = data.loan_tenure;
-    if (data.installment_count) $("llInstallmentCount").value = data.installment_count;
-    if (data.loan_purpose) $("llLoanPurpose").value = data.loan_purpose;
-
-    allRows = [];
-    filteredRows = [];
-    $("llBody").innerHTML = "";
-    clearAllSelections();
-
-    const entries = Array.isArray(data.entries) ? data.entries : [];
-    if (entries.length){
-      entries.forEach((e)=>{
-        const row = createRow();
-        row.querySelector("[data-ll='date_disb']").value = e.date_disb || "";
-        row.querySelector("[data-ll='pr_due']").value = (e.principal_due || e.pr_due) ? String(e.principal_due || e.pr_due) : "";
-        row.querySelector("[data-ll='pr_paid']").value = (e.principal_repaid || e.pr_paid) ? String(e.principal_repaid || e.pr_paid) : "";
-        row.querySelector("[data-ll='int_due']").value = (e.interest_due || e.int_due) ? String(e.interest_due || e.int_due) : "";
-        row.querySelector("[data-ll='int_paid']").value = (e.interest_paid || e.int_paid) ? String(e.interest_paid || e.int_paid) : "";
-        row.querySelector("[data-ll='next_date']").value = e.next_installment_date || e.next_date || "";
-        allRows.push(row);
-      });
-    } else {
-      allRows = [];
-    }
-
-    rebuildFiltered();
-    applyLang();
-    recalcLoan();
-    updateSelectUI();
-  }
-
-  function setEditMode(on){
-    if (on) llArmLockNow();
-    else llSetLock(false);
-
-    llIsEditing = !!on;
-    setEditingUI();
-    setAllEditable(llIsEditing);
-    recalcLoan();
-  }
-
-  function enterEdit(){
-    llArmLockNow();
-    llSnapshot = takeSnapshot();
-    setEditMode(true);
   }
 
   function requestCancel(){
     if (!llIsEditing) return;
-    openCancelConfirm();
+    openOverlay($("llCancelOverlay"));
   }
 
-  function doCancel(){
-    closeOverlay($("llCancelOverlay"));
-    const snap = llSnapshot;
+  function restoreSnapshot(){
+    if (!llSnapshot) return;
+    selectedLoanId = llSnapshot.selectedLoanId || "";
+    $("llLoanAccount").value = selectedLoanId;
+    const loan = getSelectedLoan();
+    applyLoanToFields(loan);
+    hydrateEntries(llSnapshot.entries || []);
+  }
 
-    llIsEditing = false;
-    llSetLock(false);
-    $("llWrap").classList.remove("ll-editing", "ll-mobile-editing");
-
-    try{
-      restoreSnapshot(snap);
-    } finally {
-      llIsEditing = false;
-      llSetLock(false);
-
-      setEditingUI();
-      setAllEditable(false);
-
-      clearAllSelections();
-      updateSelectUI();
-      recalcLoan();
+  function handleBack(){
+    if (llIsEditing){
+      info("You are in Edit mode. Please Save or Cancel before leaving this page.");
+      return;
     }
+
+    if (history.length > 1) history.back();
+    else window.location.href = "/";
   }
 
-  function requestSave(){
-    if (!llIsEditing) return;
-    openSaveConfirm();
-  }
+  $("llMemberName").addEventListener("change", async () => {
+    if (llIsEditing){
+      $("llMemberName").value = getSelectedLoan()?.member_id || "";
+      info("Please Save or Cancel before changing member.");
+      return;
+    }
 
-  window.loanLedgerSetLanguage = function(l){
-    setLang(l);
-  };
+    populateLoanAccountsForMember($("llMemberName").value, true);
+  });
 
-  function handleLangEvent(e){
-    const d = (e && e.detail) ? e.detail : null;
-    const raw = d && (d.lang || d.language || d.value) ? (d.lang || d.language || d.value) : null;
-    const n = normalizeLang(raw);
-    if (n) setLang(n);
-  }
+  $("llLoanAccount").addEventListener("change", async () => {
+    if (llIsEditing){
+      $("llLoanAccount").value = selectedLoanId;
+      info("Please Save or Cancel before changing loan account.");
+      return;
+    }
 
-  window.addEventListener("pgmis-language-change", handleLangEvent);
-  window.addEventListener("pgmis:language-change", handleLangEvent);
-  window.addEventListener("language-change", handleLangEvent);
-
-  window.addEventListener("storage", ()=>{
-    const l = readLangFromBase();
-    if (l) setLang(l);
+    selectedLoanId = $("llLoanAccount").value || "";
+    applyLoanToFields(getSelectedLoan());
+    await loadLoanHistoryAndCurrent();
   });
 
   $("llAddRowTop").addEventListener("click", addRow);
   $("llMobileAddRow").addEventListener("click", addRow);
 
-  $("llEditSaveBtn").addEventListener("click", ()=>{
-    if (!llIsEditing){
-      enterEdit();
+  $("llEditSaveBtn").addEventListener("click", () => {
+    if (!selectedLoanId){
+      info("Please select member and loan account first.");
       return;
     }
-    requestSave();
+
+    if (!llIsEditing){
+      llSnapshot = takeSnapshot();
+      setEditMode(true);
+      return;
+    }
+
+    openOverlay($("llSaveOverlay"));
   });
 
+  $("llMobileSave").addEventListener("click", () => openOverlay($("llSaveOverlay")));
   $("llCancelBtn").addEventListener("click", requestCancel);
   $("llMobileCancel").addEventListener("click", requestCancel);
-  $("llMobileSave").addEventListener("click", requestSave);
 
-  $("llSaveYes").addEventListener("click", async ()=>{
+  $("llSaveCancel").addEventListener("click", () => closeOverlay($("llSaveOverlay")));
+  $("llSaveYes").addEventListener("click", async () => {
     closeOverlay($("llSaveOverlay"));
     await saveLoanLedger();
   });
 
-  $("llCancelYes").addEventListener("click", doCancel);
+  $("llCancelNo").addEventListener("click", () => closeOverlay($("llCancelOverlay")));
+  $("llCancelYes").addEventListener("click", () => {
+    closeOverlay($("llCancelOverlay"));
+    setEditMode(false);
+    restoreSnapshot();
+  });
 
-  function goPrev(){
-    if (page > 1){ page -= 1; renderPage(); }
-  }
-  function goNext(){
+  $("llDeleteNo").addEventListener("click", () => {
+    pendingDeleteRow = null;
+    closeOverlay($("llDeleteOverlay"));
+  });
+  $("llDeleteYes").addEventListener("click", () => {
+    closeOverlay($("llDeleteOverlay"));
+    doDeleteRow(pendingDeleteRow);
+    pendingDeleteRow = null;
+  });
+
+  $("llDeleteSelectedTop").addEventListener("click", () => {
+    if (!llIsEditing || !selectedRows().length) return;
+    $("llDeleteMultiMsg").textContent = `Selected ${selectedRows().length} row(s) will be removed. Save to confirm or Cancel to revert.`;
+    openOverlay($("llDeleteMultiOverlay"));
+  });
+  $("llMobileDeleteSelected").addEventListener("click", () => $("llDeleteSelectedTop").click());
+  $("llDeleteMultiNo").addEventListener("click", () => closeOverlay($("llDeleteMultiOverlay")));
+  $("llDeleteMultiYes").addEventListener("click", () => {
+    closeOverlay($("llDeleteMultiOverlay"));
+    doDeleteSelected();
+  });
+
+  $("llDeleteAllTop").addEventListener("click", () => {
+    if (!llIsEditing || !allRows.length) return;
+    openOverlay($("llDeleteAllOverlay"));
+  });
+  $("llMobileDeleteAll").addEventListener("click", () => $("llDeleteAllTop").click());
+  $("llDeleteAllNo").addEventListener("click", () => closeOverlay($("llDeleteAllOverlay")));
+  $("llDeleteAllYes").addEventListener("click", () => {
+    closeOverlay($("llDeleteAllOverlay"));
+    doDeleteAll();
+  });
+
+  $("llInfoOk").addEventListener("click", () => closeOverlay($("llInfoOverlay")));
+
+  $("llPrevBottom").addEventListener("click", () => {
+    if (page > 1){
+      page -= 1;
+      renderPage();
+    }
+  });
+
+  $("llNextBottom").addEventListener("click", () => {
     const totalPages = Math.max(1, Math.ceil(filteredRows.length / perPage));
-    if (page < totalPages){ page += 1; renderPage(); }
-  }
-  $("llPrevBottom").addEventListener("click", goPrev);
-  $("llNextBottom").addEventListener("click", goNext);
+    if (page < totalPages){
+      page += 1;
+      renderPage();
+    }
+  });
 
-  $("llRowsPerPage").addEventListener("change", (e)=>{
+  $("llRowsPerPage").addEventListener("change", e => {
     const v = parseInt(e.target.value, 10);
     perPage = [10,25,50,100].includes(v) ? v : 25;
     page = 1;
     rebuildFiltered();
   });
 
-  $("llSearch").addEventListener("input", (e)=>{
+  $("llSearch").addEventListener("input", e => {
     query = e.target.value || "";
     page = 1;
     rebuildFiltered();
   });
 
-  $("llSelectAll").addEventListener("change", (e)=>{
+  $("llSelectAll").addEventListener("change", e => {
     if (!llIsEditing) return;
-
     const checked = !!e.target.checked;
-    const visible = filteredRows.slice((page-1)*perPage, (page-1)*perPage + perPage);
+    const visible = filteredRows.slice((page - 1) * perPage, (page - 1) * perPage + perPage);
 
-    visible.forEach(r=>{
-      const cb = r.querySelector("[data-ll='sel']");
+    visible.forEach(row => {
+      const cb = row.querySelector("[data-ll='sel']");
       if (cb) cb.checked = checked;
     });
 
     updateSelectUI();
   });
 
-  function requestDeleteSelected(){
+  $("llBackBtn").addEventListener("click", handleBack);
+
+  window.addEventListener("resize", updateMobileBar);
+
+  document.addEventListener("click", e => {
     if (!llIsEditing) return;
-    const n = selectedRows().length;
-    if (!n) return;
-    pendingDeleteMode = "multi";
-    openDeleteMultiConfirm(n);
-  }
-  function requestDeleteAll(){
+    const a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+    if (!a) return;
+    const href = a.getAttribute("href") || "";
+    if (!href || href === "#" || href.startsWith("#") || href.toLowerCase().startsWith("javascript:")) return;
+    e.preventDefault();
+    info("You are in Edit mode. Please Save or Cancel before leaving this page.");
+  }, true);
+
+  window.addEventListener("beforeunload", e => {
     if (!llIsEditing) return;
-    if (!allRows.length) return;
-    pendingDeleteMode = "all";
-    openDeleteAllConfirm();
-  }
-
-  $("llDeleteSelectedTop").addEventListener("click", requestDeleteSelected);
-  $("llDeleteAllTop").addEventListener("click", requestDeleteAll);
-
-  $("llMobileDeleteSelected").addEventListener("click", requestDeleteSelected);
-  $("llMobileDeleteAll").addEventListener("click", requestDeleteAll);
-
-  window.addEventListener("resize", ()=>updateMobileBar());
-
-  const initial = readLangFromBase();
-  if (initial) lang = initial;
-  rebuildFiltered();
-  applyLang();
-  recalcLoan();
+    e.preventDefault();
+    e.returnValue = "";
+  });
 
   setEditMode(false);
-  const memberSelect = $("llMemberName");
-  if (memberSelect){
-    memberSelect.addEventListener("change", async ()=>{ syncSpouseFromSelectedMember(true); await loadLoanHistory(); renderLoanHistoryBox(); });
-  }
-  loadCurrentPgName();
-  loadPgMembers().then(async ()=>{ await loadLoanHistory(); renderLoanHistoryBox(); await loadLoanLedger(); });
-
-  setTimeout(()=>{
-    const l = readLangFromBase();
-    if (l) setLang(l);
-  }, 0);
-
+  rebuildFiltered();
+  loadMemberLoans();
 })();
-
-
-// Back button
-const llBackBtn = document.getElementById("llBackBtn");
-if (llBackBtn){
-  llBackBtn.addEventListener("click", () => {
-
-    // respect edit-lock
-    if (typeof llIsEditing !== "undefined" && llIsEditing){
-      if (typeof openLockModal === "function"){
-        openLockModal();
-      }
-      return;
-    }
-
-    if (history.length > 1){
-      history.back();
-    }else{
-      window.location.href = "/";
-    }
-  });
-}
 </script>
 {% endblock %}

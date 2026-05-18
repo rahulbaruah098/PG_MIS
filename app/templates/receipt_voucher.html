@@ -1147,10 +1147,10 @@
                 <select class="ll-input" id="llMemberNamePg"><option value="">Select member</option></select>
               </div>
 
-              <div class="ll-field">
+              <!-- <div class="ll-field">
                 <div class="ll-label" id="llCodeLabelPg">Member code</div>
                 <select class="ll-input" id="llMemberCodePg"><option value="">Select member code</option></select>
-              </div>
+              </div> -->
 
               <div class="ll-field" style="grid-column: 1 / -1;">
                 <div class="ll-label" id="llDetailsLabelPg">Details on commodity procured</div>
@@ -1314,10 +1314,10 @@
                 <select class="ll-input" id="llMemberNameM"><option value="">Select member</option></select>
               </div>
 
-              <div class="ll-field">
+              <!-- <div class="ll-field">
                 <div class="ll-label" id="llCodeLabelM">Member code</div>
                 <select class="ll-input" id="llMemberCodeM"><option value="">Select member code</option></select>
-              </div>
+              </div> -->
 
               <div class="ll-field" style="grid-column: 1 / -1;">
                 <div class="ll-label" id="llDetailsLabelM">Details on commodity procured</div>
@@ -1628,7 +1628,6 @@
       pgLabel: "Name of Producers Group",
       dateLabel: "Date of transaction",
       memberLabel: "Name of member",
-      codeLabel: "Member code",
       detailsLabel: "Details on commodity procured",
       rowsLabel: "Rows",
       searchPH: "Search...",
@@ -1655,7 +1654,6 @@
       kpiValue: "Total Value:",
       phPg: "Write PG name…",
       phMember: "Select member",
-      phCode: "Select member code",
       phDetails: "Write details…",
       phCommodity: "Write commodity…",
       phGrade: "Grade…",
@@ -1714,7 +1712,6 @@
       pgLabel: "উৎপাদক দলের নাম",
       dateLabel: "লেনদেনের তারিখ",
       memberLabel: "সদস্যের নাম",
-      codeLabel: "সদস্যের কোড",
       detailsLabel: "ক্রয়কৃত পণ্যের বিবরণ",
       rowsLabel: "সারি",
       searchPH: "খুঁজুন...",
@@ -1741,7 +1738,6 @@
       kpiValue: "মোট মান:",
       phPg: "উৎপাদক দলের নাম লিখুন…",
       phMember: "সদস্য নির্বাচন করুন",
-      phCode: "সদস্য কোড নির্বাচন করুন",
       phDetails: "বিবরণ লিখুন…",
       phCommodity: "পণ্যের নাম…",
       phGrade: "শ্রেণী…",
@@ -2244,10 +2240,7 @@ const S = {
 }
 
 function getMemberKey(sectionKey){
-  const p = sectionKey === "pg" ? "Pg" : "M";
-  const code = String($(id(p,"MemberCode"))?.value || "").trim();
-  const name = String($(id(p,"MemberName"))?.value || "").trim();
-  return code || name || "";
+  return getCurrentMemberKey(sectionKey);
 }
 
 function getCurrentEntries(sectionKey){
@@ -2423,10 +2416,16 @@ function loadMemberTable(sectionKey){
     $("llWrap").classList.toggle("ll-readonly", !on);
 
     const topIds = [
-      "llPgNamePg","llTxnDatePg","llMemberNamePg","llMemberCodePg","llDetailsPg",
-      "llPgNameM","llTxnDateM","llMemberNameM","llMemberCodeM","llDetailsM"
+      "llPgNamePg","llTxnDatePg","llMemberNamePg","llDetailsPg",
+      "llPgNameM","llTxnDateM","llMemberNameM","llDetailsM"
     ];
-    topIds.forEach(i => $(i).readOnly = !on);
+
+    topIds.forEach(i => {
+      const el = $(i);
+      if (!el) return;
+      if ("readOnly" in el) el.readOnly = !on;
+      if (el.tagName === "SELECT") el.disabled = !on;
+    });
 
     S.pg.allRows.forEach(r => setRowEditable(r, on));
     S.m.allRows.forEach(r => setRowEditable(r, on));
@@ -2451,6 +2450,10 @@ function loadMemberTable(sectionKey){
  function setSignature(sectionKey, role, dataUrl){
   const st = sectionKey === "pg" ? S.pg : S.m;
   const key = getCurrentMemberKey(sectionKey);
+  if (!key || key === "__no_member__") {
+    showPopup("warn", T[lang].msgTitleWarn, T[lang].phMember || "Please select member first.");
+    return;
+  }
 
   if (!st.memberTables) st.memberTables = {};
 
@@ -2799,36 +2802,132 @@ function getSignature(sectionKey, role){
   }
 
   function snapSection(sectionKey){
+    saveActiveMemberRows(sectionKey);
+
     const p = sectionKey === "pg" ? "Pg" : "M";
     const st = sectionKey === "pg" ? S.pg : S.m;
 
     return {
-      pg_name: $(id(p,"PgName")).value || "",
-      txn_date: $(id(p,"TxnDate")).value || "",
-      member_name: $(id(p,"MemberName")).value || "",
-      member_code: $(id(p,"MemberCode")).value || "",
-      details: $(id(p,"Details")).value || "",
-    signatures: {
-  member: getSignature(sectionKey, "member"),
-  udyog: getSignature(sectionKey, "udyog")
-},
-member_tables: (() => {
-  saveActiveMemberRows(sectionKey);
-  return st.memberTables || {};
-})(),
-entries: st.allRows
-  .map(r => ({
-    commodity: r.querySelector("[data-ll='commodity']").value || "",
-    grade: r.querySelector("[data-ll='grade']").value || "",
-    rate: n2(r.querySelector("[data-ll='rate']").value),
-    volume: n2(r.querySelector("[data-ll='volume']").value),
-    value: n2(r.querySelector("[data-ll='value']").value)
-  }))
-  .filter(e => {
-    const commodity = String(e.commodity || "").trim();
-    const grade = String(e.grade || "").trim();
-    return commodity || grade || e.rate || e.volume || e.value;
-  })
+      pg_name: String($(id(p,"PgName"))?.value || "").trim(),
+      txn_date: String($(id(p,"TxnDate"))?.value || "").trim(),
+      member_name: String($(id(p,"MemberName"))?.value || "").trim(),
+      details: String($(id(p,"Details"))?.value || "").trim(),
+      signatures: {
+        member: getSignature(sectionKey, "member"),
+        udyog: getSignature(sectionKey, "udyog")
+      },
+      entries: getCurrentEntries(sectionKey),
+      member_tables: st.memberTables || {}
+    };
+  }
+
+  function sectionToCleanPayload(sectionData){
+    const pgName = String(sectionData.pg_name || "").trim();
+    const memberTables = sectionData.member_tables || {};
+    const members = [];
+
+    Object.entries(memberTables).forEach(([memberName, data]) => {
+      const cleanName = String(memberName || "").trim();
+      if (!cleanName || cleanName === "__no_member__") return;
+
+      const entries = Array.isArray(data.entries) ? data.entries : [];
+      const signatures = data.signatures || { member: "", udyog: "" };
+
+      const hasData =
+        entries.length > 0 ||
+        String(data.txn_date || "").trim() ||
+        String(data.details || "").trim() ||
+        String(signatures.member || "").trim() ||
+        String(signatures.udyog || "").trim();
+
+      if (!hasData) return;
+
+      members.push({
+        member_name: cleanName,
+        txn_date: String(data.txn_date || "").trim(),
+        details: String(data.details || "").trim(),
+        entries,
+        signatures: {
+          member: signatures.member || "",
+          udyog: signatures.udyog || ""
+        }
+      });
+    });
+
+    const activeMemberName = String(sectionData.member_name || "").trim();
+    const activeEntries = Array.isArray(sectionData.entries) ? sectionData.entries : [];
+    const activeSignatures = sectionData.signatures || { member: "", udyog: "" };
+
+    const activeHasData =
+      activeEntries.length > 0 ||
+      String(sectionData.txn_date || "").trim() ||
+      String(sectionData.details || "").trim() ||
+      String(activeSignatures.member || "").trim() ||
+      String(activeSignatures.udyog || "").trim();
+
+    if (activeMemberName && activeMemberName !== "__no_member__" && activeHasData) {
+      const activeMember = {
+        member_name: activeMemberName,
+        txn_date: String(sectionData.txn_date || "").trim(),
+        details: String(sectionData.details || "").trim(),
+        entries: activeEntries,
+        signatures: {
+          member: activeSignatures.member || "",
+          udyog: activeSignatures.udyog || ""
+        }
+      };
+
+      const existingIndex = members.findIndex(m => m.member_name === activeMemberName);
+      if (existingIndex >= 0) members[existingIndex] = activeMember;
+      else members.push(activeMember);
+    }
+
+    return {
+      pg_name: pgName,
+      members
+    };
+  }
+
+  function normalizeSectionForFrontend(section){
+    section = section || {};
+
+    if (section.member_tables && typeof section.member_tables === "object") {
+      return {
+        pg_name: section.pg_name || "",
+        txn_date: section.txn_date || "",
+        member_name: section.member_name || "",
+        details: section.details || "",
+        signatures: section.signatures || { member: "", udyog: "" },
+        entries: Array.isArray(section.entries) ? section.entries : [],
+        member_tables: section.member_tables || {}
+      };
+    }
+
+    const members = Array.isArray(section.members) ? section.members : [];
+    const memberTables = {};
+
+    members.forEach(member => {
+      const name = String(member.member_name || "").trim();
+      if (!name) return;
+
+      memberTables[name] = {
+        entries: Array.isArray(member.entries) ? member.entries : [],
+        details: member.details || "",
+        txn_date: member.txn_date || "",
+        signatures: member.signatures || { member: "", udyog: "" }
+      };
+    });
+
+    const first = members[0] || {};
+
+    return {
+      pg_name: section.pg_name || "",
+      txn_date: first.txn_date || "",
+      member_name: first.member_name || "",
+      details: first.details || "",
+      signatures: first.signatures || { member: "", udyog: "" },
+      entries: Array.isArray(first.entries) ? first.entries : [],
+      member_tables: memberTables
     };
   }
 
@@ -2839,70 +2938,75 @@ entries: st.allRows
   }
 
   function restoreSection(sectionKey, data){
-  data = data || {};
+    data = normalizeSectionForFrontend(data || {});
 
-  const p = sectionKey === "pg" ? "Pg" : "M";
-  const st = sectionKey === "pg" ? S.pg : S.m;
-  const bodyId = sectionKey === "pg" ? "llBodyPg" : "llBodyM";
+    const p = sectionKey === "pg" ? "Pg" : "M";
+    const st = sectionKey === "pg" ? S.pg : S.m;
+    const bodyId = sectionKey === "pg" ? "llBodyPg" : "llBodyM";
 
-  st.memberTables = (data && typeof data.member_tables === "object" && data.member_tables) ? data.member_tables : {};
-  st.signatures = { member: "", udyog: "" };
+    st.memberTables = (data && typeof data.member_tables === "object" && data.member_tables) ? data.member_tables : {};
+    st.signatures = data.signatures || { member: "", udyog: "" };
 
-  $(id(p,"PgName")).value = data.pg_name || "";
-  $(id(p,"MemberName")).value = data.member_name || "";
-  $(id(p,"MemberCode")).value = data.member_code || "";
+    if ($(id(p,"PgName"))) $(id(p,"PgName")).value = data.pg_name || "";
+    if ($(id(p,"MemberName"))) {
+      populateReceiptMemberDropdowns(sectionKey, data.member_name || "");
+      $(id(p,"MemberName")).value = data.member_name || "";
+    }
 
-  populateReceiptMemberDropdowns(sectionKey, data.member_name || "", data.member_code || "");
-  syncReceiptMemberPair(sectionKey, data.member_name ? "name" : "code");
-
-  const key = getCurrentMemberKey(sectionKey);
-  st.currentMemberKey = key;
-
-  if (key === "__no_member__") {
-  const firstKey = Object.keys(st.memberTables || {})[0];
-  if (firstKey) {
-    st.currentMemberKey = firstKey;
-  }
-}
-
-  if (!st.memberTables[key]) {
-    st.memberTables[key] = {
-      entries: Array.isArray(data.entries) ? data.entries : [],
-      details: data.details || "",
-      txn_date: data.txn_date || "",
-      signatures: {
-        member: data.signatures?.member || "",
-        udyog: data.signatures?.udyog || ""
+    let key = getCurrentMemberKey(sectionKey);
+    if (key === "__no_member__") {
+      const firstKey = Object.keys(st.memberTables || {})[0];
+      if (firstKey) {
+        key = firstKey;
+        if ($(id(p,"MemberName"))) {
+          populateReceiptMemberDropdowns(sectionKey, firstKey);
+          $(id(p,"MemberName")).value = firstKey;
+        }
       }
-    };
+    }
+
+    st.currentMemberKey = key;
+
+    if (key !== "__no_member__" && !st.memberTables[key]) {
+      st.memberTables[key] = {
+        entries: Array.isArray(data.entries) ? data.entries : [],
+        details: data.details || "",
+        txn_date: data.txn_date || "",
+        signatures: {
+          member: data.signatures?.member || "",
+          udyog: data.signatures?.udyog || ""
+        }
+      };
+    }
+
+    const saved = key !== "__no_member__" ? (st.memberTables[key] || {}) : {};
+
+    if ($(id(p,"Details"))) $(id(p,"Details")).value = saved.details || "";
+    if ($(id(p,"TxnDate"))) $(id(p,"TxnDate")).value = saved.txn_date || "";
+
+    st.allRows = [];
+    $(bodyId).innerHTML = "";
+
+    (saved.entries || []).forEach(e => {
+      const r = createRow(sectionKey);
+
+      r.querySelector("[data-ll='commodity']").value = e.commodity || "";
+      r.querySelector("[data-ll='grade']").value = e.grade || "";
+      r.querySelector("[data-ll='rate']").value = e.rate ? String(e.rate) : "";
+      r.querySelector("[data-ll='volume']").value = e.volume ? String(e.volume) : "";
+      r.querySelector("[data-ll='value']").value = e.value ? String(e.value) : "";
+
+      st.allRows.push(r);
+      $(bodyId).appendChild(r);
+    });
+
+    renderSignatureUI(sectionKey, "member");
+    renderSignatureUI(sectionKey, "udyog");
+
+    setAllEditable(isEditing);
+    recalcTotalsAndVisibility(sectionKey, true);
+    syncDeleteAllLabel();
   }
-
-  const saved = st.memberTables[key] || {};
-
-  $(id(p,"Details")).value = saved.details || "";
-  $(id(p,"TxnDate")).value = saved.txn_date || "";
-
-  st.allRows = [];
-  $(bodyId).innerHTML = "";
-
-  (saved.entries || []).forEach(e => {
-    const r = createRow(sectionKey);
-
-    r.querySelector("[data-ll='commodity']").value = e.commodity || "";
-    r.querySelector("[data-ll='grade']").value = e.grade || "";
-    r.querySelector("[data-ll='rate']").value = e.rate ? String(e.rate) : "";
-    r.querySelector("[data-ll='volume']").value = e.volume ? String(e.volume) : "";
-    r.querySelector("[data-ll='value']").value = e.value ? String(e.value) : "";
-
-    st.allRows.push(r);
-    $(bodyId).appendChild(r);
-  });
-
-  renderSignatureUI(sectionKey, "member");
-  renderSignatureUI(sectionKey, "udyog");
-
-  recalcTotalsAndVisibility(sectionKey, true);
-}
 
   function restoreSnapshot(snap){
     if (!snap) return;
@@ -3012,10 +3116,15 @@ entries: st.allRows
     try{
       const pg_id = getPgId();
       applyCurrentPgNameToVoucherFields();
+
+      const pgSnap = snapSection("pg");
+      const memberSnap = snapSection("m");
+
       const payload = {
-        pg_section: snapSection("pg"),
-        member_section: snapSection("m")
+        pg_group_receipt: sectionToCleanPayload(pgSnap),
+        group_member_receipt: sectionToCleanPayload(memberSnap)
       };
+
       localStorage.setItem(RECEIPT_VOUCHER_STORAGE_KEY, JSON.stringify(payload));
 
       if (!pg_id) throw new Error("Missing PG context");
@@ -3025,6 +3134,7 @@ entries: st.allRows
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         throw new Error((data && (data.error || data.message)) || `HTTP ${res.status}`);
@@ -3032,10 +3142,13 @@ entries: st.allRows
 
       await loadReceiptHistory();
       renderReceiptHistoryBox();
+
       snapshot = takeSnapshot();
       setEditMode(false);
+
       await loadReceiptHistory();
       renderReceiptHistoryBox();
+
       showPopup("success", T[lang].msgTitleSuccess, (data && data.message) || T[lang].msgSavedLocal);
 
     }catch(err){
@@ -3071,14 +3184,13 @@ entries: st.allRows
       const data = await res.json().catch(()=>null);
       if (!data) return;
 
-      const pgData = data.pg_section || data.pg || null;
-      const mData  = data.member_section || data.member || null;
+      const pgData = data.pg_section || data.pg_group_receipt || data.pg || null;
+      const mData  = data.member_section || data.group_member_receipt || data.member || null;
 
       if (pgData) restoreSection("pg", {
         pg_name: pgData.pg_name || "",
         txn_date: pgData.txn_date || "",
         member_name: pgData.member_name || "",
-        member_code: pgData.member_code || "",
         details: pgData.details || "",
         signatures: pgData.signatures || { member:"", udyog:"" },
         entries: pgData.entries || [],
@@ -3089,7 +3201,6 @@ entries: st.allRows
         pg_name: mData.pg_name || "",
         txn_date: mData.txn_date || "",
         member_name: mData.member_name || "",
-        member_code: mData.member_code || "",
         details: mData.details || "",
         signatures: mData.signatures || { member:"", udyog:"" },
         entries: mData.entries || [],
@@ -3111,97 +3222,78 @@ entries: st.allRows
 
   let receiptMembers = [];
 
-  function escapeHtml(str){
-    return String(str || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
+function escapeHtml(str){
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
-  function getMemberSelectIds(sectionKey){
-    return sectionKey === "pg"
-      ? { name: "llMemberNamePg", code: "llMemberCodePg" }
-      : { name: "llMemberNameM", code: "llMemberCodeM" };
-  }
+function getMemberNameSelectId(sectionKey){
+  return sectionKey === "pg" ? "llMemberNamePg" : "llMemberNameM";
+}
 
-  function populateReceiptMemberDropdowns(sectionKey, currentName = "", currentCode = ""){
-    const ids = getMemberSelectIds(sectionKey);
-    const nameEl = $(ids.name);
-    const codeEl = $(ids.code);
-    if (!nameEl || !codeEl) return;
+function populateReceiptMemberDropdowns(sectionKey, currentName = ""){
+  const nameEl = $(getMemberNameSelectId(sectionKey));
+  if (!nameEl) return;
 
-    const nameOptions = ['<option value="">' + escapeHtml(T[lang].phMember || "Select member") + '</option>']
-      .concat(receiptMembers.map(m => `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}${m.member_code ? " (" + escapeHtml(m.member_code) + ")" : ""}</option>`));
-    const codeOptions = ['<option value="">' + escapeHtml(T[lang].phCode || "Select member code") + '</option>']
-      .concat(receiptMembers.map(m => `<option value="${escapeHtml(m.member_code)}">${escapeHtml(m.member_code || m.name)}</option>`));
+  const options = ['<option value="">' + escapeHtml(T[lang].phMember || "Select member") + '</option>']
+    .concat(
+      receiptMembers.map(m => {
+        const name = String(m.name || "").trim();
+        return `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+      })
+    );
 
-    nameEl.innerHTML = nameOptions.join("");
-    codeEl.innerHTML = codeOptions.join("");
+  nameEl.innerHTML = options.join("");
 
-    if (currentName) nameEl.value = currentName;
-    if (currentCode) codeEl.value = currentCode;
-  }
-
-  function syncReceiptMemberPair(sectionKey, source){
-    const ids = getMemberSelectIds(sectionKey);
-    const nameEl = $(ids.name);
-    const codeEl = $(ids.code);
-    if (!nameEl || !codeEl) return;
-
-    if (source === "name"){
-      const selectedName = String(nameEl.value || "").trim();
-      if (!selectedName){
-        codeEl.value = "";
-        return;
-      }
-      const found = receiptMembers.find(m => m.name === selectedName);
-      if (found){
-        codeEl.value = found.member_code || "";
-      }
-      return;
+  if (currentName) {
+    const exists = receiptMembers.some(m => String(m.name || "").trim() === String(currentName || "").trim());
+    if (!exists) {
+      nameEl.insertAdjacentHTML(
+        "beforeend",
+        `<option value="${escapeHtml(currentName)}">${escapeHtml(currentName)}</option>`
+      );
     }
-
-    const selectedCode = String(codeEl.value || "").trim();
-    if (!selectedCode){
-      nameEl.value = "";
-      return;
-    }
-    const found = receiptMembers.find(m => m.member_code === selectedCode) || receiptMembers.find(m => m.name === selectedCode);
-    if (found){
-      nameEl.value = found.name || "";
-    }
+    nameEl.value = currentName;
   }
+}
 
-  async function loadReceiptMembers(){
-    const pgId = getPgId();
-    if (!pgId) return;
-    try{
-      const res = await fetch(`/pg/api/members/${encodeURIComponent(pgId)}`, { headers:{ "Accept":"application/json" } });
-      const data = await res.json().catch(()=>null);
-      if (!res.ok || !data || !Array.isArray(data.members)) return;
-      receiptMembers = data.members.map(m => ({
+async function loadReceiptMembers(){
+  const pgId = getPgId();
+  if (!pgId) return;
+
+  try{
+    const res = await fetch(`/pg/api/members/${encodeURIComponent(pgId)}`, {
+      headers:{ "Accept":"application/json" }
+    });
+
+    const data = await res.json().catch(()=>null);
+    if (!res.ok || !data || !Array.isArray(data.members)) return;
+
+    receiptMembers = data.members
+      .map(m => ({
         id: String(m._id || ""),
-        name: String(m.name || "").trim(),
-        member_code: String(m.member_code || "").trim()
-      })).filter(m => m.name || m.member_code);
+        name: String(m.name || "").trim()
+      }))
+      .filter(m => m.name);
 
-      const pgNameValue = $("llMemberNamePg")?.value || "";
-      const pgCodeValue = $("llMemberCodePg")?.value || "";
-      const mNameValue = $("llMemberNameM")?.value || "";
-      const mCodeValue = $("llMemberCodeM")?.value || "";
-      populateReceiptMemberDropdowns("pg", pgNameValue, pgCodeValue);
-      populateReceiptMemberDropdowns("m", mNameValue, mCodeValue);
-      if($("llMemberNamePg")) $("llMemberNamePg").value = pgNameValue;
-      if($("llMemberCodePg")) $("llMemberCodePg").value = pgCodeValue;
-      if($("llMemberNameM")) $("llMemberNameM").value = mNameValue;
-      if($("llMemberCodeM")) $("llMemberCodeM").value = mCodeValue;
-      syncReceiptMemberPair("pg", pgNameValue ? "name" : "code");
-      syncReceiptMemberPair("m", mNameValue ? "name" : "code");
-    }catch(err){
-      console.warn("Receipt member list load skipped:", err);
-    }
+    const pgNameValue = $("llMemberNamePg")?.value || "";
+    const mNameValue = $("llMemberNameM")?.value || "";
+
+    populateReceiptMemberDropdowns("pg", pgNameValue);
+    populateReceiptMemberDropdowns("m", mNameValue);
+
+    if ($("llMemberNamePg")) $("llMemberNamePg").value = pgNameValue;
+    if ($("llMemberNameM")) $("llMemberNameM").value = mNameValue;
+
+  }catch(err){
+    console.warn("Receipt member list load skipped:", err);
   }
+}
+
+
 
   const track = $("llTrack");
 
@@ -3263,21 +3355,18 @@ entries: st.allRows
     $("llPgLabelPg").textContent = t.pgLabel;
     $("llDateLabelPg").textContent = t.dateLabel;
     $("llMemberLabelPg").textContent = t.memberLabel;
-    $("llCodeLabelPg").textContent = t.codeLabel;
     $("llDetailsLabelPg").textContent = t.detailsLabel;
 
     $("llPgNamePg").placeholder = t.phPg;
-    populateReceiptMemberDropdowns("pg", $("llMemberNamePg").value || "", $("llMemberCodePg").value || "");
+    populateReceiptMemberDropdowns("pg", $("llMemberNamePg")?.value || "");
     $("llDetailsPg").placeholder = t.phDetails;
-
     $("llPgLabelM").textContent = t.pgLabel;
     $("llDateLabelM").textContent = t.dateLabel;
     $("llMemberLabelM").textContent = t.memberLabel;
-    $("llCodeLabelM").textContent = t.codeLabel;
     $("llDetailsLabelM").textContent = t.detailsLabel;
 
     $("llPgNameM").placeholder = t.phPg;
-    populateReceiptMemberDropdowns("m", $("llMemberNameM").value || "", $("llMemberCodeM").value || "");
+    populateReceiptMemberDropdowns("m", $("llMemberNameM")?.value || "");
     $("llDetailsM").placeholder = t.phDetails;
 
     $("llRowsLabelPg").textContent = t.rowsLabel;
@@ -3500,15 +3589,12 @@ entries: st.allRows
 
 
 function getCurrentMemberKey(sectionKey){
-  const ids = getMemberSelectIds(sectionKey);
-  const nameEl = $(ids.name);
-  const codeEl = $(ids.code);
+  const nameId = sectionKey === "pg" ? "llMemberNamePg" : "llMemberNameM";
+  const name = String($(nameId)?.value || "").trim();
 
-  const code = String(codeEl?.value || "").trim();
-  const name = String(nameEl?.value || "").trim();
+  if (!name) return "__no_member__";
 
-  if (code && name) return `${code}__${name}`;
-  return code || name || "__no_member__";
+  return name;
 }
 
 function ensureMemberTables(sectionKey){
@@ -3523,27 +3609,19 @@ function ensureMemberTables(sectionKey){
 function saveActiveMemberRows(sectionKey){
   const st = ensureMemberTables(sectionKey);
   const key = st.currentMemberKey || getCurrentMemberKey(sectionKey);
+  if (!key || key === "__no_member__") return;
+
   const existing = st.memberTables[key] || {};
+  const signatures = existing.signatures || {
+    member: getSignature(sectionKey, "member"),
+    udyog: getSignature(sectionKey, "udyog")
+  };
 
   st.memberTables[key] = {
-    entries: st.allRows.map(r => ({
-      commodity: r.querySelector("[data-ll='commodity']")?.value || "",
-      grade: r.querySelector("[data-ll='grade']")?.value || "",
-      rate: n2(r.querySelector("[data-ll='rate']")?.value),
-      volume: n2(r.querySelector("[data-ll='volume']")?.value),
-      value: n2(r.querySelector("[data-ll='value']")?.value)
-    })).filter(e => {
-      return String(e.commodity || "").trim()
-        || String(e.grade || "").trim()
-        || e.rate
-        || e.volume
-        || e.value;
-    }),
-
+    entries: getCurrentEntries(sectionKey),
     details: $(id(st.prefix,"Details"))?.value || "",
     txn_date: $(id(st.prefix,"TxnDate"))?.value || "",
-
-    signatures: existing.signatures || { member: "", udyog: "" }
+    signatures
   };
 }
 function clearSignatureCanvas(sectionKey, role){
@@ -3631,18 +3709,17 @@ function applyMemberPartition(sectionKey, newKey){
   }
   wireSelectAll("pg");
   wireSelectAll("m");
-[["pg","name"],["pg","code"],["m","name"],["m","code"]].forEach(([sectionKey, source]) => {
-  const ids = getMemberSelectIds(sectionKey);
-  const el = $(source === "name" ? ids.name : ids.code);
+[
+  ["pg", "llMemberNamePg"],
+  ["m", "llMemberNameM"]
+].forEach(([sectionKey, elementId]) => {
+  const el = $(elementId);
+  if (!el) return;
 
-  if (el){
-    el.addEventListener("change", ()=>{
-      syncReceiptMemberPair(sectionKey, source);
-
-      const key = getCurrentMemberKey(sectionKey);
-      applyMemberPartition(sectionKey, key);
-    });
-  }
+  el.addEventListener("change", () => {
+    const key = getCurrentMemberKey(sectionKey);
+    applyMemberPartition(sectionKey, key);
+  });
 });
 
 
@@ -3698,8 +3775,8 @@ function applyMemberPartition(sectionKey, newKey){
   if(localData){
     try{
       const parsed = JSON.parse(localData);
-      restoreSection("pg", parsed.pg_section || {});
-      restoreSection("m", parsed.member_section || {});
+      restoreSection("pg", parsed.pg_section || parsed.pg_group_receipt || {});
+      restoreSection("m", parsed.member_section || parsed.group_member_receipt || {});
       loadReceiptMembers();
       loadReceiptHistory().then(renderReceiptHistoryBox);
       snapshot = takeSnapshot();

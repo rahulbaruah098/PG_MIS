@@ -2043,14 +2043,813 @@ def member_ledger():
         return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "member-ledger"})
     return render_template('member_ledger.html', pg_id=pg_id)
 
+# ============================================================
+# Loan Ledger
+# Final flow:
+# - CLF/Block/Admin create member loans in pg_member_loan_accounts
+# - PG login only records repayment/register entries in pg_loan_ledgers
+# - Loan Ledger always connects to pg_member_loan_accounts._id
+# ============================================================
+
+def _ledger_json_safe(value):
+    """Make Mongo/ObjectId/datetime values JSON safe."""
+    if isinstance(value, ObjectId):
+        return str(value)
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, list):
+        return [_ledger_json_safe(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _ledger_json_safe(v) for k, v in value.items()}
+    return value
+
+
+def _ledger_float(value, default=0.0):
+    try:
+        if value in (None, "", "null", "None"):
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def _ledger_int(value, default=0):
+    try:
+        if value in (None, "", "null", "None"):
+            return default
+        return int(float(value))
+    except Exception:
+        return default
+
+
+def _ledger_pick_number(row, *keys):
+    if not isinstance(row, dict):
+        return 0.0
+    for key in keys:
+        if key in row and row.get(key) not in (None, "", "null"):
+            return _ledger_float(row.get(key))
+    return 0.0
+
+
+def _ledger_member_name(member_doc):
+    if not member_doc:
+        return ""
+    return (
+        member_doc.get("name")
+        or member_doc.get("member_name")
+        or member_doc.get("Member Name")
+        or ""
+    )
+
+
+def _ledger_member_guardian(member_doc):
+    if not member_doc:
+        return ""
+    return (
+        member_doc.get("spouse_name")
+        or member_doc.get("father_mother_spouse")
+        or member_doc.get("Father/Mother/Spouse Name")
+        or member_doc.get("Spouse Name")
+        or member_doc.get("Father Name")
+        or member_doc.get("Mother Name")
+        or ""
+    )
+
+
+def _ledger_member_lookup(db, loan_doc):
+    member_id = loan_doc.get("member_id")
+    member_doc = None
+
+    if member_id:
+        try:
+            member_oid = member_id if isinstance(member_id, ObjectId) else ObjectId(str(member_id))
+            member_doc = db.pg_members.find_one({"_id": member_oid}) or {}
+        except Exception:
+            member_doc = {}
+
+    return member_doc or {}
+
+
+def _ledger_loan_amount(loan_doc):
+    return _ledger_float(
+        loan_doc.get("principal")
+        or loan_doc.get("loan_amount")
+        or loan_doc.get("principal_amount")
+        or loan_doc.get("amount")
+        or 0
+    )
+
+
+def _ledger_schedule_json(schedule):
+    rows = []
+    for item in (schedule or []):
+        if not isinstance(item, dict):
+            continue
+
+        rows.append({
+            "instalment_no": _ledger_int(item.get("instalment_no") or item.get("installment_no")),
+            "due_date": _ledger_json_safe(item.get("due_date")),
+            "emi": _ledger_float(item.get("emi")),
+            "principal": _ledger_float(item.get("principal")),
+            "interest": _ledger_float(item.get("interest")),
+            "balance": _ledger_float(item.get("balance")),
+            "is_paid": bool(item.get("is_paid")),
+            "paid_at": _ledger_json_safe(item.get("paid_at")),
+            "paid_amount": _ledger_float(item.get("paid_amount")),
+            "principal_paid": _ledger_float(item.get("principal_paid")),
+            "interest_paid": _ledger_float(item.get("interest_paid")),
+        })
+
+    return rows
+
+
+def _ledger_next_unpaid_installment(schedule):
+    """
+    Finds next unpaid installment from member loan schedule.
+    Used by frontend Add Row so PG does not calculate manually.
+    """
+    schedule = schedule or []
+
+    for item in schedule:
+        if not isinstance(item, dict):
+            continue
+
+        if not item.get("is_paid"):
+            principal_due = _ledger_float(item.get("principal"))
+            interest_due = _ledger_float(item.get("interest"))
+            total_due = principal_due + interest_due
+
+            return {
+                "instalment_no": _ledger_int(item.get("instalment_no") or item.get("installment_no")),
+                "date_disb": _ledger_json_safe(item.get("due_date")),
+                "due_date": _ledger_json_safe(item.get("due_date")),
+                "principal_due": round(principal_due, 2),
+                "principal_repaid": 0,
+                "interest_due": round(interest_due, 2),
+                "interest_paid": 0,
+                "total_due": round(total_due, 2),
+                "next_installment_date": _ledger_json_safe(item.get("due_date")),
+                "schedule_balance": _ledger_float(item.get("balance")),
+            }
+
+    return None
+
+
+def _serialize_member_loan_for_ledger(db, loan_doc):
+    member_doc = _ledger_member_lookup(db, loan_doc)
+
+    principal = _ledger_loan_amount(loan_doc)
+    outstanding = loan_doc.get("outstanding_amount")
+    if outstanding in (None, ""):
+        outstanding = principal
+
+    schedule = loan_doc.get("schedule") or []
+    installments_total = (
+        _ledger_int(loan_doc.get("installments_total"))
+        or len(schedule)
+        or _ledger_int(loan_doc.get("tenure_months"))
+    )
+
+    return {
+        "_id": str(loan_doc.get("_id")),
+        "loan_id": str(loan_doc.get("_id")),
+        "loan_no": loan_doc.get("loan_no") or "",
+        "pg_id": str(loan_doc.get("pg_id")) if loan_doc.get("pg_id") else "",
+        "member_id": str(loan_doc.get("member_id")) if loan_doc.get("member_id") else "",
+
+        "member_name": _ledger_member_name(member_doc),
+        "father_mother_spouse": _ledger_member_guardian(member_doc),
+
+        "loan_amount": principal,
+        "principal": principal,
+        "purpose": loan_doc.get("purpose") or loan_doc.get("loan_purpose") or "",
+        "loan_purpose": loan_doc.get("purpose") or loan_doc.get("loan_purpose") or "",
+
+        "roi": _ledger_float(loan_doc.get("roi")),
+        "tenure_months": _ledger_int(loan_doc.get("tenure_months")),
+        "no_of_installments": installments_total,
+
+        "status": (loan_doc.get("status") or "active").lower(),
+
+        "principal_repaid": _ledger_float(loan_doc.get("principal_repaid")),
+        "interest_paid": _ledger_float(loan_doc.get("interest_paid")),
+        "total_paid": _ledger_float(loan_doc.get("total_paid")),
+
+        "principal_outstanding": _ledger_float(
+            loan_doc.get("principal_outstanding")
+            if loan_doc.get("principal_outstanding") is not None
+            else outstanding
+        ),
+        "interest_due": _ledger_float(loan_doc.get("interest_due")),
+        "outstanding_amount": _ledger_float(outstanding),
+        "overdue_amount": _ledger_float(loan_doc.get("overdue_amount")),
+
+        "installments_total": installments_total,
+        "installments_paid": _ledger_int(loan_doc.get("installments_paid")),
+        "installments_pending": _ledger_int(loan_doc.get("installments_pending")),
+
+        "next_due_date": _ledger_json_safe(loan_doc.get("next_due_date")),
+        "schedule": _ledger_schedule_json(schedule),
+        "next_unpaid_installment": _ledger_next_unpaid_installment(schedule),
+
+        "created_at": _ledger_json_safe(loan_doc.get("created_at")),
+        "updated_at": _ledger_json_safe(loan_doc.get("updated_at")),
+    }
+
+
+
+def _ledger_payload_totals(payload):
+    """
+    Reads repayment entries from Loan Ledger payload/document.
+
+    Supports:
+    - entries: [...]
+    - rows: [...]
+    - top-level principal/interest fields
+
+    Also supports schedule-linked fields:
+    - instalment_no / installment_no
+    """
+    payload = payload or {}
+
+    rows = payload.get("entries")
+    if not isinstance(rows, list):
+        rows = payload.get("rows")
+    if not isinstance(rows, list):
+        rows = []
+
+    total_principal_due = 0.0
+    total_principal_repaid = 0.0
+    total_interest_due = 0.0
+    total_interest_paid = 0.0
+    paid_entry_count = 0
+
+    paid_installment_numbers = set()
+
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+
+        principal_due = _ledger_pick_number(
+            row,
+            "principal_due",
+            "principalDue",
+            "principal_due_for_month",
+            "principalDueForMonth",
+            "pr_due"
+        )
+        principal_repaid = _ledger_pick_number(
+            row,
+            "principal_repaid",
+            "principalRepaid",
+            "principal_paid",
+            "principalPaid",
+            "pr_paid"
+        )
+        interest_due = _ledger_pick_number(
+            row,
+            "interest_due",
+            "interestDue",
+            "int_due"
+        )
+        interest_paid = _ledger_pick_number(
+            row,
+            "interest_paid",
+            "interestPaid",
+            "int_paid"
+        )
+
+        installment_no = _ledger_int(
+            row.get("instalment_no")
+            or row.get("installment_no")
+            or row.get("inst_no")
+        )
+
+        total_principal_due += principal_due
+        total_principal_repaid += principal_repaid
+        total_interest_due += interest_due
+        total_interest_paid += interest_paid
+
+        if principal_repaid > 0 or interest_paid > 0:
+            paid_entry_count += 1
+            if installment_no:
+                paid_installment_numbers.add(installment_no)
+
+    top_principal_due = _ledger_pick_number(
+        payload,
+        "principal_due",
+        "principalDue",
+        "principal_due_for_month",
+        "principalDueForMonth",
+        "pr_due"
+    )
+    top_principal_repaid = _ledger_pick_number(
+        payload,
+        "principal_repaid",
+        "principalRepaid",
+        "principal_paid",
+        "principalPaid",
+        "pr_paid"
+    )
+    top_interest_due = _ledger_pick_number(
+        payload,
+        "interest_due",
+        "interestDue",
+        "int_due"
+    )
+    top_interest_paid = _ledger_pick_number(
+        payload,
+        "interest_paid",
+        "interestPaid",
+        "int_paid"
+    )
+
+    total_principal_due += top_principal_due
+    total_principal_repaid += top_principal_repaid
+    total_interest_due += top_interest_due
+    total_interest_paid += top_interest_paid
+
+    if top_principal_repaid > 0 or top_interest_paid > 0:
+        paid_entry_count += 1
+
+    return {
+        "principal_due": round(total_principal_due, 2),
+        "principal_repaid": round(total_principal_repaid, 2),
+        "interest_due": round(total_interest_due, 2),
+        "interest_paid": round(total_interest_paid, 2),
+        "paid_entry_count": int(paid_entry_count),
+        "paid_installment_numbers": sorted(list(paid_installment_numbers)),
+    }
+
+
+
+
+def _recalculate_member_loan_from_ledgers(db, *, pg_oid, loan_doc):
+    """
+    Recalculates member loan summary from saved Loan Ledger records.
+
+    Also syncs the schedule:
+    - marks installment paid when repayment is fully paid
+    - keeps partially paid installment open
+    - updates next_due_date from next unpaid schedule row
+    """
+    loan_id = str(loan_doc["_id"])
+    principal = _ledger_loan_amount(loan_doc)
+
+    ledger_docs = list(db.pg_loan_ledgers.find({
+        "pg_id": pg_oid,
+        "loan_id": loan_id,
+        "loan_type": "member"
+    }))
+
+    principal_due_total = 0.0
+    principal_repaid_total = 0.0
+    interest_due_total = 0.0
+    interest_paid_total = 0.0
+    paid_entries_total = 0
+
+    # installment_no wise paid amount
+    installment_paid_map = {}
+
+    for ledger_doc in ledger_docs:
+        totals = _ledger_payload_totals(ledger_doc)
+
+        principal_due_total += totals["principal_due"]
+        principal_repaid_total += totals["principal_repaid"]
+        interest_due_total += totals["interest_due"]
+        interest_paid_total += totals["interest_paid"]
+        paid_entries_total += totals["paid_entry_count"]
+
+        rows = ledger_doc.get("entries")
+        if not isinstance(rows, list):
+            rows = ledger_doc.get("rows")
+        if not isinstance(rows, list):
+            rows = []
+
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+
+            inst_no = _ledger_int(
+                row.get("instalment_no")
+                or row.get("installment_no")
+                or row.get("inst_no")
+            )
+
+            if not inst_no:
+                continue
+
+            principal_paid = _ledger_pick_number(
+                row,
+                "principal_repaid",
+                "principalRepaid",
+                "principal_paid",
+                "principalPaid",
+                "pr_paid"
+            )
+            interest_paid = _ledger_pick_number(
+                row,
+                "interest_paid",
+                "interestPaid",
+                "int_paid"
+            )
+
+            if inst_no not in installment_paid_map:
+                installment_paid_map[inst_no] = {
+                    "principal_paid": 0.0,
+                    "interest_paid": 0.0,
+                    "paid_amount": 0.0,
+                    "paid_at": None,
+                }
+
+            installment_paid_map[inst_no]["principal_paid"] += principal_paid
+            installment_paid_map[inst_no]["interest_paid"] += interest_paid
+            installment_paid_map[inst_no]["paid_amount"] += principal_paid + interest_paid
+
+            paid_date = (
+                row.get("paid_at")
+                or row.get("payment_date")
+                or row.get("date_disb")
+                or row.get("disbursement_date")
+            )
+            if paid_date:
+                installment_paid_map[inst_no]["paid_at"] = paid_date
+
+    schedule = loan_doc.get("schedule") or []
+    updated_schedule = []
+    installments_paid_from_schedule = 0
+    next_due_date = None
+    overdue_amount = 0.0
+
+    now = datetime.utcnow()
+
+    for item in schedule:
+        if not isinstance(item, dict):
+            continue
+
+        inst_no = _ledger_int(item.get("instalment_no") or item.get("installment_no"))
+        due_principal = _ledger_float(item.get("principal"))
+        due_interest = _ledger_float(item.get("interest"))
+        emi = _ledger_float(item.get("emi")) or (due_principal + due_interest)
+
+        paid_info = installment_paid_map.get(inst_no, {})
+        principal_paid = round(_ledger_float(paid_info.get("principal_paid")), 2)
+        interest_paid = round(_ledger_float(paid_info.get("interest_paid")), 2)
+        paid_amount = round(principal_paid + interest_paid, 2)
+
+        full_due = round(due_principal + due_interest, 2)
+        is_paid = paid_amount >= full_due and full_due > 0
+
+        new_item = dict(item)
+        new_item["principal_paid"] = principal_paid
+        new_item["interest_paid"] = interest_paid
+        new_item["paid_amount"] = paid_amount
+        new_item["is_paid"] = bool(is_paid)
+
+        if paid_info.get("paid_at"):
+            new_item["paid_at"] = paid_info.get("paid_at")
+        elif is_paid and not new_item.get("paid_at"):
+            new_item["paid_at"] = now
+
+        if is_paid:
+            installments_paid_from_schedule += 1
+        else:
+            if next_due_date is None:
+                next_due_date = new_item.get("due_date")
+
+            due_date = new_item.get("due_date")
+            try:
+                if due_date and due_date <= now:
+                    overdue_amount += max(emi - paid_amount, 0)
+            except Exception:
+                pass
+
+        updated_schedule.append(new_item)
+
+    principal_outstanding = max(principal - principal_repaid_total, 0)
+    interest_outstanding = max(interest_due_total - interest_paid_total, 0)
+    outstanding_amount = principal_outstanding + interest_outstanding
+    total_paid = principal_repaid_total + interest_paid_total
+
+    installments_total = (
+        _ledger_int(loan_doc.get("installments_total"))
+        or len(updated_schedule)
+        or _ledger_int(loan_doc.get("tenure_months"))
+    )
+
+    if updated_schedule:
+        installments_paid = installments_paid_from_schedule
+    else:
+        installments_paid = min(paid_entries_total, installments_total) if installments_total else paid_entries_total
+
+    installments_pending = max(installments_total - installments_paid, 0) if installments_total else 0
+
+    old_status = (loan_doc.get("status") or "active").lower()
+    if outstanding_amount <= 0 and principal > 0:
+        new_status = "closed"
+    else:
+        new_status = "active" if old_status == "closed" else old_status
+
+    update_doc = {
+        "principal_due": round(principal_due_total, 2),
+        "principal_repaid": round(principal_repaid_total, 2),
+
+        # This stores current unpaid interest amount
+        "interest_due": round(interest_outstanding, 2),
+        "interest_paid": round(interest_paid_total, 2),
+
+        "total_paid": round(total_paid, 2),
+        "principal_outstanding": round(principal_outstanding, 2),
+        "outstanding_amount": round(outstanding_amount, 2),
+        "overdue_amount": round(overdue_amount, 2),
+
+        "installments_total": installments_total,
+        "installments_paid": installments_paid,
+        "installments_pending": installments_pending,
+
+        "next_due_date": next_due_date,
+        "schedule": updated_schedule,
+
+        "status": new_status,
+        "updated_at": datetime.utcnow(),
+    }
+
+    db.pg_member_loan_accounts.update_one(
+        {"_id": loan_doc["_id"]},
+        {"$set": update_doc}
+    )
+
+    refreshed = db.pg_member_loan_accounts.find_one({"_id": loan_doc["_id"]}) or {}
+    return refreshed
+
+
+
+def _get_member_loan_for_ledger_or_404(db, *, pg_oid, loan_id):
+    loan_oid = safe_objectid(loan_id)
+    if not loan_oid:
+        abort(400, "Invalid member loan ID")
+
+    loan_doc = db.pg_member_loan_accounts.find_one({
+        "_id": loan_oid,
+        "pg_id": pg_oid
+    })
+
+    if not loan_doc:
+        abort(404, "Member loan account not found for this PG")
+
+    return loan_doc
+
+
 @pg_bp.route('/registers/loan-ledger')
 @login_required
-@roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
+@roles_required('PG_DATA_ENTRY', 'CADRE_CC', 'CLF_MANAGER', 'CLF_ADMIN', 'BLOCK_ADMIN', 'DISTRICT_ADMIN', 'ADMIN', 'SUPER_ADMIN')
 def loan_ledger():
     pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
+
     if request.headers.get("Authorization") or request.is_json:
-        return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "loan-ledger"})
+        return jsonify({
+            "ok": True,
+            "pg_id": str(pg_id or ""),
+            "register": "loan-ledger",
+            "mode": "member-loan-repayment-ledger"
+        })
+
     return render_template('loan_ledger.html', pg_id=pg_id)
+
+
+@pg_bp.route("/loan-ledger/member-loans", methods=["GET"])
+@login_required
+@roles_required("PG_DATA_ENTRY", "CADRE_CC", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+def api_loan_ledger_member_loans():
+    """
+    Used by Loan Ledger frontend.
+
+    Returns only member loans created by CLF/Block/Admin from pg_member_loan_accounts.
+    PG login can select from this list and save repayments in Loan Ledger.
+    """
+    db = current_app.mongo_db
+    pg_id = _ctx_pg_id()
+
+    if not pg_id:
+        abort(400, "Missing PG context")
+
+    pg_doc = _load_pg_or_404(db, pg_id)
+    pg_oid = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
+
+    include_closed = request.args.get("include_closed") in ("1", "true", "yes")
+
+    loan_query = {"pg_id": pg_oid}
+    if not include_closed:
+        loan_query["status"] = {"$ne": "closed"}
+
+    loans_raw = list(
+        db.pg_member_loan_accounts
+        .find(loan_query)
+        .sort([("created_at", -1), ("updated_at", -1)])
+    )
+
+    loans = [_serialize_member_loan_for_ledger(db, loan) for loan in loans_raw]
+
+    return jsonify({
+        "ok": True,
+        "pg": {
+            "_id": str(pg_doc.get("_id")),
+            "name": pg_doc.get("name") or pg_doc.get("pg_name") or "",
+        },
+        "loans": loans,
+        "can_create_member_loan": False,
+        "can_save_ledger": (getattr(g, "role", None) or session.get("role")) == "PG_DATA_ENTRY",
+    })
+
+
+# ---------- Loan Ledger: repayment register for member loans ----------
+@pg_bp.route("/loan-ledger/<loan_id>", methods=["GET", "POST"])
+@login_required
+@roles_required("PG_DATA_ENTRY", "CADRE_CC", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+def api_loan_ledger(loan_id):
+    db = current_app.mongo_db
+    pg_id = _ctx_pg_id()
+
+    if not pg_id:
+        abort(400, "Missing PG context")
+
+    pg_doc = _load_pg_or_404(db, pg_id)
+    pg_oid = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
+
+    # Important: Loan Ledger must connect only to pg_member_loan_accounts
+    loan_doc = _get_member_loan_for_ledger_or_404(
+        db,
+        pg_oid=pg_oid,
+        loan_id=loan_id
+    )
+
+    member_doc = _ledger_member_lookup(db, loan_doc)
+    loan_payload = _serialize_member_loan_for_ledger(db, loan_doc)
+
+    coll = "pg_loan_ledgers"
+    year, month = _get_period_from_args()
+
+    base_q = {
+        "pg_id": pg_oid,
+        "loan_id": str(loan_doc["_id"]),
+        "loan_type": "member"
+    }
+
+    q = dict(base_q)
+    if year is not None:
+        q["year"] = year
+    if month is not None:
+        q["month"] = month
+
+    if request.method == "GET":
+        if request.args.get("history") in ("1", "true", "yes"):
+            return jsonify({
+                "ok": True,
+                "history": _period_history(db, coll, base_q)
+            })
+
+        doc = None
+        if year is not None and month is not None:
+            doc = db[coll].find_one(q)
+
+        if not doc:
+            doc = db[coll].find_one(base_q, sort=[("updated_at", -1)])
+
+        if not doc:
+            return jsonify({
+                "ok": True,
+                "pg_id": str(pg_oid),
+                "pg_name": pg_doc.get("name") or pg_doc.get("pg_name") or "",
+                "loan_id": str(loan_doc["_id"]),
+                "loan_type": "member",
+                "loan": loan_payload,
+                "member": {
+                    "_id": str(member_doc.get("_id")) if member_doc.get("_id") else "",
+                    "name": _ledger_member_name(member_doc),
+                    "father_mother_spouse": _ledger_member_guardian(member_doc),
+                },
+                "year": year,
+                "month": month,
+                "entries": [],
+                "meta": {},
+            })
+
+        doc = _ledger_json_safe(doc)
+        doc["ok"] = True
+        doc["pg_name"] = doc.get("pg_name") or pg_doc.get("name") or pg_doc.get("pg_name") or ""
+        doc["loan"] = loan_payload
+        doc["member"] = {
+            "_id": str(member_doc.get("_id")) if member_doc.get("_id") else "",
+            "name": _ledger_member_name(member_doc),
+            "father_mother_spouse": _ledger_member_guardian(member_doc),
+        }
+
+        return jsonify(doc)
+
+    # PG login is allowed to save repayment/register entries.
+    # CLF/Block/Admin create the member loan in Member Loans page, not here.
+    role = getattr(g, "role", None) or session.get("role")
+    if role != "PG_DATA_ENTRY":
+        abort(403, "Only PG login can save Loan Ledger repayment entries.")
+
+    current_status = (loan_doc.get("status") or "active").lower()
+    if current_status in ("closed", "discontinued"):
+        abort(400, "This member loan is closed/discontinued. Ledger update is not allowed.")
+
+    payload = request.get_json(silent=True) or {}
+
+    pg_name = pg_doc.get("name") or pg_doc.get("pg_name") or ""
+    member_name = _ledger_member_name(member_doc)
+    member_guardian = _ledger_member_guardian(member_doc)
+
+    before = db[coll].find_one(q)
+    now = datetime.utcnow()
+
+    doc = dict(payload)
+    doc.update({
+        "pg_id": pg_oid,
+        "pg_name": pg_name,
+        "loan_id": str(loan_doc["_id"]),
+        "loan_type": "member",
+        "loan_no": loan_doc.get("loan_no") or "",
+        "member_id": str(loan_doc.get("member_id")) if loan_doc.get("member_id") else "",
+        "member_name": member_name,
+        "father_mother_spouse": member_guardian,
+        "loan_amount": _ledger_loan_amount(loan_doc),
+        "loan_tenure": _ledger_int(loan_doc.get("tenure_months")),
+        "no_of_installments": (
+            _ledger_int(loan_doc.get("installments_total"))
+            or len(loan_doc.get("schedule") or [])
+            or _ledger_int(loan_doc.get("tenure_months"))
+        ),
+        "loan_purpose": loan_doc.get("purpose") or loan_doc.get("loan_purpose") or "",
+        "year": year,
+        "month": month,
+        "updated_at": now,
+    })
+
+    totals = _ledger_payload_totals(doc)
+    doc["summary"] = {
+        "principal_due": totals["principal_due"],
+        "principal_repaid": totals["principal_repaid"],
+        "interest_due": totals["interest_due"],
+        "interest_paid": totals["interest_paid"],
+    }
+
+    if not before:
+        doc["created_at"] = now
+        res = db[coll].insert_one(doc)
+
+        log_audit(
+            db,
+            action=f"{coll}:create",
+            collection=coll,
+            doc_id=res.inserted_id,
+            user=_current_user_dict(),
+            after=doc,
+            meta={
+                "pg_id": str(pg_oid),
+                "loan_id": str(loan_doc["_id"]),
+                "loan_type": "member",
+                "year": year,
+                "month": month,
+            }
+        )
+    else:
+        db[coll].update_one({"_id": before["_id"]}, {"$set": doc})
+
+        log_audit(
+            db,
+            action=f"{coll}:update",
+            collection=coll,
+            doc_id=before["_id"],
+            user=_current_user_dict(),
+            before=before,
+            after=doc,
+            meta={
+                "pg_id": str(pg_oid),
+                "loan_id": str(loan_doc["_id"]),
+                "loan_type": "member",
+                "year": year,
+                "month": month,
+            }
+        )
+
+    refreshed_loan = _recalculate_member_loan_from_ledgers(
+        db,
+        pg_oid=pg_oid,
+        loan_doc=loan_doc
+    )
+
+    return jsonify({
+        "ok": True,
+        "message": "Loan Ledger saved and Member Loan Account updated successfully.",
+        "loan": _serialize_member_loan_for_ledger(db, refreshed_loan),
+    })
+
+
+
+
 
 @pg_bp.route('/registers/receipt-voucher')
 @login_required
@@ -2060,6 +2859,8 @@ def receipt_voucher():
     if request.headers.get("Authorization") or request.is_json:
         return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "receipt-voucher"})
     return render_template('receipt_voucher.html', pg_id=pg_id)
+
+
 
 @pg_bp.route('/registers/input')
 @login_required
@@ -2160,6 +2961,8 @@ def _enforce_pg_scope(pg_doc):
 
     if state_id and str(pg_doc.get("state_id")) != str(state_id):
         abort(403)
+
+
 def _load_pg_or_404(db, pg_id):
     try:
         oid = (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))
@@ -2375,64 +3178,6 @@ def api_ledger_book(pg_id):
     return jsonify({"ok": True, "message": "Saved successfully"})
 
 
-# ---------- Loan Ledger (stored per PG + loan_id) ----------
-@pg_bp.route("/loan-ledger/<loan_id>", methods=["GET", "POST"])
-@login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
-def api_loan_ledger(loan_id):
-    db = current_app.mongo_db
-    pg_id = _ctx_pg_id()
-    if not pg_id:
-        abort(400, "Missing PG context")
-    _load_pg_or_404(db, pg_id)
-
-    coll = "pg_loan_ledgers"
-    year, month = _get_period_from_args()
-    base_q = {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))), "loan_id": str(loan_id)}
-    q = dict(base_q)
-    if year is not None: q["year"] = year
-    if month is not None: q["month"] = month
-
-    if request.method == "GET":
-        if request.args.get("history") in ("1", "true", "yes"):
-            return jsonify({"history": _period_history(db, coll, base_q)})
-        doc = db[coll].find_one(q) or db[coll].find_one(base_q, sort=[("updated_at", -1)])
-        pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
-        current_pg_name = pg_doc.get("name", "")
-        if not doc:
-            return jsonify({"loan_id": str(loan_id), "entries": [], "pg_name": current_pg_name, "year": year, "month": month})
-        doc["_id"] = str(doc["_id"])
-        doc["pg_id"] = str(doc["pg_id"])
-        doc["pg_name"] = current_pg_name
-        return jsonify(doc)
-
-    role = getattr(g, "role", None) or session.get("role")
-    if role != "PG_DATA_ENTRY":
-        abort(403)
-
-    payload = request.get_json(silent=True) or {}
-    pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
-    current_pg_name = pg_doc.get("name", "")
-    before = db[coll].find_one(q)
-    now = datetime.utcnow()
-    doc = dict(payload)
-    doc["pg_name"] = current_pg_name
-    doc.update({
-        "pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id'))),
-        "loan_id": str(loan_id),
-        "year": year,
-        "month": month,
-        "updated_at": now,
-    })
-    if not before:
-        doc["created_at"] = now
-        res = db[coll].insert_one(doc)
-        log_audit(db, action=f"{coll}:create", collection=coll, doc_id=res.inserted_id, user=_current_user_dict(), after=doc, meta={"pg_id": pg_id, "loan_id": str(loan_id), "year": year, "month": month})
-    else:
-        db[coll].update_one({"_id": before["_id"]}, {"$set": doc})
-        log_audit(db, action=f"{coll}:update", collection=coll, doc_id=before["_id"], user=_current_user_dict(), before=before, after=doc, meta={"pg_id": pg_id, "loan_id": str(loan_id), "year": year, "month": month})
-    return jsonify({"ok": True, "message": "Saved successfully"})
-
 
 # ---------- Receipt Voucher ----------
 @pg_bp.route("/receipt-voucher/<pg_id>", methods=["GET", "POST"])
@@ -2513,9 +3258,7 @@ def api_receipt_voucher(pg_id):
         )
 
     def _member_identity(member):
-        code = str(member.get("member_code", "") or "").strip()
-        name = str(member.get("member_name", "") or "").strip()
-        return code or name
+        return str(member.get("member_name", "") or "").strip()
 
     def _split_legacy_member_key(key):
         key = str(key or "").strip()
@@ -2533,7 +3276,6 @@ def api_receipt_voucher(pg_id):
             raw = {}
 
         member = {
-            "member_code": str(raw.get("member_code", fallback_code) or fallback_code or "").strip(),
             "member_name": str(raw.get("member_name", fallback_name) or fallback_name or "").strip(),
             "txn_date": str(raw.get("txn_date", "") or "").strip(),
             "details": str(raw.get("details", "") or "").strip(),
@@ -2600,7 +3342,7 @@ def api_receipt_voucher(pg_id):
         if _member_identity(top_level_member) and _has_member_data(top_level_member):
             members.append(top_level_member)
 
-        # Deduplicate by member_code/name, keeping last version
+        # Deduplicate by member_name, keeping last version
         deduped = {}
         for member in members:
             key = _member_identity(member)
@@ -2667,8 +3409,8 @@ def api_receipt_voucher(pg_id):
 
     def _legacy_section_for_frontend(clean_section):
         """
-        Temporary backward-compatible response for current receipt_voucher.html.
-        After frontend update, this can be removed later.
+        Temporary backward-compatible response for receipt_voucher.html.
+        Member code removed. Member-wise data is keyed by member_name only.
         """
         clean_section = clean_section if isinstance(clean_section, dict) else {}
         members = clean_section.get("members", [])
@@ -2683,7 +3425,7 @@ def api_receipt_voucher(pg_id):
             if not _member_identity(member):
                 continue
 
-            key = f'{member.get("member_code", "")}__{member.get("member_name", "")}'.strip("_")
+            key = member.get("member_name", "")
             member_tables[key] = {
                 "entries": member.get("entries", []),
                 "details": member.get("details", ""),
@@ -2698,7 +3440,6 @@ def api_receipt_voucher(pg_id):
             "pg_name": current_pg_name,
             "txn_date": first_member.get("txn_date", "") if first_member else "",
             "member_name": first_member.get("member_name", "") if first_member else "",
-            "member_code": first_member.get("member_code", "") if first_member else "",
             "details": first_member.get("details", "") if first_member else "",
             "signatures": first_member.get("signatures", {"member": "", "udyog": ""}) if first_member else {"member": "", "udyog": ""},
             "entries": first_member.get("entries", []) if first_member else [],
@@ -2819,6 +3560,7 @@ def api_receipt_voucher(pg_id):
         "pg_group_receipt_members": len(clean_pg_group.get("members", [])),
         "group_member_receipt_members": len(clean_group_member.get("members", [])),
     })
+
 
 #changes by atlanta
 # ---------- Receipt Voucher Member Options ----------
@@ -3660,3 +4402,4 @@ def clear_active_pg():
         session.pop('pg_id', None)
     flash('Active PG cleared.', 'info')
     return redirect(url_for('reports.hierarchy_dashboard'))
+
