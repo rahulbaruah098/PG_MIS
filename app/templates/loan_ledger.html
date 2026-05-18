@@ -1386,13 +1386,17 @@ $("llCancelText").textContent = t.cancelButton;
   }
 
   function clearAllSelections(){
-    allRows.forEach(r=>{
-      const cb = r.querySelector("[data-ll='sel']");
+    allRows.forEach(row => {
+      const cb = row.querySelector("[data-ll='sel']");
       if (cb) cb.checked = false;
     });
 
-    setRowEditable(row, llIsEditing);
-    return row;
+    if ($("llSelectAll")){
+      $("llSelectAll").checked = false;
+      $("llSelectAll").indeterminate = false;
+    }
+
+    updateSelectUI();
   }
 
   function valueOrBlank(v){
@@ -1400,8 +1404,104 @@ $("llCancelText").textContent = t.cancelButton;
     return String(v);
   }
 
+  function createRow(entry = {}){
+  const row = document.createElement("div");
+  row.className = "ll-row";
+
+  const dateDisb = entry.date_disb || entry.date_of_disbursement || entry.disbursement_date || "";
+  const principalDue = valueOrBlank(entry.principal_due);
+  const principalPaid = valueOrBlank(entry.principal_repaid ?? entry.principal_paid);
+  const principalOut = valueOrBlank(entry.principal_outstanding);
+  const interestDue = valueOrBlank(entry.interest_due);
+  const interestPaid = valueOrBlank(entry.interest_paid);
+  const interestOut = valueOrBlank(entry.interest_outstanding);
+  const totalOut = valueOrBlank(entry.total_outstanding);
+  const nextDate = entry.next_installment_date || entry.date_next_installment || entry.next_date || "";
+
+  row.innerHTML = `
+    <div class="ll-cell" data-label="Select" data-llcell="sel">
+      <input type="checkbox" class="ll-check" data-ll="sel" ${llIsEditing ? "" : "disabled"}>
+    </div>
+
+    <div class="ll-cell" data-label="SL" data-llcell="sl">
+      <span class="ll-slno" data-ll="slno"></span>
+    </div>
+
+    <div class="ll-cell" data-label="Date of disbursement">
+      <input class="ll-in" data-ll="date_disb" type="date" value="${esc(dateDisb)}" ${llIsEditing ? "" : "readonly"}>
+    </div>
+
+    <div class="ll-cell" data-label="Principal due">
+      <input class="ll-in num" data-ll="pr_due" type="number" step="0.01" min="0" placeholder="0.00" value="${esc(principalDue)}" ${llIsEditing ? "" : "readonly"}>
+    </div>
+
+    <div class="ll-cell" data-label="Principal Repaid">
+      <input class="ll-in num" data-ll="pr_paid" type="number" step="0.01" min="0" placeholder="0.00" value="${esc(principalPaid)}" ${llIsEditing ? "" : "readonly"}>
+    </div>
+
+    <div class="ll-cell" data-label="Principal Outstanding">
+      <input class="ll-in num" data-ll="pr_out" type="text" value="${esc(principalOut)}" readonly>
+    </div>
+
+    <div class="ll-cell" data-label="Interest Due">
+      <input class="ll-in num" data-ll="int_due" type="number" step="0.01" min="0" placeholder="0.00" value="${esc(interestDue)}" ${llIsEditing ? "" : "readonly"}>
+    </div>
+
+    <div class="ll-cell" data-label="Interest Paid">
+      <input class="ll-in num" data-ll="int_paid" type="number" step="0.01" min="0" placeholder="0.00" value="${esc(interestPaid)}" ${llIsEditing ? "" : "readonly"}>
+    </div>
+
+    <div class="ll-cell" data-label="Interest Outstanding">
+      <input class="ll-in num" data-ll="int_out" type="text" value="${esc(interestOut)}" readonly>
+    </div>
+
+    <div class="ll-cell" data-label="Total Outstanding">
+      <input class="ll-in num" data-ll="total_out" type="text" value="${esc(totalOut)}" readonly>
+    </div>
+
+    <div class="ll-cell" data-label="Date of Next Installment">
+      <input class="ll-in" data-ll="next_date" type="date" value="${esc(nextDate)}" ${llIsEditing ? "" : "readonly"}>
+    </div>
+
+    <div class="ll-cell" data-label="Action">
+      <button class="ll-del" data-ll="delete" type="button" title="Delete row" ${llIsEditing ? "" : "disabled"}>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"></path>
+          <path d="M8 6V4h8v2"></path>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+          <path d="M10 11v6"></path>
+          <path d="M14 11v6"></path>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  row.querySelectorAll("[data-ll='pr_due'], [data-ll='pr_paid'], [data-ll='int_due'], [data-ll='int_paid']").forEach(input => {
+    input.addEventListener("input", recalcLoan);
+  });
+
+  const cb = row.querySelector("[data-ll='sel']");
+  if (cb){
+    cb.addEventListener("change", updateSelectUI);
+  }
+
+  const del = row.querySelector("[data-ll='delete']");
+  if (del){
+    del.addEventListener("click", () => {
+      if (!llIsEditing) return;
+      pendingDeleteRow = row;
+      openOverlay($("llDeleteOverlay"));
+    });
+  }
+
+  setRowEditable(row, llIsEditing);
+  return row;
+}
+
+
   function addRow(){
     if (!llIsEditing) return;
+
     if (!selectedLoanId){
       info("Please select member and loan account first.");
       return;
@@ -1409,7 +1509,19 @@ $("llCancelText").textContent = t.cancelButton;
 
     const row = createRow();
     allRows.push(row);
-    rebuildFiltered();
+
+    query = "";
+    if ($("llSearch")) $("llSearch").value = "";
+
+    filteredRows = allRows.slice();
+    page = Math.max(1, Math.ceil(filteredRows.length / perPage));
+
+    renderPage();
+    recalcLoan();
+
+    setTimeout(() => {
+      row.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    }, 50);
   }
 
   function takeSnapshot(){
