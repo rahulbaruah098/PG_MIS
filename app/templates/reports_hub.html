@@ -41,7 +41,6 @@
     position: relative;
   }
 
-  /* Header */
   .rh-head{
     padding: 18px 20px 16px;
     background:
@@ -51,39 +50,37 @@
     position: relative;
   }
 
-.rh-title-row{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  max-width: 980px;
-  margin: 0 auto;
-}
- 
+  .rh-title-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    max-width: 980px;
+    margin: 0 auto;
+  }
 
- .rh-titlebox{
-  min-width: 0;
-  text-align: center;
-  width: 100%;
-}
+  .rh-titlebox{
+    min-width: 0;
+    text-align: center;
+    width: 100%;
+  }
 
   .rh-title{
-  margin:0;
-  font-weight:950;
-  letter-spacing:-.01em;
-  color: var(--ink);
-  font-size: clamp(18px, 1.2vw + 14px, 22px);
-  line-height:1.12;
-}
+    margin:0;
+    font-weight:950;
+    letter-spacing:-.01em;
+    color: var(--ink);
+    font-size: clamp(18px, 1.2vw + 14px, 22px);
+    line-height:1.12;
+  }
 
-.rh-sub{
-  margin-top:6px;
-  font-size:12px;
-  color: rgba(15,23,42,.68);
-  font-weight:800;
-  line-height:1.45;
-}
+  .rh-sub{
+    margin-top:6px;
+    font-size:12px;
+    color: rgba(15,23,42,.68);
+    font-weight:800;
+    line-height:1.45;
+  }
 
-  /* Back button */
   .rh-back{
     display:none;
     position: absolute;
@@ -113,7 +110,6 @@
   .rh-back:active{ transform: scale(.98); }
   .rh-back svg{ width:18px; height:18px; display:block; }
 
-  /* Main grid */
   .rh-grid{
     display:grid;
     grid-template-columns: minmax(0, 1.7fr) minmax(320px, .9fr);
@@ -130,35 +126,35 @@
     overflow: hidden;
   }
 
-.rh-card-head{
-  padding: 16px 18px 14px;
-  border-bottom: 1px solid rgba(11,77,58,.14);
-  background:
-    linear-gradient(180deg, rgba(232,244,238,.92), rgba(243,249,246,.98));
-  box-shadow: inset 0 -1px 0 rgba(255,255,255,.55);
-}
+  .rh-card-head{
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid rgba(11,77,58,.14);
+    background:
+      linear-gradient(180deg, rgba(232,244,238,.92), rgba(243,249,246,.98));
+    box-shadow: inset 0 -1px 0 rgba(255,255,255,.55);
+  }
 
-.rh-card-title{
-  margin: 0;
-  font-weight: 950;
-  font-size: 18px;
-  letter-spacing: -.01em;
-  color: #0b4d3a;
-  line-height:1.2;
-}
+  .rh-card-title{
+    margin: 0;
+    font-weight: 950;
+    font-size: 18px;
+    letter-spacing: -.01em;
+    color: #0b4d3a;
+    line-height:1.2;
+  }
 
-.rh-card-sub{
-  margin: 6px 0 0;
-  font-size: 13px;
-  color: rgba(11,77,58,.78);
-  font-weight: 850;
-  line-height:1.5;
-}
+  .rh-card-sub{
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: rgba(11,77,58,.78);
+    font-weight: 850;
+    line-height:1.5;
+  }
+
   .rh-card-body{
     padding: 18px;
   }
 
-  /* Form layout */
   .rh-block{
     border:1px solid rgba(15,23,42,.08);
     border-radius:18px;
@@ -209,7 +205,15 @@
     color: var(--ink);
     transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
   }
+
+  .rh-row select:disabled{
+    background:#f8fafc;
+    color:#94a3b8;
+    cursor:not-allowed;
+  }
+
   .rh-row input::placeholder{ color:#7b8794; }
+
   .rh-row select:focus,
   .rh-row input:focus{
     border-color: rgba(11,77,58,.32);
@@ -249,17 +253,20 @@
     white-space: nowrap;
     width:100%;
   }
+
   .rh-btn:hover{
     transform: translateY(-1px);
     background:#fff;
     border-color: rgba(11,77,58,.18);
     box-shadow:0 14px 20px -18px rgba(15,23,42,.22);
   }
+
   .rh-btn.primary{
     border-color: rgba(16,185,129,.35);
     background: linear-gradient(180deg, rgba(220,252,231,.92), rgba(209,250,229,.88));
     color:#0b4d3a;
   }
+
   .rh-btn.primary:hover{
     background: linear-gradient(180deg, rgba(209,250,229,.98), rgba(187,247,208,.92));
   }
@@ -276,7 +283,6 @@
     background: rgba(247,250,249,.74);
   }
 
-  /* Quick reports */
   .rh-list{
     display:grid;
     gap:12px;
@@ -299,12 +305,14 @@
     flex-direction:column;
     min-width: 0;
   }
+
   .rh-item .meta b{
     font-weight:950;
     color: var(--ink);
     line-height: 1.3;
     font-size:16px;
   }
+
   .rh-item .meta span{
     color:#64748b;
     font-weight:800;
@@ -341,71 +349,71 @@
   }
 
   @media (max-width:720px){
-  .rh-back{ display:flex; }
+    .rh-back{ display:flex; }
 
-  .rh-title-row{
-    display:flex;
-    justify-content:flex-start;
-    padding-left:54px;
-    padding-right:8px;
-    align-items:flex-start;
-    max-width:none;
-  }
+    .rh-title-row{
+      display:flex;
+      justify-content:flex-start;
+      padding-left:54px;
+      padding-right:8px;
+      align-items:flex-start;
+      max-width:none;
+    }
 
-  .rh-titlebox{
-    text-align:left;
-  }
+    .rh-titlebox{
+      text-align:left;
+    }
 
-  .rh-title{
-    font-size:17px;
-    line-height: 1.3;
-    letter-spacing:.2px;
-  }
+    .rh-title{
+      font-size:17px;
+      line-height: 1.3;
+      letter-spacing:.2px;
+    }
 
-  .rh-sub{
-    font-size:11.5px;
-    line-height:1.45;
-  }
+    .rh-sub{
+      font-size:11.5px;
+      line-height:1.45;
+    }
 
-  .rh-row{
-    grid-template-columns:repeat(2,1fr);
-  }
+    .rh-row{
+      grid-template-columns:repeat(2,1fr);
+    }
 
-  .rh-field.s2,
-  .rh-field.s3,
-  .rh-field.s4{
-    grid-column: auto;
-  }
+    .rh-field.s2,
+    .rh-field.s3,
+    .rh-field.s4{
+      grid-column: auto;
+    }
 
-  .rh-open-cell{
-    grid-column: auto;
-  }
+    .rh-open-cell{
+      grid-column: auto;
+    }
 
-  .rh-actions{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    margin-top:12px;
-  }
+    .rh-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
 
-  .rh-btn{
-    border-radius:999px;
-    min-height:auto;
-    padding:10px 14px;
-    font-size: 12px;
-    width:auto;
-  }
+    .rh-btn{
+      border-radius:999px;
+      min-height:auto;
+      padding:10px 14px;
+      font-size: 12px;
+      width:auto;
+    }
 
-  .rh-item{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-  }
+    .rh-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
 
-  .rh-item .rh-btn{
-    width:auto;
+    .rh-item .rh-btn{
+      width:auto;
+    }
   }
-}
 
   @media (max-width:560px){
     .rh-wrap{
@@ -501,18 +509,56 @@
           <form id="rhForm" method="get" action="#">
             <div class="rh-block">
               <div class="rh-row">
-                <div class="rh-field s2"><label id="rhLblState">State</label><input name="state" value="{{ request.args.get('state','') }}" placeholder="State" id="rhPhState"/></div>
-                <div class="rh-field s2"><label id="rhLblDistrict">District</label><input name="district" value="{{ request.args.get('district','') }}" placeholder="District" id="rhPhDistrict"/></div>
-                <div class="rh-field s2"><label id="rhLblBlock">Block</label><input name="block" value="{{ request.args.get('block','') }}" placeholder="Block" id="rhPhBlock"/></div>
-                <div class="rh-field s2"><label id="rhLblGp">Gram Panchayat</label><input name="gp" value="{{ request.args.get('gp','') }}" placeholder="GP" id="rhPhGp"/></div>
-                <div class="rh-field s2"><label id="rhLblVillage">Village</label><input name="village" value="{{ request.args.get('village','') }}" placeholder="Village" id="rhPhVillage"/></div>
-                <div class="rh-field s2"><label id="rhLblPgName">PG Name contains</label><input name="pg_name" value="{{ request.args.get('pg_name','') }}" placeholder="PG name" id="rhPhPgName"/></div>
+
+                <div class="rh-field s2">
+                  <label id="rhLblState" for="rhPhState">State</label>
+                  <select name="state" id="rhPhState" data-selected="{{ request.args.get('state','')|e }}">
+                    <option value="" id="rhOptStatePlaceholder">State</option>
+                  </select>
+                </div>
+
+                <div class="rh-field s2">
+                  <label id="rhLblDistrict" for="rhPhDistrict">District</label>
+                  <select name="district" id="rhPhDistrict" data-selected="{{ request.args.get('district','')|e }}">
+                    <option value="" id="rhOptDistrictPlaceholder">District</option>
+                  </select>
+                </div>
+
+                <div class="rh-field s2">
+                  <label id="rhLblBlock" for="rhPhBlock">Block</label>
+                  <select name="block" id="rhPhBlock" data-selected="{{ request.args.get('block','')|e }}">
+                    <option value="" id="rhOptBlockPlaceholder">Block</option>
+                  </select>
+                </div>
+
+                <div class="rh-field s2">
+                  <label id="rhLblGp" for="rhPhGp">Gram Panchayat</label>
+                  <select name="gp" id="rhPhGp" data-selected="{{ request.args.get('gp','')|e }}">
+                    <option value="" id="rhOptGpPlaceholder">GP</option>
+                  </select>
+                </div>
+
+                <div class="rh-field s2">
+                  <label id="rhLblVillage" for="rhPhVillage">Village</label>
+                  <select name="village" id="rhPhVillage" data-selected="{{ request.args.get('village','')|e }}">
+                    <option value="" id="rhOptVillagePlaceholder">Village</option>
+                  </select>
+                </div>
+
+                <div class="rh-field s2">
+                  <label id="rhLblPgName" for="rhPhPgName">PG Name</label>
+                  <select name="pg_name" id="rhPhPgName" data-selected="{{ request.args.get('pg_name','')|e }}">
+                    <option value="" id="rhOptPgNamePlaceholder">PG Name</option>
+                  </select>
+                </div>
+
               </div>
             </div>
 
             <div class="rh-block">
               <div class="rh-row">
-                <div class="rh-field s2"><label id="rhLblPeriod">Period</label>
+                <div class="rh-field s2">
+                  <label id="rhLblPeriod">Period</label>
                   <select name="period">
                     {% set p = (request.args.get('period') or '') %}
                     <option value="" {% if not p %}selected{% endif %} id="rhOptAllTime">All time</option>
@@ -523,7 +569,8 @@
                   </select>
                 </div>
 
-                <div class="rh-field s2"><label id="rhLblGroupBy">Group By</label>
+                <div class="rh-field s2">
+                  <label id="rhLblGroupBy">Group By</label>
                   {% set gb = (request.args.get('group_by') or '') %}
                   <select name="group_by">
                     <option value="" {% if not gb %}selected{% endif %} id="rhOptNone">None</option>
@@ -535,10 +582,24 @@
                   </select>
                 </div>
 
-                <div class="rh-field s2"><label id="rhLblQ">Search (q)</label><input name="q" value="{{ request.args.get('q','') }}" placeholder="Name / keyword" id="rhPhQ"/></div>
-                <div class="rh-field s2"><label id="rhLblFrom">From</label><input type="date" name="from" value="{{ request.args.get('from','') }}"/></div>
-                <div class="rh-field s2"><label id="rhLblTo">To</label><input type="date" name="to" value="{{ request.args.get('to','') }}"/></div>
-                <div class="rh-open-cell"><a class="rh-btn primary" id="rhOpenOverall" href="#">Open Overall Export</a></div>
+                <div class="rh-field s2">
+                  <label id="rhLblQ">Search (q)</label>
+                  <input name="q" value="{{ request.args.get('q','') }}" placeholder="Name / keyword" id="rhPhQ"/>
+                </div>
+
+                <div class="rh-field s2">
+                  <label id="rhLblFrom">From</label>
+                  <input type="date" name="from" value="{{ request.args.get('from','') }}"/>
+                </div>
+
+                <div class="rh-field s2">
+                  <label id="rhLblTo">To</label>
+                  <input type="date" name="to" value="{{ request.args.get('to','') }}"/>
+                </div>
+
+                <div class="rh-open-cell">
+                  <a class="rh-btn primary" id="rhOpenOverall" href="#">Open Overall Export</a>
+                </div>
               </div>
             </div>
 
@@ -566,15 +627,26 @@
         <div class="rh-card-body">
           <div class="rh-list">
             <div class="rh-item">
-              <div class="meta"><b id="rhItem1Title">Lakhpati Didi</b><span id="rhItem1Sub">Member-level + grouped summary</span></div>
+              <div class="meta">
+                <b id="rhItem1Title">Lakhpati Didi</b>
+                <span id="rhItem1Sub">Member-level + grouped summary</span>
+              </div>
               <a class="rh-btn" href="{{ url_for('reports.lakhpati_report') }}" id="rhItem1Btn">Open</a>
             </div>
+
             <div class="rh-item">
-              <div class="meta"><b id="rhItem2Title">Grants & Utilization</b><span id="rhItem2Sub">Grant received + utilization balance</span></div>
+              <div class="meta">
+                <b id="rhItem2Title">Grants & Utilization</b>
+                <span id="rhItem2Sub">Grant received + utilization balance</span>
+              </div>
               <a class="rh-btn" href="{{ url_for('reports.grants_report') }}" id="rhItem2Btn">Open</a>
             </div>
+
             <div class="rh-item">
-              <div class="meta"><b id="rhItem3Title">PG Overall Export</b><span id="rhItem3Sub">Everything about selected PGs (ZIP)</span></div>
+              <div class="meta">
+                <b id="rhItem3Title">PG Overall Export</b>
+                <span id="rhItem3Sub">Everything about selected PGs (ZIP)</span>
+              </div>
               <a class="rh-btn" href="{{ url_for('reports.pg_overall_report') }}" id="rhItem3Btn">Open</a>
             </div>
           </div>
@@ -588,11 +660,15 @@
 <script>
   (function(){
     const form = document.getElementById('rhForm');
+
+    const RH_FILTER_OPTIONS_URL = "{{ url_for('reports.reports_hub_filter_options') }}";
+
     const qs = () => new URLSearchParams(new FormData(form)).toString();
 
     const bind = (id, path) => {
       const el = document.getElementById(id);
       if(!el) return;
+
       el.addEventListener('click', (e)=>{
         e.preventDefault();
         const q = qs();
@@ -623,14 +699,17 @@
         block: "Block",
         gp: "Gram Panchayat",
         village: "Village",
-        pgName: "PG Name contains",
+        pgName: "PG Name",
 
         phState: "State",
         phDistrict: "District",
         phBlock: "Block",
         phGp: "GP",
         phVillage: "Village",
-        phPgName: "PG name",
+        phPgName: "PG Name",
+
+        loading: "Loading...",
+        noOptions: "No options found",
 
         period: "Period",
         allTime: "All time",
@@ -674,6 +753,7 @@
         item3Sub: "Everything about selected PGs (ZIP)",
         open: "Open"
       },
+
       bn: {
         title: "রিপোর্টস হাব",
         backAria: "ফিরে যান",
@@ -687,7 +767,7 @@
         block: "ব্লক",
         gp: "গ্রাম পঞ্চায়েত",
         village: "গ্রাম",
-        pgName: "পিজি নাম রয়েছে",
+        pgName: "পিজি নাম",
 
         phState: "রাজ্য",
         phDistrict: "জেলা",
@@ -695,6 +775,9 @@
         phGp: "জিপি",
         phVillage: "গ্রাম",
         phPgName: "পিজি নাম",
+
+        loading: "লোড হচ্ছে...",
+        noOptions: "কোনো অপশন পাওয়া যায়নি",
 
         period: "সময়কাল",
         allTime: "সর্বসময়",
@@ -740,14 +823,53 @@
       }
     };
 
+    const dropdownConfig = {
+      state: {
+        id: 'rhPhState',
+        labelKey: 'phState',
+        placeholderId: 'rhOptStatePlaceholder'
+      },
+      district: {
+        id: 'rhPhDistrict',
+        labelKey: 'phDistrict',
+        placeholderId: 'rhOptDistrictPlaceholder'
+      },
+      block: {
+        id: 'rhPhBlock',
+        labelKey: 'phBlock',
+        placeholderId: 'rhOptBlockPlaceholder'
+      },
+      gp: {
+        id: 'rhPhGp',
+        labelKey: 'phGp',
+        placeholderId: 'rhOptGpPlaceholder'
+      },
+      village: {
+        id: 'rhPhVillage',
+        labelKey: 'phVillage',
+        placeholderId: 'rhOptVillagePlaceholder'
+      },
+      pg: {
+        id: 'rhPhPgName',
+        labelKey: 'phPgName',
+        placeholderId: 'rhOptPgNamePlaceholder'
+      }
+    };
+
+    const hierarchy = ['state', 'district', 'block', 'gp', 'village', 'pg'];
+
+    function getEl(id){
+      return document.getElementById(id);
+    }
+
     function safeText(id, val){
-      const el = document.getElementById(id);
+      const el = getEl(id);
       if(el) el.textContent = val;
     }
 
     function safePlaceholder(id, val){
-      const el = document.getElementById(id);
-      if(el) el.placeholder = val;
+      const el = getEl(id);
+      if(el && 'placeholder' in el) el.placeholder = val;
     }
 
     function getStoredLang(){
@@ -755,89 +877,341 @@
         const l1 = localStorage.getItem('pgmis_lang');
         if(l1 === 'en' || l1 === 'bn') return l1;
       }catch(_){}
+
       try{
         const l2 = sessionStorage.getItem('PGMIS_LANG_SESSION');
         if(l2 === 'en' || l2 === 'bn') return l2;
       }catch(_){}
+
       try{
         const l3 = document.documentElement.getAttribute('data-lang');
         if(l3 === 'en' || l3 === 'bn') return l3;
       }catch(_){}
+
       return 'en';
     }
 
-    function applyRH(lang){
-      const t = RH_T[lang] || RH_T.en;
+    function currentLang(){
+      return getStoredLang();
+    }
 
-      try { document.title = t.title; } catch(_){}
+    function t(){
+      return RH_T[currentLang()] || RH_T.en;
+    }
+
+    function setSelectPlaceholder(level){
+      const cfg = dropdownConfig[level];
+      if(!cfg) return;
+
+      const opt = getEl(cfg.placeholderId);
+      if(opt) opt.textContent = t()[cfg.labelKey] || '';
+    }
+
+    function clearSelect(level, disabled){
+      const cfg = dropdownConfig[level];
+      if(!cfg) return;
+
+      const select = getEl(cfg.id);
+      if(!select) return;
+
+      const label = t()[cfg.labelKey] || '';
+
+      select.innerHTML = '';
+
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = label;
+      opt.id = cfg.placeholderId;
+      select.appendChild(opt);
+
+      select.disabled = !!disabled;
+    }
+
+    function setLoading(level){
+      const cfg = dropdownConfig[level];
+      if(!cfg) return;
+
+      const select = getEl(cfg.id);
+      if(!select) return;
+
+      select.innerHTML = '';
+
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = t().loading;
+      select.appendChild(opt);
+
+      select.disabled = true;
+    }
+
+    function fillSelect(level, options, selectedValue){
+      const cfg = dropdownConfig[level];
+      if(!cfg) return;
+
+      const select = getEl(cfg.id);
+      if(!select) return;
+
+      const label = t()[cfg.labelKey] || '';
+
+      select.innerHTML = '';
+
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = label;
+      placeholder.id = cfg.placeholderId;
+      select.appendChild(placeholder);
+
+      const cleanOptions = Array.isArray(options)
+        ? options.filter(v => v !== null && v !== undefined && String(v).trim() !== '')
+        : [];
+
+      cleanOptions.forEach(value => {
+        const strValue = String(value).trim();
+
+        const opt = document.createElement('option');
+        opt.value = strValue;
+        opt.textContent = strValue;
+
+        if(selectedValue && strValue === selectedValue){
+          opt.selected = true;
+        }
+
+        select.appendChild(opt);
+      });
+
+      select.disabled = false;
+    }
+
+    function getValue(level){
+      const cfg = dropdownConfig[level];
+      const select = cfg ? getEl(cfg.id) : null;
+      return select ? select.value : '';
+    }
+
+    function getInitialSelected(level){
+      const cfg = dropdownConfig[level];
+      const select = cfg ? getEl(cfg.id) : null;
+      return select ? (select.dataset.selected || '') : '';
+    }
+
+    function clearInitialSelected(level){
+      const cfg = dropdownConfig[level];
+      const select = cfg ? getEl(cfg.id) : null;
+      if(select) select.dataset.selected = '';
+    }
+
+    function getFilterParams(level){
+      const params = new URLSearchParams();
+
+      params.set('level', level);
+      params.set('state', getValue('state'));
+      params.set('district', getValue('district'));
+      params.set('block', getValue('block'));
+      params.set('gp', getValue('gp'));
+      params.set('village', getValue('village'));
+
+      return params;
+    }
+
+    async function fetchOptions(level){
+      const params = getFilterParams(level);
+      const url = RH_FILTER_OPTIONS_URL + '?' + params.toString();
+
+      const res = await fetch(url, {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+
+      if(!res.ok){
+        throw new Error('Failed to load ' + level + ' options');
+      }
+
+      const data = await res.json();
+      return data && data.success && Array.isArray(data.options) ? data.options : [];
+    }
+
+    async function loadLevel(level, selectedValue){
+      setLoading(level);
+
+      try{
+        const options = await fetchOptions(level);
+        fillSelect(level, options, selectedValue || '');
+      }catch(err){
+        console.error(err);
+        clearSelect(level, false);
+      }
+    }
+
+    function resetAfter(level){
+      const index = hierarchy.indexOf(level);
+      if(index < 0) return;
+
+      for(let i = index + 1; i < hierarchy.length; i++){
+        clearSelect(hierarchy[i], false);
+        clearInitialSelected(hierarchy[i]);
+      }
+    }
+
+    async function reloadPg(selectedValue){
+      await loadLevel('pg', selectedValue || getInitialSelected('pg') || '');
+      clearInitialSelected('pg');
+    }
+
+    async function onStateChange(){
+      resetAfter('state');
+      await loadLevel('district', '');
+      await reloadPg('');
+    }
+
+    async function onDistrictChange(){
+      resetAfter('district');
+      await loadLevel('block', '');
+      await reloadPg('');
+    }
+
+    async function onBlockChange(){
+      resetAfter('block');
+      await loadLevel('gp', '');
+      await reloadPg('');
+    }
+
+    async function onGpChange(){
+      resetAfter('gp');
+      await loadLevel('village', '');
+      await reloadPg('');
+    }
+
+    async function onVillageChange(){
+      resetAfter('village');
+      await reloadPg('');
+    }
+
+    function bindDropdownEvents(){
+      const state = getEl('rhPhState');
+      const district = getEl('rhPhDistrict');
+      const block = getEl('rhPhBlock');
+      const gp = getEl('rhPhGp');
+      const village = getEl('rhPhVillage');
+
+      if(state) state.addEventListener('change', onStateChange);
+      if(district) district.addEventListener('change', onDistrictChange);
+      if(block) block.addEventListener('change', onBlockChange);
+      if(gp) gp.addEventListener('change', onGpChange);
+      if(village) village.addEventListener('change', onVillageChange);
+    }
+
+    async function initDropdowns(){
+      clearSelect('state', false);
+      clearSelect('district', false);
+      clearSelect('block', false);
+      clearSelect('gp', false);
+      clearSelect('village', false);
+      clearSelect('pg', false);
+
+      const selectedState = getInitialSelected('state');
+      const selectedDistrict = getInitialSelected('district');
+      const selectedBlock = getInitialSelected('block');
+      const selectedGp = getInitialSelected('gp');
+      const selectedVillage = getInitialSelected('village');
+      const selectedPg = getInitialSelected('pg');
+
+      await loadLevel('state', selectedState);
+
+      if(selectedState){
+        await loadLevel('district', selectedDistrict);
+      }
+
+      if(selectedDistrict){
+        await loadLevel('block', selectedBlock);
+      }
+
+      if(selectedBlock){
+        await loadLevel('gp', selectedGp);
+      }
+
+      if(selectedGp){
+        await loadLevel('village', selectedVillage);
+      }
+
+      await reloadPg(selectedPg);
+    }
+
+    function applyRH(lang){
+      const tr = RH_T[lang] || RH_T.en;
+
+      try { document.title = tr.title; } catch(_){}
 
       const back = document.querySelector('.rh-back');
-      if(back) back.setAttribute('aria-label', t.backAria);
+      if(back) back.setAttribute('aria-label', tr.backAria);
 
-      safeText('rhTitle', t.title);
-      safeText('rhSub', t.sub);
+      safeText('rhTitle', tr.title);
+      safeText('rhSub', tr.sub);
 
-      safeText('rhFiltersTitle', t.filtersTitle);
-      safeText('rhFiltersSub', t.filtersSub);
+      safeText('rhFiltersTitle', tr.filtersTitle);
+      safeText('rhFiltersSub', tr.filtersSub);
 
-      safeText('rhLblState', t.state);
-      safeText('rhLblDistrict', t.district);
-      safeText('rhLblBlock', t.block);
-      safeText('rhLblGp', t.gp);
-      safeText('rhLblVillage', t.village);
-      safeText('rhLblPgName', t.pgName);
+      safeText('rhLblState', tr.state);
+      safeText('rhLblDistrict', tr.district);
+      safeText('rhLblBlock', tr.block);
+      safeText('rhLblGp', tr.gp);
+      safeText('rhLblVillage', tr.village);
+      safeText('rhLblPgName', tr.pgName);
 
-      safePlaceholder('rhPhState', t.phState);
-      safePlaceholder('rhPhDistrict', t.phDistrict);
-      safePlaceholder('rhPhBlock', t.phBlock);
-      safePlaceholder('rhPhGp', t.phGp);
-      safePlaceholder('rhPhVillage', t.phVillage);
-      safePlaceholder('rhPhPgName', t.phPgName);
+      setSelectPlaceholder('state');
+      setSelectPlaceholder('district');
+      setSelectPlaceholder('block');
+      setSelectPlaceholder('gp');
+      setSelectPlaceholder('village');
+      setSelectPlaceholder('pg');
 
-      safeText('rhLblPeriod', t.period);
-      safeText('rhOptAllTime', t.allTime);
-      safeText('rhOptWeekly', t.weekly);
-      safeText('rhOptMonthly', t.monthly);
-      safeText('rhOptSixMonthly', t.sixMonthly);
-      safeText('rhOptYearly', t.yearly);
+      safeText('rhLblPeriod', tr.period);
+      safeText('rhOptAllTime', tr.allTime);
+      safeText('rhOptWeekly', tr.weekly);
+      safeText('rhOptMonthly', tr.monthly);
+      safeText('rhOptSixMonthly', tr.sixMonthly);
+      safeText('rhOptYearly', tr.yearly);
 
-      safeText('rhLblGroupBy', t.groupBy);
-      safeText('rhOptNone', t.none);
-      safeText('rhOptDistrict', t.districtOpt);
-      safeText('rhOptBlock', t.blockOpt);
-      safeText('rhOptGp', t.gpOpt);
-      safeText('rhOptVillage', t.villageOpt);
-      safeText('rhOptPg', t.pgOpt);
+      safeText('rhLblGroupBy', tr.groupBy);
+      safeText('rhOptNone', tr.none);
+      safeText('rhOptDistrict', tr.districtOpt);
+      safeText('rhOptBlock', tr.blockOpt);
+      safeText('rhOptGp', tr.gpOpt);
+      safeText('rhOptVillage', tr.villageOpt);
+      safeText('rhOptPg', tr.pgOpt);
 
-      safeText('rhLblQ', t.searchQ);
-      safePlaceholder('rhPhQ', t.phQ);
-      safeText('rhLblFrom', t.from);
-      safeText('rhLblTo', t.to);
+      safeText('rhLblQ', tr.searchQ);
+      safePlaceholder('rhPhQ', tr.phQ);
+      safeText('rhLblFrom', tr.from);
+      safeText('rhLblTo', tr.to);
 
-      safeText('rhOpenOverall', t.openOverall);
-      safeText('rhLakhpati', t.lakhpati);
-      safeText('rhGrants', t.grants);
-      safeText('rhMembers', t.members);
-      safeText('rhCashbook', t.cashbook);
-      safeText('rhLoans', t.loans);
-      safeText('rhTurnover', t.turnover);
-      safeText('rhOverallZip', t.overallZip);
+      safeText('rhOpenOverall', tr.openOverall);
+      safeText('rhLakhpati', tr.lakhpati);
+      safeText('rhGrants', tr.grants);
+      safeText('rhMembers', tr.members);
+      safeText('rhCashbook', tr.cashbook);
+      safeText('rhLoans', tr.loans);
+      safeText('rhTurnover', tr.turnover);
+      safeText('rhOverallZip', tr.overallZip);
 
-      safeText('rhTip', t.tip);
+      safeText('rhTip', tr.tip);
 
-      safeText('rhQuickTitle', t.quickTitle);
-      safeText('rhQuickSub', t.quickSub);
+      safeText('rhQuickTitle', tr.quickTitle);
+      safeText('rhQuickSub', tr.quickSub);
 
-      safeText('rhItem1Title', t.item1Title);
-      safeText('rhItem1Sub', t.item1Sub);
-      safeText('rhItem2Title', t.item2Title);
-      safeText('rhItem2Sub', t.item2Sub);
-      safeText('rhItem3Title', t.item3Title);
-      safeText('rhItem3Sub', t.item3Sub);
+      safeText('rhItem1Title', tr.item1Title);
+      safeText('rhItem1Sub', tr.item1Sub);
+      safeText('rhItem2Title', tr.item2Title);
+      safeText('rhItem2Sub', tr.item2Sub);
+      safeText('rhItem3Title', tr.item3Title);
+      safeText('rhItem3Sub', tr.item3Sub);
 
-      safeText('rhItem1Btn', t.open);
-      safeText('rhItem2Btn', t.open);
-      safeText('rhItem3Btn', t.open);
+      safeText('rhItem1Btn', tr.open);
+      safeText('rhItem2Btn', tr.open);
+      safeText('rhItem3Btn', tr.open);
     }
 
     window.updatePageLanguage = function(lang){
@@ -857,6 +1231,8 @@
 
     document.addEventListener('DOMContentLoaded', ()=>{
       applyRH(getStoredLang());
+      bindDropdownEvents();
+      initDropdowns();
     });
   })();
 </script>

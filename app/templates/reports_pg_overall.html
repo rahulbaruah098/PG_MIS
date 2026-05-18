@@ -797,8 +797,15 @@
                     </select>
                   </div>
                   <div class="po-field">
-                    <label id="poLblPgName">PG Name (search)</label>
-                    <input name="pg_name" value="{{ filters.pg_name }}" placeholder="Type PG name..." id="poPhPgName" />
+                    <label id="poLblPgName">PG Name</label>
+                    <select name="pg_name" id="poPhPgName">
+                      <option value="" id="poOptAllPgName">All</option>
+                      {% for pgn in pg_names %}
+                        <option value="{{ pgn }}" {% if filters.pg_name == pgn %}selected{% endif %}>
+                          {{ pgn }}
+                        </option>
+                      {% endfor %}
+                    </select>
                   </div>
                 </div>
 
@@ -1021,9 +1028,9 @@
         block: "Block",
         gp: "Gram Panchayat",
         village: "Village",
-        pgName: "PG Name (search)",
+        pgName: "PG Name",
         all: "All",
-        phPgName: "Type PG name...",
+        phPgName: "All",
         apply: "Apply",
         reset: "Reset",
         tip: "Tip: Select a PG from the list and download its full ZIP. If you download without selecting a PG, it will export all PGs in the current filtered scope (may be large).",
@@ -1068,9 +1075,9 @@
         block: "ব্লক",
         gp: "গ্রাম পঞ্চায়েত",
         village: "গ্রাম",
-        pgName: "পিজি নাম (অনুসন্ধান)",
+        pgName: "পিজি নাম",
         all: "সব",
-        phPgName: "পিজি নাম লিখুন...",
+        phPgName: "সব",
         apply: "প্রয়োগ করুন",
         reset: "রিসেট",
         tip: "টিপ: তালিকা থেকে একটি PG নির্বাচন করে তার পূর্ণ ZIP ডাউনলোড করুন। PG নির্বাচন না করলে বর্তমান ফিল্টারের আওতাধীন সব PG এক্সপোর্ট হবে (ফাইল বড় হতে পারে)।",
@@ -1169,7 +1176,7 @@
       safeText('poOptAll4', t.all);
       safeText('poOptAll5', t.all);
 
-      safePlaceholder('poPhPgName', t.phPgName);
+      safeText('poOptAllPgName', t.phPgName);
       safeText('poApplyBtn', t.apply);
       safeText('poResetBtn', t.reset);
       safeText('poTip', t.tip);

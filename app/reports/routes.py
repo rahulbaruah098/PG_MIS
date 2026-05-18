@@ -75,12 +75,19 @@ def _geo_names_from_session(db, sess):
 # changes by atlanta
 @reports_bp.route("/hub", methods=["GET"])
 @login_required
-@roles_required("PG_DATA_ENTRY","CLF_MANAGER","CLF_ADMIN","BLOCK_ADMIN","DISTRICT_ADMIN","ADMIN","SUPER_ADMIN","CADRE_CC")
+@roles_required(
+    "PG_DATA_ENTRY",
+    "CLF_MANAGER",
+    "CLF_ADMIN",
+    "BLOCK_ADMIN",
+    "DISTRICT_ADMIN",
+    "ADMIN",
+    "SUPER_ADMIN",
+    "CADRE_CC",
+)
 def reports_hub():
-    """Unified download hub for reports (CSV/ZIP).
+    """Unified download hub for reports (CSV/ZIP)."""
 
-    Keeps existing report pages intact; this is an additional navigation entry.
-    """
     wants_json = (
         request.args.get("format") == "json"
         or request.args.get("mobile") == "1"
@@ -92,7 +99,7 @@ def reports_hub():
         return jsonify({
             "success": True,
             "title": "Reports Hub",
-            "subtitle": "Download CSV/ZIP reports with your jurisdiction filters (State/District/Block/GP/Village/PG) + period filters.",
+            "subtitle": "Download CSV/ZIP reports with your jurisdiction filters.",
             "filters": {
                 "state": request.args.get("state", ""),
                 "district": request.args.get("district", ""),
@@ -148,10 +155,126 @@ def reports_hub():
                     "path": "/reports/pg-overall",
                 },
             ],
-            "tip": "Tip: Set Group By for summary tables (district/block/gp/village/pg). If Group By is blank, downloads give row-level data.",
+            "tip": "Tip: Set Group By for summary tables. If Group By is blank, downloads give row-level data.",
         })
 
     return render_template("reports_hub.html")
+
+
+# -------------------------------------------------------------------
+# Reports Hub Dropdown Backend
+# -------------------------------------------------------------------
+
+@reports_bp.route("/hub/filter-options", methods=["GET"])
+@login_required
+@roles_required(
+    "PG_DATA_ENTRY",
+    "CLF_MANAGER",
+    "CLF_ADMIN",
+    "BLOCK_ADMIN",
+    "DISTRICT_ADMIN",
+    "ADMIN",
+    "SUPER_ADMIN",
+    "CADRE_CC",
+)
+def reports_hub_filter_options():
+    db = current_app.mongo_db
+
+    level = (request.args.get("level") or "").strip()
+
+    state = (request.args.get("state") or "").strip()
+    district = (request.args.get("district") or "").strip()
+    block = (request.args.get("block") or "").strip()
+    gp = (request.args.get("gp") or "").strip()
+    village = (request.args.get("village") or "").strip()
+
+    allowed_levels = {"state", "district", "block", "gp", "village", "pg"}
+
+    if level not in allowed_levels:
+        return jsonify({
+            "success": False,
+            "message": "Invalid dropdown level.",
+            "options": [],
+        }), 400
+
+    # This matches your PG creation insert:
+    #
+    # pg_insert = {
+    #   "name": pg_name,
+    #   "State": st,
+    #   "District": dist_name,
+    #   "Block": blk_name,
+    #   "Gram Panchayat": gp,
+    #   "Village": village,
+    #   ...
+    # }
+
+    field_map = {
+        "state": "State",
+        "district": "District",
+        "block": "Block",
+        "gp": "Gram Panchayat",
+        "village": "Village",
+        "pg": "name",
+    }
+
+    mongo_filter = {}
+
+    # Respect logged-in user's jurisdiction
+    try:
+        base_match = _pg_match_from_session(session)
+        if base_match:
+            mongo_filter.update(base_match)
+    except Exception:
+        pass
+
+    # Apply selected dropdown filters
+    if state:
+        mongo_filter["State"] = state
+
+    if district:
+        mongo_filter["District"] = district
+
+    if block:
+        mongo_filter["Block"] = block
+
+    if gp:
+        mongo_filter["Gram Panchayat"] = gp
+
+    if village:
+        mongo_filter["Village"] = village
+
+    selected_field = field_map[level]
+
+    try:
+        rows = db.pgs.distinct(selected_field, mongo_filter)
+
+        options = sorted([
+            str(row).strip()
+            for row in rows
+            if row is not None and str(row).strip()
+        ])
+
+        return jsonify({
+            "success": True,
+            "level": level,
+            "options": options,
+        })
+
+    except Exception as e:
+        current_app.logger.exception("Reports Hub dropdown loading failed")
+
+        return jsonify({
+            "success": False,
+            "message": str(e),
+            "level": level,
+            "options": [],
+        }), 500
+
+
+
+
+
 
 
 def _apply_period(match: dict, field: str, period_filters: dict):
@@ -167,12 +290,30 @@ def _apply_period(match: dict, field: str, period_filters: dict):
 
 def _pgs_in_scope(db, base_match: dict, filters: dict):
     match_pg = _pg_match_with_filters(db, base_match, filters)
+
     role = session.get("role")
+
     if role in ("PG_DATA_ENTRY", "CADRE_CC") and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
         match_pg["_id"] = ObjectId(session.get("pg_id"))
-    pgs = list(db.pgs.find(match_pg, {"name": 1, "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1}))
+
+    pgs = list(db.pgs.find(
+        match_pg,
+        {
+            "name": 1,
+            "State": 1,
+            "District": 1,
+            "Block": 1,
+            "Gram Panchayat": 1,
+            "Village": 1,
+        }
+    ))
+
     pg_by_id = {p["_id"]: p for p in pgs}
+
     return list(pg_by_id.keys()), pg_by_id
+
+
+
 
 
 @reports_bp.route("/export/members.csv", methods=["GET"])
@@ -3121,17 +3262,41 @@ def _distinct_pg_values(db, match_pg, field):
     except Exception:
         return []
 
-def _pg_match_with_filters(db, base_match, filters):
-    q = dict(base_match or {})
-    # String geo fields (from SHG master import)
-    for k in ("State", "District", "Block", "Gram Panchayat", "Village"):
-        v = (filters.get(k) or "").strip()
-        if v:
-            q[k] = v
+
+def _pg_match_with_filters(db, base_match: dict, filters: dict):
+    match = dict(base_match or {})
+
+    state = (filters.get("State") or filters.get("state") or "").strip()
+    district = (filters.get("District") or filters.get("district") or "").strip()
+    block = (filters.get("Block") or filters.get("block") or "").strip()
+    gp = (filters.get("Gram Panchayat") or filters.get("gp") or "").strip()
+    village = (filters.get("Village") or filters.get("village") or "").strip()
     pg_name = (filters.get("pg_name") or "").strip()
+
+    if state:
+        match["State"] = state
+
+    if district:
+        match["District"] = district
+
+    if block:
+        match["Block"] = block
+
+    if gp:
+        match["Gram Panchayat"] = gp
+
+    if village:
+        match["Village"] = village
+
     if pg_name:
-        q["name"] = {"$regex": re.escape(pg_name), "$options": "i"}
-    return q
+        match["name"] = pg_name
+
+    return match
+
+
+
+
+
 
 #changes by atlanta
 @reports_bp.route("/lakhpati-didi", methods=["GET"])
@@ -3675,6 +3840,25 @@ def pg_overall_report():
         "Village"
     )
 
+    pg_names = _distinct_pg_values(
+        db,
+        {
+            **dd_match,
+            **({
+                k: v
+                for k, v in {
+                    "State": filters["State"],
+                    "District": filters["District"],
+                    "Block": filters["Block"],
+                    "Gram Panchayat": filters["Gram Panchayat"],
+                    "Village": filters["Village"],
+                }.items()
+                if v
+            })
+        },
+        "name"
+    )
+
     wants_json = (
         request.args.get("format") == "json"
         or request.args.get("mobile") == "1"
@@ -3701,6 +3885,7 @@ def pg_overall_report():
                 "blocks": blocks,
                 "gps": gps,
                 "villages": villages,
+                "pg_names": pg_names,
             },
             "pgs": [
                 {
@@ -3727,7 +3912,9 @@ def pg_overall_report():
         blocks=blocks,
         gps=gps,
         villages=villages,
+        pg_names=pg_names,
     )
+
 
 def _write_csv_rows(writer, fieldnames, docs):
     import json
@@ -3927,3 +4114,5 @@ def pg_overall_download():
     stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     filename = f"pg_overall_export_{stamp}.zip"
     return send_file(mem, as_attachment=True, download_name=filename, mimetype="application/zip")
+
+
