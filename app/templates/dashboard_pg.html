@@ -824,8 +824,8 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
         <div class="pg-kpi-graph-card">
           <div class="pg-kpi-graph-titlebar">
             <div>
-              <div class="pg-kpi-graph-title">Member Coverage</div>
-              <div class="pg-kpi-graph-sub">Total members, new members and Lakhpati Didi</div>
+             <div class="pg-kpi-graph-title">Member Coverage</div>
+<div class="pg-kpi-graph-sub">Total members and new members</div>
             </div>
             <span class="pg-kpi-graph-pill">Radar</span>
           </div>
@@ -1692,7 +1692,7 @@ function makePgPolar(chartKey, canvasId, labels, values, labelText){
 
 function renderPgKpiGraphs(){
   const members = __pgMetricValue('members_count');
-  const lakhpati = __pgMetricValue('lakhpati_count');
+  // const lakhpati = __pgMetricValue('lakhpati_count');
   const newMembers = __pgMetricValue('new_members_month');
   const activeLoans = __pgMetricValue('loans_count');
   const outstanding = __pgMetricValue('outstanding_loans_amount');
@@ -1705,47 +1705,45 @@ function renderPgKpiGraphs(){
   const stockKg = __pgMetricValue('total_stock_kg');
 
   makePg3DBar(
-    'pgAllKpi',
-    'pgAllKpi3dChart',
-    [
-      'Members',
-      'Lakhpati',
-      'New Members',
-      'Active Loans',
-      'Outstanding',
-      'Turnover',
-      'Profit',
-      'Loss',
-      'Grants',
-      'Grant Count',
-      'Categories',
-      'Stock'
-    ],
-    [
-      members,
-      lakhpati,
-      newMembers,
-      activeLoans,
-      outstanding,
-      turnover,
-      profit,
-      loss,
-      grantsAmount,
-      grantsCount,
-      categories,
-      stockKg
-    ],
-    'PG KPI Value',
-    false
-  );
+  'pgAllKpi',
+  'pgAllKpi3dChart',
+  [
+    'Members',
+    'New Members',
+    'Active Loans',
+    'Outstanding',
+    'Turnover',
+    'Profit',
+    'Loss',
+    'Grants',
+    'Grant Count',
+    'Categories',
+    'Stock'
+  ],
+  [
+    members,
+    newMembers,
+    activeLoans,
+    outstanding,
+    turnover,
+    profit,
+    loss,
+    grantsAmount,
+    grantsCount,
+    categories,
+    stockKg
+  ],
+  'PG KPI Value',
+  false
+);
 
-  makePgRadar(
-    'pgMemberRadar',
-    'pgMemberRadarChart',
-    ['Total Members', 'New Members', 'Lakhpati Didi'],
-    [members, newMembers, lakhpati],
-    'Member Coverage'
-  );
+ makePgRadar(
+  'pgMemberRadar',
+  'pgMemberRadarChart',
+  ['Total Members', 'New Members'],
+  [members, newMembers],
+  'Member Coverage'
+);
 
   makePg3DBar(
     'pgFinanceKpi',

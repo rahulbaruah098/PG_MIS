@@ -522,12 +522,13 @@
       font-size:14px;
     }
 
-    .table-action-link{
+.table-action-link{
   display:inline-flex;
   align-items:center;
   justify-content:center;
   border-radius:12px;
   padding:8px 11px;
+  min-width:132px;
   font-size:12px;
   font-weight:900;
   color:#0f766e;
@@ -542,6 +543,10 @@
 .table-action-link:hover{
   transform:translateY(-1px);
   box-shadow:0 12px 24px rgba(6,95,70,.14);
+}
+
+.detail-footer-actions .btnlink.primary{
+  min-width:132px;
 }
 
     .detail-toolbar{
@@ -589,7 +594,7 @@
 .detail-footer-actions{
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-end;
   gap:12px;
   flex-wrap:wrap;
   margin-top:14px;
@@ -599,6 +604,7 @@
   color:#4c7468;
   font-size:13px;
   font-weight:700;
+  margin-right:auto;
 }
 
 @media (max-width:768px){
@@ -1021,10 +1027,6 @@
                 State Dashboard
             {% endif %}
           </h1>
-
-          <p class="text-sm md:text-[15px] text-slate-700 mt-2">
-            Reports include <b>all PGs inside your jurisdiction</b> (Super Admin: all states; State Admin: your state; District Admin: your district).
-          </p>
         </div>
 
         <div class="welcome-pill">
@@ -1170,163 +1172,6 @@
   </div>
 </div>
 
-              <!-- New 3D KPI Graphs -->
-      <div class="cardx card-border-soft fade-in">
-        <div class="hdr">
-          <div>
-            <div class="text-sm font-extrabold text-slate-900">State Dashboard KPI Graphs</div>
-            <div class="text-xs muted">Visual summary of all major KPI values currently shown above</div>
-          </div>
-          <span class="chip">3D Graphs</span>
-        </div>
-
-        <div class="bd">
-          <div class="kpiGraphMiniGrid">
-            <div class="kpiGraphMini">
-              <div class="label">Total PGs</div>
-              <div class="value">{{ pg_count or 0 }}</div>
-            </div>
-
-            <div class="kpiGraphMini">
-              <div class="label">Total Members</div>
-              <div class="value">{{ member_count or 0 }}</div>
-            </div>
-
-            <div class="kpiGraphMini">
-              <div class="label">Latest Turnover</div>
-              <div class="value">{{ total_turnover or 0 }}</div>
-            </div>
-
-            <div class="kpiGraphMini">
-              <div class="label">Total Grants</div>
-              <div class="value">{{ grants_total or 0 }}</div>
-            </div>
-          </div>
-
-          <div class="kpiGraphGrid">
-            <div class="kpiGraphCard kpiGraphWide">
-              <div class="kpiGraphHead">
-                <div>
-                  <div class="kpiGraphTitle">All State Dashboard KPIs</div>
-                  <div class="kpiGraphSub">Combined 3D-style bar graph for all KPI cards</div>
-                </div>
-                <span class="graphTypePill">3D Bar</span>
-              </div>
-              <div class="kpiGraphBody">
-                <div class="kpiChartBox" id="stateAllKpi3dBox">
-                  <canvas id="stateAllKpi3dChart"></canvas>
-                </div>
-              </div>
-            </div>
-
-            <div class="kpiGraphCard">
-              <div class="kpiGraphHead">
-                <div>
-                  <div class="kpiGraphTitle">Geographical Coverage</div>
-                  <div class="kpiGraphSub">States, districts and blocks in current scope</div>
-                </div>
-                <span class="graphTypePill">Doughnut</span>
-              </div>
-              <div class="kpiGraphBody">
-                <div class="kpiChartBox" id="stateGeoDoughnutBox">
-                  <canvas id="stateGeoDoughnutChart"></canvas>
-                </div>
-              </div>
-            </div>
-
-            <div class="kpiGraphCard">
-              <div class="kpiGraphHead">
-                <div>
-                  <div class="kpiGraphTitle">People and PG Coverage</div>
-                  <div class="kpiGraphSub">Cadres, PGs, members and Lakhpati Didi coverage</div>
-                </div>
-                <span class="graphTypePill">Radar</span>
-              </div>
-              <div class="kpiGraphBody">
-                <div class="kpiChartBox" id="statePeopleRadarBox">
-                  <canvas id="statePeopleRadarChart"></canvas>
-                </div>
-              </div>
-            </div>
-
-            <div class="kpiGraphCard">
-              <div class="kpiGraphHead">
-                <div>
-                  <div class="kpiGraphTitle">Financial KPIs</div>
-                  <div class="kpiGraphSub">Turnover, profit, loss and grant amount</div>
-                </div>
-                <span class="graphTypePill">3D Bar</span>
-              </div>
-              <div class="kpiGraphBody">
-                <div class="kpiChartBox" id="stateFinance3dBox">
-                  <canvas id="stateFinance3dChart"></canvas>
-                </div>
-              </div>
-            </div>
-
-            <div class="kpiGraphCard">
-              <div class="kpiGraphHead">
-                <div>
-                  <div class="kpiGraphTitle">Grant Coverage</div>
-                  <div class="kpiGraphSub">PGs with grants compared with total PG count</div>
-                </div>
-                <span class="graphTypePill">Pie</span>
-              </div>
-              <div class="kpiGraphBody">
-                <div class="kpiChartBox" id="stateGrantPieBox">
-                  <canvas id="stateGrantPieChart"></canvas>
-                </div>
-              </div>
-            </div>
-
-            <div class="kpiGraphCard">
-              <div class="kpiGraphHead">
-                <div>
-                  <div class="kpiGraphTitle">SHG Master Status</div>
-                  <div class="kpiGraphSub">Total SHGs and active SHGs from master data</div>
-                </div>
-                <span class="graphTypePill">Polar</span>
-              </div>
-              <div class="kpiGraphBody">
-                <div class="kpiChartBox" id="stateShgPolarBox">
-                  <canvas id="stateShgPolarChart"></canvas>
-                </div>
-              </div>
-            </div>
-
-            <div class="kpiGraphCard">
-              <div class="kpiGraphHead">
-                <div>
-                  <div class="kpiGraphTitle">PG Sector Distribution</div>
-                  <div class="kpiGraphSub">Sector-wise PG classification</div>
-                </div>
-                <span class="graphTypePill">Doughnut</span>
-              </div>
-              <div class="kpiGraphBody">
-                <div class="kpiChartBox" id="stateSectorDoughnutBox">
-                  <canvas id="stateSectorDoughnutChart"></canvas>
-                </div>
-              </div>
-            </div>
-
-            <div class="kpiGraphCard">
-              <div class="kpiGraphHead">
-                <div>
-                  <div class="kpiGraphTitle">Agri FFS Module Coverage</div>
-                  <div class="kpiGraphSub">Unique PGs mapped against each FFS module</div>
-                </div>
-                <span class="graphTypePill">Horizontal Bar</span>
-              </div>
-              <div class="kpiGraphBody">
-                <div class="kpiChartBox" id="stateFfsBarBox">
-                  <canvas id="stateFfsBarChart"></canvas>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
 
 <div id="stateDetailPanelMount">
 {% if selected_detail %}
@@ -1484,7 +1329,164 @@
 {% endif %}
 </div>
 
+              <!-- New 3D KPI Graphs -->
+      <div class="cardx card-border-soft fade-in">
+        <div class="hdr">
+          <div>
+            <div class="text-sm font-extrabold text-slate-900">State Dashboard KPI Graphs</div>
+            <div class="text-xs muted">Visual summary of all major KPI values currently shown above</div>
+          </div>
+          <span class="chip">3D Graphs</span>
+        </div>
 
+        <div class="bd">
+          <div class="kpiGraphMiniGrid">
+            <div class="kpiGraphMini">
+              <div class="label">Total PGs</div>
+              <div class="value">{{ pg_count or 0 }}</div>
+            </div>
+
+            <div class="kpiGraphMini">
+              <div class="label">Total Members</div>
+              <div class="value">{{ member_count or 0 }}</div>
+            </div>
+
+            <div class="kpiGraphMini">
+              <div class="label">Latest Turnover</div>
+              <div class="value">{{ total_turnover or 0 }}</div>
+            </div>
+
+            <div class="kpiGraphMini">
+              <div class="label">Total Grants</div>
+              <div class="value">{{ grants_total or 0 }}</div>
+            </div>
+          </div>
+
+          <div class="kpiGraphGrid">
+            <div class="kpiGraphCard kpiGraphWide">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">All State Dashboard KPIs</div>
+                  <div class="kpiGraphSub">Combined 3D-style bar graph for all KPI cards</div>
+                </div>
+                <span class="graphTypePill">3D Bar</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateAllKpi3dBox">
+                  <canvas id="stateAllKpi3dChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">Geographical Coverage</div>
+                  <div class="kpiGraphSub">States, districts and blocks in current scope</div>
+                </div>
+                <span class="graphTypePill">Doughnut</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateGeoDoughnutBox">
+                  <canvas id="stateGeoDoughnutChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+           <div class="kpiGraphCard">
+  <div class="kpiGraphHead">
+    <div>
+      <div class="kpiGraphTitle">People and PG Coverage</div>
+      {# <div class="kpiGraphSub">Cadres, PGs, members and Lakhpati Didi coverage</div> #}
+      <div class="kpiGraphSub">Cadres, PGs and members coverage</div>
+    </div>
+    <span class="graphTypePill">Radar</span>
+  </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="statePeopleRadarBox">
+                  <canvas id="statePeopleRadarChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">Financial KPIs</div>
+                  <div class="kpiGraphSub">Turnover, profit, loss and grant amount</div>
+                </div>
+                <span class="graphTypePill">3D Bar</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateFinance3dBox">
+                  <canvas id="stateFinance3dChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">Grant Coverage</div>
+                  <div class="kpiGraphSub">PGs with grants compared with total PG count</div>
+                </div>
+                <span class="graphTypePill">Pie</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateGrantPieBox">
+                  <canvas id="stateGrantPieChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">SHG Master Status</div>
+                  <div class="kpiGraphSub">Total SHGs and active SHGs from master data</div>
+                </div>
+                <span class="graphTypePill">Polar</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateShgPolarBox">
+                  <canvas id="stateShgPolarChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">PG Sector Distribution</div>
+                  <div class="kpiGraphSub">Sector-wise PG classification</div>
+                </div>
+                <span class="graphTypePill">Doughnut</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateSectorDoughnutBox">
+                  <canvas id="stateSectorDoughnutChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="kpiGraphCard">
+              <div class="kpiGraphHead">
+                <div>
+                  <div class="kpiGraphTitle">Agri FFS Module Coverage</div>
+                  <div class="kpiGraphSub">Unique PGs mapped against each FFS module</div>
+                </div>
+                <span class="graphTypePill">Horizontal Bar</span>
+              </div>
+              <div class="kpiGraphBody">
+                <div class="kpiChartBox" id="stateFfsBarBox">
+                  <canvas id="stateFfsBarChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
 
 <!-- Charts Row -->
       <div class="gridA">
@@ -2219,13 +2221,58 @@
       const sectors = stateKpis.sectors || {};
       const ffs = stateKpis.ffs || {};
 
-      make3DBar(
-        'stateAllKpi3dChart',
-        allKpis.labels || [],
-        allKpis.values || [],
-        'KPI Value',
-        false
-      );
+      // ✅ Commented out / hidden Lakhpati from graph datasets without deleting backend data
+function removeLakhpatiFromChart(labels, values){
+  const cleanLabels = [];
+  const cleanValues = [];
+
+  (labels || []).forEach((label, index) => {
+    const text = String(label || '').toLowerCase();
+
+    // Commented out Lakhpati content:
+    // if (text.includes('lakhpati')) {
+    //   cleanLabels.push(label);
+    //   cleanValues.push((values || [])[index] || 0);
+    // }
+
+    if (!text.includes('lakhpati')) {
+      cleanLabels.push(label);
+      cleanValues.push((values || [])[index] || 0);
+    }
+  });
+
+  return {
+    labels: cleanLabels,
+    values: cleanValues
+  };
+}
+
+const allKpisWithoutLakhpati = removeLakhpatiFromChart(
+  allKpis.labels || [],
+  allKpis.values || []
+);
+
+const peopleWithoutLakhpati = removeLakhpatiFromChart(
+  people.labels || [],
+  people.values || []
+);
+
+      // Original with Lakhpati kept for future use:
+// make3DBar(
+//   'stateAllKpi3dChart',
+//   allKpis.labels || [],
+//   allKpis.values || [],
+//   'KPI Value',
+//   false
+// );
+
+make3DBar(
+  'stateAllKpi3dChart',
+  allKpisWithoutLakhpati.labels,
+  allKpisWithoutLakhpati.values,
+  'KPI Value',
+  false
+);
 
       makeDoughnut(
         'stateGeoDoughnutChart',
@@ -2234,12 +2281,20 @@
         'Coverage'
       );
 
-      makeRadar(
-        'statePeopleRadarChart',
-        people.labels || [],
-        people.values || [],
-        'People / PG Coverage'
-      );
+      // Original with Lakhpati kept for future use:
+// makeRadar(
+//   'statePeopleRadarChart',
+//   people.labels || [],
+//   people.values || [],
+//   'People / PG Coverage'
+// );
+
+makeRadar(
+  'statePeopleRadarChart',
+  peopleWithoutLakhpati.labels,
+  peopleWithoutLakhpati.values,
+  'People / PG Coverage'
+);
 
       make3DBar(
         'stateFinance3dChart',

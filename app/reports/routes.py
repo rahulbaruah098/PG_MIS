@@ -1313,7 +1313,7 @@ def state_dashboard():
         pg_ids,
         request.args.get("detail"),
         search_query=request.args.get("q") or "",
-        preview_limit=1,
+        preview_limit=2,
     )
 
     # Top districts by SHG count (within scope if applicable)
