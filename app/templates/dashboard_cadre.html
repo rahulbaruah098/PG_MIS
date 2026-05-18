@@ -185,13 +185,14 @@
   }
 
   /* ===== Assigned PG section ===== */
-  .cd-section-card{
-    background:rgba(255,255,255,0.94);
-    border:1.5px solid rgba(191,230,210,0.95);
-    box-shadow:0 14px 30px rgba(6,95,70,0.12);
-    border-radius:22px;
-    padding:20px;
-  }
+ .cd-section-card{
+  background:rgba(255,255,255,0.94);
+  border:1.5px solid rgba(191,230,210,0.95);
+  box-shadow:0 14px 30px rgba(6,95,70,0.12);
+  border-radius:22px;
+  padding:20px;
+  margin-bottom:24px;
+}
 
   .cd-section-head{
     display:flex;
@@ -923,22 +924,6 @@
   line-height:1.35;
 }
 
-.cd-graph-pill{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  padding:7px 10px;
-  border-radius:999px;
-  background:rgba(15,118,110,0.10);
-  border:1px solid rgba(15,118,110,0.24);
-  color:#0f766e;
-  font-size:11px;
-  font-weight:900;
-  white-space:nowrap;
-  text-transform:uppercase;
-  letter-spacing:.06em;
-}
-
 .cd-graph-body{
   padding:16px 18px 18px;
 }
@@ -963,6 +948,18 @@
   display:block;
   width:100% !important;
   height:100% !important;
+}
+
+.cd-access-chart-box{
+  height:220px;
+  min-height:200px;
+}
+
+@media (max-width:520px){
+  .cd-access-chart-box{
+    height:200px;
+    min-height:180px;
+  }
 }
 
 .cd-graph-wide{
@@ -997,10 +994,6 @@
     height:240px;
     min-height:220px;
     padding:8px;
-  }
-
-  .cd-graph-pill{
-    width:max-content;
   }
 }
 
@@ -1063,84 +1056,10 @@
       </div>
     </div>
 
-        <!-- ✅ CADRE KPI GRAPHS -->
-    <div class="cd-graph-section">
-      <div class="cd-graph-head">
-        <div>
-          <h3>Cadre KPI Graphs</h3>
-          <p>Working graphs generated from the PGs assigned to this cadre account.</p>
-        </div>
-        <div class="cd-chip">Live Assigned PG Data</div>
-      </div>
-
-      <div class="cd-graph-grid">
-        <div class="cd-graph-card">
-          <div class="cd-graph-titlebar">
-            <div>
-              <div class="cd-graph-title">Assigned PG Overview</div>
-              <div class="cd-graph-sub">Total assigned PG count for this cadre login</div>
-            </div>
-            <span class="cd-graph-pill">3D Bar</span>
-          </div>
-          <div class="cd-graph-body">
-            <div class="cd-chart-box">
-              <canvas id="cdAssignedPgChart"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="cd-graph-card">
-          <div class="cd-graph-titlebar">
-            <div>
-              <div class="cd-graph-title">Sector-wise Assigned PGs</div>
-              <div class="cd-graph-sub">Distribution of assigned PGs by sector</div>
-            </div>
-            <span class="cd-graph-pill">Doughnut</span>
-          </div>
-          <div class="cd-graph-body">
-            <div class="cd-chart-box">
-              <canvas id="cdSectorChart"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="cd-graph-card cd-graph-wide">
-          <div class="cd-graph-titlebar">
-            <div>
-              <div class="cd-graph-title">Block-wise Assigned PGs</div>
-              <div class="cd-graph-sub">Assigned PG count grouped by block</div>
-            </div>
-            <span class="cd-graph-pill">Horizontal 3D Bar</span>
-          </div>
-          <div class="cd-graph-body">
-            <div class="cd-chart-box">
-              <canvas id="cdBlockChart"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="cd-graph-card cd-graph-wide">
-          <div class="cd-graph-titlebar">
-            <div>
-              <div class="cd-graph-title">PG Access Graph</div>
-              <div class="cd-graph-sub">Each assigned PG represented as one access unit</div>
-            </div>
-            <span class="cd-graph-pill">Line</span>
-          </div>
-          <div class="cd-graph-body">
-            <div class="cd-chart-box">
-              <canvas id="cdPgAccessLineChart"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="cd-section-card">
       <div class="cd-section-head">
         <div>
           <h3>Assigned PG List</h3>
-          <p>Select a PG below to open the same dashboard and workspace that the PG login sees.</p>
         </div>
         <div class="cd-chip">{{ assigned_pg_count }} linked PGs</div>
       </div>
@@ -1238,6 +1157,79 @@
   <div class="cd-empty">No PGs are currently assigned to this Cadre account.</div>
 {% endif %}
     </div>
+
+        <!-- ✅ CADRE KPI GRAPHS -->
+    <div class="cd-graph-section">
+      <div class="cd-graph-head">
+        <div>
+          <h3>Cadre KPI Graphs</h3>
+        </div>
+        <div class="cd-chip">Live Assigned PG Data</div>
+      </div>
+
+      <div class="cd-graph-grid">
+        <div class="cd-graph-card">
+          <div class="cd-graph-titlebar">
+            <div>
+              <div class="cd-graph-title">Assigned PG Overview</div>
+              <div class="cd-graph-sub">Total assigned PG count for this cadre login</div>
+            </div>
+
+          </div>
+          <div class="cd-graph-body">
+            <div class="cd-chart-box">
+              <canvas id="cdAssignedPgChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="cd-graph-card">
+          <div class="cd-graph-titlebar">
+            <div>
+              <div class="cd-graph-title">Sector-wise Assigned PGs</div>
+              <div class="cd-graph-sub">Distribution of assigned PGs by sector</div>
+            </div>
+          
+          </div>
+          <div class="cd-graph-body">
+            <div class="cd-chart-box">
+              <canvas id="cdSectorChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="cd-graph-card cd-graph-wide">
+          <div class="cd-graph-titlebar">
+            <div>
+              <div class="cd-graph-title">Block-wise Assigned PGs</div>
+              <div class="cd-graph-sub">Assigned PG count grouped by block</div>
+            </div>
+
+          </div>
+          <div class="cd-graph-body">
+            <div class="cd-chart-box">
+              <canvas id="cdBlockChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+      <div class="cd-graph-card cd-graph-wide cd-access-graph-card">
+  <div class="cd-graph-titlebar">
+    <div>
+      <div class="cd-graph-title">PG Access by Assigned PG</div>
+      <div class="cd-graph-sub">Each assigned PG is shown clearly as one access unit</div>
+    </div>
+  
+  </div>
+  <div class="cd-graph-body">
+    <div class="cd-chart-box cd-access-chart-box">
+      <canvas id="cdPgAccessLineChart"></canvas>
+    </div>
+  </div>
+</div>
+      </div>
+    </div>
+
   </section>
 </div>
 
@@ -1248,32 +1240,61 @@
 // Cadre Dashboard KPI Graphs
 // =========================
 (function(){
-  const chartUrl = "{{ url_for('static', filename='vendor/chart.min.js') }}";
+const chartUrls = [
+  "{{ url_for('static', filename='vendor/chart.min.js') }}",
+  "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+];
   const createdCharts = [];
 
-  function loadChartJs(){
-    return new Promise(function(resolve){
-      if(window.Chart){
-        resolve(true);
-        return;
-      }
+ function loadChartJs(){
+  return new Promise(function(resolve){
+    if(window.Chart){
+      resolve(true);
+      return;
+    }
 
-      const existing = document.querySelector('script[data-cd-chartjs="1"]');
-      if(existing){
-        existing.addEventListener('load', function(){ resolve(!!window.Chart); });
-        existing.addEventListener('error', function(){ resolve(false); });
+    const existing = document.querySelector('script[data-cd-chartjs="1"]');
+    if(existing){
+      existing.addEventListener('load', function(){ resolve(!!window.Chart); });
+      existing.addEventListener('error', function(){ resolve(false); });
+      return;
+    }
+
+    let index = 0;
+
+    function tryLoad(){
+      if(index >= chartUrls.length){
+        resolve(false);
         return;
       }
 
       const script = document.createElement('script');
-      script.src = chartUrl;
+      script.src = chartUrls[index];
       script.async = true;
       script.dataset.cdChartjs = "1";
-      script.onload = function(){ resolve(!!window.Chart); };
-      script.onerror = function(){ resolve(false); };
+
+      script.onload = function(){
+        if(window.Chart){
+          resolve(true);
+        }else{
+          index += 1;
+          script.remove();
+          tryLoad();
+        }
+      };
+
+      script.onerror = function(){
+        index += 1;
+        script.remove();
+        tryLoad();
+      };
+
       document.head.appendChild(script);
-    });
-  }
+    }
+
+    tryLoad();
+  });
+}
 
   function n(value){
     const x = Number(value || 0);
@@ -1314,6 +1335,26 @@
       values: Object.values(counts)
     };
   }
+
+  function ensureChartData(labels, values, fallbackLabel){
+  const cleanLabels = (labels || []).filter(function(label){
+    return String(label || '').trim();
+  });
+
+  const cleanValues = (values || []).map(n);
+
+  if(!cleanLabels.length || !cleanValues.length){
+    return {
+      labels:[fallbackLabel || 'No Data'],
+      values:[0]
+    };
+  }
+
+  return {
+    labels:cleanLabels,
+    values:cleanValues
+  };
+}
 
   function make3DBar(id, labels, values, label, horizontal){
     const el = document.getElementById(id);
@@ -1510,8 +1551,13 @@
   }
 
   async function initCadreCharts(){
-    const ok = await loadChartJs();
-    if(!ok || !window.Chart) return;
+const ok = await loadChartJs();
+if(!ok || !window.Chart){
+  document.querySelectorAll('.cd-chart-box').forEach(function(box){
+    box.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;color:#b91c1c;">Chart library failed to load</div>';
+  });
+  return;
+}
 
     destroyOldCharts();
 
@@ -1535,9 +1581,14 @@
       {% endfor %}
     ];
 
-    const sectorData = buildCounts(pgSectors);
-    const blockData = buildCounts(pgBlocks);
-    const accessValues = pgNames.map(function(){ return 1; });
+   let sectorData = buildCounts(pgSectors);
+let blockData = buildCounts(pgBlocks);
+
+sectorData = ensureChartData(sectorData.labels, sectorData.values, 'No Sector');
+blockData = ensureChartData(blockData.labels, blockData.values, 'No Block');
+
+const safePgNames = pgNames.length ? pgNames : ['No PG'];
+const accessValues = safePgNames.map(function(){ return pgNames.length ? 1 : 0; });
 
     make3DBar(
       'cdAssignedPgChart',
@@ -1562,12 +1613,13 @@
       true
     );
 
-    makeLine(
-      'cdPgAccessLineChart',
-      pgNames,
-      accessValues,
-      'Assigned PG Access Unit'
-    );
+ make3DBar(
+  'cdPgAccessLineChart',
+  safePgNames,
+  accessValues,
+  'Assigned PG Access Unit',
+  true
+);
   }
 
   if(document.readyState === 'loading'){
@@ -1593,9 +1645,20 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!panel) return;
 
   var rows = Array.prototype.slice.call(document.querySelectorAll('#cdPgList .cd-pg-row'));
-  var currentQuery = '';
-  var currentPage = 1;
-  var pageSize = 25;
+
+var stateKey = 'cadre_dashboard_state:' + window.location.pathname;
+var scrollKey = 'cadre_dashboard_scroll:' + window.location.pathname;
+
+var savedState = {};
+try {
+  savedState = JSON.parse(sessionStorage.getItem(stateKey) || '{}');
+} catch (e) {
+  savedState = {};
+}
+
+var currentQuery = savedState.query || '';
+var currentPage = parseInt(savedState.page || '1', 10) || 1;
+var pageSize = parseInt(savedState.pageSize || '25', 10) || 25;
 
   function getFilteredRows() {
     var q = currentQuery.trim().toLowerCase();
@@ -1608,6 +1671,17 @@ document.addEventListener('DOMContentLoaded', function () {
       return name.indexOf(q) !== -1 || sector.indexOf(q) !== -1 || block.indexOf(q) !== -1;
     });
   }
+
+  function saveCadreDashboardState() {
+  try {
+    sessionStorage.setItem(stateKey, JSON.stringify({
+      panelOpen: panel.classList.contains('is-open'),
+      query: currentQuery,
+      page: currentPage,
+      pageSize: pageSize
+    }));
+  } catch (e) {}
+}
 
   function renderRows() {
     var filtered = getFilteredRows();
@@ -1641,9 +1715,20 @@ document.addEventListener('DOMContentLoaded', function () {
     pagination.classList.toggle('cd-hidden', total === 0);
 
     pageIndicator.textContent = 'Page ' + currentPage + ' of ' + totalPages;
-    prevBtn.disabled = currentPage <= 1;
-    nextBtn.disabled = currentPage >= totalPages;
+prevBtn.disabled = currentPage <= 1;
+nextBtn.disabled = currentPage >= totalPages;
+
+saveCadreDashboardState();
   }
+
+
+if (searchInput && currentQuery) {
+  searchInput.value = currentQuery;
+}
+
+if (pageSizeSelect) {
+  pageSizeSelect.value = String(pageSize);
+}
 
   if (searchInput) {
     searchInput.addEventListener('input', function () {
@@ -1675,25 +1760,92 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  if (toggleBtn) {
-   // SET INITIAL STATE (collapsed)
-panel.classList.remove('is-open');
-toggleBtn.classList.remove('is-open');
-toggleBtn.setAttribute('aria-expanded', 'false');
-toggleBtn.querySelector('span').textContent = 'Show Assigned PG List';
+if (toggleBtn) {
+  // Restore previous state only for the same browser tab/session.
+  var shouldOpenPanel = savedState.panelOpen === true;
 
-toggleBtn.addEventListener('click', function () {
-  var isOpen = panel.classList.toggle('is-open');
-
-  toggleBtn.classList.toggle('is-open', isOpen);
-  toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-  toggleBtn.querySelector('span').textContent = isOpen
+  panel.classList.toggle('is-open', shouldOpenPanel);
+  toggleBtn.classList.toggle('is-open', shouldOpenPanel);
+  toggleBtn.setAttribute('aria-expanded', shouldOpenPanel ? 'true' : 'false');
+  toggleBtn.querySelector('span').textContent = shouldOpenPanel
     ? 'Hide Assigned PG List'
     : 'Show Assigned PG List';
-});
-  }
 
-  renderRows();
+  toggleBtn.addEventListener('click', function () {
+    var isOpen = panel.classList.toggle('is-open');
+
+    toggleBtn.classList.toggle('is-open', isOpen);
+    toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    toggleBtn.querySelector('span').textContent = isOpen
+      ? 'Hide Assigned PG List'
+      : 'Show Assigned PG List';
+
+    saveCadreDashboardState();
+  });
+}
+
+renderRows();
+
+/* ✅ Preserve dashboard scroll position on refresh only.
+   sessionStorage clears when tab/window is closed. */
+var scrollTarget = document.querySelector('.content');
+
+function saveScrollPosition() {
+  try {
+    var y = scrollTarget ? scrollTarget.scrollTop : window.scrollY;
+    sessionStorage.setItem(scrollKey, String(y || 0));
+  } catch (e) {}
+}
+
+function restoreScrollPosition() {
+  try {
+    var savedY = parseInt(sessionStorage.getItem(scrollKey) || '0', 10) || 0;
+
+    if (savedY > 0) {
+      if (scrollTarget) {
+        scrollTarget.scrollTop = savedY;
+      } else {
+        window.scrollTo(0, savedY);
+      }
+    }
+  } catch (e) {}
+}
+
+if (scrollTarget) {
+  scrollTarget.addEventListener('scroll', saveScrollPosition, { passive:true });
+} else {
+  window.addEventListener('scroll', saveScrollPosition, { passive:true });
+}
+
+requestAnimationFrame(function () {
+  restoreScrollPosition();
+
+  setTimeout(function () {
+    restoreScrollPosition();
+  }, 250);
+});
+
+/* ✅ Clear saved Cadre Dashboard display state when user logs out.
+   This prevents old opened section / scroll position from restoring after login again. */
+function clearCadreDashboardStateOnLogout() {
+  try {
+    for (var i = sessionStorage.length - 1; i >= 0; i--) {
+      var key = sessionStorage.key(i) || '';
+
+      if (
+        key.indexOf('cadre_dashboard_state:') === 0 ||
+        key.indexOf('cadre_dashboard_scroll:') === 0
+      ) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  } catch (e) {}
+}
+
+document.querySelectorAll('a[href*="/logout"], a[href*="logout"]').forEach(function (link) {
+  link.addEventListener('click', clearCadreDashboardStateOnLogout);
+});
+
 });
 </script>
 {% endblock %}

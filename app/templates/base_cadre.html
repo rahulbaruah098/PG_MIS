@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}PGMIS – Cadre Dashboard{% endblock %}</title>
 <style>
+
+:root{
+  --header-h:72px;
+  --mobile-header-h:64px;
+  --sidebar-w:290px;
+  --sidebar-collapsed-w:84px;
+  --sidebar-pad:14px;
+  --sidebar-border:rgba(15,23,42,.08);
+  --sidebar-bg:#fff;
+  --shell:#eef6f2;
+  --brand:#0b4d3a;
+  --ink:#0f172a;
+  --mint:rgba(173,231,196,.38);
+  --mint-strong:rgba(173,231,196,.52);
+}
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   html, body{
@@ -41,12 +57,14 @@
     white-space:nowrap;border:0;
   }
 
-  .app{
-    display:flex;
-    flex-direction:column;
-    min-height:100vh;
-    width:100%;
-  }
+.app{
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+  min-height:100vh;
+  width:100%;
+  overflow:hidden;
+}
 
   /* =========================================================
      HEADER / NAVBAR
@@ -56,7 +74,7 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 
-    height:72px;
+   height:var(--header-h);
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -231,32 +249,39 @@
   /* =========================================================
      MAIN WRAPPER
      ========================================================= */
- .shell{
+.shell{
   display:flex;
-  flex:1;
+  flex:1 1 auto;
   position:relative;
   width:100%;
-
-  align-items:stretch;   /* IMPORTANT */
+  height:calc(100vh - var(--header-h));
+  min-height:0;
+  align-items:stretch;
+  background:var(--shell);
+  overflow:hidden;
 }
   /* =========================================================
      SIDEBAR
      ========================================================= */
- .sidebar{
-  width:290px;
-  background:#fff;
-  border-right: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 12px 0 24px -22px rgba(15, 23, 42, 0.18);
-
+.sidebar{
+  width:var(--sidebar-w);
+  background:var(--sidebar-bg);
+  border-right:1px solid var(--sidebar-border);
+  box-shadow:12px 0 24px -22px rgba(15,23,42,.18);
   display:flex;
   flex-direction:column;
 
-  position:relative;        /* IMPORTANT CHANGE */
-  top:0;                    /* remove sticky offset */
-  height:auto;              /* IMPORTANT */
-  min-height:100%;          /* stretch with content */
+  /* ✅ Fixed inside shell, not body-scroll based */
+  position:relative;
+  top:auto;
+  height:100%;
+  max-height:100%;
+  min-height:0;
 
-  flex-shrink:0;
+  overflow:hidden;
+  flex:0 0 auto;
+  z-index:20;
+  transition:none !important;
 }
 .sidebar-title{
   font-size:0.95rem;
@@ -316,16 +341,32 @@
   }
 
   .nav,
-  .sidebar-nav{
-    flex:1;
-    padding:1rem 0.95rem 1rem;
-    display:flex;
-    flex-direction:column;
-    gap:0.4rem;
-    min-height:0;
-    overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
-  }
+.sidebar-nav{
+  flex:1 1 auto;
+  padding:var(--sidebar-pad);
+  display:flex;
+  flex-direction:column;
+  gap:.45rem;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(16,185,129,.55) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar{
+  width:8px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb{
+  background:rgba(16,185,129,.55);
+  border-radius:999px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track{
+  background:transparent;
+}
 
   .nav-section{
     margin:0.85rem 0.2rem 0.25rem;
@@ -337,40 +378,42 @@
     user-select:none;
   }
 
-  .nav a,
-  .nav-item{
-    display:flex;
-    align-items:center;
-    gap:0.75rem;
-    padding:0.85rem 0.9rem;
-    border-radius:0.95rem;
-    cursor:pointer;
-    transition: transform 0.18s ease, background-color 0.2s ease, box-shadow .2s ease, border-color .2s ease;
-    font-size:0.95rem;
-    font-weight:850;
-    line-height:1.35;
-    background:transparent;
-    border:1px solid transparent;
-    color:#0b4d3a;
-    user-select:none;
-    text-decoration:none !important;
-  }
+ .nav a,
+.nav-item{
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  padding:.86rem .95rem;
+  border-radius:18px;
+  cursor:pointer;
+  transition:none !important;
+  font-size:.95rem;
+  font-weight:850;
+  line-height:1.35;
+  background:transparent;
+  border:1px solid transparent;
+  color:#0b4d3a;
+  user-select:none;
+  text-decoration:none !important;
+  width:100%;
+  min-height:54px;
+}
 
   @media (hover: hover) and (pointer: fine){
-    .nav a:hover,
-    .nav-item:hover{
-      background: rgba(173, 231, 196, 0.38);
-      border-color: rgba(15, 23, 42, 0.10);
-      transform: translateX(4px);
-      box-shadow: 0 18px 26px -24px rgba(0,0,0,0.55);
-    }
-
-    .nav-logout:hover{
-      background: linear-gradient(180deg, #d64c4c, #b93a3a);
-      transform: translateY(-1px);
-      box-shadow: 0 18px 28px -20px rgba(185,58,58,0.65);
-    }
+  .nav a:hover,
+  .nav-item:hover{
+    background: rgba(173, 231, 196, 0.38);
+    border-color: rgba(15, 23, 42, 0.10);
+    transform:none !important;
+    box-shadow:none !important;
   }
+
+  .nav-logout:hover{
+    background: linear-gradient(180deg, #d64c4c, #b93a3a) !important;
+    transform:none !important;
+    box-shadow:none !important;
+  }
+}
 
   .nav a.active,
   .nav-item.active{
@@ -405,74 +448,185 @@
       drop-shadow(0 0 1px rgba(255,255,255,0.75));
   }
 
-  .nav-text{
-    white-space:normal;
-    word-break:break-word;
-  }
+ .nav-text{
+  white-space:normal;
+  word-break:break-word;
+  flex:1 1 auto;
+  line-height:1.2;
+}
 
   .nav-spacer{
-    flex:1;
-    min-height:12px;
-  }
+  display:none;
+}
 
-  .nav-logout{
-    margin-top:auto;
-    background: linear-gradient(180deg, #e05656, #c84343) !important;
-    border: 1px solid rgba(255,255,255,0.28) !important;
-    color:#fff !important;
-    justify-content:center;
-    gap:0.6rem;
-    transform:none;
-    box-shadow: 0 14px 24px -18px rgba(200,67,67,0.55);
-    width:100%;
-  }
+/* ✅ Separate fixed logout section below scrollable menu */
+.sidebar-logout-section{
+  flex:0 0 auto;
+  margin-top:auto;
+  padding:12px var(--sidebar-pad) 14px;
+  border-top:1px solid rgba(15,23,42,.10);
+  background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(247,250,249,.98));
+  box-shadow:0 -14px 24px -24px rgba(15,23,42,.35);
+}
+
+.nav-logout{
+  margin-top:0;
+  background:linear-gradient(180deg, #e05656, #c84343) !important;
+  border:1px solid rgba(255,255,255,.28) !important;
+  color:#fff !important;
+  justify-content:center;
+  gap:.6rem;
+  transform:none !important;
+  box-shadow:0 14px 24px -18px rgba(200,67,67,.55);
+  width:100%;
+  min-height:58px;
+}
+
+.nav-logout:hover{
+  background:linear-gradient(180deg, #d64c4c, #b93a3a) !important;
+  transform:none !important;
+  box-shadow:none !important;
+}
 
   .nav-logout .nav-icon,
   .nav-logout svg{
     color:#fff !important;
   }
 
-  .sidebar.collapsed{
-    width:88px;
-  }
+  /* ✅ Desktop collapsed sidebar — icon rail */
+.sidebar.collapsed{
+  width:var(--sidebar-collapsed-w);
+  min-width:var(--sidebar-collapsed-w);
+  max-width:var(--sidebar-collapsed-w);
+}
 
-  .sidebar.collapsed .sidebar-title,
-  .sidebar.collapsed .side-title,
-  .sidebar.collapsed .nav-text,
-  .sidebar.collapsed .nav-section,
-  .sidebar.collapsed .side-sub{
-    display:none;
-  }
+.sidebar.collapsed .sidebar-header{
+  padding:28px 0 26px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  border-top:0;
+  border-left:0;
+  border-right:0;
+}
 
-  .sidebar.collapsed .nav a,
-  .sidebar.collapsed .nav-item{
-    justify-content:center;
-    padding:0.85rem 0.75rem;
-  }
+.sidebar.collapsed .sidebar-head-row{
+  justify-content:center;
+  width:100%;
+}
 
-  .sidebar.collapsed .nav-icon{
-    margin:0;
-  }
+.sidebar.collapsed .sidebar-title,
+.sidebar.collapsed .side-title,
+.sidebar.collapsed .side-sub{
+  display:none;
+}
 
-  .sidebar.collapsed .nav-logout{
-    padding:0.9rem 0.75rem;
-  }
+.sidebar.collapsed .sidebar-toggle{
+  width:60px;
+  height:60px;
+  border-radius:20px;
+  margin:0 auto;
+  background:#f3f3f3;
+  border:1px solid rgba(15,23,42,.16);
+  box-shadow:none;
+}
 
-  .sidebar.collapsed .sidebar-toggle-ic{
-    transform: rotate(180deg);
-  }
+.sidebar.collapsed .sidebar-toggle-ic{
+  transform:rotate(180deg);
+}
+
+.sidebar.collapsed .sidebar-nav{
+  padding:12px 0 14px;
+  gap:14px;
+  align-items:center;
+  overflow-x:hidden;
+}
+
+.sidebar.collapsed .nav-section{
+  display:none;
+}
+
+.sidebar.collapsed .nav-text{
+  display:none !important;
+}
+
+.sidebar.collapsed .nav a,
+.sidebar.collapsed .nav-item{
+  width:64px !important;
+  min-width:64px !important;
+  max-width:64px !important;
+  height:64px !important;
+  min-height:64px !important;
+  max-height:64px !important;
+  padding:0 !important;
+  margin:0 auto !important;
+  justify-content:center !important;
+  align-items:center !important;
+  gap:0 !important;
+  border-radius:20px !important;
+  transform:none !important;
+}
+
+.sidebar.collapsed .nav-icon{
+  margin:0 !important;
+  width:26px !important;
+  height:26px !important;
+  flex:0 0 26px !important;
+}
+
+.sidebar.collapsed .nav a.active,
+.sidebar.collapsed .nav-item.active{
+  background:#bfe3c9 !important;
+  border-color:rgba(15,23,42,.12) !important;
+  box-shadow:0 16px 24px -22px rgba(0,0,0,.55) !important;
+}
+
+.sidebar.collapsed .nav-spacer{
+  display:none;
+}
+
+.sidebar.collapsed .sidebar-logout-section{
+  padding:12px 0 14px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.sidebar.collapsed .nav-logout{
+  width:64px !important;
+  min-width:64px !important;
+  max-width:64px !important;
+  height:64px !important;
+  min-height:64px !important;
+  max-height:64px !important;
+  padding:0 !important;
+  border-radius:20px !important;
+}
 
   /* =========================================================
      CONTENT
      ========================================================= */
-  .content{
-    flex:1;
-    padding:1.35rem;
-    overflow:auto;
-    background:#eef6f2;
-    min-width:0;
-     min-height:100vh;
-  }
+ .content-area{
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  min-height:0;
+  height:100%;
+  overflow:hidden;
+  background:var(--shell);
+}
+
+.content{
+  flex:1 1 auto;
+  padding:1.35rem;
+  overflow:auto;
+  background:#eef6f2;
+  min-width:0;
+  min-height:0;
+  height:100%;
+  -webkit-overflow-scrolling:touch;
+}
 
   .content-inner{
     max-width:1400px;
@@ -497,16 +651,17 @@
   /* =========================================================
      FOOTER
      ========================================================= */
-  .footer{
-    background: linear-gradient(180deg, rgba(222, 241, 234, 0.92), rgba(231, 246, 240, 0.92));
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding:0.95rem 1.25rem;
-    text-align:center;
-    color: rgba(15,23,42,0.70);
-    border-top: 1px solid rgba(0,0,0,0.18);
-    box-shadow: 0 -12px 24px -18px rgba(15, 23, 42, 0.28);
-  }
+ .footer{
+  background: linear-gradient(180deg, rgba(222, 241, 234, 0.92), rgba(231, 246, 240, 0.92));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding:0.95rem 1.25rem;
+  text-align:center;
+  color: rgba(15,23,42,0.70);
+  border-top: 1px solid rgba(0,0,0,0.18);
+  box-shadow: 0 -12px 24px -18px rgba(15, 23, 42, 0.28);
+  flex:0 0 auto;
+}
 
   .footer-content{
     display:flex;
@@ -618,24 +773,28 @@
     box-shadow:none;
   }
 
-  .shell{
-    min-height:calc(100vh - 64px);
-  }
+.shell{
+  height:calc(100vh - var(--mobile-header-h));
+  min-height:0;
+  overflow:hidden;
+}
 
-  .sidebar{
-    position:fixed;
-    left:-340px;
-    right:auto;
-    top:0;
-    height:100vh;
-    width:min(340px, 88vw);
-    z-index:90;
-    transition:left 0.35s ease;
-    box-shadow:18px 0 40px rgba(0,0,0,0.18);
-    border-right:1px solid rgba(0,0,0,0.12);
-    border-left:none;
-    overflow:hidden;
-  }
+ .sidebar{
+  position:fixed;
+  left:-340px;
+  right:auto;
+  top:0;
+  height:100vh;
+  max-height:100vh;
+  min-height:100vh;
+  width:min(340px, 88vw);
+  z-index:90;
+  transition:none !important;
+  box-shadow:18px 0 40px rgba(0,0,0,.18);
+  border-right:1px solid rgba(0,0,0,.12);
+  border-left:none;
+  overflow:hidden;
+}
 
   .sidebar.open{
     left:0;
@@ -647,22 +806,81 @@
   }
 
   .sidebar-nav{
-    padding:1.05rem 0.95rem 1rem;
-    gap:0.55rem;
-  }
+  padding:1.05rem .95rem 1rem;
+  gap:.55rem;
+}
 
-  .nav-spacer{
-    display:none;
-  }
+.sidebar-toggle{
+  display:none;
+}
 
-  .nav-logout{
-    position:relative;
-    bottom:auto;
-    margin-top:12px;
-    width:100%;
-    border-radius:16px;
-    padding:0.95rem 0.9rem;
-  }
+.sidebar.collapsed{
+  width:min(340px, 88vw);
+  min-width:0;
+  max-width:none;
+}
+
+.sidebar.collapsed .sidebar-title{
+  display:block;
+}
+
+.sidebar.collapsed .nav-text{
+  display:inline;
+}
+
+.sidebar.collapsed .nav-section{
+  display:block;
+}
+
+.sidebar.collapsed .sidebar-header{
+  padding:1.05rem .95rem;
+}
+
+.sidebar.collapsed .sidebar-nav{
+  padding:1.05rem .95rem 1rem;
+  align-items:stretch;
+}
+
+.sidebar.collapsed .nav a,
+.sidebar.collapsed .nav-item{
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  height:auto !important;
+  min-height:54px !important;
+  padding:.86rem .95rem !important;
+  justify-content:flex-start !important;
+  border-radius:18px !important;
+}
+
+.sidebar.collapsed .nav-logout{
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  height:auto !important;
+  min-height:58px !important;
+  padding:.95rem .9rem !important;
+  border-radius:16px !important;
+}
+
+.nav-spacer{
+  display:none;
+}
+
+.sidebar-logout-section{
+  padding:12px .95rem 14px;
+  border-top:1px solid rgba(15,23,42,.10);
+  background:rgba(255,255,255,.96);
+}
+
+.nav-logout{
+  position:relative;
+  bottom:auto;
+  margin-top:0;
+  width:100%;
+  border-radius:16px;
+  padding:.95rem .9rem;
+}
 
   body.menu-open{
     overflow:hidden;
@@ -671,6 +889,38 @@
 
   .content{
     padding:0.95rem;
+  }
+}
+
+/* ✅ App/WebView: logout stays in separate fixed bottom section */
+@media (max-width:768px){
+  body.app-webview .sidebar{
+    height:100vh;
+    max-height:100vh;
+    min-height:100vh;
+  }
+
+  @supports (height:100dvh){
+    body.app-webview .sidebar{
+      height:100dvh;
+      max-height:100dvh;
+      min-height:100dvh;
+    }
+  }
+
+  body.app-webview .nav-spacer{
+    display:none !important;
+  }
+
+  body.app-webview .sidebar-logout-section{
+    flex:0 0 auto !important;
+  }
+
+  body.app-webview .nav-logout{
+    position:relative !important;
+    bottom:auto !important;
+    margin-top:0 !important;
+    width:100%;
   }
 }
 
@@ -695,6 +945,8 @@
 
   
 </style>
+
+
   {% block head_extra %}{% endblock %}
 </head>
 <body>
@@ -720,34 +972,17 @@
   </div>
 
   <div class="header-controls">
-    <a class="control-button" href="{{ url_for('reports.cadre_dashboard') }}" title="Assigned PGs">
-  <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M21 16V8a2 2 0 0 0-1-1.73L13 2.27a2 2 0 0 0-2 0L4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73z"></path>
-    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-    <line x1="12" y1="22.08" x2="12" y2="12"></line>
-  </svg>
-  <span>Assigned PGs</span>
-</a>
-
-    <a class="control-button" href="{{ url_for('auth.cadre_profile') }}">
-      <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-        <circle cx="12" cy="7" r="4"></circle>
-      </svg>
-      <span>Profile</span>
-    </a>
-
-    <a class="control-button logout-top" href="{{ url_for('auth.logout') }}" title="Logout" aria-label="Logout">
-      <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-        <polyline points="16 17 21 12 16 7"></polyline>
-        <line x1="21" y1="12" x2="9" y2="12"></line>
-      </svg>
-      <span class="sr-only">Logout</span>
-    </a>
+   <div class="header-controls">
+  <a class="control-button logout-top" href="{{ url_for('auth.logout') }}" title="Logout" aria-label="Logout">
+    <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+      <polyline points="16 17 21 12 16 7"></polyline>
+      <line x1="21" y1="12" x2="9" y2="12"></line>
+    </svg>
+    <span class="sr-only">Logout</span>
+  </a>
+</div>
   </div>
 </header>
 
@@ -800,8 +1035,9 @@
 </a>
 
 
-  <div class="nav-spacer"></div>
+  </nav>
 
+<div class="sidebar-logout-section">
   <a class="nav-item nav-logout" data-nav="logout" href="{{ url_for('auth.logout') }}">
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -811,44 +1047,47 @@
     </svg>
     <span class="nav-text">Logout</span>
   </a>
-</nav>
+</div>
 </aside>
 
-    <main class="content">
-      <div class="content-inner">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="flash-wrap">
-            {% for category, message in messages %}
-              <div class="flash-msg">{{ message }}</div>
-            {% endfor %}
-          </div>
-        {% endif %}
+    <div class="content-area">
+  <main class="content">
+    <div class="content-inner">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-wrap">
+          {% for category, message in messages %}
+            <div class="flash-msg">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
       {% endwith %}
-         {% block content %}{% endblock %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content footer-2line">
+
+      <div class="footer-row">
+        <span>© 2026 PGMIS™ All rights reserved.</span>
       </div>
-    </main>
-  </div>
 
-<footer class="footer">
-  <div class="footer-content footer-2line">
+      <div class="footer-row">
+        <span>Powered by —</span>
+        <a href="https://sayanant.com/"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="footer-link">
+          Sayanant Group, Guwahati Assam
+        </a>
+      </div>
 
-    <div class="footer-row">
-      <span>© 2026 PGMIS™ All rights reserved.</span>
     </div>
-
-    <div class="footer-row">
-      <span>Powered by —</span>
-      <a href="https://sayanant.com/"
-         target="_blank"
-         rel="noopener noreferrer"
-         class="footer-link">
-        Sayanant Group, Guwahati Assam
-      </a>
-    </div>
-
-  </div>
-</footer>
+  </footer>
+</div>
+</div>
 </div>
 
 <script>

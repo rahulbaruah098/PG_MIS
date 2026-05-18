@@ -89,35 +89,633 @@ def _count_rows_from_register_doc(doc):
             return len(v)
     return 0
 
-def _sum_qty_from_rows(doc):
-    """Best-effort quantity sum (kg) from rows having qty/quantity/weight_kg fields."""
-    if not doc:
+def _sum_qty_from_rows(doc, mode="any"):
+    """Best-effort quantity sum from register documents.
+
+    Supports:
+    - data.rows / rows / items / entries / records / list
+    - nested row lists
+    - exact quantity fields
+    - label-style fields like 'Quantity (Kg)', 'Input Quantity', 'Sold Quantity'
+    """
+    if not doc or not isinstance(doc, dict):
         return 0.0
-    data = doc.get("data") if isinstance(doc, dict) else None
-    if data is None and isinstance(doc, dict):
-        data = doc
-    if not isinstance(data, dict):
-        return 0.0
-    rows = None
-    for k in ("rows","items","entries","records","list"):
-        v = data.get(k)
-        if isinstance(v, list):
-            rows = v
-            break
-    if not rows:
-        return 0.0
+
+    def to_float(value):
+        try:
+            if value in (None, "", "null", "None", "-", "NaN"):
+                return 0.0
+
+            cleaned = (
+                str(value)
+                .replace(",", "")
+                .replace("kg", "")
+                .replace("KG", "")
+                .replace("Kg", "")
+                .strip()
+            )
+
+            return float(cleaned) if cleaned else 0.0
+        except Exception:
+            return 0.0
+
+    def norm_key(key):
+        return (
+            str(key or "")
+            .strip()
+            .replace(" ", "_")
+            .replace("-", "_")
+            .replace("/", "_")
+            .replace("(", "_")
+            .replace(")", "_")
+            .replace(".", "_")
+            .lower()
+        )
+
+    input_exact_keys = {
+        "input_stock", "inputstock", "stock_in", "stockin",
+        "procured_qty", "procuredqty", "quantity_procured", "quantityprocured",
+        "purchase_qty", "purchaseqty", "purchased_qty", "purchasedqty",
+        "received_qty", "receivedqty", "in_qty", "inqty",
+        "input_qty", "inputqty", "input_quantity", "inputquantity",
+        "total_qty", "totalqty", "total_quantity", "totalquantity",
+        "qty_kg", "qtykg", "quantity_kg", "quantitykg",
+        "qty", "quantity", "weight", "weight_kg", "weightkg", "kg",
+        "stock_kg", "stockkg"
+    }
+
+    output_exact_keys = {
+        "output_sold", "outputsold", "sold_qty", "soldqty",
+        "quantity_sold", "quantitysold", "sale_qty", "saleqty",
+        "sales_qty", "salesqty", "sold_quantity", "soldquantity",
+        "issued_qty", "issuedqty", "out_qty", "outqty",
+        "output_qty", "outputqty", "output_quantity", "outputquantity",
+        "total_qty", "totalqty", "total_quantity", "totalquantity",
+        "qty_kg", "qtykg", "quantity_kg", "quantitykg",
+        "qty", "quantity", "weight", "weight_kg", "weightkg", "kg",
+        "stock_kg", "stockkg"
+    }
+
+    any_exact_keys = input_exact_keys | output_exact_keys | {
+        "available", "available_stock", "availablestock",
+        "closing_stock", "closingstock",
+        "balance_stock", "balancestock",
+        "stock", "stock_qty", "stockqty",
+        "remaining_qty", "remainingqty",
+        "remaining_quantity", "remainingquantity"
+    }
+
+    if mode == "input":
+        exact_keys = input_exact_keys
+        positive_words = ("input", "procured", "purchase", "purchased", "received", "in", "stock")
+    elif mode == "output":
+        exact_keys = output_exact_keys
+        positive_words = ("output", "sold", "sale", "sales", "issued", "out")
+    else:
+        exact_keys = any_exact_keys
+        positive_words = ("qty", "quantity", "kg", "weight", "stock")
+
+    negative_words = (
+        "rate", "price", "amount", "total_amount", "value",
+        "name", "date", "remark", "description", "particular",
+        "unit_price", "cost"
+    )
+
+    def is_quantity_key(key):
+        nk = norm_key(key)
+
+        if nk in exact_keys:
+            return True
+
+        # Do not treat rate/amount/value fields as quantity.
+        if any(bad in nk for bad in negative_words):
+            return False
+
+        # Catch fields like:
+        # Quantity (Kg), Input Quantity, Sold Quantity, Produce Qty, Stock KG
+        if any(word in nk for word in ("qty", "quantity", "kg", "weight")):
+            return True
+
+        if mode == "input" and any(word in nk for word in positive_words):
+            return any(x in nk for x in ("stock", "qty", "quantity", "kg", "weight"))
+
+        if mode == "output" and any(word in nk for word in positive_words):
+            return any(x in nk for x in ("qty", "quantity", "kg", "weight"))
+
+        return False
+
+    def extract_rows(obj):
+        rows = []
+
+        if isinstance(obj, list):
+            for item in obj:
+                rows.extend(extract_rows(item))
+            return rows
+
+        if not isinstance(obj, dict):
+            return rows
+
+        # If this dict itself has a quantity-looking field, treat it as one row.
+        if any(is_quantity_key(k) for k in obj.keys()):
+            rows.append(obj)
+
+        for k, v in obj.items():
+            nk = norm_key(k)
+
+            if isinstance(v, list) and (
+                nk in {
+                    "rows", "items", "entries", "records", "list",
+                    "inputs", "outputs", "products", "data",
+                    "input_rows", "output_rows", "stock_rows"
+                }
+                or "row" in nk
+                or "item" in nk
+                or "product" in nk
+            ):
+                rows.extend(extract_rows(v))
+
+            elif isinstance(v, dict) and nk in {
+                "data", "register", "register_data", "payload", "form_data"
+            }:
+                rows.extend(extract_rows(v))
+
+        return rows
+
+    data = doc.get("data") if isinstance(doc.get("data"), dict) else doc
+    rows = extract_rows(data)
+
     total = 0.0
-    for r in rows:
-        if not isinstance(r, dict):
+
+    for row in rows:
+        if not isinstance(row, dict):
             continue
-        for key in ("qty","quantity","weight","weight_kg","kg","stock_kg"):
-            if key in r:
-                try:
-                    total += float(r.get(key) or 0)
-                except Exception:
-                    pass
-                break
-    return float(total)
+
+        for key, value in row.items():
+            if is_quantity_key(key):
+                qty = to_float(value)
+                if qty:
+                    total += qty
+                    break
+
+    return round(float(total), 2)
+
+
+def _dash_num(value, default=0.0):
+    try:
+        if value in (None, "", "null", "None"):
+            return default
+        if isinstance(value, (int, float)):
+            return float(value)
+        cleaned = str(value).replace("₹", "").replace(",", "").strip()
+        return float(cleaned) if cleaned else default
+    except Exception:
+        return default
+
+
+def _dash_date(value, fallback=None):
+    if isinstance(value, datetime):
+        return value
+
+    if not value:
+        return fallback
+
+    text = str(value).strip()
+
+    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d", "%d %b %Y", "%d %B %Y"):
+        try:
+            return datetime.strptime(text[:20], fmt)
+        except Exception:
+            pass
+
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+    except Exception:
+        return fallback
+
+
+def _dash_rows_from_doc(doc, *preferred_keys):
+    if not isinstance(doc, dict):
+        return []
+
+    for key in preferred_keys:
+        val = doc.get(key)
+        if isinstance(val, list):
+            return val
+
+    data = doc.get("data")
+    if isinstance(data, dict):
+        for key in preferred_keys:
+            val = data.get(key)
+            if isinstance(val, list):
+                return val
+
+        for key in ("rows", "items", "entries", "records", "list", "receipts", "payments"):
+            val = data.get(key)
+            if isinstance(val, list):
+                return val
+
+    for key in ("rows", "items", "entries", "records", "list", "receipts", "payments"):
+        val = doc.get(key)
+        if isinstance(val, list):
+            return val
+
+    return []
+
+
+def _dash_row_amount(row):
+    if not isinstance(row, dict):
+        return 0.0
+
+    total = 0.0
+
+    # Cashbook can have cash + bank amount.
+    if "amount" in row or "bankAmount" in row:
+        total += _dash_num(row.get("amount"))
+        total += _dash_num(row.get("bankAmount"))
+        return total
+
+    for key in (
+        "value",
+        "total",
+        "total_amount",
+        "receipt_amount",
+        "payment_amount",
+        "cash_amount",
+        "bank_amount",
+        "debit",
+        "credit",
+        "paid_amount",
+        "received_amount",
+    ):
+        if key in row:
+            return _dash_num(row.get(key))
+
+    return 0.0
+
+
+def _dash_month_date(doc):
+    try:
+        year = int(doc.get("year") or 0)
+        month = int(doc.get("month") or 0)
+        if year and month:
+            return datetime(year, month, 1)
+    except Exception:
+        pass
+
+    return _dash_date(
+        doc.get("date")
+        or doc.get("entry_date")
+        or doc.get("voucher_date")
+        or doc.get("created_at")
+        or doc.get("updated_at"),
+        fallback=datetime.utcnow()
+    )
+
+
+def _dashboard_cash_metrics(db, oid, limit=10):
+    """
+    Builds real dashboard cash flow and recent transactions from:
+    - pg_cashbooks receipts/payments
+    - pg_income_expenditure
+    - pg_receipt_vouchers
+    - pg_payment_vouchers if available
+    """
+    from datetime import timedelta
+
+    today = datetime.utcnow().date()
+    start_day = today - timedelta(days=6)
+
+    day_map = {}
+    for i in range(7):
+        d = start_day + timedelta(days=i)
+        key = d.strftime("%Y-%m-%d")
+        day_map[key] = {
+            "label": d.strftime("%d %b"),
+            "income": 0.0,
+            "expense": 0.0,
+            "net": 0.0,
+        }
+
+    recent = []
+
+    def add_txn(dt, tx_type, description, income=0.0, expense=0.0, raw_id=None, status="Completed"):
+        if not isinstance(dt, datetime):
+            dt = datetime.utcnow()
+
+        income_val = _dash_num(income)
+        expense_val = _dash_num(expense)
+
+        key = dt.strftime("%Y-%m-%d")
+        if key in day_map:
+            day_map[key]["income"] += income_val
+            day_map[key]["expense"] += expense_val
+
+        signed_amount = income_val if income_val else -expense_val
+
+        if signed_amount != 0:
+            recent.append({
+                "id": str(raw_id or "")[-6:].upper() or dt.strftime("%H%M%S"),
+                "type": tx_type or "Ledger Entry",
+                "description": description or "PG transaction",
+                "date": dt.strftime("%Y-%m-%d"),
+                "amount": round(signed_amount, 2),
+                "status": status or "Completed",
+            })
+
+    # 1) Cash Book
+    try:
+        cash_docs = list(
+            db.pg_cashbooks
+            .find({"pg_id": oid})
+            .sort([("year", -1), ("month", -1), ("updated_at", -1)])
+            .limit(24)
+        )
+
+        for doc in cash_docs:
+            doc_date = _dash_month_date(doc)
+
+            for row in doc.get("receipts", []) or []:
+                amount = _dash_row_amount(row)
+                add_txn(
+                    _dash_date(row.get("date"), doc_date),
+                    "Cash Book Receipt",
+                    row.get("particulars") or row.get("description") or row.get("remarks") or "Cash book receipt",
+                    income=amount,
+                    raw_id=doc.get("_id")
+                )
+
+            for row in doc.get("payments", []) or []:
+                amount = _dash_row_amount(row)
+                add_txn(
+                    _dash_date(row.get("date"), doc_date),
+                    "Cash Book Payment",
+                    row.get("particulars") or row.get("description") or row.get("remarks") or "Cash book payment",
+                    expense=amount,
+                    raw_id=doc.get("_id")
+                )
+    except Exception:
+        pass
+
+    # 2) Income / Expenditure
+    try:
+        ie_docs = list(
+            db.pg_income_expenditure
+            .find({"pg_id": oid})
+            .sort([("created_at", -1), ("updated_at", -1)])
+            .limit(300)
+        )
+
+        for doc in ie_docs:
+            dt = _dash_date(doc.get("date") or doc.get("created_at") or doc.get("updated_at"), datetime.utcnow())
+            amount = _dash_num(doc.get("amount"))
+            ttype = str(doc.get("type") or doc.get("txn_type") or "").lower()
+
+            if ttype in ("income", "receipt", "receipts", "credit"):
+                add_txn(
+                    dt,
+                    "Income",
+                    doc.get("description") or doc.get("particulars") or doc.get("remarks") or "Income entry",
+                    income=amount,
+                    raw_id=doc.get("_id")
+                )
+            elif ttype in ("expense", "payment", "payments", "debit"):
+                add_txn(
+                    dt,
+                    "Expense",
+                    doc.get("description") or doc.get("particulars") or doc.get("remarks") or "Expense entry",
+                    expense=amount,
+                    raw_id=doc.get("_id")
+                )
+    except Exception:
+        pass
+
+        # 3) Receipt Voucher
+    try:
+        receipt_docs = list(
+            db.pg_receipt_vouchers
+            .find({"pg_id": oid})
+            .sort([("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)])
+            .limit(200)
+        )
+
+        def _receipt_section_members(section):
+            if not isinstance(section, dict):
+                return []
+
+            members = section.get("members")
+            if isinstance(members, list):
+                return members
+
+            member = section.get("member")
+            if isinstance(member, dict):
+                return [member]
+
+            return []
+
+        def _receipt_member_entries(member):
+            if not isinstance(member, dict):
+                return []
+
+            entries = member.get("entries")
+            if isinstance(entries, list):
+                return entries
+
+            rows = member.get("rows")
+            if isinstance(rows, list):
+                return rows
+
+            items = member.get("items")
+            if isinstance(items, list):
+                return items
+
+            return []
+
+        for doc in receipt_docs:
+            doc_date = _dash_month_date(doc)
+
+            # Old/simple format support
+            direct_entries = _dash_rows_from_doc(doc, "entries", "rows", "items")
+
+            if direct_entries:
+                for row in direct_entries:
+                    amount = _dash_row_amount(row)
+                    add_txn(
+                        _dash_date(row.get("date"), doc_date),
+                        "Receipt Voucher",
+                        row.get("commodity") or row.get("particulars") or row.get("description") or "Receipt voucher",
+                        income=amount,
+                        raw_id=doc.get("_id")
+                    )
+
+            # New receipt voucher structure support:
+            # pg_group_receipt.members[].entries[]
+            # group_member_receipt.members[].entries[]
+            for section_key, tx_label in (
+                ("pg_group_receipt", "PG Group Receipt"),
+                ("group_member_receipt", "Group Member Receipt"),
+            ):
+                section = doc.get(section_key) or {}
+
+                for member in _receipt_section_members(section):
+                    member_name = (
+                        member.get("member_name")
+                        or member.get("name")
+                        or section.get("pg_name")
+                        or doc.get("pg_name")
+                        or "Receipt voucher"
+                    )
+
+                    member_date = _dash_date(
+                        member.get("txn_date")
+                        or member.get("date")
+                        or doc.get("date")
+                        or doc.get("created_at")
+                        or doc.get("updated_at"),
+                        doc_date
+                    )
+
+                    member_details = (
+                        member.get("details")
+                        or member.get("description")
+                        or member.get("remarks")
+                        or ""
+                    )
+
+                    for row in _receipt_member_entries(member):
+                        amount = _dash_row_amount(row)
+
+                        description = (
+                            row.get("commodity")
+                            or row.get("particulars")
+                            or row.get("description")
+                            or member_details
+                            or member_name
+                            or "Receipt voucher"
+                        )
+
+                        add_txn(
+                            member_date,
+                            tx_label,
+                            description,
+                            income=amount,
+                            raw_id=doc.get("_id")
+                        )
+
+            # Backward-compatible old frontend keys:
+            # pg_section / member_section
+            for section_key, tx_label in (
+                ("pg_section", "PG Group Receipt"),
+                ("member_section", "Group Member Receipt"),
+            ):
+                section = doc.get(section_key) or {}
+
+                for member in _receipt_section_members(section):
+                    member_name = (
+                        member.get("member_name")
+                        or member.get("name")
+                        or section.get("pg_name")
+                        or doc.get("pg_name")
+                        or "Receipt voucher"
+                    )
+
+                    member_date = _dash_date(
+                        member.get("txn_date")
+                        or member.get("date")
+                        or doc.get("date")
+                        or doc.get("created_at")
+                        or doc.get("updated_at"),
+                        doc_date
+                    )
+
+                    member_details = (
+                        member.get("details")
+                        or member.get("description")
+                        or member.get("remarks")
+                        or ""
+                    )
+
+                    for row in _receipt_member_entries(member):
+                        amount = _dash_row_amount(row)
+
+                        description = (
+                            row.get("commodity")
+                            or row.get("particulars")
+                            or row.get("description")
+                            or member_details
+                            or member_name
+                            or "Receipt voucher"
+                        )
+
+                        add_txn(
+                            member_date,
+                            tx_label,
+                            description,
+                            income=amount,
+                            raw_id=doc.get("_id")
+                        )
+
+    except Exception:
+        pass
+
+    # 4) Payment Voucher, only if collection exists
+    try:
+        if "pg_payment_vouchers" in db.list_collection_names():
+            payment_docs = list(
+                db.pg_payment_vouchers
+                .find({"pg_id": oid})
+                .sort([("year", -1), ("month", -1), ("updated_at", -1)])
+                .limit(200)
+            )
+
+            for doc in payment_docs:
+                doc_date = _dash_month_date(doc)
+                entries = _dash_rows_from_doc(doc, "entries", "rows", "items")
+
+                if entries:
+                    for row in entries:
+                        amount = _dash_row_amount(row)
+                        add_txn(
+                            _dash_date(row.get("date"), doc_date),
+                            "Payment Voucher",
+                            row.get("particulars") or row.get("description") or row.get("remarks") or "Payment voucher",
+                            expense=amount,
+                            raw_id=doc.get("_id")
+                        )
+                else:
+                    amount = _dash_num(doc.get("total") or doc.get("total_amount") or doc.get("amount"))
+                    add_txn(
+                        doc_date,
+                        "Payment Voucher",
+                        doc.get("description") or "Payment voucher",
+                        expense=amount,
+                        raw_id=doc.get("_id")
+                    )
+    except Exception:
+        pass
+
+    chart_cash_flow = []
+    for item in day_map.values():
+        item["income"] = round(item["income"], 2)
+        item["expense"] = round(item["expense"], 2)
+        item["net"] = round(item["income"] - item["expense"], 2)
+        chart_cash_flow.append(item)
+
+    recent = sorted(recent, key=lambda x: x.get("date", ""), reverse=True)
+
+    if limit is not None:
+        recent = recent[:int(limit)]
+
+    income_7d = round(sum(x["income"] for x in chart_cash_flow), 2)
+    expense_7d = round(sum(x["expense"] for x in chart_cash_flow), 2)
+    net_balance = round(income_7d - expense_7d, 2)
+
+    return {
+        "chart_cash_flow": chart_cash_flow,
+        "recent_transactions": recent,
+        "income_7d": income_7d,
+        "expense_7d": expense_7d,
+        "net_balance": net_balance,
+    }
 
 
 def _set_pg_status(db, pg_id, status, extra=None):
@@ -165,35 +763,48 @@ def _count_rows_from_register_doc(doc):
             return len(v)
     return 0
 
-def _sum_qty_from_rows(doc):
-    """Best-effort quantity sum (kg) from rows having qty/quantity/weight_kg fields."""
-    if not doc:
-        return 0.0
-    data = doc.get("data") if isinstance(doc, dict) else None
-    if data is None and isinstance(doc, dict):
-        data = doc
-    if not isinstance(data, dict):
-        return 0.0
-    rows = None
-    for k in ("rows","items","entries","records","list"):
-        v = data.get(k)
-        if isinstance(v, list):
-            rows = v
-            break
-    if not rows:
-        return 0.0
-    total = 0.0
-    for r in rows:
-        if not isinstance(r, dict):
-            continue
-        for key in ("qty","quantity","weight","weight_kg","kg","stock_kg"):
-            if key in r:
-                try:
-                    total += float(r.get(key) or 0)
-                except Exception:
-                    pass
-                break
-    return float(total)
+
+def _pg_scope_query(pg_id):
+    ids = []
+
+    try:
+        if pg_id:
+            ids.append(str(pg_id))
+    except Exception:
+        pass
+
+    try:
+        oid = safe_objectid(pg_id)
+        if oid:
+            ids.append(oid)
+            ids.append(str(oid))
+    except Exception:
+        pass
+
+    try:
+        session_pg_id = session.get("pg_id") or session.get("active_pg_id")
+        if session_pg_id:
+            ids.append(str(session_pg_id))
+            soid = safe_objectid(session_pg_id)
+            if soid:
+                ids.append(soid)
+                ids.append(str(soid))
+    except Exception:
+        pass
+
+    clean_ids = []
+    for x in ids:
+        if x not in clean_ids and x not in (None, "", "None"):
+            clean_ids.append(x)
+
+    return {
+        "$or": [
+            {"pg_id": {"$in": clean_ids}},
+            {"PG_ID": {"$in": clean_ids}},
+            {"active_pg_id": {"$in": clean_ids}},
+            {"producer_group_id": {"$in": clean_ids}},
+        ]
+    }
 
 
 def _pg_metrics(db, pg_id):
@@ -250,13 +861,42 @@ def _pg_metrics(db, pg_id):
         pass
 
     try:
-        input_doc = db.pg_input_registers.find_one({"pg_id": oid}, sort=[("updated_at", -1)])
-        output_doc = db.pg_output_registers.find_one({"pg_id": oid}, sort=[("updated_at", -1)])
-        input_rows_count = _count_rows_from_register_doc(input_doc)
-        output_rows_count = _count_rows_from_register_doc(output_doc)
-        total_stock_kg = max(0.0, _sum_qty_from_rows(input_doc) - _sum_qty_from_rows(output_doc))
+        stock_query = _pg_scope_query(pg_id)
+
+        input_docs = list(
+            db.pg_input_registers
+            .find(stock_query)
+            .sort([("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)])
+            .limit(500)
+        )
+
+        output_docs = list(
+            db.pg_output_registers
+            .find(stock_query)
+            .sort([("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)])
+            .limit(500)
+        )
+
+        input_doc = input_docs[0] if input_docs else None
+        output_doc = output_docs[0] if output_docs else None
+
+        input_rows_count = sum(_count_rows_from_register_doc(doc) for doc in input_docs)
+        output_rows_count = sum(_count_rows_from_register_doc(doc) for doc in output_docs)
+
+        input_stock_value = sum(_sum_qty_from_rows(doc, mode="input") for doc in input_docs)
+        output_sold_value = sum(_sum_qty_from_rows(doc, mode="output") for doc in output_docs)
+
+        total_stock_kg = max(0.0, input_stock_value - output_sold_value)
     except Exception:
-        pass
+        input_docs = []
+        output_docs = []
+        input_doc = None
+        output_doc = None
+        input_stock_value = 0.0
+        output_sold_value = 0.0
+        total_stock_kg = 0.0
+
+   
 
     # ------------------------------------------------------------
     # ✅ ONLY ACTIVE MEMBERS SHOULD COUNT IN LIVE DASHBOARD
@@ -459,7 +1099,7 @@ def _pg_metrics(db, pg_id):
         pass
 
 
-    # Loan distribution
+       # Loan distribution
     try:
         disbursed = 0.0
         outstanding_total = 0.0
@@ -485,16 +1125,42 @@ def _pg_metrics(db, pg_id):
     except Exception:
         pass
 
-
     # Output stock snapshot
     try:
+        input_stock_value = sum(_sum_qty_from_rows(doc, mode="input") for doc in input_docs)
+        output_sold_value = sum(_sum_qty_from_rows(doc, mode="output") for doc in output_docs)
+        available_stock_value = max(0.0, input_stock_value - output_sold_value)
+
+        total_stock_kg = available_stock_value
+
         chart_output_stock = [
-            {"label": "Input Stock", "value": _sum_qty_from_rows(input_doc)},
-            {"label": "Output Sold", "value": _sum_qty_from_rows(output_doc)},
-            {"label": "Available", "value": total_stock_kg},
+            {
+                "label": "Stock",
+                "input_stock": round(input_stock_value, 2),
+                "output_sold": round(output_sold_value, 2),
+                "available": round(available_stock_value, 2),
+                "value": round(available_stock_value, 2),
+            }
         ]
     except Exception:
-        pass
+        chart_output_stock = [
+            {
+                "label": "Stock",
+                "input_stock": 0,
+                "output_sold": 0,
+                "available": 0,
+                "value": 0,
+            }
+        ]
+
+    # Real cash flow + recent transactions from cashbook/vouchers/income-expenditure
+    dashboard_cash = _dashboard_cash_metrics(db, oid, limit=10)
+    chart_cash_flow = dashboard_cash.get("chart_cash_flow", [])
+    recent_transactions = dashboard_cash.get("recent_transactions", [])
+
+    income_7d = dashboard_cash.get("income_7d", 0)
+    expense_7d = dashboard_cash.get("expense_7d", 0)
+    net_balance = dashboard_cash.get("net_balance", 0)
 
     return {
         "members_count": members_count,
@@ -505,17 +1171,31 @@ def _pg_metrics(db, pg_id):
         "receipt_vouchers_count": receipt_vouchers_count,
         "input_rows_count": input_rows_count,
         "output_rows_count": output_rows_count,
-        "total_stock_kg": f"{total_stock_kg:,.2f}",
+        "total_stock_kg": round(float(total_stock_kg or 0), 2),
         "lakhpati_count": lakhpati_count,
         "loans_count": loans_count,
         "outstanding_loans_amount": _fmt_inr(outstanding),
         "categories_count": categories_count,
         "income_7d": _fmt_inr(income_7d),
         "expense_7d": _fmt_inr(expense_7d),
+        "net_balance": _fmt_inr(net_balance),
+
         "chart_cash_flow": chart_cash_flow,
         "chart_membership_growth": chart_membership_growth,
         "chart_loan_distribution": chart_loan_distribution,
-        "chart_output_stock": chart_output_stock,
+                "chart_output_stock": chart_output_stock,
+
+        "stock_debug": {
+            "input_docs_count": len(input_docs),
+            "output_docs_count": len(output_docs),
+            "input_rows_count": input_rows_count,
+            "output_rows_count": output_rows_count,
+            "input_stock_value": round(float(input_stock_value or 0), 2),
+            "output_sold_value": round(float(output_sold_value or 0), 2),
+            "total_stock_kg": round(float(total_stock_kg or 0), 2),
+        },
+
+        "recent_transactions": recent_transactions,
 
         # Turnover + Profit/Loss (latest month)
         "turnover_latest": _fmt_inr(turnover_latest),
@@ -530,6 +1210,7 @@ def _pg_metrics(db, pg_id):
         "grants_count": grants_count,
         "grants_received_total": _fmt_inr(grants_received_total),
     }
+    
  ## new hybrided code of dashboard
 @pg_bp.route("/home")
 @login_required
@@ -675,6 +1356,51 @@ def pg_dashboard_live_data():
         "metrics": metrics,
         "updated_at": datetime.utcnow().isoformat(),
     }), 200
+
+
+@pg_bp.route("/dashboard/all-transactions/<pg_id>", methods=["GET"])
+@login_required
+@roles_required("PG_DATA_ENTRY", "CADRE_CC", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+def pg_dashboard_all_transactions(pg_id):
+    db = current_app.mongo_db
+
+    if not pg_id or not ObjectId.is_valid(str(pg_id)):
+        flash("Valid PG ID is required.", "danger")
+        return redirect(url_for("pg.pg_home"))
+
+    pg_obj_id = ObjectId(str(pg_id))
+    pg_doc = db.pgs.find_one({"_id": pg_obj_id})
+
+    if not pg_doc:
+        flash("PG not found.", "danger")
+        return redirect(url_for("pg.pg_home"))
+
+    role = getattr(g, "role", None) or session.get("role")
+
+    if role == "PG_DATA_ENTRY":
+        session_pg_id = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
+        if session_pg_id and session_pg_id != str(pg_id):
+            flash("You cannot access this PG.", "danger")
+            return redirect(url_for("pg.pg_home"))
+
+    if role == "CADRE_CC":
+        assigned_pg_ids = session.get("assigned_pg_ids") or []
+        assigned_pg_ids = {str(x) for x in assigned_pg_ids}
+
+        if assigned_pg_ids and str(pg_id) not in assigned_pg_ids:
+            flash("This PG is not assigned to you.", "danger")
+            return redirect(url_for("pg.pg_home"))
+
+    dashboard_cash = _dashboard_cash_metrics(db, pg_obj_id, limit=None)
+
+    return render_template(
+        "dashboard_all_transactions.html",
+        pg=pg_doc,
+        transactions=dashboard_cash.get("recent_transactions", []),
+        income_7d=_fmt_inr(dashboard_cash.get("income_7d", 0)),
+        expense_7d=_fmt_inr(dashboard_cash.get("expense_7d", 0)),
+        net_balance=_fmt_inr(dashboard_cash.get("net_balance", 0)),
+    )
 
 @pg_bp.route("/profile")
 @login_required

@@ -3,6 +3,20 @@
 
 {% block head_extra %}
 
+<script>
+(function(){
+  try {
+    var key = 'PG_DASHBOARD_SCROLL:' + window.location.pathname;
+    var saved = sessionStorage.getItem(key);
+
+    if (saved) {
+      document.documentElement.classList.add('pg-restore-pending');
+      document.documentElement.style.scrollBehavior = 'auto';
+    }
+  } catch(e){}
+})();
+</script>
+
   <!-- ✅ Removed Tailwind dependency (fixes “sometimes not loading”) -->
 <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -36,20 +50,31 @@
 
   <style>
 
+    /* ✅ Hide whole page before first paint when restoring saved dashboard section */
+html.pg-restore-pending,
+html.pg-restore-pending body {
+  scroll-behavior: auto !important;
+}
+
+html.pg-restore-pending body {
+  visibility: hidden !important;
+}
+
 /* ============================================================
    ✅ SAFE DASHBOARD GATE (Web + App WebView friendly)
    - Never hides full body (prevents permanent blank)
    - Hides only dashboard parts until first render
 ============================================================ */
+
 .pg-gate {
   opacity: 0;
-  transform: translateY(6px);
-  transition: opacity .25s ease, transform .25s ease;
+  transform: none;
+  transition: opacity .12s ease;
 }
 
 .pg-gate.pg-gate--ready {
   opacity: 1;
-  transform: translateY(0);
+  transform: none;
 }
 
 /* If JS is disabled, never hide content */
@@ -1016,9 +1041,9 @@ function __closeGate(){
       chart_categories: { en: "Categories", bn: "বিভাগ" },
 
       // Recent transactions
-      tx_title: { en: "Recent Transactions (Ledger Book)", bn: "সাম্প্রতিক লেনদেন (লেজার বুক)" },
-      tx_sub: { en: "Latest entries from registers and vouchers", bn: "রেজিস্টার ও ভাউচার থেকে সর্বশেষ এন্ট্রি" },
-      tx_view_all: { en: "View All", bn: "সব দেখুন" },
+      tx_title: { en: "Recent Transactions", bn: "সাম্প্রতিক লেনদেন" },
+tx_sub: { en: "Latest 10 entries from cash book, vouchers and income records", bn: "ক্যাশ বুক, ভাউচার এবং আয় রেকর্ড থেকে সর্বশেষ ১০টি এন্ট্রি" },
+tx_view_all: { en: "View All Transactions", bn: "সব লেনদেন দেখুন" },
       tx_no_found: { en: "No transactions found.", bn: "কোনো লেনদেন পাওয়া যায়নি।" },
 
       tx_col_id: { en: "ID", bn: "আইডি" },
@@ -1110,8 +1135,23 @@ function __closeGate(){
       IndianRupeeSmall: '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"></path><path d="M6 8h12"></path><path d="m6 13 8.5 8"></path><path d="M6 13h3"></path><path d="M9 13c6.667 0 6.667-10 0-10"></path></svg>'
     };
 
-    // Transactions Data: intentionally empty (avoid hardcoded demo values)
-    const transactionsData = [];
+  function __metric(key, fallback){
+  const value = (__liveMetrics || {})[key];
+  return value !== undefined && value !== null && value !== '' ? value : fallback;
+}
+
+function getTransactionsData(){
+  return __arr((__liveMetrics || {}).recent_transactions).slice(0, 10).map(function(tx, index){
+    return {
+      id: tx.id || String(index + 1).padStart(3, '0'),
+      type: tx.type || 'Ledger Entry',
+      description: tx.description || tx.narration || tx.particulars || 'PG transaction',
+      date: tx.date || new Date().toISOString().slice(0, 10),
+      amount: __num(tx.amount),
+      status: tx.status || 'Completed'
+    };
+  });
+}
 
     // ============================================================
     // ✅ Chart instances registry (prevents chart stacking on re-render)
@@ -1133,7 +1173,7 @@ function __closeGate(){
 let __liveMetrics = Object.assign({}, __INITIAL_METRICS || {});
 
 const __PG_LIVE_DATA_URL = "{{ url_for('pg.pg_dashboard_live_data', pg_id=PGID) }}";
-const __PG_LEDGER_BOOK_URL = "{{ url_for('pg.ledger_book', pg_id=PGID) }}";
+const __PG_ALL_TRANSACTIONS_URL = "{{ url_for('pg.pg_dashboard_all_transactions', pg_id=PGID) }}";
 
 function __num(value){
   if (value === null || value === undefined) return 0;
@@ -1146,6 +1186,141 @@ function __num(value){
 
 function __arr(value){
   return Array.isArray(value) ? value : [];
+}
+
+// ============================================================
+// ✅ Dashboard scroll memory - no visible top-to-section jump
+// ============================================================
+const __DASHBOARD_SECTION_IDS = [
+  'quickStats',
+  'dashboardOverview',
+  'pgKpiGraphSection',
+  'cashFlowChart',
+  'membershipChart',
+  'loanDistributionChart',
+  'produceStockChart',
+  'recentTransactions'
+];
+
+const __DASHBOARD_SCROLL_KEY = 'PG_DASHBOARD_SCROLL:' + window.location.pathname;
+let __dashboardIsRestoringScroll = false;
+let __dashboardScrollTimer = null;
+
+function __sectionTop(el){
+  return el.getBoundingClientRect().top + window.pageYOffset;
+}
+
+function __currentDashboardSectionInfo(){
+  const y = window.pageYOffset + 120;
+  let current = null;
+
+  __DASHBOARD_SECTION_IDS.forEach(function(id){
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const top = __sectionTop(el);
+
+    if (top <= y) {
+      current = { id: id, top: top };
+    }
+  });
+
+  if (!current) return null;
+
+  return {
+    id: current.id,
+    offset: Math.max(0, Math.round(window.pageYOffset - current.top)),
+    scrollY: Math.round(window.pageYOffset)
+  };
+}
+
+function __saveDashboardScroll(){
+  if (__dashboardIsRestoringScroll) return;
+
+  try {
+    const info = __currentDashboardSectionInfo();
+    if (!info || !info.id) return;
+    sessionStorage.setItem(__DASHBOARD_SCROLL_KEY, JSON.stringify(info));
+  } catch(e){}
+}
+
+function __getSavedDashboardScroll(){
+  try {
+    const raw = sessionStorage.getItem(__DASHBOARD_SCROLL_KEY);
+    if (!raw) return null;
+
+    const info = JSON.parse(raw);
+    if (!info || !info.id) return null;
+
+    return info;
+  } catch(e){
+    return null;
+  }
+}
+
+function __restoreDashboardScrollInstant(){
+  try {
+    const info = __getSavedDashboardScroll();
+    if (!info) return false;
+
+    const el = document.getElementById(info.id);
+    if (!el) return false;
+
+    __dashboardIsRestoringScroll = true;
+
+    const savedOffset = Number(info.offset || 0);
+    const finalY = Math.max(0, __sectionTop(el) + savedOffset - 90);
+
+    // Force instant jump, never smooth animation
+    const oldBehavior = document.documentElement.style.scrollBehavior;
+    document.documentElement.style.scrollBehavior = 'auto';
+
+    window.scrollTo(0, finalY);
+
+    document.documentElement.style.scrollBehavior = oldBehavior || '';
+
+    setTimeout(function(){
+      __dashboardIsRestoringScroll = false;
+    }, 120);
+
+    return true;
+  } catch(e){
+    __dashboardIsRestoringScroll = false;
+    return false;
+  }
+}
+
+function __finishDashboardRestoreDisplay(){
+  try {
+    document.documentElement.classList.remove('pg-restore-pending');
+    document.documentElement.style.scrollBehavior = '';
+  } catch(e){}
+
+  __openGate();
+}
+
+function __setupDashboardScrollMemory(){
+  try {
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+  } catch(e){}
+
+  window.addEventListener('scroll', function(){
+    if (__dashboardIsRestoringScroll) return;
+
+    clearTimeout(__dashboardScrollTimer);
+    __dashboardScrollTimer = setTimeout(__saveDashboardScroll, 180);
+  }, { passive: true });
+
+  window.addEventListener('beforeunload', __saveDashboardScroll);
+  window.addEventListener('pagehide', __saveDashboardScroll);
+
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState === 'hidden') {
+      __saveDashboardScroll();
+    }
+  });
 }
 
     function __destroyCharts(){
@@ -1416,16 +1591,77 @@ function getLoanDistributionData(){
 function getProduceStockData(){
   const rows = __arr(__liveMetrics.chart_output_stock);
 
+  // ✅ Supports BOTH backend formats:
+  // OLD format:
+  // [
+  //   {label:"Input Stock", value:10},
+  //   {label:"Output Sold", value:4},
+  //   {label:"Available", value:6}
+  // ]
+  //
+  // NEW format:
+  // [
+  //   {label:"Stock", input_stock:10, output_sold:4, available:6}
+  // ]
+
+  let inputStock = 0;
+  let outputSold = 0;
+  let available = 0;
+
+  if (rows.length) {
+    const hasNewShape = rows.some(function(row){
+      return row.input_stock !== undefined || row.output_sold !== undefined || row.available !== undefined;
+    });
+
+    if (hasNewShape) {
+      rows.forEach(function(row){
+        inputStock += __num(row.input_stock);
+        outputSold += __num(row.output_sold);
+        available += __num(row.available !== undefined ? row.available : row.value);
+      });
+    } else {
+      rows.forEach(function(row){
+        const label = String(row.label || '').toLowerCase();
+        const value = __num(row.value);
+
+        if (label.includes('input')) {
+          inputStock += value;
+        } else if (label.includes('output') || label.includes('sold')) {
+          outputSold += value;
+        } else if (label.includes('available') || label.includes('balance') || label.includes('stock')) {
+          available += value;
+        }
+      });
+    }
+  }
+
   return {
-    labels: rows.map(row => row.label || ''),
+    labels: ['Stock'],
     datasets: [
       {
-        data: rows.map(row => __num(row.value)),
-        backgroundColor: ['#0f766e', '#15803d', '#f59e0b', '#0ea5e9', '#65a30d'],
-        borderWidth: 2,
-        borderColor: '#fff'
+        label: 'Input Stock',
+        data: [inputStock],
+        backgroundColor: '#0f766e',
+        borderRadius: 8
       },
-    ]
+      {
+        label: 'Output Sold',
+        data: [outputSold],
+        backgroundColor: '#15803d',
+        borderRadius: 8
+      },
+      {
+        label: 'Available',
+        data: [available],
+        backgroundColor: '#f59e0b',
+        borderRadius: 8
+      }
+    ],
+    totals: {
+      inputStock: inputStock,
+      outputSold: outputSold,
+      available: available
+    }
   };
 }
 
@@ -1468,6 +1704,24 @@ function makePg3DBar(chartKey, canvasId, labels, values, labelText, horizontal){
   if(!el || !window.Chart) return;
 
   const ctx = el.getContext('2d');
+
+  // ✅ Remove only zero / empty values from the chart.
+  // ✅ Keep small positive values like 1, 2, 5, 7 visible.
+  const rawLabels = labels || [];
+  const rawValues = values || [];
+
+  const filtered = rawLabels.map(function(label, index){
+    return {
+      label: label,
+      value: __num(rawValues[index])
+    };
+  }).filter(function(item){
+    return item.value > 0;
+  });
+
+  const chartLabels = filtered.map(function(item){ return item.label; });
+  const cleanValues = filtered.map(function(item){ return item.value; });
+
   const gradient = ctx.createLinearGradient(0, 0, 0, 330);
   gradient.addColorStop(0, 'rgba(15,118,110,0.94)');
   gradient.addColorStop(0.45, 'rgba(21,128,61,0.78)');
@@ -1476,18 +1730,61 @@ function makePg3DBar(chartKey, canvasId, labels, values, labelText, horizontal){
   const yScale = horizontal ? 'x' : 'y';
   const xScale = horizontal ? 'y' : 'x';
 
+  const valueLabelPlugin = {
+    id: chartKey + '_value_labels',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+
+      chart.data.datasets.forEach(function(dataset, datasetIndex){
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (!meta || !meta.data) return;
+
+        meta.data.forEach(function(bar, index){
+          const value = __num(dataset.data[index]);
+
+          if (!value) return;
+
+          const label = value >= 1000
+            ? value.toLocaleString('en-IN')
+            : String(value);
+
+          ctx.save();
+          ctx.font = '800 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+          ctx.fillStyle = '#0b2a23';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+
+          if (horizontal) {
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, bar.x + 8, bar.y);
+          } else {
+            ctx.fillText(label, bar.x, bar.y - 8);
+          }
+
+          ctx.restore();
+        });
+      });
+    }
+  };
+
   __charts[chartKey] = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: labels || [],
+      labels: chartLabels,
       datasets: [{
         label: labelText || 'Value',
-        data: (values || []).map(__num),
+        data: cleanValues,
         backgroundColor: gradient,
         borderColor: 'rgba(6,95,70,0.95)',
         borderWidth: 2,
         borderRadius: 14,
         borderSkipped: false,
+
+        // ✅ Small positive values remain visible.
+        // ✅ Zero values are already removed above.
+        minBarLength: horizontal ? 18 : 18,
+
         maxBarThickness: horizontal ? 32 : 52
       }]
     },
@@ -1499,6 +1796,14 @@ function makePg3DBar(chartKey, canvasId, labels, values, labelText, horizontal){
         duration:650,
         easing:'easeOutQuart'
       },
+      layout: {
+        padding: {
+          top: 28,
+          right: horizontal ? 70 : 18,
+          bottom: 8,
+          left: 8
+        }
+      },
       plugins:{
         legend:{ display:false },
         tooltip:{
@@ -1508,7 +1813,13 @@ function makePg3DBar(chartKey, canvasId, labels, values, labelText, horizontal){
           borderColor:'rgba(15,118,110,0.50)',
           borderWidth:2,
           padding:12,
-          cornerRadius:14
+          cornerRadius:14,
+          callbacks: {
+            label: function(context){
+              const value = __num(context.raw);
+              return `${labelText || 'Value'}: ${value.toLocaleString('en-IN')}`;
+            }
+          }
         }
       },
       scales:{
@@ -1523,6 +1834,7 @@ function makePg3DBar(chartKey, canvasId, labels, values, labelText, horizontal){
         },
         [yScale]:{
           beginAtZero:true,
+          grace:'12%',
           ticks:{
             precision:0,
             color:'#2f5b4f',
@@ -1531,7 +1843,8 @@ function makePg3DBar(chartKey, canvasId, labels, values, labelText, horizontal){
           grid:{ color:'rgba(191,230,210,0.60)' }
         }
       }
-    }
+    },
+    plugins: [valueLabelPlugin]
   });
 }
 
@@ -2028,90 +2341,115 @@ function renderPgKpiGraphs(){
     }
 
     function renderProduceStockChart() {
-      const container = document.getElementById('produceStockChart');
-      const produceStockData = getProduceStockData();
+ const container = document.getElementById('produceStockChart');
+const produceStockData = getProduceStockData();
 
-      container.innerHTML = `
-        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="p-2.5 rounded-xl shadow-md stat-icon-soft">
-              ${icons.ShoppingBasket}
-            </div>
-            <div>
-              <h2 class="text-xl font-bold text-slate-900 human-title">${__t('chart_output_stock_title')}</h2>
-              <p class="text-sm text-slate-600 mt-1">${__t('chart_output_stock_sub')}</p>
-            </div>
-          </div>
-          <div class="chart-container">
-            <canvas id="produceStockCanvas"></canvas>
-          </div>
-          <div class="mt-5 grid grid-cols-2 gap-4">
-            <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
-              <p class="text-sm text-slate-600 font-medium mb-1">${__t('chart_total_stock')}</p>
-              <p class="text-3xl font-bold text-slate-900">{{ metrics.total_stock_kg if metrics is defined and metrics.total_stock_kg is defined else 0 }} kg</p>
-            </div>
-            <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
-              <p class="text-sm text-slate-600 font-medium mb-1">${__t('chart_categories')}</p>
-              <p class="text-3xl font-bold text-emerald-700">{{ metrics.categories_count if metrics is defined else 0 }}</p>
-            </div>
-          </div>
+const stockTotals = produceStockData.totals || {};
+
+const inputStockValue = __num(stockTotals.inputStock);
+const outputSoldValue = __num(stockTotals.outputSold);
+const availableStockValue = __num(stockTotals.available);
+
+// ✅ Total Stock card should not remain 0 when graph has real stock movement.
+// Prefer available stock. If available is 0, show input stock. If input is also 0, show output sold.
+const totalStock =
+  availableStockValue > 0
+    ? availableStockValue
+    : (inputStockValue > 0 ? inputStockValue : outputSoldValue);
+
+// ✅ Category should show 1 when this Stock chart has any real value.
+const categoriesCount =
+  (inputStockValue > 0 || outputSoldValue > 0 || availableStockValue > 0) ? 1 : 0;
+
+  container.innerHTML = `
+    <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="p-2.5 rounded-xl shadow-md stat-icon-soft">
+          ${icons.ShoppingBasket}
         </div>
-      `;
+        <div>
+          <h2 class="text-xl font-bold text-slate-900 human-title">${__t('chart_output_stock_title')}</h2>
+          <p class="text-sm text-slate-600 mt-1">${__t('chart_output_stock_sub')}</p>
+        </div>
+      </div>
 
-      const ctx = document.getElementById('produceStockCanvas').getContext('2d');
-      __charts.produceStock = new Chart(ctx, {
-        type: 'doughnut',
-        data: produceStockData,
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: true,
-              position: 'bottom',
-              labels: { font: { size: 12 }, padding: 15 },
-            },
-            tooltip: {
-              backgroundColor: '#ffffff',
-              titleColor: '#000',
-              bodyColor: '#000',
-              borderColor: 'rgba(15,118,110,0.55)',
-              borderWidth: 2,
-              padding: 12,
-              cornerRadius: 12,
-            },
-          },
+      <div class="chart-container">
+        <canvas id="produceStockCanvas"></canvas>
+      </div>
+
+      <div class="mt-5 grid grid-cols-2 gap-4">
+        <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+          <p class="text-sm text-slate-600 font-medium mb-1">${__t('chart_total_stock')}</p>
+          <p class="text-3xl font-bold text-slate-900">${__num(totalStock).toFixed(2)} kg</p>
+        </div>
+
+        <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
+          <p class="text-sm text-slate-600 font-medium mb-1">${__t('chart_categories')}</p>
+          <p class="text-3xl font-bold text-emerald-700">${categoriesCount}</p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const ctx = document.getElementById('produceStockCanvas').getContext('2d');
+
+  __charts.produceStock = new Chart(ctx, {
+    type: 'bar',
+    data: produceStockData,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            font: { size: 12 },
+            padding: 15
+          }
         },
-      });
+        tooltip: {
+          backgroundColor: '#ffffff',
+          titleColor: '#000',
+          bodyColor: '#000',
+          borderColor: 'rgba(15,118,110,0.55)',
+          borderWidth: 2,
+          padding: 12,
+          cornerRadius: 12
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            font: { size: 13, weight: 500 },
+            color: '#2f5b4f'
+          },
+          grid: {
+            color: 'rgba(191,230,210,0.95)',
+            drawBorder: false
+          }
+        },
+        x: {
+          ticks: {
+            font: { size: 12, weight: 500 },
+            color: '#2f5b4f'
+          },
+          grid: {
+            display: false
+          }
+        }
+      }
     }
-
-    async function initChartsAsync(){
-  // show placeholders immediately if charts are empty
-  safeChartsFallback();
-
-  let chartOk = false;
-  try {
-    chartOk = await (window.__chartReady || Promise.resolve(!!window.Chart));
-  } catch(e){
-    chartOk = !!window.Chart;
-  }
-
-  if (!chartOk || !window.Chart) return; // keep placeholders
-
-  try { __destroyCharts(); } catch(e){}
-
-    try { renderPgKpiGraphs(); } catch(e){ console.warn("PG KPI graphs failed", e); }
-
-    try { renderCashFlowChart(); } catch(e){ console.warn("cashFlow chart failed", e); }
-    try { renderMembershipChart(); } catch(e){ console.warn("membership chart failed", e); }
-    try { renderLoanDistributionChart(); } catch(e){ console.warn("loanDist chart failed", e); }
-    try { renderProduceStockChart(); } catch(e){ console.warn("produceStock chart failed", e); }
+  });
 }
+
 
     function renderRecentTransactions() {
       const container = document.getElementById('recentTransactions');
 
-      const hasTx = Array.isArray(transactionsData) && transactionsData.length > 0;
+      const transactionsData = getTransactionsData();
+const hasTx = Array.isArray(transactionsData) && transactionsData.length > 0;
 
       const tableRows = hasTx ? transactionsData.map(transaction => {
         const date = new Date(transaction.date);
@@ -2200,14 +2538,14 @@ function renderPgKpiGraphs(){
             </div>
 
            <a
-  href="${__PG_LEDGER_BOOK_URL}"
+href="${__PG_ALL_TRANSACTIONS_URL}"
   class="px-5 py-2.5 rounded-xl transition-all text-sm font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
   style="background:#0f766e; color:#fff; text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">
   ${__t('tx_view_all')}
 </a>
           </div>
 
-          <div class="hidden md:block overflow-x-auto rounded-xl border border-slate-200 bg-white/80">
+          <div class="block overflow-x-auto rounded-xl border border-slate-200 bg-white/80">
             <table class="w-full">
               <thead>
                 <tr class="bg-slate-50/90 border-b border-slate-200">
@@ -2225,7 +2563,7 @@ function renderPgKpiGraphs(){
             </table>
           </div>
 
-          <div class="md:hidden space-y-3">
+                   <div class="hidden space-y-3">
             ${mobileCards}
           </div>
 
@@ -2237,7 +2575,7 @@ function renderPgKpiGraphs(){
                 </div>
                 <p class="text-sm text-slate-600 font-semibold">${__t('sum_income_7d')}</p>
               </div>
-              <p class="text-2xl font-extrabold text-emerald-700">{{ metrics.income_7d if metrics is defined else "₹0" }}</p>
+<p class="text-2xl font-extrabold text-emerald-700">${__metric('income_7d', '₹0')}</p>
             </div>
 
             <div class="bg-white/85 rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
@@ -2247,7 +2585,7 @@ function renderPgKpiGraphs(){
                 </div>
                 <p class="text-sm text-slate-600 font-semibold">${__t('sum_expense_7d')}</p>
               </div>
-              <p class="text-2xl font-extrabold text-amber-700">{{ metrics.expense_7d if metrics is defined else "₹0" }}</p>
+<p class="text-2xl font-extrabold text-amber-700">${__metric('expense_7d', '₹0')}</p>
             </div>
 
             <div class="bg-white/85 rounded-xl p-5 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
@@ -2257,7 +2595,7 @@ function renderPgKpiGraphs(){
                 </div>
                 <p class="text-sm text-slate-600 font-semibold">${__t('sum_net_balance')}</p>
               </div>
-              <p class="text-2xl font-extrabold text-sky-700">₹0</p>
+<p class="text-2xl font-extrabold text-sky-700">${__metric('net_balance', '₹0')}</p>
             </div>
           </div>
         </div>
@@ -2267,13 +2605,16 @@ function renderPgKpiGraphs(){
   safeChartsFallback();
 
   let chartOk = false;
+
   try {
     chartOk = await (window.__chartReady || Promise.resolve(!!window.Chart));
   } catch(e){
     chartOk = !!window.Chart;
   }
 
-  if (!chartOk || !window.Chart) return;
+  if (!chartOk || !window.Chart) {
+    return;
+  }
 
   try {
     const response = await fetch(__PG_LIVE_DATA_URL, {
@@ -2288,6 +2629,7 @@ function renderPgKpiGraphs(){
 
     if (response.ok) {
       const payload = await response.json();
+
       if (payload && payload.ok && payload.metrics) {
         __liveMetrics = Object.assign({}, __liveMetrics || {}, payload.metrics || {});
       }
@@ -2298,14 +2640,15 @@ function renderPgKpiGraphs(){
 
   try { __destroyCharts(); } catch(e){}
 
-  /* ✅ FIX: render the 5 PG KPI graphs also */
   try { renderPgKpiGraphs(); } catch(e){ console.warn("PG KPI graphs failed", e); }
-
   try { renderCashFlowChart(); } catch(e){ console.warn("cashFlow chart failed", e); }
   try { renderMembershipChart(); } catch(e){ console.warn("membership chart failed", e); }
   try { renderLoanDistributionChart(); } catch(e){ console.warn("loanDist chart failed", e); }
   try { renderProduceStockChart(); } catch(e){ console.warn("produceStock chart failed", e); }
-  }
+
+  try { renderQuickStats(); } catch(e){ console.warn("quickStats refresh failed", e); }
+  try { renderRecentTransactions(); } catch(e){ console.warn("recent transactions refresh failed", e); }
+}
 
   function safeChartsFallback(){
     const ids = ["cashFlowChart","membershipChart","loanDistributionChart","produceStockChart"];
@@ -2333,34 +2676,44 @@ function renderPgKpiGraphs(){
 
     // re-render charts async
     initChartsAsync();
-
-    setInterval(() => {
-  initChartsAsync();
-}, 30000);
   }
   document.addEventListener('DOMContentLoaded', async () => {
     try { document.documentElement.classList.remove('no-js'); } catch(e){}
 
-    // keep hidden briefly
-    __closeGate();
+// keep hidden
+__closeGate();
 
-    // translate static text immediately
-    __applyDomI18n();
+// translate static text immediately
+__applyDomI18n();
 
-    // ✅ Render ONLY the non-chart sections first
-    try { renderQuickStats(); } catch(e){ console.warn("quickStats failed", e); }
-    try { renderDashboardOverview(); } catch(e){ console.warn("overview failed", e); }
-    try { renderRecentTransactions(); } catch(e){ console.warn("recentTx failed", e); }
+// setup scroll memory before rendering
+__setupDashboardScrollMemory();
 
-    // ✅ Open gate NOW (so no blank/half-load)
-    await new Promise(r => requestAnimationFrame(r));
-    __openGate();
+// render static sections while page is hidden
+try { renderQuickStats(); } catch(e){ console.warn("quickStats failed", e); }
+try { renderDashboardOverview(); } catch(e){ console.warn("overview failed", e); }
+try { renderRecentTransactions(); } catch(e){ console.warn("recentTx failed", e); }
 
-    // ✅ Load charts asynchronously (do not block UI)
-    initChartsAsync();
+// render charts while page is hidden
+await initChartsAsync();
 
-    // listeners unchanged
-    window.addEventListener('storage', (e) => {
+// restore position while whole page is still hidden
+__restoreDashboardScrollInstant();
+
+// wait one frame so browser applies scroll before showing
+await new Promise(r => requestAnimationFrame(r));
+
+// restore once more after layout settles, still hidden
+__restoreDashboardScrollInstant();
+
+// now show page directly at saved section
+__finishDashboardRestoreDisplay();
+
+// save final correct section after opening
+setTimeout(__saveDashboardScroll, 250);
+
+// listeners unchanged
+window.addEventListener('storage', (e) => {
       if (['pgmis_lang', 'lang', 'language', 'PGMIS_LANG_SESSION'].includes(e.key)) __rerenderForLang();
     });
 
