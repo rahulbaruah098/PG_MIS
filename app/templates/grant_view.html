@@ -32,16 +32,6 @@
 <style>
   /* ============================================================
      GRANT UTILIZATION — LEDGER LOOK + RESPONSIVE + TRANSLATION
-     ✅ NO route changes / no field name changes
-     ✅ Keeps SAME POST utilization workflow:
-        utilized_at, head, amount, attachments(multiple), remarks
-     ✅ Keeps SAME approval/reject workflow:
-        finance.approve_grant_utilization / finance.reject_grant_utilization
-        (only if role != 'PG_DATA_ENTRY' AND status is PENDING)
-     ✅ Adds: SL.No + search + pagination + rows per page selector
-     ✅ Adds: mobile/app swipe-card history like reference
-     ✅ Even when empty, headers/field labels still display
-     ✅ Scoped under .gu-wrap only
      ============================================================ */
 
   .gu-wrap{
@@ -70,7 +60,6 @@
     box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
   }
 
-  /* Header */
   .gu-head{
     padding: 14px 16px 12px;
     background:
@@ -165,7 +154,6 @@
   }
   .gu-backdesk:active{ transform: scale(.98); }
 
-  /* KPI strip */
   .gu-kpis{
     padding: 10px 16px 14px;
     display:grid;
@@ -198,7 +186,6 @@
     white-space:nowrap;
   }
 
-  /* Body cards */
   .gu-body{
     padding: 12px 16px 16px;
     background: rgba(255,255,255,.96);
@@ -239,7 +226,6 @@
   }
   .gu-card-body{ padding: 12px; }
 
-  /* Form grid */
   .gu-formgrid{
     display:grid;
     grid-template-columns: repeat(12, 1fr);
@@ -261,7 +247,6 @@
     color: var(--ink);
   }
 
-  /* Inputs */
   .gu-input, .gu-textarea{
     width:100%;
     border: 1px solid rgba(15,23,42,.16);
@@ -281,7 +266,6 @@
   }
   .gu-textarea{ min-height: 72px; resize: vertical; line-height: 1.35; }
 
-  /* File input */
   .gu-file{
     width:100%;
     border: 1px dashed rgba(15,23,42,.20);
@@ -293,7 +277,6 @@
     color: rgba(15,23,42,.82);
   }
 
-  /* Buttons */
   .gu-actions{
     display:flex;
     gap:10px;
@@ -344,7 +327,6 @@
   }
   .gu-btn.danger:hover{ background: rgba(239,68,68,.14); }
 
-    /* Inline action popup below Save/Clear buttons */
   .gu-inline-alert{
     display:none;
     width:100%;
@@ -383,14 +365,8 @@
   }
 
   @keyframes guAlertIn{
-    from{
-      opacity:0;
-      transform:translateY(-4px);
-    }
-    to{
-      opacity:1;
-      transform:translateY(0);
-    }
+    from{ opacity:0; transform:translateY(-4px); }
+    to{ opacity:1; transform:translateY(0); }
   }
 
   .gu-pill{
@@ -404,7 +380,6 @@
     white-space:nowrap;
   }
 
-  /* History controls */
   .gu-history-controls{
     padding: 12px 12px 0;
     display:flex;
@@ -486,7 +461,6 @@
     box-shadow: 0 0 0 3px rgba(11,77,58,.10);
   }
 
-  /* Status badge */
   .gu-status{
     font-weight: 950;
     font-size: 12px;
@@ -495,7 +469,6 @@
   .gu-status.rejected{ color:#991b1b; }
   .gu-status.pending{ color:#0f172a; }
 
-  /* Row actions */
   .gu-row-actions{
     display:flex;
     gap:10px;
@@ -504,7 +477,6 @@
   }
   .gu-row-actions form{ margin:0; display:inline; }
 
-  /* Table */
   .gu-tablewrap{
     width:100%;
     overflow-x:auto;
@@ -542,7 +514,6 @@
     color:#0b4d3a;
   }
 
-  /* Mobile helper */
   .gu-mobile-helper{
     display:none;
     padding:12px 12px 0;
@@ -566,7 +537,6 @@
     color:rgba(15,23,42,.58);
   }
 
-  /* Mobile empty placeholder */
   .gu-mobile-empty{
     display:none;
     padding:12px;
@@ -620,7 +590,6 @@
     word-break:break-word;
   }
 
-  /* Pagination */
   .gu-pager{
     padding: 12px 12px 12px;
     display:flex;
@@ -676,7 +645,6 @@
     font-size:12px;
   }
 
-  /* Mobile: make table horizontal swipe cards */
   @media (max-width: 720px){
     .gu-tablewrap{ display:none; }
     .gu-mobile-helper{ display:block; }
@@ -697,7 +665,6 @@
     }
   }
 
-  /* Responsive layout */
   @media (max-width: 980px){
     .gu-grid{ grid-template-columns: 1fr; }
     .gu-kpis{ grid-template-columns: 1fr; }
@@ -746,6 +713,60 @@
       display: none !important;
     }
   }
+
+  .gu-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    padding: 20px;
+  }
+  .gu-modal-content {
+    background: #fff;
+    width: min(980px, 96vw);
+    height: min(86vh, 900px);
+    margin: 4vh auto 0;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.28);
+  }
+  .gu-modal-header{
+    display:flex;
+    justify-content:flex-end;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(15,23,42,.08);
+  }
+  .gu-close{
+    cursor:pointer;
+    font-size: 28px;
+    line-height: 1;
+    color: #0f172a;
+    font-weight: 700;
+    user-select:none;
+  }
+  .gu-modal-body{
+    flex: 1;
+    background: #f8fafc;
+  }
+  #fileFrame{
+    width:100%;
+    height:100%;
+    border:none;
+    display:block;
+    background:#fff;
+  }
+  .gu-modal-footer{
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+    padding: 12px;
+    border-top: 1px solid rgba(15,23,42,.08);
+    background: #fff;
+    flex-wrap:wrap;
+  }
 </style>
 
 {% set gu_flash_messages = get_flashed_messages(with_categories=true) %}
@@ -756,7 +777,6 @@
 >
   <div class="gu-sheet">
 
-    <!-- Header -->
     <div class="gu-head">
       <div class="gu-head-row">
         <div class="gu-leftslot">
@@ -789,7 +809,6 @@
       </div>
     </div>
 
-    <!-- KPI strip -->
     <div class="gu-kpis">
       <div class="gu-kpi">
         <div class="k" id="guKReceivedK">Received</div>
@@ -808,7 +827,6 @@
     <div class="gu-body">
       <div class="gu-grid">
 
-        <!-- Add Utilization Entry -->
         <div class="gu-card">
           <div class="gu-card-head">
             <div>
@@ -818,14 +836,15 @@
           </div>
 
           <div class="gu-card-body">
-<form
-  method="POST"
-  action="{{ url_for('finance.grant_view', grant_id=grant._id) }}"
-  enctype="multipart/form-data"
-  class="gu-formgrid"
-  id="guUtilForm"
->
-  <input type="hidden" name="action" value="utilize">
+            <form
+              method="POST"
+              action="{{ url_for('finance.grant_view', grant_id=grant._id) }}"
+              enctype="multipart/form-data"
+              class="gu-formgrid"
+              id="guUtilForm"
+            >
+              <input type="hidden" name="action" value="utilize">
+
               <div class="gu-stack gu-col-4">
                 <label id="guLblDate">Date</label>
                 <input name="utilized_at" type="date" class="gu-input">
@@ -851,7 +870,7 @@
                 <textarea name="remarks" class="gu-textarea"></textarea>
               </div>
 
-                            <div class="gu-col-12 gu-actions">
+              <div class="gu-col-12 gu-actions">
                 <button class="gu-btn primary" type="submit" id="guBtnSaveUtil">
                   Save Utilization
                 </button>
@@ -872,7 +891,6 @@
           </div>
         </div>
 
-        <!-- Utilization History -->
         <div class="gu-card">
           <div class="gu-card-head">
             <div>
@@ -885,7 +903,6 @@
             </span>
           </div>
 
-          <!-- Search + page size + counts -->
           <div class="gu-history-controls">
             <div class="gu-search">
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -918,7 +935,6 @@
             </div>
           </div>
 
-          <!-- Mobile helper -->
           <div class="gu-mobile-helper" id="guMobileHelper">
             <div class="gu-mobile-helper-box">
               <div class="gu-mobile-helper-title" id="guMobileHelperTitle">Showing utilization records</div>
@@ -926,7 +942,6 @@
             </div>
           </div>
 
-          <!-- Desktop table -->
           <div class="gu-tablewrap" id="guTableWrap">
             <table class="gu-table" id="guTable">
               <thead>
@@ -961,7 +976,13 @@
 
                     <td data-label="Attachments">
                       {% if u.attachments %}
-                        {{ u.attachments|length }} file(s)
+                        {% for file in u.attachments %}
+                          <a href="javascript:void(0)"
+                             onclick="openFilePreview('{{ file|e }}')"
+                             style="color:#0b4d3a;font-weight:900;text-decoration:underline;">
+                             {{ file }}
+                          </a><br>
+                        {% endfor %}
                       {% else %}
                         —
                       {% endif %}
@@ -1004,7 +1025,6 @@
             </table>
           </div>
 
-          <!-- Mobile cards / placeholder -->
           <div class="gu-mobile-empty" id="guMobileArea">
             <div class="gu-mobile-rail" id="guMobileRail">
               {% for u in utils %}
@@ -1034,7 +1054,14 @@
                     <div class="gu-mobile-label" id="guMLblAttachments{{ loop.index }}">Attachments</div>
                     <div class="gu-mobile-value">
                       {% if u.attachments %}
-                        {{ u.attachments|length }} file(s)
+                        {% for file in u.attachments %}
+                          <a href="javascript:void(0)"
+                            onclick="openFilePreview('{{ file|e }}')"
+                            title="{{ file }}"
+                            style="color:#0b4d3a;font-weight:900;text-decoration:underline;display:inline-block;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;">
+                            {{ file[:18] }}{% if file|length > 18 %}...{% endif %}
+                          </a><br>
+                        {% endfor %}
                       {% else %}
                         —
                       {% endif %}
@@ -1107,7 +1134,6 @@
             </div>
           </div>
 
-          <!-- Pagination -->
           <div class="gu-pager" id="guPager">
             <div class="gu-pager-info" id="guPagerInfo">Showing 0–0 of 0</div>
 
@@ -1124,13 +1150,26 @@
     </div>
 
   </div>
+
+  <div id="filePreviewModal" class="gu-modal" aria-hidden="true">
+    <div class="gu-modal-content">
+      <div class="gu-modal-header">
+        <span onclick="closeFilePreview()" class="gu-close">&times;</span>
+      </div>
+
+      <div class="gu-modal-body">
+        <iframe id="fileFrame" src=""></iframe>
+      </div>
+
+      <div class="gu-modal-footer">
+        <a id="downloadFileBtn" href="" download class="gu-btn primary">Download</a>
+        <button class="gu-btn ghost" type="button" onclick="closeFilePreview()">Close</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-  // ============================================================
-  // GRANT UTILIZATION — TRANSLATION (EN/BN) + CLEAR BUTTON
-  // ============================================================
-
   (function(){
     const T = {
       en: {
@@ -1138,36 +1177,28 @@
         backAria: "Go Back",
         back: "Back",
         pageSub: "Add utilization entries and track grant balance.",
-
         received: "Received",
         utilized: "Utilized",
         balance: "Balance",
-
         addTitle: "Add Utilization Entry",
         addSub: "Fill the details and save.",
-
         date: "Date",
         head: "Head",
         headPh: "Civil work / purchase",
         amount: "Amount",
         attachments: "Attachments (Bills / Photos)",
         remarks: "Remarks",
-
         saveUtil: "Save Utilization",
         clearUtil: "Clear",
-
         histTitle: "Utilization History",
         histSub: "Latest entries appear at top.",
         entriesPrefix: "Entries: ",
-
         search: "Search...",
         rows: "Rows",
         total: "Total",
         visible: "Visible",
-
         mobileHelperTitle: "Showing utilization records",
         mobileHelperSub: "Swipe horizontally to view more",
-
         thSl: "SL.No",
         thDate: "Date",
         thHead: "Head",
@@ -1176,12 +1207,9 @@
         thAttachments: "Attachments",
         thRemarks: "Remarks",
         thAction: "Action",
-
         approve: "Approve",
         reject: "Reject",
-
         noEntries: "No utilization entries yet.",
-
         prev: "Prev",
         next: "Next",
         page: "Page",
@@ -1193,36 +1221,28 @@
         backAria: "ফিরে যান",
         back: "ফিরে যান",
         pageSub: "ব্যবহার এন্ট্রি যোগ করুন এবং অনুদানের ব্যালেন্স ট্র্যাক করুন।",
-
         received: "প্রাপ্ত",
         utilized: "ব্যবহৃত",
         balance: "ব্যালেন্স",
-
         addTitle: "ব্যবহার এন্ট্রি যোগ করুন",
         addSub: "তথ্য দিন এবং সেভ করুন।",
-
         date: "তারিখ",
         head: "খাত",
         headPh: "সিভিল কাজ / ক্রয়",
         amount: "অর্থ",
         attachments: "সংযুক্তি (বিল / ছবি)",
         remarks: "মন্তব্য",
-
         saveUtil: "ব্যবহার সেভ করুন",
         clearUtil: "ক্লিয়ার",
-
         histTitle: "ব্যবহার ইতিহাস",
         histSub: "সর্বশেষ এন্ট্রি উপরে দেখাবে।",
         entriesPrefix: "এন্ট্রি: ",
-
         search: "খুঁজুন...",
         rows: "সারি",
         total: "মোট",
         visible: "দেখানো",
-
         mobileHelperTitle: "ব্যবহার রেকর্ড দেখানো হচ্ছে",
         mobileHelperSub: "আরও দেখতে আড়াআড়ি সোয়াইপ করুন",
-
         thSl: "ক্রমিক নং",
         thDate: "তারিখ",
         thHead: "খাত",
@@ -1231,12 +1251,9 @@
         thAttachments: "সংযুক্তি",
         thRemarks: "মন্তব্য",
         thAction: "অ্যাকশন",
-
         approve: "অনুমোদন",
         reject: "বাতিল",
-
         noEntries: "এখনও কোনো ব্যবহার এন্ট্রি নেই।",
-
         prev: "পূর্ববর্তী",
         next: "পরবর্তী",
         page: "পৃষ্ঠা",
@@ -1279,14 +1296,12 @@
 
     function applyLang(lang){
       const t = T[lang] || T.en;
-
       try{ document.title = t.docTitle; }catch(_){}
 
       const back = document.querySelector('.gu-back');
       if(back) back.setAttribute('aria-label', t.backAria);
 
       safeText('guPageSub', t.pageSub);
-
       safeText('guKReceivedK', t.received);
       safeText('guKUtilizedK', t.utilized);
       safeText('guKBalanceK', t.balance);
@@ -1324,7 +1339,6 @@
       safeText('guThAttachments', t.thAttachments);
       safeText('guThRemarks', t.thRemarks);
       safeText('guThAction', t.thAction);
-
       safeText('guBackDeskText', t.back);
 
       document.querySelectorAll('#guTbody #guApproveBtnText').forEach(el => el.textContent = t.approve);
@@ -1371,16 +1385,7 @@
           "Status": t.thStatus,
           "Attachments": t.thAttachments,
           "Remarks": t.thRemarks,
-          "Action": t.thAction,
-
-          "ক্রমিক নং": t.thSl,
-          "তারিখ": t.thDate,
-          "খাত": t.thHead,
-          "অর্থ": t.thAmount,
-          "স্ট্যাটাস": t.thStatus,
-          "সংযুক্তি": t.thAttachments,
-          "মন্তব্য": t.thRemarks,
-          "অ্যাকশন": t.thAction
+          "Action": t.thAction
         };
         if(map[dl]) td.setAttribute('data-label', map[dl]);
       });
@@ -1402,7 +1407,7 @@
       if(lang === 'en' || lang === 'bn') applyLang(lang);
     });
 
-        document.addEventListener('DOMContentLoaded', ()=>{
+    document.addEventListener('DOMContentLoaded', ()=>{
       applyLang(getStoredLang());
 
       const form = document.getElementById('guUtilForm');
@@ -1423,15 +1428,10 @@
 
       function showUtilAlert(type, message){
         if(!alertBox) return;
-
         hideUtilAlert();
-
         alertBox.textContent = message;
         alertBox.classList.add('show', type || 'warning');
-
-        alertTimer = setTimeout(()=>{
-          hideUtilAlert();
-        }, 3500);
+        alertTimer = setTimeout(hideUtilAlert, 3500);
       }
 
       window.__showGrantUtilAlert = showUtilAlert;
@@ -1442,10 +1442,8 @@
 
       document.addEventListener('click', function(e){
         if(!alertBox || !alertBox.classList.contains('show')) return;
-
         const clickedInsideAlert = alertBox.contains(e.target);
         const clickedSubmit = e.target && e.target.closest && e.target.closest('#guBtnSaveUtil');
-
         if(!clickedInsideAlert && !clickedSubmit){
           hideUtilAlert();
         }
@@ -1455,7 +1453,6 @@
         form.addEventListener('submit', function(e){
           const head = form.querySelector('[name="head"]');
           const amount = form.querySelector('[name="amount"]');
-
           const headValue = (head?.value || '').trim();
           const amountValue = parseFloat(amount?.value || '0');
 
@@ -1492,33 +1489,21 @@
         const wrap = document.getElementById('guWrap');
         const rawFlash = wrap ? wrap.getAttribute('data-flash') : '';
         const flashMessages = rawFlash ? JSON.parse(rawFlash) : [];
-
         if(Array.isArray(flashMessages) && flashMessages.length){
           const latest = flashMessages[flashMessages.length - 1];
           const category = String(latest[0] || '').toLowerCase();
           const message = String(latest[1] || '');
-
           let type = 'warning';
           if(category.includes('success')) type = 'success';
           if(category.includes('danger') || category.includes('error')) type = 'error';
-
-          if(message){
-            showUtilAlert(type, message);
-          }
+          if(message) showUtilAlert(type, message);
         }
       }catch(_){}
     });
-      
-    
   })();
 </script>
 
 <script>
-  // ============================================================
-  // GRANT UTILIZATION — SEARCH + PAGINATION + PAGE SIZE
-  // ✅ Frontend only
-  // ✅ No backend / route / field-name changes
-  // ============================================================
   (function(){
     const searchInput = document.getElementById('guSearch');
     const pageSizeSelect = document.getElementById('guPageSize');
@@ -1569,10 +1554,8 @@
         const serial = displayIdx + 1;
         const dRow = desktopRows[originalIdx];
         const mCard = mobileCards[originalIdx];
-
         const dSl = dRow ? dRow.querySelector('.gu-sl') : null;
         const mSl = mCard ? mCard.querySelector('.gu-sl-mobile') : null;
-
         if (dSl) dSl.textContent = serial;
         if (mSl) mSl.textContent = serial;
       });
@@ -1622,10 +1605,8 @@
       if (visible === 0){
         desktopRows.forEach(r => r.style.display = 'none');
         mobileCards.forEach(c => c.style.display = 'none');
-
         if (desktopEmpty) desktopEmpty.style.display = '';
         if (mobilePlaceholder) mobilePlaceholder.style.display = '';
-
         currentPage = 1;
         renderPager(0, 0, 0, 1);
         if (prevBtn) prevBtn.disabled = true;
@@ -1694,6 +1675,23 @@
 
     document.addEventListener('DOMContentLoaded', applyVisibility);
   })();
+
+  function openFilePreview(file) {
+    const url = "/finance/uploads/" + encodeURIComponent(file);
+    const frame = document.getElementById("fileFrame");
+    const downloadBtn = document.getElementById("downloadFileBtn");
+    const modal = document.getElementById("filePreviewModal");
+    if (frame) frame.src = url;
+    if (downloadBtn) downloadBtn.href = url;
+    if (modal) modal.style.display = "block";
+  }
+
+  function closeFilePreview() {
+    const modal = document.getElementById("filePreviewModal");
+    const frame = document.getElementById("fileFrame");
+    if (modal) modal.style.display = "none";
+    if (frame) frame.src = "";
+  }
 </script>
 
 {% endblock %}

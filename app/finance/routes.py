@@ -1,6 +1,6 @@
 from services.audit_engine import AuditLogger
 import os
-from flask import render_template, request, redirect, url_for, flash, current_app, session, jsonify
+from flask import render_template,send_from_directory, request, redirect, url_for, flash, current_app, session, jsonify
 from app.services.guards import require_unlocked_period
 from bson import ObjectId
 from datetime import datetime
@@ -1048,6 +1048,19 @@ def grants(pg_id):
         })
 
     return render_template("grants.html", pg=pg, grants=grants_raw)
+
+@finance_bp.route('/uploads/<filename>')
+@login_required
+def serve_uploaded_file(filename):
+    import os
+    from flask import send_from_directory, current_app
+
+    BASE_DIR = os.path.abspath(os.path.join(current_app.root_path, ".."))
+    upload_folder = os.path.join(BASE_DIR, "uploads")
+
+    return send_from_directory(upload_folder, filename)
+
+
 
 
 # changes made by atlanta
