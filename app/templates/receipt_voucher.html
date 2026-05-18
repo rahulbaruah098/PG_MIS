@@ -2435,9 +2435,20 @@ function loadMemberTable(sectionKey){
 
   function setEditMode(on){
     isEditing = !!on;
+
     setEditingUI();
     setAllEditable(isEditing);
     syncDeleteAllLabel();
+    dockActionBar();
+
+    // Hidden tab canvases need a size refresh after edit/readonly changes.
+    requestAnimationFrame(() => {
+      refreshSignaturePads();
+    });
+
+    setTimeout(() => {
+      refreshSignaturePads();
+    }, 150);
   }
 
   const signMap = {
@@ -2446,6 +2457,19 @@ function loadMemberTable(sectionKey){
     m_member:  { file:"llSignFileMMember",  img:"llSignImgMMember",  empty:"llSignEmptyMMember",  upload:"llSignUploadMMember",  capture:"llSignCaptureMMember",  replace:"llSignReplaceMMember",  remove:"llSignRemoveMMember",  sectionKey:"m",  role:"member", pad:"llPadMMember", padLabel:"llPadLabelMMember", padClear:"llPadClearMMember", padUse:"llPadUseMMember" },
     m_udyog:   { file:"llSignFileMUdyog",   img:"llSignImgMUdyog",   empty:"llSignEmptyMUdyog",   upload:"llSignUploadMUdyog",   capture:"llSignCaptureMUdyog",   replace:"llSignReplaceMUdyog",   remove:"llSignRemoveMUdyog",   sectionKey:"m",  role:"udyog", pad:"llPadMUdyog", padLabel:"llPadLabelMUdyog", padClear:"llPadClearMUdyog", padUse:"llPadUseMUdyog" }
   };
+
+  function refreshSignaturePads(sectionKey = null){
+    Object.values(signMap).forEach(cfg => {
+      if (sectionKey && cfg.sectionKey !== sectionKey) return;
+
+      const canvas = $(cfg.pad);
+      if (!canvas) return;
+
+      if (typeof canvas.__llResizePad === "function") {
+        canvas.__llResizePad();
+      }
+    });
+  }
 
  function setSignature(sectionKey, role, dataUrl){
   const st = sectionKey === "pg" ? S.pg : S.m;
@@ -2653,39 +2677,55 @@ function getSignature(sectionKey, role){
     let drawing = false;
     let last = null;
 
-    function isSmallScreen(){
-      return window.matchMedia && window.matchMedia("(max-width: 820px)").matches;
+    function getCanvasSize(){
+      const rect = canvas.getBoundingClientRect();
+      const pane = canvas.closest(".ll-signpane");
+      const paneRect = pane ? pane.getBoundingClientRect() : { width: 0, height: 0 };
+
+      const width = Math.max(240, Math.floor(rect.width || paneRect.width || 260));
+      const height = Math.max(120, Math.floor(rect.height || paneRect.height || 120));
+
+      return { width, height };
     }
 
     function resizeCanvas(){
       const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      const w = Math.max(1, Math.floor(rect.width));
-      const h = Math.max(1, Math.floor(rect.height));
-      const prev = canvas.toDataURL("image/png");
+      const { width, height } = getCanvasSize();
 
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      canvas.style.width = w + "px";
-      canvas.style.height = h + "px";
+      if (!width || !height) return;
+
+      let previousImage = "";
+      try {
+        if (canvas.width > 0 && canvas.height > 0) {
+          previousImage = canvas.toDataURL("image/png");
+        }
+      } catch (_) {
+        previousImage = "";
+      }
+
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = width + "px";
+      canvas.style.height = height + "px";
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctx.lineWidth = 2.2;
-      ctx.strokeStyle = (cfg.sectionKey === "m") ? "#1e40af" : "#0b4d3a";
+      ctx.strokeStyle = cfg.sectionKey === "m" ? "#1e40af" : "#0b4d3a";
+      ctx.clearRect(0, 0, width, height);
 
-      if (prev && prev.startsWith("data:image")){
+      if (previousImage && previousImage.startsWith("data:image")) {
         const img = new Image();
         img.onload = () => {
-          ctx.clearRect(0,0,w,h);
-          ctx.drawImage(img, 0, 0, w, h);
+          ctx.clearRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
         };
-        img.src = prev;
-      } else {
-        ctx.clearRect(0,0,w,h);
+        img.src = previousImage;
       }
     }
+
+    canvas.__llResizePad = resizeCanvas;
 
     function posFromEvent(e){
       const rect = canvas.getBoundingClientRect();
@@ -2698,6 +2738,8 @@ function getSignature(sectionKey, role){
 
     function start(e){
       if (!isEditing) return;
+
+      resizeCanvas();
       drawing = true;
       last = posFromEvent(e);
       e.preventDefault();
@@ -2705,12 +2747,18 @@ function getSignature(sectionKey, role){
 
     function move(e){
       if (!drawing || !isEditing) return;
+
       const p = posFromEvent(e);
-      if (!last){ last = p; return; }
+      if (!last){
+        last = p;
+        return;
+      }
+
       ctx.beginPath();
       ctx.moveTo(last.x, last.y);
       ctx.lineTo(p.x, p.y);
       ctx.stroke();
+
       last = p;
       e.preventDefault();
     }
@@ -2738,48 +2786,36 @@ function getSignature(sectionKey, role){
     }
 
     function clearPad(){
-      if (!isSmallScreen()){
-        const rect = canvas.getBoundingClientRect();
-        ctx.clearRect(0,0,rect.width,rect.height);
-        return;
-      }
-      const dpr = window.devicePixelRatio || 1;
-      ctx.save();
-      ctx.setTransform(1,0,0,1,0,0);
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      ctx.restore();
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (!isEditing) return;
+
+      const { width, height } = getCanvasSize();
+      ctx.clearRect(0, 0, width, height);
     }
 
     function hasInk(){
-      if (!isSmallScreen()){
-        const rect = canvas.getBoundingClientRect();
-        const w = Math.max(1, Math.floor(rect.width));
-        const h = Math.max(1, Math.floor(rect.height));
-        const img = ctx.getImageData(0,0,w,h).data;
-        for (let i=3; i<img.length; i+=4){
+      try {
+        const w = Math.max(1, canvas.width | 0);
+        const h = Math.max(1, canvas.height | 0);
+        const img = ctx.getImageData(0, 0, w, h).data;
+
+        for (let i = 3; i < img.length; i += 4){
           if (img[i] > 0) return true;
         }
-        return false;
-      }
 
-      const w = Math.max(1, canvas.width|0);
-      const h = Math.max(1, canvas.height|0);
-      let img;
-      try{
-        img = ctx.getImageData(0,0,w,h).data;
-      }catch(_){
-        const d = canvas.toDataURL("image/png");
-        return !!(d && d.length > 2000);
+        return false;
+      } catch (_) {
+        try {
+          const d = canvas.toDataURL("image/png");
+          return !!(d && d.length > 2000);
+        } catch (__){
+          return false;
+        }
       }
-      for (let i=3; i<img.length; i+=4){
-        if (img[i] > 0) return true;
-      }
-      return false;
     }
 
     function usePad(){
       if (!isEditing) return;
+
       if (!hasInk()){
         showPopup("warn", T[lang].msgTitleWarn, T[lang].msgSignFirst);
         return;
@@ -2794,7 +2830,10 @@ function getSignature(sectionKey, role){
     if (useBtn) useBtn.addEventListener("click", usePad);
 
     resizeCanvas();
-    window.addEventListener("resize", ()=>resizeCanvas());
+
+    window.addEventListener("resize", () => {
+      resizeCanvas();
+    });
   }
 
   function initPads(){
@@ -3144,7 +3183,12 @@ function getSignature(sectionKey, role){
       renderReceiptHistoryBox();
 
       snapshot = takeSnapshot();
+
+      // After a successful save, return to normal view.
+      // User must click Edit again to continue entering/signing data.
       setEditMode(false);
+      dockActionBar();
+      syncDeleteAllLabel();
 
       await loadReceiptHistory();
       renderReceiptHistoryBox();
@@ -3320,6 +3364,16 @@ async function loadReceiptMembers(){
     saveActivePanel(activePanel);
     dockActionBar();
     syncDeleteAllLabel();
+
+    const currentSectionKey = activePanel === "pg" ? "pg" : "m";
+
+    requestAnimationFrame(() => {
+      refreshSignaturePads(currentSectionKey);
+    });
+
+    setTimeout(() => {
+      refreshSignaturePads(currentSectionKey);
+    }, 150);
 
     if (!skipFocus){ /* no-op */ }
   }
@@ -3693,6 +3747,14 @@ function applyMemberPartition(sectionKey, newKey){
   setAllEditable(isEditing);
   recalcTotalsAndVisibility(sectionKey, true);
   syncDeleteAllLabel();
+
+  requestAnimationFrame(() => {
+    refreshSignaturePads(sectionKey);
+  });
+
+  setTimeout(() => {
+    refreshSignaturePads(sectionKey);
+  }, 150);
 }
 
   function wireSelectAll(sectionKey){
@@ -3719,6 +3781,14 @@ function applyMemberPartition(sectionKey, newKey){
   el.addEventListener("change", () => {
     const key = getCurrentMemberKey(sectionKey);
     applyMemberPartition(sectionKey, key);
+
+    requestAnimationFrame(() => {
+      refreshSignaturePads(sectionKey);
+    });
+
+    setTimeout(() => {
+      refreshSignaturePads(sectionKey);
+    }, 150);
   });
 });
 
@@ -3765,6 +3835,7 @@ function applyMemberPartition(sectionKey, newKey){
   setActivePanel(activePanel, true);
   dockActionBar();
   initPads();
+  refreshSignaturePads();
   applyLang();
   setEditMode(false);
 
