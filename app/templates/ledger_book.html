@@ -39,13 +39,17 @@
     box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
   }
 
- .lb-head{
-  padding: 14px 16px 12px;
+.lb-head{
+  padding:14px 16px 12px;
   background:
     radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
     linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
-  border-bottom: 1.5px solid var(--line2);
-  position: relative;
+  border-bottom:1.5px solid var(--line2);
+  position:relative;
+  display:grid;
+  grid-template-columns:44px 1fr auto;
+  align-items:center;
+  gap:12px;
 }
 
 .lb-title{
@@ -101,9 +105,19 @@
 }
 
 .lb-titlewrap{
-  flex: 1 1 auto;
-  min-width: 0;
-  text-align: center;
+  grid-column:2;
+  min-width:0;
+  text-align:center;
+}
+
+.lb-head-actions{
+  grid-column:3;
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
 }
 
 .lb-head-spacer{
@@ -126,38 +140,61 @@ body.is-webview .lb-back{
     padding: 14px 14px 12px;
   }
 
-  .lb-title{
-    text-align: left;
-    padding-left: 52px;
-    padding-right: 8px;
-    font-size: 16px;
-    min-height: 38px;
-    display: flex;
-    align-items: center;
-    line-height: 1.25;
-  }
+ .lb-title{
+  text-align:left;
+  padding-left:0;
+  padding-right:0;
+  font-size:16px;
+  min-height:38px;
+  display:flex;
+  align-items:center;
+  line-height:1.25;
+}
 }
   /* action buttons */
-  .lb-actions-top{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    margin-left: auto;
-  }
+ .lb-actions-top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  margin-left:auto;
+}
 
-  .lb-actions-bar{
-    padding: 10px 16px;
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    gap: 10px;
-    border-bottom: 1.5px solid var(--line2);
-    background: rgba(255,255,255,.94);
-    flex-wrap: wrap;
-  }
-  .lb-actions-bar .lb-actions-top{ margin-left: 0; }
+.lb-actions-bar .lb-actions-top .lb-btn{
+  min-height:44px;
+  padding:11px 18px;
+  font-size:12.8px;
+}
+
+.lb-actions-bar .lb-actions-top #lbDeleteSelectedTop,
+.lb-actions-bar .lb-actions-top #lbDeleteAllTop{
+  min-width:168px;
+}
+
+.lb-actions-bar .lb-actions-top #lbAddRowTop{
+  min-width:132px;
+}
+
+/* ✅ Bottom table action toolbar: hidden until Edit mode */
+.lb-actions-bar{
+  padding:12px 16px;
+  display:none;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  border-bottom:1.5px solid var(--line2);
+  background:rgba(255,255,255,.94);
+  flex-wrap:wrap;
+}
+
+.lb-wrap.lb-editing .lb-actions-bar{
+  display:flex;
+}
+
+.lb-actions-bar .lb-actions-top{
+  margin-left:0;
+}
 
   .lb-btn{
     border: 1px solid rgba(15,23,42,.14);
@@ -201,6 +238,62 @@ body.is-webview .lb-back{
     color: rgba(127,29,29,.95);
   }
   .lb-btn.lb-danger:hover{ background: rgba(239,68,68,.14); }
+
+  /* ✅ TOP buttons: Edit / Save / Cancel = strong highlighted colours */
+.lb-btn.lb-red{
+  background:linear-gradient(180deg, #ef4444, #dc2626) !important;
+  border-color:rgba(185,28,28,.58) !important;
+  color:#ffffff !important;
+  box-shadow:0 16px 28px -18px rgba(220,38,38,.75) !important;
+}
+
+.lb-btn.lb-red:hover{
+  background:linear-gradient(180deg, #f87171, #dc2626) !important;
+  border-color:rgba(185,28,28,.72) !important;
+  color:#ffffff !important;
+}
+
+.lb-btn.lb-green{
+  background:linear-gradient(180deg, #22c55e, #16a34a) !important;
+  border-color:rgba(21,128,61,.58) !important;
+  color:#ffffff !important;
+  box-shadow:0 16px 28px -18px rgba(22,163,74,.75) !important;
+}
+
+.lb-btn.lb-green:hover{
+  background:linear-gradient(180deg, #4ade80, #16a34a) !important;
+  border-color:rgba(21,128,61,.72) !important;
+  color:#ffffff !important;
+}
+
+/* ✅ BOTTOM toolbar buttons: soft outlined style */
+.lb-btn.lb-soft-red{
+  border:1.5px solid rgba(220,38,38,.20) !important;
+  background:rgba(220,38,38,.045) !important;
+  color:#b42318 !important;
+  box-shadow:none !important;
+}
+
+.lb-btn.lb-soft-red:hover{
+  background:rgba(220,38,38,.075) !important;
+  border-color:rgba(220,38,38,.32) !important;
+  color:#991b1b !important;
+  box-shadow:0 14px 22px -20px rgba(220,38,38,.25) !important;
+}
+
+.lb-btn.lb-soft-green{
+  border:1.5px solid rgba(11,77,58,.16) !important;
+  background:rgba(16,185,129,.065) !important;
+  color:#0b4d3a !important;
+  box-shadow:none !important;
+}
+
+.lb-btn.lb-soft-green:hover{
+  background:rgba(16,185,129,.10) !important;
+  border-color:rgba(11,77,58,.26) !important;
+  color:#064e3b !important;
+  box-shadow:0 14px 22px -20px rgba(11,77,58,.25) !important;
+}
 
   .lb-icon{ width: 14px; height: 14px; flex-shrink: 0; }
   .lb-hidden{ display:none !important; }
@@ -531,6 +624,76 @@ body.is-webview .lb-back{
   }
 
   @media (max-width: 720px){
+
+    /* ✅ Mobile/app header buttons */
+.lb-head{
+  grid-template-columns:44px 1fr;
+  align-items:start;
+}
+
+.lb-titlewrap{
+  grid-column:2;
+  text-align:left;
+}
+
+.lb-title{
+  text-align:left;
+  padding-left:0;
+  padding-right:0;
+}
+
+.lb-head-actions{
+  grid-column:1 / -1;
+  width:100%;
+  justify-self:stretch;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:10px;
+}
+
+.lb-head-actions .lb-btn{
+  width:100%;
+  min-width:0;
+  min-height:52px;
+  justify-content:center;
+}
+
+.lb-head-actions #lbEditSaveBtn{
+  grid-column:1 / -1;
+}
+
+.lb-wrap.lb-editing .lb-head-actions #lbEditSaveBtn{
+  grid-column:1;
+  grid-row:1;
+}
+
+.lb-wrap.lb-editing .lb-head-actions #lbCancelBtn{
+  grid-column:2;
+  grid-row:1;
+}
+
+/*  Mobile/app bottom action toolbar after Search/Rows */
+.lb-actions-bar{
+  padding:12px 14px;
+  justify-content:stretch;
+}
+
+.lb-actions-bar .lb-actions-top{
+  width:100%;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+
+.lb-actions-bar .lb-actions-top .lb-btn{
+  width:100%;
+  min-width:0 !important;
+  min-height:58px;
+  padding:14px 16px;
+  font-size:14px;
+  justify-content:center;
+}
     .lb-topfields{ grid-template-columns: 1fr; }
     .lb-search{ min-width: 100%; }
     .lb-summary{ justify-content: flex-start; }
@@ -594,23 +757,41 @@ body.is-webview .lb-back{
     .lb-cell[data-lbcell="sel"]{ justify-content: flex-start; }
     .lb-cell[data-lbcell="sl"]{ justify-content: flex-start; }
 
-    /* ✅ Mobile editing: hide top save/cancel/addrow (use bottom bar) */
-    .lb-wrap.lb-mobile-editing #lbCancelBtn,
-    .lb-wrap.lb-mobile-editing #lbAddRowTop,
-    .lb-wrap.lb-mobile-editing #lbEditSaveBtn,
-    .lb-wrap.lb-mobile-editing #lbDeleteAllTop,
-    .lb-wrap.lb-mobile-editing #lbDeleteSelectedTop{
-      display:none !important;
-    }
+  /*  Do not use old sticky mobilebar; keep uniform header + toolbar placement */
+.lb-mobilebar{
+  display:none !important;
+}
 
     /* bottom pager aligns nicely */
     .lb-footer-controls{ justify-content: center; }
   }
 
-  @media (max-width: 420px){
-    .lb-body{ grid-auto-columns: 90%; }
+ @media (max-width: 420px){
+  .lb-body{ grid-auto-columns:90%; }
+
+  .lb-head-actions{
+    grid-template-columns:1fr 1fr;
   }
 
+  .lb-head-actions #lbEditSaveBtn{
+    grid-column:1 / -1;
+  }
+
+  .lb-wrap.lb-editing .lb-head-actions #lbEditSaveBtn{
+    grid-column:1;
+    grid-row:1;
+  }
+
+  .lb-wrap.lb-editing .lb-head-actions #lbCancelBtn{
+    grid-column:2;
+    grid-row:1;
+  }
+
+  .lb-actions-bar .lb-actions-top{
+    grid-template-columns:1fr;
+  }
+}
+ 
   /* ============================================================
      MOBILE BOTTOM ACTION BAR (only during edit on mobile)
      ============================================================ */
@@ -757,25 +938,46 @@ body.is-webview .lb-back{
 <div class="lb-wrap" id="lbWrap">
   <div class="lb-sheet">
 
-   <div class="lb-head">
-<a class="lb-back"
-   href="javascript:void(0)"
-   aria-label="Back"
-   onclick="(window.history.length>1)?window.history.back():window.location.href='{{ url_for('pg.pg_home') }}'">
-  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M19 12H5M5 12l6 6M5 12l6-6"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"></path>
-  </svg>
-</a>
+  <div class="lb-head">
+  <a class="lb-back"
+     href="javascript:void(0)"
+     aria-label="Back"
+     onclick="(window.history.length>1)?window.history.back():window.location.href='{{ url_for('pg.pg_home') }}'">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M19 12H5M5 12l6 6M5 12l6-6"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+    </svg>
+  </a>
 
   <div class="lb-titlewrap">
     <h2 class="lb-title" id="lbTitle">Ledger Book</h2>
   </div>
 
-  <div class="lb-head-spacer" aria-hidden="true"></div>
+  <div class="lb-head-actions">
+    <button class="lb-btn lb-red lb-hidden" id="lbCancelBtn" type="button">
+      <svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 6 6 18"></path>
+        <path d="M6 6l12 12"></path>
+      </svg>
+      <span id="lbCancelText">Cancel</span>
+    </button>
+
+    <button class="lb-btn lb-red" id="lbEditSaveBtn" type="button">
+      <svg id="lbEditIcon" class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+      </svg>
+      <svg id="lbSaveIcon" class="lb-icon lb-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+      <span id="lbEditSaveText">Edit</span>
+    </button>
+  </div>
 </div>
 
     <div class="lb-topfields">
@@ -808,66 +1010,40 @@ body.is-webview .lb-back{
       </div>
     </div>
 
-    <!-- ✅ buttons ABOVE table -->
-    <div class="lb-actions-bar">
-      <div style="font-weight:950; font-size:12px; color:rgba(15,23,42,.72);">
-        <!-- intentionally blank label space; keeps UI clean -->
-      </div>
+    <!--  Table toolbar: visible only after Edit -->
+<div class="lb-actions-bar">
+  <div class="lb-actions-top">
+    <button class="lb-btn lb-soft-red" id="lbDeleteSelectedTop" type="button" disabled>
+      <svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 6h18"></path>
+        <path d="M8 6V4h8v2"></path>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+        <path d="M10 11v6"></path>
+        <path d="M14 11v6"></path>
+      </svg>
+      <span id="lbDeleteSelectedText">Delete Selected</span>
+    </button>
 
-      <div class="lb-actions-top">
-        <button class="lb-btn lb-hidden" id="lbCancelBtn" type="button">
-          <svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 6 6 18"></path>
-            <path d="M6 6l12 12"></path>
-          </svg>
-          <span id="lbCancelText">Cancel</span>
-        </button>
+    <button class="lb-btn lb-soft-red" id="lbDeleteAllTop" type="button" disabled>
+      <svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 6h18"></path>
+        <path d="M8 6V4h8v2"></path>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+        <path d="M10 11v6"></path>
+        <path d="M14 11v6"></path>
+      </svg>
+      <span id="lbDeleteAllText">Delete All</span>
+    </button>
 
-        <button class="lb-btn" id="lbEditSaveBtn" type="button">
-          <svg id="lbEditIcon" class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-          </svg>
-          <svg id="lbSaveIcon" class="lb-icon lb-hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-            <polyline points="7 3 7 8 15 8"></polyline>
-          </svg>
-          <span id="lbEditSaveText">Edit</span>
-        </button>
-
-        <button class="lb-btn lb-primary" id="lbAddRowTop" type="button" disabled>
-          <svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 5v14"></path>
-            <path d="M5 12h14"></path>
-          </svg>
-          <span id="lbAddRowText">+ Add Row</span>
-        </button>
-
-        <!-- ✅ multi delete actions (edit only) -->
-        <button class="lb-btn lb-danger" id="lbDeleteSelectedTop" type="button" disabled>
-          <svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 6h18"></path>
-            <path d="M8 6V4h8v2"></path>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-            <path d="M10 11v6"></path>
-            <path d="M14 11v6"></path>
-          </svg>
-          <span id="lbDeleteSelectedText">Delete Selected</span>
-        </button>
-
-        <button class="lb-btn lb-danger" id="lbDeleteAllTop" type="button" disabled>
-          <svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 6h18"></path>
-            <path d="M8 6V4h8v2"></path>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-            <path d="M10 11v6"></path>
-            <path d="M14 11v6"></path>
-          </svg>
-          <span id="lbDeleteAllText">Delete All</span>
-        </button>
-      </div>
-    </div>
+    <button class="lb-btn lb-soft-green" id="lbAddRowTop" type="button" disabled>
+      <svg class="lb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 5v14"></path>
+        <path d="M5 12h14"></path>
+      </svg>
+      <span id="lbAddRowText">Add Row</span>
+    </button>
+  </div>
+</div>
 
     <div class="lb-table-wrap">
       <div class="lb-table">
@@ -917,7 +1093,7 @@ body.is-webview .lb-back{
       <div class="lb-kpi" id="lbKpiClose">Closing Balance: <b id="lbClosing">0</b></div>
     </div>
 
-    <!-- ✅ ONLY pager: BELOW totals -->
+    <!--  ONLY pager: BELOW totals -->
     <div class="lb-footer-controls">
       <div class="lb-pager">
         <button class="lb-btn" id="lbPrevBottom" type="button">Prev</button>
@@ -926,18 +1102,18 @@ body.is-webview .lb-back{
       </div>
     </div>
 
-    <!-- ✅ Mobile sticky action bar (only in edit mode on mobile) -->
+    <!--  Mobile sticky action bar (only in edit mode on mobile) -->
     <div class="lb-mobilebar lb-hidden" id="lbMobileBar">
-      <button class="lb-btn" id="lbMobileCancel" type="button">Cancel</button>
-      <button class="lb-btn lb-primary" id="lbMobileAddRow" type="button">+ Add Row</button>
-      <button class="lb-btn lb-danger" id="lbMobileDeleteSelected" type="button" disabled>Delete Selected</button>
-      <button class="lb-btn lb-danger" id="lbMobileDeleteAll" type="button" disabled>Delete All</button>
-      <button class="lb-btn lb-primary" id="lbMobileSave" type="button">Save</button>
-    </div>
+  <button class="lb-btn lb-red" id="lbMobileCancel" type="button">Cancel</button>
+  <button class="lb-btn lb-soft-green" id="lbMobileAddRow" type="button">Add Row</button>
+  <button class="lb-btn lb-soft-red" id="lbMobileDeleteSelected" type="button" disabled>Delete Selected</button>
+  <button class="lb-btn lb-soft-red" id="lbMobileDeleteAll" type="button" disabled>Delete All</button>
+  <button class="lb-btn lb-green" id="lbMobileSave" type="button">Save</button>
+</div>
   </div>
 </div>
 
-<!-- ✅ SAVE CONFIRM MODAL -->
+<!--  SAVE CONFIRM MODAL -->
 <div id="lbSaveOverlay" class="lb-modal-overlay" role="dialog" aria-modal="true">
   <div class="lb-modal">
     <div class="lb-mhead">
@@ -1084,7 +1260,7 @@ document.addEventListener("DOMContentLoaded", () => {
       hBalCredit: "Bal Credit",
       hAction: "Action",
 
-      addRow: "+ Add Row",
+      addRow: " Add Row",
       save: "Save",
 
       editButton: "Edit",
@@ -1156,7 +1332,7 @@ document.addEventListener("DOMContentLoaded", () => {
       hBalCredit: "ব্যালেন্স জমা",
       hAction: "অ্যাকশন",
 
-      addRow: "+ সারি যোগ করুন",
+      addRow: " সারি যোগ করুন",
       save: "সেভ",
 
       editButton: "সম্পাদনা করুন",
@@ -1703,7 +1879,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (mobSel) mobSel.disabled = !(on && selectedRows().length > 0);
     if (mobAll) mobAll.disabled = !(on && allRows.length > 0);
 
-    $("lbSelectAll").disabled = !on;
+   const lbSelectAllEl = $("lbSelectAll");
+if (lbSelectAllEl) {
+  lbSelectAllEl.disabled = !on;
+}
 
     // ✅ lock toggles exactly with edit mode
     lbSetLock(on);
@@ -1713,14 +1892,19 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function setEditingUI(){
-    const t = T[lang];
+  const t = T[lang];
 
-    $("lbEditIcon").classList.toggle("lb-hidden", lbIsEditing);
-    $("lbSaveIcon").classList.toggle("lb-hidden", !lbIsEditing);
-    $("lbEditSaveText").textContent = lbIsEditing ? t.saveButton : t.editButton;
+  $("lbEditIcon").classList.toggle("lb-hidden", lbIsEditing);
+  $("lbSaveIcon").classList.toggle("lb-hidden", !lbIsEditing);
+  $("lbEditSaveText").textContent = lbIsEditing ? t.saveButton : t.editButton;
 
-    $("lbCancelBtn").classList.toggle("lb-hidden", !lbIsEditing);
-    $("lbCancelText").textContent = t.cancelButton;
+  // ✅ Edit = strong red, Save = strong green, Cancel = strong red
+  $("lbEditSaveBtn").classList.toggle("lb-red", !lbIsEditing);
+  $("lbEditSaveBtn").classList.toggle("lb-green", lbIsEditing);
+  $("lbCancelBtn").classList.add("lb-red");
+
+  $("lbCancelBtn").classList.toggle("lb-hidden", !lbIsEditing);
+  $("lbCancelText").textContent = t.cancelButton;
 
     $("lbAddRowText").textContent = t.addRow;
 
@@ -1741,8 +1925,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const cb = r.querySelector("[data-lb='sel']");
       if (cb) cb.checked = false;
     });
-    $("lbSelectAll").checked = false;
-    $("lbSelectAll").indeterminate = false;
+    const lbSelectAllEl = $("lbSelectAll");
+if (lbSelectAllEl) {
+  lbSelectAllEl.checked = false;
+  lbSelectAllEl.indeterminate = false;
+}
     updateSelectUI();
   }
 
@@ -1812,7 +1999,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     $("lbEmpty").textContent = t.empty;
 
-    $("lbHSel").textContent = t.hSel;
+const lbSelectAllHead = $("lbSelectAll");
+if (lbSelectAllHead) {
+  lbSelectAllHead.setAttribute("title", lang === "bn" ? "সব নির্বাচন" : "Select all");
+}
     $("lbHSl").textContent = t.hSl;
     $("lbHDate").textContent = t.hDate;
     $("lbHParticulars").textContent = t.hParticulars;

@@ -72,21 +72,37 @@
 }
 
  .opr-head{
-  padding: 14px 16px 12px;
+  padding:14px 16px 12px;
   background:
     radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
     linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
-  border-bottom: 1.5px solid var(--line2);
+  border-bottom:1.5px solid var(--line2);
+  display:grid;
+  grid-template-columns:44px 1fr auto;
+  align-items:center;
+  gap:12px;
 }
 
   /* NEW: title row with mobile/app back button */
-  .opr-titleRow{
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 42px;
-  }
+ .opr-titleRow{
+  grid-column:2;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:42px;
+  min-width:0;
+}
+
+.opr-headActions{
+  grid-column:3;
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
 
   .opr-backBtn{
     display: none; /* hidden on web by default */
@@ -133,13 +149,14 @@
   }
 
   .opr-sub{
-    margin: 6px 0 0;
-    text-align:center;
-    color: rgba(15,23,42,.72);
-    font-weight: 850;
-    font-size: 12.5px;
-    line-height: 1.25;
-  }
+  grid-column:2;
+  margin:6px 0 0;
+  text-align:center;
+  color:rgba(15,23,42,.72);
+  font-weight:850;
+  font-size:12.5px;
+  line-height:1.25;
+}
 
   @media (max-width: 560px){
     .opr-title{ font-size: 16px; }
@@ -204,54 +221,203 @@
 }
   .opr-btnDanger:hover{ background: rgba(239,68,68,.14); }
 
+
+/* ✅ TOP buttons: Edit / Save / Cancel = strong highlighted colours */
+.opr-btn.opr-red{
+  background:linear-gradient(180deg, #ef4444, #dc2626) !important;
+  border-color:rgba(185,28,28,.58) !important;
+  color:#ffffff !important;
+  box-shadow:0 16px 28px -18px rgba(220,38,38,.75) !important;
+}
+
+.opr-btn.opr-red:hover{
+  background:linear-gradient(180deg, #f87171, #dc2626) !important;
+  border-color:rgba(185,28,28,.72) !important;
+  color:#ffffff !important;
+}
+
+.opr-btn.opr-green{
+  background:linear-gradient(180deg, #22c55e, #16a34a) !important;
+  border-color:rgba(21,128,61,.58) !important;
+  color:#ffffff !important;
+  box-shadow:0 16px 28px -18px rgba(22,163,74,.75) !important;
+}
+
+.opr-btn.opr-green:hover{
+  background:linear-gradient(180deg, #4ade80, #16a34a) !important;
+  border-color:rgba(21,128,61,.72) !important;
+  color:#ffffff !important;
+}
+
+/* ✅ BOTTOM table action buttons = soft outlined colours */
+.opr-btn.opr-soft-red{
+  border:1.5px solid rgba(220,38,38,.20) !important;
+  background:rgba(220,38,38,.045) !important;
+  color:#b42318 !important;
+  box-shadow:none !important;
+}
+
+.opr-btn.opr-soft-red:hover{
+  background:rgba(220,38,38,.075) !important;
+  border-color:rgba(220,38,38,.32) !important;
+  color:#991b1b !important;
+  box-shadow:0 14px 22px -20px rgba(220,38,38,.25) !important;
+}
+
+.opr-btn.opr-soft-green{
+  border:1.5px solid rgba(11,77,58,.16) !important;
+  background:rgba(16,185,129,.065) !important;
+  color:#0b4d3a !important;
+  box-shadow:none !important;
+}
+
+.opr-btn.opr-soft-green:hover{
+  background:rgba(16,185,129,.10) !important;
+  border-color:rgba(11,77,58,.26) !important;
+  color:#064e3b !important;
+  box-shadow:0 14px 22px -20px rgba(11,77,58,.25) !important;
+}
+
  .opr-btnMuted{
   border-color: rgba(15,23,42,.14);
   background: rgba(241,245,249,.75);
   color: rgba(15,23,42,.78);
 }
 
-  /* Actions bar */
-  .opr-actionsBar{
-    padding: 10px 16px;
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    gap: 10px;
-    background: rgba(255,255,255,.94);
-    flex-wrap: wrap;
-  }
-  .opr-actionsLeft, .opr-actionsRight{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
+ /* ✅ Export/Print bar only */
+.opr-actionsBar{
+  padding:10px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  background:rgba(255,255,255,.94);
+  flex-wrap:wrap;
+}
+
+.opr-actionsRight{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.opr-actionsLeft{
+  display:none;
+}
 
   /* ✅ Mobile/tablet: clean button placement (no messy wrap) */
   @media (max-width: 760px){
-    .opr-actionsBar{
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
-    }
-    .opr-actionsLeft, .opr-actionsRight{
-      width:100%;
-      justify-content: space-between;
-    }
-    .opr-actionsLeft{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .opr-actionsRight{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .opr-actionsLeft .opr-btn,
-    .opr-actionsRight .opr-btn{
-      width:100%;
-    }
+   /* ✅ Mobile/app header buttons */
+.opr-head{
+  grid-template-columns:1fr;
+  align-items:stretch;
+  gap:12px;
+  padding:14px 16px;
+}
+
+.opr-titleRow{
+  grid-column:1 / -1;
+  display:grid;
+  grid-template-columns:44px 1fr;
+  align-items:center;
+  gap:10px;
+  min-height:44px;
+  width:100%;
+}
+
+.opr-backBtn{
+  position:static;
+  transform:none;
+  display:inline-flex;
+  width:44px;
+  height:44px;
+  border-radius:14px;
+  grid-column:1;
+}
+
+.opr-backBtn:hover{
+  transform:none;
+}
+
+.opr-title{
+  grid-column:2;
+  text-align:left;
+  padding:0;
+  font-size:16px;
+  line-height:1.25;
+  word-break:normal;
+  overflow-wrap:break-word;
+}
+
+.opr-sub{
+  grid-column:1 / -1;
+  text-align:left;
+  margin:0;
+  line-height:1.35;
+}
+
+.opr-tabs{
+  padding:12px 16px;
+  gap:10px;
+  scroll-snap-type:x mandatory;
+}
+
+.opr-tab{
+  flex:0 0 auto;
+  scroll-snap-align:start;
+}
+
+.opr-headActions{
+  grid-column:1 / -1;
+  width:100%;
+  justify-self:stretch;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:2px;
+}
+
+.opr-headActions .opr-btn{
+  width:100%;
+  min-width:0;
+  min-height:56px;
+  justify-content:center;
+  font-size:14px;
+  border-radius:999px;
+}
+
+.opr-headActions #oprEditSave{
+  grid-column:1 / -1;
+}
+
+.opr-wrap.is-editing .opr-headActions #oprEditSave{
+  grid-column:1;
+  grid-row:1;
+}
+
+.opr-wrap.is-editing .opr-headActions #oprCancel{
+  grid-column:2;
+  grid-row:1;
+}
+/* ✅ Export / Print responsive */
+.opr-actionsBar{
+  align-items:stretch;
+  justify-content:stretch;
+}
+
+.opr-actionsRight{
+  width:100%;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.opr-actionsRight .opr-btn{
+  width:100%;
+  justify-content:center;
+}
   }
 
   .opr-divider{ height:1px; background: var(--line2); width:100%; }
@@ -378,22 +544,20 @@
     .opr-tab{ flex: 0 0 auto; }
   }
 
-  /* Section header */
-  .opr-sectionHead{
-    padding: 12px 16px;
-    display:flex;
-    align-items:flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    background: rgba(255,255,255,.96);
-  }
-  .opr-sectionMeta{
-  display:none;
+/* Section toolbar area */
+.opr-sectionHead{
+  padding:12px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:12px;
+  background:rgba(255,255,255,.96);
+  border-top:1px solid var(--line2);
+  border-bottom:1px solid var(--line2);
 }
 
-.opr-sectionHead{
-  justify-content:flex-end;
+.opr-sectionMeta{
+  display:none;
 }
   .opr-sectionTitle{
     margin:0;
@@ -412,25 +576,65 @@
     font-size: 12.5px;
   }
 
-  .opr-sectionTools{
-    display:flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items:center;
-    justify-content:flex-end;
+/* Table action toolbar: hidden until Edit mode */
+.opr-sectionTools{
+  display:none;
+  width:100%;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-end;
+}
+
+.opr-wrap.is-editing .opr-sectionTools{
+  display:flex;
+}
+
+.opr-sectionTools .opr-btn{
+  min-height:44px;
+  padding:11px 18px;
+  font-size:12.8px;
+  justify-content:center;
+}
+
+.opr-sectionTools #oprDeleteSelected,
+.opr-sectionTools #oprDeleteAll{
+  min-width:168px;
+}
+
+.opr-sectionTools #oprAddRow{
+  min-width:132px;
+}
+
+
+@media (max-width: 760px){
+  .opr-sectionHead{
+    padding:14px 16px;
+    justify-content:stretch;
   }
 
-  /* ✅ Mobile: tools row neat */
-  @media (max-width: 760px){
-    .opr-sectionTools{
-      width:100%;
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-      justify-content: stretch;
-    }
-    .opr-sectionTools .opr-btn{ width:100%; }
+  .opr-sectionTools{
+    width:100%;
+    display:none;
+    grid-template-columns:1fr;
+    gap:12px;
+    justify-content:stretch;
   }
+
+  .opr-wrap.is-editing .opr-sectionTools{
+    display:grid;
+  }
+
+  .opr-sectionTools .opr-btn{
+    width:100%;
+    min-width:0 !important;
+    min-height:58px;
+    padding:14px 16px;
+    font-size:14px;
+    border-radius:999px;
+    justify-content:center;
+  }
+}
 
   /* Table wrap */
   .opr-tableWrap{
@@ -559,9 +763,30 @@
     font-weight: 950;
     color: rgba(15,23,42,.90);
   }
-  @media (max-width: 900px){
-    .opr-totals{ grid-template-columns: 1fr; }
+ @media (max-width: 900px){
+  .opr-topfields{
+    grid-template-columns:1fr;
+    padding:14px 16px;
+    gap:16px;
   }
+
+  .opr-field{
+    flex-direction:column;
+    align-items:stretch;
+    gap:8px;
+  }
+
+  .opr-label{
+    width:100%;
+    white-space:normal;
+    line-height:1.25;
+  }
+
+  .opr-input{
+    width:100%;
+    min-width:0;
+  }
+}
 
   /* Mobile/app swipe cards */
   .opr-mobileList{
@@ -600,9 +825,11 @@
     }
 
     .opr-card{
-      flex: 0 0 min(560px, 86%);
-      scroll-snap-align: start;
-    }
+  flex:0 0 100%;
+  width:100%;
+  max-width:100%;
+  scroll-snap-align:start;
+}
 
     .opr-stickyLeft, .opr-stickyLeft2{ position: static; left: auto; }
   }
@@ -640,10 +867,78 @@
     margin-bottom: 6px;
   }
   .opr-item .opr-tdInput{ min-height: 44px; }
-  @media (max-width: 520px){
-    .opr-grid{ grid-template-columns: 1fr; }
+ @media (max-width: 520px){
+  .opr-mobileList{
+    padding:12px 16px 18px;
   }
 
+  .opr-grid{
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+
+  .opr-item label{
+    font-size:10.5px;
+    margin-bottom:4px;
+  }
+
+  .opr-item .opr-tdInput{
+    min-height:38px;
+    font-size:12px;
+    padding:8px 10px;
+  }
+
+  .opr-card{
+    padding:10px;
+    border-radius:16px;
+  }
+
+  .opr-cardTop{
+    margin-bottom:8px;
+  }
+}
+/* ✅ Saved Month Records fixed inside Output Register card */
+.opr-history-slot{
+  width:100%;
+  padding:16px;
+  background:#fff;
+  border-top:1px solid var(--line2);
+}
+
+#oprHistoryBox{
+  margin:0 !important;
+  padding:16px !important;
+  background:#fff !important;
+  border:1px solid rgba(15,23,42,.10) !important;
+  border-radius:18px !important;
+  box-shadow:0 16px 28px -24px rgba(15,23,42,.35);
+}
+
+@media (max-width:760px){
+  .opr-history-slot{
+    padding:14px 16px 16px;
+  }
+
+  #oprHistoryBox{
+    border-radius:18px !important;
+    padding:16px !important;
+  }
+
+  #oprHistoryBox > div{
+    align-items:flex-start !important;
+  }
+
+  #oprHistoryCards{
+    width:100%;
+    justify-content:flex-start;
+  }
+
+  .opr-history-card{
+    min-height:52px;
+    padding:12px 18px !important;
+    border-radius:16px !important;
+  }
+}
   /* Funky toast top-right (not green) */
   .opr-toast{
     position: fixed;
@@ -1000,57 +1295,56 @@
 
 {% block content %}
 <script>window.PG_ID = "{{ pg_id|default('') }}";</script>
-<div class="opr-wrap">
+<div class="opr-wrap" id="oprWrap">
   <div class="opr-shell">
     <div class="opr-sheet">
 
-          <div class="opr-head">
-        <div class="opr-titleRow">
-          <button type="button" class="opr-backBtn" id="oprBackBtn" aria-label="Back">
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M19 12H5M5 12l6 6M5 12l6-6"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"></path>
-            </svg>
-          </button>
+<div class="opr-head">
+  <div class="opr-titleRow">
+    <button type="button" class="opr-backBtn" id="oprBackBtn" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M19 12H5M5 12l6 6M5 12l6-6"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+      </svg>
+    </button>
 
-          <h1 class="opr-title" data-i18n="page_title">Output / Produce Register (Purchase / Sale / Stock)</h1>
-        </div>
+    <h1 class="opr-title" data-i18n="page_title">Output / Produce Register (Purchase / Sale / Stock)</h1>
+  </div>
 
-        <p class="opr-sub" data-i18n="page_sub">
-          Record purchases from members, sales to buyers, and live stock balance. Amounts & stock auto-calculate.
-        </p>
-      </div>
+  <div class="opr-headActions">
+    <button type="button" class="opr-btn opr-red" id="oprEditSave">
+      <ion-icon id="oprEditSaveIcon" name="create"></ion-icon>
+      <span id="oprEditSaveText" data-i18n="btn_edit">Edit</span>
+    </button>
 
-      <!-- Actions -->
-      <div class="opr-actionsBar">
-        <div class="opr-actionsLeft">
-          <!-- ✅ Edit toggles to Save (single button) -->
-          <button type="button" class="opr-btn opr-btnPrimary" id="oprEditSave">
-            <ion-icon id="oprEditSaveIcon" name="create"></ion-icon>
-            <span id="oprEditSaveText" data-i18n="btn_edit">Edit</span>
-          </button>
+    <button type="button" class="opr-btn opr-red" id="oprCancel" style="display:none;">
+      <ion-icon name="close-circle"></ion-icon>
+      <span data-i18n="btn_cancel">Cancel</span>
+    </button>
+  </div>
 
-          <button type="button" class="opr-btn opr-btnMuted" id="oprCancel" style="display:none;">
-            <ion-icon name="close-circle"></ion-icon>
-            <span data-i18n="btn_cancel">Cancel</span>
-          </button>
-        </div>
+  <p class="opr-sub" data-i18n="page_sub">
+    Record purchases from members, sales to buyers, and live stock balance. Amounts & stock auto-calculate.
+  </p>
+</div>
 
-        <div class="opr-actionsRight">
-          <button type="button" class="opr-btn" id="oprExport">
-            <ion-icon name="download"></ion-icon>
-            <span data-i18n="btn_export">Export</span>
-          </button>
+      <!-- Export / Print actions only -->
+<div class="opr-actionsBar">
+  <div class="opr-actionsRight">
+    <button type="button" class="opr-btn" id="oprExport">
+      <ion-icon name="download"></ion-icon>
+      <span data-i18n="btn_export">Export</span>
+    </button>
 
-          <button type="button" class="opr-btn" id="oprPrint">
-            <ion-icon name="print"></ion-icon>
-            <span data-i18n="btn_print">Print</span>
-          </button>
-        </div>
-      </div>
+    <button type="button" class="opr-btn" id="oprPrint">
+      <ion-icon name="print"></ion-icon>
+      <span data-i18n="btn_print">Print</span>
+    </button>
+  </div>
+</div>
 
       <div class="opr-divider"></div>
 
@@ -1094,37 +1388,38 @@
         </button>
       </div>
 
-      <!-- Section head + tools -->
-      <div class="opr-sectionHead">
-        <div>
-        <div class="opr-sectionMeta" aria-hidden="true">
-  <h3 class="opr-sectionTitle" id="sectionTitle">
-    <ion-icon name="grid"></ion-icon>
-    <span id="sectionTitleText">All (Purchases + Sales + Stock)</span>
-  </h3>
-  <div class="opr-sectionNote" id="sectionNote">All records shown together. Amounts & stock auto-calculate.</div>
+    <!-- Section action toolbar: visible only after Edit -->
+<div class="opr-sectionHead">
+  <div class="opr-sectionMeta" aria-hidden="true">
+    <h3 class="opr-sectionTitle" id="sectionTitle">
+      <ion-icon name="grid"></ion-icon>
+      <span id="sectionTitleText">All (Purchases + Sales + Stock)</span>
+    </h3>
+    <div class="opr-sectionNote" id="sectionNote">
+      All records shown together. Amounts & stock auto-calculate.
+    </div>
+  </div>
+
+  <div class="opr-sectionTools" id="sectionTools">
+    <button type="button" class="opr-btn opr-soft-red" id="oprDeleteSelected" style="display:none;">
+      <ion-icon name="trash"></ion-icon>
+      <span data-i18n="btn_delete_selected">Delete Selected</span>
+    </button>
+
+    <button type="button" class="opr-btn opr-soft-red" id="oprDeleteAll" style="display:none;">
+      <ion-icon name="trash-bin"></ion-icon>
+      <span data-i18n="btn_delete_all">Delete All</span>
+    </button>
+
+    <button type="button" class="opr-btn opr-soft-green" id="oprAddRow" style="display:none;">
+      <ion-icon name="add-circle"></ion-icon>
+      <span data-i18n="btn_add_row">Add Row</span>
+    </button>
+  </div>
 </div>
 
-        <div class="opr-sectionTools" id="sectionTools">
-          <button type="button" class="opr-btn opr-btnPrimary" id="oprAddRow" style="display:none;">
-            <ion-icon name="add-circle"></ion-icon>
-            <span data-i18n="btn_add_row">Add Row</span>
-          </button>
-
-          <button type="button" class="opr-btn opr-btnDanger" id="oprDeleteSelected" style="display:none;">
-            <ion-icon name="trash"></ion-icon>
-            <span data-i18n="btn_delete_selected">Delete Selected</span>
-          </button>
-
-          <button type="button" class="opr-btn opr-btnDanger" id="oprDeleteAll" style="display:none;">
-            <ion-icon name="trash-bin"></ion-icon>
-            <span data-i18n="btn_delete_all">Delete All</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Desktop table -->
-      <div class="opr-tableWrap">
+<!-- Desktop table -->
+<div class="opr-tableWrap">
         <table class="opr-table" id="sectionTable" aria-label="Section Table">
           <thead id="sectionThead"></thead>
           <tbody id="sectionTbody"></tbody>
@@ -1134,8 +1429,8 @@
       <!-- Mobile/app cards -->
       <div class="opr-mobileList" id="mobileList"></div>
 
-      <!-- Totals -->
-      <div class="opr-totals" id="totalsStrip">
+          <!-- Totals -->
+          <div class="opr-totals" id="totalsStrip">
         <div class="opr-kpi">
           <b id="kpi1Label">Total Purchase Amount</b>
           <span id="kpi1Val">0</span>
@@ -1149,6 +1444,9 @@
           <span id="kpi3Val">0</span>
         </div>
       </div>
+
+      <!--  Fixed place for Saved Month Records INSIDE the register card -->
+      <div id="oprHistorySlot" class="opr-history-slot"></div>
 
     </div>
   </div>
@@ -1919,25 +2217,41 @@ let outputPrintPreviewOpen = false;
     return `${names[(Number(month) || 1) - 1] || "Month"} ${year || ""}`.trim();
   }
 
-  function ensureHistoryBox(){
-    let el = document.getElementById('oprHistoryBox');
-    if(el) return el;
+ function ensureHistoryBox(){
+  const slot = document.getElementById('oprHistorySlot');
+  if(!slot) return null;
+
+  let el = document.getElementById('oprHistoryBox');
+
+  // ✅ If old/wrong instance exists anywhere, move it back into the fixed slot.
+  if(!el){
     el = document.createElement('section');
     el.id = 'oprHistoryBox';
-    el.style.marginTop = '16px';
-    el.style.padding = '16px';
-    el.style.background = '#fff';
-    el.style.border = '1px solid rgba(15,23,42,.08)';
-    el.style.borderRadius = '18px';
-    el.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div style="font-size:18px;font-weight:800;color:#0f172a">Saved Month Records</div><div id="oprCurrentPeriodText" style="font-size:13px;color:#64748b;margin-top:4px"></div></div><div id="oprHistoryCards" style="display:flex;gap:10px;flex-wrap:wrap"></div></div>';
-    const sheet = document.querySelector('.opr-page .opr-shell, .opr-page .opr-container, .opr-page main, .opr-page') || document.body;
-    sheet.appendChild(el);
-    return el;
   }
 
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+      <div>
+        <div style="font-size:18px;font-weight:950;color:#0f172a">Saved Month Records</div>
+        <div id="oprCurrentPeriodText" style="font-size:13px;color:#64748b;margin-top:4px;font-weight:700"></div>
+      </div>
+      <div id="oprHistoryCards" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+    </div>
+  `;
+
+  if(el.parentElement !== slot){
+    slot.innerHTML = '';
+    slot.appendChild(el);
+  }
+
+  return el;
+}
+
   function renderHistoryBox(){
-    ensureHistoryBox();
-    const current = document.getElementById('oprCurrentPeriodText');
+  const box = ensureHistoryBox();
+  if(!box) return;
+
+  const current = document.getElementById('oprCurrentPeriodText');
     const cards = document.getElementById('oprHistoryCards');
     if(current) current.textContent = `Working month: ${monthLabel(selectedPeriod.month, selectedPeriod.year)}`;
     if(!cards) return;
@@ -2407,22 +2721,29 @@ cloned.querySelectorAll("tr").forEach(tr=>{
     _lock.onBeforeUnload = _lock.onKeyDown = _lock.onClick = _lock.onSubmit = _lock.onPopState = null;
   }
 
-  function setEditUI(){
-    // keep your logic as-is
-    els.produceName.toggleAttribute("readonly", !editMode);
-    els.unitStock.toggleAttribute("readonly", !editMode);
+function setEditUI(){
+  const root = document.getElementById("oprWrap") || document.querySelector(".opr-wrap");
+  if(root) root.classList.toggle("is-editing", !!editMode);
 
-    els.editSaveText.textContent = editMode ? t("btn_save") : t("btn_edit");
-    els.editSaveIcon.setAttribute("name", editMode ? "save" : "create");
+  els.produceName.toggleAttribute("readonly", !editMode);
+  els.unitStock.toggleAttribute("readonly", !editMode);
 
-    els.cancelBtn.style.display = editMode ? "inline-flex" : "none";
-    els.addRowBtn.style.display = editMode ? "inline-flex" : "none";
-    els.delSelectedBtn.style.display = editMode ? "inline-flex" : "none";
-    els.delAllBtn.style.display = editMode ? "inline-flex" : "none";
+  els.editSaveText.textContent = editMode ? t("btn_save") : t("btn_edit");
+  els.editSaveIcon.setAttribute("name", editMode ? "save" : "create");
 
-    if(editMode) enableEditLock();
-    else disableEditLock();
-  }
+  // ✅ Edit = strong red, Save = strong green, Cancel = strong red
+  els.editSaveBtn.classList.toggle("opr-red", !editMode);
+  els.editSaveBtn.classList.toggle("opr-green", editMode);
+  els.cancelBtn.classList.add("opr-red");
+
+  els.cancelBtn.style.display = editMode ? "inline-flex" : "none";
+  els.addRowBtn.style.display = editMode ? "inline-flex" : "none";
+  els.delSelectedBtn.style.display = editMode ? "inline-flex" : "none";
+  els.delAllBtn.style.display = editMode ? "inline-flex" : "none";
+
+  if(editMode) enableEditLock();
+  else disableEditLock();
+}
 
   function setTabsUI(){
     const map = { all: els.tabAll, purchases: els.tabPurchases, sales: els.tabSales, stock: els.tabStock };
