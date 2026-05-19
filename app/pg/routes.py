@@ -4340,9 +4340,10 @@ def api_receipt_voucher_members(pg_id):
         "members": result
     })
 
+
 @pg_bp.route("/api/register/<name>/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CADRE_CC", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg', pg_id_param="pg_id")
 def api_generic_register(name, pg_id):
     db = current_app.mongo_db
@@ -4356,67 +4357,348 @@ def api_generic_register(name, pg_id):
         "minutes": "pg_meeting_minutes",
         "member_ledger": "pg_member_ledgers",
     }
+
     if name not in allowed:
         return jsonify({"ok": False, "error": f"Invalid register name: {name}"}), 404
 
     coll = allowed[name]
+    base_pg_id = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
 
+    def _norm_name(value):
+        return " ".join(str(value or "").strip().split())
+
+    def _name_key(value):
+        return _norm_name(value).lower()
+
+    def _safe_regex_exact(value):
+        value = str(value or "")
+        for ch in ["\\", ".", "+", "*", "?", "^", "$", "(", ")", "[", "]", "{", "}", "|"]:
+            value = value.replace(ch, "\\" + ch)
+        return f"^{value}$"
+
+    def _serialize_doc(doc):
+        if not doc:
+            return doc
+        doc["_id"] = str(doc["_id"])
+        doc["pg_id"] = str(doc["pg_id"])
+        return doc
+
+    def _base_period_query():
+        q = {"pg_id": base_pg_id}
+        if year is not None:
+            q["year"] = int(year)
+        if month is not None:
+            q["month"] = int(month)
+        return q
+
+    def _blank_pg_name():
+        pg_doc = db.pgs.find_one({"_id": base_pg_id}, {"name": 1}) or {}
+        return pg_doc.get("name", "")
+
+    def _get_saved_names(register_name):
+        """
+        For input:
+            root: input_name
+            meta: data.meta.regInputName
+
+        For output:
+            root: output_name
+            meta: data.meta.regOutputName
+            fallback: data.produceName
+        """
+        q = _base_period_query()
+
+        if register_name == "input":
+            root_field = "input_name"
+            meta_field = "data.meta.regInputName"
+            projection = {
+                "input_name": 1,
+                "data.meta.regInputName": 1,
+                "updated_at": 1,
+                "created_at": 1,
+            }
+        elif register_name == "output":
+            root_field = "output_name"
+            meta_field = "data.meta.regOutputName"
+            projection = {
+                "output_name": 1,
+                "data.meta.regOutputName": 1,
+                "data.produceName": 1,
+                "updated_at": 1,
+                "created_at": 1,
+            }
+        else:
+            return []
+
+        docs = list(
+            db[coll].find(q, projection).sort([("updated_at", -1), ("created_at", -1)])
+        )
+
+        seen = set()
+        names = []
+
+        for d in docs:
+            data = d.get("data") or {}
+            meta = data.get("meta") or {}
+
+            if register_name == "input":
+                val = d.get(root_field) or meta.get("regInputName") or ""
+            else:
+                val = d.get(root_field) or meta.get("regOutputName") or data.get("produceName") or ""
+
+            val = _norm_name(val)
+            if not val:
+                continue
+
+            k = val.lower()
+            if k in seen:
+                continue
+
+            seen.add(k)
+            names.append(val)
+
+        return names
+
+    def _get_selected_name_from_args(register_name):
+        if register_name == "input":
+            return _norm_name(
+                request.args.get("input_name")
+                or request.args.get("regInputName")
+                or request.args.get("search")
+                or ""
+            )
+
+        if register_name == "output":
+            return _norm_name(
+                request.args.get("output_name")
+                or request.args.get("produce_name")
+                or request.args.get("regOutputName")
+                or request.args.get("search")
+                or ""
+            )
+
+        return ""
+
+    def _find_named_doc(register_name, selected_name):
+        selected_key = _name_key(selected_name)
+        base_q = _base_period_query()
+
+        if not selected_key:
+            return None
+
+        if register_name == "input":
+            return db[coll].find_one(
+                {
+                    **base_q,
+                    "$or": [
+                        {"input_key": selected_key},
+                        {"input_name": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
+                        {"data.meta.regInputName": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
+                    ],
+                },
+                sort=[("updated_at", -1), ("created_at", -1)],
+            )
+
+        if register_name == "output":
+            return db[coll].find_one(
+                {
+                    **base_q,
+                    "$or": [
+                        {"output_key": selected_key},
+                        {"output_name": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
+                        {"data.meta.regOutputName": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
+                        {"data.produceName": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
+                    ],
+                },
+                sort=[("updated_at", -1), ("created_at", -1)],
+            )
+
+        return None
+
+    def _blank_input_response(selected_name=""):
+        selected_name = _norm_name(selected_name)
+        selected_key = _name_key(selected_name)
+
+        return {
+            "ok": True,
+            "is_new_input": bool(selected_name),
+            "saved_input_names": _get_saved_names("input"),
+            "year": year,
+            "month": month,
+            "input_name": selected_name,
+            "input_key": selected_key,
+            "unit_of_stocking": "",
+            "data": {
+                "pg_name": _blank_pg_name(),
+                "meta": {
+                    "regInputName": selected_name,
+                    "regInputUnit": "",
+                    "regUnit": "",
+                },
+                "rows": [],
+                "purchaseRows": [],
+                "saleRows": [],
+                "stockRows": [],
+            },
+        }
+
+    def _blank_output_response(selected_name=""):
+        selected_name = _norm_name(selected_name)
+        selected_key = _name_key(selected_name)
+
+        return {
+            "ok": True,
+            "is_new_output": bool(selected_name),
+            "saved_output_names": _get_saved_names("output"),
+            "year": year,
+            "month": month,
+            "output_name": selected_name,
+            "output_key": selected_key,
+            "unit_of_stocking": "",
+            "data": {
+                "pg_name": _blank_pg_name(),
+                "produceName": selected_name,
+                "unitStock": "",
+                "activeTab": "all",
+                "meta": {
+                    "regOutputName": selected_name,
+                    "regOutputUnit": "",
+                    "regUnit": "",
+                },
+                "rows": [],
+            },
+        }
+
+    # ============================================================
+    # GET
+    # ============================================================
     if request.method == "GET":
-        base_pg_id = (safe_objectid(pg_id) or safe_objectid(session.get("pg_id")))
-        search = (request.args.get("search") or "").strip()
 
-        # INPUT REGISTER ONLY: optional feed search
-        # This does not affect other registers
-        if name == "input" and search:
-            doc = db[coll].find_one(
-                {
-                    "pg_id": base_pg_id,
-                    "data.meta.regInputName": {"$regex": search, "$options": "i"},
-                },
-                sort=[("updated_at", -1)],
-            )
+        # --------------------------------------------------------
+        # INPUT REGISTER SPECIAL FLOW
+        # Save/load separately by:
+        # pg_id + year + month + input_key
+        # --------------------------------------------------------
+        if name == "input":
+            selected_input_name = _get_selected_name_from_args("input")
 
-            if not doc:
-                pg_doc = db.pgs.find_one({"_id": base_pg_id}, {"name": 1}) or {}
-                return jsonify({
-                    "ok": False,
-                    "error": "No matching feed found",
-                    "data": {"pg_name": pg_doc.get("name", "")},
-                    "year": year,
-                    "month": month,
-                }), 404
+            if selected_input_name:
+                doc = _find_named_doc("input", selected_input_name)
 
-            doc["_id"] = str(doc["_id"])
-            doc["pg_id"] = str(doc["pg_id"])
-            return jsonify(doc)
+                if not doc:
+                    return jsonify(_blank_input_response(selected_input_name)), 200
 
-        # OUTPUT REGISTER ONLY: optional produce search
-        # This does not affect other registers
-        if name == "output" and search:
-            doc = db[coll].find_one(
-                {
-                    "pg_id": base_pg_id,
-                    "data.meta.regOutputName": {"$regex": search, "$options": "i"},
-                },
-                sort=[("updated_at", -1)],
-            )
+                doc = _serialize_doc(doc)
+                doc["ok"] = True
+                doc["saved_input_names"] = _get_saved_names("input")
+                doc["input_name"] = (
+                    doc.get("input_name")
+                    or (((doc.get("data") or {}).get("meta") or {}).get("regInputName"))
+                    or selected_input_name
+                )
+                doc["input_key"] = doc.get("input_key") or _name_key(doc.get("input_name"))
+                doc["unit_of_stocking"] = (
+                    doc.get("unit_of_stocking")
+                    or (((doc.get("data") or {}).get("meta") or {}).get("regInputUnit"))
+                    or (((doc.get("data") or {}).get("meta") or {}).get("regUnit"))
+                    or ""
+                )
+                return jsonify(doc), 200
 
-            if not doc:
-                pg_doc = db.pgs.find_one({"_id": base_pg_id}, {"name": 1}) or {}
-                return jsonify({
-                    "ok": False,
-                    "error": "No matching produce found",
-                    "data": {"pg_name": pg_doc.get("name", "")},
-                    "year": year,
-                    "month": month,
-                }), 404
+            # No selected input: return blank + saved names only.
+            return jsonify(_blank_input_response("")), 200
 
-            doc["_id"] = str(doc["_id"])
-            doc["pg_id"] = str(doc["pg_id"])
-            return jsonify(doc)
+        # --------------------------------------------------------
+        # OUTPUT REGISTER SPECIAL FLOW
+        # Save/load separately by:
+        # pg_id + year + month + output_key
+        # Example:
+        # /pg/api/register/output/<pg_id>?year=2026&month=5
+        # /pg/api/register/output/<pg_id>?year=2026&month=5&output_name=Paddy
+        # --------------------------------------------------------
+        if name == "output":
+            selected_output_name = _get_selected_name_from_args("output")
 
-        # EXISTING GENERIC FLOW FOR ALL REGISTERS
-        base_q = {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get("pg_id")))}
+            # History should remain available, but unique by month.
+            if request.args.get("history") in ("1", "true", "yes"):
+                q = {"pg_id": base_pg_id}
+                docs = list(
+                    db[coll].find(
+                        q,
+                        {
+                            "year": 1,
+                            "month": 1,
+                            "updated_at": 1,
+                            "created_at": 1,
+                        },
+                    ).sort([("year", -1), ("month", -1), ("updated_at", -1)])
+                )
+
+                seen = set()
+                history = []
+                for d in docs:
+                    y = d.get("year")
+                    m = d.get("month")
+                    if not y or not m:
+                        continue
+                    k = f"{y}-{m}"
+                    if k in seen:
+                        continue
+                    seen.add(k)
+                    history.append({
+                        "year": y,
+                        "month": m,
+                        "updated_at": d.get("updated_at"),
+                        "created_at": d.get("created_at"),
+                    })
+
+                return jsonify({"ok": True, "history": history}), 200
+
+            if selected_output_name:
+                doc = _find_named_doc("output", selected_output_name)
+
+                if not doc:
+                    return jsonify(_blank_output_response(selected_output_name)), 200
+
+                doc = _serialize_doc(doc)
+                data = doc.get("data") or {}
+                meta = data.get("meta") or {}
+
+                doc["ok"] = True
+                doc["saved_output_names"] = _get_saved_names("output")
+                doc["output_name"] = (
+                    doc.get("output_name")
+                    or meta.get("regOutputName")
+                    or data.get("produceName")
+                    or selected_output_name
+                )
+                doc["output_key"] = doc.get("output_key") or _name_key(doc.get("output_name"))
+                doc["unit_of_stocking"] = (
+                    doc.get("unit_of_stocking")
+                    or meta.get("regOutputUnit")
+                    or meta.get("regUnit")
+                    or data.get("unitStock")
+                    or ""
+                )
+
+                data.setdefault("meta", {})
+                data["meta"]["regOutputName"] = doc["output_name"]
+                data["meta"]["regOutputUnit"] = doc["unit_of_stocking"]
+                data["produceName"] = doc["output_name"]
+                data["unitStock"] = doc["unit_of_stocking"]
+                data.setdefault("rows", [])
+
+                doc["data"] = data
+
+                return jsonify(doc), 200
+
+            # No selected produce: return blank + saved output names only.
+            return jsonify(_blank_output_response("")), 200
+
+        # --------------------------------------------------------
+        # EXISTING GENERIC GET FLOW FOR OTHER REGISTERS
+        # --------------------------------------------------------
+        base_q = {"pg_id": base_pg_id}
 
         if request.args.get("history") in ("1", "true", "yes"):
             return jsonify({"history": _period_history(db, coll, base_q)})
@@ -4426,10 +4708,7 @@ def api_generic_register(name, pg_id):
             doc = db[coll].find_one({**base_q, "_id": safe_objectid(doc_id)})
             if not doc:
                 return jsonify({"ok": False, "error": "Record not found"}), 404
-
-            doc["_id"] = str(doc["_id"])
-            doc["pg_id"] = str(doc["pg_id"])
-            return jsonify(doc)
+            return jsonify(_serialize_doc(doc)), 200
 
         doc = (
             db[coll].find_one({**base_q, "year": year, "month": month})
@@ -4438,23 +4717,260 @@ def api_generic_register(name, pg_id):
         )
 
         if not doc:
-            pg_doc = db.pgs.find_one({"_id": base_pg_id}, {"name": 1}) or {}
-            return jsonify({"data": {"pg_name": pg_doc.get("name", "")}, "year": year, "month": month})
+            return jsonify({
+                "ok": True,
+                "data": {"pg_name": _blank_pg_name()},
+                "year": year,
+                "month": month,
+            }), 200
 
-        doc["_id"] = str(doc["_id"])
-        doc["pg_id"] = str(doc["pg_id"])
-        return jsonify(doc)
+        return jsonify(_serialize_doc(doc)), 200
 
+    # ============================================================
+    # POST
+    # ============================================================
     role = getattr(g, "role", None) or session.get("role")
-    print("DEBUG resolved role:", role)
 
-    if role != "PG_DATA_ENTRY":
+    if role not in ("PG_DATA_ENTRY", "CADRE_CC"):
         return jsonify({"ok": False, "error": f"Forbidden for role: {role}"}), 403
 
     payload = request.get_json(silent=True) or {}
-    print("DEBUG payload:", payload)
 
     try:
+        # --------------------------------------------------------
+        # INPUT REGISTER SPECIAL SAVE FLOW
+        # Save Fish / Chicken / Seed separately using:
+        # pg_id + year + month + input_key
+        # --------------------------------------------------------
+        if name == "input":
+            data = payload.get("data", payload) or {}
+            meta = data.get("meta") or {}
+
+            input_name = _norm_name(
+                payload.get("input_name")
+                or payload.get("regInputName")
+                or meta.get("regInputName")
+                or data.get("regInputName")
+                or ""
+            )
+
+            if not input_name:
+                return jsonify({
+                    "ok": False,
+                    "error": "Name of Input is required before saving."
+                }), 400
+
+            input_key = _name_key(input_name)
+
+            data.setdefault("meta", {})
+            data["meta"]["regInputName"] = input_name
+
+            unit_of_stocking = (
+                payload.get("unit_of_stocking")
+                or payload.get("regInputUnit")
+                or data["meta"].get("regInputUnit")
+                or data["meta"].get("regUnit")
+                or data.get("regInputUnit")
+                or ""
+            )
+
+            data["meta"]["regInputUnit"] = unit_of_stocking
+            data["meta"]["regUnit"] = unit_of_stocking
+
+            now = datetime.utcnow()
+
+            q = {
+                "pg_id": base_pg_id,
+                "input_key": input_key,
+            }
+
+            if year is not None:
+                q["year"] = int(year)
+            if month is not None:
+                q["month"] = int(month)
+
+            before = db[coll].find_one(q)
+
+            doc_set = {
+                "pg_id": base_pg_id,
+                "year": int(year) if year is not None else None,
+                "month": int(month) if month is not None else None,
+                "input_name": input_name,
+                "input_key": input_key,
+                "unit_of_stocking": unit_of_stocking,
+                "data": data,
+                "updated_at": now,
+            }
+
+            if before:
+                db[coll].update_one({"_id": before["_id"]}, {"$set": doc_set})
+                saved_id = before["_id"]
+
+                log_audit(
+                    db,
+                    action=f"{coll}:update",
+                    collection=coll,
+                    doc_id=before["_id"],
+                    user=_current_user_dict(),
+                    before=before,
+                    after=doc_set,
+                    meta={
+                        "pg_id": pg_id,
+                        "year": year,
+                        "month": month,
+                        "input_name": input_name,
+                    },
+                )
+            else:
+                doc_set["created_at"] = now
+                res = db[coll].insert_one(doc_set)
+                saved_id = res.inserted_id
+
+                log_audit(
+                    db,
+                    action=f"{coll}:create",
+                    collection=coll,
+                    doc_id=saved_id,
+                    user=_current_user_dict(),
+                    after=doc_set,
+                    meta={
+                        "pg_id": pg_id,
+                        "year": year,
+                        "month": month,
+                        "input_name": input_name,
+                    },
+                )
+
+            return jsonify({
+                "ok": True,
+                "message": f"{input_name} saved successfully.",
+                "id": str(saved_id),
+                "input_name": input_name,
+                "input_key": input_key,
+                "saved_input_names": _get_saved_names("input"),
+            }), 200
+
+        # --------------------------------------------------------
+        # OUTPUT REGISTER SPECIAL SAVE FLOW
+        # Save Paddy / Fish / Vegetable separately using:
+        # pg_id + year + month + output_key
+        # --------------------------------------------------------
+        if name == "output":
+            data = payload.get("data", payload) or {}
+            meta = data.get("meta") or {}
+
+            output_name = _norm_name(
+                payload.get("output_name")
+                or payload.get("produce_name")
+                or payload.get("regOutputName")
+                or meta.get("regOutputName")
+                or data.get("produceName")
+                or data.get("regOutputName")
+                or ""
+            )
+
+            if not output_name:
+                return jsonify({
+                    "ok": False,
+                    "error": "Name of Produce is required before saving."
+                }), 400
+
+            output_key = _name_key(output_name)
+
+            unit_of_stocking = (
+                payload.get("unit_of_stocking")
+                or payload.get("regOutputUnit")
+                or meta.get("regOutputUnit")
+                or meta.get("regUnit")
+                or data.get("unitStock")
+                or data.get("regOutputUnit")
+                or ""
+            )
+
+            data.setdefault("meta", {})
+            data["meta"]["regOutputName"] = output_name
+            data["meta"]["regOutputUnit"] = unit_of_stocking
+            data["meta"]["regUnit"] = unit_of_stocking
+            data["produceName"] = output_name
+            data["unitStock"] = unit_of_stocking
+            data.setdefault("rows", [])
+
+            now = datetime.utcnow()
+
+            q = {
+                "pg_id": base_pg_id,
+                "output_key": output_key,
+            }
+
+            if year is not None:
+                q["year"] = int(year)
+            if month is not None:
+                q["month"] = int(month)
+
+            before = db[coll].find_one(q)
+
+            doc_set = {
+                "pg_id": base_pg_id,
+                "year": int(year) if year is not None else None,
+                "month": int(month) if month is not None else None,
+                "output_name": output_name,
+                "output_key": output_key,
+                "unit_of_stocking": unit_of_stocking,
+                "data": data,
+                "updated_at": now,
+            }
+
+            if before:
+                db[coll].update_one({"_id": before["_id"]}, {"$set": doc_set})
+                saved_id = before["_id"]
+
+                log_audit(
+                    db,
+                    action=f"{coll}:update",
+                    collection=coll,
+                    doc_id=before["_id"],
+                    user=_current_user_dict(),
+                    before=before,
+                    after=doc_set,
+                    meta={
+                        "pg_id": pg_id,
+                        "year": year,
+                        "month": month,
+                        "output_name": output_name,
+                    },
+                )
+            else:
+                doc_set["created_at"] = now
+                res = db[coll].insert_one(doc_set)
+                saved_id = res.inserted_id
+
+                log_audit(
+                    db,
+                    action=f"{coll}:create",
+                    collection=coll,
+                    doc_id=saved_id,
+                    user=_current_user_dict(),
+                    after=doc_set,
+                    meta={
+                        "pg_id": pg_id,
+                        "year": year,
+                        "month": month,
+                        "output_name": output_name,
+                    },
+                )
+
+            return jsonify({
+                "ok": True,
+                "message": f"{output_name} saved successfully.",
+                "id": str(saved_id),
+                "output_name": output_name,
+                "output_key": output_key,
+                "saved_output_names": _get_saved_names("output"),
+            }), 200
+
+        # --------------------------------------------------------
+        # EXISTING GENERIC SAVE FLOW FOR OTHER REGISTERS
+        # --------------------------------------------------------
         _upsert_pg_period_doc(
             db,
             collection=coll,
@@ -4466,10 +4982,15 @@ def api_generic_register(name, pg_id):
             },
             user=_current_user_dict(),
         )
-        return jsonify({"ok": True, "message": "Saved successfully"})
+
+        return jsonify({"ok": True, "message": "Saved successfully"}), 200
+
     except Exception as e:
         current_app.logger.exception("api_generic_register save failed")
         return jsonify({"ok": False, "error": str(e)}), 500
+
+
+
 
 @pg_bp.route("/api/members/<pg_id>", methods=["GET"])
 @login_required
