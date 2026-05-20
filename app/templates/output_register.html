@@ -606,9 +606,63 @@
   }
 
   .opr-table{
-    width: 100%;
+    width: max-content;
+    min-width: 1750px;
     border-collapse: collapse;
-    min-width: 980px;
+    table-layout: auto;
+  }
+
+  .opr-table th:not(.opr-stickyLeft),
+  .opr-table td:not(.opr-stickyLeft){
+    min-width: 145px;
+  }
+
+  .opr-table th[data-col="farmer"],
+  .opr-table td[data-col="farmer"],
+  .opr-table th[data-col="buyer"],
+  .opr-table td[data-col="buyer"]{
+    min-width: 230px;
+  }
+
+  .opr-table th[data-col="p_bill_no"],
+  .opr-table td[data-col="p_bill_no"],
+  .opr-table th[data-col="s_bill_no"],
+  .opr-table td[data-col="s_bill_no"],
+  .opr-table th[data-col="stk_ref_no"],
+  .opr-table td[data-col="stk_ref_no"],
+  .opr-table th[data-col="p_folio"],
+  .opr-table td[data-col="p_folio"],
+  .opr-table th[data-col="s_folio"],
+  .opr-table td[data-col="s_folio"]{
+    min-width: 165px;
+  }
+
+  .opr-table th[data-col="p_date"],
+  .opr-table td[data-col="p_date"],
+  .opr-table th[data-col="s_date"],
+  .opr-table td[data-col="s_date"]{
+    min-width: 155px;
+  }
+
+  .opr-table th[data-col="p_qty"],
+  .opr-table td[data-col="p_qty"],
+  .opr-table th[data-col="p_rate"],
+  .opr-table td[data-col="p_rate"],
+  .opr-table th[data-col="p_amt"],
+  .opr-table td[data-col="p_amt"],
+  .opr-table th[data-col="s_qty"],
+  .opr-table td[data-col="s_qty"],
+  .opr-table th[data-col="s_rate"],
+  .opr-table td[data-col="s_rate"],
+  .opr-table th[data-col="s_amt"],
+  .opr-table td[data-col="s_amt"],
+  .opr-table th[data-col="stk_qty"],
+  .opr-table td[data-col="stk_qty"],
+  .opr-table th[data-col="stk_rate"],
+  .opr-table td[data-col="stk_rate"],
+  .opr-table th[data-col="stk_amt"],
+  .opr-table td[data-col="stk_amt"]{
+    min-width: 135px;
   }
 
   .opr-table th,
@@ -644,6 +698,7 @@
   .opr-tdInput,
   .opr-cellInput{
     width: 100%;
+    min-width: 0;
     border-radius: 12px;
     border: 1px solid rgba(15,23,42,.16);
     padding: 8px 10px;
@@ -1463,7 +1518,7 @@
 
     .opr-grid,
     .opr-cardGrid{
-      grid-template-columns:1fr 1fr;
+      grid-template-columns:1fr;
       gap:8px;
     }
 
@@ -1513,6 +1568,168 @@
       padding: 8px 12px;
     }
   }
+
+
+/* ===== OUTPUT REGISTER FIX: match Input Register field layout + stable typing + wider table ===== */
+.opr-topfields{
+  padding:16px !important;
+  display:grid !important;
+  grid-template-columns:1.6fr 1fr !important;
+  gap:12px !important;
+  background:rgba(255,255,255,.92) !important;
+  overflow:visible !important;
+}
+
+.opr-field{
+  display:block !important;
+  min-width:0 !important;
+  background:rgba(247,250,249,.75) !important;
+  border:1px solid rgba(15,23,42,.16) !important;
+  border-radius:12px !important;
+  padding:12px 12px !important;
+}
+
+.opr-label{
+  display:flex !important;
+  align-items:center !important;
+  gap:8px !important;
+  width:100% !important;
+  margin:0 0 8px !important;
+  font-size:13px !important;
+  font-weight:950 !important;
+  line-height:1.25 !important;
+  color:rgba(15,23,42,.78) !important;
+  white-space:normal !important;
+}
+
+.opr-combo{
+  width:100% !important;
+  display:block !important;
+}
+
+.opr-input{
+  width:100% !important;
+  min-width:0 !important;
+  min-height:30px !important;
+  height:auto !important;
+  border-radius:12px !important;
+  padding:10px 12px !important;
+  background:rgba(247,250,249,.75) !important;
+}
+
+.opr-combo .opr-input{
+  padding-right:48px !important;
+}
+
+.opr-tableWrap{
+  width:100% !important;
+  overflow:auto !important;
+  padding:0 12px 14px !important;
+  -webkit-overflow-scrolling:touch !important;
+}
+
+.opr-table{
+  width:1750px !important;
+  min-width:1750px !important;
+  border-collapse:separate !important;
+  border-spacing:0 !important;
+  table-layout:auto !important;
+}
+
+.opr-table th,
+.opr-table td{
+  padding:8px 8px !important;
+  vertical-align:middle !important;
+}
+
+.opr-table th:not(.opr-stickyLeft),
+.opr-table td:not(.opr-stickyLeft){
+  min-width:120px !important;
+}
+
+.opr-table th[data-col="farmer"],
+.opr-table td[data-col="farmer"],
+.opr-table th[data-col="buyer"],
+.opr-table td[data-col="buyer"]{
+  min-width:220px !important;
+}
+
+.opr-table th[data-col="p_date"],
+.opr-table td[data-col="p_date"],
+.opr-table th[data-col="s_date"],
+.opr-table td[data-col="s_date"]{
+  min-width:170px !important;
+}
+
+.opr-table th[data-col="p_bill_no"],
+.opr-table td[data-col="p_bill_no"],
+.opr-table th[data-col="s_bill_no"],
+.opr-table td[data-col="s_bill_no"],
+.opr-table th[data-col="p_folio"],
+.opr-table td[data-col="p_folio"],
+.opr-table th[data-col="s_folio"],
+.opr-table td[data-col="s_folio"],
+.opr-table th[data-col="stk_ref_no"],
+.opr-table td[data-col="stk_ref_no"]{
+  min-width:145px !important;
+}
+
+.opr-table th[data-col="p_qty"],
+.opr-table td[data-col="p_qty"],
+.opr-table th[data-col="p_rate"],
+.opr-table td[data-col="p_rate"],
+.opr-table th[data-col="p_amt"],
+.opr-table td[data-col="p_amt"],
+.opr-table th[data-col="s_qty"],
+.opr-table td[data-col="s_qty"],
+.opr-table th[data-col="s_rate"],
+.opr-table td[data-col="s_rate"],
+.opr-table th[data-col="s_amt"],
+.opr-table td[data-col="s_amt"],
+.opr-table th[data-col="stk_qty"],
+.opr-table td[data-col="stk_qty"],
+.opr-table th[data-col="stk_rate"],
+.opr-table td[data-col="stk_rate"],
+.opr-table th[data-col="stk_amt"],
+.opr-table td[data-col="stk_amt"]{
+  min-width:120px !important;
+}
+
+.opr-cellInput,
+.opr-tdInput{
+  width:100% !important;
+  min-width:0 !important;
+  min-height:44px !important;
+  border-radius:12px !important;
+  padding:8px 10px !important;
+  font-size:13px !important;
+}
+
+.opr-cellInput[type="date"],
+.opr-tdInput[type="date"]{
+  min-width:145px !important;
+}
+
+@media (max-width:900px){
+  .opr-topfields{
+    grid-template-columns:1fr !important;
+    padding:14px 16px !important;
+  }
+}
+
+@media (max-width:520px){
+  .opr-grid,
+  .opr-cardGrid{
+    grid-template-columns:1fr !important;
+  }
+
+  .opr-cardItem .opr-cellInput,
+  .opr-item .opr-tdInput{
+    min-height:44px !important;
+    font-size:13px !important;
+  }
+}
+
 </style>
 
 
@@ -2303,6 +2520,24 @@
       openOutputPanel();
     });
 
+    els.produceName.addEventListener("change", () => {
+      if(!editMode) return;
+
+      const typedName = norm(els.produceName.value);
+      state.produceName = typedName;
+      els.produceName.value = typedName;
+      renderOutputOptions();
+    });
+
+    els.produceName.addEventListener("blur", () => {
+      if(!editMode) return;
+
+      const typedName = norm(els.produceName.value);
+      state.produceName = typedName;
+      els.produceName.value = typedName;
+      renderOutputOptions();
+    });
+
     els.produceName.addEventListener("keydown", async (e) => {
       if(e.key !== "Enter") return;
       e.preventDefault();
@@ -2564,7 +2799,7 @@
         <th class="opr-center opr-stickyLeft" style="width:56px;">
           <input type="checkbox" class="opr-chk" id="oprSelectAll" ${editMode ? "" : "disabled"}>
         </th>
-        ${cols.map((c) => `<th>${esc(c.label)}</th>`).join("")}
+        ${cols.map((c) => `<th data-col="${esc(c.key)}">${esc(c.label)}</th>`).join("")}
       </tr>
     `;
 
@@ -2574,7 +2809,7 @@
           <td class="opr-center opr-stickyLeft">
             <input type="checkbox" class="opr-chk" data-chk="1" ${row.selected ? "checked" : ""} ${editMode ? "" : "disabled"}>
           </td>
-          ${cols.map((c) => `<td>${inputHTML(row, c)}</td>`).join("")}
+          ${cols.map((c) => `<td data-col="${esc(c.key)}">${inputHTML(row, c)}</td>`).join("")}
         </tr>
       `;
     }).join("");
@@ -2705,6 +2940,29 @@
     }
 
     computeRow(row);
+  }
+
+  function syncCalculatedInputs(container){
+    const idx = Number(container.getAttribute("data-row"));
+    const row = state.rows[idx];
+
+    if(!row) return;
+
+    ["p_amt", "s_amt", "stk_qty", "stk_rate", "stk_amt"].forEach((key) => {
+      const input = container.querySelector(`input[data-key="${key}"]`);
+
+      if(input && document.activeElement !== input){
+        input.value = row[key] ?? "";
+      }
+    });
+  }
+
+  function updateInlineEditedRow(container){
+    if(!container) return;
+
+    syncRowFromContainer(container);
+    syncCalculatedInputs(container);
+    computeTotals();
   }
 
   async function startEdit(){
@@ -3085,8 +3343,7 @@
     const rowEl = e.target.closest("tr");
     if(!rowEl) return;
 
-    syncRowFromContainer(rowEl);
-    renderAll();
+    updateInlineEditedRow(rowEl);
   });
 
   els.tbody.addEventListener("change", (e) => {
@@ -3106,8 +3363,7 @@
     const card = e.target.closest(".opr-card");
     if(!card) return;
 
-    syncRowFromContainer(card);
-    renderAll();
+    updateInlineEditedRow(card);
   });
 
   els.mobileList.addEventListener("change", (e) => {
