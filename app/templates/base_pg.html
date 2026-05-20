@@ -1818,9 +1818,179 @@
           </div>
 
           <!--  Embedded Profile panel (VIEW-ONLY now) -->
-          <div id="profilePageContainer" class="pg-profile-page">
-            ...
+          <!--  Embedded Profile panel (VIEW-ONLY now) -->
+<div id="profilePageContainer" class="pg-profile-page">
+  <div class="content-wrapper">
+
+    <section class="profile-hero">
+      <div class="hero-top" id="profileHeroTop">
+        <div class="hero-title">
+          <div class="hero-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
           </div>
+
+          <div class="hero-text">
+            <div class="hero-kicker" id="profileKicker">Producer Group Profile</div>
+            <div class="hero-title-line" id="profileTitle">PG Profile Details</div>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          <button id="clearAllButton" class="pill-btn pill-btn-danger hidden" type="button">
+            Clear All
+          </button>
+
+          <button id="editSaveButton" class="pill-btn" type="button">
+            Edit
+          </button>
+        </div>
+      </div>
+
+      <div class="hero-fields">
+        <div class="mini-card">
+          <label class="mini-label" id="labelPgName" for="inputPgName">PG Name</label>
+          <input id="inputPgName" class="hero-input" type="text" disabled>
+        </div>
+
+        <div class="mini-card">
+          <label class="mini-label" id="labelActivity" for="inputActivity">Activity</label>
+          <input id="inputActivity" class="hero-input" type="text" disabled>
+        </div>
+      </div>
+    </section>
+
+    <section class="profile-card">
+
+      <div class="section">
+        <div class="section-head">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0Z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <div class="section-title">Location Details</div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label class="field-label" id="labelAddress" for="inputAddress">Address</label>
+            <input id="inputAddress" class="field-input" type="text" disabled>
+          </div>
+
+          <div class="field">
+            <label class="field-label" id="labelVillage" for="inputVillage">Village</label>
+            <input id="inputVillage" class="field-input" type="text" disabled>
+          </div>
+
+          <div class="field">
+            <label class="field-label" id="labelBlock" for="inputBlock">Block</label>
+            <input id="inputBlock" class="field-input" type="text" disabled>
+          </div>
+
+          <div class="field">
+            <label class="field-label" id="labelDistrict" for="inputDistrict">District</label>
+            <input id="inputDistrict" class="field-input" type="text" disabled>
+          </div>
+
+          <div class="field">
+            <label class="field-label" id="labelState" for="inputState">State</label>
+            <input id="inputState" class="field-input" type="text" disabled>
+          </div>
+
+          <div class="field">
+            <label class="field-label" id="labelClfName" for="inputClfName">Name of CLF under which PG belongs to</label>
+            <input id="inputClfName" class="field-input" type="text" disabled>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-head">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 2v4"></path>
+            <path d="M16 2v4"></path>
+            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+            <path d="M3 10h18"></path>
+          </svg>
+          <div class="section-title">Basic Details</div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label class="field-label" id="labelFormationDate" for="inputFormationDateText">Date of Formation</label>
+
+            <div class="date-row">
+              <div>
+                <input id="inputFormationDateText" class="field-input" type="text" placeholder="DD/MM/YYYY" disabled>
+                <div class="date-help">Use DD/MM/YYYY format</div>
+                <div id="dateError" class="date-error">Invalid date. Use DD/MM/YYYY.</div>
+              </div>
+
+              <input id="inputFormationDatePicker" class="field-input" type="date" disabled>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" id="labelTotalMembers" for="inputTotalMembers">Total Members in PG</label>
+            <input id="inputTotalMembers" class="field-input" type="number" disabled>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section">
+        <div class="section-head">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="22" x2="21" y2="22"></line>
+            <line x1="6" y1="18" x2="6" y2="11"></line>
+            <line x1="10" y1="18" x2="10" y2="11"></line>
+            <line x1="14" y1="18" x2="14" y2="11"></line>
+            <line x1="18" y1="18" x2="18" y2="11"></line>
+            <polygon points="12 2 20 7 4 7"></polygon>
+          </svg>
+          <div class="section-title" id="labelBankDetails">Bank Details</div>
+        </div>
+
+        <div class="bank-grid">
+          <div class="field">
+            <label class="field-label" id="labelBankName" for="inputBankName">Bank Name</label>
+            <input id="inputBankName" class="field-input" type="text" disabled>
+          </div>
+
+          <div class="field">
+            <label class="field-label" id="labelBranch" for="inputBranch">Branch</label>
+            <input id="inputBranch" class="field-input" type="text" disabled>
+          </div>
+
+          <div class="field">
+            <label class="field-label" id="labelAccountNo" for="inputAccountNo">Account Number</label>
+            <input id="inputAccountNo" class="field-input" type="text" disabled>
+          </div>
+
+          <div class="field">
+            <label class="field-label" id="labelIfsc" for="inputIfsc">IFSC Code</label>
+            <input id="inputIfsc" class="field-input" type="text" disabled>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-foot">
+        <div class="card-foot-line"></div>
+      </div>
+
+    </section>
+
+  </div>
+</div>
 
         </main>
 
@@ -2423,12 +2593,24 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
 
     const PG_ID = "{{ (pg._id|string) if pg else session.get('pg_id') }}";
 
-    function toYYYYMMDD(ddMmYyyy){
-      if(!ddMmYyyy) return "";
-      if(!/^\d{2}\/\d{2}\/\d{4}$/.test(ddMmYyyy)) return "";
-      const [dd,mm,yyyy] = ddMmYyyy.split("/");
-      return `${yyyy}-${mm}-${dd}`;
-    }
+    function toYYYYMMDD(value){
+  if(!value) return "";
+
+  const s = String(value).trim();
+
+  // already ISO yyyy-mm-dd
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)){
+    return s;
+  }
+
+  // dd/mm/yyyy
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){
+    const [dd, mm, yyyy] = s.split("/");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  return "";
+}
 
     async function loadProfileData(){
     if(!PG_ID){
@@ -2516,9 +2698,21 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
 
     function setDisabledAll(disabled){
       const ids = [
-        "inputPgName","inputActivity","inputVillage","inputBlock","inputDistrict","inputState",
-        "inputFormationDateText","inputFormationDatePicker","inputTotalMembers","inputClfName",
-        "inputAccountNo","inputIfsc","inputBankName","inputBranch"
+        "inputPgName",
+        "inputActivity",
+        "inputAddress",
+        "inputVillage",
+        "inputBlock",
+        "inputDistrict",
+        "inputState",
+        "inputFormationDateText",
+        "inputFormationDatePicker",
+        "inputTotalMembers",
+        "inputClfName",
+        "inputAccountNo",
+        "inputIfsc",
+        "inputBankName",
+        "inputBranch"
       ];
       ids.forEach(id=>{
         const el = document.getElementById(id);
