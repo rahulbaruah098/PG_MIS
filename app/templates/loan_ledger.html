@@ -3,7 +3,6 @@
 
 {% block content %}
 <script>window.PG_ID = "{{ pg_id|default('') }}";</script>
-
 <style>
   .ll-wrap{
     width:100%;
@@ -505,26 +504,46 @@
   }
   .ll-empty.show{display:block}
   .ll-summary{
-    padding:10px 16px;
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    justify-content:space-between;
+    padding:14px 16px;
+    display:grid;
+    grid-template-columns:repeat(6,minmax(140px,1fr));
+    gap:12px;
     border-top:1.5px solid var(--line2);
-    background:rgba(247,250,249,.72);
+    background:linear-gradient(180deg,rgba(247,250,249,.85),rgba(255,255,255,.96));
   }
   .ll-kpi{
+    min-height:76px;
     display:flex;
-    align-items:center;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
     gap:8px;
-    padding:8px 12px;
-    border:1px solid rgba(15,23,42,.14);
-    border-radius:999px;
-    background:rgba(255,255,255,.86);
+    padding:13px 14px;
+    border:1.5px solid rgba(11,77,58,.13);
+    border-radius:16px;
+    background:#fff;
+    box-shadow:0 16px 26px -24px rgba(15,23,42,.35);
     font-weight:950;
-    font-size:12px;
+    font-size:11.5px;
+    color:rgba(15,23,42,.68);
+    line-height:1.15;
   }
-  .ll-kpi b{font-variant-numeric:tabular-nums}
+  .ll-kpi b{
+    display:block;
+    color:#0b4d3a;
+    font-size:17px;
+    font-weight:950;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:.1px;
+  }
+  @media (max-width:1100px){
+    .ll-summary{grid-template-columns:repeat(3,minmax(140px,1fr));}
+  }
+  @media (max-width:720px){
+    .ll-summary{grid-template-columns:repeat(2,minmax(0,1fr)); padding:12px;}
+    .ll-kpi{min-height:74px; border-radius:14px;}
+    .ll-kpi b{font-size:15px;}
+  }
   .ll-footer-controls{
     padding:12px 16px;
     display:flex;
@@ -869,6 +888,45 @@
     .ll-mactions{justify-content:stretch}
     .ll-ghost,.ll-solid{min-width:100%}
   }
+
+  /* New sector-based loan ledger additions */
+  .ll-sector-note{
+    padding:10px 16px;
+    border-bottom:1.5px solid var(--line2);
+    background:rgba(240,253,244,.62);
+    color:rgba(15,23,42,.78);
+    font-size:12px;
+    font-weight:850;
+    line-height:1.35;
+  }
+  .ll-sector-note b{color:#0b4d3a}
+  .ll-table{min-width:1620px}
+  .ll-th-row,.ll-row{
+    display:grid;
+    grid-template-columns:54px 64px 150px 150px 145px 145px 145px 145px 150px 165px 190px 74px;
+  }
+  .ll-input:disabled,
+  select.ll-input:disabled{
+    opacity:.78;
+    cursor:not-allowed;
+    background:rgba(247,250,249,.75);
+  }
+  .ll-in:disabled{
+    opacity:.78;
+    cursor:not-allowed;
+  }
+  .ll-hint-text{
+    font-size:11.5px;
+    font-weight:850;
+    color:rgba(15,23,42,.60);
+    padding:0 16px 10px;
+    background:#fff;
+  }
+  @media(max-width:720px){
+    .ll-table{min-width:0}
+    .ll-sector-note{font-size:12.5px;padding:12px 14px}
+  }
+
 </style>
 
 <div class="ll-wrap" id="llWrap">
@@ -883,7 +941,7 @@
       <h2 class="ll-title" id="llTitle">Loan Ledger</h2>
 
       <div class="ll-head-actions">
-<button class="ll-btn ll-red ll-hidden" id="llCancelBtn" type="button">
+        <button class="ll-btn ll-red ll-hidden" id="llCancelBtn" type="button">
           <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 6 6 18"></path>
             <path d="M6 6l12 12"></path>
@@ -891,7 +949,7 @@
           <span id="llCancelText">Cancel</span>
         </button>
 
-<button class="ll-btn ll-red" id="llEditSaveBtn" type="button">
+        <button class="ll-btn ll-red" id="llEditSaveBtn" type="button">
           <svg id="llEditIcon" class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
@@ -906,10 +964,19 @@
       </div>
     </div>
 
+    <div class="ll-sector-note" id="llSectorNote">
+      Loading sector-based loan ledger...
+    </div>
+
     <div class="ll-topfields">
       <div class="ll-field">
         <div class="ll-label">Name of Producer Group</div>
-        <input class="ll-input" id="llPgName" type="text" value="{{ current_pg_name }}" readonly>
+        <input class="ll-input" id="llPgName" type="text" value="{{ current_pg_name|default('') }}" readonly>
+      </div>
+
+      <div class="ll-field">
+        <div class="ll-label">PG Sector</div>
+        <input class="ll-input" id="llPgSector" type="text" placeholder="Sector will appear automatically" readonly>
       </div>
 
       <div class="ll-field">
@@ -920,9 +987,9 @@
       </div>
 
       <div class="ll-field">
-        <div class="ll-label" id="llLoanAccountLabel">Loan Account</div>
-        <select class="ll-input" id="llLoanAccount">
-          <option value="">Select loan account</option>
+        <div class="ll-label" id="llItemLabel">Crop / Activity / Unit</div>
+        <select class="ll-input" id="llSectorItem">
+          <option value="">Select item</option>
         </select>
       </div>
 
@@ -932,24 +999,33 @@
       </div>
 
       <div class="ll-field">
-        <div class="ll-label" id="llLoanAmountLabel">Loan Amount</div>
-        <input class="ll-input" id="llLoanAmount" type="text" placeholder="Loan amount will appear automatically" readonly>
+        <div class="ll-label" id="llLoanAmountLabel">Assigned Loan Amount</div>
+        <input class="ll-input" id="llLoanAmount" type="number" min="0" step="0.01" placeholder="Enter assigned loan amount">
       </div>
 
       <div class="ll-field">
-        <div class="ll-label" id="llLoanTenureLabel">Loan Tenure</div>
-        <input class="ll-input" id="llLoanTenure" type="text" placeholder="Loan tenure will appear automatically" readonly>
+        <div class="ll-label" id="llStartDateLabel">Loan Start Date</div>
+        <input class="ll-input" id="llLoanStartDate" type="date">
       </div>
 
       <div class="ll-field">
-        <div class="ll-label" id="llInstallmentLabel">No. of Installment</div>
-        <input class="ll-input" id="llInstallmentCount" type="text" placeholder="Installment count will appear automatically" readonly>
+        <div class="ll-label" id="llRuleLabel">Sector Rule</div>
+        <input class="ll-input" id="llSectorRule" type="text" placeholder="Sector rule will appear automatically" readonly>
       </div>
 
       <div class="ll-field">
         <div class="ll-label" id="llPurposeLabel">Loan Purpose</div>
-        <input class="ll-input" id="llLoanPurpose" type="text" placeholder="Loan purpose will appear automatically" readonly>
+        <input class="ll-input" id="llLoanPurpose" type="text" placeholder="Loan purpose">
       </div>
+
+      <div class="ll-field">
+        <div class="ll-label">Working Period</div>
+        <input class="ll-input" id="llWorkingPeriod" type="text" readonly>
+      </div>
+    </div>
+
+    <div class="ll-hint-text" id="llHintText">
+      Select a member and crop/activity/unit to load the sector-based ledger.
     </div>
 
     <div class="ll-controls">
@@ -971,45 +1047,45 @@
     </div>
 
     <div class="ll-actions-bar">
-  <div class="ll-actions-top">
-    <button class="ll-btn ll-soft-red" id="llDeleteSelectedTop" type="button" disabled>
-      <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 6h18"></path>
-        <path d="M8 6V4h8v2"></path>
-        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-        <path d="M10 11v6"></path>
-        <path d="M14 11v6"></path>
-      </svg>
-      <span id="llDeleteSelectedText">Delete Selected</span>
-    </button>
+      <div class="ll-actions-top">
+        <button class="ll-btn ll-soft-red" id="llDeleteSelectedTop" type="button" disabled>
+          <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4h8v2"></path>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+          </svg>
+          <span id="llDeleteSelectedText">Delete Selected</span>
+        </button>
 
-    <button class="ll-btn ll-soft-red" id="llDeleteAllTop" type="button" disabled>
-      <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 6h18"></path>
-        <path d="M8 6V4h8v2"></path>
-        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-        <path d="M10 11v6"></path>
-        <path d="M14 11v6"></path>
-      </svg>
-      <span id="llDeleteAllText">Delete All</span>
-    </button>
+        <button class="ll-btn ll-soft-red" id="llDeleteAllTop" type="button" disabled>
+          <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4h8v2"></path>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+          </svg>
+          <span id="llDeleteAllText">Delete All</span>
+        </button>
 
-    <button class="ll-btn ll-soft-green" id="llAddRowTop" type="button" disabled>
-      <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 5v14"></path>
-        <path d="M5 12h14"></path>
-      </svg>
-      <span id="llAddRowText">Add Row</span>
-    </button>
-  </div>
-</div>
+        <button class="ll-btn ll-soft-green" id="llAddRowTop" type="button" disabled>
+          <svg class="ll-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14"></path>
+            <path d="M5 12h14"></path>
+          </svg>
+          <span id="llAddRowText">Add Row</span>
+        </button>
+      </div>
+    </div>
 
     <div class="ll-mobilebar ll-hidden" id="llMobileBar">
-     <button class="ll-btn ll-red" id="llMobileCancel" type="button">Cancel</button>
-<button class="ll-btn ll-soft-green" id="llMobileAddRow" type="button">Add Row</button>
-<button class="ll-btn ll-soft-red" id="llMobileDeleteSelected" type="button" disabled>Delete Selected</button>
-<button class="ll-btn ll-soft-red" id="llMobileDeleteAll" type="button" disabled>Delete All</button>
-<button class="ll-btn ll-green" id="llMobileSave" type="button">Save</button>
+      <button class="ll-btn ll-red" id="llMobileCancel" type="button">Cancel</button>
+      <button class="ll-btn ll-soft-green" id="llMobileAddRow" type="button">Add Row</button>
+      <button class="ll-btn ll-soft-red" id="llMobileDeleteSelected" type="button" disabled>Delete Selected</button>
+      <button class="ll-btn ll-soft-red" id="llMobileDeleteAll" type="button" disabled>Delete All</button>
+      <button class="ll-btn ll-green" id="llMobileSave" type="button">Save</button>
     </div>
 
     <div class="ll-table-wrap">
@@ -1017,15 +1093,15 @@
         <div class="ll-th-row">
           <div class="ll-th"><input type="checkbox" class="ll-check" id="llSelectAll" title="Select all"></div>
           <div class="ll-th" id="llHSl">SL</div>
-          <div class="ll-th" id="llHDateDisb">Date of disbursement</div>
-          <div class="ll-th" id="llHPrDue">Principal due</div>
-          <div class="ll-th" id="llHPrPaid">Principal Repaid</div>
-          <div class="ll-th" id="llHPrOut">Principal Outstanding</div>
-          <div class="ll-th" id="llHIntDue">Interest Due</div>
+          <div class="ll-th" id="llHDate">Date</div>
+          <div class="ll-th" id="llHOpening">Opening Loan Amount</div>
+          <div class="ll-th" id="llHNewLoan">New Loan Amount</div>
+          <div class="ll-th" id="llHPrPaid">Principal Paid</div>
           <div class="ll-th" id="llHIntPaid">Interest Paid</div>
-          <div class="ll-th" id="llHIntOut">Interest Outstanding</div>
-          <div class="ll-th" id="llHTotalOut">Total Outstanding (Principal+Interest)</div>
-          <div class="ll-th" id="llHNext">Date of Next Installment</div>
+          <div class="ll-th" id="llHTotalPaid">Total Repayment</div>
+          
+          <div class="ll-th" id="llHClosing">Outstanding Balance</div>
+          <div class="ll-th" id="llHRemarks">Remarks</div>
           <div class="ll-th" id="llHAction">Action</div>
         </div>
 
@@ -1035,9 +1111,12 @@
     </div>
 
     <div class="ll-summary">
-      <div class="ll-kpi">Total Principal Outstanding: <b id="llTotalPrOut">0</b></div>
-      <div class="ll-kpi">Total Interest Outstanding: <b id="llTotalIntOut">0</b></div>
-      <div class="ll-kpi">Total Outstanding: <b id="llTotalOut">0</b></div>
+      <div class="ll-kpi">Base Loan: <b id="llKpiBaseLoan">0</b></div>
+      <div class="ll-kpi">Additional Loan: <b id="llKpiAdditionalLoan">0</b></div>
+      <div class="ll-kpi">Principal Paid: <b id="llKpiPrincipalPaid">0</b></div>
+      <div class="ll-kpi">Interest Paid: <b id="llKpiInterestPaid">0</b></div>
+      <div class="ll-kpi">Total Repaid: <b id="llKpiTotalRepaid">0</b></div>
+      <div class="ll-kpi">Outstanding: <b id="llKpiOutstanding">0</b></div>
     </div>
 
     <div class="ll-footer-controls">
@@ -1048,8 +1127,6 @@
       </div>
     </div>
   </div>
-
-
 </div>
 
 <div id="llSaveOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
@@ -1123,9 +1200,25 @@
 
   const $ = (id) => document.getElementById(id);
 
-  let memberLoans = [];
-  let memberMap = new Map();
-  let selectedLoanId = "";
+  const API = {
+    bootstrap: "/pg/loan-ledger/sector/bootstrap",
+    memberItems: "/pg/loan-ledger/sector/member-items",
+    account: "/pg/loan-ledger/sector/account",
+    ledger: "/pg/loan-ledger/sector/ledger",
+    summary: "/pg/loan-ledger/sector/summary"
+  };
+
+  let pgInfo = null;
+  let sector = "";
+  let rules = { interest_rate: 0, moratorium_months: 0 };
+  let members = [];
+  let currentMember = null;
+  let currentItems = [];
+  let currentItem = null;
+  let currentAccount = null;
+
+  let selectedMemberId = "";
+  let selectedItemKey = "";
   let selectedPeriod = (() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
@@ -1154,13 +1247,21 @@
   }
 
   function n2(v){
-    const x = parseFloat(String(v || "").replace(/[, ]+/g,""));
+    const x = parseFloat(String(v ?? "").replace(/[₹, ]+/g,""));
     return Number.isFinite(x) ? x : 0;
   }
 
   function fmt(v){
     const x = Number(v || 0);
     return (Math.round(x * 100) / 100).toString();
+  }
+
+  function money(v){
+    const x = Number(v || 0);
+    if (!Number.isFinite(x)) return "0";
+    return (Math.round(x * 100) / 100).toLocaleString("en-IN", {
+      maximumFractionDigits: 2
+    });
   }
 
   function monthLabel(month, year){
@@ -1187,18 +1288,23 @@
     openOverlay($("llInfoOverlay"));
   }
 
-  function getSelectedLoan(){
-    return memberLoans.find(l => String(l.loan_id || l._id || "") === String(selectedLoanId || ""));
-  }
+  async function fetchJson(url, options = {}){
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        "Accept": "application/json",
+        ...(options.headers || {})
+      }
+    });
 
-  function getLoanId(loan){
-    return String((loan && (loan.loan_id || loan._id || loan.id)) || "");
-  }
+    const data = await res.json().catch(() => null);
 
-  function rowText(row){
-    const parts = [];
-    row.querySelectorAll("input").forEach(el => parts.push(el.value || el.placeholder || ""));
-    return parts.join(" ").toLowerCase();
+    if (!res.ok || !data || data.ok === false){
+      const message = (data && (data.error || data.message)) || `HTTP ${res.status}`;
+      throw new Error(message);
+    }
+
+    return data;
   }
 
   function selectedRows(){
@@ -1213,11 +1319,19 @@
       const cb = row.querySelector("[data-ll='sel']");
       if (cb) cb.checked = false;
     });
+
     if ($("llSelectAll")){
       $("llSelectAll").checked = false;
       $("llSelectAll").indeterminate = false;
     }
+
     updateSelectUI();
+  }
+
+  function rowText(row){
+    const parts = [];
+    row.querySelectorAll("input").forEach(el => parts.push(el.value || el.placeholder || ""));
+    return parts.join(" ").toLowerCase();
   }
 
   function updateSelectUI(){
@@ -1243,38 +1357,130 @@
     $("llMobileDeleteAll").disabled = !(llIsEditing && allRows.length > 0);
   }
 
+  function rowField(row, key){
+    return row ? row.querySelector(`[data-ll='${key}']`) : null;
+  }
+
+  function setRowFieldValue(row, key, value){
+    const el = rowField(row, key);
+    if (el) el.value = value ?? "";
+  }
+
+  function getRowFieldValue(row, key){
+    const el = rowField(row, key);
+    return el ? (el.value || "") : "";
+  }
+
+  function getEntryFromRow(row){
+    return {
+      date: getRowFieldValue(row, "date"),
+      new_loan_amount: n2(getRowFieldValue(row, "new_loan")),
+      principal_paid: n2(getRowFieldValue(row, "principal_paid")),
+      interest_paid: n2(getRowFieldValue(row, "interest_paid")),
+      remarks: getRowFieldValue(row, "remarks")
+    };
+  }
+
+  function monthDiffFromStart(startDate, entryDate){
+    if (!startDate || !entryDate) return null;
+
+    const sd = new Date(`${startDate}T00:00:00`);
+    const ed = new Date(`${entryDate}T00:00:00`);
+
+    if (Number.isNaN(sd.getTime()) || Number.isNaN(ed.getTime())) return null;
+
+    return ((ed.getFullYear() - sd.getFullYear()) * 12) + (ed.getMonth() - sd.getMonth()) + 1;
+  }
+
+  function getBaseLoanAmount(){
+    return n2($("llLoanAmount").value || (currentAccount && currentAccount.loan_amount));
+  }
+
+  function getInterestRate(){
+    return n2((currentAccount && currentAccount.interest_rate) ?? rules.interest_rate);
+  }
+
+  function getMoratoriumMonths(){
+    return Number((currentAccount && currentAccount.moratorium_months) ?? rules.moratorium_months ?? 0);
+  }
+
   function recalcLoan(){
-    let prevPrOut = 0;
-    let prevIntOut = 0;
-    let totalPrOut = 0;
-    let totalIntOut = 0;
-    let totalOut = 0;
+    const baseLoan = getBaseLoanAmount();
+    const interestRate = getInterestRate();
+    const moratoriumMonths = getMoratoriumMonths();
+    const startDate = $("llLoanStartDate").value || (currentAccount && currentAccount.loan_start_date) || "";
 
-    allRows.forEach(row => {
-      const prDue = n2(row.querySelector("[data-ll='pr_due']").value);
-      const prPaid = n2(row.querySelector("[data-ll='pr_paid']").value);
-      const intDue = n2(row.querySelector("[data-ll='int_due']").value);
-      const intPaid = n2(row.querySelector("[data-ll='int_paid']").value);
+    let openingBalance = baseLoan;
+    let additionalLoan = 0;
+    let principalPaidTotal = 0;
+    let interestPaidTotal = 0;
+    let totalRepaid = 0;
 
-      let prOut = Math.max(0, prevPrOut + prDue - prPaid);
-      let intOut = Math.max(0, prevIntOut + intDue - intPaid);
-      const total = prOut + intOut;
+    allRows.forEach((row, idx) => {
+      if (!row) return;
 
-      prevPrOut = prOut;
-      prevIntOut = intOut;
+      const entryDate = getRowFieldValue(row, "date");
+      const newLoanInput = rowField(row, "new_loan");
+      const principalInput = rowField(row, "principal_paid");
+      const interestInput = rowField(row, "interest_paid");
 
-      row.querySelector("[data-ll='pr_out']").value = prOut ? fmt(prOut) : "";
-      row.querySelector("[data-ll='int_out']").value = intOut ? fmt(intOut) : "";
-      row.querySelector("[data-ll='total_out']").value = total ? fmt(total) : "";
+      if (!principalInput || !interestInput){
+        return;
+      }
 
-      totalPrOut = prOut;
-      totalIntOut = intOut;
-      totalOut = total;
+      let newLoan = n2(newLoanInput ? newLoanInput.value : 0);
+      if (sector !== "ARDD") newLoan = 0;
+
+      const available = Math.max(0, openingBalance + newLoan);
+      let principalPaid = n2(principalInput.value);
+      let interestPaid = n2(interestInput.value);
+
+      if (principalPaid > available){
+        principalPaid = available;
+        principalInput.value = fmt(available);
+      }
+
+      const monthNo = monthDiffFromStart(startDate, entryDate);
+      const inMoratorium = (
+        monthNo !== null &&
+        moratoriumMonths > 0 &&
+        monthNo <= moratoriumMonths
+      );
+
+      if (inMoratorium && (principalPaid > 0 || interestPaid > 0)){
+        row.dataset.warn = "1";
+      } else {
+        row.dataset.warn = "";
+      }
+
+      const suggestedInterest = available * interestRate;
+      const total = principalPaid + interestPaid;
+      const closing = Math.max(0, available - principalPaid);
+
+      setRowFieldValue(row, "opening", money(openingBalance));
+      setRowFieldValue(row, "new_loan", sector === "ARDD" && newLoan ? fmt(newLoan) : (sector === "ARDD" && newLoanInput ? newLoanInput.value : ""));
+      setRowFieldValue(row, "total_repayment", total ? money(total) : "");
+      setRowFieldValue(row, "suggested_interest", suggestedInterest ? money(suggestedInterest) : "");
+      setRowFieldValue(row, "closing", money(closing));
+
+      additionalLoan += newLoan;
+      principalPaidTotal += principalPaid;
+      interestPaidTotal += interestPaid;
+      totalRepaid += total;
+
+      openingBalance = closing;
+
+      const sl = rowField(row, "slno");
+      if (sl && !sl.textContent) sl.textContent = String(idx + 1);
     });
 
-    $("llTotalPrOut").textContent = fmt(totalPrOut);
-    $("llTotalIntOut").textContent = fmt(totalIntOut);
-    $("llTotalOut").textContent = fmt(totalOut);
+    $("llKpiBaseLoan").textContent = money(baseLoan);
+    $("llKpiAdditionalLoan").textContent = money(additionalLoan);
+    $("llKpiPrincipalPaid").textContent = money(principalPaidTotal);
+    $("llKpiInterestPaid").textContent = money(interestPaidTotal);
+    $("llKpiTotalRepaid").textContent = money(totalRepaid);
+    $("llKpiOutstanding").textContent = money(openingBalance);
+
     updateSelectUI();
   }
 
@@ -1296,8 +1502,8 @@
     $("llPageInfoBottom").textContent = `Page ${page} / ${totalPages}`;
     $("llPrevBottom").disabled = page <= 1;
     $("llNextBottom").disabled = page >= totalPages;
-
     $("llEmpty").classList.toggle("show", filteredRows.length === 0);
+
     updateSelectUI();
   }
 
@@ -1308,11 +1514,39 @@
     recalcLoan();
   }
 
+  function setTopInputsEditable(on){
+    $("llMemberName").disabled = !!on;
+    $("llSectorItem").disabled = !!on;
+
+    $("llLoanAmount").readOnly = !on;
+    $("llLoanStartDate").readOnly = !on;
+    $("llLoanPurpose").readOnly = !on;
+  }
+
   function setRowEditable(row, on){
     row.querySelectorAll("input[data-ll]").forEach(el => {
       const key = el.getAttribute("data-ll");
-      if (["sel","pr_out","int_out","total_out"].includes(key)) return;
-      el.readOnly = !on;
+
+      if (["sel"].includes(key)) return;
+
+      if ([
+        "opening",
+        "total_repayment",
+        "suggested_interest",
+        "closing"
+      ].includes(key)){
+        el.readOnly = true;
+        return;
+      }
+
+      if (key === "new_loan"){
+        el.readOnly = !(on && sector === "ARDD");
+        return;
+      }
+
+      if (["date", "principal_paid", "interest_paid", "remarks"].includes(key)){
+        el.readOnly = !on;
+      }
     });
 
     const cb = row.querySelector("[data-ll='sel']");
@@ -1335,10 +1569,15 @@
     $("llEditIcon").classList.toggle("ll-hidden", llIsEditing);
     $("llSaveIcon").classList.toggle("ll-hidden", !llIsEditing);
     $("llEditSaveText").textContent = llIsEditing ? "Save" : "Edit";
+
+    $("llEditSaveBtn").classList.toggle("ll-red", !llIsEditing);
+    $("llEditSaveBtn").classList.toggle("ll-green", llIsEditing);
+    $("llCancelBtn").classList.add("ll-red");
     $("llCancelBtn").classList.toggle("ll-hidden", !llIsEditing);
 
-    $("llAddRowTop").disabled = !llIsEditing;
+    $("llAddRowTop").disabled = !(llIsEditing && selectedMemberId && selectedItemKey);
     allRows.forEach(row => setRowEditable(row, llIsEditing));
+    setTopInputsEditable(llIsEditing);
 
     if (!llIsEditing) clearSelections();
 
@@ -1347,157 +1586,343 @@
     recalcLoan();
   }
 
-  function setEditingUI(){
-    const t = T[lang];
-
-    $("llEditIcon").classList.toggle("ll-hidden", llIsEditing);
-$("llSaveIcon").classList.toggle("ll-hidden", !llIsEditing);
-$("llEditSaveText").textContent = llIsEditing ? t.saveButton : t.editButton;
-
-/*  Edit = red, Save = green, Cancel = red */
-$("llEditSaveBtn").classList.toggle("ll-red", !llIsEditing);
-$("llEditSaveBtn").classList.toggle("ll-green", llIsEditing);
-$("llCancelBtn").classList.add("ll-red");
-
-$("llCancelBtn").classList.toggle("ll-hidden", !llIsEditing);
-$("llCancelText").textContent = t.cancelButton;
-
-    $("llAddRowText").textContent = t.addRow;
-    $("llDeleteSelectedText").textContent = t.deleteSelected;
-    $("llDeleteAllText").textContent = t.deleteAll;
-
-    $("llMobileCancel").textContent = t.cancelButton;
-    $("llMobileAddRow").textContent = t.addRow;
-    $("llMobileSave").textContent = t.saveButton;
-    $("llMobileDeleteSelected").textContent = t.deleteSelected;
-    $("llMobileDeleteAll").textContent = t.deleteAll;
-
-    updateMobileBar();
-  }
-
-  function clearAllSelections(){
-    allRows.forEach(row => {
-      const cb = row.querySelector("[data-ll='sel']");
-      if (cb) cb.checked = false;
-    });
-
-    if ($("llSelectAll")){
-      $("llSelectAll").checked = false;
-      $("llSelectAll").indeterminate = false;
-    }
-
-    updateSelectUI();
-  }
-
   function valueOrBlank(v){
     if (v === null || v === undefined || v === "" || Number(v) === 0) return "";
     return String(v);
   }
 
   function createRow(entry = {}){
-  const row = document.createElement("div");
-  row.className = "ll-row";
+    const row = document.createElement("div");
+    row.className = "ll-row";
 
-  const dateDisb = entry.date_disb || entry.date_of_disbursement || entry.disbursement_date || "";
-  const principalDue = valueOrBlank(entry.principal_due);
-  const principalPaid = valueOrBlank(entry.principal_repaid ?? entry.principal_paid);
-  const principalOut = valueOrBlank(entry.principal_outstanding);
-  const interestDue = valueOrBlank(entry.interest_due);
-  const interestPaid = valueOrBlank(entry.interest_paid);
-  const interestOut = valueOrBlank(entry.interest_outstanding);
-  const totalOut = valueOrBlank(entry.total_outstanding);
-  const nextDate = entry.next_installment_date || entry.date_next_installment || entry.next_date || "";
+    const dateValue = entry.date || entry.entry_date || entry.repayment_date || "";
+    const opening = valueOrBlank(entry.opening_loan_amount);
+    const newLoan = valueOrBlank(entry.current_month_new_loan ?? entry.new_loan_amount);
+    const principalPaid = valueOrBlank(entry.principal_paid);
+    const interestPaid = valueOrBlank(entry.interest_paid);
+    const totalRepayment = valueOrBlank(entry.total_repayment);
+    const suggestedInterest = valueOrBlank(entry.suggested_interest);
+    const closing = valueOrBlank(entry.closing_loan_balance ?? entry.principal_outstanding);
+    const remarks = entry.remarks || "";
 
-  row.innerHTML = `
-    <div class="ll-cell" data-label="Select" data-llcell="sel">
-      <input type="checkbox" class="ll-check" data-ll="sel" ${llIsEditing ? "" : "disabled"}>
-    </div>
+    row.innerHTML = `
+      <div class="ll-cell" data-label="Select" data-llcell="sel">
+        <input type="checkbox" class="ll-check" data-ll="sel" ${llIsEditing ? "" : "disabled"}>
+      </div>
 
-    <div class="ll-cell" data-label="SL" data-llcell="sl">
-      <span class="ll-slno" data-ll="slno"></span>
-    </div>
+      <div class="ll-cell" data-label="SL" data-llcell="sl">
+        <span class="ll-slno" data-ll="slno"></span>
+      </div>
 
-    <div class="ll-cell" data-label="Date of disbursement">
-      <input class="ll-in" data-ll="date_disb" type="date" value="${esc(dateDisb)}" ${llIsEditing ? "" : "readonly"}>
-    </div>
+      <div class="ll-cell" data-label="Date">
+        <input class="ll-in" data-ll="date" type="date" value="${esc(dateValue)}" ${llIsEditing ? "" : "readonly"}>
+      </div>
 
-    <div class="ll-cell" data-label="Principal due">
-      <input class="ll-in num" data-ll="pr_due" type="number" step="0.01" min="0" placeholder="0.00" value="${esc(principalDue)}" ${llIsEditing ? "" : "readonly"}>
-    </div>
+      <div class="ll-cell" data-label="Opening Loan Amount">
+        <input class="ll-in num" data-ll="opening" type="text" value="${esc(opening)}" readonly>
+      </div>
 
-    <div class="ll-cell" data-label="Principal Repaid">
-      <input class="ll-in num" data-ll="pr_paid" type="number" step="0.01" min="0" placeholder="0.00" value="${esc(principalPaid)}" ${llIsEditing ? "" : "readonly"}>
-    </div>
+      <div class="ll-cell" data-label="New Loan Amount">
+        <input class="ll-in num" data-ll="new_loan" type="number" step="0.01" min="0" placeholder="${sector === "ARDD" ? "0.00" : "Only ARDD"}" value="${esc(newLoan)}">
+      </div>
 
-    <div class="ll-cell" data-label="Principal Outstanding">
-      <input class="ll-in num" data-ll="pr_out" type="text" value="${esc(principalOut)}" readonly>
-    </div>
+      <div class="ll-cell" data-label="Principal Paid">
+        <input class="ll-in num" data-ll="principal_paid" type="number" step="0.01" min="0" placeholder="0.00" value="${esc(principalPaid)}" ${llIsEditing ? "" : "readonly"}>
+      </div>
 
-    <div class="ll-cell" data-label="Interest Due">
-      <input class="ll-in num" data-ll="int_due" type="number" step="0.01" min="0" placeholder="0.00" value="${esc(interestDue)}" ${llIsEditing ? "" : "readonly"}>
-    </div>
+      <div class="ll-cell" data-label="Interest Paid">
+        <input class="ll-in num" data-ll="interest_paid" type="number" step="0.01" min="0" placeholder="0.00" value="${esc(interestPaid)}" ${llIsEditing ? "" : "readonly"}>
+      </div>
 
-    <div class="ll-cell" data-label="Interest Paid">
-      <input class="ll-in num" data-ll="int_paid" type="number" step="0.01" min="0" placeholder="0.00" value="${esc(interestPaid)}" ${llIsEditing ? "" : "readonly"}>
-    </div>
+      <div class="ll-cell" data-label="Total Repayment">
+        <input class="ll-in num" data-ll="total_repayment" type="text" value="${esc(totalRepayment)}" readonly>
+      </div>
 
-    <div class="ll-cell" data-label="Interest Outstanding">
-      <input class="ll-in num" data-ll="int_out" type="text" value="${esc(interestOut)}" readonly>
-    </div>
+      <div class="ll-cell" data-label="Outstanding Balance">
+        <input class="ll-in num" data-ll="closing" type="text" value="${esc(closing)}" readonly>
+      </div>
 
-    <div class="ll-cell" data-label="Total Outstanding">
-      <input class="ll-in num" data-ll="total_out" type="text" value="${esc(totalOut)}" readonly>
-    </div>
+      <div class="ll-cell" data-label="Remarks">
+        <input class="ll-in" data-ll="remarks" type="text" placeholder="Remarks" value="${esc(remarks)}" ${llIsEditing ? "" : "readonly"}>
+      </div>
 
-    <div class="ll-cell" data-label="Date of Next Installment">
-      <input class="ll-in" data-ll="next_date" type="date" value="${esc(nextDate)}" ${llIsEditing ? "" : "readonly"}>
-    </div>
+      <div class="ll-cell" data-label="Action">
+        <button class="ll-del" data-ll="delete" type="button" title="Delete row" ${llIsEditing ? "" : "disabled"}>
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M8 6V4h8v2"></path>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+          </svg>
+        </button>
+      </div>
+    `;
 
-    <div class="ll-cell" data-label="Action">
-      <button class="ll-del" data-ll="delete" type="button" title="Delete row" ${llIsEditing ? "" : "disabled"}>
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 6h18"></path>
-          <path d="M8 6V4h8v2"></path>
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-          <path d="M10 11v6"></path>
-          <path d="M14 11v6"></path>
-        </svg>
-      </button>
-    </div>
-  `;
-
-  row.querySelectorAll("[data-ll='pr_due'], [data-ll='pr_paid'], [data-ll='int_due'], [data-ll='int_paid']").forEach(input => {
-    input.addEventListener("input", recalcLoan);
-  });
-
-  const cb = row.querySelector("[data-ll='sel']");
-  if (cb){
-    cb.addEventListener("change", updateSelectUI);
-  }
-
-  const del = row.querySelector("[data-ll='delete']");
-  if (del){
-    del.addEventListener("click", () => {
-      if (!llIsEditing) return;
-      pendingDeleteRow = row;
-      openOverlay($("llDeleteOverlay"));
+    row.querySelectorAll("[data-ll='date'], [data-ll='new_loan'], [data-ll='principal_paid'], [data-ll='interest_paid'], [data-ll='remarks']").forEach(input => {
+      input.addEventListener("input", recalcLoan);
+      input.addEventListener("change", recalcLoan);
     });
+
+    const cb = row.querySelector("[data-ll='sel']");
+    if (cb) cb.addEventListener("change", updateSelectUI);
+
+    const del = row.querySelector("[data-ll='delete']");
+    if (del){
+      del.addEventListener("click", () => {
+        if (!llIsEditing) return;
+        pendingDeleteRow = row;
+        openOverlay($("llDeleteOverlay"));
+      });
+    }
+
+    setRowEditable(row, llIsEditing);
+    return row;
   }
 
-  setRowEditable(row, llIsEditing);
-  return row;
-}
+  function hydrateEntries(entries){
+    allRows = [];
+    filteredRows = [];
+    $("llBody").innerHTML = "";
+    clearSelections();
 
+    if (Array.isArray(entries)){
+      entries.forEach(e => allRows.push(createRow(e)));
+    }
+
+    page = 1;
+    rebuildFiltered();
+    setEditMode(false);
+  }
+
+  function clearLedgerState(){
+    currentAccount = null;
+    allRows = [];
+    filteredRows = [];
+    $("llBody").innerHTML = "";
+    $("llLoanAmount").value = "";
+    $("llLoanStartDate").value = "";
+    $("llSectorRule").value = "";
+    $("llLoanPurpose").value = "";
+    updateKpiFromSummary({});
+    rebuildFiltered();
+    setEditMode(false);
+  }
+
+  function updateKpiFromSummary(summary = {}){
+    $("llKpiBaseLoan").textContent = money(summary.base_loan_amount ?? getBaseLoanAmount());
+    $("llKpiAdditionalLoan").textContent = money(summary.additional_loan_amount ?? 0);
+    $("llKpiPrincipalPaid").textContent = money(summary.principal_paid ?? 0);
+    $("llKpiInterestPaid").textContent = money(summary.interest_paid ?? 0);
+    $("llKpiTotalRepaid").textContent = money(summary.total_repayment ?? 0);
+    $("llKpiOutstanding").textContent = money(summary.principal_outstanding ?? summary.closing_loan_balance ?? getBaseLoanAmount());
+  }
+
+  function applyBootstrap(data){
+    pgInfo = data.pg || {};
+    sector = pgInfo.sector || "";
+    rules = data.rules || rules;
+    members = Array.isArray(data.members) ? data.members : [];
+
+    $("llPgName").value = pgInfo.name || "";
+    $("llPgSector").value = sector || "";
+    $("llWorkingPeriod").value = monthLabel(selectedPeriod.month, selectedPeriod.year);
+
+    const moratorium = Number(rules.moratorium_months || 0);
+    const rate = Number(rules.interest_rate || 0);
+
+    $("llSectorRule").value = `${moratorium} month(s) no repayment `;
+    $("llSectorNote").innerHTML = `<b>${esc(sector || "Sector")}</b> based Loan Ledger. Select member and ${esc(itemLabelText().toLowerCase())}.`;
+    $("llItemLabel").textContent = itemLabelText();
+
+    if (sector === "ARDD"){
+      $("llHintText").textContent = "ARDD: in each row, enter Date, New Loan Amount if released, Principal Paid and Interest Paid. Balance will auto-calculate.";
+    } else if (sector === "Agri"){
+      $("llHintText").textContent = "Agri: first 4 months no repayment. In each row, enter Date, Principal Paid and Interest Paid only.";
+    } else if (sector === "Fishery"){
+      $("llHintText").textContent = "Fishery: first month no repayment. In each row, enter Date, Principal Paid and Interest Paid only.";
+    } else {
+      $("llHintText").textContent = "Select member and item to load the sector-based ledger.";
+    }
+
+    populateMembers();
+  }
+
+  function itemLabelText(){
+    if (sector === "Agri") return "Crop";
+    if (sector === "Fishery") return "Fishery Activity";
+    if (sector === "ARDD") return "ARDD Unit";
+    return "Crop / Activity / Unit";
+  }
+
+  function memberIdOf(member){
+    return String(member.member_id || member._id || "");
+  }
+
+  function populateMembers(){
+    const select = $("llMemberName");
+    select.innerHTML = '<option value="">Select member</option>';
+
+    members
+      .slice()
+      .sort((a,b) => String(a.name || "").localeCompare(String(b.name || "")))
+      .forEach(member => {
+        const id = memberIdOf(member);
+        if (!id) return;
+
+        const suffix = Number(member.items_count || 0) ? "" : " (No item saved)";
+        select.insertAdjacentHTML(
+          "beforeend",
+          `<option value="${esc(id)}">${esc(member.name || "Member")}${esc(suffix)}</option>`
+        );
+      });
+
+    if (!members.length){
+      info("No active PG members found. Please update PG Registration / Membership Register first.");
+    }
+  }
+
+  function populateItems(items){
+    const select = $("llSectorItem");
+    select.innerHTML = `<option value="">Select ${esc(itemLabelText().toLowerCase())}</option>`;
+
+    currentItems = Array.isArray(items) ? items : [];
+
+    currentItems.forEach(item => {
+      select.insertAdjacentHTML(
+        "beforeend",
+        `<option value="${esc(item.item_key)}">${esc(item.label || item.item_name || item.item_key)}</option>`
+      );
+    });
+
+    if (!currentItems.length && selectedMemberId){
+      info(`No ${itemLabelText().toLowerCase()} found for this member. Please update PG Membership Details first.`);
+    }
+  }
+
+  async function loadBootstrap(){
+    try{
+      const data = await fetchJson(API.bootstrap);
+      applyBootstrap(data);
+    } catch (err){
+      console.error(err);
+      info(`Could not load sector Loan Ledger: ${err.message || err}`);
+    }
+  }
+
+  async function loadMemberItems(memberId){
+    if (!memberId){
+      currentMember = null;
+      selectedItemKey = "";
+      populateItems([]);
+      clearLedgerState();
+      return;
+    }
+
+    const localMember = members.find(m => memberIdOf(m) === String(memberId));
+    currentMember = localMember || null;
+
+    $("llSpouseName").value = currentMember ? (currentMember.father_mother_spouse || "") : "";
+
+    try{
+      const qs = new URLSearchParams({ member_id: memberId });
+      const data = await fetchJson(`${API.memberItems}?${qs.toString()}`);
+      currentMember = data.member || currentMember;
+      $("llSpouseName").value = currentMember ? (currentMember.father_mother_spouse || "") : "";
+      populateItems(data.items || []);
+      clearLedgerState();
+    } catch (err){
+      console.error(err);
+      populateItems([]);
+      clearLedgerState();
+      info(`Could not load member ${itemLabelText().toLowerCase()}: ${err.message || err}`);
+    }
+  }
+
+  function setValueSafe(id, value){
+    const el = $(id);
+    if (el) el.value = value ?? "";
+  }
+
+  function applyAccount(account){
+    currentAccount = account || {};
+
+    setValueSafe("llLoanAmount", currentAccount.loan_amount || "");
+    setValueSafe("llLoanStartDate", currentAccount.loan_start_date || "");
+    setValueSafe("llLoanPurpose", currentAccount.loan_purpose || "");
+
+    const moratorium = Number(currentAccount.moratorium_months ?? rules.moratorium_months ?? 0);
+    setValueSafe("llSectorRule", `${moratorium} month(s) no repayment.`);
+  }
+
+  async function loadAccountAndLedger(){
+    if (!selectedMemberId || !selectedItemKey){
+      clearLedgerState();
+      return;
+    }
+
+    try{
+      const qs = new URLSearchParams({
+        member_id: selectedMemberId,
+        item_key: selectedItemKey
+      });
+
+      const accountData = await fetchJson(`${API.account}?${qs.toString()}`);
+      currentItem = accountData.item || currentItems.find(i => i.item_key === selectedItemKey) || null;
+      applyAccount(accountData.account || {});
+
+      await loadLedger();
+    } catch (err){
+      console.error(err);
+      clearLedgerState();
+      info(`Could not load loan account/ledger: ${err.message || err}`);
+    }
+  }
+
+  async function loadLedger(){
+    if (!selectedMemberId || !selectedItemKey){
+      hydrateEntries([]);
+      return;
+    }
+
+    try{
+      const qs = new URLSearchParams({
+        member_id: selectedMemberId,
+        item_key: selectedItemKey
+      });
+
+      const data = await fetchJson(`${API.ledger}?${qs.toString()}`);
+
+      if (data.account) applyAccount(data.account);
+      if (data.summary) updateKpiFromSummary(data.summary);
+
+      hydrateEntries(Array.isArray(data.entries) ? data.entries : []);
+      llSnapshot = takeSnapshot();
+    } catch (err){
+      console.error(err);
+      hydrateEntries([]);
+      llSnapshot = takeSnapshot();
+      info(`Could not load ledger rows: ${err.message || err}`);
+    }
+  }
 
   function addRow(){
     if (!llIsEditing) return;
 
-    if (!selectedLoanId){
-      info("Please select member and loan account first.");
+    if (!selectedMemberId || !selectedItemKey){
+      info(`Please select member and ${itemLabelText().toLowerCase()} first.`);
       return;
     }
 
-    const row = createRow();
+    if (!getBaseLoanAmount() && sector !== "ARDD"){
+      info("Please enter assigned loan amount before adding repayment row.");
+      return;
+    }
+
+    const today = new Date();
+    const defaultDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+    const row = createRow({ date: defaultDate });
+
     allRows.push(row);
 
     query = "";
@@ -1516,328 +1941,71 @@ $("llCancelText").textContent = t.cancelButton;
 
   function takeSnapshot(){
     return {
-      selectedLoanId,
-      member: $("llMemberName").value || "",
-      entries: allRows.map(row => ({
-        date_disb: row.querySelector("[data-ll='date_disb']").value || "",
-        principal_due: n2(row.querySelector("[data-ll='pr_due']").value),
-        principal_repaid: n2(row.querySelector("[data-ll='pr_paid']").value),
-        interest_due: n2(row.querySelector("[data-ll='int_due']").value),
-        interest_paid: n2(row.querySelector("[data-ll='int_paid']").value),
-        next_installment_date: row.querySelector("[data-ll='next_date']").value || ""
-      }))
+      selectedMemberId,
+      selectedItemKey,
+      account: {
+        loan_amount: $("llLoanAmount").value || "",
+        loan_start_date: $("llLoanStartDate").value || "",
+        loan_purpose: $("llLoanPurpose").value || ""
+      },
+      entries: allRows.map(getEntryFromRow)
     };
   }
 
-  function hydrateEntries(entries){
-    allRows = [];
-    filteredRows = [];
-    $("llBody").innerHTML = "";
-    clearSelections();
+  function restoreSnapshot(){
+    if (!llSnapshot) return;
 
-    if (Array.isArray(entries)){
-      entries.forEach(e => allRows.push(createRow(e)));
-    }
+    $("llLoanAmount").value = llSnapshot.account?.loan_amount || "";
+    $("llLoanStartDate").value = llSnapshot.account?.loan_start_date || "";
+    $("llLoanPurpose").value = llSnapshot.account?.loan_purpose || "";
 
-    rebuildFiltered();
-    setEditMode(false);
-  }
-
-  function applyLoanToFields(loan){
-    if (!loan){
-      $("llSpouseName").value = "";
-      $("llLoanAmount").value = "";
-      $("llLoanTenure").value = "";
-      $("llInstallmentCount").value = "";
-      $("llLoanPurpose").value = "";
-      return;
-    }
-
-    $("llSpouseName").value = loan.father_mother_spouse || loan.spouse_name || "";
-    $("llLoanAmount").value = loan.loan_amount ?? loan.principal ?? "";
-    $("llLoanTenure").value = loan.tenure_months ?? "";
-    $("llInstallmentCount").value = loan.no_of_installments || loan.installments_total || "";
-    $("llLoanPurpose").value = loan.loan_purpose || loan.purpose || "";
-  }
-
-  function populateMembers(){
-    const select = $("llMemberName");
-    memberMap = new Map();
-
-    memberLoans.forEach(loan => {
-      const memberId = String(loan.member_id || loan.member_name || "");
-      if (!memberId) return;
-
-      if (!memberMap.has(memberId)){
-        memberMap.set(memberId, {
-          id: memberId,
-          name: loan.member_name || "Member"
-        });
-      }
-    });
-
-    select.innerHTML = '<option value="">Select member</option>';
-    Array.from(memberMap.values())
-      .sort((a,b) => a.name.localeCompare(b.name))
-      .forEach(member => {
-        select.insertAdjacentHTML(
-          "beforeend",
-          `<option value="${esc(member.id)}">${esc(member.name)}</option>`
-        );
-      });
-
-    const firstMember = Array.from(memberMap.values())[0];
-    if (firstMember){
-      select.value = firstMember.id;
-      populateLoanAccountsForMember(firstMember.id, true);
-    } else {
-      populateLoanAccountsForMember("", false);
-      info("No member loan found. Please ask CLF/Block/Admin to create a member loan first.");
-    }
-  }
-
-  function populateLoanAccountsForMember(memberId, autoLoad=false){
-    const loanSelect = $("llLoanAccount");
-    const loans = memberLoans.filter(loan => String(loan.member_id || loan.member_name || "") === String(memberId || ""));
-
-    loanSelect.innerHTML = '<option value="">Select loan account</option>';
-
-    loans.forEach(loan => {
-      const id = getLoanId(loan);
-      const label = [
-        loan.loan_no || "Loan",
-        loan.loan_purpose || loan.purpose || "",
-        loan.loan_amount ? `₹${loan.loan_amount}` : ""
-      ].filter(Boolean).join(" - ");
-
-      loanSelect.insertAdjacentHTML(
-        "beforeend",
-        `<option value="${esc(id)}">${esc(label)}</option>`
-      );
-    });
-
-    selectedLoanId = "";
-    applyLoanToFields(null);
-    hydrateEntries([]);
-    renderLoanHistory([]);
-
-    if (loans.length && autoLoad){
-      const id = getLoanId(loans[0]);
-      loanSelect.value = id;
-      selectedLoanId = id;
-      applyLoanToFields(loans[0]);
-      loadLoanHistoryAndCurrent();
-    } else if (!loans.length && memberId){
-      info("No active member loan found for this member. Please ask CLF/Block/Admin to create member loan first.");
-    }
-  }
-
-  async function loadMemberLoans(){
-    try{
-      const res = await fetch("/pg/loan-ledger/member-loans", {
-        method:"GET",
-        headers:{ "Accept":"application/json" }
-      });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok || !data || !data.ok){
-        throw new Error((data && (data.message || data.error)) || `HTTP ${res.status}`);
-      }
-
-      if (data.pg && data.pg.name){
-        $("llPgName").value = data.pg.name;
-      }
-
-      memberLoans = Array.isArray(data.loans) ? data.loans : [];
-      populateMembers();
-    } catch (err){
-      console.error(err);
-      memberLoans = [];
-      populateMembers();
-      info("Could not load member loans. Please check backend route /pg/loan-ledger/member-loans.");
-    }
-  }
-
-  async function loadLoanHistory(){
-    if (!selectedLoanId){
-      renderLoanHistory([]);
-      return [];
-    }
-
-    try{
-      const qs = new URLSearchParams({ history:"1" });
-      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(selectedLoanId)}?${qs.toString()}`, {
-        method:"GET",
-        headers:{ "Accept":"application/json" }
-      });
-
-      const data = await res.json().catch(() => null);
-      const history = res.ok && data && Array.isArray(data.history) ? data.history : [];
-      renderLoanHistory(history);
-      return history;
-    } catch (_){
-      renderLoanHistory([]);
-      return [];
-    }
-  }
-
-  async function loadLoanLedger(year=selectedPeriod.year, month=selectedPeriod.month){
-    if (!selectedLoanId){
-      hydrateEntries([]);
-      return;
-    }
-
-    try{
-      const qs = new URLSearchParams({
-        year:String(year),
-        month:String(month)
-      });
-
-      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(selectedLoanId)}?${qs.toString()}`, {
-        method:"GET",
-        headers:{ "Accept":"application/json" }
-      });
-
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok || !data || !data.ok){
-        throw new Error((data && (data.message || data.error)) || `HTTP ${res.status}`);
-      }
-
-      if (data.pg_name) $("llPgName").value = data.pg_name;
-
-      const loan = data.loan || getSelectedLoan();
-      if (loan) applyLoanToFields(loan);
-
-      hydrateEntries(Array.isArray(data.entries) ? data.entries : []);
-      llSnapshot = takeSnapshot();
-    } catch (err){
-      console.error(err);
-      hydrateEntries([]);
-      llSnapshot = takeSnapshot();
-    }
-  }
-
-  async function loadLoanHistoryAndCurrent(){
-    await loadLoanHistory();
-    await loadLoanLedger(selectedPeriod.year, selectedPeriod.month);
+    hydrateEntries(llSnapshot.entries || []);
   }
 
   function buildPayload(){
-    const loan = getSelectedLoan();
-
     return {
-      pg_name: $("llPgName").value || "",
-      loan_id: selectedLoanId,
-      loan_type: "member",
-      loan_no: loan ? (loan.loan_no || "") : "",
-      member_id: loan ? (loan.member_id || "") : "",
-      member_name: loan ? (loan.member_name || "") : "",
-      spouse_name: $("llSpouseName").value || "",
-      father_mother_spouse: $("llSpouseName").value || "",
-      loan_amount: $("llLoanAmount").value || "",
-      loan_tenure: $("llLoanTenure").value || "",
-      installment_count: $("llInstallmentCount").value || "",
+      member_id: selectedMemberId,
+      item_key: selectedItemKey,
+      loan_amount: getBaseLoanAmount(),
+      loan_start_date: $("llLoanStartDate").value || "",
       loan_purpose: $("llLoanPurpose").value || "",
-      entries: allRows.map(row => ({
-        date_disb: row.querySelector("[data-ll='date_disb']").value || "",
-        principal_due: n2(row.querySelector("[data-ll='pr_due']").value),
-        principal_repaid: n2(row.querySelector("[data-ll='pr_paid']").value),
-        interest_due: n2(row.querySelector("[data-ll='int_due']").value),
-        interest_paid: n2(row.querySelector("[data-ll='int_paid']").value),
-        next_installment_date: row.querySelector("[data-ll='next_date']").value || ""
-      }))
+      entries: allRows.map(getEntryFromRow)
     };
   }
 
   async function saveLoanLedger(){
-    if (!selectedLoanId){
-      info("Please select a member loan account first.");
+    if (!selectedMemberId || !selectedItemKey){
+      info(`Please select member and ${itemLabelText().toLowerCase()} first.`);
       return;
     }
 
     const payload = buildPayload();
 
-    try{
-      const qs = new URLSearchParams({
-        year:String(selectedPeriod.year),
-        month:String(selectedPeriod.month)
-      });
+    if (!payload.loan_amount && sector !== "ARDD"){
+      info("Assigned loan amount is required.");
+      return;
+    }
 
-      const res = await fetch(`/pg/loan-ledger/${encodeURIComponent(selectedLoanId)}?${qs.toString()}`, {
+    try{
+      const res = await fetchJson(API.ledger, {
         method:"POST",
         headers:{
-          "Content-Type":"application/json",
-          "Accept":"application/json"
+          "Content-Type":"application/json"
         },
         body:JSON.stringify(payload)
       });
 
-      const data = await res.json().catch(() => null);
+      if (res.account) applyAccount(res.account);
+      if (res.summary) updateKpiFromSummary(res.summary);
 
-      if (!res.ok || !data || !data.ok){
-        throw new Error((data && (data.message || data.error)) || `HTTP ${res.status}`);
-      }
-
-      if (data.loan){
-        const idx = memberLoans.findIndex(l => getLoanId(l) === selectedLoanId);
-        if (idx >= 0) memberLoans[idx] = { ...memberLoans[idx], ...data.loan };
-        applyLoanToFields(memberLoans[idx] || data.loan);
-      }
-
+      hydrateEntries(Array.isArray(res.entries) ? res.entries : []);
       setEditMode(false);
       llSnapshot = takeSnapshot();
-      await loadLoanHistory();
-      info(data.message || "Saved successfully.");
+      info(res.message || "Sector-based Loan Ledger saved successfully.");
     } catch (err){
       console.error(err);
       info(`Save failed: ${err.message || err}`);
     }
-  }
-
-  function renderLoanHistory(history){
-    const current = $("loanCurrentPeriodText");
-    const cards = $("loanHistoryCards");
-    const loan = getSelectedLoan();
-
-    if (current){
-      current.textContent = `${loan && loan.member_name ? `Member: ${loan.member_name} • ` : ""}Working month: ${monthLabel(selectedPeriod.month, selectedPeriod.year)}`;
-    }
-
-    if (!cards) return;
-
-    if (!selectedLoanId){
-      cards.innerHTML = '<div style="font-size:13px;color:#64748b">Select a member loan to view saved month records.</div>';
-      return;
-    }
-
-    if (!Array.isArray(history) || !history.length){
-      cards.innerHTML = '<div style="font-size:13px;color:#64748b">No saved month records yet for the selected member loan.</div>';
-      return;
-    }
-
-    cards.innerHTML = history.map(item => {
-      const active = Number(item.year) === Number(selectedPeriod.year) && Number(item.month) === Number(selectedPeriod.month);
-      return `<button type="button" class="ll-history-card ${active ? "active" : ""}" data-year="${esc(item.year)}" data-month="${esc(item.month)}">${esc(monthLabel(item.month, item.year))}</button>`;
-    }).join("");
-
-    cards.querySelectorAll(".ll-history-card").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        if (llIsEditing){
-          info("Please Save or Cancel before changing month.");
-          return;
-        }
-
-        selectedPeriod = {
-          year:Number(btn.dataset.year),
-          month:Number(btn.dataset.month)
-        };
-
-        await loadLoanLedger(selectedPeriod.year, selectedPeriod.month);
-        await loadLoanHistory();
-      });
-    });
   }
 
   function doDeleteRow(row){
@@ -1869,15 +2037,6 @@ $("llCancelText").textContent = t.cancelButton;
     openOverlay($("llCancelOverlay"));
   }
 
-  function restoreSnapshot(){
-    if (!llSnapshot) return;
-    selectedLoanId = llSnapshot.selectedLoanId || "";
-    $("llLoanAccount").value = selectedLoanId;
-    const loan = getSelectedLoan();
-    applyLoanToFields(loan);
-    hydrateEntries(llSnapshot.entries || []);
-  }
-
   function handleBack(){
     if (llIsEditing){
       info("You are in Edit mode. Please Save or Cancel before leaving this page.");
@@ -1890,32 +2049,39 @@ $("llCancelText").textContent = t.cancelButton;
 
   $("llMemberName").addEventListener("change", async () => {
     if (llIsEditing){
-      $("llMemberName").value = getSelectedLoan()?.member_id || "";
+      $("llMemberName").value = selectedMemberId;
       info("Please Save or Cancel before changing member.");
       return;
     }
 
-    populateLoanAccountsForMember($("llMemberName").value, true);
+    selectedMemberId = $("llMemberName").value || "";
+    selectedItemKey = "";
+    $("llSectorItem").value = "";
+    await loadMemberItems(selectedMemberId);
   });
 
-  $("llLoanAccount").addEventListener("change", async () => {
+  $("llSectorItem").addEventListener("change", async () => {
     if (llIsEditing){
-      $("llLoanAccount").value = selectedLoanId;
-      info("Please Save or Cancel before changing loan account.");
+      $("llSectorItem").value = selectedItemKey;
+      info(`Please Save or Cancel before changing ${itemLabelText().toLowerCase()}.`);
       return;
     }
 
-    selectedLoanId = $("llLoanAccount").value || "";
-    applyLoanToFields(getSelectedLoan());
-    await loadLoanHistoryAndCurrent();
+    selectedItemKey = $("llSectorItem").value || "";
+    currentItem = currentItems.find(i => i.item_key === selectedItemKey) || null;
+    await loadAccountAndLedger();
   });
+
+  $("llLoanAmount").addEventListener("input", recalcLoan);
+  $("llLoanStartDate").addEventListener("change", recalcLoan);
+  $("llLoanPurpose").addEventListener("input", recalcLoan);
 
   $("llAddRowTop").addEventListener("click", addRow);
   $("llMobileAddRow").addEventListener("click", addRow);
 
   $("llEditSaveBtn").addEventListener("click", () => {
-    if (!selectedLoanId){
-      info("Please select member and loan account first.");
+    if (!selectedMemberId || !selectedItemKey){
+      info(`Please select member and ${itemLabelText().toLowerCase()} first.`);
       return;
     }
 
@@ -1949,6 +2115,7 @@ $("llCancelText").textContent = t.cancelButton;
     pendingDeleteRow = null;
     closeOverlay($("llDeleteOverlay"));
   });
+
   $("llDeleteYes").addEventListener("click", () => {
     closeOverlay($("llDeleteOverlay"));
     doDeleteRow(pendingDeleteRow);
@@ -1960,6 +2127,7 @@ $("llCancelText").textContent = t.cancelButton;
     $("llDeleteMultiMsg").textContent = `Selected ${selectedRows().length} row(s) will be removed. Save to confirm or Cancel to revert.`;
     openOverlay($("llDeleteMultiOverlay"));
   });
+
   $("llMobileDeleteSelected").addEventListener("click", () => $("llDeleteSelectedTop").click());
   $("llDeleteMultiNo").addEventListener("click", () => closeOverlay($("llDeleteMultiOverlay")));
   $("llDeleteMultiYes").addEventListener("click", () => {
@@ -1971,6 +2139,7 @@ $("llCancelText").textContent = t.cancelButton;
     if (!llIsEditing || !allRows.length) return;
     openOverlay($("llDeleteAllOverlay"));
   });
+
   $("llMobileDeleteAll").addEventListener("click", () => $("llDeleteAllTop").click());
   $("llDeleteAllNo").addEventListener("click", () => closeOverlay($("llDeleteAllOverlay")));
   $("llDeleteAllYes").addEventListener("click", () => {
@@ -2043,7 +2212,7 @@ $("llCancelText").textContent = t.cancelButton;
 
   setEditMode(false);
   rebuildFiltered();
-  loadMemberLoans();
+  loadBootstrap();
 })();
 </script>
 {% endblock %}
