@@ -1,0 +1,538 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .clf-dash-page {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .clf-hero {
+    background:
+      radial-gradient(circle at 12% 12%, rgba(255, 255, 255, 0.20), transparent 42%),
+      linear-gradient(135deg, #064e3b, #198754);
+    color: #fff;
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow: 0 18px 42px rgba(6, 78, 59, 0.22);
+    overflow: hidden;
+  }
+
+  .clf-hero h3 {
+    font-weight: 900;
+    letter-spacing: -0.035em;
+    margin: 0;
+  }
+
+  .clf-hero p {
+    color: rgba(255, 255, 255, 0.86);
+    margin: 8px 0 0;
+    font-weight: 600;
+  }
+
+  .hero-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border-radius: 999px;
+    padding: 7px 12px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .hero-actions .btn {
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.84rem;
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .metric-card {
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+  }
+
+  .metric-card small {
+    display: block;
+    color: #64748b;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.035em;
+    font-size: 0.74rem;
+    margin-bottom: 8px;
+  }
+
+  .metric-card strong {
+    display: block;
+    color: #0f172a;
+    font-size: clamp(1.35rem, 2vw, 1.9rem);
+    line-height: 1.05;
+    font-weight: 900;
+  }
+
+  .metric-card span {
+    display: block;
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .soft-card {
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+    overflow: hidden;
+  }
+
+  .soft-card .card-head {
+    padding: 16px 18px;
+    border-bottom: 1px solid #e9eef3;
+    background: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .soft-card .card-head h5 {
+    margin: 0;
+    font-weight: 900;
+    color: #0f172a;
+    font-size: 1rem;
+  }
+
+  .soft-card .card-head p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 0.84rem;
+    font-weight: 600;
+  }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .status-box {
+    border: 1px solid #e6ecef;
+    background: #f8fafc;
+    border-radius: 14px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .status-box small {
+    display: block;
+    color: #64748b;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    font-weight: 850;
+    letter-spacing: 0.03em;
+  }
+
+  .status-box strong {
+    display: block;
+    margin-top: 5px;
+    color: #0f172a;
+    font-size: 1.25rem;
+    font-weight: 900;
+  }
+
+  .table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.035em;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .table td {
+    vertical-align: middle;
+  }
+
+  .pg-name {
+    font-weight: 900;
+    color: #0f172a;
+  }
+
+  .text-soft {
+    color: #64748b;
+  }
+
+  .action-btn {
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.8rem;
+  }
+
+  .empty-state {
+    padding: 38px 18px;
+    text-align: center;
+    color: #64748b;
+  }
+
+  .mobile-pg-list {
+    display: none;
+  }
+
+  .mobile-pg-card {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  }
+
+  .badge-soft {
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: 0.72rem;
+    font-weight: 850;
+  }
+
+  @media (max-width: 1100px) {
+    .metric-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .status-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 767px) {
+    .clf-hero {
+      padding: 18px;
+      border-radius: 18px;
+    }
+
+    .clf-hero h3 {
+      font-size: 1.2rem;
+    }
+
+    .hero-actions {
+      width: 100%;
+    }
+
+    .hero-actions .btn {
+      width: 100%;
+    }
+
+    .metric-grid,
+    .status-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .desktop-table-wrap {
+      display: none;
+    }
+
+    .mobile-pg-list {
+      display: block;
+    }
+  }
+</style>
+
+<div class="clf-dash-page">
+  <div class="clf-hero mb-4">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <h3>CLF Dashboard</h3>
+        <p>
+          {% if clf %}
+            {{ clf.name or clf.clf_name or 'Mapped CLF' }}
+          {% else %}
+            Mapped CLF
+          {% endif %}
+          — monitor assigned PGs, members, cashflow, and validation status.
+        </p>
+      </div>
+
+      <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
+        <span class="hero-pill">
+          {{ user.name or user.username or 'CLF Admin' }}
+        </span>
+
+        <div class="hero-actions">
+          <a href="{{ url_for('clf.assigned_pgs') }}" class="btn btn-light btn-sm">
+            Assigned PGs
+          </a>
+          <a href="{{ url_for('clf.cashflow') }}" class="btn btn-outline-light btn-sm">
+            Cashflow
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="metric-grid mb-4">
+    <div class="metric-card">
+      <small>Total Assigned PGs</small>
+      <strong>{{ total_pgs or 0 }}</strong>
+      <span>PGs mapped to this CLF</span>
+    </div>
+
+    <div class="metric-card">
+      <small>Total Members</small>
+      <strong>{{ total_members or 0 }}</strong>
+      <span>Members under assigned PGs</span>
+    </div>
+
+    <div class="metric-card">
+      <small>Cash In</small>
+      <strong>₹{{ "%.2f"|format(cashflow.cash_in or 0) }}</strong>
+      <span>Grants and loan inflow</span>
+    </div>
+
+    <div class="metric-card">
+      <small>Balance</small>
+      <strong>₹{{ "%.2f"|format(cashflow.balance or 0) }}</strong>
+      <span>Cash in minus cash out</span>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="soft-card h-100">
+        <div class="card-head">
+          <div>
+            <h5>PG Registration Validation</h5>
+            <p>Current PG registration form status under this CLF.</p>
+          </div>
+        </div>
+
+        <div class="p-3">
+          {% set pg_status = validation_counts.pg_registration %}
+          <div class="status-grid">
+            <div class="status-box">
+              <small>Draft</small>
+              <strong>{{ pg_status.draft or 0 }}</strong>
+            </div>
+            <div class="status-box">
+              <small>Submitted</small>
+              <strong>{{ pg_status.submitted or 0 }}</strong>
+            </div>
+            <div class="status-box">
+              <small>Approved</small>
+              <strong>{{ pg_status.approved or 0 }}</strong>
+            </div>
+            <div class="status-box">
+              <small>Rejected</small>
+              <strong>{{ pg_status.rejected or 0 }}</strong>
+            </div>
+            <div class="status-box">
+              <small>Resubmitted</small>
+              <strong>{{ pg_status.resubmitted or 0 }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="soft-card h-100">
+        <div class="card-head">
+          <div>
+            <h5>Membership Validation</h5>
+            <p>Current membership registration status under this CLF.</p>
+          </div>
+        </div>
+
+        <div class="p-3">
+          {% set member_status = validation_counts.member_registration %}
+          <div class="status-grid">
+            <div class="status-box">
+              <small>Draft</small>
+              <strong>{{ member_status.draft or 0 }}</strong>
+            </div>
+            <div class="status-box">
+              <small>Submitted</small>
+              <strong>{{ member_status.submitted or 0 }}</strong>
+            </div>
+            <div class="status-box">
+              <small>Approved</small>
+              <strong>{{ member_status.approved or 0 }}</strong>
+            </div>
+            <div class="status-box">
+              <small>Rejected</small>
+              <strong>{{ member_status.rejected or 0 }}</strong>
+            </div>
+            <div class="status-box">
+              <small>Resubmitted</small>
+              <strong>{{ member_status.resubmitted or 0 }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="soft-card mb-4">
+    <div class="card-head">
+      <div>
+        <h5>Cashflow Summary</h5>
+        <p>Best-effort cashflow summary from assigned PG finance records.</p>
+      </div>
+      <a href="{{ url_for('clf.cashflow') }}" class="btn btn-sm btn-outline-success action-btn">
+        View Details
+      </a>
+    </div>
+
+    <div class="p-3">
+      <div class="metric-grid">
+        <div class="metric-card">
+          <small>Grant Received</small>
+          <strong>₹{{ "%.2f"|format(cashflow.grant_received or 0) }}</strong>
+        </div>
+
+        <div class="metric-card">
+          <small>Grant Utilized</small>
+          <strong>₹{{ "%.2f"|format(cashflow.grant_utilized or 0) }}</strong>
+        </div>
+
+        <div class="metric-card">
+          <small>Loan Principal</small>
+          <strong>₹{{ "%.2f"|format(cashflow.loan_principal or 0) }}</strong>
+        </div>
+
+        <div class="metric-card">
+          <small>Member Loan Principal</small>
+          <strong>₹{{ "%.2f"|format(cashflow.member_loan_principal or 0) }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="soft-card">
+    <div class="card-head">
+      <div>
+        <h5>Recent Assigned PGs</h5>
+        <p>Quick access to PGs mapped to this CLF.</p>
+      </div>
+      <a href="{{ url_for('clf.assigned_pgs') }}" class="btn btn-sm btn-success action-btn">
+        View All
+      </a>
+    </div>
+
+    <div class="desktop-table-wrap">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th style="width: 60px;">#</th>
+            <th>PG</th>
+            <th>Village</th>
+            <th>PG Registration</th>
+            <th>Membership</th>
+            <th style="width: 150px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pg in recent_pgs %}
+            {% set reg_status = (pg.registration_validation or {}).status or pg.registration_validation_status or 'draft' %}
+            {% set mem_status = (pg.member_registration_validation or {}).status or pg.member_registration_validation_status or 'draft' %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>
+                <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
+                <small class="text-soft">ID: {{ pg._id }}</small>
+              </td>
+              <td>{{ pg.Village or pg.village or '-' }}</td>
+              <td>
+                {% if reg_status == 'approved' %}
+                  <span class="badge text-bg-success badge-soft">Approved</span>
+                {% elif reg_status == 'submitted' or reg_status == 'resubmitted' %}
+                  <span class="badge text-bg-warning badge-soft">{{ reg_status|capitalize }}</span>
+                {% elif reg_status == 'rejected' %}
+                  <span class="badge text-bg-danger badge-soft">Rejected</span>
+                {% else %}
+                  <span class="badge text-bg-light border badge-soft">Draft</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if mem_status == 'approved' %}
+                  <span class="badge text-bg-success badge-soft">Approved</span>
+                {% elif mem_status == 'submitted' or mem_status == 'resubmitted' %}
+                  <span class="badge text-bg-warning badge-soft">{{ mem_status|capitalize }}</span>
+                {% elif mem_status == 'rejected' %}
+                  <span class="badge text-bg-danger badge-soft">Rejected</span>
+                {% else %}
+                  <span class="badge text-bg-light border badge-soft">Draft</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ url_for('clf.view_pg', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-success action-btn">
+                  View
+                </a>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <strong>No PG assigned yet.</strong>
+                  <div>Ask Block Admin to assign PGs to this CLF.</div>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mobile-pg-list p-3">
+      {% for pg in recent_pgs %}
+        {% set reg_status = (pg.registration_validation or {}).status or pg.registration_validation_status or 'draft' %}
+        {% set mem_status = (pg.member_registration_validation or {}).status or pg.member_registration_validation_status or 'draft' %}
+
+        <div class="mobile-pg-card">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <div>
+              <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
+              <small class="text-soft">ID: {{ pg._id }}</small>
+            </div>
+            <a href="{{ url_for('clf.view_pg', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-success action-btn">
+              View
+            </a>
+          </div>
+
+          <div class="small text-soft mb-2">
+            <div><strong>Village:</strong> {{ pg.Village or pg.village or '-' }}</div>
+            <div><strong>PG Registration:</strong> {{ reg_status|capitalize }}</div>
+            <div><strong>Membership:</strong> {{ mem_status|capitalize }}</div>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <strong>No PG assigned yet.</strong>
+          <div>Ask Block Admin to assign PGs to this CLF.</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

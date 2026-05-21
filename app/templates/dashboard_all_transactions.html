@@ -3,13 +3,20 @@
 {% block title %}All Transactions - PGMIS{% endblock %}
 
 {% block content %}
+{% set pg_reg = (pg.registration_validation if pg and pg.registration_validation is defined else {}) or {} %}
+{% set member_reg = (pg.member_registration_validation if pg and pg.member_registration_validation is defined else {}) or {} %}
+{% set pg_reg_status = pg_reg.status or pg.registration_validation_status if pg and pg.registration_validation_status is defined else pg_reg.status or 'draft' %}
+{% set member_reg_status = member_reg.status or pg.member_registration_validation_status if pg and pg.member_registration_validation_status is defined else member_reg.status or 'draft' %}
+{% set pg_reg_remarks = pg_reg.remarks or pg.registration_validation_remarks if pg and pg.registration_validation_remarks is defined else pg_reg.remarks or '' %}
+{% set member_reg_remarks = member_reg.remarks or pg.member_registration_validation_remarks if pg and pg.member_registration_validation_remarks is defined else member_reg.remarks or '' %}
+
 <section class="tx-page-wrap">
   <div class="tx-shell">
 
     <!-- Header -->
     <div class="tx-header">
       <div class="tx-header-left">
-        <a href="{{ url_for('pg.pg_view', pg_id=pg['_id']) }}" class="tx-back-btn" title="Back to Dashboard">
+        <a href="{{ url_for('pg.pg_home') }}" class="tx-back-btn" title="Back to Dashboard">
           <span class="tx-back-icon">←</span>
           <span>Back</span>
         </a>
@@ -23,6 +30,48 @@
             <span class="tx-dot"></span>
             PG: {{ pg.name if pg and pg.name else "PG" }}
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Validation Context -->
+    <div class="tx-validation-card">
+      <div class="tx-validation-head">
+        <div>
+          <h2>Registration Validation Status</h2>
+          <p>Current Block validation status for this PG. Rejected forms can be corrected from the respective form pages.</p>
+        </div>
+      </div>
+
+      <div class="tx-validation-grid">
+        <div class="tx-validation-item">
+          <div class="tx-validation-top">
+            <strong>PG Registration</strong>
+            <span class="tx-vbadge tx-vbadge-{{ pg_reg_status }}">{{ pg_reg_status|replace('_', ' ')|title }}</span>
+          </div>
+          {% if pg_reg_remarks %}
+            <p class="tx-validation-remarks"><b>Remarks:</b> {{ pg_reg_remarks }}</p>
+          {% else %}
+            <p class="tx-validation-remarks muted">No correction remarks available.</p>
+          {% endif %}
+          <a href="{{ url_for('pg.pg_registration', pg_id=pg['_id']) }}" class="tx-validation-link">
+            Open PG Registration
+          </a>
+        </div>
+
+        <div class="tx-validation-item">
+          <div class="tx-validation-top">
+            <strong>Membership Registration</strong>
+            <span class="tx-vbadge tx-vbadge-{{ member_reg_status }}">{{ member_reg_status|replace('_', ' ')|title }}</span>
+          </div>
+          {% if member_reg_remarks %}
+            <p class="tx-validation-remarks"><b>Remarks:</b> {{ member_reg_remarks }}</p>
+          {% else %}
+            <p class="tx-validation-remarks muted">No correction remarks available.</p>
+          {% endif %}
+          <a href="{{ url_for('pg.pg_members', pg_id=pg['_id']) }}" class="tx-validation-link">
+            Open Membership Register
+          </a>
         </div>
       </div>
     </div>
@@ -259,6 +308,7 @@
     transform: translateY(-1px);
     background: #0b6b63;
     box-shadow: 0 14px 28px rgba(6, 95, 70, 0.30);
+    color: #ffffff;
   }
 
   .tx-back-icon {
@@ -312,6 +362,127 @@
     background: rgba(21, 128, 61, 0.95);
     box-shadow: 0 0 0 4px rgba(21, 128, 61, 0.12);
     flex-shrink: 0;
+  }
+
+  .tx-validation-card {
+    border: 1.5px solid rgba(191, 230, 210, 0.95);
+    border-radius: 18px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.90);
+    box-shadow: var(--tx-shadow-soft);
+    margin-bottom: 18px;
+  }
+
+  .tx-validation-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .tx-validation-head h2 {
+    margin: 0;
+    color: var(--tx-ink);
+    font-size: 18px;
+    font-weight: 950;
+  }
+
+  .tx-validation-head p {
+    margin: 5px 0 0;
+    color: var(--tx-muted-2);
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1.4;
+  }
+
+  .tx-validation-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .tx-validation-item {
+    border: 1px solid rgba(191, 230, 210, 0.95);
+    border-radius: 16px;
+    padding: 14px;
+    background: rgba(233, 248, 240, 0.45);
+    min-width: 0;
+  }
+
+  .tx-validation-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .tx-validation-top strong {
+    color: var(--tx-ink);
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .tx-vbadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: max-content;
+    border-radius: 999px;
+    padding: 5px 9px;
+    border: 1px solid rgba(191, 230, 210, 0.95);
+    background: #ffffff;
+    color: var(--tx-ink);
+    font-size: 11px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .tx-vbadge-approved {
+    color: #047857;
+    background: rgba(236, 253, 245, 0.95);
+    border-color: rgba(16, 185, 129, 0.28);
+  }
+
+  .tx-vbadge-submitted,
+  .tx-vbadge-resubmitted {
+    color: #b45309;
+    background: rgba(255, 251, 235, 0.95);
+    border-color: rgba(245, 158, 11, 0.28);
+  }
+
+  .tx-vbadge-rejected {
+    color: #b91c1c;
+    background: rgba(254, 242, 242, 0.95);
+    border-color: rgba(239, 68, 68, 0.28);
+  }
+
+  .tx-validation-remarks {
+    margin: 0;
+    color: var(--tx-muted);
+    font-size: 13px;
+    line-height: 1.4;
+    font-weight: 700;
+  }
+
+  .tx-validation-remarks.muted {
+    color: var(--tx-muted-2);
+  }
+
+  .tx-validation-link {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 10px;
+    color: #0f766e;
+    font-size: 13px;
+    font-weight: 950;
+    text-decoration: none;
+  }
+
+  .tx-validation-link:hover {
+    color: #0b6b63;
+    text-decoration: underline;
   }
 
   .tx-summary-grid {
@@ -702,7 +873,8 @@
       padding: 18px;
     }
 
-    .tx-summary-grid {
+    .tx-summary-grid,
+    .tx-validation-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
@@ -747,7 +919,8 @@
       padding: 6px 9px;
     }
 
-    .tx-summary-grid {
+    .tx-summary-grid,
+    .tx-validation-grid {
       grid-template-columns: 1fr;
       gap: 10px;
       margin-bottom: 14px;
@@ -757,9 +930,16 @@
       grid-column: auto;
     }
 
-    .tx-summary-card {
+    .tx-summary-card,
+    .tx-validation-card,
+    .tx-validation-item {
       border-radius: 16px;
       padding: 14px;
+    }
+
+    .tx-validation-top {
+      align-items: flex-start;
+      flex-direction: column;
     }
 
     .tx-summary-card h2 {

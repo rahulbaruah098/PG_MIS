@@ -800,6 +800,222 @@ def _pg_match_from_session(sess):
 
     return q
 
+
+
+# ============================================================
+# CLF / Block surveillance helpers
+# ============================================================
+
+VALIDATION_PENDING_STATUSES = ("submitted", "resubmitted")
+
+
+def _to_object_id(value):
+    try:
+        if value and ObjectId.is_valid(str(value)):
+            return ObjectId(str(value))
+    except Exception:
+        pass
+    return None
+
+
+def _id_values(value):
+    """Return ObjectId + string variants for old/new Mongo documents."""
+    values = []
+    oid = _to_object_id(value)
+    if oid:
+        values.append(oid)
+        values.append(str(oid))
+    elif value not in (None, "", [], {}):
+        values.append(str(value))
+    return values
+
+
+def _safe_float(value):
+    try:
+        if value in (None, ""):
+            return 0.0
+        return float(value)
+    except Exception:
+        return 0.0
+
+
+def _pg_child_match(pg_ids):
+    """Build child collection match for documents storing pg_id as ObjectId or string."""
+    values = []
+    for pg_id in pg_ids or []:
+        values.extend(_id_values(pg_id))
+    return {"pg_id": {"$in": values}} if values else {"pg_id": {"$in": []}}
+
+
+def _validation_status_from_pg(pg, field_name):
+    doc = pg.get(field_name) or {}
+    return str(doc.get("status") or "draft").lower()
+
+
+def _validation_counts_for_pgs(pgs):
+    """Return validation status counts for PG Registration and Membership Registration."""
+    counts = {
+        "pg_registration": {
+            "draft": 0,
+            "submitted": 0,
+            "resubmitted": 0,
+            "approved": 0,
+            "rejected": 0,
+            "pending": 0,
+        },
+        "member_registration": {
+            "draft": 0,
+            "submitted": 0,
+            "resubmitted": 0,
+            "approved": 0,
+            "rejected": 0,
+            "pending": 0,
+        },
+        "total_pending": 0,
+    }
+
+    valid = {"draft", "submitted", "resubmitted", "approved", "rejected"}
+
+    for pg in pgs or []:
+        reg_status = _validation_status_from_pg(pg, "registration_validation")
+        mem_status = _validation_status_from_pg(pg, "member_registration_validation")
+
+        if reg_status not in valid:
+            reg_status = "draft"
+        if mem_status not in valid:
+            mem_status = "draft"
+
+        counts["pg_registration"][reg_status] += 1
+        counts["member_registration"][mem_status] += 1
+
+        if reg_status in VALIDATION_PENDING_STATUSES:
+            counts["pg_registration"]["pending"] += 1
+            counts["total_pending"] += 1
+
+        if mem_status in VALIDATION_PENDING_STATUSES:
+            counts["member_registration"]["pending"] += 1
+            counts["total_pending"] += 1
+
+    return counts
+
+
+def _cashflow_for_pg_ids(db, pg_ids):
+    """Best-effort cashflow used by hierarchy CLF surveillance cards."""
+    match = _pg_child_match(pg_ids)
+
+    grant_received = 0.0
+    grant_utilized = 0.0
+    loan_principal = 0.0
+    member_loan_principal = 0.0
+
+    for grant in db.pg_grants.find(match):
+        grant_received += _safe_float(
+            grant.get("amount_received")
+            or grant.get("amount")
+            or grant.get("received_amount")
+            or grant.get("release_amount")
+            or grant.get("grant_amount")
+        )
+
+    for util in db.pg_grant_utilizations.find(match):
+        grant_utilized += _safe_float(
+            util.get("amount")
+            or util.get("utilized_amount")
+            or util.get("utilization_amount")
+        )
+
+    for loan in db.pg_loan_accounts.find(match):
+        loan_principal += _safe_float(
+            loan.get("principal_amount")
+            or loan.get("principal")
+            or loan.get("sanctioned_amount")
+            or loan.get("amount")
+        )
+
+    for loan in db.pg_member_loan_accounts.find(match):
+        member_loan_principal += _safe_float(
+            loan.get("principal_amount")
+            or loan.get("principal")
+            or loan.get("loan_amount")
+            or loan.get("amount")
+        )
+
+    cash_in = grant_received + loan_principal + member_loan_principal
+    cash_out = grant_utilized
+
+    return {
+        "cash_in": round(cash_in, 2),
+        "cash_out": round(cash_out, 2),
+        "balance": round(cash_in - cash_out, 2),
+        "grant_received": round(grant_received, 2),
+        "grant_utilized": round(grant_utilized, 2),
+        "loan_principal": round(loan_principal, 2),
+        "member_loan_principal": round(member_loan_principal, 2),
+    }
+
+
+def _build_clf_surveillance_summary(db, pgs, role=None):
+    """
+    Build CLF-wise surveillance rows for Block/District dashboards.
+
+    Each row contains CLF name, PG count, member count, cashflow and pending validation.
+    Unassigned PGs are grouped separately so Block Admin can immediately assign them.
+    """
+    role = role or _reports_ctx_value("role", "")
+    grouped = {}
+
+    for pg in pgs or []:
+        clf_id = pg.get("clf_id")
+        key = str(clf_id) if clf_id else "__unassigned__"
+
+        if key not in grouped:
+            grouped[key] = {
+                "clf_id": clf_id,
+                "clf_id_str": str(clf_id) if clf_id else "",
+                "clf_name": "Unassigned CLF" if key == "__unassigned__" else "CLF",
+                "pgs": [],
+            }
+        grouped[key]["pgs"].append(pg)
+
+    clf_ids = [v["clf_id"] for v in grouped.values() if v.get("clf_id")]
+    clf_docs = list(db.clfs.find({"_id": {"$in": clf_ids}}, {"name": 1, "clf_name": 1})) if clf_ids else []
+    clf_map = {str(c.get("_id")): c for c in clf_docs}
+
+    rows = []
+    for key, data in grouped.items():
+        row_pgs = data.get("pgs") or []
+        row_pg_ids = [pg.get("_id") for pg in row_pgs if pg.get("_id")]
+        clf_doc = clf_map.get(str(data.get("clf_id") or ""), {})
+        validation_counts = _validation_counts_for_pgs(row_pgs)
+        cashflow = _cashflow_for_pg_ids(db, row_pg_ids)
+
+        data["clf_name"] = (
+            clf_doc.get("name")
+            or clf_doc.get("clf_name")
+            or data.get("clf_name")
+            or "CLF"
+        )
+        data["pg_count"] = len(row_pgs)
+        data["member_count"] = db.pg_members.count_documents(_pg_child_match(row_pg_ids)) if row_pg_ids else 0
+        data["validation_counts"] = validation_counts
+        data["pending_validation_count"] = validation_counts.get("total_pending", 0)
+        data["cashflow"] = cashflow
+        data["assigned_pg_url"] = ""
+
+        if key == "__unassigned__" and role == "BLOCK_ADMIN":
+            data["assigned_pg_url"] = url_for("master_data.clf_pg_assignment")
+        elif data.get("clf_id"):
+            try:
+                data["assigned_pg_url"] = url_for("master_data.clf_pg_assignment") if role == "BLOCK_ADMIN" else ""
+            except Exception:
+                data["assigned_pg_url"] = ""
+
+        rows.append(data)
+
+    rows.sort(key=lambda x: (x.get("clf_name") == "Unassigned CLF", x.get("clf_name") or ""))
+    return rows
+
+
 def _aggregate_count(collection, pipeline):
     try:
         res = list(collection.aggregate(pipeline))
@@ -1764,50 +1980,83 @@ def hierarchy_dashboard():
 
     query = {}
     assigned_pg_ids = session.get("assigned_pg_ids") or []
-    if role == "CADRE_CC":
-        cadre_pg_oids = [ObjectId(x) for x in assigned_pg_ids if ObjectId.is_valid(str(x))]
-        query["_id"] = {"$in": cadre_pg_oids or [ObjectId("000000000000000000000000")]}
-    elif clf_id:
-        query["clf_id"] = ObjectId(clf_id)
-    elif block_id:
-        query["block_id"] = ObjectId(block_id)
-    elif district_id:
-        query["district_id"] = ObjectId(district_id)
-    elif state_id:
-        query["state_id"] = ObjectId(state_id)
 
-    pgs = list(db.pgs.find(query).sort([("created_at", -1)]).limit(200))
+    if role == "CADRE_CC":
+        cadre_pg_oids = [ObjectId(str(x)) for x in assigned_pg_ids if ObjectId.is_valid(str(x))]
+        query["_id"] = {"$in": cadre_pg_oids or [ObjectId("000000000000000000000000")]}
+    elif clf_id and ObjectId.is_valid(str(clf_id)):
+        query["clf_id"] = ObjectId(str(clf_id))
+    elif block_id and ObjectId.is_valid(str(block_id)):
+        query["block_id"] = ObjectId(str(block_id))
+    elif district_id and ObjectId.is_valid(str(district_id)):
+        query["district_id"] = ObjectId(str(district_id))
+    elif state_id and ObjectId.is_valid(str(state_id)):
+        query["state_id"] = ObjectId(str(state_id))
+
+    pgs = list(db.pgs.find(query).sort([("created_at", -1)]).limit(500))
+
     if role == "CADRE_CC":
         cadre_count = 1
     else:
         cadre_match = {"role": "CADRE_CC"}
-        if block_id:
-            cadre_match["block_id"] = ObjectId(block_id)
-        elif district_id:
-            cadre_match["district_id"] = ObjectId(district_id)
-        elif state_id:
-            cadre_match["state_id"] = ObjectId(state_id)
+        if block_id and ObjectId.is_valid(str(block_id)):
+            cadre_match["block_id"] = ObjectId(str(block_id))
+        elif district_id and ObjectId.is_valid(str(district_id)):
+            cadre_match["district_id"] = ObjectId(str(district_id))
+        elif state_id and ObjectId.is_valid(str(state_id)):
+            cadre_match["state_id"] = ObjectId(str(state_id))
         cadre_count = db.users.count_documents(cadre_match)
+
     pg_ids = [pg["_id"] for pg in pgs]
     pg_count = len(pg_ids)
-    member_count = db.pg_members.count_documents({"pg_id": {"$in": pg_ids}}) if pg_ids else 0
+    member_count = db.pg_members.count_documents(_pg_child_match(pg_ids)) if pg_ids else 0
 
-    #  Turnover / Profit-Loss / Grants / Lakhpati (scope)
+    # CLF surveillance: Block sees all CLFs under block; District sees all CLFs under district.
+    clf_match = {}
+    if role == "BLOCK_ADMIN" and block_id and ObjectId.is_valid(str(block_id)):
+        clf_match["block_id"] = ObjectId(str(block_id))
+    elif role == "DISTRICT_ADMIN" and district_id and ObjectId.is_valid(str(district_id)):
+        clf_match["district_id"] = ObjectId(str(district_id))
+    elif role == "ADMIN" and state_id and ObjectId.is_valid(str(state_id)):
+        clf_match["state_id"] = ObjectId(str(state_id))
+    elif role in ("CLF_ADMIN", "CLF_MANAGER") and clf_id and ObjectId.is_valid(str(clf_id)):
+        clf_match["_id"] = ObjectId(str(clf_id))
+
+    clf_count = db.clfs.count_documents(clf_match) if clf_match or role in ("SUPER_ADMIN", "ADMIN", "DISTRICT_ADMIN", "BLOCK_ADMIN", "CLF_ADMIN", "CLF_MANAGER") else 0
+    clf_admin_count = 0
+    clf_admin_match = {"role": "CLF_ADMIN"}
+    if block_id and ObjectId.is_valid(str(block_id)):
+        clf_admin_match["block_id"] = ObjectId(str(block_id))
+    elif district_id and ObjectId.is_valid(str(district_id)):
+        clf_admin_match["district_id"] = ObjectId(str(district_id))
+    elif state_id and ObjectId.is_valid(str(state_id)):
+        clf_admin_match["state_id"] = ObjectId(str(state_id))
+    if role in ("SUPER_ADMIN", "ADMIN", "DISTRICT_ADMIN", "BLOCK_ADMIN", "CLF_ADMIN", "CLF_MANAGER"):
+        clf_admin_count = db.users.count_documents(clf_admin_match)
+
+    validation_counts = _validation_counts_for_pgs(pgs)
+    validation_pending_count = validation_counts.get("total_pending", 0)
+    clf_surveillance = _build_clf_surveillance_summary(db, pgs, role=role)
+
+    # Turnover / Profit-Loss / Grants / Lakhpati (scope)
     turnover_total = 0.0
     profit_total = 0.0
     loss_total = 0.0
     grants_total = 0.0
     pgs_with_grants = 0
     lakhpati_total = 0
+
     if pg_ids:
+        child_match = _pg_child_match(pg_ids)
+
         td = list(db.pg_market_transactions.aggregate([
-            {"$match": {"pg_id": {"$in": pg_ids}}},
+            {"$match": child_match},
             {"$group": {"_id": None, "turnover": {"$sum": "$total_turnover"}}}
         ]))
         turnover_total = float(td[0].get("turnover") if td else 0)
 
         pd = list(db.pg_income_expenditure.aggregate([
-            {"$match": {"pg_id": {"$in": pg_ids}}},
+            {"$match": child_match},
             {"$group": {
                 "_id": None,
                 "profit": {"$sum": {"$cond": [{"$gt": ["$excess_income_over_expenditure", 0]}, "$excess_income_over_expenditure", 0]}},
@@ -1819,7 +2068,7 @@ def hierarchy_dashboard():
             loss_total = float(pd[0].get("loss") or 0)
 
         gd = list(db.pg_grants.aggregate([
-            {"$match": {"pg_id": {"$in": pg_ids}}},
+            {"$match": child_match},
             {"$group": {"_id": None, "grants_total": {"$sum": "$amount_received"}, "pgs": {"$addToSet": "$pg_id"}}}
         ]))
         if gd:
@@ -1827,7 +2076,7 @@ def hierarchy_dashboard():
             pgs_with_grants = len(gd[0].get("pgs") or [])
 
         try:
-            lakhpati_total = db.pg_members.count_documents({"pg_id": {"$in": pg_ids}, "lakh_pati_didi": True})
+            lakhpati_total = db.pg_members.count_documents({**child_match, "lakh_pati_didi": True})
         except Exception:
             lakhpati_total = 0
 
@@ -1836,7 +2085,7 @@ def hierarchy_dashboard():
     shg_total = db.shg_master.count_documents(shg_q)
     shg_active = db.shg_master.count_documents({**shg_q, "Status": "Active"})
 
-    # Top blocks (or villages) for quick insight
+    # Top blocks or GP for quick insight
     group_field = "$Block" if role in ("DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN") else "$Gram Panchayat"
     pipe = []
     if shg_q:
@@ -1860,6 +2109,13 @@ def hierarchy_dashboard():
         pgs_with_grants=pgs_with_grants,
         lakhpati_total=lakhpati_total,
         cadre_count=cadre_count,
+        clf_count=clf_count,
+        clf_admin_count=clf_admin_count,
+        validation_counts=validation_counts,
+        validation_pending_count=validation_pending_count,
+        clf_surveillance=clf_surveillance,
+        validation_queue_url=url_for("pg.validation_queue") if role == "BLOCK_ADMIN" else "",
+        clf_assignment_url=url_for("master_data.clf_pg_assignment") if role == "BLOCK_ADMIN" else "",
         pgs=pgs,
         shg_total=shg_total,
         shg_active=shg_active,

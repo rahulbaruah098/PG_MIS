@@ -865,11 +865,13 @@ transition:none !important;
   {% block head_extra %}{% endblock %}
 </head>
 <body>
+  {% set _base_role = session.get('role') %}
+  {% set _base_home_endpoint = 'reports.state_dashboard' if _base_role in ['SUPER_ADMIN', 'ADMIN'] else 'reports.hierarchy_dashboard' %}
   <div class="app-container">
 
     <header class="header">
       <div class="header-left">
-<a id="brandHome" class="header-logo" href="{{ url_for('reports.state_dashboard') }}" title="Go to State Dashboard">
+<a id="brandHome" class="header-logo" href="{{ url_for(_base_home_endpoint) }}" title="Go to Dashboard">
           <div class="brand-mark" aria-hidden="true">
             <img
               class="brand-logo"
@@ -1202,6 +1204,47 @@ transition:none !important;
             </li>
           </ul>
 
+          {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN'] %}
+          <div class="nav-section">CLF Surveillance</div>
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="clf-surveillance" href="{{ url_for('reports.hierarchy_dashboard') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 21V7l6-4 6 4v14"></path>
+                  <path d="M15 11l6-4v14"></path>
+                  <path d="M7 10h.01"></path>
+                  <path d="M11 10h.01"></path>
+                  <path d="M7 14h.01"></path>
+                  <path d="M11 14h.01"></path>
+                </svg>
+                <span class="nav-text">CLF Surveillance</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="clf-wise-monitoring" href="{{ url_for('reports.hierarchy_dashboard') }}#clf-surveillance">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 3v18h18"></path>
+                  <path d="M7 16V8"></path>
+                  <path d="M12 16V5"></path>
+                  <path d="M17 16v-4"></path>
+                </svg>
+                <span class="nav-text">CLF-wise Monitoring</span>
+              </a>
+            </li>
+            <li>
+              <a class="nav-item" data-page="district-pg-master" href="{{ url_for('master_data.manage_pgs') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <path d="M20 8v6"></path>
+                  <path d="M23 11h-6"></path>
+                </svg>
+                <span class="nav-text">PG Master View</span>
+              </a>
+            </li>
+          </ul>
+          {% endif %}
+
           <div class="nav-section">Master Data</div>
           <ul class="nav-item-group">
             <li>
@@ -1227,7 +1270,7 @@ transition:none !important;
             </li>
             {% endif %}
 
-            {% if session.get('role') in ['SUPER_ADMIN', 'ADMIN', 'DISTRICT_ADMIN', 'BLOCK_ADMIN', 'CLF_ADMIN', 'CLF_MANAGER'] %}
+            {% if session.get('role') in ['SUPER_ADMIN', 'ADMIN', 'DISTRICT_ADMIN', 'BLOCK_ADMIN'] %}
 
               {% if session.get('role') == 'SUPER_ADMIN' %}
               <li>
@@ -1266,7 +1309,7 @@ transition:none !important;
               </li>
               {% endif %}
 
-              {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN','BLOCK_ADMIN','CLF_ADMIN','CLF_MANAGER'] %}
+              {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN','BLOCK_ADMIN'] %}
               <li>
                 <a class="nav-item" data-page="pgs" href="{{ url_for('master_data.manage_pgs') }}">
                   <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1282,7 +1325,7 @@ transition:none !important;
             {% endif %}
           </ul>
 
-          {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN','BLOCK_ADMIN','CLF_MANAGER'] %}
+          {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN','BLOCK_ADMIN'] %}
           <div class="nav-section">User Management</div>
           <ul class="nav-item-group">
             {% if session.get('role') == 'SUPER_ADMIN' %}
@@ -1345,7 +1388,7 @@ transition:none !important;
             </li>
             {% endif %}
 
-            {% if session.get('role') in ['BLOCK_ADMIN', 'CLF_ADMIN', 'CLF_MANAGER'] %}
+            {% if session.get('role') in ['BLOCK_ADMIN'] %}
             <li>
               <a class="nav-item" data-page="create-pg-login" href="{{ url_for('auth.create_pg_member') }}">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1586,7 +1629,7 @@ transition:none !important;
 
       const brandHome = document.getElementById('brandHome');
       brandHome?.addEventListener('click', function(){
-  sessionStorage.setItem(ACTIVE_KEY, "{{ url_for('reports.state_dashboard') }}");
+  sessionStorage.setItem(ACTIVE_KEY, "{{ url_for(_base_home_endpoint) }}");
 });
 
       initActiveNav();

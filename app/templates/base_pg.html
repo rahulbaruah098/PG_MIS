@@ -1378,6 +1378,194 @@
     transform: none !important;
   }
 }
+  
+    /* ============================================================
+       PG VALIDATION STATUS VISIBILITY
+       ============================================================ */
+    .pg-validation-strip{
+      width:100%;
+      margin:0 0 14px;
+      border:1px solid rgba(15,23,42,.10);
+      border-radius:18px;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(16,185,129,.10), transparent 42%),
+        linear-gradient(135deg, rgba(255,255,255,.94), rgba(247,250,249,.88));
+      box-shadow:0 14px 28px -24px rgba(15,23,42,.35);
+      padding:12px;
+    }
+
+    .pg-validation-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+
+    .pg-validation-title{
+      display:flex;
+      align-items:center;
+      gap:9px;
+      color:#0b4d3a;
+      font-weight:950;
+      font-size:.92rem;
+      letter-spacing:.15px;
+    }
+
+    .pg-validation-title::before{
+      content:"";
+      width:10px;
+      height:10px;
+      border-radius:999px;
+      background:#0b4d3a;
+      box-shadow:0 0 0 6px rgba(16,185,129,.12);
+      flex:0 0 auto;
+    }
+
+    .pg-validation-sub{
+      color:rgba(15,23,42,.62);
+      font-size:.78rem;
+      font-weight:800;
+      margin-top:3px;
+    }
+
+    .pg-validation-grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:10px;
+    }
+
+    .pg-validation-card{
+      border:1px solid rgba(15,23,42,.10);
+      background:#fff;
+      border-radius:16px;
+      padding:10px 12px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      min-width:0;
+    }
+
+    .pg-validation-card-title{
+      color:#0f172a;
+      font-size:.82rem;
+      font-weight:950;
+      line-height:1.2;
+    }
+
+    .pg-validation-remarks{
+      margin-top:5px;
+      color:#92400e;
+      font-size:.76rem;
+      line-height:1.25;
+      font-weight:800;
+    }
+
+    .pg-status-chip,
+    .nav-status-chip{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      border:1px solid rgba(15,23,42,.10);
+      font-weight:950;
+      white-space:nowrap;
+      line-height:1;
+      text-transform:capitalize;
+    }
+
+    .pg-status-chip{
+      padding:7px 10px;
+      font-size:.74rem;
+      min-width:92px;
+    }
+
+    .nav-status-chip{
+      margin-left:auto;
+      padding:5px 7px;
+      font-size:.65rem;
+      min-width:0;
+      flex:0 0 auto;
+    }
+
+    .pg-status-draft{
+      color:#475569;
+      background:rgba(248,250,252,.95);
+      border-color:rgba(100,116,139,.22);
+    }
+
+    .pg-status-submitted,
+    .pg-status-resubmitted{
+      color:#92400e;
+      background:rgba(245,158,11,.12);
+      border-color:rgba(245,158,11,.28);
+    }
+
+    .pg-status-approved{
+      color:#0b4d3a;
+      background:rgba(16,185,129,.13);
+      border-color:rgba(16,185,129,.30);
+    }
+
+    .pg-status-rejected{
+      color:#991b1b;
+      background:rgba(239,68,68,.11);
+      border-color:rgba(239,68,68,.28);
+    }
+
+    .pg-validation-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+    }
+
+    .pg-validation-link{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      border-radius:999px;
+      border:1px solid rgba(16,185,129,.28);
+      background:rgba(16,185,129,.10);
+      color:#0b4d3a;
+      padding:8px 11px;
+      font-size:.78rem;
+      font-weight:950;
+      text-decoration:none;
+      white-space:nowrap;
+    }
+
+    .pg-validation-link:hover{
+      color:#0b4d3a;
+      background:rgba(16,185,129,.15);
+    }
+
+    @media (max-width:768px){
+      .pg-validation-grid{
+        grid-template-columns:1fr;
+      }
+
+      .pg-validation-card{
+        flex-direction:column;
+      }
+
+      .pg-status-chip{
+        min-width:0;
+      }
+
+      .pg-validation-actions,
+      .pg-validation-link{
+        width:100%;
+      }
+    }
+
+    .sidebar.collapsed .nav-status-chip{
+      display:none !important;
+    }
+
   </style>
 
   
@@ -1386,6 +1574,57 @@
 </head>
 
 <body>
+
+{% set _pgv = namespace(
+  has_doc=false,
+  reg_status='draft',
+  reg_remarks='',
+  member_status='draft',
+  member_remarks=''
+) %}
+
+{% if current_pg is defined and current_pg %}
+  {% set _pgv.has_doc = true %}
+  {% set _base_pg_doc = current_pg %}
+{% elif pg_context is defined and pg_context %}
+  {% set _pgv.has_doc = true %}
+  {% set _base_pg_doc = pg_context %}
+{% elif pg is defined and pg %}
+  {% set _pgv.has_doc = true %}
+  {% set _base_pg_doc = pg %}
+{% else %}
+  {% set _base_pg_doc = {} %}
+{% endif %}
+
+{% if _pgv.has_doc %}
+  {% set _reg_obj = _base_pg_doc.registration_validation if _base_pg_doc.registration_validation is defined and _base_pg_doc.registration_validation else {} %}
+  {% set _mem_obj = _base_pg_doc.member_registration_validation if _base_pg_doc.member_registration_validation is defined and _base_pg_doc.member_registration_validation else {} %}
+
+  {% if _reg_obj.status is defined and _reg_obj.status %}
+    {% set _pgv.reg_status = _reg_obj.status %}
+  {% elif _base_pg_doc.registration_validation_status is defined and _base_pg_doc.registration_validation_status %}
+    {% set _pgv.reg_status = _base_pg_doc.registration_validation_status %}
+  {% endif %}
+
+  {% if _reg_obj.remarks is defined and _reg_obj.remarks %}
+    {% set _pgv.reg_remarks = _reg_obj.remarks %}
+  {% elif _base_pg_doc.registration_validation_remarks is defined and _base_pg_doc.registration_validation_remarks %}
+    {% set _pgv.reg_remarks = _base_pg_doc.registration_validation_remarks %}
+  {% endif %}
+
+  {% if _mem_obj.status is defined and _mem_obj.status %}
+    {% set _pgv.member_status = _mem_obj.status %}
+  {% elif _base_pg_doc.member_registration_validation_status is defined and _base_pg_doc.member_registration_validation_status %}
+    {% set _pgv.member_status = _base_pg_doc.member_registration_validation_status %}
+  {% endif %}
+
+  {% if _mem_obj.remarks is defined and _mem_obj.remarks %}
+    {% set _pgv.member_remarks = _mem_obj.remarks %}
+  {% elif _base_pg_doc.member_registration_validation_remarks is defined and _base_pg_doc.member_registration_validation_remarks %}
+    {% set _pgv.member_remarks = _base_pg_doc.member_registration_validation_remarks %}
+  {% endif %}
+{% endif %}
+
   <div class="app-container">
 
     <!-- HEADER -->
@@ -1491,6 +1730,11 @@
               <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
             </svg>
             <span class="nav-text" id="navPgRegistration">PG Registration</span>
+            {% if _pgv.has_doc %}
+              <span class="nav-status-chip pg-status-{{ _pgv.reg_status|lower|replace('_','-') }}">
+                {{ _pgv.reg_status|replace('_',' ') }}
+              </span>
+            {% endif %}
           </a>
 
           <a class="nav-item" data-page="membership-register" href="{{ url_for('pg.pg_members', pg_id=session.get('pg_id')) }}">
@@ -1502,6 +1746,11 @@
               <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
             <span class="nav-text" id="navMembershipRegister">Membership Register</span>
+            {% if _pgv.has_doc %}
+              <span class="nav-status-chip pg-status-{{ _pgv.member_status|lower|replace('_','-') }}">
+                {{ _pgv.member_status|replace('_',' ') }}
+              </span>
+            {% endif %}
           </a>
 
           <!-- <a class="nav-item" data-page="meeting-register" href="{{ url_for('pg.meeting_register', pg_id=session.get('pg_id')) }}">
@@ -1814,6 +2063,84 @@
 
           <!-- Normal page content -->
           <div id="dashboardContainer" class="content-inner">
+
+            {% if _pgv.has_doc %}
+            <div class="pg-validation-strip" id="pgValidationStrip">
+              <div class="pg-validation-head">
+                <div>
+                  <div class="pg-validation-title">Registration Validation Status</div>
+                  <div class="pg-validation-sub">
+                    Track approval status before final submission and corrections.
+                  </div>
+                </div>
+
+                <div class="pg-validation-actions">
+                  <a class="pg-validation-link" href="{{ url_for('pg.pg_registration', pg_id=session.get('pg_id')) }}">
+                    PG Registration
+                  </a>
+                  <a class="pg-validation-link" href="{{ url_for('pg.pg_members', pg_id=session.get('pg_id')) }}">
+                    Membership
+                  </a>
+                </div>
+              </div>
+
+              <div class="pg-validation-grid">
+                <div class="pg-validation-card">
+                  <div>
+                    <div class="pg-validation-card-title">PG Registration Form</div>
+                    {% if _pgv.reg_status == 'rejected' and _pgv.reg_remarks %}
+                      <div class="pg-validation-remarks">
+                        Remarks: {{ _pgv.reg_remarks }}
+                      </div>
+                    {% elif _pgv.reg_status in ['submitted', 'resubmitted'] %}
+                      <div class="pg-validation-remarks">
+                        Submitted to Block Admin for validation.
+                      </div>
+                    {% elif _pgv.reg_status == 'approved' %}
+                      <div class="pg-validation-remarks" style="color:#0b4d3a;">
+                        Approved by Block Admin.
+                      </div>
+                    {% else %}
+                      <div class="pg-validation-remarks" style="color:rgba(15,23,42,.58);">
+                        Complete the form and submit for validation.
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <span class="pg-status-chip pg-status-{{ _pgv.reg_status|lower|replace('_','-') }}">
+                    {{ _pgv.reg_status|replace('_',' ') }}
+                  </span>
+                </div>
+
+                <div class="pg-validation-card">
+                  <div>
+                    <div class="pg-validation-card-title">Membership Registration Form</div>
+                    {% if _pgv.member_status == 'rejected' and _pgv.member_remarks %}
+                      <div class="pg-validation-remarks">
+                        Remarks: {{ _pgv.member_remarks }}
+                      </div>
+                    {% elif _pgv.member_status in ['submitted', 'resubmitted'] %}
+                      <div class="pg-validation-remarks">
+                        Submitted to Block Admin for validation.
+                      </div>
+                    {% elif _pgv.member_status == 'approved' %}
+                      <div class="pg-validation-remarks" style="color:#0b4d3a;">
+                        Approved by Block Admin.
+                      </div>
+                    {% else %}
+                      <div class="pg-validation-remarks" style="color:rgba(15,23,42,.58);">
+                        Complete members and submit for validation.
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <span class="pg-status-chip pg-status-{{ _pgv.member_status|lower|replace('_','-') }}">
+                    {{ _pgv.member_status|replace('_',' ') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            {% endif %}
             {% block content %}{% endblock %}
           </div>
 

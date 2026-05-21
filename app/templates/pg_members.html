@@ -1,6 +1,11 @@
 ﻿{% extends "base.html" %}
 {% block content %}
 {% set sector = (current_sector or (pg.sector or "")) %}
+{% set member_validation = pg.member_registration_validation or {} %}
+{% set member_validation_status = (member_validation.status or pg.member_registration_validation_status or 'draft')|lower %}
+{% set member_validation_remarks = member_validation.remarks or pg.member_registration_validation_remarks or '' %}
+{% set member_validation_locked = member_validation_status in ['submitted', 'resubmitted', 'approved'] %}
+{% set member_validation_can_submit = session.get('role') in ['PG_DATA_ENTRY', 'CADRE_CC'] and member_validation_status in ['draft', 'rejected'] and rows %}
 
 {% block head_extra %}
   <!-- Ionicons (same look as Meeting Minutes Book) -->
@@ -757,6 +762,165 @@
 @media (max-width: 900px){
   .pmd-btnBack{ display:inline-flex; }
 }
+
+/* ============================================================
+   Membership validation workflow
+============================================================ */
+.pmd-validation-panel{
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r16);
+  background: rgba(255,255,255,.94);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.pmd-validation-head{
+  padding: 13px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  background:
+    radial-gradient(circle at 12% 16%, rgba(16,185,129,.12), transparent 48%),
+    linear-gradient(135deg, rgba(240,253,244,.92), rgba(255,255,255,.96));
+  border-bottom:1px solid rgba(15,23,42,.10);
+}
+
+.pmd-validation-title{
+  margin:0;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing:.2px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.pmd-validation-title ion-icon{
+  font-size:20px;
+}
+
+.pmd-validation-body{
+  padding: 13px 16px;
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap:14px;
+  align-items:center;
+}
+
+.pmd-validation-text{
+  color: rgba(15,23,42,.74);
+  font-size: 12.5px;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.pmd-statusBadge{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  border-radius:999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 950;
+  border:1px solid rgba(15,23,42,.12);
+  background: rgba(247,250,249,.85);
+  color: rgba(15,23,42,.76);
+  white-space:nowrap;
+}
+
+.pmd-statusBadge::before{
+  content:"";
+  width:9px;
+  height:9px;
+  border-radius:999px;
+  background:#64748b;
+  box-shadow:0 0 0 5px rgba(100,116,139,.10);
+}
+
+.pmd-statusBadge.is-draft::before{ background:#64748b; box-shadow:0 0 0 5px rgba(100,116,139,.12); }
+.pmd-statusBadge.is-submitted::before,
+.pmd-statusBadge.is-resubmitted::before{ background:#f59e0b; box-shadow:0 0 0 5px rgba(245,158,11,.14); }
+.pmd-statusBadge.is-approved::before{ background:#10b981; box-shadow:0 0 0 5px rgba(16,185,129,.14); }
+.pmd-statusBadge.is-rejected::before{ background:#ef4444; box-shadow:0 0 0 5px rgba(239,68,68,.14); }
+
+.pmd-validation-remarks{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(239,68,68,.22);
+  background: rgba(254,242,242,.72);
+  color: rgba(127,29,29,.95);
+  font-size:12.5px;
+  font-weight:800;
+  line-height:1.4;
+}
+
+.pmd-submitValidationForm{
+  margin:0;
+  display:flex;
+  justify-content:flex-end;
+}
+
+.pmd-btn-submitValidation{
+  border: 1px solid rgba(16,185,129,.35);
+  border-radius:999px;
+  background: rgba(16,185,129,.12);
+  color: var(--accent);
+  font-weight: 900;
+  font-size:12px;
+  padding: 10px 14px;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+  white-space:nowrap;
+}
+
+.pmd-btn-submitValidation:hover{
+  transform: translateY(-1px);
+  background: rgba(16,185,129,.17);
+  box-shadow: var(--shadow2);
+}
+
+.pmd-lock-note{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px dashed rgba(15,23,42,.18);
+  background: rgba(247,250,249,.78);
+  color: rgba(15,23,42,.66);
+  font-size:12px;
+  font-weight:800;
+}
+
+.pmd-is-locked .pmd-input{
+  pointer-events:none;
+  background: rgba(248,250,252,.92);
+  color: rgba(15,23,42,.68);
+}
+
+.pmd-is-locked .pmd-btn-save{
+  display:none;
+}
+
+@media(max-width: 760px){
+  .pmd-validation-body{
+    grid-template-columns:1fr;
+  }
+  .pmd-submitValidationForm,
+  .pmd-btn-submitValidation{
+    width:100%;
+  }
+  .pmd-btn-submitValidation{
+    justify-content:center;
+  }
+}
+
 </style>
 
 <div class="pmd-wrap">
@@ -788,6 +952,73 @@
       </div>
     </div>
 
+
+    <!-- Membership Validation Status -->
+    <div class="pmd-validation-panel">
+      <div class="pmd-validation-head">
+        <h2 class="pmd-validation-title">
+          <ion-icon name="shield-checkmark-outline"></ion-icon>
+          Membership Registration Validation
+        </h2>
+
+        <span class="pmd-statusBadge is-{{ member_validation_status }}">
+          {{ member_validation_status|replace('_', ' ')|capitalize }}
+        </span>
+      </div>
+
+      <div class="pmd-validation-body">
+        <div>
+          <div class="pmd-validation-text">
+            {% if member_validation_status == 'approved' %}
+              Membership registration has been approved by Block Admin. Editing is locked.
+            {% elif member_validation_status in ['submitted', 'resubmitted'] %}
+              Membership registration has been submitted to Block Admin. Editing is locked until review.
+            {% elif member_validation_status == 'rejected' %}
+              Membership registration was rejected by Block Admin. Correct the member details below and resubmit.
+            {% else %}
+              Complete and save member-wise details, then submit the membership registration for Block validation.
+            {% endif %}
+          </div>
+
+          {% if member_validation_remarks %}
+            <div class="pmd-validation-remarks">
+              <strong>Block Remarks:</strong> {{ member_validation_remarks }}
+            </div>
+          {% endif %}
+
+          {% if member_validation_locked %}
+            <div class="pmd-lock-note">
+              This form is currently locked because its validation status is <b>{{ member_validation_status|capitalize }}</b>.
+            </div>
+          {% endif %}
+
+          {% if not rows %}
+            <div class="pmd-lock-note">
+              Members are not available yet. Select members in PG Registration first, then submit membership registration.
+            </div>
+          {% endif %}
+        </div>
+
+        {% if member_validation_can_submit %}
+          <form
+            method="POST"
+            class="pmd-submitValidationForm"
+            action="{{ url_for('pg.submit_member_registration_validation', pg_id=pg._id|string) }}"
+            onsubmit="return confirm('Submit membership registration for Block Admin validation?');"
+          >
+            <button type="submit" class="pmd-btn-submitValidation">
+              <ion-icon name="send-outline"></ion-icon>
+              {% if member_validation_status == 'rejected' %}
+                Resubmit for Validation
+              {% else %}
+                Submit for Validation
+              {% endif %}
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
     {% if not rows %}
       <div class="pmd-alertWrap">
         <div class="alert alert-warning mb-0" id="pmdNoMembersAlert">
@@ -797,7 +1028,7 @@
     {% else %}
 
       <!-- EDIT SECTION -->
-      <div class="pmd-card pmd-section is-active" id="pmdSectionEdit">
+      <div class="pmd-card pmd-section is-active {% if member_validation_locked %}pmd-is-locked{% endif %}" id="pmdSectionEdit">
         <div class="pmd-cardTitle" id="pmdEditTitle">PG Member Details (Edit)</div>
 
         <div class="pmd-note" id="pmdEditNote">
@@ -948,7 +1179,7 @@
                     <form method="POST" class="m-0 p-0 pmd-editForm" id="{{ fid }}">
                       <input type="hidden" name="member_id" value="{{ r.member_id }}">
                       <div class="pmd-actions">
-                        <button class="pmd-btn-save" type="submit">
+                        <button class="pmd-btn-save" type="submit" {% if member_validation_locked %}disabled{% endif %}>
                           <ion-icon name="save"></ion-icon>
                           <span class="pmdSaveText">Save</span>
                         </button>
@@ -1402,6 +1633,8 @@
   btnView.addEventListener('click', () => setMode('view'));
 })();
 
+const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 'false' }};
+
 /* Instant View sync + Save confirmations (updated to support lakh_pati_didi) */
 (function(){
   const viewTable = document.getElementById('pmdViewTable');
@@ -1540,6 +1773,11 @@
     });
 
     form.addEventListener('submit', async (e) => {
+      if(PMD_MEMBER_VALIDATION_LOCKED){
+        e.preventDefault();
+        showToast(form,'info',`<ion-icon name="lock-closed-outline"></ion-icon>This form is locked for validation review.`);
+        return;
+      }
       if(!window.fetch) return;
 
       const v = validateRequired(form);

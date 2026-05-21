@@ -15,6 +15,156 @@ from ..constants import ROLES
 auth_bp = Blueprint("auth", __name__, template_folder="../templates")
 
 
+# ------------------------------------------------------------
+# Auth helpers
+# ------------------------------------------------------------
+
+def _to_object_id(value):
+    """Safely convert a value to ObjectId."""
+    try:
+        if value and ObjectId.is_valid(str(value)):
+            return ObjectId(str(value))
+    except Exception:
+        pass
+    return None
+
+
+def _as_str(value):
+    """Safely serialize ObjectId/None/session values."""
+    if value in (None, "", [], {}):
+        return None
+    try:
+        return str(value)
+    except Exception:
+        return None
+
+
+def _id_or_none(value):
+    """Return ObjectId for valid ids, otherwise None."""
+    return _to_object_id(value)
+
+
+def _fetch_name_by_id(db, collection_name, value, name_fields=None):
+    """Fetch display name from a Mongo collection by ObjectId/string id."""
+    name_fields = name_fields or ["name", "pg_name", "full_name", "username"]
+    oid = _to_object_id(value)
+    doc = None
+
+    if oid:
+        doc = getattr(db, collection_name).find_one({"_id": oid})
+
+    if not doc and value:
+        doc = getattr(db, collection_name).find_one({"_id": str(value)})
+
+    if not doc:
+        return None
+
+    for field in name_fields:
+        if doc.get(field):
+            return doc.get(field)
+
+    return None
+
+
+def _serialize_assigned_pg_ids(values):
+    """Serialize assigned PG ids for session/JWT/mobile response."""
+    return [str(x) for x in (values or []) if x]
+
+
+def _active_status_ok(user):
+    """Return whether user account is active enough to login."""
+    status = (user.get("status") or "active").lower()
+    return status == "active"
+
+
+def _inactive_login_message(user):
+    status = (user.get("status") or "active").lower()
+    if status == "pending":
+        return "Your account is pending block approval."
+    if status == "rejected":
+        return "Your account registration was rejected. Please contact your Block Admin."
+    if status == "disabled":
+        return "Your account is disabled. Please contact administrator."
+    return "Your account is not active."
+
+
+def _set_login_session(user):
+    """Create web session for all roles including CLF_ADMIN."""
+    session.clear()
+    session["user_id"] = str(user["_id"])
+    session["role"] = user.get("role")
+    session["username"] = user.get("username")
+    session["name"] = user.get("name") or user.get("full_name") or user.get("username")
+    session["cadre_name"] = user.get("name") or user.get("full_name") or user.get("username")
+    session["state_id"] = json_safe(user.get("state_id"))
+    session["district_id"] = json_safe(user.get("district_id"))
+    session["block_id"] = json_safe(user.get("block_id"))
+    session["clf_id"] = json_safe(user.get("clf_id"))
+    session["pg_id"] = json_safe(user.get("pg_id"))
+    session["validator_level"] = user.get("validator_level")
+    session["assigned_pg_ids"] = _serialize_assigned_pg_ids(user.get("assigned_pg_ids"))
+
+
+def _jwt_payload_for_user(user):
+    """Build mobile JWT payload for all roles including CLF_ADMIN."""
+    return {
+        "user_id": str(user["_id"]),
+        "role": user.get("role"),
+        "state_id": _as_str(user.get("state_id")),
+        "district_id": _as_str(user.get("district_id")),
+        "block_id": _as_str(user.get("block_id")),
+        "clf_id": _as_str(user.get("clf_id")),
+        "pg_id": _as_str(user.get("pg_id")),
+        "validator_level": user.get("validator_level"),
+        "assigned_pg_ids": _serialize_assigned_pg_ids(user.get("assigned_pg_ids")),
+        "exp": datetime.utcnow() + timedelta(hours=24),
+    }
+
+
+def _login_response_user(db, user):
+    """Build mobile login user payload with PG/CLF names."""
+    pg_name = _fetch_name_by_id(db, "pgs", user.get("pg_id"), ["name", "pg_name"])
+    clf_name = _fetch_name_by_id(db, "clfs", user.get("clf_id"), ["name", "clf_name"])
+
+    return {
+        "id": str(user["_id"]),
+        "username": user.get("username"),
+        "name": user.get("name") or user.get("full_name") or user.get("username"),
+        "full_name": user.get("full_name") or user.get("name") or "",
+        "role": user.get("role"),
+        "state_id": _as_str(user.get("state_id")),
+        "district_id": _as_str(user.get("district_id")),
+        "block_id": _as_str(user.get("block_id")),
+        "clf_id": _as_str(user.get("clf_id")),
+        "clf_name": clf_name,
+        "pg_id": _as_str(user.get("pg_id")),
+        "pg_name": pg_name,
+        "validator_level": user.get("validator_level"),
+        "assigned_pg_ids": _serialize_assigned_pg_ids(user.get("assigned_pg_ids")),
+        "status": user.get("status") or "active",
+    }
+
+
+def _redirect_after_login(role):
+    """Central web redirect rules."""
+    if role in ["SUPER_ADMIN", "ADMIN"]:
+        return redirect(url_for("reports.state_dashboard"))
+
+    if role == "CLF_ADMIN":
+        return redirect(url_for("clf.dashboard"))
+
+    if role in ["DISTRICT_ADMIN", "BLOCK_ADMIN", "CLF_MANAGER"]:
+        return redirect(url_for("reports.hierarchy_dashboard"))
+
+    if role == "CADRE_CC":
+        return redirect(url_for("reports.cadre_dashboard"))
+
+    if role == "PG_DATA_ENTRY":
+        return redirect(url_for("pg.pg_home"))
+
+    return redirect(url_for("reports.hierarchy_dashboard"))
+
+
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     db = current_app.mongo_db
@@ -33,40 +183,18 @@ def login():
 
         user = db.users.find_one({"username": username})
 
-        if not user or not verify_password(password, user["password_hash"]):
+        if not user or not verify_password(password, user.get("password_hash", "")):
             return jsonify({"error": "Invalid username or password"}), 401
 
-        pg_name = None
-        if user.get("pg_id"):
-            try:
-                pg_oid = user.get("pg_id")
-                if not isinstance(pg_oid, ObjectId):
-                    pg_oid = ObjectId(pg_oid)
-                pg_doc = db.pgs.find_one({"_id": pg_oid}, {"name": 1})
-                if pg_doc:
-                    pg_name = pg_doc.get("name")
-            except Exception:
-                pg_name = None
+        if not _active_status_ok(user):
+            return jsonify({"error": _inactive_login_message(user)}), 403
 
-        # Update last login
         db.users.update_one(
             {"_id": user["_id"]},
             {"$set": {"last_login": datetime.utcnow()}}
         )
 
-        # 🔐 Generate JWT token for mobile (FULL HYBRID SCOPE)
-        payload = {
-            "user_id": str(user["_id"]),
-            "role": user.get("role"),
-            "state_id": str(user.get("state_id")) if user.get("state_id") else None,
-            "district_id": str(user.get("district_id")) if user.get("district_id") else None,
-            "block_id": str(user.get("block_id")) if user.get("block_id") else None,
-            "clf_id": str(user.get("clf_id")) if user.get("clf_id") else None,
-            "pg_id": str(user.get("pg_id")) if user.get("pg_id") else None,
-            "validator_level": user.get("validator_level"),
-            "assigned_pg_ids": [str(x) for x in (user.get("assigned_pg_ids") or [])],
-            "exp": datetime.utcnow() + timedelta(hours=24),
-        }
+        payload = _jwt_payload_for_user(user)
 
         token = jwt.encode(
             payload,
@@ -77,19 +205,7 @@ def login():
         return jsonify({
             "message": "Login successful",
             "token": token,
-            "user": {
-                "id": str(user["_id"]),
-                "username": user.get("username"),
-                "role": user.get("role"),
-                "state_id": str(user.get("state_id")) if user.get("state_id") else None,
-                "district_id": str(user.get("district_id")) if user.get("district_id") else None,
-                "block_id": str(user.get("block_id")) if user.get("block_id") else None,
-                "clf_id": str(user.get("clf_id")) if user.get("clf_id") else None,
-                "pg_id": str(user.get("pg_id")) if user.get("pg_id") else None,
-                "pg_name": pg_name,
-                "validator_level": user.get("validator_level"),
-                "assigned_pg_ids": [str(x) for x in (user.get("assigned_pg_ids") or [])],
-            }
+            "user": _login_response_user(db, user),
         }), 200
 
     # ==========================================================
@@ -101,32 +217,15 @@ def login():
 
         user = db.users.find_one({"username": username})
 
-        if not user or not verify_password(password, user["password_hash"]):
+        if not user or not verify_password(password, user.get("password_hash", "")):
             flash("Invalid username or password.", "danger")
             return render_template("login.html")
 
-        status = (user.get("status") or "active").lower()
-        if status != "active":
-            if status == "pending":
-                flash("Your account is pending block approval.", "warning")
-            elif status == "rejected":
-                flash("Your account registration was rejected. Please contact your Block Admin.", "danger")
-            else:
-                flash("Your account is not active.", "danger")
+        if not _active_status_ok(user):
+            flash(_inactive_login_message(user), "danger")
             return render_template("login.html")
 
-        session.clear()
-        session["user_id"] = str(user["_id"])
-        session["role"] = user["role"]
-        session["username"] = user.get("username")
-        session["cadre_name"] = user.get("name") or user.get("full_name") or user.get("username")
-        session["state_id"] = json_safe(user.get("state_id"))
-        session["district_id"] = json_safe(user.get("district_id"))
-        session["block_id"] = json_safe(user.get("block_id"))
-        session["clf_id"] = json_safe(user.get("clf_id"))
-        session["pg_id"] = json_safe(user.get("pg_id"))
-        session["validator_level"] = user.get("validator_level")
-        session["assigned_pg_ids"] = [str(x) for x in (user.get("assigned_pg_ids") or [])]
+        _set_login_session(user)
 
         db.users.update_one(
             {"_id": user["_id"]},
@@ -134,23 +233,13 @@ def login():
         )
 
         flash("Logged in successfully.", "success")
-
-        role = user["role"]
-        if role in ["SUPER_ADMIN", "ADMIN"]:
-            return redirect(url_for("reports.state_dashboard"))
-        elif role in ["DISTRICT_ADMIN", "BLOCK_ADMIN", "CLF_MANAGER"]:
-            return redirect(url_for("reports.hierarchy_dashboard"))
-        elif role == "CADRE_CC":
-            return redirect(url_for("reports.cadre_dashboard"))
-        elif role == "PG_DATA_ENTRY":
-            return redirect(url_for("pg.pg_home"))
-        else:
-            return redirect(url_for("reports.hierarchy_dashboard"))
+        return _redirect_after_login(user.get("role"))
 
     # ==========================================================
     # GET REQUEST → Render login page (Web only)
     # ==========================================================
     return render_template("login.html")
+
 
 @auth_bp.route("/logout")
 @login_required
@@ -353,7 +442,8 @@ def _create_user(data, creator_role):
         "clf_id": data.get("clf_id"),
         "pg_id": data.get("pg_id"),
         "validator_level": data.get("validator_level"),
-        "full_name": data.get("full_name"),
+        "full_name": data.get("full_name") or data.get("name"),
+        "name": data.get("name") or data.get("full_name"),
         "email": data.get("email"),
         "phone": data.get("phone"),
         "aadhaar_card": data.get("aadhaar_card"),
@@ -378,6 +468,7 @@ def _create_user(data, creator_role):
         "last_login": None,
     }
     db.users.insert_one(user_doc)
+
 
 @auth_bp.route("/users/create/admin", methods=["GET", "POST"])
 @roles_required("SUPER_ADMIN")
@@ -522,7 +613,7 @@ def create_district_admin():
 @auth_bp.route("/users/create/block", methods=["GET", "POST"])
 @roles_required("DISTRICT_ADMIN")
 def create_clf_admin():
-    """District Admin creates CLF Admin (formerly Block Admin)."""
+    """District Admin creates Block Admin."""
     db = current_app.mongo_db
     district_id = session.get("district_id")
     blocks_q = {"district_id": ObjectId(district_id)} if district_id else {}
@@ -541,12 +632,12 @@ def create_clf_admin():
                 "block_id": upstream["block_id"],
             }
             _create_user(data, "DISTRICT_ADMIN")
-            flash("CLF admin created.", "success")
+            flash("Block admin created.", "success")
             return redirect(url_for("auth.create_clf_admin"))
         except Exception as e:
             flash(str(e), "danger")
 
-    return render_template("user_create_block.html", blocks=blocks, title="Create CLF Admin")
+    return render_template("user_create_block.html", blocks=blocks, title="Create Block Admin")
 
 
 @auth_bp.route("/users/create/cadre", methods=["GET", "POST"])
@@ -592,6 +683,7 @@ def register_cadre_cc():
             flash(str(e), "danger")
 
     return render_template("user_create_cadre.html", pgs=pgs, title="Cadre (CC) Registration", form_mode="register", pending_approval=True, blocks=blocks, selected_block=selected_block)
+
 
 # changes by atlanta
 @auth_bp.route("/cadre/profile", methods=["GET", "POST"])
@@ -923,6 +1015,7 @@ def reject_cadre_profile(user_id):
     flash("Cadre profile validation rejected.", "warning")
     return redirect(url_for("auth.manage_cadre_cc"))
 
+
 # changes by atlanta
 @auth_bp.route("/cadre/document/<user_id>")
 def view_cadre_document(user_id):
@@ -970,6 +1063,7 @@ def view_cadre_document(user_id):
             "ADMIN",
             "SUPER_ADMIN",
             "BLOCK_ADMIN",
+            "CLF_ADMIN",
         }
         if token_role not in allowed_roles:
             return jsonify({"ok": False, "error": "Forbidden"}), 403
@@ -1003,7 +1097,7 @@ def view_cadre_document(user_id):
     return send_file(path)
 
 
-#changes by atlanta
+# changes by atlanta
 @auth_bp.route("/cadre/assigned-pgs", methods=["GET"])
 def mobile_cadre_assigned_pgs():
     """
@@ -1074,50 +1168,141 @@ def mobile_cadre_assigned_pgs():
         "pgs": out,
     }), 200
 
+
 @auth_bp.route("/users/create/clf", methods=["GET", "POST"])
-@roles_required("BLOCK_ADMIN", "CLF_MANAGER")
+@roles_required("BLOCK_ADMIN")
 def create_clf_manager():
-    """Block Admin creates CLF Official."""
+    """
+    Block Admin creates CLF Admin login.
+
+    New workflow:
+    - CLF_ADMIN is under Block Admin.
+    - CLF is auto-mapped with the same district/block as the logged-in Block Admin.
+    - CLF_ADMIN can later operate assigned PGs.
+    - CLF_ADMIN cannot create PG master records.
+    """
     db = current_app.mongo_db
     block_id = session.get("block_id")
-    clfs_q = {"block_id": ObjectId(block_id)} if block_id else {}
-    clfs = list(db.clfs.find(clfs_q).sort("name", 1))
+
+    if not block_id or not ObjectId.is_valid(str(block_id)):
+        flash("Your account is not mapped to a valid block.", "danger")
+        return redirect(url_for("reports.hierarchy_dashboard"))
+
+    block_oid = ObjectId(str(block_id))
+    clfs = list(db.clfs.find({"block_id": block_oid}).sort("name", 1))
 
     if request.method == "POST":
         try:
-            clf_id = request.form["clf_id"]
+            clf_id = request.form.get("clf_id", "").strip()
+            username = request.form.get("username", "").strip()
+            password = request.form.get("password", "")
+            full_name = (
+                request.form.get("full_name")
+                or request.form.get("name")
+                or request.form.get("admin_name")
+                or ""
+            ).strip()
+
+            if not clf_id or not ObjectId.is_valid(clf_id):
+                raise ValueError("Please select a valid CLF.")
+
+            if not username:
+                raise ValueError("Username is required.")
+
+            if not password:
+                raise ValueError("Password is required.")
+
+            if not full_name:
+                raise ValueError("CLF Admin name is required.")
+
+            clf_doc = db.clfs.find_one({"_id": ObjectId(clf_id), "block_id": block_oid})
+            if not clf_doc:
+                raise ValueError("Selected CLF does not belong to your block.")
+
             upstream = _resolve_upstream_ids(db, clf_id=clf_id)
+
+            if str(upstream.get("block_id")) != str(block_oid):
+                raise ValueError("You cannot create CLF Admin outside your block.")
+
             data = {
-                "username": request.form["username"].strip(),
-                "password": request.form["password"],
-                "role": "CLF_MANAGER",
+                "username": username,
+                "password": password,
+                "role": "CLF_ADMIN",
                 "state_id": upstream["state_id"],
                 "district_id": upstream["district_id"],
                 "block_id": upstream["block_id"],
                 "clf_id": upstream["clf_id"],
+                "full_name": full_name,
+                "name": full_name,
+                "assigned_pg_ids": [],
+                "status": "active",
+                "profile_validation_status": "approved",
             }
+
             _create_user(data, "BLOCK_ADMIN")
-            flash("CLF Official created.", "success")
+
+            # Mark CLF as having a login/admin mapped.
+            created_user = db.users.find_one({"username": username, "role": "CLF_ADMIN"})
+            if created_user:
+                db.clfs.update_one(
+                    {"_id": ObjectId(clf_id)},
+                    {"$set": {
+                        "clf_admin_user_id": created_user["_id"],
+                        "updated_at": datetime.utcnow(),
+                        "updated_by": ObjectId(session.get("user_id")) if session.get("user_id") and ObjectId.is_valid(str(session.get("user_id"))) else session.get("user_id"),
+                    }}
+                )
+
+            flash("CLF Admin created successfully.", "success")
             return redirect(url_for("auth.create_clf_manager"))
+
         except Exception as e:
             flash(str(e), "danger")
 
-    return render_template("user_create_clf.html", clfs=clfs)
+    return render_template("user_create_clf.html", clfs=clfs, title="Create CLF Admin")
 
 
 @auth_bp.route("/users/create/pg", methods=["GET", "POST"])
-@roles_required("CLF_MANAGER")
+@roles_required("BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def create_pg_data_entry():
-    """CLF Official creates PG Data Entry user."""
+    """
+    Create PG Data Entry user.
+
+    CLF_ADMIN is intentionally not allowed here because CLF cannot create PG
+    or create PG login in the new workflow. Block/Admin hierarchy keeps this control.
+    """
     db = current_app.mongo_db
-    clf_id = session.get("clf_id")
-    pgs_q = {"clf_id": ObjectId(clf_id)} if clf_id else {}
-    pgs = list(db.pgs.find(pgs_q).sort("name", 1))
+    role = session.get("role")
+
+    q = {}
+
+    if role == "BLOCK_ADMIN" and session.get("block_id"):
+        q["block_id"] = ObjectId(session.get("block_id"))
+    elif role == "DISTRICT_ADMIN" and session.get("district_id"):
+        q["district_id"] = ObjectId(session.get("district_id"))
+    elif role == "ADMIN" and session.get("state_id"):
+        q["state_id"] = ObjectId(session.get("state_id"))
+
+    pgs = list(db.pgs.find(q).sort("name", 1))
 
     if request.method == "POST":
         try:
             pg_id = request.form["pg_id"]
+
+            if not ObjectId.is_valid(pg_id):
+                raise ValueError("Invalid PG selected.")
+
             upstream = _resolve_upstream_ids(db, pg_id=pg_id)
+
+            if role == "BLOCK_ADMIN" and session.get("block_id") and str(upstream.get("block_id")) != str(session.get("block_id")):
+                raise ValueError("You cannot create PG login outside your block.")
+
+            if role == "DISTRICT_ADMIN" and session.get("district_id") and str(upstream.get("district_id")) != str(session.get("district_id")):
+                raise ValueError("You cannot create PG login outside your district.")
+
+            if role == "ADMIN" and session.get("state_id") and str(upstream.get("state_id")) != str(session.get("state_id")):
+                raise ValueError("You cannot create PG login outside your state.")
+
             data = {
                 "username": request.form["username"].strip(),
                 "password": request.form["password"],
@@ -1128,13 +1313,13 @@ def create_pg_data_entry():
                 "clf_id": upstream["clf_id"],
                 "pg_id": upstream["pg_id"],
             }
-            _create_user(data, "CLF_MANAGER")
+            _create_user(data, role)
             flash("PG data entry user created.", "success")
             return redirect(url_for("auth.create_pg_data_entry"))
         except Exception as e:
             flash(str(e), "danger")
 
-    return render_template("user_create_pg.html", pgs=pgs)
+    return render_template("user_create_pg.html", pgs=pgs, title="Create PG Login")
 
 
 @auth_bp.route("/users/password-reset", methods=["GET", "POST"])
@@ -1390,6 +1575,7 @@ def super_admin_user_edit(user_id):
         user_summary_fields=user_summary_fields,
         activity_logs=activity_logs
     )
+
 
 @auth_bp.route("/notifications")
 @login_required

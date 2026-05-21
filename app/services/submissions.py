@@ -5,6 +5,31 @@ from flask import current_app, session
 
 SUBMISSION_COLLECTION = "monthly_module_submissions"
 
+# Monthly module approval flow:
+# PG_DATA_ENTRY submits monthly module -> CLF_ADMIN/CLF_MANAGER approves -> BLOCK_ADMIN -> DISTRICT_ADMIN -> ADMIN/SUPER_ADMIN.
+#
+# This service is only for monthly module workflow submission/approval.
+# PG Registration / Membership Registration validation is handled separately in app/pg/routes.py
+# using validation metadata on the PG/member records, so both workflows remain independent.
+
+MONTHLY_LEVELS = ["CLF", "BLOCK", "DISTRICT", "STATE"]
+
+PENDING_STATUSES = {
+    "SUBMITTED",
+    "CLF_APPROVED",
+    "BLOCK_APPROVED",
+    "DISTRICT_APPROVED",
+}
+
+FINAL_APPROVED_STATUSES = {
+    "STATE_APPROVED",
+    "APPROVED",
+}
+
+REJECTED_STATUSES = {
+    "REJECTED",
+}
+
 
 def _now():
     return datetime.utcnow()
@@ -46,16 +71,32 @@ def _clean_module(module):
 
 
 def _clean_level(level):
+    """
+    Normalize all legacy and new role names into the monthly approval levels.
+
+    New CLF role:
+    - CLF_ADMIN now owns the CLF-level monthly approval step.
+    - CLF_MANAGER remains supported for older users/data.
+    """
     level = str(level or "").strip().upper()
+
     aliases = {
+        "CLF": "CLF",
         "CLF_MANAGER": "CLF",
         "CLF_ADMIN": "CLF",
+
+        "BLOCK": "BLOCK",
         "BLOCK_ADMIN": "BLOCK",
+
+        "DISTRICT": "DISTRICT",
         "DISTRICT_ADMIN": "DISTRICT",
+
+        "STATE": "STATE",
         "STATE_ADMIN": "STATE",
         "ADMIN": "STATE",
         "SUPER_ADMIN": "STATE",
     }
+
     return aliases.get(level, level or "CLF")
 
 
@@ -72,6 +113,10 @@ def _current_user_id():
 
 def _current_role():
     return session.get("role") or ""
+
+
+def _current_level():
+    return _clean_level(_current_role())
 
 
 def _submission_key(pg_id, year, month, module):
@@ -95,7 +140,14 @@ def _normalize_submission(doc):
     doc["_id"] = str(doc.get("_id"))
     doc["pg_id"] = str(doc.get("pg_id"))
 
-    for key in ("submitted_at", "created_at", "updated_at", "approved_at", "rejected_at"):
+    for key in (
+        "submitted_at",
+        "created_at",
+        "updated_at",
+        "approved_at",
+        "rejected_at",
+        "resubmitted_at",
+    ):
         if doc.get(key) and hasattr(doc.get(key), "isoformat"):
             doc[key] = doc[key].isoformat()
 
@@ -107,7 +159,56 @@ def _normalize_submission(doc):
             if info.get("rejected_at") and hasattr(info.get("rejected_at"), "isoformat"):
                 info["rejected_at"] = info["rejected_at"].isoformat()
 
+    rejection = doc.get("rejection")
+    if isinstance(rejection, dict):
+        if rejection.get("rejected_at") and hasattr(rejection.get("rejected_at"), "isoformat"):
+            rejection["rejected_at"] = rejection["rejected_at"].isoformat()
+
     return doc
+
+
+def _pg_scope_snapshot(db, pg_id):
+    """
+    Store a lightweight geo/CLF snapshot inside monthly submissions.
+    This allows dashboards/queues to filter without expensive joins later.
+    """
+    pg_oid = _safe_objectid(pg_id)
+    if not pg_oid:
+        return {}
+
+    pg = db.pgs.find_one(
+        {"_id": pg_oid},
+        {
+            "state_id": 1,
+            "district_id": 1,
+            "block_id": 1,
+            "clf_id": 1,
+            "assigned_clf_user_id": 1,
+            "name": 1,
+            "pg_name": 1,
+        },
+    ) or {}
+
+    return {
+        "state_id": pg.get("state_id"),
+        "district_id": pg.get("district_id"),
+        "block_id": pg.get("block_id"),
+        "clf_id": pg.get("clf_id"),
+        "assigned_clf_user_id": pg.get("assigned_clf_user_id"),
+        "pg_name": pg.get("name") or pg.get("pg_name") or "",
+    }
+
+
+def _can_role_act_on_level(role, level):
+    """
+    Permission check for monthly submission approvals.
+
+    This does not replace route-level RBAC; it protects this service if called
+    from any route/API later.
+    """
+    role_level = _clean_level(role)
+    level = _clean_level(level)
+    return role_level == level
 
 
 def get_submission(pg_id, year, month, module, db=None):
@@ -130,7 +231,11 @@ def submit_to_clf(pg_id, year, month, module, submitted_by=None, db=None, remark
     Submit a monthly module for approval.
 
     First approval level becomes CLF.
-    Existing rejected draft can be resubmitted.
+    Existing rejected/draft submission can be resubmitted.
+
+    Important:
+    This is the monthly workflow only. It is separate from PG Registration
+    and Membership Registration validation, which are handled in app/pg/routes.py.
     """
 
     db = _get_db(db)
@@ -156,8 +261,11 @@ def submit_to_clf(pg_id, year, month, module, submitted_by=None, db=None, remark
             "submission": _normalize_submission(existing),
         }
 
+    scope_snapshot = _pg_scope_snapshot(db, pg_id)
+
     payload = {
         **key,
+        **scope_snapshot,
         "status": "SUBMITTED",
         "current_level": "CLF",
         "submitted_by": submitted_by,
@@ -170,11 +278,10 @@ def submit_to_clf(pg_id, year, month, module, submitted_by=None, db=None, remark
     }
 
     if existing:
+        payload["resubmitted_at"] = now
         db[SUBMISSION_COLLECTION].update_one(
             key,
-            {
-                "$set": payload
-            }
+            {"$set": payload}
         )
     else:
         payload["created_at"] = now
@@ -190,40 +297,43 @@ def submit_to_clf(pg_id, year, month, module, submitted_by=None, db=None, remark
     }
 
 
-def approve(pg_id, year, month, module, level, approved_by=None, db=None, remarks=""):
+def approve(pg_id, year, month, module, level=None, approved_by=None, db=None, remarks=""):
     """
     Approve monthly module submission at a level.
 
     Flow:
-    SUBMITTED -> CLF_APPROVED -> BLOCK_APPROVED -> DISTRICT_APPROVED -> STATE_APPROVED / APPROVED
+    SUBMITTED -> CLF_APPROVED -> BLOCK_APPROVED -> DISTRICT_APPROVED -> APPROVED
+
+    CLF_ADMIN and legacy CLF_MANAGER both approve at CLF level.
     """
 
     db = _get_db(db)
     key = _submission_key(pg_id, year, month, module)
 
-    level = _clean_level(level)
+    level = _clean_level(level or _current_level())
     approved_by = approved_by or _current_user_id()
     now = _now()
+
+    if level not in MONTHLY_LEVELS:
+        raise ValueError("Invalid approval level.")
+
+    if not _can_role_act_on_level(_current_role(), level):
+        raise ValueError(f"Your role is not allowed to approve at {level} level.")
 
     doc = db[SUBMISSION_COLLECTION].find_one(key)
     if not doc:
         raise ValueError("No submission found for this module and period.")
 
-    if doc.get("status") in ("REJECTED",):
+    if doc.get("status") in REJECTED_STATUSES:
         raise ValueError("Rejected submission cannot be approved. Please resubmit first.")
 
-    if doc.get("status") in ("STATE_APPROVED", "APPROVED"):
+    if doc.get("status") in FINAL_APPROVED_STATUSES:
         return {
             "ok": True,
             "already_approved": True,
             "message": "This module is already fully approved.",
             "submission": _normalize_submission(doc),
         }
-
-    allowed_flow = ["CLF", "BLOCK", "DISTRICT", "STATE"]
-
-    if level not in allowed_flow:
-        raise ValueError("Invalid approval level.")
 
     current_level = _clean_level(doc.get("current_level") or "CLF")
 
@@ -267,9 +377,7 @@ def approve(pg_id, year, month, module, level, approved_by=None, db=None, remark
 
     db[SUBMISSION_COLLECTION].update_one(
         key,
-        {
-            "$set": set_data
-        },
+        {"$set": set_data},
     )
 
     updated = db[SUBMISSION_COLLECTION].find_one(key)
@@ -282,23 +390,31 @@ def approve(pg_id, year, month, module, level, approved_by=None, db=None, remark
     }
 
 
-def reject(pg_id, year, month, module, level, reason="", rejected_by=None, db=None):
+def reject(pg_id, year, month, module, level=None, reason="", rejected_by=None, db=None):
     """
     Reject monthly module submission at current approval level.
+
+    Rejection sends the same monthly module back for PG correction/resubmission.
     """
 
     db = _get_db(db)
     key = _submission_key(pg_id, year, month, module)
 
-    level = _clean_level(level)
+    level = _clean_level(level or _current_level())
     rejected_by = rejected_by or _current_user_id()
     now = _now()
+
+    if level not in MONTHLY_LEVELS:
+        raise ValueError("Invalid approval level.")
+
+    if not _can_role_act_on_level(_current_role(), level):
+        raise ValueError(f"Your role is not allowed to reject at {level} level.")
 
     doc = db[SUBMISSION_COLLECTION].find_one(key)
     if not doc:
         raise ValueError("No submission found for this module and period.")
 
-    if doc.get("status") in ("APPROVED", "STATE_APPROVED"):
+    if doc.get("status") in FINAL_APPROVED_STATUSES:
         raise ValueError("Approved submission cannot be rejected.")
 
     current_level = _clean_level(doc.get("current_level") or "CLF")
@@ -343,10 +459,30 @@ def reject(pg_id, year, month, module, level, reason="", rejected_by=None, db=No
     }
 
 
-def list_submissions(pg_id=None, year=None, month=None, module=None, status=None, current_level=None, db=None, limit=100):
+def list_submissions(
+    pg_id=None,
+    year=None,
+    month=None,
+    module=None,
+    status=None,
+    current_level=None,
+    db=None,
+    limit=100,
+    state_id=None,
+    district_id=None,
+    block_id=None,
+    clf_id=None,
+    assigned_clf_user_id=None,
+):
     """
-    Optional helper for future dashboard/listing use.
-    Does not affect existing routes.
+    Optional helper for dashboard/listing use.
+
+    Supports the new CLF_ADMIN scope fields stored during submission:
+    - state_id
+    - district_id
+    - block_id
+    - clf_id
+    - assigned_clf_user_id
     """
 
     db = _get_db(db)
@@ -368,10 +504,26 @@ def list_submissions(pg_id=None, year=None, month=None, module=None, status=None
         query["module"] = _clean_module(module)
 
     if status:
-        query["status"] = str(status).strip().upper()
+        if isinstance(status, (list, tuple, set)):
+            query["status"] = {"$in": [str(s).strip().upper() for s in status if str(s).strip()]}
+        else:
+            query["status"] = str(status).strip().upper()
 
     if current_level:
         query["current_level"] = _clean_level(current_level)
+
+    scoped_ids = {
+        "state_id": state_id,
+        "district_id": district_id,
+        "block_id": block_id,
+        "clf_id": clf_id,
+        "assigned_clf_user_id": assigned_clf_user_id,
+    }
+
+    for key, value in scoped_ids.items():
+        oid = _safe_objectid(value)
+        if oid:
+            query[key] = oid
 
     rows = list(
         db[SUBMISSION_COLLECTION]
@@ -381,3 +533,114 @@ def list_submissions(pg_id=None, year=None, month=None, module=None, status=None
     )
 
     return [_normalize_submission(row) for row in rows]
+
+
+def list_pending_for_current_user(year=None, month=None, module=None, db=None, limit=100):
+    """
+    Convenience helper for approval queues.
+
+    Role behavior:
+    - CLF_ADMIN/CLF_MANAGER: current_level=CLF, filtered by session clf_id/user assignment when available
+    - BLOCK_ADMIN: current_level=BLOCK, filtered by session block_id
+    - DISTRICT_ADMIN: current_level=DISTRICT, filtered by session district_id
+    - ADMIN/SUPER_ADMIN: current_level=STATE, optionally state filtered if state_id exists
+    """
+
+    role = _current_role()
+    level = _current_level()
+
+    kwargs = {
+        "year": year,
+        "month": month,
+        "module": module,
+        "current_level": level,
+        "status": list(PENDING_STATUSES),
+        "db": db,
+        "limit": limit,
+    }
+
+    if role in ("CLF_ADMIN", "CLF_MANAGER"):
+        if session.get("clf_id"):
+            kwargs["clf_id"] = session.get("clf_id")
+        elif session.get("user_id"):
+            kwargs["assigned_clf_user_id"] = session.get("user_id")
+
+    elif role == "BLOCK_ADMIN":
+        kwargs["block_id"] = session.get("block_id")
+
+    elif role == "DISTRICT_ADMIN":
+        kwargs["district_id"] = session.get("district_id")
+
+    elif role == "ADMIN":
+        kwargs["state_id"] = session.get("state_id")
+
+    return list_submissions(**kwargs)
+
+
+def status_summary(pg_id=None, year=None, month=None, db=None):
+    """
+    Return lightweight monthly workflow counts for dashboards.
+    """
+
+    db = _get_db(db)
+
+    query = {}
+
+    pg_oid = _safe_objectid(pg_id)
+    if pg_oid:
+        query["pg_id"] = pg_oid
+
+    if year:
+        query["year"] = int(year)
+
+    if month:
+        query["month"] = int(month)
+
+    pipeline = [
+        {"$match": query},
+        {
+            "$group": {
+                "_id": {
+                    "status": "$status",
+                    "current_level": "$current_level",
+                },
+                "count": {"$sum": 1},
+            }
+        },
+    ]
+
+    result = {
+        "total": 0,
+        "submitted": 0,
+        "clf_pending": 0,
+        "block_pending": 0,
+        "district_pending": 0,
+        "state_pending": 0,
+        "approved": 0,
+        "rejected": 0,
+        "by_status": {},
+    }
+
+    for row in db[SUBMISSION_COLLECTION].aggregate(pipeline):
+        status = (row.get("_id") or {}).get("status") or "UNKNOWN"
+        level = (row.get("_id") or {}).get("current_level") or ""
+        count = int(row.get("count") or 0)
+
+        result["total"] += count
+        result["by_status"][status] = result["by_status"].get(status, 0) + count
+
+        if status == "SUBMITTED" and level == "CLF":
+            result["submitted"] += count
+            result["clf_pending"] += count
+        elif level == "BLOCK":
+            result["block_pending"] += count
+        elif level == "DISTRICT":
+            result["district_pending"] += count
+        elif level == "STATE":
+            result["state_pending"] += count
+        elif status in FINAL_APPROVED_STATUSES:
+            result["approved"] += count
+        elif status in REJECTED_STATUSES:
+            result["rejected"] += count
+
+    return result

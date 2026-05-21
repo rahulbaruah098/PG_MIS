@@ -74,6 +74,31 @@
     line-height:1.45;
   }
 
+  .rh-scope-pill{
+    width:max-content;
+    max-width:100%;
+    margin:10px auto 0;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:7px 11px;
+    border-radius:999px;
+    background:rgba(236,253,245,.95);
+    border:1px solid rgba(16,185,129,.28);
+    color:#0b4d3a;
+    font-size:12px;
+    font-weight:950;
+  }
+
+  .rh-scope-dot{
+    width:8px;
+    height:8px;
+    border-radius:999px;
+    background:#16a34a;
+    box-shadow:0 0 0 4px rgba(22,163,74,.12);
+  }
+
   .rh-back{
     display:none;
     position: absolute;
@@ -486,7 +511,25 @@
       <div class="rh-title-row">
         <div class="rh-titlebox">
           <h1 class="rh-title" id="rhTitle">Reports Hub</h1>
-          <div class="rh-sub" id="rhSub">Download CSV/ZIP reports with your jurisdiction filters (State/District/Block/GP/Village/PG) + period filters.</div>
+          <div class="rh-sub" id="rhSub">Download CSV/ZIP reports with your jurisdiction filters. CLF Admin reports are restricted to assigned/mapped PGs.</div>
+          <div class="rh-scope-pill" id="rhScopePill">
+            <span class="rh-scope-dot"></span>
+            <span id="rhScopeText">
+              {% if hub_role == 'CLF_ADMIN' %}
+                CLF Scope: Assigned/Mapped PGs only
+              {% elif hub_role == 'BLOCK_ADMIN' %}
+                Block Scope
+              {% elif hub_role == 'DISTRICT_ADMIN' %}
+                District Scope
+              {% elif hub_role in ['ADMIN', 'STATE_ADMIN'] %}
+                State Scope
+              {% elif hub_role == 'PG_DATA_ENTRY' %}
+                PG Scope
+              {% else %}
+                Jurisdiction Scope
+              {% endif %}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -569,6 +612,7 @@
                     <option value="" {% if not gb %}selected{% endif %} id="rhOptNone">None</option>
                     <option value="district" {% if gb=='district' %}selected{% endif %} id="rhOptDistrict">District</option>
                     <option value="block" {% if gb=='block' %}selected{% endif %} id="rhOptBlock">Block</option>
+                    <option value="clf" {% if gb=='clf' %}selected{% endif %} id="rhOptClf">CLF</option>
                     <option value="gp" {% if gb=='gp' %}selected{% endif %} id="rhOptGp">Gram Panchayat</option>
                     <option value="village" {% if gb=='village' %}selected{% endif %} id="rhOptVillage">Village</option>
                     <option value="pg" {% if gb=='pg' %}selected{% endif %} id="rhOptPg">PG</option>
@@ -608,7 +652,13 @@
               <a class="rh-btn" id="rhOverallZip" href="#">Download Overall ZIP</a>
             </div>
 
-            <div class="rh-tip" id="rhTip">Tip: Set Group By for summary tables (district/block/gp/village/pg). If Group By is blank, downloads give row-level data.</div>
+            <div class="rh-tip" id="rhTip">
+              {% if hub_role == 'CLF_ADMIN' %}
+                Tip: Your report filters are locked to your assigned/mapped CLF PGs. You cannot export outside-scope PG data.
+              {% else %}
+                Tip: Set Group By for summary tables (district/block/clf/gp/village/pg). If Group By is blank, downloads give row-level data.
+              {% endif %}
+            </div>
           </form>
         </div>
       </div>
@@ -712,7 +762,7 @@
       en: {
         title: "Reports Hub",
         backAria: "Go Back",
-        sub: "Download CSV/ZIP reports with your jurisdiction filters (State/District/Block/GP/Village/PG) + period filters.",
+        sub: "Download CSV/ZIP reports with your jurisdiction filters. CLF Admin reports are restricted to assigned/mapped PGs.",
 
         filtersTitle: "Report Filters",
         filtersSub: "Set jurisdiction and period filters, then open or download the required report.",
@@ -745,6 +795,13 @@
         none: "None",
         districtOpt: "District",
         blockOpt: "Block",
+        clfOpt: "CLF",
+        scopeClf: "CLF Scope: Assigned/Mapped PGs only",
+        scopeBlock: "Block Scope",
+        scopeDistrict: "District Scope",
+        scopeState: "State Scope",
+        scopePg: "PG Scope",
+        scopeDefault: "Jurisdiction Scope",
         gpOpt: "Gram Panchayat",
         villageOpt: "Village",
         pgOpt: "PG",
@@ -780,7 +837,7 @@
       bn: {
         title: "রিপোর্টস হাব",
         backAria: "ফিরে যান",
-        sub: "আপনার এখতিয়ারভিত্তিক ফিল্টার (State/District/Block/GP/Village/PG) এবং সময়কাল ফিল্টারসহ CSV/ZIP রিপোর্ট ডাউনলোড করুন।",
+        sub: "আপনার এখতিয়ারভিত্তিক ফিল্টারসহ CSV/ZIP রিপোর্ট ডাউনলোড করুন। CLF Admin শুধুমাত্র assigned/mapped PG রিপোর্ট দেখতে পারবে।",
 
         filtersTitle: "রিপোর্ট ফিল্টার",
         filtersSub: "এখতিয়ার ও সময়কাল নির্বাচন করে প্রয়োজনীয় রিপোর্ট খুলুন বা ডাউনলোড করুন।",
@@ -813,6 +870,13 @@
         none: "কোনোটি নয়",
         districtOpt: "জেলা",
         blockOpt: "ব্লক",
+        clfOpt: "CLF",
+        scopeClf: "CLF Scope: Assigned/Mapped PGs only",
+        scopeBlock: "Block Scope",
+        scopeDistrict: "District Scope",
+        scopeState: "State Scope",
+        scopePg: "PG Scope",
+        scopeDefault: "Jurisdiction Scope",
         gpOpt: "গ্রাম পঞ্চায়েত",
         villageOpt: "গ্রাম",
         pgOpt: "পিজি",
@@ -1221,6 +1285,18 @@
       safeText('rhOptNone', tr.none);
       safeText('rhOptDistrict', tr.districtOpt);
       safeText('rhOptBlock', tr.blockOpt);
+      safeText('rhOptClf', tr.clfOpt);
+
+      const scopeText = getEl('rhScopeText');
+      if (scopeText) {
+        if (RH_ROLE === 'CLF_ADMIN') scopeText.textContent = tr.scopeClf;
+        else if (RH_ROLE === 'BLOCK_ADMIN') scopeText.textContent = tr.scopeBlock;
+        else if (RH_ROLE === 'DISTRICT_ADMIN') scopeText.textContent = tr.scopeDistrict;
+        else if (RH_ROLE === 'ADMIN' || RH_ROLE === 'STATE_ADMIN') scopeText.textContent = tr.scopeState;
+        else if (RH_ROLE === 'PG_DATA_ENTRY') scopeText.textContent = tr.scopePg;
+        else scopeText.textContent = tr.scopeDefault;
+      }
+
       safeText('rhOptGp', tr.gpOpt);
       safeText('rhOptVillage', tr.villageOpt);
       safeText('rhOptPg', tr.pgOpt);
@@ -1239,7 +1315,9 @@ safeText('rhLoans', tr.loans);
 safeText('rhTurnover', tr.turnover);
 safeText('rhOverallZip', tr.overallZip);
 
-      safeText('rhTip', tr.tip);
+      if (RH_ROLE !== 'CLF_ADMIN') {
+        safeText('rhTip', tr.tip);
+      }
 
       safeText('rhQuickTitle', tr.quickTitle);
       safeText('rhQuickSub', tr.quickSub);

@@ -104,6 +104,52 @@
     font-size:12px;
   }
 
+  .po-scope-pill{
+    width:max-content;
+    max-width:100%;
+    margin:10px auto 0;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:7px 11px;
+    border-radius:999px;
+    background:rgba(236,253,245,.95);
+    border:1px solid rgba(16,185,129,.28);
+    color:#0b4d3a;
+    font-size:12px;
+    font-weight:950;
+  }
+
+  .po-scope-dot{
+    width:8px;
+    height:8px;
+    border-radius:999px;
+    background:#16a34a;
+    box-shadow:0 0 0 4px rgba(22,163,74,.12);
+    flex-shrink:0;
+  }
+
+  .po-scope-note{
+    margin-top:10px;
+    padding:10px 12px;
+    border-radius:14px;
+    background:rgba(236,253,245,.78);
+    border:1px dashed rgba(16,185,129,.32);
+    color:#0b4d3a;
+    font-size:12px;
+    font-weight:850;
+    line-height:1.45;
+  }
+
+  .po-field select:disabled,
+  .po-field input:disabled{
+    background:#f8fafc;
+    color:#64748b;
+    cursor:not-allowed;
+    opacity:1;
+  }
+
   /* layout */
   .po-main{
     padding:18px;
@@ -728,6 +774,29 @@
         <div class="po-headbox">
           <h1 id="poTitle">PG Overall Export</h1>
           <div class="sub" id="poSub">Download a complete PG snapshot as a ZIP (Members, Cashbook, Ledger, Loans, Meetings, Grants, Utilization).</div>
+          <div class="po-scope-pill" id="poScopePill">
+            <span class="po-scope-dot"></span>
+            <span id="poScopeText">
+              {% if hub_role == 'CLF_ADMIN' or role == 'CLF_ADMIN' %}
+                CLF Scope: Assigned/Mapped PGs only
+              {% elif hub_role == 'BLOCK_ADMIN' or role == 'BLOCK_ADMIN' %}
+                Block Scope
+              {% elif hub_role == 'DISTRICT_ADMIN' or role == 'DISTRICT_ADMIN' %}
+                District Scope
+              {% elif hub_role in ['ADMIN', 'STATE_ADMIN'] or role in ['ADMIN', 'STATE_ADMIN'] %}
+                State Scope
+              {% elif hub_role == 'PG_DATA_ENTRY' or role == 'PG_DATA_ENTRY' %}
+                PG Scope
+              {% else %}
+                Jurisdiction Scope
+              {% endif %}
+            </span>
+          </div>
+          {% if hub_role == 'CLF_ADMIN' or role == 'CLF_ADMIN' %}
+            <div class="po-scope-note" id="poClfScopeNote">
+              This export page is restricted to your assigned/mapped CLF PGs. Outside-scope PGs cannot be selected or exported.
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -738,18 +807,26 @@
           <h3 id="poFiltersTitle">Filters (Scope-based)</h3>
           <div class="po-body">
             <form method="get" action="{{ url_for('reports.pg_overall_report') }}">
+              {% if hub_locked_fields is defined %}
+                {% if "state" in hub_locked_fields %}<input type="hidden" name="state" value="{{ filters.State }}" />{% endif %}
+                {% if "district" in hub_locked_fields %}<input type="hidden" name="district" value="{{ filters.District }}" />{% endif %}
+                {% if "block" in hub_locked_fields %}<input type="hidden" name="block" value="{{ filters.Block }}" />{% endif %}
+                {% if "gp" in hub_locked_fields %}<input type="hidden" name="gp" value="{{ filters['Gram Panchayat'] }}" />{% endif %}
+                {% if "village" in hub_locked_fields %}<input type="hidden" name="village" value="{{ filters.Village }}" />{% endif %}
+                {% if "pg_name" in hub_locked_fields %}<input type="hidden" name="pg_name" value="{{ filters.pg_name }}" />{% endif %}
+              {% endif %}
               <div class="po-section">
                 <div class="po-row">
                   <div class="po-field">
                     <label id="poLblState">State</label>
-                    <select name="state">
+                    <select name="state" {% if "state" in (hub_locked_fields or []) %}disabled{% endif %}>
                       <option value="" id="poOptAll1">All</option>
                       {% for s in states %}<option value="{{ s }}" {% if filters.State==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
                     </select>
                   </div>
                   <div class="po-field">
                     <label id="poLblDistrict">District</label>
-                    <select name="district">
+                    <select name="district" {% if "district" in (hub_locked_fields or []) %}disabled{% endif %}>
                       <option value="" id="poOptAll2">All</option>
                       {% for s in districts %}<option value="{{ s }}" {% if filters.District==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
                     </select>
@@ -759,14 +836,14 @@
                 <div class="po-row">
                   <div class="po-field">
                     <label id="poLblBlock">Block</label>
-                    <select name="block">
+                    <select name="block" {% if "block" in (hub_locked_fields or []) %}disabled{% endif %}>
                       <option value="" id="poOptAll3">All</option>
                       {% for s in blocks %}<option value="{{ s }}" {% if filters.Block==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
                     </select>
                   </div>
                   <div class="po-field">
                     <label id="poLblGp">Gram Panchayat</label>
-                    <select name="gp">
+                    <select name="gp" {% if "gp" in (hub_locked_fields or []) %}disabled{% endif %}>
                       <option value="" id="poOptAll4">All</option>
                       {% for s in gps %}<option value="{{ s }}" {% if filters['Gram Panchayat']==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
                     </select>
@@ -776,14 +853,14 @@
                 <div class="po-row">
                   <div class="po-field">
                     <label id="poLblVillage">Village</label>
-                    <select name="village">
+                    <select name="village" {% if "village" in (hub_locked_fields or []) %}disabled{% endif %}>
                       <option value="" id="poOptAll5">All</option>
                       {% for s in villages %}<option value="{{ s }}" {% if filters.Village==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
                     </select>
                   </div>
                   <div class="po-field">
                     <label id="poLblPgName">PG Name</label>
-                    <select name="pg_name" id="poPhPgName">
+                    <select name="pg_name" id="poPhPgName" {% if "pg_name" in (hub_locked_fields or []) %}disabled{% endif %}>
                       <option value="" id="poOptAllPgName">All</option>
                       {% for pgn in pg_names %}
                         <option value="{{ pgn }}" {% if filters.pg_name == pgn %}selected{% endif %}>
@@ -802,7 +879,13 @@
 
               <hr class="po-divider" />
 
-              <div class="po-small" id="poTip">Tip: Select a PG from the list and download its full ZIP. If you download without selecting a PG, it will export all PGs in the current filtered scope (may be large).</div>
+              <div class="po-small" id="poTip">
+                {% if hub_role == 'CLF_ADMIN' or role == 'CLF_ADMIN' %}
+                  Tip: Select one assigned/mapped PG to download its ZIP, or export all PGs within your CLF scope only.
+                {% else %}
+                  Tip: Select a PG from the list and download its full ZIP. If you download without selecting a PG, it will export all PGs in the current filtered scope (may be large).
+                {% endif %}
+              </div>
             </form>
           </div>
         </div>
@@ -824,7 +907,7 @@
                   <select name="pg_id">
                     <option value="" id="poOptExportAll">(Optional) Export all in filter</option>
                     {% for p in pgs %}
-                      <option value="{{ p._id }}">{{ p.name }} — {{ p.District or '' }} {{ p.Block or '' }}</option>
+                      <option value="{{ p._id }}">{{ p.name }} — {{ p.District or '' }} {{ p.Block or '' }}{% if p.clf_name %} / {{ p.clf_name }}{% endif %}</option>
                     {% endfor %}
                   </select>
                 </div>
@@ -847,7 +930,7 @@
               <input
                 type="text"
                 id="poScopeSearch"
-                placeholder="Search PG / District / Block / GP / Village..."
+                placeholder="Search PG / District / Block / CLF / GP / Village..."
                 aria-label="Search PGs in scope"
               />
             </div>
@@ -875,6 +958,7 @@
                 <th id="poThPg">PG</th>
                 <th id="poThDistrict">District</th>
                 <th id="poThBlock">Block</th>
+                <th id="poThClf">CLF</th>
                 <th id="poThGp">GP</th>
                 <th id="poThVillage">Village</th>
               </tr>
@@ -887,6 +971,7 @@
                   data-name="{{ (p.name or '')|e }}"
                   data-district="{{ (p.District or '')|e }}"
                   data-block="{{ (p.Block or '')|e }}"
+                  data-clf="{{ (p.clf_name or p.CLF or '')|e }}"
                   data-gp="{{ (p['Gram Panchayat'] or '')|e }}"
                   data-village="{{ (p.Village or '')|e }}"
                 >
@@ -894,13 +979,14 @@
                   <td class="po-pgname">{{ p.name or '' }}</td>
                   <td>{{ p.District or '' }}</td>
                   <td>{{ p.Block or '' }}</td>
+                  <td>{{ p.clf_name or p.CLF or '' }}</td>
                   <td>{{ p['Gram Panchayat'] or '' }}</td>
                   <td>{{ p.Village or '' }}</td>
                 </tr>
                 {% endfor %}
               {% else %}
                 <tr class="po-empty-row" id="poEmptyRow">
-                  <td colspan="6" id="poEmptyText">No PG records found for the current scope.</td>
+                  <td colspan="7" id="poEmptyText">No PG records found for the current scope.</td>
                 </tr>
               {% endif %}
             </tbody>
@@ -916,6 +1002,7 @@
                 data-name="{{ (p.name or '')|e }}"
                 data-district="{{ (p.District or '')|e }}"
                 data-block="{{ (p.Block or '')|e }}"
+                data-clf="{{ (p.clf_name or p.CLF or '')|e }}"
                 data-gp="{{ (p['Gram Panchayat'] or '')|e }}"
                 data-village="{{ (p.Village or '')|e }}"
               >
@@ -937,6 +1024,10 @@
                   <div class="po-kv">
                     <b class="poMobBlockLbl">Block</b>
                     <span>{{ p.Block or '' }}</span>
+                  </div>
+                  <div class="po-kv">
+                    <b class="poMobClfLbl">CLF</b>
+                    <span>{{ p.clf_name or p.CLF or '' }}</span>
                   </div>
                   <div class="po-kv">
                     <b class="poMobGpLbl">GP</b>
@@ -971,6 +1062,10 @@
                     <span>—</span>
                   </div>
                   <div class="po-kv">
+                    <b class="poMobClfLbl">CLF</b>
+                    <span>—</span>
+                  </div>
+                  <div class="po-kv">
                     <b class="poMobGpLbl">GP</b>
                     <span>—</span>
                   </div>
@@ -1001,11 +1096,18 @@
 
 <script>
   (function(){
+    const PO_ROLE = "{{ hub_role if hub_role is defined else (role if role is defined else session.get('role','')) }}";
     const PO_T = {
       en: {
         title: "PG Overall Export",
         backAria: "Go Back",
         sub: "Download a complete PG snapshot as a ZIP (Members, Cashbook, Ledger, Loans, Meetings, Grants, Utilization).",
+        scopeClf: "CLF Scope: Assigned/Mapped PGs only",
+        scopeBlock: "Block Scope",
+        scopeDistrict: "District Scope",
+        scopeState: "State Scope",
+        scopePg: "PG Scope",
+        scopeDefault: "Jurisdiction Scope",
 
         filtersTitle: "Filters (Scope-based)",
         state: "State",
@@ -1030,10 +1132,11 @@
         thPg: "PG",
         thDistrict: "District",
         thBlock: "Block",
+        thClf: "CLF",
         thGp: "GP",
         thVillage: "Village",
 
-        searchPlaceholder: "Search PG / District / Block / GP / Village...",
+        searchPlaceholder: "Search PG / District / Block / CLF / GP / Village...",
         rowsPerPage: "Rows per page",
         scopeMeta: "Showing {start} to {end} of {total} entries",
         pageInfo: "Page {page} of {pages}",
@@ -1046,6 +1149,7 @@
         mobSl: "SL No",
         mobDistrict: "District",
         mobBlock: "Block",
+        mobClf: "CLF",
         mobGp: "GP",
         mobVillage: "Village"
       },
@@ -1053,6 +1157,12 @@
         title: "পিজি ওভারঅল এক্সপোর্ট",
         backAria: "ফিরে যান",
         sub: "একটি পূর্ণাঙ্গ PG snapshot ZIP আকারে ডাউনলোড করুন (Members, Cashbook, Ledger, Loans, Meetings, Grants, Utilization)।",
+        scopeClf: "CLF Scope: Assigned/Mapped PGs only",
+        scopeBlock: "Block Scope",
+        scopeDistrict: "District Scope",
+        scopeState: "State Scope",
+        scopePg: "PG Scope",
+        scopeDefault: "Jurisdiction Scope",
 
         filtersTitle: "ফিল্টার (স্কোপ-ভিত্তিক)",
         state: "রাজ্য",
@@ -1077,10 +1187,11 @@
         thPg: "পিজি",
         thDistrict: "জেলা",
         thBlock: "ব্লক",
+        thClf: "CLF",
         thGp: "জিপি",
         thVillage: "গ্রাম",
 
-        searchPlaceholder: "পিজি / জেলা / ব্লক / জিপি / গ্রাম অনুসন্ধান করুন...",
+        searchPlaceholder: "পিজি / জেলা / ব্লক / CLF / জিপি / গ্রাম অনুসন্ধান করুন...",
         rowsPerPage: "প্রতি পৃষ্ঠায় সারি",
         scopeMeta: "{total} এন্ট্রির মধ্যে {start} থেকে {end} দেখানো হচ্ছে",
         pageInfo: "পৃষ্ঠা {page} / {pages}",
@@ -1093,6 +1204,7 @@
         mobSl: "ক্রমিক নং",
         mobDistrict: "জেলা",
         mobBlock: "ব্লক",
+        mobClf: "CLF",
         mobGp: "জিপি",
         mobVillage: "গ্রাম"
       }
@@ -1147,6 +1259,16 @@
       safeText('poTitle', t.title);
       safeText('poSub', t.sub);
 
+      const scopeText = document.getElementById('poScopeText');
+      if(scopeText){
+        if(PO_ROLE === 'CLF_ADMIN') scopeText.textContent = t.scopeClf;
+        else if(PO_ROLE === 'BLOCK_ADMIN') scopeText.textContent = t.scopeBlock;
+        else if(PO_ROLE === 'DISTRICT_ADMIN') scopeText.textContent = t.scopeDistrict;
+        else if(PO_ROLE === 'ADMIN' || PO_ROLE === 'STATE_ADMIN') scopeText.textContent = t.scopeState;
+        else if(PO_ROLE === 'PG_DATA_ENTRY') scopeText.textContent = t.scopePg;
+        else scopeText.textContent = t.scopeDefault;
+      }
+
       safeText('poFiltersTitle', t.filtersTitle);
       safeText('poLblState', t.state);
       safeText('poLblDistrict', t.district);
@@ -1164,7 +1286,9 @@
       safeText('poOptAllPgName', t.phPgName);
       safeText('poApplyBtn', t.apply);
       safeText('poResetBtn', t.reset);
-      safeText('poTip', t.tip);
+      if(PO_ROLE !== 'CLF_ADMIN'){
+        safeText('poTip', t.tip);
+      }
 
       safeText('poDownloadTitle', t.downloadTitle);
       safeText('poLblSelectPg', t.selectPg);
@@ -1176,6 +1300,7 @@
       safeText('poThPg', t.thPg);
       safeText('poThDistrict', t.thDistrict);
       safeText('poThBlock', t.thBlock);
+      safeText('poThClf', t.thClf);
       safeText('poThGp', t.thGp);
       safeText('poThVillage', t.thVillage);
 
@@ -1187,6 +1312,7 @@
       safeTextAll('.poMobSlLbl', t.mobSl);
       safeTextAll('.poMobDistrictLbl', t.mobDistrict);
       safeTextAll('.poMobBlockLbl', t.mobBlock);
+      safeTextAll('.poMobClfLbl', t.mobClf);
       safeTextAll('.poMobGpLbl', t.mobGp);
       safeTextAll('.poMobVillageLbl', t.mobVillage);
 
@@ -1234,6 +1360,7 @@
           row.dataset.name || '',
           row.dataset.district || '',
           row.dataset.block || '',
+          row.dataset.clf || '',
           row.dataset.gp || '',
           row.dataset.village || ''
         ].join(' ').toLowerCase();
@@ -1245,6 +1372,7 @@
           card.dataset.name || '',
           card.dataset.district || '',
           card.dataset.block || '',
+          card.dataset.clf || '',
           card.dataset.gp || '',
           card.dataset.village || ''
         ].join(' ').toLowerCase();

@@ -738,6 +738,274 @@ def _current_user_dict():
         "role": getattr(g, "role", None) or session.get("role"),
     }
 
+
+# ============================================================
+# PG / Membership Registration Validation Workflow
+# ============================================================
+
+VALIDATION_PENDING_STATUSES = ("submitted", "resubmitted")
+VALIDATION_EDIT_LOCK_STATUSES = ("submitted", "resubmitted", "approved")
+VALIDATION_FORM_TYPES = {
+    "pg_registration": {
+        "field": "registration_validation",
+        "label": "PG Registration",
+        "form_endpoint": "pg.pg_registration",
+    },
+    "member_registration": {
+        "field": "member_registration_validation",
+        "label": "Membership Registration",
+        "form_endpoint": "pg.pg_members",
+    },
+}
+
+
+def _wants_json_response():
+    return bool(
+        request.headers.get("Authorization")
+        or request.is_json
+        or "application/json" in (request.headers.get("Accept", "") or "").lower()
+    )
+
+
+def _current_role():
+    return getattr(g, "role", None) or session.get("role")
+
+
+def _current_user_id():
+    return getattr(g, "user_id", None) or session.get("user_id")
+
+
+def _current_user_id_value():
+    uid = _current_user_id()
+    try:
+        return ObjectId(str(uid)) if uid and ObjectId.is_valid(str(uid)) else uid
+    except Exception:
+        return uid
+
+
+def _validation_now():
+    return datetime.utcnow()
+
+
+def _validation_status(doc, form_type):
+    field = VALIDATION_FORM_TYPES.get(form_type, {}).get("field")
+    if not field:
+        return "draft"
+
+    validation_doc = doc.get(field) or {}
+    return str(validation_doc.get("status") or "draft").lower()
+
+
+def _validation_doc(doc, form_type):
+    field = VALIDATION_FORM_TYPES.get(form_type, {}).get("field")
+    validation_doc = dict(doc.get(field) or {}) if field else {}
+
+    validation_doc.setdefault("status", "draft")
+    validation_doc.setdefault("remarks", "")
+    validation_doc.setdefault("submitted_at", None)
+    validation_doc.setdefault("submitted_by", None)
+    validation_doc.setdefault("reviewed_by", None)
+    validation_doc.setdefault("reviewed_at", None)
+    validation_doc.setdefault("history", [])
+
+    return validation_doc
+
+
+def _validation_field(form_type):
+    meta = VALIDATION_FORM_TYPES.get(form_type)
+    return meta.get("field") if meta else None
+
+
+def _validation_label(form_type):
+    meta = VALIDATION_FORM_TYPES.get(form_type) or {}
+    return meta.get("label") or form_type.replace("_", " ").title()
+
+
+def _validation_form_url(form_type, pg_id):
+    meta = VALIDATION_FORM_TYPES.get(form_type) or {}
+    endpoint = meta.get("form_endpoint") or "pg.pg_view"
+    try:
+        return url_for(endpoint, pg_id=str(pg_id))
+    except Exception:
+        return url_for("pg.pg_view", pg_id=str(pg_id))
+
+
+def _load_pg_for_validation(db, pg_id):
+    oid = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
+    if not oid:
+        return None
+    return db.pgs.find_one({"_id": oid})
+
+
+def _validation_json_or_redirect(ok, message, *, status=200, redirect_to=None, extra=None, category=None):
+    extra = extra or {}
+
+    if _wants_json_response():
+        payload = {"ok": bool(ok), "message" if ok else "error": message}
+        payload.update(extra)
+        return jsonify(payload), status
+
+    flash(message, category or ("success" if ok else "danger"))
+    return redirect(redirect_to or url_for("reports.hierarchy_dashboard"))
+
+
+def _pg_user_can_access_pg(pg):
+    role = _current_role()
+    pg_id = str(pg.get("_id"))
+
+    if role == "PG_DATA_ENTRY":
+        current_pg_id = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
+        return current_pg_id == pg_id
+
+    if role == "CADRE_CC":
+        try:
+            allowed_pg_ids = {str(x) for x in _assigned_pg_ids_for_session()}
+        except Exception:
+            allowed_pg_ids = {str(x) for x in (session.get("assigned_pg_ids") or [])}
+        return pg_id in allowed_pg_ids
+
+    return False
+
+
+def _block_admin_can_validate_pg(pg):
+    role = _current_role()
+    if role != "BLOCK_ADMIN":
+        return False
+
+    block_id = getattr(g, "block_id", None) or session.get("block_id")
+    return bool(block_id and str(pg.get("block_id")) == str(block_id))
+
+
+def _make_validation_history_entry(action, status, remarks=""):
+    return {
+        "action": action,
+        "status": status,
+        "remarks": remarks or "",
+        "by": _current_user_id_value(),
+        "by_role": _current_role(),
+        "at": _validation_now(),
+    }
+
+
+def _submit_validation(db, pg, form_type):
+    field = _validation_field(form_type)
+    if not field:
+        return False, "Invalid validation form type.", 400
+
+    role = _current_role()
+    if role not in ("PG_DATA_ENTRY", "CADRE_CC"):
+        return False, "Only PG login can submit this form for validation.", 403
+
+    if not _pg_user_can_access_pg(pg):
+        return False, "You cannot submit this PG form.", 403
+
+    current_doc = _validation_doc(pg, form_type)
+    current_status = str(current_doc.get("status") or "draft").lower()
+
+    if current_status == "approved":
+        return False, f"{_validation_label(form_type)} is already approved.", 409
+
+    if current_status in VALIDATION_PENDING_STATUSES:
+        return False, f"{_validation_label(form_type)} is already submitted for Block validation.", 409
+
+    new_status = "resubmitted" if current_status == "rejected" else "submitted"
+    now = _validation_now()
+
+    history = list(current_doc.get("history") or [])
+    history.append(_make_validation_history_entry("submit", new_status, ""))
+
+    update_doc = {
+        f"{field}.status": new_status,
+        f"{field}.submitted_at": now,
+        f"{field}.submitted_by": _current_user_id_value(),
+        f"{field}.reviewed_by": None,
+        f"{field}.reviewed_at": None,
+        f"{field}.history": history,
+        "updated_at": now,
+    }
+
+    # Preserve rejection remarks until Block validates again; this helps PG see what was corrected.
+    db.pgs.update_one({"_id": pg["_id"]}, {"$set": update_doc})
+
+    try:
+        add_notification(
+            db,
+            to_role="BLOCK_ADMIN",
+            title=f"{_validation_label(form_type)} submitted",
+            body=f'PG "{pg.get("name") or pg.get("pg_name") or pg.get("_id")}" submitted {_validation_label(form_type)} for validation.',
+            link=url_for("pg.validation_review", form_type=form_type, pg_id=str(pg["_id"])),
+        )
+    except Exception:
+        pass
+
+    return True, f"{_validation_label(form_type)} submitted for Block validation.", 200
+
+
+def _review_validation(db, pg, form_type, action, remarks=""):
+    field = _validation_field(form_type)
+    if not field:
+        return False, "Invalid validation form type.", 400
+
+    if not _block_admin_can_validate_pg(pg):
+        return False, "Only mapped Block Admin can validate this form.", 403
+
+    current_doc = _validation_doc(pg, form_type)
+    current_status = str(current_doc.get("status") or "draft").lower()
+
+    if current_status not in VALIDATION_PENDING_STATUSES:
+        return False, f"{_validation_label(form_type)} is not pending validation.", 409
+
+    action = str(action or "").lower().strip()
+    remarks = (remarks or "").strip()
+    now = _validation_now()
+
+    if action == "approve":
+        new_status = "approved"
+        action_label = "approved"
+        remarks_to_store = remarks or current_doc.get("remarks") or ""
+    elif action == "reject":
+        if not remarks:
+            return False, "Rejection remarks are required.", 400
+        new_status = "rejected"
+        action_label = "rejected"
+        remarks_to_store = remarks
+    else:
+        return False, "Invalid validation action.", 400
+
+    history = list(current_doc.get("history") or [])
+    history.append(_make_validation_history_entry(action_label, new_status, remarks_to_store))
+
+    update_doc = {
+        f"{field}.status": new_status,
+        f"{field}.remarks": remarks_to_store,
+        f"{field}.reviewed_by": _current_user_id_value(),
+        f"{field}.reviewed_at": now,
+        f"{field}.history": history,
+        "updated_at": now,
+    }
+
+    db.pgs.update_one({"_id": pg["_id"]}, {"$set": update_doc})
+
+    try:
+        add_notification(
+            db,
+            to_role="PG_DATA_ENTRY",
+            title=f"{_validation_label(form_type)} {action_label}",
+            body=f'Your {_validation_label(form_type)} for PG "{pg.get("name") or pg.get("pg_name") or pg.get("_id")}" was {action_label}.',
+            link=_validation_form_url(form_type, pg["_id"]),
+        )
+    except Exception:
+        pass
+
+    return True, f"{_validation_label(form_type)} {action_label} successfully.", 200
+
+
+def _validation_badge_status(pg, form_type):
+    status = _validation_status(pg, form_type)
+    if status not in ("draft", "submitted", "approved", "rejected", "resubmitted"):
+        return "draft"
+    return status
+
 def _fmt_inr(amount):
     try:
         amt = float(amount or 0)
@@ -1640,6 +1908,22 @@ def pg_registration(pg_id):
                 if assigned_pg and str(assigned_pg) != str(pg_id):
                     return _error("You cannot edit this PG.", 403)
 
+    # ----------------------------------------------------------
+    # New Block validation workflow guard
+    # ----------------------------------------------------------
+    registration_validation = _validation_doc(pg, "pg_registration")
+    registration_status = str(registration_validation.get("status") or "draft").lower()
+
+    if request.method == "POST":
+        if role not in ("PG_DATA_ENTRY", "CADRE_CC"):
+            return _error("Only PG login can edit and save the PG Registration Form.", 403)
+
+        if registration_status in VALIDATION_EDIT_LOCK_STATUSES:
+            return _error(
+                "PG Registration Form is already submitted/approved and cannot be edited now.",
+                403
+            )
+
     # ==========================================================
     # GET
     # ==========================================================
@@ -1698,6 +1982,9 @@ def pg_registration(pg_id):
                     "pg": _serialize_pg_for_json(pg),
                     "shg_members": sm,
                     "safe_members": safe_members,
+                    "validation": registration_validation,
+                    "validation_status": registration_status,
+                    "validation_can_edit": registration_status not in VALIDATION_EDIT_LOCK_STATUSES,
                 }), 200
             except Exception as e:
                 current_app.logger.exception("Failed to serialize PG registration response")
@@ -1711,7 +1998,12 @@ def pg_registration(pg_id):
             pg=pg,
             shg_members=shg_members,
             safe_members=safe_members,
-            sector_options=PG_SECTOR_OPTIONS
+            sector_options=PG_SECTOR_OPTIONS,
+            validation=registration_validation,
+            validation_status=registration_status,
+            validation_remarks=registration_validation.get("remarks") or "",
+            validation_can_edit=(registration_status not in VALIDATION_EDIT_LOCK_STATUSES),
+            validation_form_type="pg_registration",
         )
 
     # ==========================================================
@@ -2029,6 +2321,19 @@ def pg_registration(pg_id):
 
     db.pgs.update_one({"_id": pg["_id"]}, {"$set": data})
 
+    # If Block had rejected the form, saving corrections moves it back to draft.
+    # PG must submit again using "Submit for Validation".
+    if registration_status == "rejected":
+        db.pgs.update_one(
+            {"_id": pg["_id"]},
+            {"$set": {
+                "registration_validation.status": "draft",
+                "registration_validation.corrected_at": datetime.utcnow(),
+                "registration_validation.corrected_by": _current_user_id_value(),
+                "updated_at": datetime.utcnow(),
+            }}
+        )
+
     log_audit(
         db,
         action="update",
@@ -2157,6 +2462,23 @@ def pg_members(pg_id):
             return jsonify({"ok": False, "error": "PG not found."}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
+
+    # ----------------------------------------------------------
+    # New Block validation workflow guard
+    # ----------------------------------------------------------
+    role = getattr(g, "role", None) or session.get("role")
+    member_validation = _validation_doc(pg, "member_registration")
+    member_validation_status = str(member_validation.get("status") or "draft").lower()
+
+    if request.method == "POST":
+        if role not in ("PG_DATA_ENTRY", "CADRE_CC"):
+            return _deny("Only PG login can edit and save the Membership Registration Form.", 403)
+
+        if member_validation_status in VALIDATION_EDIT_LOCK_STATUSES:
+            return _deny(
+                "Membership Registration Form is already submitted/approved and cannot be edited now.",
+                403
+            )
 
     # Members selected during PG Registration (stored inside pgs.members)
     selected = pg.get("members") or []
@@ -2419,6 +2741,19 @@ def pg_members(pg_id):
             upsert=True
         )
 
+        # If Block had rejected the membership form, any correction moves it back to draft.
+        # PG must submit again using "Submit for Validation".
+        if member_validation_status == "rejected":
+            db.pgs.update_one(
+                {"_id": pg_obj_id},
+                {"$set": {
+                    "member_registration_validation.status": "draft",
+                    "member_registration_validation.corrected_at": datetime.utcnow(),
+                    "member_registration_validation.corrected_by": _current_user_id_value(),
+                    "updated_at": datetime.utcnow(),
+                }}
+            )
+
         if _is_mobile:
             return jsonify({"ok": True, "message": "Member details saved successfully."}), 200
 
@@ -2495,7 +2830,10 @@ def pg_members(pg_id):
                 "ardd_units": ARDD_UNIT_OPTIONS,
                 "fishery_activities": FISHERY_ACTIVITY_OPTIONS,
             },
-            "rows": rows
+            "rows": rows,
+            "validation": member_validation,
+            "validation_status": member_validation_status,
+            "validation_can_edit": member_validation_status not in VALIDATION_EDIT_LOCK_STATUSES,
         }), 200
 
     return render_template(
@@ -2508,6 +2846,11 @@ def pg_members(pg_id):
         ardd_activities=ARDD_ACTIVITY_OPTIONS,
         ardd_unit_options=ARDD_UNIT_OPTIONS,
         fishery_activities=FISHERY_ACTIVITY_OPTIONS,
+        validation=member_validation,
+        validation_status=member_validation_status,
+        validation_remarks=member_validation.get("remarks") or "",
+        validation_can_edit=(member_validation_status not in VALIDATION_EDIT_LOCK_STATUSES),
+        validation_form_type="member_registration",
     )
 
 @pg_bp.route("/lakhpati/<pg_id>")
@@ -7034,4 +7377,324 @@ def clear_active_pg():
         session.pop('pg_id', None)
     flash('Active PG cleared.', 'info')
     return redirect(url_for('reports.hierarchy_dashboard'))
+
+# ============================================================
+# PG Registration + Membership Validation Routes
+# ============================================================
+
+@pg_bp.route("/registration/<pg_id>/submit-validation", methods=["POST"])
+@login_required
+@roles_required("PG_DATA_ENTRY", "CADRE_CC")
+@require_unlocked_period(scope='pg')
+def submit_pg_registration_validation(pg_id):
+    db = current_app.mongo_db
+    pg = _load_pg_for_validation(db, pg_id)
+
+    if not pg:
+        return _validation_json_or_redirect(
+            False,
+            "PG not found.",
+            status=404,
+            redirect_to=url_for("pg.pg_home")
+        )
+
+    ok, message, status = _submit_validation(db, pg, "pg_registration")
+
+    return _validation_json_or_redirect(
+        ok,
+        message,
+        status=status,
+        redirect_to=url_for("pg.pg_registration", pg_id=str(pg["_id"])),
+        extra={
+            "pg_id": str(pg["_id"]),
+            "form_type": "pg_registration",
+            "validation_status": _validation_status(
+                current_app.mongo_db.pgs.find_one({"_id": pg["_id"]}) or pg,
+                "pg_registration"
+            ),
+        },
+        category="success" if ok else "danger"
+    )
+
+
+@pg_bp.route("/members/<pg_id>/submit-validation", methods=["POST"])
+@login_required
+@roles_required("PG_DATA_ENTRY", "CADRE_CC")
+@require_unlocked_period(scope='pg')
+def submit_member_registration_validation(pg_id):
+    db = current_app.mongo_db
+    pg = _load_pg_for_validation(db, pg_id)
+
+    if not pg:
+        return _validation_json_or_redirect(
+            False,
+            "PG not found.",
+            status=404,
+            redirect_to=url_for("pg.pg_home")
+        )
+
+    ok, message, status = _submit_validation(db, pg, "member_registration")
+
+    return _validation_json_or_redirect(
+        ok,
+        message,
+        status=status,
+        redirect_to=url_for("pg.pg_members", pg_id=str(pg["_id"])),
+        extra={
+            "pg_id": str(pg["_id"]),
+            "form_type": "member_registration",
+            "validation_status": _validation_status(
+                current_app.mongo_db.pgs.find_one({"_id": pg["_id"]}) or pg,
+                "member_registration"
+            ),
+        },
+        category="success" if ok else "danger"
+    )
+
+
+@pg_bp.route("/validation/queue", methods=["GET"])
+@login_required
+@roles_required("BLOCK_ADMIN")
+def validation_queue():
+    """
+    Block Admin validation queue.
+
+    Shows PG Registration and Membership Registration forms submitted/resubmitted
+    by PG logins under the logged-in Block Admin's block.
+    """
+    db = current_app.mongo_db
+    block_id = getattr(g, "block_id", None) or session.get("block_id")
+
+    if not block_id or not ObjectId.is_valid(str(block_id)):
+        flash("Your account is not mapped to a valid block.", "danger")
+        return redirect(url_for("reports.hierarchy_dashboard"))
+
+    block_oid = ObjectId(str(block_id))
+
+    query = {
+        "block_id": block_oid,
+        "$or": [
+            {"registration_validation.status": {"$in": list(VALIDATION_PENDING_STATUSES)}},
+            {"member_registration_validation.status": {"$in": list(VALIDATION_PENDING_STATUSES)}},
+        ]
+    }
+
+    pgs = list(db.pgs.find(query).sort([
+        ("registration_validation.submitted_at", -1),
+        ("member_registration_validation.submitted_at", -1),
+        ("updated_at", -1),
+    ]))
+
+    rows = []
+    for pg in pgs:
+        reg_doc = _validation_doc(pg, "pg_registration")
+        mem_doc = _validation_doc(pg, "member_registration")
+
+        if str(reg_doc.get("status") or "").lower() in VALIDATION_PENDING_STATUSES:
+            rows.append({
+                "pg": pg,
+                "form_type": "pg_registration",
+                "form_label": _validation_label("pg_registration"),
+                "status": reg_doc.get("status") or "submitted",
+                "submitted_at": reg_doc.get("submitted_at"),
+                "remarks": reg_doc.get("remarks") or "",
+            })
+
+        if str(mem_doc.get("status") or "").lower() in VALIDATION_PENDING_STATUSES:
+            rows.append({
+                "pg": pg,
+                "form_type": "member_registration",
+                "form_label": _validation_label("member_registration"),
+                "status": mem_doc.get("status") or "submitted",
+                "submitted_at": mem_doc.get("submitted_at"),
+                "remarks": mem_doc.get("remarks") or "",
+            })
+
+    if _wants_json_response():
+        return jsonify({
+            "ok": True,
+            "rows": [
+                {
+                    "pg_id": str(row["pg"].get("_id")),
+                    "pg_name": row["pg"].get("name") or row["pg"].get("pg_name") or "",
+                    "form_type": row["form_type"],
+                    "form_label": row["form_label"],
+                    "status": row["status"],
+                    "submitted_at": row["submitted_at"].isoformat() if isinstance(row["submitted_at"], datetime) else row["submitted_at"],
+                    "review_url": url_for("pg.validation_review", form_type=row["form_type"], pg_id=str(row["pg"].get("_id"))),
+                }
+                for row in rows
+            ],
+            "count": len(rows),
+        }), 200
+
+    return render_template(
+        "block/validation_queue.html",
+        rows=rows,
+        pending_count=len(rows),
+    )
+
+
+@pg_bp.route("/validation/<form_type>/<pg_id>/review", methods=["GET"])
+@login_required
+@roles_required("BLOCK_ADMIN")
+def validation_review(form_type, pg_id):
+    """
+    Block Admin review page for PG Registration or Membership Registration.
+    """
+    db = current_app.mongo_db
+
+    if form_type not in VALIDATION_FORM_TYPES:
+        flash("Invalid validation form type.", "danger")
+        return redirect(url_for("pg.validation_queue"))
+
+    pg = _load_pg_for_validation(db, pg_id)
+
+    if not pg:
+        flash("PG not found.", "danger")
+        return redirect(url_for("pg.validation_queue"))
+
+    if not _block_admin_can_validate_pg(pg):
+        flash("This PG is not under your Block.", "danger")
+        return redirect(url_for("pg.validation_queue"))
+
+    validation = _validation_doc(pg, form_type)
+    status = str(validation.get("status") or "draft").lower()
+
+    members = []
+    if form_type == "member_registration":
+        members = list(db.pg_members.find({
+            "pg_id": pg["_id"],
+            "$or": [
+                {"is_active": True},
+                {"is_active": {"$exists": False}},
+            ]
+        }).sort("name", 1))
+
+    if _wants_json_response():
+        return jsonify({
+            "ok": True,
+            "pg": {
+                "_id": str(pg.get("_id")),
+                "name": pg.get("name") or pg.get("pg_name") or "",
+                "sector": pg.get("sector") or "",
+                "status": pg.get("status") or "draft",
+            },
+            "form_type": form_type,
+            "form_label": _validation_label(form_type),
+            "validation": {
+                **validation,
+                "submitted_at": validation.get("submitted_at").isoformat() if isinstance(validation.get("submitted_at"), datetime) else validation.get("submitted_at"),
+                "reviewed_at": validation.get("reviewed_at").isoformat() if isinstance(validation.get("reviewed_at"), datetime) else validation.get("reviewed_at"),
+            },
+            "status": status,
+            "members_count": len(members),
+        }), 200
+
+    return render_template(
+        "block/validation_review.html",
+        pg=pg,
+        form_type=form_type,
+        form_label=_validation_label(form_type),
+        validation=validation,
+        validation_status=status,
+        members=members,
+        form_url=_validation_form_url(form_type, pg["_id"]),
+    )
+
+
+@pg_bp.route("/validation/<form_type>/<pg_id>/approve", methods=["POST"])
+@login_required
+@roles_required("BLOCK_ADMIN")
+def validation_approve(form_type, pg_id):
+    db = current_app.mongo_db
+
+    if form_type not in VALIDATION_FORM_TYPES:
+        return _validation_json_or_redirect(
+            False,
+            "Invalid validation form type.",
+            status=400,
+            redirect_to=url_for("pg.validation_queue")
+        )
+
+    pg = _load_pg_for_validation(db, pg_id)
+    if not pg:
+        return _validation_json_or_redirect(
+            False,
+            "PG not found.",
+            status=404,
+            redirect_to=url_for("pg.validation_queue")
+        )
+
+    remarks = request.form.get("remarks", "") if not request.is_json else (request.get_json(silent=True) or {}).get("remarks", "")
+    ok, message, status = _review_validation(db, pg, form_type, "approve", remarks)
+
+    return _validation_json_or_redirect(
+        ok,
+        message,
+        status=status,
+        redirect_to=url_for("pg.validation_queue"),
+        extra={
+            "pg_id": str(pg["_id"]),
+            "form_type": form_type,
+            "validation_status": _validation_status(
+                current_app.mongo_db.pgs.find_one({"_id": pg["_id"]}) or pg,
+                form_type
+            ),
+        },
+        category="success" if ok else "danger"
+    )
+
+
+@pg_bp.route("/validation/<form_type>/<pg_id>/reject", methods=["POST"])
+@login_required
+@roles_required("BLOCK_ADMIN")
+def validation_reject(form_type, pg_id):
+    db = current_app.mongo_db
+
+    if form_type not in VALIDATION_FORM_TYPES:
+        return _validation_json_or_redirect(
+            False,
+            "Invalid validation form type.",
+            status=400,
+            redirect_to=url_for("pg.validation_queue")
+        )
+
+    pg = _load_pg_for_validation(db, pg_id)
+    if not pg:
+        return _validation_json_or_redirect(
+            False,
+            "PG not found.",
+            status=404,
+            redirect_to=url_for("pg.validation_queue")
+        )
+
+    if request.is_json:
+        body = request.get_json(silent=True) or {}
+        remarks = body.get("remarks", "")
+    else:
+        remarks = request.form.get("remarks", "")
+
+    ok, message, status = _review_validation(db, pg, form_type, "reject", remarks)
+
+    redirect_to = (
+        url_for("pg.validation_review", form_type=form_type, pg_id=str(pg["_id"]))
+        if not ok else url_for("pg.validation_queue")
+    )
+
+    return _validation_json_or_redirect(
+        ok,
+        message,
+        status=status,
+        redirect_to=redirect_to,
+        extra={
+            "pg_id": str(pg["_id"]),
+            "form_type": form_type,
+            "validation_status": _validation_status(
+                current_app.mongo_db.pgs.find_one({"_id": pg["_id"]}) or pg,
+                form_type
+            ),
+        },
+        category="success" if ok else "danger"
+    )
 

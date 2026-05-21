@@ -107,6 +107,53 @@
     text-align:center;
   }
 
+  .rp-scope-pill{
+    width:max-content;
+    max-width:100%;
+    margin:10px auto 0;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:7px 11px;
+    border-radius:999px;
+    background:rgba(236,253,245,.95);
+    border:1px solid rgba(16,185,129,.28);
+    color:#0b4d3a;
+    font-size:12px;
+    font-weight:950;
+  }
+
+  .rp-scope-dot{
+    width:8px;
+    height:8px;
+    border-radius:999px;
+    background:#16a34a;
+    box-shadow:0 0 0 4px rgba(22,163,74,.12);
+    flex-shrink:0;
+  }
+
+  .rp-scope-note{
+    margin-top:10px;
+    padding:10px 12px;
+    border-radius:14px;
+    background:rgba(236,253,245,.78);
+    border:1px dashed rgba(16,185,129,.32);
+    color:#0b4d3a;
+    font-size:12px;
+    font-weight:850;
+    line-height:1.45;
+    text-align:center;
+  }
+
+  .rp-grid select:disabled,
+  .rp-grid input:disabled{
+    background:#f8fafc;
+    color:#64748b;
+    cursor:not-allowed;
+    opacity:1;
+  }
+
   .rp-kpis{
     display:flex;
     gap:.7rem;
@@ -814,7 +861,30 @@
       <div class="rp-head-row">
         <div class="rp-headbox">
           <div class="rp-title" id="rpTitle">Lakhpati Didi — Report</div>
-          <div class="rp-sub" id="rpSub">Filter by State → District → Block → GP → Village → PG • Search member name • Download CSV</div>
+          <div class="rp-sub" id="rpSub">Filter by State → District → Block → CLF → GP → Village → PG • Search member name • Download CSV</div>
+          <div class="rp-scope-pill" id="rpScopePill">
+            <span class="rp-scope-dot"></span>
+            <span id="rpScopeText">
+              {% if hub_role == 'CLF_ADMIN' or role == 'CLF_ADMIN' %}
+                CLF Scope: Assigned/Mapped PGs only
+              {% elif hub_role == 'BLOCK_ADMIN' or role == 'BLOCK_ADMIN' %}
+                Block Scope
+              {% elif hub_role == 'DISTRICT_ADMIN' or role == 'DISTRICT_ADMIN' %}
+                District Scope
+              {% elif hub_role in ['ADMIN', 'STATE_ADMIN'] or role in ['ADMIN', 'STATE_ADMIN'] %}
+                State Scope
+              {% elif hub_role == 'PG_DATA_ENTRY' or role == 'PG_DATA_ENTRY' %}
+                PG Scope
+              {% else %}
+                Jurisdiction Scope
+              {% endif %}
+            </span>
+          </div>
+          {% if hub_role == 'CLF_ADMIN' or role == 'CLF_ADMIN' %}
+            <div class="rp-scope-note" id="rpClfScopeNote">
+              This report is restricted to assigned/mapped CLF PG members only. Outside-scope member records cannot be viewed or exported.
+            </div>
+          {% endif %}
         </div>
         <div class="rp-kpis">
           <div class="kpi"><span id="rpTotalLbl">Total</span>: {{ total }}</div>
@@ -827,6 +897,14 @@
         <div class="rp-card-head" id="rpFiltersTitle">Filters</div>
         <div class="rp-body">
           <form method="GET">
+            {% if hub_locked_fields is defined %}
+              {% if "state" in hub_locked_fields %}<input type="hidden" name="state" value="{{ filters.State }}" />{% endif %}
+              {% if "district" in hub_locked_fields %}<input type="hidden" name="district" value="{{ filters.District }}" />{% endif %}
+              {% if "block" in hub_locked_fields %}<input type="hidden" name="block" value="{{ filters.Block }}" />{% endif %}
+              {% if "gp" in hub_locked_fields %}<input type="hidden" name="gp" value="{{ filters['Gram Panchayat'] }}" />{% endif %}
+              {% if "village" in hub_locked_fields %}<input type="hidden" name="village" value="{{ filters.Village }}" />{% endif %}
+              {% if "pg_name" in hub_locked_fields %}<input type="hidden" name="pg_name" value="{{ filters.pg_name }}" />{% endif %}
+            {% endif %}
             <div class="rp-section">
               <div class="rp-grid">
                 <div class="f">
@@ -846,6 +924,7 @@
                     <option value="" {% if not group_by %}selected{% endif %} id="rpOptDetailCsv">(Detail CSV)</option>
                     <option value="District" {% if group_by=='District' %}selected{% endif %} id="rpOptDistrict">District</option>
                     <option value="Block" {% if group_by=='Block' %}selected{% endif %} id="rpOptBlock">Block</option>
+                    <option value="CLF" {% if group_by=='CLF' %}selected{% endif %} id="rpOptClf">CLF</option>
                     <option value="Gram Panchayat" {% if group_by=='Gram Panchayat' %}selected{% endif %} id="rpOptGp">Gram Panchayat</option>
                     <option value="Village" {% if group_by=='Village' %}selected{% endif %} id="rpOptVillage">Village</option>
                     <option value="PG" {% if group_by=='PG' %}selected{% endif %} id="rpOptPg">PG</option>
@@ -854,7 +933,7 @@
 
                 <div class="f">
                   <label id="rpLblState">State</label>
-                  <select name="state">
+                  <select name="state" {% if "state" in (hub_locked_fields or []) %}disabled{% endif %}>
                     <option value="" id="rpOptAllState">All</option>
                     {% for s in states %}<option value="{{ s }}" {% if filters.State==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
                   </select>
@@ -862,7 +941,7 @@
 
                 <div class="f">
                   <label id="rpLblDistrict2">District</label>
-                  <select name="district">
+                  <select name="district" {% if "district" in (hub_locked_fields or []) %}disabled{% endif %}>
                     <option value="" id="rpOptAllDistrict">All</option>
                     {% for s in districts %}<option value="{{ s }}" {% if filters.District==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
                   </select>
@@ -870,7 +949,7 @@
 
                 <div class="f">
                   <label id="rpLblBlock2">Block</label>
-                  <select name="block">
+                  <select name="block" {% if "block" in (hub_locked_fields or []) %}disabled{% endif %}>
                     <option value="" id="rpOptAllBlock">All</option>
                     {% for s in blocks %}<option value="{{ s }}" {% if filters.Block==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
                   </select>
@@ -878,7 +957,7 @@
 
                 <div class="f">
                   <label id="rpLblGp2">Gram Panchayat</label>
-                  <select name="gp">
+                  <select name="gp" {% if "gp" in (hub_locked_fields or []) %}disabled{% endif %}>
                     <option value="" id="rpOptAllGp">All</option>
                     {% for s in gps %}<option value="{{ s }}" {% if filters['Gram Panchayat']==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
                   </select>
@@ -886,7 +965,7 @@
 
                 <div class="f">
                   <label id="rpLblVillage2">Village</label>
-                  <select name="village">
+                  <select name="village" {% if "village" in (hub_locked_fields or []) %}disabled{% endif %}>
                     <option value="" id="rpOptAllVillage">All</option>
                     {% for s in villages %}<option value="{{ s }}" {% if filters.Village==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
                   </select>
@@ -894,7 +973,7 @@
 
                 <div class="f wide">
                   <label id="rpLblPgName">PG Name</label>
-                  <input type="text" name="pg_name" value="{{ filters.pg_name }}" placeholder="Search PG name…" id="rpPhPgName" />
+                  <input type="text" name="pg_name" value="{{ filters.pg_name }}" placeholder="Search PG name…" id="rpPhPgName" {% if "pg_name" in (hub_locked_fields or []) %}disabled{% endif %} />
                 </div>
 
                 <div class="f wide">
@@ -951,6 +1030,7 @@
                 <th id="rpThPg">PG</th>
                 <th id="rpThDistrict">District</th>
                 <th id="rpThBlock">Block</th>
+                <th id="rpThClf">CLF</th>
                 <th id="rpThGp">Gram Panchayat</th>
                 <th id="rpThVillage">Village</th>
                 <th id="rpThCreated">Created</th>
@@ -968,6 +1048,7 @@
                       (r['PG Name'] or '') ~ ' ' ~
                       (r['District'] or '') ~ ' ' ~
                       (r['Block'] or '') ~ ' ' ~
+                      (r['CLF'] or r['CLF Name'] or '') ~ ' ' ~
                       (r['Gram Panchayat'] or '') ~ ' ' ~
                       (r['Village'] or '') ~ ' ' ~
                       (r['Created At'] or '')
@@ -979,6 +1060,7 @@
                   <td>{{ r['PG Name'] or '—' }}</td>
                   <td>{{ r['District'] or '—' }}</td>
                   <td>{{ r['Block'] or '—' }}</td>
+                  <td>{{ r['CLF'] or r['CLF Name'] or '—' }}</td>
                   <td>{{ r['Gram Panchayat'] or '—' }}</td>
                   <td>{{ r['Village'] or '—' }}</td>
                   <td>{{ r['Created At'] or '—' }}</td>
@@ -986,7 +1068,7 @@
                 {% endfor %}
               {% else %}
                 <tr id="rpNoTableDataRow">
-                  <td class="rp-empty" colspan="10" id="rpEmpty">No Lakhpati Didi members found for the selected filters.</td>
+                  <td class="rp-empty" colspan="11" id="rpEmpty">No Lakhpati Didi members found for the selected filters.</td>
                 </tr>
               {% endif %}
             </tbody>
@@ -1031,6 +1113,10 @@
                   <div class="rp-kv">
                     <b class="rpMobBlockLbl">Block</b>
                     <span>{{ r['Block'] or '—' }}</span>
+                  </div>
+                  <div class="rp-kv">
+                    <b class="rpMobClfLbl">CLF</b>
+                    <span>{{ r['CLF'] or r['CLF Name'] or '—' }}</span>
                   </div>
                   <div class="rp-kv">
                     <b class="rpMobGpLbl">Gram Panchayat</b>
@@ -1079,6 +1165,10 @@
                     <span>—</span>
                   </div>
                   <div class="rp-kv">
+                    <b class="rpMobClfLbl">CLF</b>
+                    <span>—</span>
+                  </div>
+                  <div class="rp-kv">
                     <b class="rpMobGpLbl">Gram Panchayat</b>
                     <span>—</span>
                   </div>
@@ -1117,11 +1207,18 @@
 
 <script>
   (function(){
+    const RP_ROLE = "{{ hub_role if hub_role is defined else (role if role is defined else session.get('role','')) }}";
     const RP_T = {
       en: {
         title: "Lakhpati Didi — Report",
         backAria: "Go Back",
-        sub: "Filter by State → District → Block → GP → Village → PG • Search member name • Download CSV",
+        sub: "Filter by State → District → Block → CLF → GP → Village → PG • Search member name • Download CSV",
+        scopeClf: "CLF Scope: Assigned/Mapped PGs only",
+        scopeBlock: "Block Scope",
+        scopeDistrict: "District Scope",
+        scopeState: "State Scope",
+        scopePg: "PG Scope",
+        scopeDefault: "Jurisdiction Scope",
         total: "Total",
 
         filtersTitle: "Filters",
@@ -1136,6 +1233,7 @@
         detailCsv: "(Detail CSV)",
         district: "District",
         block: "Block",
+        clf: "CLF",
         gp: "Gram Panchayat",
         village: "Village",
         pg: "PG",
@@ -1169,7 +1267,13 @@
       bn: {
         title: "লাখপতি দিদি — রিপোর্ট",
         backAria: "ফিরে যান",
-        sub: "State → District → Block → GP → Village → PG অনুযায়ী ফিল্টার করুন • সদস্যের নাম খুঁজুন • CSV ডাউনলোড করুন",
+        sub: "State → District → Block → CLF → GP → Village → PG অনুযায়ী ফিল্টার করুন • সদস্যের নাম খুঁজুন • CSV ডাউনলোড করুন",
+        scopeClf: "CLF Scope: Assigned/Mapped PGs only",
+        scopeBlock: "Block Scope",
+        scopeDistrict: "District Scope",
+        scopeState: "State Scope",
+        scopePg: "PG Scope",
+        scopeDefault: "Jurisdiction Scope",
         total: "মোট",
 
         filtersTitle: "ফিল্টার",
@@ -1184,6 +1288,7 @@
         detailCsv: "(ডিটেইল CSV)",
         district: "জেলা",
         block: "ব্লক",
+        clf: "CLF",
         gp: "গ্রাম পঞ্চায়েত",
         village: "গ্রাম",
         pg: "পিজি",
@@ -1442,6 +1547,16 @@
 
       safeText('rpTitle', t.title);
       safeText('rpSub', t.sub);
+
+      const scopeText = document.getElementById('rpScopeText');
+      if(scopeText){
+        if(RP_ROLE === 'CLF_ADMIN') scopeText.textContent = t.scopeClf;
+        else if(RP_ROLE === 'BLOCK_ADMIN') scopeText.textContent = t.scopeBlock;
+        else if(RP_ROLE === 'DISTRICT_ADMIN') scopeText.textContent = t.scopeDistrict;
+        else if(RP_ROLE === 'ADMIN' || RP_ROLE === 'STATE_ADMIN') scopeText.textContent = t.scopeState;
+        else if(RP_ROLE === 'PG_DATA_ENTRY') scopeText.textContent = t.scopePg;
+        else scopeText.textContent = t.scopeDefault;
+      }
       safeText('rpTotalLbl', t.total);
 
       safeText('rpFiltersTitle', t.filtersTitle);
@@ -1456,6 +1571,7 @@
       safeText('rpOptDetailCsv', t.detailCsv);
       safeText('rpOptDistrict', t.district);
       safeText('rpOptBlock', t.block);
+      safeText('rpOptClf', t.clf);
       safeText('rpOptGp', t.gp);
       safeText('rpOptVillage', t.village);
       safeText('rpOptPg', t.pg);
@@ -1489,6 +1605,7 @@
       safeText('rpThPg', t.pg);
       safeText('rpThDistrict', t.district);
       safeText('rpThBlock', t.block);
+      safeText('rpThClf', t.clf);
       safeText('rpThGp', t.gp);
       safeText('rpThVillage', t.village);
       safeText('rpThCreated', t.created);
@@ -1506,6 +1623,7 @@
       safeText('rpMobPgLbl', t.pg);
       safeTextAll('.rpMobDistrictLbl', t.district);
       safeTextAll('.rpMobBlockLbl', t.block);
+      safeTextAll('.rpMobClfLbl', t.clf);
       safeTextAll('.rpMobGpLbl', t.gp);
       safeTextAll('.rpMobVillageLbl', t.village);
       safeTextAll('.rpMobCreatedLbl', t.created);

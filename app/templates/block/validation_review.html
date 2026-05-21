@@ -1,0 +1,568 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .review-page {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .review-hero {
+    background:
+      radial-gradient(circle at 12% 12%, rgba(255,255,255,.18), transparent 42%),
+      linear-gradient(135deg, #064e3b, #198754);
+    color: #fff;
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow: 0 18px 42px rgba(6, 78, 59, .22);
+  }
+
+  .review-hero h3 {
+    margin: 0;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+  }
+
+  .review-hero p {
+    margin: 8px 0 0;
+    color: rgba(255,255,255,.86);
+    font-weight: 600;
+  }
+
+  .hero-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 7px 12px;
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.18);
+    color: #fff;
+    font-size: .82rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .hero-actions .btn {
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: .84rem;
+  }
+
+  .soft-card {
+    background: #fff;
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(15,23,42,.07);
+    overflow: hidden;
+  }
+
+  .card-head {
+    padding: 16px 18px;
+    border-bottom: 1px solid #e9eef3;
+    background: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .card-head h5 {
+    margin: 0;
+    font-weight: 900;
+    color: #0f172a;
+    font-size: 1rem;
+  }
+
+  .card-head p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: .84rem;
+    font-weight: 600;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .info-box {
+    border: 1px solid #e6ecef;
+    background: #f8fafc;
+    border-radius: 14px;
+    padding: 12px 14px;
+    min-height: 76px;
+  }
+
+  .info-box small {
+    display: block;
+    color: #64748b;
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    font-weight: 850;
+    margin-bottom: 5px;
+  }
+
+  .info-box strong {
+    color: #0f172a;
+    font-weight: 850;
+    word-break: break-word;
+  }
+
+  .badge-soft {
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: .72rem;
+    font-weight: 850;
+  }
+
+  .action-btn {
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: .84rem;
+  }
+
+  .approval-panel {
+    position: sticky;
+    bottom: 12px;
+    z-index: 10;
+    background: rgba(255,255,255,.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 16px 36px rgba(15,23,42,.14);
+  }
+
+  .reject-box textarea {
+    border-radius: 14px;
+    min-height: 92px;
+    resize: vertical;
+    font-size: .9rem;
+    font-weight: 650;
+  }
+
+  .table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+
+  .table td {
+    vertical-align: middle;
+  }
+
+  .member-name {
+    font-weight: 850;
+    color: #0f172a;
+  }
+
+  .text-soft {
+    color: #64748b;
+  }
+
+  .empty-state {
+    padding: 42px 18px;
+    text-align: center;
+    color: #64748b;
+  }
+
+  .mobile-member-list {
+    display: none;
+  }
+
+  .mobile-member-card {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 20px rgba(15,23,42,.06);
+  }
+
+  @media (max-width: 1100px) {
+    .info-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 767px) {
+    .review-hero {
+      padding: 18px;
+      border-radius: 18px;
+    }
+
+    .review-hero h3 {
+      font-size: 1.2rem;
+    }
+
+    .hero-actions {
+      width: 100%;
+    }
+
+    .hero-actions .btn {
+      width: 100%;
+    }
+
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .desktop-table-wrap {
+      display: none;
+    }
+
+    .mobile-member-list {
+      display: block;
+    }
+
+    .approval-panel .btn {
+      width: 100%;
+    }
+  }
+</style>
+
+{% set status = validation.status or 'submitted' %}
+{% set remarks = validation.remarks or '' %}
+
+<div class="review-page">
+  <div class="review-hero mb-4">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <h3>{{ form_label or 'Validation Review' }}</h3>
+        <p>
+          Review submitted details for <b>{{ pg.name or pg.pg_name or 'Unnamed PG' }}</b>.
+          Approve if correct, or reject with correction remarks.
+        </p>
+      </div>
+
+      <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
+        <span class="hero-pill">
+          Status: {{ status|capitalize }}
+        </span>
+
+        <div class="hero-actions">
+          <a href="{{ url_for('pg.validation_queue') }}" class="btn btn-light btn-sm">
+            Back to Queue
+          </a>
+          <a href="{{ url_for('reports.hierarchy_dashboard') }}" class="btn btn-outline-light btn-sm">
+            Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="soft-card mb-4">
+    <div class="card-head">
+      <div>
+        <h5>PG Information</h5>
+        <p>Basic mapped details of the submitted PG.</p>
+      </div>
+
+      {% if status == 'resubmitted' %}
+        <span class="badge text-bg-warning badge-soft">Resubmitted</span>
+      {% elif status == 'submitted' %}
+        <span class="badge text-bg-primary badge-soft">Submitted</span>
+      {% elif status == 'approved' %}
+        <span class="badge text-bg-success badge-soft">Approved</span>
+      {% elif status == 'rejected' %}
+        <span class="badge text-bg-danger badge-soft">Rejected</span>
+      {% else %}
+        <span class="badge text-bg-light border badge-soft">{{ status|capitalize }}</span>
+      {% endif %}
+    </div>
+
+    <div class="p-3">
+      <div class="info-grid">
+        <div class="info-box">
+          <small>PG Name</small>
+          <strong>{{ pg.name or pg.pg_name or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Form Type</small>
+          <strong>{{ form_label or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Sector</small>
+          <strong>{{ pg.sector or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>District</small>
+          <strong>{{ pg.District or pg.district_name or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Block</small>
+          <strong>{{ pg.Block or pg.block_name or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Gram Panchayat</small>
+          <strong>{{ pg['Gram Panchayat'] or pg.gp_name or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Village</small>
+          <strong>{{ pg.Village or pg.village or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Submitted At</small>
+          <strong>
+            {% if validation.submitted_at %}
+              {{ validation.submitted_at.strftime('%d-%m-%Y %I:%M %p') if validation.submitted_at.strftime is defined else validation.submitted_at }}
+            {% else %}
+              -
+            {% endif %}
+          </strong>
+        </div>
+
+        <div class="info-box">
+          <small>Previous Remarks</small>
+          <strong>{{ remarks if remarks else 'No remarks' }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if form_type == 'pg_registration' %}
+    <div class="soft-card mb-4">
+      <div class="card-head">
+        <div>
+          <h5>PG Registration Details</h5>
+          <p>Exact filled registration details submitted by the PG.</p>
+        </div>
+      </div>
+
+      <div class="p-3">
+        <div class="info-grid">
+          <div class="info-box">
+            <small>PG Type</small>
+            <strong>{{ pg.pg_type or '-' }}</strong>
+          </div>
+
+          <div class="info-box">
+            <small>Formation Date</small>
+            <strong>{{ pg.formation_date or '-' }}</strong>
+          </div>
+
+          <div class="info-box">
+            <small>Contact Number</small>
+            <strong>{{ pg.office_bearers.contact_number if pg.office_bearers else '-' }}</strong>
+          </div>
+
+          <div class="info-box">
+            <small>Bank Name</small>
+            <strong>{{ pg.bank_details.bank_name if pg.bank_details else '-' }}</strong>
+          </div>
+
+          <div class="info-box">
+            <small>Branch</small>
+            <strong>{{ pg.bank_details.branch if pg.bank_details else '-' }}</strong>
+          </div>
+
+          <div class="info-box">
+            <small>Account Number</small>
+            <strong>{{ pg.bank_details.account_number if pg.bank_details else '-' }}</strong>
+          </div>
+
+          <div class="info-box">
+            <small>IFSC</small>
+            <strong>{{ pg.bank_details.ifsc if pg.bank_details else '-' }}</strong>
+          </div>
+
+          <div class="info-box">
+            <small>Aggregation Centre</small>
+            <strong>{{ pg.aggregation_centre.name if pg.aggregation_centre else '-' }}</strong>
+          </div>
+
+          <div class="info-box">
+            <small>Aggregation Address</small>
+            <strong>{{ pg.aggregation_centre.address if pg.aggregation_centre else '-' }}</strong>
+          </div>
+
+          <div class="info-box">
+            <small>Total Members</small>
+            <strong>{{ pg.total_members or members|length or 0 }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="soft-card mb-4">
+    <div class="card-head">
+      <div>
+        <h5>Selected / Registered Members</h5>
+        <p>Members linked with this PG registration.</p>
+      </div>
+
+      <span class="badge text-bg-light border badge-soft">
+        {{ members|length }} Member{{ '' if members|length == 1 else 's' }}
+      </span>
+    </div>
+
+    <div class="desktop-table-wrap">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th style="width: 60px;">#</th>
+            <th>Member</th>
+            <th>Spouse / Parent</th>
+            <th>Category</th>
+            <th>SHG</th>
+            <th>Contact</th>
+            <th>Bank</th>
+            <th>Account</th>
+            <th>Fee</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for m in members %}
+            <tr>
+              <td>{{ loop.index }}</td>
+
+              <td>
+                <div class="member-name">{{ m.name or m.member_name or m['Member Name'] or '-' }}</div>
+                <small class="text-soft">
+                  {{ m.member_code or m['Member Code'] or m.member_id or '-' }}
+                </small>
+              </td>
+
+              <td>{{ m.spouse_name or m['Father/Mother/Spouse Name'] or '-' }}</td>
+              <td>{{ m.category or m['Social Category'] or '-' }}</td>
+              <td>{{ m.shg_name or m['SHG Name'] or '-' }}</td>
+              <td>{{ m.contact or '-' }}</td>
+              <td>{{ m.bank_name or '-' }}</td>
+              <td>{{ m.account_number or '-' }}</td>
+              <td>{{ m.membership_fee_paid or '-' }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="9">
+                <div class="empty-state">
+                  <strong>No members found.</strong>
+                  <div>No member data is currently linked with this PG.</div>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mobile-member-list p-3">
+      {% for m in members %}
+        <div class="mobile-member-card">
+          <div class="member-name">{{ m.name or m.member_name or m['Member Name'] or '-' }}</div>
+          <small class="text-soft">
+            {{ m.member_code or m['Member Code'] or m.member_id or '-' }}
+          </small>
+
+          <div class="small text-soft mt-2">
+            <div><strong>Spouse/Parent:</strong> {{ m.spouse_name or m['Father/Mother/Spouse Name'] or '-' }}</div>
+            <div><strong>Category:</strong> {{ m.category or m['Social Category'] or '-' }}</div>
+            <div><strong>SHG:</strong> {{ m.shg_name or m['SHG Name'] or '-' }}</div>
+            <div><strong>Contact:</strong> {{ m.contact or '-' }}</div>
+            <div><strong>Bank:</strong> {{ m.bank_name or '-' }}</div>
+            <div><strong>Account:</strong> {{ m.account_number or '-' }}</div>
+            <div><strong>Fee:</strong> {{ m.membership_fee_paid or '-' }}</div>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <strong>No members found.</strong>
+          <div>No member data is currently linked with this PG.</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="approval-panel">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <strong>Validation Decision</strong>
+        <div class="small text-soft">
+          Approve if all details are correct. Reject only with clear remarks so PG can correct and resubmit.
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2">
+        <form
+          method="post"
+          action="{{ url_for('pg.validation_approve', form_type=form_type, pg_id=pg._id|string) }}"
+          onsubmit="return confirm('Approve this {{ form_label }}?');"
+        >
+          <button type="submit" class="btn btn-success action-btn px-4">
+            Approve
+          </button>
+        </form>
+
+        <button
+          type="button"
+          class="btn btn-outline-danger action-btn px-4"
+          data-bs-toggle="collapse"
+          data-bs-target="#rejectDecisionBox"
+          aria-expanded="false"
+        >
+          Reject
+        </button>
+      </div>
+    </div>
+
+    <div class="collapse reject-box mt-3" id="rejectDecisionBox">
+      <form
+        method="post"
+        action="{{ url_for('pg.validation_reject', form_type=form_type, pg_id=pg._id|string) }}"
+        onsubmit="return validateFinalReject(this);"
+      >
+        <label class="form-label fw-bold">Correction Remarks</label>
+        <textarea
+          name="remarks"
+          class="form-control mb-2"
+          placeholder="Write exact changes/corrections needed from PG..."
+          required
+        ></textarea>
+
+        <button type="submit" class="btn btn-danger action-btn">
+          Reject & Send Back to PG
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function validateFinalReject(form) {
+    const remarks = form.querySelector('[name="remarks"]');
+    const value = remarks ? remarks.value.trim() : "";
+
+    if (!value) {
+      alert("Please write rejection remarks before sending the form back to PG.");
+      if (remarks) remarks.focus();
+      return false;
+    }
+
+    return confirm("Reject this form and send it back to PG for correction?");
+  }
+</script>
+{% endblock %}

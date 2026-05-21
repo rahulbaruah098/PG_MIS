@@ -764,10 +764,216 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
   }
 }
 
+/* ============================================================
+   PG VALIDATION STATUS STRIP
+   - Shows PG Registration + Membership validation status
+   - PG can quickly correct/resubmit rejected forms
+============================================================ */
+.pg-validation-strip{
+  width:100%;
+  max-width:80rem;
+  margin:0 auto 16px;
+  padding:0;
+  position:relative;
+  z-index:2;
+}
+
+.pg-validation-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+
+.pg-validation-card{
+  position:relative;
+  overflow:hidden;
+  border-radius:22px;
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(15,118,110,0.10), transparent 46%),
+    rgba(255,255,255,0.94);
+  border:1.5px solid rgba(191,230,210,0.95);
+  box-shadow:0 18px 42px rgba(6,95,70,0.12);
+  padding:16px;
+}
+
+.pg-validation-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background-image:radial-gradient(rgba(6,95,70,0.08) 0.7px, transparent 0.7px);
+  background-size:18px 18px;
+  opacity:.16;
+}
+
+.pg-validation-card > *{
+  position:relative;
+  z-index:1;
+}
+
+.pg-validation-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+
+.pg-validation-title{
+  font-size:15px;
+  line-height:1.25;
+  font-weight:900;
+  color:#0b2a23;
+}
+
+.pg-validation-sub{
+  margin-top:4px;
+  color:#4c7468;
+  font-size:12px;
+  font-weight:750;
+  line-height:1.35;
+}
+
+.pg-validation-status{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:92px;
+  padding:7px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  white-space:nowrap;
+  border:1px solid transparent;
+}
+
+.pg-validation-status.is-draft{
+  color:#475569;
+  background:#f8fafc;
+  border-color:#e2e8f0;
+}
+
+.pg-validation-status.is-submitted,
+.pg-validation-status.is-resubmitted{
+  color:#92400e;
+  background:#fffbeb;
+  border-color:#fde68a;
+}
+
+.pg-validation-status.is-approved{
+  color:#047857;
+  background:#ecfdf5;
+  border-color:#a7f3d0;
+}
+
+.pg-validation-status.is-rejected{
+  color:#be123c;
+  background:#fff1f2;
+  border-color:#fecdd3;
+}
+
+.pg-validation-remarks{
+  margin-top:10px;
+  border-radius:16px;
+  border:1px solid rgba(251,191,36,.45);
+  background:rgba(255,251,235,.92);
+  padding:10px 12px;
+  color:#78350f;
+  font-size:13px;
+  line-height:1.35;
+  font-weight:750;
+}
+
+.pg-validation-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+
+.pg-validation-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  padding:9px 13px;
+  min-height:38px;
+  border:1px solid rgba(15,118,110,.22);
+  background:rgba(15,118,110,.08);
+  color:#0b4d3a;
+  font-size:12px;
+  line-height:1;
+  font-weight:900;
+  text-decoration:none;
+  cursor:pointer;
+}
+
+.pg-validation-btn:hover{
+  background:rgba(15,118,110,.12);
+  color:#0b4d3a;
+}
+
+.pg-validation-btn.submit{
+  background:rgba(21,128,61,.94);
+  border-color:rgba(21,128,61,.94);
+  color:#fff;
+}
+
+.pg-validation-btn.submit:hover{
+  background:rgba(22,101,52,.96);
+  color:#fff;
+}
+
+.pg-validation-note{
+  margin-top:10px;
+  color:#4c7468;
+  font-size:12px;
+  font-weight:750;
+  line-height:1.35;
+}
+
+@media (max-width:768px){
+  .pg-validation-grid{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .pg-validation-card{
+    padding:14px;
+    border-radius:18px;
+  }
+
+  .pg-validation-head{
+    gap:10px;
+  }
+
+  .pg-validation-actions{
+    justify-content:stretch;
+  }
+
+  .pg-validation-actions form,
+  .pg-validation-actions a,
+  .pg-validation-actions button{
+    width:100%;
+  }
+}
+
+
   </style>
 {% endblock %}
 
 {% set PGID = (pg['_id']|string if pg and pg['_id'] else (session.get('pg_id') or session.get('active_pg_id'))) %}
+{% set _reg_validation = (pg.registration_validation if pg and pg.registration_validation is defined else {}) or {} %}
+{% set _member_validation = (pg.member_registration_validation if pg and pg.member_registration_validation is defined else {}) or {} %}
+{% set _reg_status = (_reg_validation.status if _reg_validation.status is defined else (pg.registration_validation_status if pg and pg.registration_validation_status is defined else 'draft')) or 'draft' %}
+{% set _member_status = (_member_validation.status if _member_validation.status is defined else (pg.member_registration_validation_status if pg and pg.member_registration_validation_status is defined else 'draft')) or 'draft' %}
+{% set _reg_remarks = (_reg_validation.remarks if _reg_validation.remarks is defined else '') or '' %}
+{% set _member_remarks = (_member_validation.remarks if _member_validation.remarks is defined else '') or '' %}
+
 {% block content %}
  <div id="pgDashboardGate" class="pg-gate">
   <!--  Welcome Heading under navbar -->
@@ -803,6 +1009,102 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
             data-i18n="dash_live_view"
             data-en="Dashboard • Live View"
             data-bn="ড্যাশবোর্ড • লাইভ ভিউ">Dashboard • Live View</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- PG Validation Status -->
+  <section class="pg-validation-strip">
+    <div class="pg-validation-grid">
+      <div class="pg-validation-card">
+        <div class="pg-validation-head">
+          <div>
+            <div class="pg-validation-title">PG Registration Validation</div>
+            <div class="pg-validation-sub">Block Admin approval status for your PG Registration Form.</div>
+          </div>
+          <span class="pg-validation-status is-{{ _reg_status|lower }}">
+            {{ _reg_status|replace('_', ' ')|capitalize }}
+          </span>
+        </div>
+
+        {% if _reg_status|lower == 'rejected' and _reg_remarks %}
+          <div class="pg-validation-remarks">
+            <strong>Correction Remarks:</strong> {{ _reg_remarks }}
+          </div>
+        {% elif _reg_status|lower in ['submitted', 'resubmitted'] %}
+          <div class="pg-validation-note">
+            Your PG Registration Form is submitted and waiting for Block Admin validation.
+          </div>
+        {% elif _reg_status|lower == 'approved' %}
+          <div class="pg-validation-note">
+            Your PG Registration Form has been approved. Editing is locked unless reopened by the authority.
+          </div>
+        {% else %}
+          <div class="pg-validation-note">
+            Complete your PG Registration Form and submit it for Block Admin validation.
+          </div>
+        {% endif %}
+
+        <div class="pg-validation-actions">
+          <a class="pg-validation-btn" href="{{ url_for('pg.pg_registration', pg_id=PGID) }}">
+            Open Registration
+          </a>
+
+          {% if _reg_status|lower in ['draft', 'rejected'] %}
+            <form method="post" action="{{ url_for('pg.submit_pg_registration_validation', pg_id=PGID) }}"
+                  onsubmit="return confirm('Submit PG Registration Form for Block Admin validation?');">
+              <button type="submit" class="pg-validation-btn submit">
+                Submit for Validation
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="pg-validation-card">
+        <div class="pg-validation-head">
+          <div>
+            <div class="pg-validation-title">Membership Registration Validation</div>
+            <div class="pg-validation-sub">Block Admin approval status for your PG Membership Register.</div>
+          </div>
+          <span class="pg-validation-status is-{{ _member_status|lower }}">
+            {{ _member_status|replace('_', ' ')|capitalize }}
+          </span>
+        </div>
+
+        {% if _member_status|lower == 'rejected' and _member_remarks %}
+          <div class="pg-validation-remarks">
+            <strong>Correction Remarks:</strong> {{ _member_remarks }}
+          </div>
+        {% elif _member_status|lower in ['submitted', 'resubmitted'] %}
+          <div class="pg-validation-note">
+            Your Membership Register is submitted and waiting for Block Admin validation.
+          </div>
+        {% elif _member_status|lower == 'approved' %}
+          <div class="pg-validation-note">
+            Your Membership Register has been approved. Editing is locked unless reopened by the authority.
+          </div>
+        {% else %}
+          <div class="pg-validation-note">
+            Complete the Membership Register and submit it for Block Admin validation.
+          </div>
+        {% endif %}
+
+        <div class="pg-validation-actions">
+          <a class="pg-validation-btn" href="{{ url_for('pg.pg_members', pg_id=PGID) }}">
+            Open Membership
+          </a>
+
+          {% if _member_status|lower in ['draft', 'rejected'] %}
+            <form method="post" action="{{ url_for('pg.submit_member_registration_validation', pg_id=PGID) }}"
+                  onsubmit="return confirm('Submit Membership Registration for Block Admin validation?');">
+              <button type="submit" class="pg-validation-btn submit">
+                Submit for Validation
+              </button>
+            </form>
+          {% endif %}
         </div>
       </div>
     </div>

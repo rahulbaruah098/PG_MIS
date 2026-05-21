@@ -8,10 +8,144 @@ from datetime import datetime
 from . import business_bp
 from ..rbac import login_required, roles_required
 
+
+BUSINESS_VIEW_ROLES = (
+    "PG_DATA_ENTRY",
+    "CLF_MANAGER",
+    "CLF_ADMIN",
+    "BLOCK_ADMIN",
+    "DISTRICT_ADMIN",
+    "ADMIN",
+    "SUPER_ADMIN",
+)
+
+BUSINESS_WRITE_ROLES = {
+    "PG_DATA_ENTRY",
+    "CLF_MANAGER",
+    "CLF_ADMIN",
+    "ADMIN",
+    "SUPER_ADMIN",
+}
+
+
+def _wants_json_response():
+    accept = (request.headers.get("Accept") or "").lower()
+    content_type = (request.content_type or "").lower()
+    requested_with = (request.headers.get("X-Requested-With") or "").lower()
+    return (
+        request.is_json
+        or "application/json" in accept
+        or "application/json" in content_type
+        or request.args.get("format") == "json"
+        or requested_with == "xmlhttprequest"
+    )
+
+
+def _to_object_id(value):
+    try:
+        if value and ObjectId.is_valid(str(value)):
+            return ObjectId(str(value))
+    except Exception:
+        pass
+    return None
+
+
+def _id_list(values):
+    out = []
+    for value in values or []:
+        oid = _to_object_id(value)
+        if oid:
+            out.append(oid)
+    return out
+
+
+def _business_error(message, status=403, redirect_endpoint="pg.pg_home"):
+    if _wants_json_response():
+        return jsonify({"success": False, "ok": False, "message": message}), status
+    flash(message, "danger" if status >= 400 else "warning")
+    return redirect(url_for(redirect_endpoint))
+
+
+def _get_scoped_pg(db, pg_obj_id):
+    """
+    Return PG only if it is inside the logged-in user's jurisdiction.
+
+    New CLF workflow:
+    - CLF_ADMIN/CLF_MANAGER can access only PGs mapped to own clf_id or explicitly assigned.
+    - BLOCK_ADMIN can view PGs under own block, but POST writes are blocked below.
+    - DISTRICT_ADMIN can view PGs under own district.
+    - PG_DATA_ENTRY can access only its own PG/active PG.
+    """
+    role = session.get("role") or ""
+    user_id = _to_object_id(session.get("user_id"))
+    state_id = _to_object_id(session.get("state_id"))
+    district_id = _to_object_id(session.get("district_id"))
+    block_id = _to_object_id(session.get("block_id"))
+    clf_id = _to_object_id(session.get("clf_id"))
+    own_pg_id = _to_object_id(session.get("pg_id") or session.get("active_pg_id"))
+    assigned_pg_ids = _id_list(session.get("assigned_pg_ids") or [])
+
+    q = {"_id": pg_obj_id}
+
+    if role in ("SUPER_ADMIN", "ADMIN"):
+        if role == "ADMIN" and state_id:
+            q["state_id"] = state_id
+        return db.pgs.find_one(q)
+
+    if role == "DISTRICT_ADMIN":
+        if not district_id:
+            return None
+        q["district_id"] = district_id
+        return db.pgs.find_one(q)
+
+    if role == "BLOCK_ADMIN":
+        if not block_id:
+            return None
+        q["block_id"] = block_id
+        return db.pgs.find_one(q)
+
+    if role in ("CLF_ADMIN", "CLF_MANAGER"):
+        scope_or = []
+        if clf_id:
+            scope_or.append({"clf_id": clf_id})
+        if user_id:
+            scope_or.append({"assigned_clf_user_id": user_id})
+        if assigned_pg_ids:
+            scope_or.append({"_id": {"$in": assigned_pg_ids}})
+        if not scope_or:
+            return None
+        q["$or"] = scope_or
+        return db.pgs.find_one(q)
+
+    if role == "PG_DATA_ENTRY":
+        if not own_pg_id or str(own_pg_id) != str(pg_obj_id):
+            return None
+        return db.pgs.find_one(q)
+
+    return None
+
+
+def _can_write_business(pg=None):
+    role = session.get("role") or ""
+    if role not in BUSINESS_WRITE_ROLES:
+        return False
+
+    if role == "PG_DATA_ENTRY" and pg:
+        own_pg_id = _to_object_id(session.get("pg_id") or session.get("active_pg_id"))
+        return bool(own_pg_id and str(own_pg_id) == str(pg.get("_id")))
+
+    return True
+
+
+def _guard_business_write(pg=None, message="This business module is view-only for your role."):
+    if _can_write_business(pg):
+        return None
+    return _business_error(message, 403)
+
 #changes made by atlanta
 @business_bp.route("/income_expenditure/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def income_expenditure(pg_id):
     db = current_app.mongo_db
@@ -46,7 +180,7 @@ def income_expenditure(pg_id):
         flash("Invalid PG ID.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    pg = db.pgs.find_one({"_id": pg_obj_id})
+    pg = _get_scoped_pg(db, pg_obj_id)
     if not pg:
         if wants_json():
             return jsonify({"success": False, "message": "PG not found."}), 404
@@ -56,6 +190,10 @@ def income_expenditure(pg_id):
     now = datetime.utcnow()
 
     if request.method == "POST":
+        write_denied = _guard_business_write(pg)
+        if write_denied:
+            return write_denied
+
         if request.is_json:
             src = request.get_json(silent=True) or {}
             year = ival(src, "year", now.year)
@@ -200,7 +338,7 @@ def income_expenditure(pg_id):
 # changes made by atlanta
 @business_bp.route("/stock_register/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def stock_register(pg_id):
     db = current_app.mongo_db
@@ -262,7 +400,7 @@ def stock_register(pg_id):
         flash("Invalid PG ID.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    pg = db.pgs.find_one({"_id": pg_obj_id})
+    pg = _get_scoped_pg(db, pg_obj_id)
     if not pg:
         if wants_json():
             return jsonify({"success": False, "message": "PG not found."}), 404
@@ -303,6 +441,10 @@ def stock_register(pg_id):
         }
 
     if request.method == "POST":
+        write_denied = _guard_business_write(pg)
+        if write_denied:
+            return write_denied
+
         src = request.get_json(silent=True) or {} if request.is_json else request.form
 
         year = ival(src, "year", datetime.utcnow().year)
@@ -363,7 +505,7 @@ def stock_register(pg_id):
 # changes made by atlanta
 @business_bp.route("/stock_movement/<pg_id>", methods=["POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def stock_movement(pg_id):
     db = current_app.mongo_db
@@ -392,12 +534,16 @@ def stock_movement(pg_id):
         flash("Invalid PG ID.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    pg = db.pgs.find_one({"_id": pg_obj_id})
+    pg = _get_scoped_pg(db, pg_obj_id)
     if not pg:
         if wants_json():
             return jsonify({"success": False, "message": "PG not found."}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
+
+    write_denied = _guard_business_write(pg)
+    if write_denied:
+        return write_denied
 
     src = request.get_json(silent=True) or {} if request.is_json else request.form
 
@@ -452,16 +598,25 @@ def stock_movement(pg_id):
 
 @business_bp.route("/business_plan/<pg_id>", methods=["GET","POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def business_plan(pg_id):
     db = current_app.mongo_db
-    pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
+    pg_obj_id = _to_object_id(pg_id)
+    if not pg_obj_id:
+        flash("Invalid PG ID.", "danger")
+        return redirect(url_for("pg.pg_home"))
+
+    pg = _get_scoped_pg(db, pg_obj_id)
     if not pg:
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
     if request.method == "POST":
+        write_denied = _guard_business_write(pg)
+        if write_denied:
+            return write_denied
+
         year = int(request.form.get("year") or datetime.utcnow().year)
         plan = {
             "turnover_target": float(request.form.get("turnover_target") or 0),
@@ -469,19 +624,19 @@ def business_plan(pg_id):
             "member_coverage_target": int(request.form.get("member_coverage_target") or 0),
             "notes": request.form.get("notes") or "",
         }
-        doc = {"pg_id": ObjectId(pg_id), "year": year, "plan": plan, "updated_at": datetime.utcnow()}
-        db.pg_business_plans.update_one({"pg_id": ObjectId(pg_id), "year": year}, {"$set": doc}, upsert=True)
+        doc = {"pg_id": pg_obj_id, "year": year, "plan": plan, "updated_at": datetime.utcnow()}
+        db.pg_business_plans.update_one({"pg_id": pg_obj_id, "year": year}, {"$set": doc}, upsert=True)
         flash("Business plan saved.", "success")
         return redirect(url_for("business.business_plan", pg_id=pg_id))
 
     # latest plan
-    plan_doc = db.pg_business_plans.find_one({"pg_id": ObjectId(pg_id)}, sort=[("year", -1)])
+    plan_doc = db.pg_business_plans.find_one({"pg_id": pg_obj_id}, sort=[("year", -1)])
     # actuals from market transactions (sum year)
     actual_turnover = 0.0
     if plan_doc:
         y = int(plan_doc.get("year") or datetime.utcnow().year)
         agg = list(db.pg_market_transactions.aggregate([
-            {"$match": {"pg_id": ObjectId(pg_id), "year": y}},
+            {"$match": {"pg_id": pg_obj_id, "year": y}},
             {"$group": {"_id": None, "turnover": {"$sum": "$total_turnover"}}}
         ]))
         actual_turnover = float(agg[0]["turnover"] if agg else 0)
@@ -506,7 +661,7 @@ from services.kpi_engine import KPIEngine
 # changes made by atlanta
 @business_bp.route("/monthly_business/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def monthly_business(pg_id):
     db = current_app.mongo_db
@@ -539,7 +694,7 @@ def monthly_business(pg_id):
             float(market_doc.get("market_total") or market_doc.get("total_turnover") or 0)
         )
 
-        total_members = db.pg_members.count_documents({"pg_id": ObjectId(pg_id)})
+        total_members = db.pg_members.count_documents({"pg_id": pg_obj_id})
         pct_in = KPIEngine.calculate_member_percentage(
             int(internal_doc.get("members_input_count") or 0),
             int(total_members or 0)
@@ -583,7 +738,12 @@ def monthly_business(pg_id):
             },
         }
 
-    pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
+    pg_obj_id = _to_object_id(pg_id)
+    if not pg_obj_id:
+        flash("Invalid PG ID.", "danger")
+        return redirect(url_for("pg.pg_home"))
+
+    pg = _get_scoped_pg(db, pg_obj_id)
     if not pg:
         if wants_json():
             return jsonify({"success": False, "message": "PG not found."}), 404
@@ -593,6 +753,10 @@ def monthly_business(pg_id):
     now = datetime.utcnow()
 
     if request.method == "POST":
+        write_denied = _guard_business_write(pg)
+        if write_denied:
+            return write_denied
+
         if request.is_json:
             src = request.get_json(silent=True) or {}
             year = ival(src, "year", now.year)
@@ -603,7 +767,7 @@ def monthly_business(pg_id):
             month = int(request.args.get("month") or request.form.get("month") or now.month)
 
         internal = {
-            "pg_id": ObjectId(pg_id),
+            "pg_id": pg_obj_id,
             "year": year,
             "month": month,
             "input_sold_to_members_value": fval(src, "input_sold_to_members_value"),
@@ -622,13 +786,13 @@ def monthly_business(pg_id):
         )
 
         db.pg_business_monthly.update_one(
-            {"pg_id": ObjectId(pg_id), "year": year, "month": month},
+            {"pg_id": pg_obj_id, "year": year, "month": month},
             {"$set": internal},
             upsert=True,
         )
 
         market = {
-            "pg_id": ObjectId(pg_id),
+            "pg_id": pg_obj_id,
             "year": year,
             "month": month,
             "input_procured_from_market_value": fval(src, "input_procured_from_market_value"),
@@ -650,7 +814,7 @@ def monthly_business(pg_id):
         )
 
         db.pg_market_transactions.update_one(
-            {"pg_id": ObjectId(pg_id), "year": year, "month": month},
+            {"pg_id": pg_obj_id, "year": year, "month": month},
             {"$set": market},
             upsert=True,
         )
@@ -667,10 +831,10 @@ def monthly_business(pg_id):
             pass
 
         internal_doc = db.pg_business_monthly.find_one(
-            {"pg_id": ObjectId(pg_id), "year": year, "month": month}
+            {"pg_id": pg_obj_id, "year": year, "month": month}
         ) or {}
         market_doc = db.pg_market_transactions.find_one(
-            {"pg_id": ObjectId(pg_id), "year": year, "month": month}
+            {"pg_id": pg_obj_id, "year": year, "month": month}
         ) or {}
 
         if wants_json():
@@ -685,10 +849,10 @@ def monthly_business(pg_id):
     month = int(request.args.get("month") or now.month)
 
     internal_doc = db.pg_business_monthly.find_one(
-        {"pg_id": ObjectId(pg_id), "year": year, "month": month}
+        {"pg_id": pg_obj_id, "year": year, "month": month}
     ) or {}
     market_doc = db.pg_market_transactions.find_one(
-        {"pg_id": ObjectId(pg_id), "year": year, "month": month}
+        {"pg_id": pg_obj_id, "year": year, "month": month}
     ) or {}
 
     if wants_json():
@@ -698,7 +862,7 @@ def monthly_business(pg_id):
         float(internal_doc.get("internal_total") or 0),
         float(market_doc.get("market_total") or market_doc.get("total_turnover") or 0)
     )
-    total_members = db.pg_members.count_documents({"pg_id": ObjectId(pg_id)})
+    total_members = db.pg_members.count_documents({"pg_id": pg_obj_id})
     pct_in = KPIEngine.calculate_member_percentage(
         int(internal_doc.get("members_input_count") or 0),
         int(total_members or 0)
@@ -730,7 +894,7 @@ def monthly_business(pg_id):
 # changes made by atlanta
 @business_bp.route("/income_expenditure_year/<pg_id>", methods=["GET"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def income_expenditure_year(pg_id):
     db = current_app.mongo_db
 
@@ -767,7 +931,7 @@ def income_expenditure_year(pg_id):
         flash("Invalid PG ID.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    pg = db.pgs.find_one({"_id": pg_obj_id})
+    pg = _get_scoped_pg(db, pg_obj_id)
     if not pg:
         if wants_json():
             return jsonify({"success": False, "message": "PG not found."}), 404

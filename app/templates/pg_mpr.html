@@ -65,6 +65,88 @@
   font-weight:800;
 }
 
+.mpr-scope-pill{
+  width:max-content;
+  max-width:100%;
+  margin:10px auto 0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:7px 11px;
+  border-radius:999px;
+  background:rgba(236,253,245,.95);
+  border:1px solid rgba(16,185,129,.28);
+  color:#0b4d3a;
+  font-size:12px;
+  font-weight:950;
+}
+
+.mpr-scope-dot{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background:#16a34a;
+  box-shadow:0 0 0 4px rgba(22,163,74,.12);
+  flex-shrink:0;
+}
+
+.mpr-workflow-note{
+  margin:12px 14px 0;
+  padding:11px 13px;
+  border-radius:14px;
+  border:1px dashed rgba(16,185,129,.30);
+  background:rgba(236,253,245,.72);
+  color:#0b4d3a;
+  font-size:12px;
+  font-weight:850;
+  line-height:1.45;
+}
+
+.mpr-status-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:max-content;
+  max-width:100%;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(15,23,42,.12);
+  background:#fff;
+  color:#0f172a;
+  font-size:12px;
+  font-weight:950;
+  white-space:nowrap;
+}
+
+.mpr-status-approved,
+.mpr-status-state_approved{
+  background:#dcfce7;
+  border-color:#86efac;
+  color:#166534;
+}
+
+.mpr-status-submitted,
+.mpr-status-clf_approved,
+.mpr-status-block_approved,
+.mpr-status-district_approved{
+  background:#dbeafe;
+  border-color:#93c5fd;
+  color:#1e40af;
+}
+
+.mpr-status-rejected{
+  background:#fee2e2;
+  border-color:#fecaca;
+  color:#991b1b;
+}
+
+.mpr-status-draft{
+  background:#f8fafc;
+  border-color:#e2e8f0;
+  color:#475569;
+}
+
 /* Back (mobile only) */
 .mpr-back{
  display:flex;
@@ -488,6 +570,24 @@
         <div class="mpr-title-text">
           <div class="mpr-h1" id="mprTitle">PG Monthly Progress Reports</div>
           <div class="mpr-sub" id="mprSub">Turnover &amp; Member Participation Snapshot</div>
+          <div class="mpr-scope-pill" id="mprScopePill">
+            <span class="mpr-scope-dot"></span>
+            <span id="mprScopeText">
+              {% if hub_role == 'CLF_ADMIN' or role == 'CLF_ADMIN' or session.get('role') == 'CLF_ADMIN' %}
+                CLF Monthly Workflow Scope
+              {% elif hub_role == 'BLOCK_ADMIN' or role == 'BLOCK_ADMIN' or session.get('role') == 'BLOCK_ADMIN' %}
+                Block Review Scope
+              {% elif hub_role == 'DISTRICT_ADMIN' or role == 'DISTRICT_ADMIN' or session.get('role') == 'DISTRICT_ADMIN' %}
+                District Review Scope
+              {% elif hub_role in ['ADMIN', 'STATE_ADMIN'] or role in ['ADMIN', 'STATE_ADMIN'] or session.get('role') in ['ADMIN', 'STATE_ADMIN'] %}
+                State Review Scope
+              {% elif hub_role == 'PG_DATA_ENTRY' or role == 'PG_DATA_ENTRY' or session.get('role') == 'PG_DATA_ENTRY' %}
+                PG Submission Scope
+              {% else %}
+                Monthly Workflow Scope
+              {% endif %}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -527,6 +627,10 @@
       </div>
     </div>
 
+    <div class="mpr-workflow-note" id="mprWorkflowNote">
+      PG monthly modules move through the approval flow PG → CLF → Block → District → State. This page remains read-only and displays generated MPR snapshots within the logged-in user's scope.
+    </div>
+
     <!-- TABLE / MOBILE CARDS -->
     <div class="mpr-card">
 
@@ -547,6 +651,8 @@
               <th id="mprThTurnover">Monthly Turnover</th>
               <th id="mprThInput">% Members (Input)</th>
               <th id="mprThOutput">% Members (Output)</th>
+              <th id="mprThStatus">Workflow Status</th>
+              <th id="mprThLevel">Current Level</th>
             </tr>
           </thead>
           <tbody id="mprTableBody">
@@ -558,10 +664,17 @@
               <td>{{ s.monthly_turnover }}</td>
               <td>{{ s.pct_members_input }}</td>
               <td>{{ s.pct_members_output }}</td>
+              {% set _status = (s.status or s.workflow_status or s.submission_status or 'draft')|lower %}
+              <td>
+                <span class="mpr-status-badge mpr-status-{{ _status|replace(' ', '_') }}">
+                  {{ (_status|replace('_', ' '))|title }}
+                </span>
+              </td>
+              <td>{{ s.current_level or s.workflow_level or '-' }}</td>
             </tr>
             {% else %}
             <tr id="mprEmptyDesktop" class="mpr-emptyDesktop">
-              <td colspan="6" id="mprNoDataDesktop">No progress records found.</td>
+              <td colspan="8" id="mprNoDataDesktop">No progress records found.</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -579,6 +692,9 @@
             <div class="mpr-row"><span class="mpr-label" id="mprLblTurnover{{ loop.index }}">Turnover</span><span class="mpr-value">{{ s.monthly_turnover }}</span></div>
             <div class="mpr-row"><span class="mpr-label" id="mprLblInput{{ loop.index }}">Input %</span><span class="mpr-value">{{ s.pct_members_input }}</span></div>
             <div class="mpr-row"><span class="mpr-label" id="mprLblOutput{{ loop.index }}">Output %</span><span class="mpr-value">{{ s.pct_members_output }}</span></div>
+            {% set _status = (s.status or s.workflow_status or s.submission_status or 'draft')|lower %}
+            <div class="mpr-row"><span class="mpr-label" id="mprLblStatus{{ loop.index }}">Status</span><span class="mpr-value"><span class="mpr-status-badge mpr-status-{{ _status|replace(' ', '_') }}">{{ (_status|replace('_', ' '))|title }}</span></span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprLblLevel{{ loop.index }}">Level</span><span class="mpr-value">{{ s.current_level or s.workflow_level or '-' }}</span></div>
           </div>
           {% else %}
           <div class="mpr-item" id="mprEmptyMobile">
@@ -588,6 +704,8 @@
             <div class="mpr-row"><span class="mpr-label" id="mprEmptyLblTurnover">Turnover</span><span class="mpr-value">—</span></div>
             <div class="mpr-row"><span class="mpr-label" id="mprEmptyLblInput">Input %</span><span class="mpr-value">—</span></div>
             <div class="mpr-row"><span class="mpr-label" id="mprEmptyLblOutput">Output %</span><span class="mpr-value">—</span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprEmptyLblStatus">Status</span><span class="mpr-value">—</span></div>
+            <div class="mpr-row"><span class="mpr-label" id="mprEmptyLblLevel">Level</span><span class="mpr-value">—</span></div>
           </div>
           {% endfor %}
         </div>
@@ -618,12 +736,20 @@
   // ============================================================
 
   (function(){
+    const MPR_ROLE = "{{ hub_role if hub_role is defined else (role if role is defined else session.get('role','')) }}";
     const MPR_T = {
       en: {
         docTitle: "Monthly Progress Reports",
         backAria: "Go Back",
         title: "PG Monthly Progress Reports",
         sub: "Turnover & Member Participation Snapshot",
+        scopeClf: "CLF Monthly Workflow Scope",
+        scopeBlock: "Block Review Scope",
+        scopeDistrict: "District Review Scope",
+        scopeState: "State Review Scope",
+        scopePg: "PG Submission Scope",
+        scopeDefault: "Monthly Workflow Scope",
+        workflowNote: "PG monthly modules move through the approval flow PG → CLF → Block → District → State. This page remains read-only and displays generated MPR snapshots within the logged-in user's scope.",
         helperTitle: "Showing monthly progress records",
         helperSub: "Swipe horizontally to view more",
         search: "Search...",
@@ -636,6 +762,8 @@
         turnover: "Monthly Turnover",
         input: "% Members (Input)",
         output: "% Members (Output)",
+        status: "Workflow Status",
+        level: "Current Level",
         inputShort: "Input %",
         outputShort: "Output %",
         turnoverShort: "Turnover",
@@ -651,6 +779,13 @@
         backAria: "ফিরে যান",
         title: "পিজি মাসিক অগ্রগতি প্রতিবেদন",
         sub: "টার্নওভার ও সদস্য অংশগ্রহণের স্ন্যাপশট",
+        scopeClf: "CLF Monthly Workflow Scope",
+        scopeBlock: "Block Review Scope",
+        scopeDistrict: "District Review Scope",
+        scopeState: "State Review Scope",
+        scopePg: "PG Submission Scope",
+        scopeDefault: "Monthly Workflow Scope",
+        workflowNote: "PG monthly modules approval flow PG → CLF → Block → District → State অনুযায়ী চলে। এই পেজটি read-only এবং logged-in scope অনুযায়ী generated MPR snapshot দেখায়।",
         helperTitle: "মাসিক অগ্রগতির রেকর্ড দেখানো হচ্ছে",
         helperSub: "আরও দেখতে আড়াআড়ি সোয়াইপ করুন",
         search: "খুঁজুন...",
@@ -663,6 +798,8 @@
         turnover: "মাসিক টার্নওভার",
         input: "% সদস্য (ইনপুট)",
         output: "% সদস্য (আউটপুট)",
+        status: "ওয়ার্কফ্লো স্ট্যাটাস",
+        level: "বর্তমান স্তর",
         inputShort: "ইনপুট %",
         outputShort: "আউটপুট %",
         turnoverShort: "টার্নওভার",
@@ -701,6 +838,18 @@
 
       safeText('mprTitle', t.title);
       safeText('mprSub', t.sub);
+
+      const scopeText = document.getElementById('mprScopeText');
+      if(scopeText){
+        if(MPR_ROLE === 'CLF_ADMIN') scopeText.textContent = t.scopeClf;
+        else if(MPR_ROLE === 'BLOCK_ADMIN') scopeText.textContent = t.scopeBlock;
+        else if(MPR_ROLE === 'DISTRICT_ADMIN') scopeText.textContent = t.scopeDistrict;
+        else if(MPR_ROLE === 'ADMIN' || MPR_ROLE === 'STATE_ADMIN') scopeText.textContent = t.scopeState;
+        else if(MPR_ROLE === 'PG_DATA_ENTRY') scopeText.textContent = t.scopePg;
+        else scopeText.textContent = t.scopeDefault;
+      }
+
+      safeText('mprWorkflowNote', t.workflowNote);
       safeText('mprHelperTitle', t.helperTitle);
       safeText('mprHelperSub', t.helperSub);
       safePlaceholder('mprSearch', t.search);
@@ -715,6 +864,8 @@
       safeText('mprThTurnover', t.turnover);
       safeText('mprThInput', t.input);
       safeText('mprThOutput', t.output);
+      safeText('mprThStatus', t.status);
+      safeText('mprThLevel', t.level);
 
       safeText('mprNoDataDesktop', t.noData);
       safeText('mprPrevBtn', t.prev);
@@ -726,6 +877,8 @@
       applyRepeated('mprLblTurnover', t.turnoverShort);
       applyRepeated('mprLblInput', t.inputShort);
       applyRepeated('mprLblOutput', t.outputShort);
+      applyRepeated('mprLblStatus', t.statusShort);
+      applyRepeated('mprLblLevel', t.levelShort);
 
       safeText('mprEmptyLblSl', t.sl);
       safeText('mprEmptyLblYear', t.year);
@@ -733,6 +886,8 @@
       safeText('mprEmptyLblTurnover', t.turnoverShort);
       safeText('mprEmptyLblInput', t.inputShort);
       safeText('mprEmptyLblOutput', t.outputShort);
+      safeText('mprEmptyLblStatus', t.statusShort);
+      safeText('mprEmptyLblLevel', t.levelShort);
 
       if (window.__mprRenderPagerText) window.__mprRenderPagerText();
     }

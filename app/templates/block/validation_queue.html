@@ -1,0 +1,657 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .validation-page {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .validation-hero {
+    background:
+      radial-gradient(circle at 12% 12%, rgba(255,255,255,.18), transparent 42%),
+      linear-gradient(135deg, #064e3b, #198754);
+    color: #fff;
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow: 0 18px 42px rgba(6, 78, 59, .22);
+  }
+
+  .validation-hero h3 {
+    margin: 0;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+  }
+
+  .validation-hero p {
+    margin: 8px 0 0;
+    color: rgba(255,255,255,.86);
+    font-weight: 600;
+  }
+
+  .hero-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 7px 12px;
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.18);
+    color: #fff;
+    font-size: .82rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .hero-actions .btn {
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: .84rem;
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .metric-card {
+    background: #fff;
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 12px 30px rgba(15,23,42,.07);
+  }
+
+  .metric-card small {
+    display: block;
+    color: #64748b;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    font-size: .74rem;
+    margin-bottom: 8px;
+  }
+
+  .metric-card strong {
+    display: block;
+    color: #0f172a;
+    font-size: clamp(1.25rem, 2vw, 1.8rem);
+    line-height: 1.05;
+    font-weight: 900;
+  }
+
+  .soft-card {
+    background: #fff;
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(15,23,42,.07);
+    overflow: hidden;
+  }
+
+  .card-head {
+    padding: 16px 18px;
+    border-bottom: 1px solid #e9eef3;
+    background: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .card-head h5 {
+    margin: 0;
+    font-weight: 900;
+    color: #0f172a;
+    font-size: 1rem;
+  }
+
+  .card-head p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: .84rem;
+    font-weight: 600;
+  }
+
+  .queue-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .queue-search,
+  .queue-filter {
+    border-radius: 999px;
+    min-height: 42px;
+    border: 1px solid #d7dee8;
+    padding: 9px 14px;
+    font-weight: 700;
+    outline: none;
+    background: #fff;
+  }
+
+  .queue-search {
+    min-width: 320px;
+  }
+
+  .queue-search:focus,
+  .queue-filter:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 .18rem rgba(25,135,84,.12);
+  }
+
+  .table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+
+  .table td {
+    vertical-align: middle;
+  }
+
+  .pg-name {
+    font-weight: 900;
+    color: #0f172a;
+  }
+
+  .text-soft {
+    color: #64748b;
+  }
+
+  .badge-soft {
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: .72rem;
+    font-weight: 850;
+  }
+
+  .action-btn {
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: .8rem;
+  }
+
+  .reject-inline {
+    min-width: 260px;
+  }
+
+  .reject-inline textarea {
+    border-radius: 12px;
+    min-height: 72px;
+    resize: vertical;
+    font-size: .84rem;
+  }
+
+  .empty-state {
+    padding: 46px 18px;
+    text-align: center;
+    color: #64748b;
+  }
+
+  .mobile-list {
+    display: none;
+  }
+
+  .mobile-card {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 20px rgba(15,23,42,.06);
+  }
+
+  .hidden-row {
+    display: none !important;
+  }
+
+  @media (max-width: 1100px) {
+    .metric-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 767px) {
+    .validation-hero {
+      padding: 18px;
+      border-radius: 18px;
+    }
+
+    .validation-hero h3 {
+      font-size: 1.2rem;
+    }
+
+    .hero-actions,
+    .hero-actions .btn,
+    .queue-tools,
+    .queue-search,
+    .queue-filter {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .metric-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .desktop-table-wrap {
+      display: none;
+    }
+
+    .mobile-list {
+      display: block;
+    }
+
+    .reject-inline {
+      min-width: 0;
+      width: 100%;
+    }
+  }
+</style>
+
+{% set pg_reg_count = 0 %}
+{% set member_reg_count = 0 %}
+{% set submitted_count = 0 %}
+{% set resubmitted_count = 0 %}
+
+{% for row in rows %}
+  {% if row.form_type == 'pg_registration' %}
+    {% set pg_reg_count = pg_reg_count + 1 %}
+  {% endif %}
+  {% if row.form_type == 'member_registration' %}
+    {% set member_reg_count = member_reg_count + 1 %}
+  {% endif %}
+  {% if row.status == 'submitted' %}
+    {% set submitted_count = submitted_count + 1 %}
+  {% endif %}
+  {% if row.status == 'resubmitted' %}
+    {% set resubmitted_count = resubmitted_count + 1 %}
+  {% endif %}
+{% endfor %}
+
+<div class="validation-page">
+  <div class="validation-hero mb-4">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <h3>Validation Queue</h3>
+        <p>
+          Review PG Registration and Membership Registration forms submitted by PGs under your Block.
+        </p>
+      </div>
+
+      <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
+        <span class="hero-pill">
+          Pending: {{ pending_count or rows|length }}
+        </span>
+
+        <div class="hero-actions">
+          <a href="{{ url_for('reports.hierarchy_dashboard') }}" class="btn btn-light btn-sm">
+            Dashboard
+          </a>
+          <a href="{{ url_for('master_data.clf_pg_assignment') }}" class="btn btn-outline-light btn-sm">
+            CLF Assignment
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="metric-grid mb-4">
+    <div class="metric-card">
+      <small>Total Pending</small>
+      <strong id="mTotal">{{ pending_count or rows|length }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <small>PG Registration</small>
+      <strong id="mPgRegistration">0</strong>
+    </div>
+
+    <div class="metric-card">
+      <small>Membership Registration</small>
+      <strong id="mMemberRegistration">0</strong>
+    </div>
+
+    <div class="metric-card">
+      <small>Resubmitted</small>
+      <strong id="mResubmitted">0</strong>
+    </div>
+  </div>
+
+  <div class="soft-card">
+    <div class="card-head">
+      <div>
+        <h5>Pending Forms</h5>
+        <p>Approve the form if correct, or reject with clear correction remarks.</p>
+      </div>
+
+      <div class="queue-tools">
+        <select class="queue-filter" id="formTypeFilter">
+          <option value="">All Form Types</option>
+          <option value="pg_registration">PG Registration</option>
+          <option value="member_registration">Membership Registration</option>
+        </select>
+
+        <select class="queue-filter" id="statusFilter">
+          <option value="">All Status</option>
+          <option value="submitted">Submitted</option>
+          <option value="resubmitted">Resubmitted</option>
+        </select>
+
+        <input
+          type="text"
+          class="queue-search"
+          id="queueSearch"
+          placeholder="Search PG, village, GP, form type..."
+          autocomplete="off"
+        >
+      </div>
+    </div>
+
+    <div class="desktop-table-wrap">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th style="width: 60px;">#</th>
+            <th>PG</th>
+            <th>Form Type</th>
+            <th>Status</th>
+            <th>Submitted At</th>
+            <th>Location</th>
+            <th style="width: 320px;">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for row in rows %}
+            {% set pg = row.pg %}
+            {% set pg_name = pg.name or pg.pg_name or 'Unnamed PG' %}
+            {% set status = row.status or 'submitted' %}
+            <tr
+              class="queue-row"
+              data-form-type="{{ row.form_type }}"
+              data-status="{{ status }}"
+              data-search="{{ pg_name|lower }} {{ row.form_label|lower }} {{ status|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ (pg.Block or '')|lower }}"
+            >
+              <td>{{ loop.index }}</td>
+
+              <td>
+                <div class="pg-name">{{ pg_name }}</div>
+                <small class="text-soft">PG ID: {{ pg._id }}</small>
+              </td>
+
+              <td>
+                <span class="badge text-bg-light border badge-soft">
+                  {{ row.form_label }}
+                </span>
+              </td>
+
+              <td>
+                {% if status == 'resubmitted' %}
+                  <span class="badge text-bg-warning badge-soft">Resubmitted</span>
+                {% else %}
+                  <span class="badge text-bg-primary badge-soft">Submitted</span>
+                {% endif %}
+              </td>
+
+              <td>
+                {% if row.submitted_at %}
+                  {{ row.submitted_at.strftime('%d-%m-%Y %I:%M %p') if row.submitted_at.strftime is defined else row.submitted_at }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+
+              <td>
+                <div class="fw-semibold">{{ pg['Gram Panchayat'] or '-' }}</div>
+                <small class="text-soft">{{ pg.Village or pg.village or '-' }}</small>
+              </td>
+
+              <td>
+                <div class="d-flex flex-wrap gap-1">
+                  <a
+                    href="{{ url_for('pg.validation_review', form_type=row.form_type, pg_id=pg._id|string) }}"
+                    class="btn btn-sm btn-outline-success action-btn"
+                  >
+                    Review
+                  </a>
+
+                  <form
+                    method="post"
+                    action="{{ url_for('pg.validation_approve', form_type=row.form_type, pg_id=pg._id|string) }}"
+                    onsubmit="return confirm('Approve this {{ row.form_label }}?');"
+                  >
+                    <button type="submit" class="btn btn-sm btn-success action-btn">
+                      Approve
+                    </button>
+                  </form>
+
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger action-btn"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#rejectBox{{ loop.index }}"
+                    aria-expanded="false"
+                  >
+                    Reject
+                  </button>
+                </div>
+
+                <div class="collapse mt-2" id="rejectBox{{ loop.index }}">
+                  <form
+                    method="post"
+                    action="{{ url_for('pg.validation_reject', form_type=row.form_type, pg_id=pg._id|string) }}"
+                    class="reject-inline"
+                    onsubmit="return validateRejectForm(this);"
+                  >
+                    <textarea
+                      name="remarks"
+                      class="form-control mb-2"
+                      placeholder="Write exact correction remarks before rejecting..."
+                      required
+                    ></textarea>
+
+                    <button type="submit" class="btn btn-sm btn-danger action-btn">
+                      Send Back to PG
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="7">
+                <div class="empty-state">
+                  <strong>No pending validation forms.</strong>
+                  <div>Submitted PG Registration and Membership Registration forms will appear here.</div>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mobile-list p-3">
+      {% for row in rows %}
+        {% set pg = row.pg %}
+        {% set pg_name = pg.name or pg.pg_name or 'Unnamed PG' %}
+        {% set status = row.status or 'submitted' %}
+
+        <div
+          class="mobile-card queue-row"
+          data-form-type="{{ row.form_type }}"
+          data-status="{{ status }}"
+          data-search="{{ pg_name|lower }} {{ row.form_label|lower }} {{ status|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ (pg.Block or '')|lower }}"
+        >
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <div>
+              <div class="pg-name">{{ pg_name }}</div>
+              <small class="text-soft">PG ID: {{ pg._id }}</small>
+            </div>
+
+            {% if status == 'resubmitted' %}
+              <span class="badge text-bg-warning badge-soft">Resubmitted</span>
+            {% else %}
+              <span class="badge text-bg-primary badge-soft">Submitted</span>
+            {% endif %}
+          </div>
+
+          <div class="small text-soft mb-3">
+            <div><strong>Form:</strong> {{ row.form_label }}</div>
+            <div>
+              <strong>Submitted:</strong>
+              {% if row.submitted_at %}
+                {{ row.submitted_at.strftime('%d-%m-%Y %I:%M %p') if row.submitted_at.strftime is defined else row.submitted_at }}
+              {% else %}
+                -
+              {% endif %}
+            </div>
+            <div><strong>GP:</strong> {{ pg['Gram Panchayat'] or '-' }}</div>
+            <div><strong>Village:</strong> {{ pg.Village or pg.village or '-' }}</div>
+          </div>
+
+          <div class="d-grid gap-2">
+            <a
+              href="{{ url_for('pg.validation_review', form_type=row.form_type, pg_id=pg._id|string) }}"
+              class="btn btn-sm btn-outline-success action-btn"
+            >
+              Review
+            </a>
+
+            <form
+              method="post"
+              action="{{ url_for('pg.validation_approve', form_type=row.form_type, pg_id=pg._id|string) }}"
+              onsubmit="return confirm('Approve this {{ row.form_label }}?');"
+            >
+              <button type="submit" class="btn btn-sm btn-success action-btn w-100">
+                Approve
+              </button>
+            </form>
+
+            <form
+              method="post"
+              action="{{ url_for('pg.validation_reject', form_type=row.form_type, pg_id=pg._id|string) }}"
+              onsubmit="return validateRejectForm(this);"
+            >
+              <textarea
+                name="remarks"
+                class="form-control mb-2"
+                placeholder="Write exact correction remarks before rejecting..."
+                required
+              ></textarea>
+
+              <button type="submit" class="btn btn-sm btn-danger action-btn w-100">
+                Reject & Send Back
+              </button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <strong>No pending validation forms.</strong>
+          <div>Submitted PG Registration and Membership Registration forms will appear here.</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const rows = Array.from(document.querySelectorAll(".queue-row"));
+    const search = document.getElementById("queueSearch");
+    const formTypeFilter = document.getElementById("formTypeFilter");
+    const statusFilter = document.getElementById("statusFilter");
+
+    const mTotal = document.getElementById("mTotal");
+    const mPgRegistration = document.getElementById("mPgRegistration");
+    const mMemberRegistration = document.getElementById("mMemberRegistration");
+    const mResubmitted = document.getElementById("mResubmitted");
+
+    function uniqueRows() {
+      const map = new Map();
+
+      rows.forEach((row) => {
+        const text = row.innerText || "";
+        const idMatch = text.match(/PG ID:\s*([a-f0-9]{24})/i);
+        const pgId = idMatch ? idMatch[1] : text.slice(0, 80);
+        const key = pgId + "::" + (row.dataset.formType || "");
+
+        if (!map.has(key)) {
+          map.set(key, row);
+        }
+      });
+
+      return Array.from(map.values());
+    }
+
+    function updateMetrics() {
+      const list = uniqueRows();
+      let total = list.length;
+      let pgReg = 0;
+      let memberReg = 0;
+      let resubmitted = 0;
+
+      list.forEach((row) => {
+        if (row.dataset.formType === "pg_registration") pgReg += 1;
+        if (row.dataset.formType === "member_registration") memberReg += 1;
+        if (row.dataset.status === "resubmitted") resubmitted += 1;
+      });
+
+      if (mTotal) mTotal.textContent = total;
+      if (mPgRegistration) mPgRegistration.textContent = pgReg;
+      if (mMemberRegistration) mMemberRegistration.textContent = memberReg;
+      if (mResubmitted) mResubmitted.textContent = resubmitted;
+    }
+
+    function filterRows() {
+      const q = (search ? search.value : "").trim().toLowerCase();
+      const formType = formTypeFilter ? formTypeFilter.value : "";
+      const status = statusFilter ? statusFilter.value : "";
+
+      rows.forEach((row) => {
+        const text = row.dataset.search || "";
+        const matchesSearch = !q || text.includes(q);
+        const matchesType = !formType || row.dataset.formType === formType;
+        const matchesStatus = !status || row.dataset.status === status;
+
+        row.classList.toggle("hidden-row", !(matchesSearch && matchesType && matchesStatus));
+      });
+    }
+
+    if (search) search.addEventListener("input", filterRows);
+    if (formTypeFilter) formTypeFilter.addEventListener("change", filterRows);
+    if (statusFilter) statusFilter.addEventListener("change", filterRows);
+
+    updateMetrics();
+    filterRows();
+  })();
+
+  function validateRejectForm(form) {
+    const remarks = form.querySelector('[name="remarks"]');
+    const value = remarks ? remarks.value.trim() : "";
+
+    if (!value) {
+      alert("Please write rejection remarks before sending the form back to PG.");
+      if (remarks) remarks.focus();
+      return false;
+    }
+
+    return confirm("Reject this form and send it back to PG for correction?");
+  }
+</script>
+{% endblock %}

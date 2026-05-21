@@ -2,7 +2,15 @@
 {% set cadre_in_pg = (_role == 'CADRE_CC' and (session.get('active_pg_id') or session.get('pg_id'))) %}
 {% set is_pg = (_role == 'PG_DATA_ENTRY') or cadre_in_pg %}
 {% set is_cadre = (_role == 'CADRE_CC' and not cadre_in_pg) %}
-{% set is_clf_block = (_role in ['CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN']) %}
+
+{# 
+  New CLF role routing:
+  - CLF_ADMIN must use base_clf.html because it has its own CLF login/dashboard flow.
+  - BLOCK_ADMIN should also use base_clf.html because Block/CLF management pages are under the same hierarchy shell.
+  - CLF_MANAGER is kept only for old/legacy users.
+#}
+{% set is_clf_block = (_role in ['BLOCK_ADMIN', 'CLF_ADMIN', 'CLF_MANAGER']) %}
+
 {% extends 'base_pg.html' if is_pg else ('base_cadre.html' if is_cadre else ('base_clf.html' if is_clf_block else 'base_default.html')) %}
 
 {# Pass-through blocks so pages extending base.html work unchanged #}

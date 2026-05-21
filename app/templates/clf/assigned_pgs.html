@@ -1,0 +1,553 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .assigned-page {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .assigned-hero {
+    background:
+      radial-gradient(circle at 12% 12%, rgba(255, 255, 255, 0.18), transparent 42%),
+      linear-gradient(135deg, #064e3b, #198754);
+    color: #fff;
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow: 0 18px 42px rgba(6, 78, 59, 0.22);
+    overflow: hidden;
+  }
+
+  .assigned-hero h3 {
+    margin: 0;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+  }
+
+  .assigned-hero p {
+    margin: 8px 0 0;
+    color: rgba(255,255,255,.86);
+    font-weight: 600;
+  }
+
+  .hero-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 7px 12px;
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.18);
+    color: #fff;
+    font-size: .82rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .hero-actions .btn {
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: .84rem;
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .metric-card {
+    background: #fff;
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 12px 30px rgba(15,23,42,.07);
+  }
+
+  .metric-card small {
+    display: block;
+    color: #64748b;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    font-size: .74rem;
+    margin-bottom: 8px;
+  }
+
+  .metric-card strong {
+    display: block;
+    color: #0f172a;
+    font-size: clamp(1.35rem, 2vw, 1.9rem);
+    line-height: 1.05;
+    font-weight: 900;
+  }
+
+  .soft-card {
+    background: #fff;
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(15,23,42,.07);
+    overflow: hidden;
+  }
+
+  .card-head {
+    padding: 16px 18px;
+    border-bottom: 1px solid #e9eef3;
+    background: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .card-head h5 {
+    margin: 0;
+    font-weight: 900;
+    color: #0f172a;
+    font-size: 1rem;
+  }
+
+  .card-head p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: .84rem;
+    font-weight: 600;
+  }
+
+  .table-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .pg-search {
+    border-radius: 999px;
+    min-height: 42px;
+    border: 1px solid #d7dee8;
+    padding: 9px 14px;
+    min-width: 300px;
+    font-weight: 700;
+    outline: none;
+  }
+
+  .pg-search:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 .18rem rgba(25,135,84,.12);
+  }
+
+  .table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+
+  .table td {
+    vertical-align: middle;
+  }
+
+  .pg-name {
+    font-weight: 900;
+    color: #0f172a;
+  }
+
+  .text-soft {
+    color: #64748b;
+  }
+
+  .badge-soft {
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: .72rem;
+    font-weight: 850;
+  }
+
+  .action-btn {
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: .8rem;
+  }
+
+  .empty-state {
+    padding: 42px 18px;
+    text-align: center;
+    color: #64748b;
+  }
+
+  .mobile-pg-list {
+    display: none;
+  }
+
+  .mobile-pg-card {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 20px rgba(15,23,42,.06);
+  }
+
+  .hidden-row {
+    display: none !important;
+  }
+
+  @media (max-width: 1100px) {
+    .metric-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 767px) {
+    .assigned-hero {
+      padding: 18px;
+      border-radius: 18px;
+    }
+
+    .assigned-hero h3 {
+      font-size: 1.2rem;
+    }
+
+    .hero-actions {
+      width: 100%;
+    }
+
+    .hero-actions .btn {
+      width: 100%;
+    }
+
+    .metric-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .desktop-table-wrap {
+      display: none;
+    }
+
+    .mobile-pg-list {
+      display: block;
+    }
+
+    .table-tools,
+    .pg-search {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+</style>
+
+{% set approved_pg = 0 %}
+{% set submitted_pg = 0 %}
+{% set rejected_pg = 0 %}
+{% set approved_member = 0 %}
+
+{% for row in rows %}
+  {% set reg_status = row.registration_status or 'draft' %}
+  {% set mem_status = row.member_registration_status or 'draft' %}
+
+  {% if reg_status == 'approved' %}
+    {% set approved_pg = approved_pg + 1 %}
+  {% endif %}
+
+  {% if reg_status == 'submitted' or reg_status == 'resubmitted' %}
+    {% set submitted_pg = submitted_pg + 1 %}
+  {% endif %}
+
+  {% if reg_status == 'rejected' %}
+    {% set rejected_pg = rejected_pg + 1 %}
+  {% endif %}
+
+  {% if mem_status == 'approved' %}
+    {% set approved_member = approved_member + 1 %}
+  {% endif %}
+{% endfor %}
+
+<div class="assigned-page">
+  <div class="assigned-hero mb-4">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <h3>Assigned PGs</h3>
+        <p>
+          {% if clf %}
+            {{ clf.name or clf.clf_name or 'Mapped CLF' }}
+          {% else %}
+            Mapped CLF
+          {% endif %}
+          — these PGs are currently mapped to your CLF login.
+        </p>
+      </div>
+
+      <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
+        <span class="hero-pill">
+          Total Assigned PGs: {{ total_pgs or 0 }}
+        </span>
+
+        <div class="hero-actions">
+          <a href="{{ url_for('clf.dashboard') }}" class="btn btn-light btn-sm">
+            Dashboard
+          </a>
+          <a href="{{ url_for('clf.cashflow') }}" class="btn btn-outline-light btn-sm">
+            Cashflow
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="metric-grid mb-4">
+    <div class="metric-card">
+      <small>Total Assigned PGs</small>
+      <strong>{{ total_pgs or 0 }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <small>PG Registration Approved</small>
+      <strong id="approvedPgCount">0</strong>
+    </div>
+
+    <div class="metric-card">
+      <small>PG Registration Pending</small>
+      <strong id="pendingPgCount">0</strong>
+    </div>
+
+    <div class="metric-card">
+      <small>Rejected PG Forms</small>
+      <strong id="rejectedPgCount">0</strong>
+    </div>
+  </div>
+
+  <div class="soft-card">
+    <div class="card-head">
+      <div>
+        <h5>PG List</h5>
+        <p>Open any assigned PG for read-only CLF monitoring and next workflow actions.</p>
+      </div>
+
+      <div class="table-tools">
+        <input
+          type="text"
+          id="pgSearchInput"
+          class="pg-search"
+          placeholder="Search PG, village, status..."
+          autocomplete="off"
+        >
+      </div>
+    </div>
+
+    <div class="desktop-table-wrap">
+      <table class="table table-hover mb-0" id="assignedPgTable">
+        <thead>
+          <tr>
+            <th style="width: 60px;">#</th>
+            <th>PG</th>
+            <th>Gram Panchayat</th>
+            <th>Village</th>
+            <th>PG Registration</th>
+            <th>Membership</th>
+            <th style="width: 210px;">Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for row in rows %}
+            {% set pg = row.pg %}
+            {% set reg_status = row.registration_status or 'draft' %}
+            {% set mem_status = row.member_registration_status or 'draft' %}
+            <tr
+              class="pg-row"
+              data-reg-status="{{ reg_status }}"
+              data-mem-status="{{ mem_status }}"
+              data-search="{{ (pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ reg_status|lower }} {{ mem_status|lower }}"
+            >
+              <td>{{ loop.index }}</td>
+
+              <td>
+                <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
+                <small class="text-soft">ID: {{ pg._id }}</small>
+              </td>
+
+              <td>{{ pg['Gram Panchayat'] or '-' }}</td>
+              <td>{{ pg.Village or pg.village or '-' }}</td>
+
+              <td>
+                {% if reg_status == 'approved' %}
+                  <span class="badge text-bg-success badge-soft">Approved</span>
+                {% elif reg_status == 'submitted' or reg_status == 'resubmitted' %}
+                  <span class="badge text-bg-warning badge-soft">{{ reg_status|capitalize }}</span>
+                {% elif reg_status == 'rejected' %}
+                  <span class="badge text-bg-danger badge-soft">Rejected</span>
+                {% else %}
+                  <span class="badge text-bg-light border badge-soft">Draft</span>
+                {% endif %}
+              </td>
+
+              <td>
+                {% if mem_status == 'approved' %}
+                  <span class="badge text-bg-success badge-soft">Approved</span>
+                {% elif mem_status == 'submitted' or mem_status == 'resubmitted' %}
+                  <span class="badge text-bg-warning badge-soft">{{ mem_status|capitalize }}</span>
+                {% elif mem_status == 'rejected' %}
+                  <span class="badge text-bg-danger badge-soft">Rejected</span>
+                {% else %}
+                  <span class="badge text-bg-light border badge-soft">Draft</span>
+                {% endif %}
+              </td>
+
+              <td>
+                <div class="d-flex flex-wrap gap-1">
+                  <a href="{{ url_for('clf.view_pg', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-success action-btn">
+                    View
+                  </a>
+
+                  <a href="{{ url_for('pg.pg_registration', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-primary action-btn">
+                    Registration
+                  </a>
+
+                  <a href="{{ url_for('pg.pg_members', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-secondary action-btn">
+                    Members
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="7">
+                <div class="empty-state">
+                  <strong>No PG assigned yet.</strong>
+                  <div>Ask Block Admin to assign PGs to this CLF Admin.</div>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mobile-pg-list p-3">
+      {% for row in rows %}
+        {% set pg = row.pg %}
+        {% set reg_status = row.registration_status or 'draft' %}
+        {% set mem_status = row.member_registration_status or 'draft' %}
+
+        <div
+          class="mobile-pg-card pg-row"
+          data-reg-status="{{ reg_status }}"
+          data-mem-status="{{ mem_status }}"
+          data-search="{{ (pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ reg_status|lower }} {{ mem_status|lower }}"
+        >
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <div>
+              <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
+              <small class="text-soft">ID: {{ pg._id }}</small>
+            </div>
+
+            {% if reg_status == 'approved' %}
+              <span class="badge text-bg-success badge-soft">Approved</span>
+            {% elif reg_status == 'submitted' or reg_status == 'resubmitted' %}
+              <span class="badge text-bg-warning badge-soft">{{ reg_status|capitalize }}</span>
+            {% elif reg_status == 'rejected' %}
+              <span class="badge text-bg-danger badge-soft">Rejected</span>
+            {% else %}
+              <span class="badge text-bg-light border badge-soft">Draft</span>
+            {% endif %}
+          </div>
+
+          <div class="small text-soft mb-3">
+            <div><strong>Gram Panchayat:</strong> {{ pg['Gram Panchayat'] or '-' }}</div>
+            <div><strong>Village:</strong> {{ pg.Village or pg.village or '-' }}</div>
+            <div><strong>PG Registration:</strong> {{ reg_status|capitalize }}</div>
+            <div><strong>Membership:</strong> {{ mem_status|capitalize }}</div>
+          </div>
+
+          <div class="d-grid gap-2">
+            <a href="{{ url_for('clf.view_pg', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-success action-btn">
+              View PG
+            </a>
+
+            <a href="{{ url_for('pg.pg_registration', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-primary action-btn">
+              Registration
+            </a>
+
+            <a href="{{ url_for('pg.pg_members', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-secondary action-btn">
+              Members
+            </a>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <strong>No PG assigned yet.</strong>
+          <div>Ask Block Admin to assign PGs to this CLF Admin.</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const searchInput = document.getElementById("pgSearchInput");
+    const rows = Array.from(document.querySelectorAll(".pg-row"));
+
+    const approvedPgCount = document.getElementById("approvedPgCount");
+    const pendingPgCount = document.getElementById("pendingPgCount");
+    const rejectedPgCount = document.getElementById("rejectedPgCount");
+
+    function updateCounts() {
+      const unique = new Map();
+
+      rows.forEach((row) => {
+        const pgIdText = row.innerText || "";
+        const keyMatch = pgIdText.match(/ID:\s*([a-f0-9]{24})/i);
+        const key = keyMatch ? keyMatch[1] : pgIdText.slice(0, 80);
+
+        if (!unique.has(key)) {
+          unique.set(key, {
+            reg: (row.dataset.regStatus || "draft").toLowerCase(),
+            mem: (row.dataset.memStatus || "draft").toLowerCase()
+          });
+        }
+      });
+
+      let approved = 0;
+      let pending = 0;
+      let rejected = 0;
+
+      unique.forEach((item) => {
+        if (item.reg === "approved") approved += 1;
+        if (item.reg === "submitted" || item.reg === "resubmitted" || item.reg === "draft") pending += 1;
+        if (item.reg === "rejected") rejected += 1;
+      });
+
+      if (approvedPgCount) approvedPgCount.textContent = approved;
+      if (pendingPgCount) pendingPgCount.textContent = pending;
+      if (rejectedPgCount) rejectedPgCount.textContent = rejected;
+    }
+
+    function filterRows() {
+      const term = (searchInput ? searchInput.value : "").trim().toLowerCase();
+
+      rows.forEach((row) => {
+        const haystack = row.dataset.search || "";
+        const visible = !term || haystack.includes(term);
+        row.classList.toggle("hidden-row", !visible);
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener("input", filterRows);
+    }
+
+    updateCounts();
+  })();
+</script>
+{% endblock %}

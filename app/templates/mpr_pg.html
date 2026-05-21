@@ -2,60 +2,350 @@
 {% block title %}Monthly Progress Report{% endblock %}
 {% block content %}
 <style>
-  .wrap{max-width:980px;margin:0 auto;padding:18px}
-  .hero{background:linear-gradient(to right,#059669,#10b981);color:#fff;border-radius:18px;padding:16px 18px;box-shadow:0 14px 22px -10px rgba(0,0,0,.18)}
-  .hero h1{margin:0;font-weight:950}
-  .hero .sub{margin-top:.35rem;color:#d1fae5;font-weight:800}
-  .card{margin-top:14px;background:#fff;border-radius:18px;border:1px solid rgba(4,120,87,.12);box-shadow:0 14px 22px -10px rgba(0,0,0,.18);padding:14px}
-  .f{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
-  label{font-size:.78rem;color:#059669;font-weight:900}
-  input{background:#f0fdf4;border:1px solid rgba(5,150,105,.22);border-radius:12px;padding:10px 12px;outline:none}
-  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid rgba(5,150,105,.28);background:#ecfdf5;color:#065f46;font-weight:950;cursor:pointer;text-decoration:none}
-  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
-  .k{background:#ecfdf5;border:1px solid rgba(5,150,105,.18);border-radius:16px;padding:12px}
-  .k .t{font-size:.78rem;color:#047857;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
-  .k .v{margin-top:4px;font-weight:950;font-size:1.1rem;color:#064e3b}
-  .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid rgba(15,23,42,.12);font-weight:950}
-  .pill.lock{background:#fee2e2;border-color:rgba(220,38,38,.25);color:#991b1b}
-  .pill.ok{background:#ecfdf5;border-color:rgba(5,150,105,.25);color:#065f46}
-  @media(max-width:720px){.kpis{grid-template-columns:1fr}}
+  .wrap{
+    max-width:980px;
+    margin:0 auto;
+    padding:18px;
+
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:rgba(15,23,42,.12);
+    --line2:rgba(15,23,42,.08);
+    --green:#059669;
+    --green-dark:#064e3b;
+    --green-soft:#ecfdf5;
+    --green-line:rgba(5,150,105,.22);
+  }
+
+  .wrap *{box-sizing:border-box}
+
+  .hero{
+    background:
+      radial-gradient(circle at 14% 18%, rgba(255,255,255,.22), transparent 38%),
+      linear-gradient(135deg,#047857,#10b981);
+    color:#fff;
+    border-radius:18px;
+    padding:16px 18px;
+    box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+  }
+
+  .hero h1{
+    margin:0;
+    font-weight:950;
+    letter-spacing:-.02em;
+  }
+
+  .hero .sub{
+    margin-top:.35rem;
+    color:#d1fae5;
+    font-weight:800;
+  }
+
+  .scope-pill{
+    width:max-content;
+    max-width:100%;
+    margin-top:10px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 11px;
+    border-radius:999px;
+    background:rgba(255,255,255,.16);
+    border:1px solid rgba(255,255,255,.22);
+    color:#fff;
+    font-size:12px;
+    font-weight:950;
+  }
+
+  .scope-dot{
+    width:8px;
+    height:8px;
+    border-radius:999px;
+    background:#bbf7d0;
+    box-shadow:0 0 0 4px rgba(187,247,208,.15);
+  }
+
+  .status-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:10px;
+  }
+
+  .card{
+    margin-top:14px;
+    background:#fff;
+    border-radius:18px;
+    border:1px solid rgba(4,120,87,.12);
+    box-shadow:0 14px 22px -10px rgba(0,0,0,.18);
+    padding:14px;
+  }
+
+  .f{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:end;
+  }
+
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+
+  label{
+    font-size:.78rem;
+    color:#059669;
+    font-weight:900;
+  }
+
+  input{
+    background:#f0fdf4;
+    border:1px solid rgba(5,150,105,.22);
+    border-radius:12px;
+    padding:10px 12px;
+    outline:none;
+    font-weight:800;
+    color:#0f172a;
+  }
+
+  input:focus{
+    border-color:#059669;
+    box-shadow:0 0 0 4px rgba(5,150,105,.12);
+  }
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:10px 14px;
+    border-radius:999px;
+    border:1px solid rgba(5,150,105,.28);
+    background:#ecfdf5;
+    color:#065f46;
+    font-weight:950;
+    cursor:pointer;
+    text-decoration:none;
+    min-height:42px;
+  }
+
+  .btn:hover{
+    background:#d1fae5;
+    color:#064e3b;
+  }
+
+  .workflow-note{
+    margin-top:12px;
+    padding:11px 13px;
+    border-radius:14px;
+    border:1px dashed rgba(5,150,105,.28);
+    background:#f0fdf4;
+    color:#065f46;
+    font-size:12px;
+    font-weight:850;
+    line-height:1.45;
+  }
+
+  .kpis{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+    margin-top:10px;
+  }
+
+  .k{
+    background:#ecfdf5;
+    border:1px solid rgba(5,150,105,.18);
+    border-radius:16px;
+    padding:12px;
+  }
+
+  .k .t{
+    font-size:.78rem;
+    color:#047857;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+
+  .k .v{
+    margin-top:4px;
+    font-weight:950;
+    font-size:1.1rem;
+    color:#064e3b;
+    word-break:break-word;
+  }
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 10px;
+    border-radius:999px;
+    border:1px solid rgba(15,23,42,.12);
+    font-weight:950;
+    font-size:12px;
+  }
+
+  .pill.lock{
+    background:#fee2e2;
+    border-color:rgba(220,38,38,.25);
+    color:#991b1b;
+  }
+
+  .pill.ok{
+    background:#ecfdf5;
+    border-color:rgba(5,150,105,.25);
+    color:#065f46;
+  }
+
+  .pill.status{
+    background:#dbeafe;
+    border-color:#93c5fd;
+    color:#1e40af;
+  }
+
+  .pill.status.approved,
+  .pill.status.state_approved{
+    background:#dcfce7;
+    border-color:#86efac;
+    color:#166534;
+  }
+
+  .pill.status.rejected{
+    background:#fee2e2;
+    border-color:#fecaca;
+    color:#991b1b;
+  }
+
+  .pill.status.draft{
+    background:#f8fafc;
+    border-color:#e2e8f0;
+    color:#475569;
+  }
+
+  @media(max-width:720px){
+    .wrap{padding:10px}
+    .hero{padding:14px}
+    .hero h1{font-size:1.15rem}
+    .kpis{grid-template-columns:1fr}
+    .field{width:100%}
+    input{width:100%}
+    .btn{width:100%}
+  }
 </style>
+
+{% set role_name = hub_role if hub_role is defined else (role if role is defined else session.get('role','')) %}
+{% set workflow_status = (mpr.status or mpr.workflow_status or mpr.submission_status or 'draft')|lower %}
+{% set workflow_level = mpr.current_level or mpr.workflow_level or '-' %}
 
 <div class="wrap">
   <div class="hero">
     <h1>MPR — {{ pg.pg_name or pg.name }}</h1>
     <div class="sub">Auto-aggregated monthly metrics</div>
-    <div style="margin-top:10px">
+
+    <div class="scope-pill">
+      <span class="scope-dot"></span>
+      <span>
+        {% if role_name == 'CLF_ADMIN' %}
+          CLF Monthly Workflow Scope
+        {% elif role_name == 'BLOCK_ADMIN' %}
+          Block Review Scope
+        {% elif role_name == 'DISTRICT_ADMIN' %}
+          District Review Scope
+        {% elif role_name in ['ADMIN', 'STATE_ADMIN'] %}
+          State Review Scope
+        {% elif role_name == 'PG_DATA_ENTRY' %}
+          PG Submission Scope
+        {% else %}
+          Monthly Workflow Scope
+        {% endif %}
+      </span>
+    </div>
+
+    <div class="status-row">
       {% if locked %}
         <span class="pill lock">🔒 Locked period — data frozen</span>
       {% else %}
-        <span class="pill ok"> Open period</span>
+        <span class="pill ok">Open period</span>
       {% endif %}
+
+      <span class="pill status {{ workflow_status|replace(' ', '_') }}">
+        Status: {{ workflow_status|replace('_', ' ')|title }}
+      </span>
+
+      <span class="pill status">
+        Level: {{ workflow_level }}
+      </span>
     </div>
   </div>
 
   <div class="card">
     <form method="GET" class="f">
-      <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="field">
         <label>Year</label>
         <input name="year" type="number" value="{{ mpr.year }}">
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px">
+
+      <div class="field">
         <label>Month</label>
         <input name="month" type="number" min="1" max="12" value="{{ mpr.month }}">
       </div>
+
       <button class="btn" type="submit">View</button>
       <a class="btn" href="{{ url_for('pg.pg_home') }}">Back</a>
-      <a class="btn" href="{{ url_for('reports.period_lock', scope='pg', ref_id=pg._id, year=mpr.year, month=mpr.month) }}">Period Lock</a>
+
+      {% if role_name in ['ADMIN', 'STATE_ADMIN', 'DISTRICT_ADMIN', 'BLOCK_ADMIN', 'SUPER_ADMIN'] %}
+        <a class="btn" href="{{ url_for('reports.period_lock', scope='pg', ref_id=pg._id, year=mpr.year, month=mpr.month) }}">Period Lock</a>
+      {% endif %}
     </form>
 
+    <div class="workflow-note">
+      PG monthly modules move through the approval flow PG → CLF → Block → District → State. This page is read-only for review and displays generated MPR values for the selected period.
+    </div>
+
     <div class="kpis">
-      <div class="k"><div class="t">Turnover</div><div class="v">₹{{ "{:,.2f}".format(mpr.turnover or 0) }}</div></div>
-      <div class="k"><div class="t">Profit</div><div class="v">₹{{ "{:,.2f}".format(mpr.profit or 0) }}</div></div>
-      <div class="k"><div class="t">Loans Outstanding</div><div class="v">₹{{ "{:,.2f}".format(mpr.loans_outstanding or 0) }}</div></div>
-      <div class="k"><div class="t">Loans Overdue</div><div class="v">₹{{ "{:,.2f}".format(mpr.loans_overdue or 0) }}</div></div>
-      <div class="k"><div class="t">Meetings Held</div><div class="v">{{ mpr.meetings_count }}</div></div>
-      <div class="k"><div class="t">Stock Closing Value</div><div class="v">₹{{ "{:,.2f}".format(mpr.stock_closing_value or 0) }}</div></div>
+      <div class="k">
+        <div class="t">Turnover</div>
+        <div class="v">₹{{ "{:,.2f}".format(mpr.turnover or 0) }}</div>
+      </div>
+
+      <div class="k">
+        <div class="t">Profit</div>
+        <div class="v">₹{{ "{:,.2f}".format(mpr.profit or 0) }}</div>
+      </div>
+
+      <div class="k">
+        <div class="t">Loans Outstanding</div>
+        <div class="v">₹{{ "{:,.2f}".format(mpr.loans_outstanding or 0) }}</div>
+      </div>
+
+      <div class="k">
+        <div class="t">Loans Overdue</div>
+        <div class="v">₹{{ "{:,.2f}".format(mpr.loans_overdue or 0) }}</div>
+      </div>
+
+      <div class="k">
+        <div class="t">Meetings Held</div>
+        <div class="v">{{ mpr.meetings_count }}</div>
+      </div>
+
+      <div class="k">
+        <div class="t">Stock Closing Value</div>
+        <div class="v">₹{{ "{:,.2f}".format(mpr.stock_closing_value or 0) }}</div>
+      </div>
+
+      <div class="k">
+        <div class="t">Workflow Status</div>
+        <div class="v">{{ workflow_status|replace('_', ' ')|title }}</div>
+      </div>
+
+      <div class="k">
+        <div class="t">Current Level</div>
+        <div class="v">{{ workflow_level }}</div>
+      </div>
     </div>
   </div>
 </div>

@@ -606,6 +606,179 @@
     width:max-content;
   }
 }
+
+/* ============================================================
+    CLF surveillance + validation workflow additions
+============================================================ */
+.rd-workflow-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.rd-workflow-actions .rd-btn{
+  min-height:38px;
+}
+
+.rd-clf-surveillance-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:14px;
+}
+
+.rd-clf-card{
+  border:1px solid rgba(15,23,42,.12);
+  border-radius:18px;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(16,185,129,.10), transparent 38%),
+    linear-gradient(135deg, #f8fafc, #ffffff);
+  padding:14px;
+  box-shadow:0 18px 30px -26px rgba(15,23,42,.28);
+}
+
+.rd-clf-card-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+
+.rd-clf-name{
+  font-weight:950;
+  color:rgba(15,23,42,.95);
+  font-size:14px;
+}
+
+.rd-clf-admin{
+  color:var(--muted);
+  font-weight:800;
+  font-size:12px;
+  margin-top:3px;
+}
+
+.rd-clf-mini-grid{
+  display:grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap:8px;
+  margin-top:10px;
+}
+
+.rd-clf-mini{
+  border:1px solid rgba(15,23,42,.10);
+  border-radius:14px;
+  background:rgba(255,255,255,.82);
+  padding:10px;
+}
+
+.rd-clf-mini small{
+  display:block;
+  color:rgba(100,116,139,.95);
+  font-size:10px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.rd-clf-mini strong{
+  display:block;
+  margin-top:5px;
+  color:rgba(15,23,42,.95);
+  font-weight:950;
+  font-size:16px;
+  line-height:1.1;
+}
+
+.rd-status-chip{
+  border:1px solid rgba(15,23,42,.12);
+  background:rgba(247,250,249,.85);
+  color:rgba(15,23,42,.76);
+  border-radius:999px;
+  padding:7px 10px;
+  font-size:11px;
+  font-weight:950;
+  white-space:nowrap;
+}
+
+.rd-status-chip.is-warn{
+  border-color:rgba(245,158,11,.30);
+  background:rgba(245,158,11,.11);
+  color:#92400e;
+}
+
+.rd-status-chip.is-ok{
+  border-color:rgba(16,185,129,.30);
+  background:rgba(16,185,129,.12);
+  color:#0b4d3a;
+}
+
+.rd-clf-empty{
+  border:1px dashed rgba(15,23,42,.18);
+  border-radius:16px;
+  padding:18px;
+  text-align:center;
+  color:rgba(100,116,139,.95);
+  font-weight:800;
+  background:rgba(247,250,249,.70);
+}
+
+.rd-validation-strip{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:12px;
+  margin-top:12px;
+}
+
+.rd-validation-box{
+  border:1px solid rgba(245,158,11,.22);
+  border-radius:16px;
+  background:rgba(245,158,11,.08);
+  padding:12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.rd-validation-box strong{
+  font-weight:950;
+  color:#92400e;
+  font-size:20px;
+}
+
+.rd-validation-box span{
+  color:rgba(15,23,42,.75);
+  font-weight:850;
+  font-size:12px;
+}
+
+@media (max-width: 980px){
+  .rd-clf-surveillance-grid,
+  .rd-validation-strip{
+    grid-template-columns:1fr;
+  }
+  .rd-clf-mini-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px){
+  .rd-workflow-actions{
+    width:100%;
+    justify-content:stretch;
+  }
+  .rd-workflow-actions .rd-btn{
+    width:100%;
+  }
+  .rd-clf-mini-grid{
+    grid-template-columns:1fr;
+  }
+}
+
 </style>
 
 <div class="rd-wrap">
@@ -614,7 +787,27 @@
     <!--  CONTAINER 1: DASHBOARD HEADER (separate) -->
     <div class="rd-sheet">
       <div class="rd-head">
-        <h3 class="rd-title">{{ role }} Dashboard</h3>
+        <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+          <div>
+            <h3 class="rd-title">{{ role }} Dashboard</h3>
+            {% if role == 'BLOCK_ADMIN' %}
+              <div class="rd-sub">Block surveillance, CLF mapping, and validation monitoring</div>
+            {% elif role == 'DISTRICT_ADMIN' %}
+              <div class="rd-sub">District-level PG, CLF, and cashflow monitoring</div>
+            {% else %}
+              <div class="rd-sub">Jurisdiction dashboard and quick access</div>
+            {% endif %}
+          </div>
+
+          {% if role == 'BLOCK_ADMIN' %}
+            <div class="rd-workflow-actions">
+              <a href="{{ url_for('pg.validation_queue') }}" class="btn rd-btn rd-btn-warn">Validation Queue</a>
+              <a href="{{ url_for('master_data.manage_clfs') }}" class="btn rd-btn rd-btn-primary">CLF Master</a>
+              <a href="{{ url_for('master_data.manage_clf_admins') }}" class="btn rd-btn rd-btn-info">CLF Admins</a>
+              <a href="{{ url_for('master_data.clf_pg_assignment') }}" class="btn rd-btn">Assign PG to CLF</a>
+            </div>
+          {% endif %}
+        </div>
       </div>
     </div>
 
@@ -772,6 +965,53 @@
             <div class="rd-ov-foot">All PGs in scope</div>
           </div>
 
+
+          <!-- New CLF workflow card -->
+          <div class="rd-ov-card">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 21h18"/>
+                <path d="M5 21V7l7-4 7 4v14"/>
+                <path d="M9 21v-6h6v6"/>
+                <path d="M9 10h.01"/>
+                <path d="M15 10h.01"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">TOTAL CLFs</div>
+            <div class="rd-ov-value">{{ clf_count|default(0) }}</div>
+            <div class="rd-ov-foot">CLFs under scope</div>
+          </div>
+
+          <!-- New CLF Admin card -->
+          <div class="rd-ov-card">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+                <path d="M16 11l2 2 4-4"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">CLF ADMINS</div>
+            <div class="rd-ov-value">{{ clf_admin_count|default(0) }}</div>
+            <div class="rd-ov-foot">Active CLF login users</div>
+          </div>
+
+          <!-- Validation card -->
+          <div class="rd-ov-card">
+            <div class="rd-ov-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 11l3 3L22 4"/>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+              </svg>
+            </div>
+            <div class="rd-ov-label">PENDING VALIDATION</div>
+            <div class="rd-ov-value">{{ (pending_pg_registration_count|default(0)) + (pending_member_registration_count|default(0)) }}</div>
+            <div class="rd-ov-foot">
+              PG: <span class="rd-muted">{{ pending_pg_registration_count|default(0) }}</span>
+              • Members: <span class="rd-muted">{{ pending_member_registration_count|default(0) }}</span>
+            </div>
+          </div>
+
           {#
 <!-- Card 8 - Lakhpati Didi hidden for now -->
 <div class="rd-ov-card">
@@ -789,6 +1029,109 @@
         </div>
       </div>
 
+
+
+      {% if role == 'BLOCK_ADMIN' %}
+      <!-- BLOCK VALIDATION + CLF WORKFLOW SHORTCUTS -->
+      <div class="rd-section">
+        <div class="rd-section-title">
+          <div class="rd-left-title">
+            <span class="rd-dot"></span>
+            <h6 class="rd-h6">Block Validation Workflow</h6>
+          </div>
+
+          <div class="rd-workflow-actions">
+            <a href="{{ url_for('pg.validation_queue') }}" class="btn rd-btn rd-btn-warn">Open Validation Queue</a>
+            <a href="{{ url_for('master_data.clf_pg_assignment') }}" class="btn rd-btn rd-btn-primary">Assign PGs to CLF</a>
+          </div>
+        </div>
+
+        <div class="rd-validation-strip">
+          <div class="rd-validation-box">
+            <div>
+              <span>PG Registration forms waiting for Block validation</span>
+              <strong>{{ pending_pg_registration_count|default(0) }}</strong>
+            </div>
+            <a href="{{ url_for('pg.validation_queue') }}" class="btn rd-btn rd-btn-warn">Review PG Forms</a>
+          </div>
+
+          <div class="rd-validation-box">
+            <div>
+              <span>Membership Registration forms waiting for Block validation</span>
+              <strong>{{ pending_member_registration_count|default(0) }}</strong>
+            </div>
+            <a href="{{ url_for('pg.validation_queue') }}" class="btn rd-btn rd-btn-warn">Review Member Forms</a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% set _clf_rows = clf_surveillance|default(clf_summary|default(clf_summaries|default([]))) %}
+      {% if role in ['BLOCK_ADMIN', 'DISTRICT_ADMIN', 'ADMIN', 'SUPER_ADMIN'] %}
+      <!-- CLF SURVEILLANCE SUMMARY -->
+      <div class="rd-section">
+        <div class="rd-section-title">
+          <div class="rd-left-title">
+            <span class="rd-dot"></span>
+            <h6 class="rd-h6">CLF Surveillance Summary</h6>
+          </div>
+
+          {% if role == 'BLOCK_ADMIN' %}
+          <div class="rd-workflow-actions">
+            <a href="{{ url_for('master_data.manage_clf_admins') }}" class="btn rd-btn rd-btn-info">Manage CLF Admins</a>
+            <a href="{{ url_for('master_data.clf_pg_assignment') }}" class="btn rd-btn rd-btn-primary">PG Assignment</a>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if _clf_rows %}
+          <div class="rd-clf-surveillance-grid">
+            {% for c in _clf_rows %}
+              <div class="rd-clf-card">
+                <div class="rd-clf-card-head">
+                  <div>
+                    <div class="rd-clf-name">{{ c.clf_name or c.name or 'Unnamed CLF' }}</div>
+                    <div class="rd-clf-admin">
+                      Admin:
+                      {{ c.clf_admin_name or c.admin_name or c.username or 'Not created' }}
+                    </div>
+                  </div>
+
+                  {% if (c.pending_validation_count|default(0)) > 0 %}
+                    <span class="rd-status-chip is-warn">{{ c.pending_validation_count }} pending</span>
+                  {% else %}
+                    <span class="rd-status-chip is-ok">No pending</span>
+                  {% endif %}
+                </div>
+
+                <div class="rd-clf-mini-grid">
+                  <div class="rd-clf-mini">
+                    <small>PGs</small>
+                    <strong>{{ c.pg_count|default(0) }}</strong>
+                  </div>
+                  <div class="rd-clf-mini">
+                    <small>Members</small>
+                    <strong>{{ c.member_count|default(0) }}</strong>
+                  </div>
+                  <div class="rd-clf-mini">
+                    <small>Cashflow</small>
+                    <strong>₹{{ c.cashflow|default(c.cashflow_total|default(c.balance|default(0))) }}</strong>
+                  </div>
+                  <div class="rd-clf-mini">
+                    <small>Validation</small>
+                    <strong>{{ c.pending_validation_count|default(0) }}</strong>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="rd-clf-empty">
+            No CLF surveillance rows available yet. Create CLFs, create CLF Admins, and assign PGs to generate this summary.
+          </div>
+        {% endif %}
+      </div>
+      {% endif %}
 
         <!--  PG QUICK ACTIONS (NOW ABOVE SHG SECTION) -->
       <div class="rd-section">
@@ -830,26 +1173,39 @@
                     <tr>
                       <th class="rd-col-name">PG Name</th>
                       <th class="rd-col-sector">Sector</th>
+                      <th>CLF</th>
+                      <th>Validation</th>
                       <th class="rd-col-actions text-end">Actions</th>
                     </tr>
                   </thead>
                   <tbody id="rdPgTbody">
                     {% for pg in pgs %}
-                      <tr class="rd-pg-row" data-pg-search="{{ (pg.name ~ ' ' ~ (pg.sector or ''))|lower }}">
+                      {% set pg_reg_status = (pg.registration_validation or {}).status or pg.registration_validation_status or 'draft' %}
+                      {% set pg_mem_status = (pg.member_registration_validation or {}).status or pg.member_registration_validation_status or 'draft' %}
+                      <tr class="rd-pg-row" data-pg-search="{{ (pg.name ~ ' ' ~ (pg.sector or '') ~ ' ' ~ (pg.clf_name or '') ~ ' ' ~ pg_reg_status ~ ' ' ~ pg_mem_status)|lower }}">
                         <td class="rd-col-name">{{ pg.name }}</td>
                         <td class="rd-col-sector">{{ pg.sector or '-' }}</td>
+                        <td>{{ pg.clf_name or pg.mapped_clf_name or '-' }}</td>
+                        <td>
+                          <span class="rd-status-chip {% if pg_reg_status in ['submitted','resubmitted'] or pg_mem_status in ['submitted','resubmitted'] %}is-warn{% elif pg_reg_status == 'approved' and pg_mem_status == 'approved' %}is-ok{% endif %}">
+                            PG: {{ pg_reg_status|capitalize }} • Mem: {{ pg_mem_status|capitalize }}
+                          </span>
+                        </td>
                         <td class="rd-col-actions text-end">
                           <div class="rd-actions">
                             <a class="btn btn-sm rd-btn rd-btn-primary" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('pg.pg_view', pg_id=pg._id)) }}">Open</a>
                             <a class="btn btn-sm rd-btn rd-btn-info" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('finance.pg_funds', pg_id=pg._id)) }}">Funds</a>
                             <a class="btn btn-sm rd-btn rd-btn-warn" href="{{ url_for('pg.set_active_pg', pg_id=pg._id, next=url_for('finance.loan_accounts', pg_id=pg._id)) }}">PG Loan Accounts</a>
+                            {% if role == 'BLOCK_ADMIN' %}
+                              <a class="btn btn-sm rd-btn" href="{{ url_for('pg.validation_review', form_type='pg_registration', pg_id=pg._id|string) }}">Validate</a>
+                            {% endif %}
                           </div>
                         </td>
                       </tr>
                     {% endfor %}
                     {% if not pgs %}
                       <tr class="rd-pg-row">
-                        <td colspan="3" class="text-muted">No PGs found under your jurisdiction.</td>
+                        <td colspan="5" class="text-muted">No PGs found under your jurisdiction.</td>
                       </tr>
                     {% endif %}
                   </tbody>
@@ -1522,6 +1878,9 @@ if(!safe.hasData){
     const pgsWithGrants = n({{ pgs_with_grants|default(0)|tojson }});
     const shgTotal = n({{ shg_total|default(0)|tojson }});
     const shgActive = n({{ shg_active|default(0)|tojson }});
+    const clfCount = n({{ clf_count|default(0)|tojson }});
+    const clfAdminCount = n({{ clf_admin_count|default(0)|tojson }});
+    const pendingValidation = n({{ ((pending_pg_registration_count|default(0)) + (pending_member_registration_count|default(0)))|tojson }});
 
     const sectorRaw = [
       {% for pg in pgs %}
@@ -1533,15 +1892,15 @@ if(!safe.hasData){
 
     make3DBar(
       'rdHierarchyAllKpiChart',
-      ['PGs', 'Members', 'Cadres', 'Turnover', 'Profit', 'Loss', 'Grants', 'SHG Total', 'SHG Active'],
-      [pgCount, memberCount, cadreCount, turnoverTotal, profitTotal, lossTotal, grantsTotal, shgTotal, shgActive],
+      ['PGs', 'Members', 'Cadres', 'CLFs', 'CLF Admins', 'Pending Validation', 'Turnover', 'Profit', 'Loss', 'Grants', 'SHG Total', 'SHG Active'],
+      [pgCount, memberCount, cadreCount, clfCount, clfAdminCount, pendingValidation, turnoverTotal, profitTotal, lossTotal, grantsTotal, shgTotal, shgActive],
       false
     );
 
     makeRadar(
       'rdHierarchyPeopleChart',
-      ['Cadres', 'PGs', 'Members'],
-      [cadreCount, pgCount, memberCount]
+      ['Cadres', 'CLF Admins', 'PGs', 'Members'],
+      [cadreCount, clfAdminCount, pgCount, memberCount]
     );
 
     make3DBar(

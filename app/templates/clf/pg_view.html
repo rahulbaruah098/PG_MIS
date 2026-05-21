@@ -1,0 +1,644 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .clf-pg-view {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .pg-view-hero {
+    background:
+      radial-gradient(circle at 12% 12%, rgba(255,255,255,.18), transparent 42%),
+      linear-gradient(135deg, #064e3b, #198754);
+    color: #fff;
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow: 0 18px 42px rgba(6, 78, 59, .22);
+  }
+
+  .pg-view-hero h3 {
+    margin: 0;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+  }
+
+  .pg-view-hero p {
+    margin: 8px 0 0;
+    color: rgba(255,255,255,.86);
+    font-weight: 600;
+  }
+
+  .hero-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 7px 12px;
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.18);
+    color: #fff;
+    font-size: .82rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .hero-actions .btn {
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: .84rem;
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .metric-card {
+    background: #fff;
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 12px 30px rgba(15,23,42,.07);
+  }
+
+  .metric-card small {
+    display: block;
+    color: #64748b;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    font-size: .74rem;
+    margin-bottom: 8px;
+  }
+
+  .metric-card strong {
+    display: block;
+    color: #0f172a;
+    font-size: clamp(1.25rem, 2vw, 1.8rem);
+    line-height: 1.05;
+    font-weight: 900;
+  }
+
+  .soft-card {
+    background: #fff;
+    border: 1px solid rgba(15,23,42,.08);
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(15,23,42,.07);
+    overflow: hidden;
+  }
+
+  .card-head {
+    padding: 16px 18px;
+    border-bottom: 1px solid #e9eef3;
+    background: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .card-head h5 {
+    margin: 0;
+    font-weight: 900;
+    color: #0f172a;
+    font-size: 1rem;
+  }
+
+  .card-head p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: .84rem;
+    font-weight: 600;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .info-box {
+    border: 1px solid #e6ecef;
+    background: #f8fafc;
+    border-radius: 14px;
+    padding: 12px 14px;
+    min-height: 76px;
+  }
+
+  .info-box small {
+    display: block;
+    color: #64748b;
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    font-weight: 850;
+    margin-bottom: 5px;
+  }
+
+  .info-box strong {
+    color: #0f172a;
+    font-weight: 850;
+    word-break: break-word;
+  }
+
+  .badge-soft {
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: .72rem;
+    font-weight: 850;
+  }
+
+  .action-btn {
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: .8rem;
+  }
+
+  .table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+
+  .table td {
+    vertical-align: middle;
+  }
+
+  .member-name {
+    font-weight: 850;
+    color: #0f172a;
+  }
+
+  .text-soft {
+    color: #64748b;
+  }
+
+  .empty-state {
+    padding: 42px 18px;
+    text-align: center;
+    color: #64748b;
+  }
+
+  .mobile-member-list {
+    display: none;
+  }
+
+  .mobile-member-card {
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 20px rgba(15,23,42,.06);
+  }
+
+  .search-input {
+    border-radius: 999px;
+    min-height: 42px;
+    border: 1px solid #d7dee8;
+    padding: 9px 14px;
+    min-width: 300px;
+    font-weight: 700;
+    outline: none;
+  }
+
+  .search-input:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 .18rem rgba(25,135,84,.12);
+  }
+
+  .hidden-row {
+    display: none !important;
+  }
+
+  @media (max-width: 1100px) {
+    .metric-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .info-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 767px) {
+    .pg-view-hero {
+      padding: 18px;
+      border-radius: 18px;
+    }
+
+    .pg-view-hero h3 {
+      font-size: 1.2rem;
+    }
+
+    .hero-actions {
+      width: 100%;
+    }
+
+    .hero-actions .btn {
+      width: 100%;
+    }
+
+    .metric-grid,
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .desktop-table-wrap {
+      display: none;
+    }
+
+    .mobile-member-list {
+      display: block;
+    }
+
+    .search-input {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+</style>
+
+{% set reg_status = (pg.registration_validation or {}).status or pg.registration_validation_status or 'draft' %}
+{% set mem_status = (pg.member_registration_validation or {}).status or pg.member_registration_validation_status or 'draft' %}
+{% set reg_remarks = (pg.registration_validation or {}).remarks or '' %}
+{% set mem_remarks = (pg.member_registration_validation or {}).remarks or '' %}
+
+<div class="clf-pg-view">
+  <div class="pg-view-hero mb-4">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <h3>{{ pg.name or pg.pg_name or 'Unnamed PG' }}</h3>
+        <p>
+          CLF read-only monitoring view for PG registration, membership, and cashflow status.
+        </p>
+      </div>
+
+      <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
+        <span class="hero-pill">CLF PG View</span>
+
+        <div class="hero-actions">
+          <a href="{{ url_for('clf.assigned_pgs') }}" class="btn btn-light btn-sm">
+            Back to Assigned PGs
+          </a>
+          <a href="{{ url_for('clf.dashboard') }}" class="btn btn-outline-light btn-sm">
+            Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="metric-grid mb-4">
+    <div class="metric-card">
+      <small>Total Members</small>
+      <strong>{{ members|length }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <small>Cash In</small>
+      <strong>₹{{ "%.2f"|format(cashflow.cash_in or 0) }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <small>Cash Out</small>
+      <strong>₹{{ "%.2f"|format(cashflow.cash_out or 0) }}</strong>
+    </div>
+
+    <div class="metric-card">
+      <small>Balance</small>
+      <strong>₹{{ "%.2f"|format(cashflow.balance or 0) }}</strong>
+    </div>
+  </div>
+
+  <div class="soft-card mb-4">
+    <div class="card-head">
+      <div>
+        <h5>PG Basic Details</h5>
+        <p>Basic location and mapping information for this PG.</p>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('pg.pg_registration', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-primary action-btn">
+          Registration Form
+        </a>
+        <a href="{{ url_for('pg.pg_members', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-secondary action-btn">
+          Members Form
+        </a>
+      </div>
+    </div>
+
+    <div class="p-3">
+      <div class="info-grid">
+        <div class="info-box">
+          <small>PG Name</small>
+          <strong>{{ pg.name or pg.pg_name or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Sector</small>
+          <strong>{{ pg.sector or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Status</small>
+          <strong>{{ pg.status or 'draft' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>District</small>
+          <strong>{{ pg.District or pg.district_name or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Block</small>
+          <strong>{{ pg.Block or pg.block_name or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Gram Panchayat</small>
+          <strong>{{ pg['Gram Panchayat'] or pg.gp_name or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Village</small>
+          <strong>{{ pg.Village or pg.village or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>CLF ID</small>
+          <strong>{{ pg.clf_id or '-' }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Assigned CLF User</small>
+          <strong>{{ pg.assigned_clf_user_id or '-' }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="soft-card h-100">
+        <div class="card-head">
+          <div>
+            <h5>PG Registration Validation</h5>
+            <p>Block Admin validates this form.</p>
+          </div>
+
+          {% if reg_status == 'approved' %}
+            <span class="badge text-bg-success badge-soft">Approved</span>
+          {% elif reg_status == 'submitted' or reg_status == 'resubmitted' %}
+            <span class="badge text-bg-warning badge-soft">{{ reg_status|capitalize }}</span>
+          {% elif reg_status == 'rejected' %}
+            <span class="badge text-bg-danger badge-soft">Rejected</span>
+          {% else %}
+            <span class="badge text-bg-light border badge-soft">Draft</span>
+          {% endif %}
+        </div>
+
+        <div class="p-3">
+          {% if reg_remarks %}
+            <div class="alert alert-warning mb-0">
+              <strong>Remarks:</strong> {{ reg_remarks }}
+            </div>
+          {% else %}
+            <div class="text-soft">
+              No validation remarks available.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="soft-card h-100">
+        <div class="card-head">
+          <div>
+            <h5>Membership Validation</h5>
+            <p>Block Admin validates the membership registration.</p>
+          </div>
+
+          {% if mem_status == 'approved' %}
+            <span class="badge text-bg-success badge-soft">Approved</span>
+          {% elif mem_status == 'submitted' or mem_status == 'resubmitted' %}
+            <span class="badge text-bg-warning badge-soft">{{ mem_status|capitalize }}</span>
+          {% elif mem_status == 'rejected' %}
+            <span class="badge text-bg-danger badge-soft">Rejected</span>
+          {% else %}
+            <span class="badge text-bg-light border badge-soft">Draft</span>
+          {% endif %}
+        </div>
+
+        <div class="p-3">
+          {% if mem_remarks %}
+            <div class="alert alert-warning mb-0">
+              <strong>Remarks:</strong> {{ mem_remarks }}
+            </div>
+          {% else %}
+            <div class="text-soft">
+              No validation remarks available.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="soft-card mb-4">
+    <div class="card-head">
+      <div>
+        <h5>Cashflow Details</h5>
+        <p>Read-only summary from available PG finance records.</p>
+      </div>
+    </div>
+
+    <div class="p-3">
+      <div class="info-grid">
+        <div class="info-box">
+          <small>Grant Received</small>
+          <strong>₹{{ "%.2f"|format(cashflow.grant_received or 0) }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Grant Utilized</small>
+          <strong>₹{{ "%.2f"|format(cashflow.grant_utilized or 0) }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>PG Loan Principal</small>
+          <strong>₹{{ "%.2f"|format(cashflow.loan_principal or 0) }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>PG Loan Repaid</small>
+          <strong>₹{{ "%.2f"|format(cashflow.loan_repaid or 0) }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Member Loan Principal</small>
+          <strong>₹{{ "%.2f"|format(cashflow.member_loan_principal or 0) }}</strong>
+        </div>
+
+        <div class="info-box">
+          <small>Member Loan Repaid</small>
+          <strong>₹{{ "%.2f"|format(cashflow.member_loan_repaid or 0) }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="soft-card">
+    <div class="card-head">
+      <div>
+        <h5>PG Members</h5>
+        <p>Members currently stored under this PG.</p>
+      </div>
+
+      <input
+        type="text"
+        id="memberSearchInput"
+        class="search-input"
+        placeholder="Search member name, code, SHG..."
+        autocomplete="off"
+      >
+    </div>
+
+    <div class="desktop-table-wrap">
+      <table class="table table-hover mb-0">
+        <thead>
+          <tr>
+            <th style="width: 60px;">#</th>
+            <th>Member</th>
+            <th>Member Code</th>
+            <th>SHG</th>
+            <th>Category</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for member in members %}
+            <tr
+              class="member-row"
+              data-search="{{ (member.name or member.member_name or member['Member Name'] or '')|lower }} {{ (member.member_code or member['Member Code'] or '')|lower }} {{ (member.shg_name or member['SHG Name'] or '')|lower }} {{ (member.category or member['Social Category'] or '')|lower }}"
+            >
+              <td>{{ loop.index }}</td>
+
+              <td>
+                <div class="member-name">
+                  {{ member.name or member.member_name or member['Member Name'] or 'Unnamed Member' }}
+                </div>
+                <small class="text-soft">
+                  ID: {{ member._id }}
+                </small>
+              </td>
+
+              <td>{{ member.member_code or member['Member Code'] or '-' }}</td>
+              <td>{{ member.shg_name or member['SHG Name'] or '-' }}</td>
+              <td>{{ member.category or member['Social Category'] or '-' }}</td>
+
+              <td>
+                {% set vstatus = member.validation_status or 'draft' %}
+                {% if vstatus == 'approved' %}
+                  <span class="badge text-bg-success badge-soft">Approved</span>
+                {% elif vstatus == 'submitted' or vstatus == 'resubmitted' %}
+                  <span class="badge text-bg-warning badge-soft">{{ vstatus|capitalize }}</span>
+                {% elif vstatus == 'rejected' %}
+                  <span class="badge text-bg-danger badge-soft">Rejected</span>
+                {% else %}
+                  <span class="badge text-bg-light border badge-soft">Draft</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <strong>No members found.</strong>
+                  <div>This PG does not have member records yet.</div>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mobile-member-list p-3">
+      {% for member in members %}
+        <div
+          class="mobile-member-card member-row"
+          data-search="{{ (member.name or member.member_name or member['Member Name'] or '')|lower }} {{ (member.member_code or member['Member Code'] or '')|lower }} {{ (member.shg_name or member['SHG Name'] or '')|lower }} {{ (member.category or member['Social Category'] or '')|lower }}"
+        >
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+            <div>
+              <div class="member-name">
+                {{ member.name or member.member_name or member['Member Name'] or 'Unnamed Member' }}
+              </div>
+              <small class="text-soft">ID: {{ member._id }}</small>
+            </div>
+
+            {% set vstatus = member.validation_status or 'draft' %}
+            {% if vstatus == 'approved' %}
+              <span class="badge text-bg-success badge-soft">Approved</span>
+            {% elif vstatus == 'submitted' or vstatus == 'resubmitted' %}
+              <span class="badge text-bg-warning badge-soft">{{ vstatus|capitalize }}</span>
+            {% elif vstatus == 'rejected' %}
+              <span class="badge text-bg-danger badge-soft">Rejected</span>
+            {% else %}
+              <span class="badge text-bg-light border badge-soft">Draft</span>
+            {% endif %}
+          </div>
+
+          <div class="small text-soft">
+            <div><strong>Member Code:</strong> {{ member.member_code or member['Member Code'] or '-' }}</div>
+            <div><strong>SHG:</strong> {{ member.shg_name or member['SHG Name'] or '-' }}</div>
+            <div><strong>Category:</strong> {{ member.category or member['Social Category'] or '-' }}</div>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <strong>No members found.</strong>
+          <div>This PG does not have member records yet.</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const searchInput = document.getElementById("memberSearchInput");
+    const rows = Array.from(document.querySelectorAll(".member-row"));
+
+    function filterRows() {
+      const term = (searchInput ? searchInput.value : "").trim().toLowerCase();
+
+      rows.forEach((row) => {
+        const haystack = row.dataset.search || "";
+        const visible = !term || haystack.includes(term);
+        row.classList.toggle("hidden-row", !visible);
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener("input", filterRows);
+    }
+  })();
+</script>
+{% endblock %}

@@ -4,7 +4,7 @@
 <style>
   .pgb-wrap{
     width:100%;
-    max-width:1100px;
+    max-width:1180px;
     margin:0 auto;
     padding:clamp(12px,2.2vw,22px);
 
@@ -15,6 +15,9 @@
     --paper:#ffffff;
     --soft:#f7faf9;
     --accent:#0b4d3a;
+    --green:#198754;
+    --green-dark:#064e3b;
+    --warn:#f59e0b;
 
     color:var(--ink);
     position:relative;
@@ -103,6 +106,13 @@
     gap:10px;
     flex-wrap:wrap;
     min-width:0;
+  }
+  .pgb-top-right{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    flex-wrap:wrap;
   }
   .pgb-label{
     font-weight:900;
@@ -217,6 +227,53 @@
   .pgb-btn.pgb-primary:hover{
     background:rgba(16,185,129,.16);
   }
+  .pgb-btn.pgb-outline{
+    border-color:rgba(16,185,129,.35);
+    background:#fff;
+    color:#0b4d3a;
+  }
+
+  /* Workflow note */
+  .pgb-workflow-note{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .pgb-step{
+    border:1px solid rgba(15,23,42,.12);
+    background:#fff;
+    border-radius:15px;
+    padding:12px;
+    box-shadow:0 10px 22px -20px rgba(15,23,42,.28);
+  }
+  .pgb-step small{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:24px;
+    height:24px;
+    border-radius:999px;
+    background:rgba(16,185,129,.12);
+    color:#0b4d3a;
+    font-size:12px;
+    font-weight:950;
+    margin-bottom:7px;
+  }
+  .pgb-step strong{
+    display:block;
+    font-size:12px;
+    font-weight:950;
+    color:var(--ink);
+  }
+  .pgb-step span{
+    display:block;
+    margin-top:4px;
+    font-size:11.5px;
+    font-weight:750;
+    color:var(--muted);
+    line-height:1.4;
+  }
 
   /* Form */
   .pgb-form{
@@ -272,27 +329,6 @@
     border-color:rgba(15,23,42,.12);
     color:rgba(15,23,42,.55);
     cursor:not-allowed;
-  }
-
-  /* Legacy create area */
-
-  .pgb-legacy-collapse[hidden]{
-  display:none !important;
-}
-
-.pgb-legacy-collapse{
-  display:block;
-}
-
-#legacyPgCreateToggle.is-open{
-  background:rgba(16,185,129,.16);
-  border-color:rgba(16,185,129,.40);
-  color:#0b4d3a;
-}
-  .pgb-legacy{
-    padding-top:12px;
-    margin-top:12px;
-    border-top:1px dashed var(--line2);
   }
 
   /* Toolbar */
@@ -355,7 +391,7 @@
     border-collapse:separate;
     border-spacing:0;
     font-size:13px;
-    min-width:760px;
+    min-width:1040px;
   }
   .pgb-table thead th{
     position:sticky;
@@ -408,6 +444,7 @@
     font-size:12px;
     color:var(--ink);
     text-transform:lowercase;
+    white-space:nowrap;
   }
   .pgb-badge::before{
     content:"";
@@ -416,16 +453,13 @@
     border-radius:999px;
     background:rgba(140,140,140,.7);
     box-shadow:0 0 0 4px rgba(11,77,58,.08);
+    flex:0 0 auto;
   }
-  .pgb-badge.is-active::before{
-    background:linear-gradient(180deg,#16a34a,#0b5f3a);
-  }
-  .pgb-badge.is-inactive::before{
-    background:rgba(220,120,20,.75);
-  }
-  .pgb-badge.is-draft::before{
-    background:rgba(140,140,140,.7);
-  }
+  .pgb-badge.is-active::before{ background:linear-gradient(180deg,#16a34a,#0b5f3a); }
+  .pgb-badge.is-inactive::before{ background:rgba(220,120,20,.75); }
+  .pgb-badge.is-draft::before{ background:rgba(140,140,140,.7); }
+  .pgb-badge.is-unassigned::before{ background:var(--warn); }
+  .pgb-badge.is-assigned::before{ background:linear-gradient(180deg,#16a34a,#0b5f3a); }
 
   .pgb-open{
     display:inline-flex;
@@ -447,6 +481,19 @@
     transform:translateY(-1px);
     background:rgba(16,185,129,.16);
     box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  .pgb-open.pgb-warn{
+    border-color:rgba(245,158,11,.38);
+    background:rgba(245,158,11,.12);
+    color:#92400e;
+  }
+
+  .pgb-action-stack{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
   }
 
   .pgb-empty{
@@ -474,12 +521,9 @@
 
   /* Tablet */
   @media (max-width: 900px){
-    .pgb-wrap{
-      padding:12px;
-    }
-    .pgb-form{
-      grid-template-columns:repeat(6,minmax(0,1fr));
-    }
+    .pgb-wrap{ padding:12px; }
+    .pgb-workflow-note{ grid-template-columns:1fr; }
+    .pgb-form{ grid-template-columns:repeat(6,minmax(0,1fr)); }
     .pgb-span-3{ grid-column:span 3; }
     .pgb-span-4{ grid-column:span 6; }
     .pgb-span-6{ grid-column:span 6; }
@@ -490,15 +534,10 @@
 
   /* Mobile / app */
   @media (max-width: 720px){
-    .pgb-wrap{
-      padding:10px;
-    }
-
+    .pgb-wrap{ padding:10px; }
     .pgb-back{ display:flex; }
 
-    .pgb-head{
-      padding:14px 14px 12px;
-    }
+    .pgb-head{ padding:14px 14px 12px; }
     .pgb-title{
       text-align:left;
       padding-left:52px;
@@ -518,17 +557,18 @@
       padding:12px 14px;
       align-items:flex-start;
     }
-
-    .pgb-section{
-      padding:12px 14px 14px;
+    .pgb-top-left,
+    .pgb-top-right{
+      width:100%;
+    }
+    .pgb-top-right .pgb-btn{
+      width:100%;
     }
 
-    .pgb-block-head{
-      padding:14px 12px 12px;
-    }
-    .pgb-block-body{
-      padding:12px;
-    }
+    .pgb-section{ padding:12px 14px 14px; }
+
+    .pgb-block-head{ padding:14px 12px 12px; }
+    .pgb-block-body{ padding:12px; }
 
     .pgb-form{
       grid-template-columns:1fr;
@@ -547,15 +587,13 @@
       padding:11px 12px;
     }
 
-    .pgb-table-area{
-      padding:0 14px 14px;
-    }
+    .pgb-table-area{ padding:0 14px 14px; }
     .pgb-table-wrap{
       max-height:none;
       overflow:hidden;
     }
 
-    /* Swipe cards like grants page */
+    /* Swipe cards */
     table.pgb-table{
       min-width:0;
       width:100%;
@@ -580,8 +618,8 @@
 
     .pgb-table tr.pgb-row{
       display:block;
-      min-width:84%;
-      max-width:84%;
+      min-width:86%;
+      max-width:86%;
       scroll-snap-align:start;
       background:rgba(255,255,255,.96);
       border:1px solid rgba(15,23,42,.14);
@@ -600,6 +638,7 @@
       border-bottom:1px dashed rgba(15,23,42,.10);
       white-space:normal;
       background:transparent !important;
+      text-align:right;
     }
     .pgb-table tr.pgb-row td:last-child{ border-bottom:none; }
 
@@ -608,33 +647,39 @@
       font-weight:950;
       color:rgba(15,23,42,.72);
       flex:0 0 auto;
-      min-width:90px;
+      min-width:96px;
+      text-align:left;
     }
 
-    .pgb-table tr.pgb-row td[data-label="Open"]{
+    .pgb-table tr.pgb-row td[data-label="Action"]{
+      display:block;
+      text-align:left;
       padding-top:10px !important;
       border-bottom:none;
     }
+    .pgb-table tr.pgb-row td[data-label="Action"]::before{
+      display:block;
+      margin-bottom:8px;
+    }
 
+    .pgb-action-stack{
+      width:100%;
+      display:grid;
+      grid-template-columns:1fr;
+    }
     .pgb-open{
       width:100%;
       min-height:44px;
     }
 
-    .pgb-toolbar{
-      align-items:stretch;
-    }
+    .pgb-toolbar{ align-items:stretch; }
     .pgb-toolbar-left,
-    .pgb-toolbar-right{
-      width:100%;
-    }
+    .pgb-toolbar-right{ width:100%; }
     .pgb-search{
       width:100%;
       min-width:0;
     }
-    .pgb-search input{
-      width:100%;
-    }
+    .pgb-search input{ width:100%; }
 
     .pgb-pager{
       flex-direction:column;
@@ -652,9 +697,7 @@
       font-size:15px;
       line-height:1.3;
     }
-    .pgb-block-title{
-      font-size:12.5px;
-    }
+    .pgb-block-title{ font-size:12.5px; }
   }
 </style>
 
@@ -674,7 +717,7 @@
       </a>
 
       <h2 class="pgb-title">Producer Groups (PGs)</h2>
-      <div class="pgb-subtitle">Create PGs and manage existing PG records</div>
+      <div class="pgb-subtitle">Create PGs, view CLF mapping, and assign PGs to CLF Admins</div>
     </div>
 
     <!-- Scope -->
@@ -686,20 +729,42 @@
           <span>{{ scope_badge or 'Scope' }}</span>
         </div>
       </div>
+
+      <div class="pgb-top-right">
+        <a class="pgb-btn pgb-outline" href="{{ url_for('master_data.manage_clfs') }}">CLF Master</a>
+        <a class="pgb-btn pgb-outline" href="{{ url_for('master_data.manage_clf_admins') }}">CLF Admins</a>
+        <a class="pgb-btn pgb-primary" href="{{ url_for('master_data.clf_pg_assignment') }}">Assign PG to CLF</a>
+      </div>
     </div>
 
     <!-- Create PG -->
     <div class="pgb-section">
+      <div class="pgb-workflow-note">
+        <div class="pgb-step">
+          <small>1</small>
+          <strong>Create PG + Login</strong>
+          <span>Block/Admin hierarchy creates the PG and PG login from SHG master.</span>
+        </div>
+        <div class="pgb-step">
+          <small>2</small>
+          <strong>Assign PG to CLF</strong>
+          <span>Block Admin maps the newly created PG to a CLF Admin from the assignment page.</span>
+        </div>
+        <div class="pgb-step">
+          <small>3</small>
+          <strong>CLF Operates PG</strong>
+          <span>After assignment, the CLF Admin can operate only its mapped PGs.</span>
+        </div>
+      </div>
+
       <div class="pgb-block">
         <div class="pgb-block-head">
           <div>
-            <h3 class="pgb-block-title">Create PG (from SHG Master)</h3>
-          
+            <h3 class="pgb-block-title">Create PG from SHG Master</h3>
+            <p class="pgb-block-sub">
+              PG creation stays with Block/Admin roles. CLF assignment happens after PG creation.
+            </p>
           </div>
-
-          <button class="pgb-btn" type="button" id="legacyPgCreateToggle" aria-expanded="false" aria-controls="legacyPgCreate">
-          Legacy Create
-          </button>
         </div>
 
         <div class="pgb-block-body">
@@ -743,72 +808,29 @@
 
             <div class="pgb-span-3 pgb-stack">
               <label class="pgb-label">PG Name</label>
-              <input class="pgb-input" name="pg_name" required>
+              <input class="pgb-input" name="pg_name" placeholder="Enter PG name" required>
             </div>
 
             <div class="pgb-span-3 pgb-stack">
-              <label class="pgb-label">Username</label>
-              <input class="pgb-input" name="username" required>
+              <label class="pgb-label">PG Login Username</label>
+              <input class="pgb-input" name="username" placeholder="Username" autocomplete="off" required>
             </div>
 
             <div class="pgb-span-3 pgb-stack">
-              <label class="pgb-label">Password</label>
-              <input type="password" class="pgb-input" name="password" required>
+              <label class="pgb-label">PG Login Password</label>
+              <input type="password" class="pgb-input" name="password" placeholder="Password" autocomplete="new-password" required>
             </div>
 
             <div class="pgb-span-3 pgb-stack" style="justify-content:end;">
               <button class="pgb-btn pgb-primary" type="submit">Create PG + Login</button>
             </div>
-          </form>
 
-          <div class="pgb-legacy-collapse" id="legacyPgCreate" hidden>
-            <div class="pgb-legacy">
-              <div class="pgb-block" style="margin-top:0;">
-                <div class="pgb-block-head">
-                  <div>
-                    <h3 class="pgb-block-title">Legacy: Manual PG Create</h3>
-
-                  </div>
-                </div>
-
-                <div class="pgb-block-body">
-                  <form method="post" class="pgb-form" style="margin-top:0;">
-                    <input type="hidden" name="create_mode" value="manual">
-
-                    <div class="pgb-span-4 pgb-stack">
-                      <label class="pgb-label">PG Name</label>
-                      <input class="pgb-input" name="name" placeholder="e.g., Tuisa PG" required>
-                    </div>
-
-                    <div class="pgb-span-4 pgb-stack">
-                      <label class="pgb-label">Sector (optional)</label>
-                      <select class="pgb-select" name="sector">
-                        <option value="" selected>Select Sector</option>
-                        <option value="Agri">Agri</option>
-                        <option value="ARDD">ARDD</option>
-                        <option value="Fishery">Fishery</option>
-                      </select>
-                    </div>
-
-                    <div class="pgb-span-4 pgb-stack">
-                      <label class="pgb-label">Block</label>
-                      <select class="pgb-select" name="block_id" required>
-                        <option value="" selected disabled>Select Block</option>
-                        {% for b in (blocks or []) %}
-                          <option value="{{ b._id|string }}">{{ b.name }}</option>
-                        {% endfor %}
-                      </select>
-                    </div>
-
-                    <div class="pgb-span-3 pgb-stack" style="justify-content:end;">
-                      <button class="pgb-btn pgb-primary" type="submit">Create</button>
-                    </div>
-                  </form>
-                </div>
+            <div class="pgb-span-9 pgb-stack" style="justify-content:end;">
+              <div class="pgb-pill">
+                After creation, use <strong>Assign PG to CLF</strong> to map this PG with a CLF Admin.
               </div>
             </div>
-          </div>
-
+          </form>
         </div>
       </div>
     </div>
@@ -819,14 +841,16 @@
         <div class="pgb-block-head">
           <div>
             <h3 class="pgb-block-title">Producer Group List</h3>
-           
+            <p class="pgb-block-sub">
+              View PG status, CLF mapping, and next assignment action.
+            </p>
           </div>
         </div>
 
         <div class="pgb-toolbar" id="pgbToolbar">
           <div class="pgb-toolbar-left">
             <div class="pgb-search">
-              <input class="pgb-input" type="text" id="pgbSearchInput" placeholder="Search PGs...">
+              <input class="pgb-input" type="text" id="pgbSearchInput" placeholder="Search PGs, sector, CLF, admin, status...">
               <button class="pgb-btn" type="button" id="pgbSearchBtn">Search</button>
             </div>
             <span class="pgb-pill" id="pgbResultCount">Current PGs - 0</span>
@@ -853,32 +877,78 @@
                     <th>PG</th>
                     <th>Sector</th>
                     <th>Status</th>
-                    <th style="width:160px;">Open</th>
+                    <th>Mapped CLF</th>
+                    <th>CLF Admin</th>
+                    <th style="width:220px;">Action</th>
                   </tr>
                 </thead>
                 <tbody id="pgbTbody">
                   {% for pg in pgs %}
                     {% set st = (pg.status or 'draft')|lower %}
+                    {% set clf_name = pg.clf_name or '' %}
+                    {% set clf_admin_name = pg.assigned_clf_admin_name or '' %}
+                    {% set is_mapped = clf_name or pg.clf_id %}
                     <tr class="pgb-row"
                         data-index="{{ loop.index }}"
-                        data-name="{{ pg.name }}"
+                        data-name="{{ pg.display_name or pg.name or pg.pg_name or '' }}"
                         data-sector="{{ pg.sector or '-' }}"
-                        data-status="{{ pg.status or 'draft' }}">
+                        data-status="{{ pg.status or 'draft' }}"
+                        data-clf="{{ clf_name or 'not assigned' }}"
+                        data-admin="{{ clf_admin_name or 'not assigned' }}">
                       <td class="pgb-num" data-label="#">{{ loop.index }}</td>
-                      <td class="pgb-name" data-label="PG">{{ pg.name }}</td>
+
+                      <td class="pgb-name" data-label="PG">
+                        {{ pg.display_name or pg.name or pg.pg_name or '-' }}
+                        <div class="pgb-subtle" style="font-size:11px; margin-top:3px;">
+                          ID: {{ pg._id }}
+                        </div>
+                      </td>
+
                       <td class="pgb-subtle" data-label="Sector">{{ pg.sector or '-' }}</td>
+
                       <td data-label="Status">
                         <span class="pgb-badge {% if st == 'active' %}is-active{% elif st == 'inactive' %}is-inactive{% else %}is-draft{% endif %}">
                           {{ pg.status or 'draft' }}
                         </span>
                       </td>
-                      <td data-label="Open">
-                        <a class="pgb-open" href="{{ url_for('pg.pg_view', pg_id=pg._id|string) }}">Open</a>
+
+                      <td data-label="Mapped CLF">
+                        {% if is_mapped %}
+                          <span class="pgb-badge is-assigned">{{ clf_name or 'Mapped' }}</span>
+                          <div class="pgb-subtle" style="font-size:11px; margin-top:4px;">
+                            CLF ID: {{ pg.clf_id }}
+                          </div>
+                        {% else %}
+                          <span class="pgb-badge is-unassigned">not assigned</span>
+                        {% endif %}
+                      </td>
+
+                      <td data-label="CLF Admin">
+                        {% if clf_admin_name %}
+                          <div class="pgb-name">{{ clf_admin_name }}</div>
+                          <div class="pgb-subtle" style="font-size:11px;">
+                            Assigned
+                          </div>
+                        {% else %}
+                          <span class="pgb-subtle">Not assigned yet</span>
+                        {% endif %}
+                      </td>
+
+                      <td data-label="Action">
+                        <div class="pgb-action-stack">
+                          <a class="pgb-open" href="{{ url_for('pg.pg_view', pg_id=pg._id|string) }}">Open</a>
+
+                          {% if is_mapped %}
+                            <a class="pgb-open" href="{{ url_for('master_data.clf_pg_assignment') }}">Change CLF</a>
+                          {% else %}
+                            <a class="pgb-open pgb-warn" href="{{ url_for('master_data.clf_pg_assignment') }}">Assign CLF</a>
+                          {% endif %}
+                        </div>
                       </td>
                     </tr>
                   {% else %}
                     <tr id="pgbNoDataRow">
-                      <td colspan="5" class="pgb-empty">
+                      <td colspan="7" class="pgb-empty">
                         No PGs yet.
                       </td>
                     </tr>
@@ -909,30 +979,6 @@
   (function(){
     const $ = id => document.getElementById(id);
 
-    /* ============================================================
-   Legacy Create toggle
-============================================================ */
-const legacyBtn = $('legacyPgCreateToggle');
-const legacyBox = $('legacyPgCreate');
-
-if (legacyBtn && legacyBox) {
-  legacyBtn.addEventListener('click', function(){
-    const isHidden = legacyBox.hasAttribute('hidden');
-
-    if (isHidden) {
-      legacyBox.removeAttribute('hidden');
-      legacyBtn.classList.add('is-open');
-      legacyBtn.setAttribute('aria-expanded', 'true');
-      legacyBtn.textContent = 'Hide Legacy Create';
-    } else {
-      legacyBox.setAttribute('hidden', 'hidden');
-      legacyBtn.classList.remove('is-open');
-      legacyBtn.setAttribute('aria-expanded', 'false');
-      legacyBtn.textContent = 'Legacy Create';
-    }
-  });
-}
-
     const el = {
       state: $('shg_state'),
       district: $('shg_district'),
@@ -942,6 +988,8 @@ if (legacyBtn && legacyBox) {
     };
 
     const fill = (select, items, placeholder) => {
+      if (!select) return;
+
       select.innerHTML = `<option value="" selected disabled>${placeholder}</option>`;
       (items || []).forEach(v=>{
         const opt = document.createElement('option');
@@ -951,7 +999,9 @@ if (legacyBtn && legacyBox) {
       });
     };
 
-    const lock = (select, locked)=> select.disabled = !!locked;
+    const lock = (select, locked)=> {
+      if (select) select.disabled = !!locked;
+    };
 
     const resetDownstream = (from) => {
       if(from <= 1){ fill(el.district, [], 'Select District'); lock(el.district,true); }
@@ -991,7 +1041,7 @@ if (legacyBtn && legacyBox) {
         await onBlock();
       }
 
-      if(role === 'BLOCK_ADMIN' || role === 'CLF_MANAGER' || role === 'CLF_ADMIN'){
+      if(role === 'BLOCK_ADMIN'){
         el.state.disabled = true;
         el.district.disabled = true;
         el.block.disabled = true;
@@ -1045,10 +1095,10 @@ if (legacyBtn && legacyBox) {
       lock(el.village,false);
     }
 
-    el.state.addEventListener('change', onState);
-    el.district.addEventListener('change', onDistrict);
-    el.block.addEventListener('change', onBlock);
-    el.gp.addEventListener('change', onGp);
+    if(el.state) el.state.addEventListener('change', onState);
+    if(el.district) el.district.addEventListener('change', onDistrict);
+    if(el.block) el.block.addEventListener('change', onBlock);
+    if(el.gp) el.gp.addEventListener('change', onGp);
 
     (async function init(){
       await loadStates();
@@ -1068,14 +1118,12 @@ if (legacyBtn && legacyBox) {
 
     /* ============================================================
        PG LIST SEARCH + PAGINATION
-        client-side only
-        no backend/data logic changed
+       client-side only
        ============================================================ */
     let currentPage = 1;
     let perPage = 25;
     let query = "";
 
-    const tableBody = document.getElementById('pgbTbody');
     const searchInput = document.getElementById('pgbSearchInput');
     const searchBtn = document.getElementById('pgbSearchBtn');
     const perPageSelect = document.getElementById('pgbPerPage');
@@ -1101,7 +1149,9 @@ if (legacyBtn && legacyBox) {
         row.dataset.index,
         row.dataset.name,
         row.dataset.sector,
-        row.dataset.status
+        row.dataset.status,
+        row.dataset.clf,
+        row.dataset.admin
       ].map(normalize).join(" | ");
       return hay.includes(q);
     }

@@ -1,43 +1,401 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-  <h4 class="mb-0">CLFs</h4>
-  <span class="badge bg-secondary">Block scope</span>
-</div>
+<style>
+  .clf-page-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+  }
 
-<div class="card mb-3">
-  <div class="card-body">
-    <form method="post" class="row g-2">
-      <div class="col-md-8">
-        <input class="form-control" name="name" placeholder="CLF name" required>
+  .clf-header {
+    background: linear-gradient(135deg, #0f5132, #198754);
+    color: #fff;
+    border-radius: 18px;
+    padding: 22px 24px;
+    box-shadow: 0 14px 35px rgba(15, 81, 50, 0.18);
+  }
+
+  .clf-header h4 {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .clf-header p {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .scope-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 7px 12px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .clf-card {
+    border: 0;
+    border-radius: 18px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+  }
+
+  .clf-card .card-header {
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+    padding: 16px 18px;
+  }
+
+  .clf-card .card-header h6 {
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .clf-form-label {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #334155;
+    margin-bottom: 6px;
+  }
+
+  .clf-input {
+    border-radius: 12px;
+    min-height: 44px;
+    border: 1px solid #d7dee8;
+  }
+
+  .clf-input:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.18rem rgba(25, 135, 84, 0.12);
+  }
+
+  .clf-btn {
+    border-radius: 12px;
+    min-height: 44px;
+    font-weight: 800;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .info-box {
+    border: 1px solid #e6ecef;
+    background: #f8fafc;
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+
+  .info-box small {
+    display: block;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+  }
+
+  .info-box strong {
+    color: #0f172a;
+    font-size: 0.96rem;
+  }
+
+  .table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.035em;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .table td {
+    vertical-align: middle;
+  }
+
+  .clf-name-main {
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .text-soft {
+    color: #64748b;
+  }
+
+  .empty-state {
+    padding: 38px 18px;
+    text-align: center;
+    color: #64748b;
+  }
+
+  .quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .quick-actions .btn {
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.82rem;
+  }
+
+  .mobile-clf-card {
+    display: none;
+  }
+
+  @media (max-width: 991px) {
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .clf-header {
+      padding: 18px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .desktop-table-wrap {
+      display: none;
+    }
+
+    .mobile-clf-card {
+      display: block;
+    }
+
+    .mobile-clf-card .mini-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 14px;
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+      margin-bottom: 12px;
+    }
+
+    .clf-header h4 {
+      font-size: 1.1rem;
+    }
+
+    .quick-actions {
+      width: 100%;
+    }
+
+    .quick-actions .btn {
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="clf-page-wrap">
+  <div class="clf-header mb-4">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+      <div>
+        <h4 class="mb-1">CLF Master</h4>
+        <p class="mb-0">
+          Create and manage CLFs under your mapped Block. CLF login and PG assignment are handled separately.
+        </p>
       </div>
-      <div class="col-md-4">
-        <button class="btn btn-primary w-100" type="submit">Add CLF</button>
+
+      <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
+        <span class="scope-pill">
+          Block Scope
+        </span>
+
+        <div class="quick-actions">
+          <a href="{{ url_for('master_data.manage_clf_admins') }}" class="btn btn-light btn-sm">
+            CLF Admins
+          </a>
+          <a href="{{ url_for('master_data.clf_pg_assignment') }}" class="btn btn-outline-light btn-sm">
+            Assign PGs
+          </a>
+        </div>
       </div>
-    </form>
+    </div>
   </div>
-</div>
 
-<div class="card">
-  <div class="card-body p-0">
-    <table class="table table-striped mb-0">
-      <thead>
-        <tr>
-          <th style="width: 60px;">#</th>
-          <th>CLF Name</th>
-        </tr>
-      </thead>
-      <tbody>
+  <div class="card clf-card mb-4">
+    <div class="card-header">
+      <h6>Create CLF</h6>
+    </div>
+
+    <div class="card-body">
+      <div class="info-grid mb-3">
+        <div class="info-box">
+          <small>State</small>
+          <strong>
+            {% if state %}
+              {{ state.name or state.code or '-' }}
+            {% else %}
+              -
+            {% endif %}
+          </strong>
+        </div>
+
+        <div class="info-box">
+          <small>District</small>
+          <strong>
+            {% if district %}
+              {{ district.name or '-' }}
+            {% else %}
+              -
+            {% endif %}
+          </strong>
+        </div>
+
+        <div class="info-box">
+          <small>Block</small>
+          <strong>
+            {% if block %}
+              {{ block.name or '-' }}
+            {% else %}
+              -
+            {% endif %}
+          </strong>
+        </div>
+      </div>
+
+      <form method="post" class="row g-3">
+        <div class="col-lg-8">
+          <label class="clf-form-label">CLF Name</label>
+          <input
+            class="form-control clf-input"
+            name="name"
+            placeholder="Enter CLF name"
+            required
+            autocomplete="off"
+          >
+          <div class="form-text">
+            This CLF will be automatically mapped to your current Block and District.
+          </div>
+        </div>
+
+        <div class="col-lg-4 d-flex align-items-end">
+          <button class="btn btn-success clf-btn w-100" type="submit">
+            Add CLF
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card clf-card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h6>CLFs under this Block</h6>
+      <span class="badge text-bg-success">{{ clfs|length }} CLF{{ '' if clfs|length == 1 else 's' }}</span>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="desktop-table-wrap">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th style="width: 70px;">#</th>
+              <th>CLF Name</th>
+              <th>Mapped Block</th>
+              <th>Mapped District</th>
+              <th>Status</th>
+              <th style="width: 170px;">Next Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in clfs %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>
+                  <div class="clf-name-main">{{ c.name or c.clf_name or '-' }}</div>
+                  <small class="text-soft">
+                    ID: {{ c._id }}
+                  </small>
+                </td>
+                <td>
+                  {% if block %}
+                    {{ block.name or '-' }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>
+                  {% if district %}
+                    {{ district.name or '-' }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>
+                  {% set status = c.status or 'active' %}
+                  {% if status == 'active' %}
+                    <span class="badge text-bg-success">Active</span>
+                  {% else %}
+                    <span class="badge text-bg-secondary">{{ status|capitalize }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="{{ url_for('master_data.manage_clf_admins') }}" class="btn btn-sm btn-outline-success">
+                    Create Login
+                  </a>
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="6">
+                  <div class="empty-state">
+                    <strong>No CLFs created yet.</strong>
+                    <div>Create your first CLF using the form above.</div>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-clf-card p-3">
         {% for c in clfs %}
-          <tr>
-            <td>{{ loop.index }}</td>
-            <td>{{ c.name }}</td>
-          </tr>
+          <div class="mini-card">
+            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+              <div>
+                <div class="clf-name-main">{{ c.name or c.clf_name or '-' }}</div>
+                <small class="text-soft">ID: {{ c._id }}</small>
+              </div>
+
+              {% set status = c.status or 'active' %}
+              {% if status == 'active' %}
+                <span class="badge text-bg-success">Active</span>
+              {% else %}
+                <span class="badge text-bg-secondary">{{ status|capitalize }}</span>
+              {% endif %}
+            </div>
+
+            <div class="small text-soft mb-2">
+              <div>
+                <strong>Block:</strong>
+                {% if block %}{{ block.name or '-' }}{% else %}-{% endif %}
+              </div>
+              <div>
+                <strong>District:</strong>
+                {% if district %}{{ district.name or '-' }}{% else %}-{% endif %}
+              </div>
+            </div>
+
+            <a href="{{ url_for('master_data.manage_clf_admins') }}" class="btn btn-sm btn-outline-success w-100">
+              Create CLF Login
+            </a>
+          </div>
         {% else %}
-          <tr><td colspan="2" class="text-muted p-3">No CLFs yet.</td></tr>
+          <div class="empty-state">
+            <strong>No CLFs created yet.</strong>
+            <div>Create your first CLF using the form above.</div>
+          </div>
         {% endfor %}
-      </tbody>
-    </table>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

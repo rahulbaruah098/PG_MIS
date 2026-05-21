@@ -8,7 +8,219 @@ import os
 from . import master_data_bp
 from ..rbac import login_required, roles_required
 from ..services.workflow import next_pg_auto_id
+from ..utils import hash_password
 
+
+# ============================================================
+# Common helpers
+# ============================================================
+
+def _to_object_id(value):
+    try:
+        if value and ObjectId.is_valid(str(value)):
+            return ObjectId(str(value))
+    except Exception:
+        pass
+    return None
+
+
+def _safe_str(value):
+    if value in (None, "", [], {}):
+        return ""
+    try:
+        return str(value)
+    except Exception:
+        return ""
+
+
+def _current_user_oid():
+    return _to_object_id(session.get("user_id")) or session.get("user_id")
+
+
+def _get_block_scope(db):
+    """
+    Resolve logged-in Block Admin scope.
+
+    Returns:
+        {
+            state_id,
+            district_id,
+            block_id,
+            block,
+            district,
+            state
+        }
+    """
+    block_id = session.get("block_id")
+    block_oid = _to_object_id(block_id)
+
+    if not block_oid:
+        return None
+
+    block = db.blocks.find_one({"_id": block_oid})
+    if not block:
+        return None
+
+    district_id = block.get("district_id") or _to_object_id(session.get("district_id"))
+    district = None
+    state = None
+    state_id = None
+
+    if district_id:
+        district = db.districts.find_one({"_id": district_id})
+        if district:
+            state_id = district.get("state_id") or _to_object_id(session.get("state_id"))
+
+    if state_id:
+        state = db.states.find_one({"_id": state_id})
+
+    return {
+        "state_id": state_id,
+        "district_id": district_id,
+        "block_id": block_oid,
+        "block": block,
+        "district": district,
+        "state": state,
+    }
+
+
+def _resolve_upstream_ids(db, *, district_id=None, block_id=None, clf_id=None, pg_id=None):
+    """
+    Given a child geo id, resolve upstream ids.
+
+    We store upstream ids on users and PGs for fast scoping and simpler dashboard filters.
+    """
+    out = {
+        "state_id": None,
+        "district_id": None,
+        "block_id": None,
+        "clf_id": None,
+        "pg_id": None,
+    }
+
+    if pg_id:
+        pg_oid = _to_object_id(pg_id)
+        if pg_oid:
+            pg = db.pgs.find_one(
+                {"_id": pg_oid},
+                {"state_id": 1, "district_id": 1, "block_id": 1, "clf_id": 1}
+            )
+            if pg:
+                out.update({
+                    "state_id": pg.get("state_id"),
+                    "district_id": pg.get("district_id"),
+                    "block_id": pg.get("block_id"),
+                    "clf_id": pg.get("clf_id"),
+                    "pg_id": pg_oid,
+                })
+                return out
+
+    if clf_id:
+        clf_oid = _to_object_id(clf_id)
+        if clf_oid:
+            clf = db.clfs.find_one(
+                {"_id": clf_oid},
+                {"state_id": 1, "district_id": 1, "block_id": 1}
+            )
+            if clf:
+                out["clf_id"] = clf_oid
+                out["block_id"] = clf.get("block_id")
+                out["district_id"] = clf.get("district_id")
+                out["state_id"] = clf.get("state_id")
+                if clf.get("block_id"):
+                    block_id = str(clf["block_id"])
+
+    if block_id and not out.get("block_id"):
+        block_oid = _to_object_id(block_id)
+        if block_oid:
+            blk = db.blocks.find_one({"_id": block_oid}, {"district_id": 1})
+            if blk and blk.get("district_id"):
+                out["block_id"] = block_oid
+                district_id = str(blk["district_id"])
+
+    if district_id and not out.get("district_id"):
+        district_oid = _to_object_id(district_id)
+        if district_oid:
+            dist = db.districts.find_one({"_id": district_oid}, {"state_id": 1})
+            if dist and dist.get("state_id"):
+                out["district_id"] = district_oid
+                out["state_id"] = dist.get("state_id")
+
+    return out
+
+
+def _create_user(db, data, creator_role):
+    username = (data.get("username") or "").strip()
+
+    if not username:
+        raise ValueError("Username is required.")
+
+    if db.users.find_one({"username": username}):
+        raise ValueError("Username already exists.")
+
+    password = data.get("password") or ""
+    if not password:
+        raise ValueError("Password is required.")
+
+    user_doc = {
+        "username": username,
+        "password_hash": hash_password(password),
+        "role": data.get("role"),
+        "state_id": data.get("state_id"),
+        "district_id": data.get("district_id"),
+        "block_id": data.get("block_id"),
+        "clf_id": data.get("clf_id"),
+        "pg_id": data.get("pg_id"),
+        "validator_level": data.get("validator_level"),
+        "full_name": data.get("full_name") or data.get("name"),
+        "name": data.get("name") or data.get("full_name"),
+        "email": data.get("email"),
+        "phone": data.get("phone"),
+        "assigned_pg_ids": data.get("assigned_pg_ids") or [],
+        "status": data.get("status") or "active",
+        "profile_validation_status": data.get("profile_validation_status") or "approved",
+        "profile_validation_reason": data.get("profile_validation_reason") or "",
+        "created_at": datetime.utcnow(),
+        "created_by": creator_role,
+        "created_by_user_id": _current_user_oid(),
+        "last_login": None,
+    }
+
+    result = db.users.insert_one(user_doc)
+    return result.inserted_id
+
+
+def _pg_name(pg):
+    return pg.get("name") or pg.get("pg_name") or "Unnamed PG"
+
+
+def _clf_name(clf):
+    return clf.get("name") or clf.get("clf_name") or "Unnamed CLF"
+
+
+def _assigned_pg_ids_from_form():
+    ids = []
+    for pg_id in request.form.getlist("assigned_pg_ids"):
+        oid = _to_object_id(pg_id)
+        if oid:
+            ids.append(oid)
+    return ids
+
+
+def _ensure_block_admin_scope():
+    if session.get("role") != "BLOCK_ADMIN":
+        raise ValueError("Only Block Admin can perform this action.")
+
+    block_id = session.get("block_id")
+    if not block_id or not ObjectId.is_valid(str(block_id)):
+        raise ValueError("Your account is not mapped to a valid block.")
+
+    return ObjectId(str(block_id))
+
+
+# ============================================================
+# SHG upload
+# ============================================================
 
 @master_data_bp.route("/shg/upload", methods=["GET", "POST"])
 @roles_required("SUPER_ADMIN")
@@ -63,10 +275,12 @@ def _geo_names_from_session(db, sess):
             clf = db.clfs.find_one({"_id": ObjectId(clf_id)}, {"block_id": 1})
             if clf and clf.get("block_id"):
                 block_id = str(clf["block_id"])
+
         if block_id and not district_id:
             blk = db.blocks.find_one({"_id": ObjectId(block_id)}, {"district_id": 1})
             if blk and blk.get("district_id"):
                 district_id = str(blk["district_id"])
+
         if district_id and not state_id:
             dist = db.districts.find_one({"_id": ObjectId(district_id)}, {"state_id": 1})
             if dist and dist.get("state_id"):
@@ -86,6 +300,7 @@ def _geo_names_from_session(db, sess):
             blk = db.blocks.find_one({"_id": ObjectId(block_id)}, {"name": 1})
             if blk:
                 block_name = blk.get("name")
+
     except Exception:
         return None, None, None
 
@@ -108,14 +323,13 @@ def shg_scope():
     })
 
 
-# ===============================
+# ============================================================
 # SHG MASTER (LokOS) – Cascading Dropdown APIs
-# ===============================
+# ============================================================
 
 def _distinct_sorted(db, field, query=None):
     query = query or {}
     values = db.shg_master.distinct(field, query)
-    # Normalize + sort (case-insensitive)
     values = [v for v in values if v not in (None, "")]
     return sorted(values, key=lambda x: str(x).lower())
 
@@ -226,9 +440,7 @@ def shg_names():
 @master_data_bp.route("/shg/details")
 @login_required
 def shg_details():
-    """Return the full SHG master record for the selected SHG Code (+ optional name).
-    Used to auto-fill the remaining fields in forms.
-    """
+    """Return the full SHG master record for the selected SHG Code (+ optional name)."""
     db = current_app.mongo_db
     shg_code = request.args.get("shg_code")
     shg_name = request.args.get("shg_name")
@@ -244,7 +456,6 @@ def shg_details():
     if not doc:
         return jsonify({})
 
-    # Convert ObjectId + datetimes to JSON-friendly values
     out = {}
     for k, v in doc.items():
         if k == "_id":
@@ -282,8 +493,15 @@ def shg_search():
 
     limit = min(int(request.args.get("limit", 100)), 500)
     cursor = db.shg_master.find(q, {
-        "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1,
-        "SHG Code": 1, "SHG Name": 1, "shg_nic_code": 1, "Active Members": 1,
+        "State": 1,
+        "District": 1,
+        "Block": 1,
+        "Gram Panchayat": 1,
+        "Village": 1,
+        "SHG Code": 1,
+        "SHG Name": 1,
+        "shg_nic_code": 1,
+        "Active Members": 1,
         "Status": 1,
     }).limit(limit)
 
@@ -291,24 +509,20 @@ def shg_search():
     for d in cursor:
         d["_id"] = str(d["_id"])
         out.append(d)
+
     return jsonify(out)
 
 
 @master_data_bp.route("/shg/browser")
 @login_required
 def shg_browser():
-    """A lightweight UI for browsing the imported LokOS SHG master data.
-
-    All roles can view this (read-only). The page uses the cascading dropdown APIs
-    already implemented above.
-    """
+    """A lightweight UI for browsing the imported LokOS SHG master data."""
     return render_template("shg_browser.html")
 
 
-
-# ===============================
-# SHG MEMBERS MASTER – Browser + Search (140k+ rows)
-# ===============================
+# ============================================================
+# SHG MEMBERS MASTER – Browser + Search
+# ============================================================
 
 @master_data_bp.route("/shg/members/search")
 @login_required
@@ -323,11 +537,16 @@ def shg_members_search():
     qtxt = (request.args.get("q") or "").strip()
 
     q = {}
-    if state: q["State"] = state
-    if district: q["District"] = district
-    if block: q["Block"] = block
-    if gp: q["Gram Panchayat"] = gp
-    if village: q["Village"] = village
+    if state:
+        q["State"] = state
+    if district:
+        q["District"] = district
+    if block:
+        q["Block"] = block
+    if gp:
+        q["Gram Panchayat"] = gp
+    if village:
+        q["Village"] = village
 
     if qtxt:
         q["$or"] = [
@@ -337,7 +556,6 @@ def shg_members_search():
             {"SHG Code": {"$regex": re.escape(qtxt), "$options": "i"}},
         ]
 
-    #  page + page_size (25/50/100)
     page = max(int(request.args.get("page", 1)), 1)
     page_size = int(request.args.get("page_size", request.args.get("limit", 100)))
     page_size = 25 if page_size not in (25, 50, 100) else page_size
@@ -345,27 +563,42 @@ def shg_members_search():
     skip = (page - 1) * page_size
 
     projection = {
-        "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1,
-        "SHG Name": 1, "SHG Code": 1,
-        "Member Code": 1, "Member Name": 1,
-        "Designation in SHG": 1, "Social Category": 1, "Religion": 1, "Education": 1,
-        "Disability": 1, "Is head of Family": 1, "Father/Mother/Spouse Name": 1,
+        "State": 1,
+        "District": 1,
+        "Block": 1,
+        "Gram Panchayat": 1,
+        "Village": 1,
+        "SHG Name": 1,
+        "SHG Code": 1,
+        "Member Code": 1,
+        "Member Name": 1,
+        "Designation in SHG": 1,
+        "Social Category": 1,
+        "Religion": 1,
+        "Education": 1,
+        "Disability": 1,
+        "Is head of Family": 1,
+        "Father/Mother/Spouse Name": 1,
     }
 
-    #  total count for pagination
     total = db.shg_members_master.count_documents(q)
     pages = max((total + page_size - 1) // page_size, 1)
 
-    # clamp page if user clicks beyond end
     if page > pages:
         page = pages
         skip = (page - 1) * page_size
 
-    #  stable sort so paging is consistent (avoid random ordering)
     cursor = (
         db.shg_members_master
         .find(q, projection)
-        .sort([("State", 1), ("District", 1), ("Block", 1), ("Gram Panchayat", 1), ("Village", 1), ("Member Code", 1)])
+        .sort([
+            ("State", 1),
+            ("District", 1),
+            ("Block", 1),
+            ("Gram Panchayat", 1),
+            ("Village", 1),
+            ("Member Code", 1),
+        ])
         .skip(skip)
         .limit(page_size)
     )
@@ -390,15 +623,19 @@ def shg_members_browser():
     return render_template("shg_members_browser.html")
 
 
-
+# ============================================================
+# State / District / Block Masters
+# ============================================================
 
 @master_data_bp.route("/states", methods=["GET", "POST"])
 @roles_required("SUPER_ADMIN")
 def manage_states():
     db = current_app.mongo_db
+
     if request.method == "POST":
         code = request.form["code"].strip()
         name = request.form["name"].strip()
+
         if db.states.find_one({"code": code}):
             flash("State code already exists.", "danger")
         else:
@@ -408,32 +645,38 @@ def manage_states():
                 "created_at": datetime.utcnow(),
             })
             flash("State added.", "success")
+
     states = list(db.states.find())
     return render_template("states.html", states=states)
+
 
 @master_data_bp.route("/districts", methods=["GET", "POST"])
 @roles_required("ADMIN", "SUPER_ADMIN")
 def manage_districts():
     db = current_app.mongo_db
-    # State Admin should only manage districts under their own state.
     role = session.get("role")
     session_state_id = session.get("state_id")
 
     states = list(db.states.find())
     if role == "ADMIN" and session_state_id:
         states = list(db.states.find({"_id": ObjectId(session_state_id)}))
+
     if request.method == "POST":
         name = request.form["name"].strip()
         state_ref = request.form.get("state_id") or session_state_id
+
         db.districts.insert_one({
             "name": name,
             "state_id": ObjectId(state_ref),
             "created_at": datetime.utcnow(),
         })
+
         flash("District added.", "success")
+
     districts_q = {}
     if role == "ADMIN" and session_state_id:
         districts_q["state_id"] = ObjectId(session_state_id)
+
     districts = list(db.districts.find(districts_q).sort("name", 1))
     return render_template("districts.html", states=states, districts=districts)
 
@@ -441,15 +684,17 @@ def manage_districts():
 @master_data_bp.route("/blocks", methods=["GET", "POST"])
 @roles_required("DISTRICT_ADMIN")
 def manage_blocks():
-    """District-level master data: Blocks (one-time / change-based)."""
+    """District-level master data: Blocks."""
     db = current_app.mongo_db
     district_id = session.get("district_id")
+
     if not district_id:
         flash("No district scope found for your account.", "danger")
         return redirect(url_for("reports.hierarchy_dashboard"))
 
     if request.method == "POST":
         name = request.form["name"].strip()
+
         if not name:
             flash("Block name is required.", "danger")
         else:
@@ -457,6 +702,7 @@ def manage_blocks():
                 "name": name,
                 "district_id": ObjectId(district_id),
                 "created_at": datetime.utcnow(),
+                "created_by": _current_user_oid(),
             })
             flash("Block added.", "success")
 
@@ -464,40 +710,544 @@ def manage_blocks():
     return render_template("blocks.html", blocks=blocks)
 
 
+# ============================================================
+# CLF Master
+# ============================================================
+
 @master_data_bp.route("/clfs", methods=["GET", "POST"])
-@roles_required("BLOCK_ADMIN", "CLF_MANAGER")
+@roles_required("BLOCK_ADMIN")
 def manage_clfs():
-    """Block-level master data: CLFs."""
+    """
+    Block-level master data: CLFs.
+
+    New workflow:
+    - Only Block Admin can create CLF master records.
+    - CLF is automatically mapped to the Block Admin's block and district.
+    - CLF_ADMIN cannot create CLF.
+    """
     db = current_app.mongo_db
-    block_id = session.get("block_id")
-    if not block_id:
-        flash("No block scope found for your account.", "danger")
+    scope = _get_block_scope(db)
+
+    if not scope:
+        flash("No valid block scope found for your account.", "danger")
         return redirect(url_for("reports.hierarchy_dashboard"))
 
+    block_id = scope["block_id"]
+    district_id = scope["district_id"]
+    state_id = scope["state_id"]
+
     if request.method == "POST":
-        name = request.form["name"].strip()
+        name = (request.form.get("name") or "").strip()
+
         if not name:
             flash("CLF name is required.", "danger")
         else:
-            db.clfs.insert_one({
-                "name": name,
-                "block_id": ObjectId(block_id),
-                "created_at": datetime.utcnow(),
+            existing = db.clfs.find_one({
+                "name": {"$regex": f"^{re.escape(name)}$", "$options": "i"},
+                "block_id": block_id,
             })
-            flash("CLF added.", "success")
 
-    clfs = list(db.clfs.find({"block_id": ObjectId(block_id)}).sort("name", 1))
-    return render_template("clfs.html", clfs=clfs)
+            if existing:
+                flash("This CLF already exists under your block.", "danger")
+            else:
+                db.clfs.insert_one({
+                    "name": name,
+                    "state_id": state_id,
+                    "district_id": district_id,
+                    "block_id": block_id,
+                    "assigned_pg_ids": [],
+                    "status": "active",
+                    "created_at": datetime.utcnow(),
+                    "created_by": _current_user_oid(),
+                    "updated_at": datetime.utcnow(),
+                })
+                flash("CLF added successfully.", "success")
 
+    clfs = list(db.clfs.find({"block_id": block_id}).sort("name", 1))
+
+    return render_template(
+        "clfs.html",
+        clfs=clfs,
+        block=scope.get("block"),
+        district=scope.get("district"),
+        state=scope.get("state"),
+    )
+
+
+# ============================================================
+# CLF Admin Login Management
+# ============================================================
+
+@master_data_bp.route("/clf-admins", methods=["GET", "POST"])
+@roles_required("BLOCK_ADMIN")
+def manage_clf_admins():
+    """
+    Block Admin creates CLF Admin login.
+
+    Required workflow:
+    - Block Admin selects CLF.
+    - Enters CLF Admin name, username, password.
+    - CLF Admin is mapped with same district and block as Block Admin.
+    """
+    db = current_app.mongo_db
+    scope = _get_block_scope(db)
+
+    if not scope:
+        flash("No valid block scope found for your account.", "danger")
+        return redirect(url_for("reports.hierarchy_dashboard"))
+
+    block_id = scope["block_id"]
+
+    clfs = list(db.clfs.find({"block_id": block_id}).sort("name", 1))
+    clf_ids = [clf["_id"] for clf in clfs]
+
+    if request.method == "POST":
+        try:
+            clf_id = request.form.get("clf_id", "").strip()
+            full_name = (
+                request.form.get("full_name")
+                or request.form.get("name")
+                or request.form.get("admin_name")
+                or ""
+            ).strip()
+            username = (request.form.get("username") or "").strip()
+            password = request.form.get("password") or ""
+
+            clf_oid = _to_object_id(clf_id)
+
+            if not clf_oid:
+                raise ValueError("Please select a valid CLF.")
+
+            clf_doc = db.clfs.find_one({"_id": clf_oid, "block_id": block_id})
+            if not clf_doc:
+                raise ValueError("Selected CLF does not belong to your block.")
+
+            if not full_name:
+                raise ValueError("CLF Admin name is required.")
+
+            if not username:
+                raise ValueError("Username is required.")
+
+            if not password:
+                raise ValueError("Password is required.")
+
+            upstream = _resolve_upstream_ids(db, clf_id=clf_oid)
+
+            user_id = _create_user(db, {
+                "username": username,
+                "password": password,
+                "role": "CLF_ADMIN",
+                "state_id": upstream["state_id"],
+                "district_id": upstream["district_id"],
+                "block_id": upstream["block_id"],
+                "clf_id": upstream["clf_id"],
+                "full_name": full_name,
+                "name": full_name,
+                "assigned_pg_ids": [],
+                "status": "active",
+                "profile_validation_status": "approved",
+            }, "BLOCK_ADMIN")
+
+            db.clfs.update_one(
+                {"_id": clf_oid},
+                {"$set": {
+                    "clf_admin_user_id": user_id,
+                    "updated_at": datetime.utcnow(),
+                    "updated_by": _current_user_oid(),
+                }}
+            )
+
+            flash("CLF Admin login created successfully.", "success")
+            return redirect(url_for("master_data.manage_clf_admins"))
+
+        except Exception as e:
+            flash(str(e), "danger")
+
+    clf_admins = list(db.users.find({
+        "role": "CLF_ADMIN",
+        "block_id": block_id,
+    }).sort("created_at", -1))
+
+    clf_map = {str(clf["_id"]): clf for clf in clfs}
+
+    for admin in clf_admins:
+        admin_clf_id = str(admin.get("clf_id") or "")
+        admin["clf_name"] = _clf_name(clf_map.get(admin_clf_id, {}))
+
+        admin["assigned_pg_count"] = len(admin.get("assigned_pg_ids") or [])
+
+    return render_template(
+        "clf_admins.html",
+        clfs=clfs,
+        clf_admins=clf_admins,
+        block=scope.get("block"),
+        district=scope.get("district"),
+        state=scope.get("state"),
+    )
+
+
+@master_data_bp.route("/clf-admins/<user_id>/toggle", methods=["POST"])
+@roles_required("BLOCK_ADMIN")
+def toggle_clf_admin_status(user_id):
+    """
+    Enable/disable CLF Admin under the logged-in Block Admin.
+    """
+    db = current_app.mongo_db
+    block_id = _ensure_block_admin_scope()
+    user_oid = _to_object_id(user_id)
+
+    if not user_oid:
+        flash("Invalid CLF Admin.", "danger")
+        return redirect(url_for("master_data.manage_clf_admins"))
+
+    user = db.users.find_one({
+        "_id": user_oid,
+        "role": "CLF_ADMIN",
+        "block_id": block_id,
+    })
+
+    if not user:
+        flash("CLF Admin not found under your block.", "danger")
+        return redirect(url_for("master_data.manage_clf_admins"))
+
+    current_status = (user.get("status") or "active").lower()
+    new_status = "disabled" if current_status == "active" else "active"
+
+    db.users.update_one(
+        {"_id": user_oid},
+        {"$set": {
+            "status": new_status,
+            "updated_at": datetime.utcnow(),
+            "updated_by": _current_user_oid(),
+        }}
+    )
+
+    flash(f"CLF Admin status changed to {new_status}.", "success")
+    return redirect(url_for("master_data.manage_clf_admins"))
+
+
+@master_data_bp.route("/clf-pg-assignment", methods=["GET", "POST"])
+@roles_required("BLOCK_ADMIN")
+def clf_pg_assignment():
+    db = current_app.mongo_db
+
+    block_id = session.get("block_id")
+    district_id = session.get("district_id")
+    state_id = session.get("state_id")
+
+    if not block_id or not ObjectId.is_valid(str(block_id)):
+        flash("No valid block scope found for your account.", "danger")
+        return redirect(url_for("reports.hierarchy_dashboard"))
+
+    block_oid = ObjectId(str(block_id))
+    district_oid = ObjectId(str(district_id)) if district_id and ObjectId.is_valid(str(district_id)) else None
+    state_oid = ObjectId(str(state_id)) if state_id and ObjectId.is_valid(str(state_id)) else None
+
+    # ---------------------------------------------------------
+    # Resolve current scope display
+    # ---------------------------------------------------------
+    block = db.blocks.find_one({"_id": block_oid})
+    district = db.districts.find_one({"_id": district_oid}) if district_oid else None
+    state = db.states.find_one({"_id": state_oid}) if state_oid else None
+
+    # Fallback: derive district/state from block if session is missing them
+    if block and not district and block.get("district_id"):
+        district = db.districts.find_one({"_id": block.get("district_id")})
+
+    if district and not state and district.get("state_id"):
+        state = db.states.find_one({"_id": district.get("state_id")})
+
+    # ---------------------------------------------------------
+    # CLF admins under this block
+    # Handles both ObjectId and string block_id safely
+    # ---------------------------------------------------------
+    clf_admins = list(
+        db.users.find({
+            "role": "CLF_ADMIN",
+            "$or": [
+                {"block_id": block_oid},
+                {"block_id": str(block_oid)},
+            ],
+            "status": {"$ne": "deleted"},
+        }).sort("username", 1)
+    )
+
+    clfs = list(
+        db.clfs.find({
+            "$or": [
+                {"block_id": block_oid},
+                {"block_id": str(block_oid)},
+            ]
+        }).sort("name", 1)
+    )
+
+    clf_name_by_id = {}
+    for c in clfs:
+        clf_name_by_id[str(c["_id"])] = c.get("name") or c.get("clf_name") or "Mapped CLF"
+
+    # Add CLF name and assigned count into CLF admin records
+    for admin in clf_admins:
+        admin["clf_id_str"] = str(admin.get("clf_id") or "")
+        admin["clf_name"] = clf_name_by_id.get(admin["clf_id_str"], "Mapped CLF")
+        admin["assigned_pg_count"] = len(admin.get("assigned_pg_ids") or [])
+
+    # ---------------------------------------------------------
+    # PGs under this block
+    # Handles both ObjectId and string block_id safely
+    # ---------------------------------------------------------
+    pgs = list(
+        db.pgs.find({
+            "$or": [
+                {"block_id": block_oid},
+                {"block_id": str(block_oid)},
+            ]
+        }).sort("name", 1)
+    )
+
+    for pg in pgs:
+        pg["display_name"] = pg.get("name") or pg.get("pg_name") or "Unnamed PG"
+        pg["assigned_clf_user_id_str"] = str(pg.get("assigned_clf_user_id") or "")
+
+    # ---------------------------------------------------------
+    # GET selected CLF admin from URL
+    # Example:
+    # /master/clf-pg-assignment?clf_admin_id=<id>
+    # ---------------------------------------------------------
+    selected_user_id = (
+        request.args.get("clf_admin_id")
+        or request.form.get("clf_admin_id")
+        or ""
+    ).strip()
+
+    selected_admin = None
+    selected_assigned_ids = []
+
+    if selected_user_id and ObjectId.is_valid(selected_user_id):
+        selected_admin = db.users.find_one({
+            "_id": ObjectId(selected_user_id),
+            "role": "CLF_ADMIN",
+            "$or": [
+                {"block_id": block_oid},
+                {"block_id": str(block_oid)},
+            ],
+            "status": {"$ne": "deleted"},
+        })
+
+        if selected_admin:
+            selected_admin["clf_id_str"] = str(selected_admin.get("clf_id") or "")
+            selected_admin["clf_name"] = clf_name_by_id.get(
+                selected_admin["clf_id_str"],
+                "Mapped CLF"
+            )
+
+            selected_assigned_ids = [
+                str(x) for x in (selected_admin.get("assigned_pg_ids") or [])
+            ]
+
+    # ---------------------------------------------------------
+    # POST save assignment
+    # ---------------------------------------------------------
+    if request.method == "POST":
+        clf_admin_id = (request.form.get("clf_admin_id") or "").strip()
+
+        # IMPORTANT:
+        # Template checkboxes must use name="pg_ids"
+        selected_pg_ids = request.form.getlist("pg_ids")
+
+        if not clf_admin_id or not ObjectId.is_valid(clf_admin_id):
+            flash("Please select a valid CLF Admin.", "danger")
+            return redirect(url_for("master_data.clf_pg_assignment"))
+
+        clf_admin = db.users.find_one({
+            "_id": ObjectId(clf_admin_id),
+            "role": "CLF_ADMIN",
+            "$or": [
+                {"block_id": block_oid},
+                {"block_id": str(block_oid)},
+            ],
+            "status": {"$ne": "deleted"},
+        })
+
+        if not clf_admin:
+            flash("Invalid CLF Admin selected or CLF Admin is outside your block.", "danger")
+            return redirect(url_for("master_data.clf_pg_assignment"))
+
+        clf_id = clf_admin.get("clf_id")
+        if not clf_id:
+            flash("Selected CLF Admin is not mapped with any CLF.", "danger")
+            return redirect(url_for("master_data.clf_pg_assignment", clf_admin_id=clf_admin_id))
+
+        clf_oid = ObjectId(str(clf_id)) if ObjectId.is_valid(str(clf_id)) else clf_id
+
+        clean_pg_oids = []
+        for pg_id in selected_pg_ids:
+            if ObjectId.is_valid(str(pg_id)):
+                clean_pg_oids.append(ObjectId(str(pg_id)))
+
+        now = datetime.utcnow()
+
+        # If no PG selected, remove all previous assignment for this selected CLF Admin
+        old_assigned_pg_ids = []
+        for old_pg_id in clf_admin.get("assigned_pg_ids") or []:
+            if ObjectId.is_valid(str(old_pg_id)):
+                old_assigned_pg_ids.append(ObjectId(str(old_pg_id)))
+
+        if not clean_pg_oids:
+            db.users.update_one(
+                {"_id": ObjectId(clf_admin_id)},
+                {
+                    "$set": {
+                        "assigned_pg_ids": [],
+                        "updated_at": now,
+                    }
+                }
+            )
+
+            if old_assigned_pg_ids:
+                db.pgs.update_many(
+                    {
+                        "_id": {"$in": old_assigned_pg_ids},
+                        "$or": [
+                            {"block_id": block_oid},
+                            {"block_id": str(block_oid)},
+                        ],
+                    },
+                    {
+                        "$unset": {
+                            "clf_id": "",
+                            "assigned_clf_user_id": "",
+                            "assigned_clf_username": "",
+                        },
+                        "$set": {
+                            "updated_at": now,
+                        },
+                    }
+                )
+
+            flash("All PG assignments removed from selected CLF Admin.", "success")
+            return redirect(url_for("master_data.clf_pg_assignment", clf_admin_id=clf_admin_id))
+
+        # Security: only allow PGs from same block
+        allowed_pg_ids = [
+            p["_id"] for p in db.pgs.find({
+                "_id": {"$in": clean_pg_oids},
+                "$or": [
+                    {"block_id": block_oid},
+                    {"block_id": str(block_oid)},
+                ],
+            }, {"_id": 1})
+        ]
+
+        if not allowed_pg_ids:
+            flash("No valid PG found under your block for assignment.", "danger")
+            return redirect(url_for("master_data.clf_pg_assignment", clf_admin_id=clf_admin_id))
+
+        # Remove selected PGs from other CLF Admin users of the same block
+        db.users.update_many(
+            {
+                "role": "CLF_ADMIN",
+                "_id": {"$ne": ObjectId(clf_admin_id)},
+                "$or": [
+                    {"block_id": block_oid},
+                    {"block_id": str(block_oid)},
+                ],
+            },
+            {
+                "$pull": {
+                    "assigned_pg_ids": {"$in": allowed_pg_ids}
+                },
+                "$set": {
+                    "updated_at": now
+                }
+            }
+        )
+
+        # Save PG ids in selected CLF Admin user
+        db.users.update_one(
+            {"_id": ObjectId(clf_admin_id)},
+            {
+                "$set": {
+                    "assigned_pg_ids": allowed_pg_ids,
+                    "updated_at": now,
+                }
+            }
+        )
+
+        # Clear old PG mappings previously assigned to this CLF Admin but now unselected
+        if old_assigned_pg_ids:
+            db.pgs.update_many(
+                        {
+                            "_id": {
+                                "$in": [
+                                    x for x in old_assigned_pg_ids
+                                    if x not in allowed_pg_ids
+                                ]
+                            },
+                            "assigned_clf_user_id": ObjectId(clf_admin_id),
+                        },
+                {
+                    "$unset": {
+                        "clf_id": "",
+                        "assigned_clf_user_id": "",
+                        "assigned_clf_username": "",
+                    },
+                    "$set": {
+                        "updated_at": now,
+                    },
+                }
+            )
+
+        # Save CLF mapping directly into PG records
+        db.pgs.update_many(
+            {
+                "_id": {"$in": allowed_pg_ids},
+                "$or": [
+                    {"block_id": block_oid},
+                    {"block_id": str(block_oid)},
+                ],
+            },
+            {
+                "$set": {
+                    "clf_id": clf_oid,
+                    "assigned_clf_user_id": ObjectId(clf_admin_id),
+                    "assigned_clf_username": clf_admin.get("username"),
+                    "updated_at": now,
+                }
+            }
+        )
+
+        flash(f"{len(allowed_pg_ids)} PG(s) assigned to CLF successfully.", "success")
+        return redirect(url_for("master_data.clf_pg_assignment", clf_admin_id=clf_admin_id))
+
+    return render_template(
+        "clf_pg_assignment.html",
+        state=state,
+        district=district,
+        block=block,
+        clfs=clfs,
+        clf_admins=clf_admins,
+        pgs=pgs,
+        selected_user_id=selected_user_id,
+        selected_admin=selected_admin,
+        selected_assigned_ids=selected_assigned_ids,
+    )
+
+
+# ============================================================
+# PG Master
+# ============================================================
 
 @master_data_bp.route("/pgs", methods=["GET", "POST"])
-@roles_required("BLOCK_ADMIN","CLF_MANAGER", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def manage_pgs():
+    """
+    PG master creation/listing.
 
-    from bson import ObjectId
-    from datetime import datetime
-    from ..utils import hash_password
-
+    New workflow:
+    - PG creation remains with Block/Admin hierarchy.
+    - CLF_ADMIN cannot create PG.
+    - CLF_MANAGER removed from creation access.
+    """
     db = current_app.mongo_db
     role = session.get("role")
 
@@ -524,14 +1274,12 @@ def manage_pgs():
         scope_badge = "State scope"
 
     # =========================
-    # POST (Basic Creation)
+    # POST Basic Creation
     # =========================
     if request.method == "POST":
-
         create_mode = request.form.get("create_mode")
 
         if create_mode == "basic":
-
             try:
                 st = (request.form.get("State") or "").strip()
                 dist_name = (request.form.get("District") or "").strip()
@@ -546,27 +1294,28 @@ def manage_pgs():
                 if not (st and dist_name and blk_name and gp and village and pg_name and username and password):
                     raise ValueError("All fields are required.")
 
-                # Resolve IDs
                 state_doc = db.states.find_one({"name": st})
                 if not state_doc:
                     raise ValueError("Invalid State.")
                 state_id = state_doc["_id"]
 
-                district_doc = db.districts.find_one(
-                    {"name": dist_name, "state_id": state_id}
-                )
+                district_doc = db.districts.find_one({
+                    "name": dist_name,
+                    "state_id": state_id,
+                })
                 if not district_doc:
                     raise ValueError("Invalid District.")
                 district_id = district_doc["_id"]
 
-                block_doc = db.blocks.find_one(
-                    {"name": blk_name, "district_id": district_id}
-                )
+                block_doc = db.blocks.find_one({
+                    "name": blk_name,
+                    "district_id": district_id,
+                })
                 if not block_doc:
                     raise ValueError("Invalid Block.")
                 block_id_obj = block_doc["_id"]
 
-                # 🔒 Role Enforcement
+                # Role Enforcement
                 if role == "BLOCK_ADMIN" and str(block_id_obj) != str(block_id_sess):
                     raise ValueError("Unauthorized block selection.")
 
@@ -576,11 +1325,17 @@ def manage_pgs():
                 if role == "ADMIN" and str(state_id) != str(state_id_sess):
                     raise ValueError("Unauthorized state selection.")
 
-                # Username uniqueness
                 if db.users.find_one({"username": username}):
                     raise ValueError("Username already exists.")
 
-                # Create PG
+                existing_pg = db.pgs.find_one({
+                    "name": {"$regex": f"^{re.escape(pg_name)}$", "$options": "i"},
+                    "block_id": block_id_obj,
+                })
+
+                if existing_pg:
+                    raise ValueError("PG name already exists in this block.")
+
                 pg_insert = {
                     "name": pg_name,
                     "State": st,
@@ -591,15 +1346,33 @@ def manage_pgs():
                     "block_id": block_id_obj,
                     "district_id": district_id,
                     "state_id": state_id,
+                    "clf_id": None,
+                    "assigned_clf_user_id": None,
                     "status": "draft",
+                    "registration_validation": {
+                        "status": "draft",
+                        "remarks": "",
+                        "submitted_at": None,
+                        "reviewed_by": None,
+                        "reviewed_at": None,
+                        "history": [],
+                    },
+                    "member_registration_validation": {
+                        "status": "draft",
+                        "remarks": "",
+                        "submitted_at": None,
+                        "reviewed_by": None,
+                        "reviewed_at": None,
+                        "history": [],
+                    },
                     "created_at": datetime.utcnow(),
+                    "created_by": _current_user_oid(),
                     "updated_at": datetime.utcnow(),
                 }
 
                 pg_res = db.pgs.insert_one(pg_insert)
                 new_pg_id = pg_res.inserted_id
 
-                # Create Login
                 db.users.insert_one({
                     "username": username,
                     "password_hash": hash_password(password),
@@ -608,12 +1381,16 @@ def manage_pgs():
                     "state_id": state_id,
                     "district_id": district_id,
                     "block_id": block_id_obj,
+                    "clf_id": None,
                     "status": "active",
+                    "assigned_pg_ids": [],
                     "created_at": datetime.utcnow(),
                     "created_by": role,
+                    "created_by_user_id": _current_user_oid(),
+                    "last_login": None,
                 })
 
-                flash("PG and Login created successfully.", "success")
+                flash("PG and Login created successfully. Assign the PG to a CLF from CLF PG Assignment.", "success")
                 return redirect(url_for("master_data.manage_pgs"))
 
             except Exception as e:
@@ -625,13 +1402,37 @@ def manage_pgs():
     # =========================
     pgs = list(db.pgs.find(q).sort("created_at", -1))
 
+    clf_ids = []
+    assigned_user_ids = []
+
+    for pg in pgs:
+        if pg.get("clf_id"):
+            clf_ids.append(pg.get("clf_id"))
+        if pg.get("assigned_clf_user_id"):
+            assigned_user_ids.append(pg.get("assigned_clf_user_id"))
+
+    clfs = list(db.clfs.find({"_id": {"$in": clf_ids}})) if clf_ids else []
+    clf_admins = list(db.users.find({"_id": {"$in": assigned_user_ids}})) if assigned_user_ids else []
+
+    clf_map = {str(clf["_id"]): clf for clf in clfs}
+    clf_admin_map = {str(user["_id"]): user for user in clf_admins}
+
+    for pg in pgs:
+        pg["display_name"] = _pg_name(pg)
+        pg["clf_name"] = _clf_name(clf_map.get(str(pg.get("clf_id") or ""), {})) if pg.get("clf_id") else ""
+        assigned_user = clf_admin_map.get(str(pg.get("assigned_clf_user_id") or ""))
+        pg["assigned_clf_admin_name"] = (
+            assigned_user.get("full_name")
+            or assigned_user.get("name")
+            or assigned_user.get("username")
+            if assigned_user else ""
+        )
+
     return render_template(
         "pgs.html",
         pgs=pgs,
         scope_badge=scope_badge
     )
-
-
 
 
 # === CORE ENGINE INTEGRATION ACTIVE ===

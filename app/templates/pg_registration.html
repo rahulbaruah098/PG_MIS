@@ -1,6 +1,13 @@
 ﻿{% extends "base.html" %}
 {% block content %}
 
+{% set _validation = validation or pg.registration_validation or {} %}
+{% set _validation_status = (validation_status or _validation.status or 'draft')|lower %}
+{% set _validation_remarks = validation_remarks or _validation.remarks or '' %}
+{% set _validation_can_edit = validation_can_edit if validation_can_edit is defined else (_validation_status not in ['submitted', 'resubmitted', 'approved']) %}
+{% set _can_submit_validation = session.get('role') in ['PG_DATA_ENTRY', 'CADRE_CC'] and _validation_status in ['draft', 'rejected'] %}
+{% set _is_validation_locked = not _validation_can_edit %}
+
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -602,6 +609,135 @@
     padding: 6px 9px;
   }
 }
+
+/* ======= Block Validation Workflow ======= */
+.pgr-validation-card{
+  margin-top:12px;
+  border:1px solid rgba(15,23,42,.14);
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 18px 34px -26px rgba(15,23,42,.35);
+  overflow:hidden;
+}
+.pgr-validation-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:12px 14px;
+  background:linear-gradient(135deg, rgba(240,253,244,.92), rgba(255,255,255,.96));
+  border-bottom:1px solid rgba(15,23,42,.10);
+}
+.pgr-validation-title{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  font-weight:950;
+  color:#0b4d3a;
+  font-size:12.5px;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.pgr-validation-title svg{width:18px;height:18px;color:#0b4d3a;}
+.pgr-validation-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  border-radius:999px;
+  padding:7px 11px;
+  font-size:11px;
+  font-weight:950;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  border:1px solid rgba(15,23,42,.12);
+  background:rgba(247,250,249,.82);
+  color:rgba(15,23,42,.74);
+}
+.pgr-validation-badge::before{
+  content:'';
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background:#64748b;
+}
+.pgr-validation-badge.status-draft::before{background:#64748b;}
+.pgr-validation-badge.status-submitted::before,
+.pgr-validation-badge.status-resubmitted::before{background:#d97706;}
+.pgr-validation-badge.status-approved::before{background:#059669;}
+.pgr-validation-badge.status-rejected::before{background:#dc2626;}
+.pgr-validation-body{
+  padding:12px 14px;
+  display:grid;
+  gap:10px;
+}
+.pgr-validation-msg{
+  margin:0;
+  color:rgba(15,23,42,.72);
+  font-size:12px;
+  line-height:1.5;
+  font-weight:800;
+}
+.pgr-validation-remarks{
+  border:1px solid rgba(220,38,38,.18);
+  background:rgba(254,242,242,.82);
+  color:#7f1d1d;
+  border-radius:14px;
+  padding:10px 12px;
+  font-size:12px;
+  font-weight:850;
+  line-height:1.45;
+}
+.pgr-validation-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.pgr-validation-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border-radius:999px;
+  border:1px solid rgba(15,23,42,.10);
+  background:rgba(247,250,249,.82);
+  padding:6px 10px;
+  color:rgba(15,23,42,.68);
+  font-size:11px;
+  font-weight:850;
+}
+.pgr-card.is-locked{
+  position:relative;
+}
+.pgr-card.is-locked .pgr-input:not([readonly]),
+.pgr-card.is-locked .pgr-select,
+.pgr-card.is-locked .select2-selection{
+  background:rgba(248,250,252,.76) !important;
+  cursor:not-allowed !important;
+}
+.pgr-locked-note{
+  margin-top:12px;
+  border:1px dashed rgba(15,23,42,.18);
+  background:rgba(248,250,252,.82);
+  border-radius:14px;
+  padding:10px 12px;
+  color:rgba(15,23,42,.68);
+  font-size:12px;
+  line-height:1.45;
+  font-weight:850;
+}
+.pgr-btn-submit-validation{
+  border-color:rgba(217,119,6,.28);
+  background:rgba(251,191,36,.16);
+  color:#92400e;
+}
+.pgr-btn-submit-validation:hover{
+  background:rgba(251,191,36,.22);
+}
+.pgr-btn-disabled-state{
+  opacity:.6;
+  pointer-events:none;
+}
+
 </style>
 
 <!--  Toast container (scoped, no backend dependency) -->
@@ -639,13 +775,78 @@
       <div class="pgr-status">
         <span class="pgr-dot"></span>
         <span id="pgrStatusLabel">Status:</span> {{ pg.status or 'draft' }}
+        <span style="opacity:.45;">|</span>
+        <span>Validation:</span> {{ _validation_status|capitalize }}
       </div>
     </div>
   </div>
 
+  <!-- BLOCK VALIDATION STATUS -->
+  <div class="pgr-validation-card">
+    <div class="pgr-validation-head">
+      <div class="pgr-validation-title">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" stroke="currentColor" stroke-width="2.1"></path>
+        </svg>
+        Block Validation Status
+      </div>
+      <span class="pgr-validation-badge status-{{ _validation_status }}">{{ _validation_status|capitalize }}</span>
+    </div>
+
+    <div class="pgr-validation-body">
+      {% if _validation_status == 'approved' %}
+        <p class="pgr-validation-msg">This PG Registration Form has been approved by Block Admin. The form is now locked for editing.</p>
+      {% elif _validation_status in ['submitted', 'resubmitted'] %}
+        <p class="pgr-validation-msg">This PG Registration Form has been submitted to Block Admin for validation. Editing is locked until Block Admin approves or rejects it.</p>
+      {% elif _validation_status == 'rejected' %}
+        <p class="pgr-validation-msg">This PG Registration Form was rejected by Block Admin. The existing filled data is still available below. Correct the mentioned points, save, and submit again.</p>
+      {% else %}
+        <p class="pgr-validation-msg">Save the completed PG Registration Form first, then submit it to Block Admin for validation.</p>
+      {% endif %}
+
+      {% if _validation_remarks %}
+        <div class="pgr-validation-remarks">
+          <strong>Correction Remarks:</strong> {{ _validation_remarks }}
+        </div>
+      {% endif %}
+
+      <div class="pgr-validation-meta">
+        {% if _validation.submitted_at %}
+          <span class="pgr-validation-chip">Submitted: {{ _validation.submitted_at }}</span>
+        {% endif %}
+        {% if _validation.reviewed_at %}
+          <span class="pgr-validation-chip">Reviewed: {{ _validation.reviewed_at }}</span>
+        {% endif %}
+        {% if _is_validation_locked %}
+          <span class="pgr-validation-chip">Editing Locked</span>
+        {% else %}
+          <span class="pgr-validation-chip">Editable</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if _can_submit_validation %}
+    <form
+      method="POST"
+      id="pgValidationSubmitForm"
+      action="{{ url_for('pg.submit_pg_registration_validation', pg_id=pg._id|string) }}"
+      onsubmit="return confirm('Submit this PG Registration Form to Block Admin for validation?');"
+    ></form>
+  {% endif %}
+
   <!-- FORM CARD -->
-  <div class="pgr-card">
-    <form method="POST" id="pgRegForm">
+  <div class="pgr-card {% if _is_validation_locked %}is-locked{% endif %}">
+    <form method="POST" id="pgRegForm" data-validation-locked="{{ '1' if _is_validation_locked else '0' }}">
+      {% if _is_validation_locked %}
+        <div class="pgr-locked-note">
+          This form is currently locked because the validation status is <strong>{{ _validation_status|capitalize }}</strong>.
+          {% if _validation_status in ['submitted', 'resubmitted'] %}Wait for Block Admin review.{% endif %}
+          {% if _validation_status == 'approved' %}Approved forms cannot be edited.{% endif %}
+        </div>
+      {% endif %}
+
       <div class="pgr-section">
         <svg viewBox="0 0 24 24" fill="none">
           <path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -808,7 +1009,26 @@
       <div id="hiddenMemberInputs"></div>
 
       <div class="pgr-actions">
-        <button class="pgr-btn pgr-btn-primary" id="pgrSaveBtn" type="submit">Save</button>
+        {% if _validation_can_edit and session.get('role') in ['PG_DATA_ENTRY', 'CADRE_CC'] %}
+          <button class="pgr-btn pgr-btn-primary" id="pgrSaveBtn" type="submit">Save</button>
+        {% else %}
+          <button class="pgr-btn pgr-btn-primary pgr-btn-disabled-state" id="pgrSaveBtn" type="button" disabled>Save Locked</button>
+        {% endif %}
+
+        {% if _can_submit_validation %}
+          <button
+            class="pgr-btn pgr-btn-submit-validation"
+            id="pgrSubmitValidationBtn"
+            type="submit"
+            form="pgValidationSubmitForm"
+          >
+            Submit for Block Validation
+          </button>
+        {% elif _validation_status in ['submitted', 'resubmitted'] %}
+          <button class="pgr-btn pgr-btn-submit-validation pgr-btn-disabled-state" type="button" disabled>Submitted to Block</button>
+        {% elif _validation_status == 'approved' %}
+          <button class="pgr-btn pgr-btn-submit-validation pgr-btn-disabled-state" type="button" disabled>Approved by Block</button>
+        {% endif %}
       </div>
     </form>
   </div>
@@ -819,6 +1039,8 @@
 {{ safe_members | tojson | safe }}
 </script>
 <script>
+  const PG_ID = "{{ pg._id|string }}";
+  const PGR_VALIDATION_LOCKED = {{ 'true' if _is_validation_locked else 'false' }};
   const PG_MEMBERSHIP_URL_TEMPLATE = "{{ url_for('pg.pg_members', pg_id='__PGID__') }}";
 </script>
 
@@ -1164,6 +1386,29 @@ $(document).ready(function() {
         placeholder: tkey('selectPlaceholder')
     });
 
+    // ===============================
+    // Block validation lock state
+    // ===============================
+    function applyValidationLock(){
+      if(!PGR_VALIDATION_LOCKED) return;
+
+      const form = document.getElementById('pgRegForm');
+      if(!form) return;
+
+      Array.from(form.querySelectorAll('input, select, textarea, button')).forEach((el) => {
+        if(el.type === 'hidden') return;
+        if(el.hasAttribute('readonly')) return;
+        el.disabled = true;
+      });
+
+      try{
+        $('#memberSelect').prop('disabled', true).trigger('change.select2');
+        $('#presidentSelect').prop('disabled', true);
+        $('#secretarySelect').prop('disabled', true);
+        $('#cashierSelect').prop('disabled', true);
+      }catch(_){}
+    }
+
     // keep placeholder updated when opening dropdown (no re-init)
     $('#memberSelect').on('select2:open', function(){
       updateSelect2Placeholder(tkey('selectPlaceholder'));
@@ -1315,6 +1560,8 @@ $(document).ready(function() {
         refreshUI();
     }
 
+    applyValidationLock();
+
     // ===============================
     // NEW: Pre-submit validation + success feedback
     // (No backend change; just clear user feedback)
@@ -1357,6 +1604,12 @@ $(document).ready(function() {
 
     if(form && saveBtn){
       form.addEventListener('submit', function(e){
+        if(PGR_VALIDATION_LOCKED){
+          e.preventDefault();
+          showToast('info', 'Form Locked', '<div>This PG Registration Form is locked because it is already submitted or approved.</div>');
+          return;
+        }
+
         const issues = preSubmitValidate();
         if(issues.length){
           e.preventDefault();

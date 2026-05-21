@@ -8,6 +8,168 @@ from datetime import datetime
 from . import finance_bp
 from ..rbac import login_required, roles_required
 
+# ============================================================
+# CLF / Block / PG finance scope helpers
+# ============================================================
+
+def _role():
+    return (session.get("role") or "").strip().upper()
+
+
+def _is_json_request():
+    return (
+        request.args.get("format") == "json"
+        or "application/json" in (request.headers.get("Accept", "").lower())
+        or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or request.is_json
+    )
+
+
+def _to_object_id(value):
+    try:
+        if value and ObjectId.is_valid(str(value)):
+            return ObjectId(str(value))
+    except Exception:
+        pass
+    return None
+
+
+def _assigned_pg_oid_set():
+    out = set()
+    for raw in session.get("assigned_pg_ids") or []:
+        oid = _to_object_id(raw)
+        if oid:
+            out.add(str(oid))
+    return out
+
+
+def _pg_allowed_for_current_user(pg):
+    """
+    Finance jurisdiction guard.
+
+    New workflow:
+    - CLF_ADMIN/CLF_MANAGER can access only PGs mapped to their clf_id or explicitly assigned.
+    - BLOCK_ADMIN can access only PGs under own block, but write access is separately restricted.
+    - DISTRICT_ADMIN / ADMIN / SUPER_ADMIN keep jurisdiction-level read access.
+    - PG_DATA_ENTRY can access only own PG.
+    - CADRE_CC can access assigned PGs only if any finance links are reused from mobile/web.
+    """
+    if not pg:
+        return False
+
+    role = _role()
+    pg_id = str(pg.get("_id") or "")
+
+    if role == "SUPER_ADMIN":
+        return True
+
+    if role in {"ADMIN", "STATE_ADMIN"}:
+        state_id = session.get("state_id")
+        return bool(state_id and str(pg.get("state_id")) == str(state_id))
+
+    if role == "DISTRICT_ADMIN":
+        district_id = session.get("district_id")
+        return bool(district_id and str(pg.get("district_id")) == str(district_id))
+
+    if role == "BLOCK_ADMIN":
+        block_id = session.get("block_id")
+        return bool(block_id and str(pg.get("block_id")) == str(block_id))
+
+    if role in {"CLF_ADMIN", "CLF_MANAGER"}:
+        clf_id = session.get("clf_id")
+        if clf_id and str(pg.get("clf_id")) == str(clf_id):
+            return True
+        return pg_id in _assigned_pg_oid_set()
+
+    if role == "PG_DATA_ENTRY":
+        active_pg_id = session.get("active_pg_id") or session.get("pg_id")
+        return bool(active_pg_id and str(active_pg_id) == pg_id)
+
+    if role == "CADRE_CC":
+        return pg_id in _assigned_pg_oid_set()
+
+    return False
+
+
+def _deny(message, is_json=None, status_code=403, redirect_endpoint="pg.pg_home"):
+    if is_json is None:
+        is_json = _is_json_request()
+
+    if is_json:
+        return jsonify({"ok": False, "message": message}), status_code
+
+    flash(message, "danger" if status_code == 403 else "warning")
+    return redirect(url_for(redirect_endpoint))
+
+
+def _require_pg_access(pg, is_json=None):
+    if not _pg_allowed_for_current_user(pg):
+        return _deny("This PG is outside your finance scope.", is_json=is_json, status_code=403)
+    return None
+
+
+def _can_write_finance():
+    """
+    Finance write permission.
+
+    New workflow:
+    - CLF_ADMIN/CLF_MANAGER handles finance operations for assigned/mapped PGs.
+    - BLOCK_ADMIN becomes surveillance/view-only for finance data entry.
+    - PG_DATA_ENTRY remains view-only for authority-created finance records.
+    - Higher admins are kept enabled for administrative correction/support.
+    """
+    return _role() in {"CLF_ADMIN", "CLF_MANAGER", "DISTRICT_ADMIN", "ADMIN", "STATE_ADMIN", "SUPER_ADMIN"}
+
+
+def _require_finance_write(message=None, is_json=None):
+    if _can_write_finance():
+        return None
+
+    message = message or "View only: finance entry and updates are handled by CLF/Admin authorities."
+    return _deny(message, is_json=is_json, status_code=403)
+
+
+def _pg_from_id_or_response(db, pg_id, is_json=None):
+    try:
+        pg_obj_id = ObjectId(str(pg_id))
+    except Exception:
+        return None, _deny("Invalid PG ID.", is_json=is_json, status_code=400)
+
+    pg = db.pgs.find_one({"_id": pg_obj_id})
+    if not pg:
+        return None, _deny("PG not found.", is_json=is_json, status_code=404)
+
+    denied = _require_pg_access(pg, is_json=is_json)
+    if denied:
+        return None, denied
+
+    return pg, None
+
+
+def _pg_from_grant_or_response(db, grant, is_json=None):
+    pg = db.pgs.find_one({"_id": grant.get("pg_id")}) if grant and grant.get("pg_id") else None
+    if not pg:
+        return None, _deny("Mapped PG not found for this grant.", is_json=is_json, status_code=404)
+
+    denied = _require_pg_access(pg, is_json=is_json)
+    if denied:
+        return None, denied
+
+    return pg, None
+
+
+def _pg_from_loan_or_response(db, loan, is_json=None):
+    pg = db.pgs.find_one({"_id": loan.get("pg_id")}) if loan and loan.get("pg_id") else None
+    if not pg:
+        return None, _deny("Mapped PG not found for this loan.", is_json=is_json, status_code=404)
+
+    denied = _require_pg_access(pg, is_json=is_json)
+    if denied:
+        return None, denied
+
+    return pg, None
+
+
 def _sanitize_loan_payload(payload: dict) -> dict:
     """Backend enforcement of manual rules:
     - If status == 'discontinued' => only allow 'status' and 'reason_discontinued'
@@ -32,12 +194,15 @@ def _sanitize_loan_payload(payload: dict) -> dict:
 @require_unlocked_period(scope='pg')
 def pg_funds(pg_id):
     db = current_app.mongo_db
-    pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
-    if not pg:
-        flash("PG not found.", "danger")
-        return redirect(url_for("pg.pg_home"))
+    pg, access_response = _pg_from_id_or_response(db, pg_id, is_json=_is_json_request())
+    if access_response:
+        return access_response
 
     if request.method == "POST":
+        write_response = _require_finance_write("View only: fund entry/update is handled by CLF/Admin authorities.")
+        if write_response:
+            return write_response
+
         fund_doc = {
             "pg_id": ObjectId(pg_id),
             "establishment_cost_received": request.form.get("establishment_cost_received") == "yes",
@@ -280,10 +445,9 @@ def _loan_summary_from_schedule(schedule):
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def loan_dashboard(pg_id):
     db = current_app.mongo_db
-    pg = db.pgs.find_one({"_id": ObjectId(pg_id)})
-    if not pg:
-        flash("PG not found.", "danger")
-        return redirect(url_for("pg.pg_home"))
+    pg, access_response = _pg_from_id_or_response(db, pg_id, is_json=_is_json_request())
+    if access_response:
+        return access_response
 
     loans = list(db.pg_loan_accounts.find({"pg_id": ObjectId(pg_id)}).sort([("created_at", -1)]))
     mloans = list(db.pg_member_loan_accounts.find({"pg_id": ObjectId(pg_id)}).sort([("created_at", -1)]).limit(50))
@@ -333,16 +497,18 @@ def loan_accounts(pg_id):
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    if request.method == "POST" and session.get("role") == "PG_DATA_ENTRY":
-        if is_json_request():
-            return jsonify({
-                "ok": False,
-                "message": "Loans can only be created/edited by CLF/Block authorities."
-            }), 403
-        flash("Loans can only be created/edited by CLF/Block authorities.", "warning")
-        return redirect(request.path)
+    access_response = _require_pg_access(pg, is_json=is_json_request())
+    if access_response:
+        return access_response
 
     if request.method == "POST":
+        write_response = _require_finance_write(
+            "Loans can only be created/edited by CLF/Admin authorities.",
+            is_json=is_json_request(),
+        )
+        if write_response:
+            return write_response
+
         payload = request.get_json(silent=True) or request.form
 
         loan_no = (payload.get("loan_no") or "").strip()
@@ -411,7 +577,7 @@ def loan_accounts(pg_id):
                 "pg_name": pg.get("pg_name") or pg.get("name") or "",
             },
             "loans": loans,
-            "can_create": session.get("role") != "PG_DATA_ENTRY",
+            "can_create": _can_write_finance(),
         })
 
     return render_template("loan_accounts.html", pg=pg, loans=loans)
@@ -456,18 +622,18 @@ def loan_account_view(loan_id):
         flash("Loan not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    pg = db.pgs.find_one({"_id": loan.get("pg_id")}) if loan.get("pg_id") else None
-
-    if request.method == "POST" and session.get("role") == "PG_DATA_ENTRY":
-        if is_json_request():
-            return jsonify({
-                "ok": False,
-                "message": "Loan repayments/updates can only be entered by CLF/Block authorities."
-            }), 403
-        flash("Loan repayments/updates can only be entered by CLF/Block authorities.", "warning")
-        return redirect(request.path)
+    pg, access_response = _pg_from_loan_or_response(db, loan, is_json=is_json_request())
+    if access_response:
+        return access_response
 
     if request.method == "POST":
+        write_response = _require_finance_write(
+            "Loan repayments/updates can only be entered by CLF/Admin authorities.",
+            is_json=is_json_request(),
+        )
+        if write_response:
+            return write_response
+
         payload = request.get_json(silent=True) or request.form
 
         amt = float(payload.get("paid_amount") or 0)
@@ -559,7 +725,7 @@ def loan_account_view(loan_id):
                 "schedule": schedule_json,
             },
             "repayments": repayments,
-            "can_edit": session.get("role") != "PG_DATA_ENTRY",
+            "can_edit": _can_write_finance(),
         })
 
     return render_template("loan_account_view.html", pg=pg, loan=loan, repayments=repayments_raw)
@@ -587,6 +753,10 @@ def member_loan_accounts(pg_id):
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
+    access_response = _require_pg_access(pg, is_json=_is_json_request())
+    if access_response:
+        return access_response
+
     members_raw = list(
         db.pg_members.find({"pg_id": pg_obj_id}, {"name": 1, "member_name": 1}).limit(500)
     )
@@ -608,17 +778,15 @@ def member_loan_accounts(pg_id):
         or request.headers.get("X-Requested-With") == "XMLHttpRequest"
     )
 
-    # PG can view loans, but only CLF/Block authorities can create/update.
-    if request.method == "POST" and session.get("role") == "PG_DATA_ENTRY":
-        if is_json_request:
-            return jsonify({
-                "ok": False,
-                "message": "Member loans can only be created/edited by CLF/Block authorities."
-            }), 403
-        flash("Member loans can only be created/edited by CLF/Block authorities.", "warning")
-        return redirect(request.path)
-
+    # PG/Block can view loans, but only CLF/Admin authorities can create/update.
     if request.method == "POST":
+        write_response = _require_finance_write(
+            "Member loans can only be created/edited by CLF/Admin authorities.",
+            is_json=is_json_request,
+        )
+        if write_response:
+            return write_response
+
         payload = request.get_json(silent=True) or request.form
 
         member_id = payload.get("member_id")
@@ -705,7 +873,7 @@ def member_loan_accounts(pg_id):
             },
             "members": members,
             "loans": loans,
-            "can_create": session.get("role") != "PG_DATA_ENTRY",
+            "can_create": _can_write_finance(),
         })
 
     return render_template("member_loan_accounts.html", pg=pg, loans=loans_raw, members=members_raw)
@@ -748,21 +916,22 @@ def member_loan_view(loan_id):
         flash("Loan not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    pg = db.pgs.find_one({"_id": loan.get("pg_id")}) if loan.get("pg_id") else None
+    pg, access_response = _pg_from_loan_or_response(db, loan, is_json=is_json_request())
+    if access_response:
+        return access_response
+
     member = None
     if loan.get("member_id") and ObjectId.is_valid(str(loan.get("member_id"))):
         member = db.pg_members.find_one({"_id": ObjectId(str(loan.get("member_id")))})
 
-    if request.method == "POST" and session.get("role") == "PG_DATA_ENTRY":
-        if is_json_request():
-            return jsonify({
-                "ok": False,
-                "message": "View only: Loan entry/updates are handled by CLF/Block."
-            }), 403
-        flash("View only: Loan entry/updates are handled by CLF/Block.", "warning")
-        return redirect(request.path)
-
     if request.method == "POST":
+        write_response = _require_finance_write(
+            "View only: Loan entry/updates are handled by CLF/Admin.",
+            is_json=is_json_request(),
+        )
+        if write_response:
+            return write_response
+
         payload = request.get_json(silent=True) or request.form
 
         inst_no = int(payload.get("instalment_no") or 0)
@@ -869,7 +1038,7 @@ def member_loan_view(loan_id):
                 "name": (member.get("name") or member.get("member_name") or "Member") if member else "Member",
             },
             "repayments": repayments,
-            "can_edit": session.get("role") != "PG_DATA_ENTRY",
+            "can_edit": _can_write_finance(),
         })
 
     return render_template(
@@ -979,7 +1148,18 @@ def grants(pg_id):
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
+    access_response = _require_pg_access(pg, is_json=wants_json())
+    if access_response:
+        return access_response
+
     if request.method == "POST":
+        write_response = _require_finance_write(
+            "Grant creation/update is handled by CLF/Admin authorities.",
+            is_json=wants_json(),
+        )
+        if write_response:
+            return write_response
+
         payload = request.get_json(silent=True) or request.form
 
         amount_received = _safe_float(payload.get("amount_received"))
@@ -1080,6 +1260,17 @@ def grant_update(grant_id):
     if not grant:
         return jsonify({"ok": False, "message": "Grant not found"}), 404
 
+    pg, access_response = _pg_from_grant_or_response(db, grant, is_json=True)
+    if access_response:
+        return access_response
+
+    write_response = _require_finance_write(
+        "Grant update is handled by CLF/Admin authorities.",
+        is_json=True,
+    )
+    if write_response:
+        return write_response
+
     payload = request.get_json(silent=True) or request.form
 
     update_doc = {
@@ -1115,6 +1306,17 @@ def grant_delete(grant_id):
     grant = db.pg_grants.find_one({"_id": grant_obj_id})
     if not grant:
         return jsonify({"ok": False, "message": "Grant not found"}), 404
+
+    pg, access_response = _pg_from_grant_or_response(db, grant, is_json=True)
+    if access_response:
+        return access_response
+
+    write_response = _require_finance_write(
+        "Grant deletion is handled by CLF/Admin authorities.",
+        is_json=True,
+    )
+    if write_response:
+        return write_response
 
     db.pg_grant_utilizations.delete_many({"grant_id": grant_obj_id})
     db.pg_grants.delete_one({"_id": grant_obj_id})
@@ -1161,11 +1363,20 @@ def grant_view(grant_id):
         flash("Grant not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    pg = db.pgs.find_one({"_id": grant.get("pg_id")}) if grant.get("pg_id") else None
+    pg, access_response = _pg_from_grant_or_response(db, grant, is_json=wants_json())
+    if access_response:
+        return access_response
 
     if request.method == "POST":
         payload = request.get_json(silent=True) or request.form
         action = (payload.get("action") or "utilize").strip().lower()
+
+        write_response = _require_finance_write(
+            "Grant utilization and grant changes are handled by CLF/Admin authorities.",
+            is_json=wants_json(),
+        )
+        if write_response:
+            return write_response
 
         if action == "delete":
             db.pg_grant_utilizations.delete_many({"grant_id": grant_obj_id})
@@ -1335,7 +1546,7 @@ def grant_view(grant_id):
             "grant": grant_json,
             "utils": utils,
             "role": session.get("role") or "",
-            "can_edit": session.get("role") != "PG_DATA_ENTRY",
+            "can_edit": _can_write_finance(),
         }), 200
 
     return render_template(
@@ -1357,6 +1568,12 @@ def approve_grant_utilization(util_id):
     if not util:
         flash("Utilization entry not found.", "danger")
         return redirect(url_for("pg.pg_home"))
+
+    pg = db.pgs.find_one({"_id": util.get("pg_id")}) if util.get("pg_id") else None
+    access_response = _require_pg_access(pg, is_json=False)
+    if access_response:
+        return access_response
+
     role = session.get("role")
     cur = (util.get("status") or "PENDING").upper()
 
@@ -1401,6 +1618,12 @@ def reject_grant_utilization(util_id):
     if not util:
         flash("Utilization entry not found.", "danger")
         return redirect(url_for("pg.pg_home"))
+
+    pg = db.pgs.find_one({"_id": util.get("pg_id")}) if util.get("pg_id") else None
+    access_response = _require_pg_access(pg, is_json=False)
+    if access_response:
+        return access_response
+
     reason = (request.form.get("reason") or "").strip()
     db.pg_grant_utilizations.update_one(
         {"_id": ObjectId(util_id)},
