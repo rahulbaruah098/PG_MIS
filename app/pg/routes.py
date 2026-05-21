@@ -1357,14 +1357,22 @@ def pg_dashboard_live_data():
         "updated_at": datetime.utcnow().isoformat(),
     }), 200
 
-
 @pg_bp.route("/dashboard/all-transactions/<pg_id>", methods=["GET"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CADRE_CC", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def pg_dashboard_all_transactions(pg_id):
     db = current_app.mongo_db
 
+    def _wants_json():
+        return bool(
+            request.headers.get("Authorization")
+            or request.is_json
+            or "application/json" in request.headers.get("Accept", "").lower()
+        )
+
     if not pg_id or not ObjectId.is_valid(str(pg_id)):
+        if _wants_json():
+            return jsonify({"ok": False, "error": "Valid PG ID is required."}), 400
         flash("Valid PG ID is required.", "danger")
         return redirect(url_for("pg.pg_home"))
 
@@ -1372,6 +1380,8 @@ def pg_dashboard_all_transactions(pg_id):
     pg_doc = db.pgs.find_one({"_id": pg_obj_id})
 
     if not pg_doc:
+        if _wants_json():
+            return jsonify({"ok": False, "error": "PG not found."}), 404
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
@@ -1380,23 +1390,48 @@ def pg_dashboard_all_transactions(pg_id):
     if role == "PG_DATA_ENTRY":
         session_pg_id = str(getattr(g, "pg_id", None) or session.get("pg_id") or "")
         if session_pg_id and session_pg_id != str(pg_id):
+            if _wants_json():
+                return jsonify({"ok": False, "error": "You cannot access this PG."}), 403
             flash("You cannot access this PG.", "danger")
             return redirect(url_for("pg.pg_home"))
 
     if role == "CADRE_CC":
-        assigned_pg_ids = session.get("assigned_pg_ids") or []
-        assigned_pg_ids = {str(x) for x in assigned_pg_ids}
+        try:
+            assigned_pg_ids = set(str(x) for x in _assigned_pg_ids_for_session())
+        except Exception:
+            assigned_pg_ids = set(str(x) for x in (session.get("assigned_pg_ids") or []))
 
         if assigned_pg_ids and str(pg_id) not in assigned_pg_ids:
+            if _wants_json():
+                return jsonify({"ok": False, "error": "This PG is not assigned to you."}), 403
             flash("This PG is not assigned to you.", "danger")
             return redirect(url_for("pg.pg_home"))
 
     dashboard_cash = _dashboard_cash_metrics(db, pg_obj_id, limit=None)
 
+    transactions = dashboard_cash.get("recent_transactions", [])
+
+    if _wants_json():
+        return jsonify({
+            "ok": True,
+            "pg": {
+                "_id": str(pg_doc.get("_id")),
+                "name": pg_doc.get("name") or pg_doc.get("pg_name") or "PG",
+            },
+            "transactions": transactions,
+            "summary": {
+                "income_7d": _fmt_inr(dashboard_cash.get("income_7d", 0)),
+                "expense_7d": _fmt_inr(dashboard_cash.get("expense_7d", 0)),
+                "net_balance": _fmt_inr(dashboard_cash.get("net_balance", 0)),
+            },
+            "count": len(transactions),
+            "updated_at": datetime.utcnow().isoformat(),
+        }), 200
+
     return render_template(
         "dashboard_all_transactions.html",
         pg=pg_doc,
-        transactions=dashboard_cash.get("recent_transactions", []),
+        transactions=transactions,
         income_7d=_fmt_inr(dashboard_cash.get("income_7d", 0)),
         expense_7d=_fmt_inr(dashboard_cash.get("expense_7d", 0)),
         net_balance=_fmt_inr(dashboard_cash.get("net_balance", 0)),

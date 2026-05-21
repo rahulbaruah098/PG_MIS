@@ -505,42 +505,42 @@
 
                 <div class="rh-field s2">
                   <label id="rhLblState" for="rhPhState">State</label>
-                  <select name="state" id="rhPhState" data-selected="{{ request.args.get('state','')|e }}">
-                    <option value="" id="rhOptStatePlaceholder">State</option>
+                    <select name="state" id="rhPhState" data-selected="{{ (hub_filters.state if hub_filters is defined else request.args.get('state',''))|e }}">                    
+                      <option value="" id="rhOptStatePlaceholder">State</option>
                   </select>
                 </div>
 
                 <div class="rh-field s2">
                   <label id="rhLblDistrict" for="rhPhDistrict">District</label>
-                  <select name="district" id="rhPhDistrict" data-selected="{{ request.args.get('district','')|e }}">
-                    <option value="" id="rhOptDistrictPlaceholder">District</option>
+                    <select name="district" id="rhPhDistrict" data-selected="{{ (hub_filters.district if hub_filters is defined else request.args.get('district',''))|e }}">                    
+                      <option value="" id="rhOptDistrictPlaceholder">District</option>
                   </select>
                 </div>
 
                 <div class="rh-field s2">
                   <label id="rhLblBlock" for="rhPhBlock">Block</label>
-                  <select name="block" id="rhPhBlock" data-selected="{{ request.args.get('block','')|e }}">
-                    <option value="" id="rhOptBlockPlaceholder">Block</option>
+                    <select name="block" id="rhPhBlock" data-selected="{{ (hub_filters.block if hub_filters is defined else request.args.get('block',''))|e }}">                    
+                      <option value="" id="rhOptBlockPlaceholder">Block</option>
                   </select>
                 </div>
 
                 <div class="rh-field s2">
                   <label id="rhLblGp" for="rhPhGp">Gram Panchayat</label>
-                  <select name="gp" id="rhPhGp" data-selected="{{ request.args.get('gp','')|e }}">
-                    <option value="" id="rhOptGpPlaceholder">GP</option>
+                    <select name="gp" id="rhPhGp" data-selected="{{ (hub_filters.gp if hub_filters is defined else request.args.get('gp',''))|e }}">                    
+                      <option value="" id="rhOptGpPlaceholder">GP</option>
                   </select>
                 </div>
 
                 <div class="rh-field s2">
                   <label id="rhLblVillage" for="rhPhVillage">Village</label>
-                  <select name="village" id="rhPhVillage" data-selected="{{ request.args.get('village','')|e }}">
+                  <select name="village" id="rhPhVillage" data-selected="{{ (hub_filters.village if hub_filters is defined else request.args.get('village',''))|e }}">                    
                     <option value="" id="rhOptVillagePlaceholder">Village</option>
                   </select>
                 </div>
 
                 <div class="rh-field s2">
                   <label id="rhLblPgName" for="rhPhPgName">PG Name</label>
-                  <select name="pg_name" id="rhPhPgName" data-selected="{{ request.args.get('pg_name','')|e }}">
+                  <select name="pg_name" id="rhPhPgName" data-selected="{{ (hub_filters.pg_name if hub_filters is defined else request.args.get('pg_name',''))|e }}">                    
                     <option value="" id="rhOptPgNamePlaceholder">PG Name</option>
                   </select>
                 </div>
@@ -655,9 +655,39 @@
     const form = document.getElementById('rhForm');
 
     const RH_FILTER_OPTIONS_URL = "{{ url_for('reports.reports_hub_filter_options') }}";
+    const RH_LOCKED_FIELDS = {{ (hub_locked_fields if hub_locked_fields is defined else [])|tojson }};
+    const RH_ROLE = "{{ hub_role if hub_role is defined else '' }}";
 
-    const qs = () => new URLSearchParams(new FormData(form)).toString();
+    function isLockedLevel(level){
+      return Array.isArray(RH_LOCKED_FIELDS) && RH_LOCKED_FIELDS.includes(level);
+    }
+    
+    const qs = () => {
+      const params = new URLSearchParams(new FormData(form));
 
+      const forcedFields = [
+        ['state', 'rhPhState'],
+        ['district', 'rhPhDistrict'],
+        ['block', 'rhPhBlock'],
+        ['gp', 'rhPhGp'],
+        ['village', 'rhPhVillage'],
+        ['pg_name', 'rhPhPgName'],
+      ];
+
+      forcedFields.forEach(([name, id]) => {
+        const el = document.getElementById(id);
+        const value = el ? String(el.value || '').trim() : '';
+
+        // Disabled select values are not included in FormData,
+        // so we manually append them before download.
+        if (value) {
+          params.set(name, value);
+        }
+      });
+
+      return params.toString();
+    };
+    
     const bind = (id, path) => {
       const el = document.getElementById(id);
       if(!el) return;
@@ -908,16 +938,18 @@
       if(!select) return;
 
       const label = t()[cfg.labelKey] || '';
+      const selectedValue = getInitialSelected(level);
 
       select.innerHTML = '';
 
       const opt = document.createElement('option');
-      opt.value = '';
-      opt.textContent = label;
+      opt.value = selectedValue || '';
+      opt.textContent = selectedValue || label;
       opt.id = cfg.placeholderId;
+      opt.selected = true;
       select.appendChild(opt);
 
-      select.disabled = !!disabled;
+      select.disabled = isLockedLevel(level) ? true : !!disabled;
     }
 
     function setLoading(level){
@@ -948,15 +980,31 @@
 
       select.innerHTML = '';
 
+      const cleanOptions = Array.isArray(options)
+        ? options.filter(v => v !== null && v !== undefined && String(v).trim() !== '')
+        : [];
+
+      const finalSelected = selectedValue || getInitialSelected(level) || '';
+
+      // For locked fields, show only the logged-in value and disable dropdown.
+      if(isLockedLevel(level)){
+        const lockedValue = finalSelected || cleanOptions[0] || '';
+
+        const opt = document.createElement('option');
+        opt.value = lockedValue;
+        opt.textContent = lockedValue || label;
+        opt.selected = true;
+        select.appendChild(opt);
+
+        select.disabled = true;
+        return;
+      }
+
       const placeholder = document.createElement('option');
       placeholder.value = '';
       placeholder.textContent = label;
       placeholder.id = cfg.placeholderId;
       select.appendChild(placeholder);
-
-      const cleanOptions = Array.isArray(options)
-        ? options.filter(v => v !== null && v !== undefined && String(v).trim() !== '')
-        : [];
 
       cleanOptions.forEach(value => {
         const strValue = String(value).trim();
@@ -965,7 +1013,7 @@
         opt.value = strValue;
         opt.textContent = strValue;
 
-        if(selectedValue && strValue === selectedValue){
+        if(finalSelected && strValue === finalSelected){
           opt.selected = true;
         }
 
@@ -1114,19 +1162,20 @@
 
       await loadLevel('state', selectedState);
 
-      if(selectedState){
+      // If state is auto-filled, continue loading child dropdowns.
+      if(selectedState || getValue('state')){
         await loadLevel('district', selectedDistrict);
       }
 
-      if(selectedDistrict){
+      if(selectedDistrict || getValue('district')){
         await loadLevel('block', selectedBlock);
       }
 
-      if(selectedBlock){
+      if(selectedBlock || getValue('block')){
         await loadLevel('gp', selectedGp);
       }
 
-      if(selectedGp){
+      if(selectedGp || getValue('gp')){
         await loadLevel('village', selectedVillage);
       }
 

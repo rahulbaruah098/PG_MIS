@@ -1,7 +1,7 @@
 ﻿from services.audit_engine import AuditLogger
 import os
 import re
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app, send_file, g
 from datetime import datetime, timedelta
 from app.services.guards import require_unlocked_period
 from bson import ObjectId
@@ -20,9 +20,6 @@ from app.services.report_service import ReportService
 from app.services.kpi_service import KPIService
 from app.utils import safe_objectid
 from app.services.submissions import submit_to_clf, approve, reject, get_submission
-
-
-
 
 def _geo_names_from_session(db, sess):
     """Resolve state/district/block names (strings) for SHG master filtering.
@@ -72,6 +69,153 @@ def _geo_names_from_session(db, sess):
 
     return state_name, district_name, block_name
 
+def _reports_ctx_value(key, default=None):
+    """
+    Reports Hub context reader.
+
+    Web login      => Flask session
+    Mobile app JWT => flask.g populated by rbac/login_required
+    """
+    val = getattr(g, key, None)
+    if val is not None and str(val).strip() != "":
+        return val
+
+    val = session.get(key)
+    if val is not None and str(val).strip() != "":
+        return val
+
+    return default
+
+def _reports_hub_defaults_from_session(db):
+    """
+    Build default Reports Hub filters from logged-in user's scope.
+
+    Web:
+      - Reads from Flask session.
+
+    Mobile app:
+      - Reads from flask.g because JWT auth stores user scope there.
+
+    State/Admin:
+      - State auto-filled.
+
+    PG Entry:
+      - State/District/Block/GP/Village/PG auto-filled from own PG.
+    """
+    role = _reports_ctx_value("role", "")
+    defaults = {
+        "state": "",
+        "district": "",
+        "block": "",
+        "gp": "",
+        "village": "",
+        "pg_name": "",
+    }
+
+    locked_fields = []
+
+    # PG Entry: lock everything to its own PG
+    if role in ("PG_DATA_ENTRY", "CADRE_CC"):
+        pg = None
+
+        raw_pg_id = (
+            _reports_ctx_value("pg_id")
+            or _reports_ctx_value("active_pg_id")
+        )
+
+        if raw_pg_id and ObjectId.is_valid(str(raw_pg_id)):
+            pg = db.pgs.find_one(
+                {"_id": ObjectId(str(raw_pg_id))},
+                {
+                    "name": 1,
+                    "State": 1,
+                    "District": 1,
+                    "Block": 1,
+                    "Gram Panchayat": 1,
+                    "Village": 1,
+                },
+            )
+
+        # fallback: if JWT has assigned_pg_ids but no direct pg_id
+        if not pg:
+            assigned_pg_ids = (
+                getattr(g, "assigned_pg_ids", None)
+                or session.get("assigned_pg_ids")
+                or []
+            )
+
+            possible_pg_id = None
+            if isinstance(assigned_pg_ids, list) and assigned_pg_ids:
+                possible_pg_id = assigned_pg_ids[0]
+
+            if possible_pg_id and ObjectId.is_valid(str(possible_pg_id)):
+                pg = db.pgs.find_one(
+                    {"_id": ObjectId(str(possible_pg_id))},
+                    {
+                        "name": 1,
+                        "State": 1,
+                        "District": 1,
+                        "Block": 1,
+                        "Gram Panchayat": 1,
+                        "Village": 1,
+                    },
+                )
+
+        if pg:
+            defaults.update({
+                "state": pg.get("State") or "",
+                "district": pg.get("District") or "",
+                "block": pg.get("Block") or "",
+                "gp": pg.get("Gram Panchayat") or "",
+                "village": pg.get("Village") or "",
+                "pg_name": pg.get("name") or "",
+            })
+
+        locked_fields = ["state", "district", "block", "gp", "village", "pg"]
+        return defaults, locked_fields
+
+    # State/Admin scoped users
+    state_id = _reports_ctx_value("state_id")
+
+    if state_id and ObjectId.is_valid(str(state_id)):
+        st = db.states.find_one(
+            {"_id": ObjectId(str(state_id))},
+            {"name": 1, "code": 1},
+        )
+        if st:
+            defaults["state"] = st.get("name") or st.get("code") or ""
+
+    if defaults["state"] and role in ("ADMIN", "STATE_ADMIN"):
+        locked_fields = ["state"]
+
+    return defaults, locked_fields
+
+def _reports_hub_effective_filters(db):
+    defaults, locked_fields = _reports_hub_defaults_from_session(db)
+
+    filters = {
+        "state": request.args.get("state") or defaults["state"],
+        "district": request.args.get("district") or defaults["district"],
+        "block": request.args.get("block") or defaults["block"],
+        "gp": request.args.get("gp") or defaults["gp"],
+        "village": request.args.get("village") or defaults["village"],
+        "pg_name": request.args.get("pg_name") or defaults["pg_name"],
+        "period": request.args.get("period", ""),
+        "group_by": request.args.get("group_by", ""),
+        "q": request.args.get("q", ""),
+        "from": request.args.get("from", ""),
+        "to": request.args.get("to", ""),
+    }
+
+    # Locked fields must always use session-derived values, not user URL values
+    for field in locked_fields:
+        if field == "pg":
+            filters["pg_name"] = defaults["pg_name"]
+        else:
+            filters[field] = defaults[field]
+
+    return filters, locked_fields
+
 # changes by atlanta
 @reports_bp.route("/hub", methods=["GET"])
 @login_required
@@ -87,7 +231,9 @@ def _geo_names_from_session(db, sess):
 )
 def reports_hub():
     """Unified download hub for reports (CSV/ZIP)."""
-
+    db = current_app.mongo_db
+    filters, locked_fields = _reports_hub_effective_filters(db)
+    role = _reports_ctx_value("role", "")
     wants_json = (
         request.args.get("format") == "json"
         or request.args.get("mobile") == "1"
@@ -95,76 +241,73 @@ def reports_hub():
         or "application/json" in (request.headers.get("Accept") or "")
     )
 
+    payload = {
+        "success": True,
+        "title": "Reports Hub",
+        "subtitle": "Download CSV/ZIP reports with your jurisdiction filters.",
+        "role": role,
+        "locked_fields": locked_fields,
+        "filters": filters,
+        "period_options": [
+            {"label": "All time", "value": ""},
+            {"label": "Weekly", "value": "weekly"},
+            {"label": "Monthly", "value": "monthly"},
+            {"label": "6 Monthly", "value": "six_monthly"},
+            {"label": "Yearly", "value": "yearly"},
+        ],
+        "group_by_options": [
+            {"label": "None", "value": ""},
+            {"label": "District", "value": "district"},
+            {"label": "Block", "value": "block"},
+            {"label": "Gram Panchayat", "value": "gp"},
+            {"label": "Village", "value": "village"},
+            {"label": "PG", "value": "pg"},
+        ],
+        "actions": {
+            "open_overall": "/reports/pg-overall",
+            "overall_zip": "/reports/pg-overall/download",
+            # "lakhpati_csv": "/reports/export/lakhpati.csv",
+            "grants_csv": "/reports/export/grants.csv",
+            "members_csv": "/reports/export/members.csv",
+            "cashbook_csv": "/reports/export/cashbook.csv",
+            "loans_csv": "/reports/export/loans.csv",
+            "turnover_csv": "/reports/export/turnover.csv",
+        },
+        "quick_reports": [
+            # {
+            #     "title": "Lakhpati Didi",
+            #     "subtitle": "Member-level + grouped summary",
+            #     "path": "/reports/lakhpati",
+            # },
+            {
+                "title": "Grants & Utilization",
+                "subtitle": "Grant received + utilization balance",
+                "path": "/reports/grants",
+            },
+            {
+                "title": "PG Overall Export",
+                "subtitle": "Everything about selected PGs (ZIP)",
+                "path": "/reports/pg-overall",
+            },
+        ],
+        "tip": "Tip: Set Group By for summary tables. If Group By is blank, downloads give row-level data.",
+    }
+
     if wants_json:
-        return jsonify({
-            "success": True,
-            "title": "Reports Hub",
-            "subtitle": "Download CSV/ZIP reports with your jurisdiction filters.",
-            "filters": {
-                "state": request.args.get("state", ""),
-                "district": request.args.get("district", ""),
-                "block": request.args.get("block", ""),
-                "gp": request.args.get("gp", ""),
-                "village": request.args.get("village", ""),
-                "pg_name": request.args.get("pg_name", ""),
-                "period": request.args.get("period", ""),
-                "group_by": request.args.get("group_by", ""),
-                "q": request.args.get("q", ""),
-                "from": request.args.get("from", ""),
-                "to": request.args.get("to", ""),
-            },
-            "period_options": [
-                {"label": "All time", "value": ""},
-                {"label": "Weekly", "value": "weekly"},
-                {"label": "Monthly", "value": "monthly"},
-                {"label": "6 Monthly", "value": "six_monthly"},
-                {"label": "Yearly", "value": "yearly"},
-            ],
-            "group_by_options": [
-                {"label": "None", "value": ""},
-                {"label": "District", "value": "district"},
-                {"label": "Block", "value": "block"},
-                {"label": "Gram Panchayat", "value": "gp"},
-                {"label": "Village", "value": "village"},
-                {"label": "PG", "value": "pg"},
-            ],
-            "actions": {
-                "open_overall": "/reports/pg-overall",
-                "overall_zip": "/reports/pg-overall/download",
-                "lakhpati_csv": "/reports/export/lakhpati.csv",
-                "grants_csv": "/reports/export/grants.csv",
-                "members_csv": "/reports/export/members.csv",
-                "cashbook_csv": "/reports/export/cashbook.csv",
-                "loans_csv": "/reports/export/loans.csv",
-                "turnover_csv": "/reports/export/turnover.csv",
-            },
-            "quick_reports": [
-                {
-                    "title": "Lakhpati Didi",
-                    "subtitle": "Member-level + grouped summary",
-                    "path": "/reports/lakhpati",
-                },
-                {
-                    "title": "Grants & Utilization",
-                    "subtitle": "Grant received + utilization balance",
-                    "path": "/reports/grants",
-                },
-                {
-                    "title": "PG Overall Export",
-                    "subtitle": "Everything about selected PGs (ZIP)",
-                    "path": "/reports/pg-overall",
-                },
-            ],
-            "tip": "Tip: Set Group By for summary tables. If Group By is blank, downloads give row-level data.",
-        })
+        return jsonify(payload)
 
-    return render_template("reports_hub.html")
-
+    return render_template(
+        "reports_hub.html",
+        hub_filters=filters,
+        hub_locked_fields=locked_fields,
+        hub_role=role,
+    )
 
 # -------------------------------------------------------------------
 # Reports Hub Dropdown Backend
 # -------------------------------------------------------------------
 
+#changes by atlanta
 @reports_bp.route("/hub/filter-options", methods=["GET"])
 @login_required
 @roles_required(
@@ -181,7 +324,6 @@ def reports_hub_filter_options():
     db = current_app.mongo_db
 
     level = (request.args.get("level") or "").strip()
-
     state = (request.args.get("state") or "").strip()
     district = (request.args.get("district") or "").strip()
     block = (request.args.get("block") or "").strip()
@@ -197,17 +339,27 @@ def reports_hub_filter_options():
             "options": [],
         }), 400
 
-    # This matches your PG creation insert:
-    #
-    # pg_insert = {
-    #   "name": pg_name,
-    #   "State": st,
-    #   "District": dist_name,
-    #   "Block": blk_name,
-    #   "Gram Panchayat": gp,
-    #   "Village": village,
-    #   ...
-    # }
+    role = _reports_ctx_value("role", "")
+    defaults, locked_fields = _reports_hub_defaults_from_session(db)
+
+    # PG Entry: return only its own fixed values
+    if role in ("PG_DATA_ENTRY", "CADRE_CC"):
+        fixed = {
+            "state": defaults.get("state", ""),
+            "district": defaults.get("district", ""),
+            "block": defaults.get("block", ""),
+            "gp": defaults.get("gp", ""),
+            "village": defaults.get("village", ""),
+            "pg": defaults.get("pg_name", ""),
+        }
+
+        value = fixed.get(level, "")
+        return jsonify({
+            "success": True,
+            "level": level,
+            "locked": True,
+            "options": [value] if value else [],
+        })
 
     field_map = {
         "state": "State",
@@ -220,15 +372,11 @@ def reports_hub_filter_options():
 
     mongo_filter = {}
 
-    # Respect logged-in user's jurisdiction
-    try:
-        base_match = _pg_match_from_session(session)
-        if base_match:
-            mongo_filter.update(base_match)
-    except Exception:
-        pass
+    # State Admin: always keep logged-in state fixed
+    if defaults.get("state"):
+        mongo_filter["State"] = defaults["state"]
 
-    # Apply selected dropdown filters
+    # Apply dropdown selections
     if state:
         mongo_filter["State"] = state
 
@@ -258,6 +406,7 @@ def reports_hub_filter_options():
         return jsonify({
             "success": True,
             "level": level,
+            "locked": level in locked_fields,
             "options": options,
         })
 
@@ -270,11 +419,6 @@ def reports_hub_filter_options():
             "level": level,
             "options": [],
         }), 500
-
-
-
-
-
 
 
 def _apply_period(match: dict, field: str, period_filters: dict):
@@ -291,10 +435,11 @@ def _apply_period(match: dict, field: str, period_filters: dict):
 def _pgs_in_scope(db, base_match: dict, filters: dict):
     match_pg = _pg_match_with_filters(db, base_match, filters)
 
-    role = session.get("role")
+    role = _reports_ctx_value("role", "")
+    pg_id = _reports_ctx_value("pg_id") or _reports_ctx_value("active_pg_id")
 
-    if role in ("PG_DATA_ENTRY", "CADRE_CC") and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
-        match_pg["_id"] = ObjectId(session.get("pg_id"))
+    if role in ("PG_DATA_ENTRY", "CADRE_CC") and pg_id and ObjectId.is_valid(str(pg_id)):
+        match_pg = {"_id": ObjectId(str(pg_id))}
 
     pgs = list(db.pgs.find(
         match_pg,
@@ -312,9 +457,20 @@ def _pgs_in_scope(db, base_match: dict, filters: dict):
 
     return list(pg_by_id.keys()), pg_by_id
 
+def _reports_export_filters(db):
+    """
+    Shared safe filters for Reports Hub CSV downloads.
+    """
+    effective, _locked_fields = _reports_hub_effective_filters(db)
 
-
-
+    return {
+        "State": effective.get("state") or "",
+        "District": effective.get("district") or "",
+        "Block": effective.get("block") or "",
+        "Gram Panchayat": effective.get("gp") or "",
+        "Village": effective.get("village") or "",
+        "pg_name": effective.get("pg_name") or "",
+    }
 
 @reports_bp.route("/export/members.csv", methods=["GET"])
 @login_required
@@ -323,14 +479,7 @@ def export_members_csv():
     import csv, io
     db = current_app.mongo_db
     base_match = _pg_match_from_session(session)
-    filters = {
-        "State": request.args.get("state") or "",
-        "District": request.args.get("district") or "",
-        "Block": request.args.get("block") or "",
-        "Gram Panchayat": request.args.get("gp") or "",
-        "Village": request.args.get("village") or "",
-        "pg_name": request.args.get("pg_name") or "",
-    }
+    filters = _reports_export_filters(db)
     group_by = (request.args.get("group_by") or "").strip().lower()
     q = (request.args.get("q") or "").strip()
     pg_ids, pg_by_id = _pgs_in_scope(db, base_match, filters)
@@ -407,14 +556,7 @@ def export_cashbook_csv():
     import csv, io
     db = current_app.mongo_db
     base_match = _pg_match_from_session(session)
-    filters = {
-        "State": request.args.get("state") or "",
-        "District": request.args.get("district") or "",
-        "Block": request.args.get("block") or "",
-        "Gram Panchayat": request.args.get("gp") or "",
-        "Village": request.args.get("village") or "",
-        "pg_name": request.args.get("pg_name") or "",
-    }
+    filters = _reports_export_filters(db)
     group_by = (request.args.get("group_by") or "").strip().lower()
     pg_ids, pg_by_id = _pgs_in_scope(db, base_match, filters)
 
@@ -484,14 +626,7 @@ def export_loans_csv():
     import csv, io
     db = current_app.mongo_db
     base_match = _pg_match_from_session(session)
-    filters = {
-        "State": request.args.get("state") or "",
-        "District": request.args.get("district") or "",
-        "Block": request.args.get("block") or "",
-        "Gram Panchayat": request.args.get("gp") or "",
-        "Village": request.args.get("village") or "",
-        "pg_name": request.args.get("pg_name") or "",
-    }
+    filters = _reports_export_filters(db)
     group_by = (request.args.get("group_by") or "").strip().lower()
     pg_ids, pg_by_id = _pgs_in_scope(db, base_match, filters)
 
@@ -554,14 +689,7 @@ def export_turnover_csv():
     import csv, io
     db = current_app.mongo_db
     base_match = _pg_match_from_session(session)
-    filters = {
-        "State": request.args.get("state") or "",
-        "District": request.args.get("district") or "",
-        "Block": request.args.get("block") or "",
-        "Gram Panchayat": request.args.get("gp") or "",
-        "Village": request.args.get("village") or "",
-        "pg_name": request.args.get("pg_name") or "",
-    }
+    filters = _reports_export_filters(db)
     group_by = (request.args.get("group_by") or "").strip().lower()
     pg_ids, pg_by_id = _pgs_in_scope(db, base_match, filters)
 
@@ -634,27 +762,43 @@ def _shg_filter_from_session(db, sess):
 
 
 def _pg_match_from_session(sess):
-    """Build a Mongo query for PGs scoped to the user's jurisdiction."""
-    role = sess.get("role")
-    state_id = sess.get("state_id")
-    district_id = sess.get("district_id")
-    block_id = sess.get("block_id")
-    clf_id = sess.get("clf_id")
+    """Build a Mongo query for PGs scoped to the user's jurisdiction.
+
+    Supports:
+    - Web session
+    - Mobile JWT context via flask.g
+    """
+    role = _reports_ctx_value("role", "")
+    state_id = _reports_ctx_value("state_id")
+    district_id = _reports_ctx_value("district_id")
+    block_id = _reports_ctx_value("block_id")
+    clf_id = _reports_ctx_value("clf_id")
+    pg_id = _reports_ctx_value("pg_id") or _reports_ctx_value("active_pg_id")
 
     q = {}
+
     try:
-        if clf_id:
-            q["clf_id"] = ObjectId(clf_id)
-        elif block_id:
-            q["block_id"] = ObjectId(block_id)
-        elif district_id:
-            q["district_id"] = ObjectId(district_id)
-        elif state_id and role in ("ADMIN", "DISTRICT_ADMIN", "BLOCK_ADMIN", "CLF_ADMIN", "CLF_MANAGER"):
-            q["state_id"] = ObjectId(state_id)
+        if role in ("PG_DATA_ENTRY", "CADRE_CC") and pg_id and ObjectId.is_valid(str(pg_id)):
+            q["_id"] = ObjectId(str(pg_id))
+        elif clf_id and ObjectId.is_valid(str(clf_id)):
+            q["clf_id"] = ObjectId(str(clf_id))
+        elif block_id and ObjectId.is_valid(str(block_id)):
+            q["block_id"] = ObjectId(str(block_id))
+        elif district_id and ObjectId.is_valid(str(district_id)):
+            q["district_id"] = ObjectId(str(district_id))
+        elif state_id and ObjectId.is_valid(str(state_id)) and role in (
+            "ADMIN",
+            "STATE_ADMIN",
+            "DISTRICT_ADMIN",
+            "BLOCK_ADMIN",
+            "CLF_ADMIN",
+            "CLF_MANAGER",
+        ):
+            q["state_id"] = ObjectId(str(state_id))
     except Exception:
         return {}
-    return q
 
+    return q
 
 def _aggregate_count(collection, pipeline):
     try:
@@ -1404,7 +1548,6 @@ def state_dashboard():
     )
 
 
-
 @reports_bp.route("/state_dashboard/details")
 @login_required
 @roles_required("SUPER_ADMIN", "ADMIN", "DISTRICT_ADMIN", "BLOCK_ADMIN", "CADRE_CC")
@@ -1879,73 +2022,145 @@ def export_scope_csv():
 @reports_bp.route("/pg_mpr/<pg_id>")
 @login_required
 def pg_mpr(pg_id):
-    from flask import request, jsonify
+    from flask import request, jsonify, redirect, url_for, flash
+    from bson import ObjectId
+    from datetime import datetime
 
     db = current_app.mongo_db
 
-    selected_year = request.args.get("year")
-    selected_month = request.args.get("month")
-    view_mode = (request.args.get("view") or "period").strip().lower()
+    if not pg_id or not ObjectId.is_valid(str(pg_id)):
+        flash("Invalid PG selected.", "danger")
+        return redirect(url_for("pg.pg_home"))
+
+    pg_oid = ObjectId(str(pg_id))
+
+    selected_year_raw = request.args.get("year")
+    selected_month_raw = request.args.get("month")
+    view_mode = (request.args.get("view") or "").strip().lower()
+
+    try:
+        selected_year = int(selected_year_raw) if selected_year_raw not in (None, "") else None
+    except Exception:
+        selected_year = None
+
+    try:
+        selected_month = int(selected_month_raw) if selected_month_raw not in (None, "") else None
+    except Exception:
+        selected_month = None
+
+    has_period = (
+        selected_year is not None
+        and selected_month is not None
+        and 1 <= int(selected_month) <= 12
+    )
+
+    # Sidebar opens this page without year/month.
+    # In that case, show all records instead of returning blank.
+    if view_mode == "all" or not has_period:
+        effective_view_mode = "all"
+    else:
+        effective_view_mode = "period"
 
     query = {
         "level": "pg",
-        "ref_id": pg_id
+        "$or": [
+            {"ref_id": str(pg_oid)},
+            {"ref_id": pg_oid},
+            {"pg_id": str(pg_oid)},
+            {"pg_id": pg_oid},
+        ],
     }
 
-    if view_mode == "all":
-        # View All Time button only
-        pass
-    else:
-        # Selected period mode must NEVER fall back to all data
-        try:
-            query["year"] = int(selected_year)
-            query["month"] = int(selected_month)
-        except Exception:
-            query["year"] = -1
-            query["month"] = -1
+    if effective_view_mode == "period":
+        query["year"] = int(selected_year)
+        query["month"] = int(selected_month)
 
-    snapshots = list(
-        db.mpr_snapshots.find(query).sort([("year", -1), ("month", -1)])
+    snapshots_raw = list(
+        db.mpr_snapshots.find(query).sort([
+            ("year", -1),
+            ("month", -1),
+            ("updated_at", -1),
+            ("created_at", -1),
+        ])
     )
 
-    def _safe_num(v):
+    def _safe_num(value):
         try:
-            if v is None or v == "":
+            if value is None or value == "":
                 return 0
-            return float(v)
+            if isinstance(value, str):
+                value = value.replace("₹", "").replace(",", "").replace("%", "").strip()
+            return float(value)
         except Exception:
             return 0
 
+    def _pick(row, *keys, default=0):
+        metrics = row.get("metrics") or {}
+
+        for key in keys:
+            value = row.get(key)
+            if value not in (None, ""):
+                return value
+
+        for key in keys:
+            value = metrics.get(key)
+            if value not in (None, ""):
+                return value
+
+        return default
+
+    def _format_amount(value):
+        return "₹{:,.2f}".format(_safe_num(value))
+
+    def _format_percent(value):
+        return "{:.2f}%".format(_safe_num(value))
+
     normalized = []
-    for i, row in enumerate(snapshots, start=1):
+
+    for i, row in enumerate(snapshots_raw, start=1):
+        monthly_turnover = _pick(
+            row,
+            "monthly_turnover",
+            "turnover",
+            "total_turnover",
+            "business_turnover",
+            default=0,
+        )
+
+        pct_members_input = _pick(
+            row,
+            "pct_members_input",
+            "members_input_pct",
+            "input_business_involvement",
+            "input_involvement_pct",
+            "input_pct",
+            default=0,
+        )
+
+        pct_members_output = _pick(
+            row,
+            "pct_members_output",
+            "members_output_pct",
+            "output_business_involvement",
+            "output_involvement_pct",
+            "output_pct",
+            default=0,
+        )
+
         normalized.append({
-            "_id": str(row.get("_id")),
+            "_id": str(row.get("_id") or ""),
             "sl_no": i,
-            "pg_id": pg_id,
+            "pg_id": str(pg_oid),
             "year": row.get("year") or "",
             "month": row.get("month") or "",
-            "turnover": _safe_num(
-                row.get("turnover")
-                or row.get("total_turnover")
-                or row.get("business_turnover")
-                or 0
-            ),
-            "input": _safe_num(
-                row.get("input")
-                or row.get("input_cost")
-                or row.get("total_input")
-                or 0
-            ),
-            "output": _safe_num(
-                row.get("output")
-                or row.get("output_value")
-                or row.get("total_output")
-                or 0
-            ),
-            "raw": {
-                k: (str(v) if hasattr(v, "__class__") and v.__class__.__name__ == "ObjectId" else v)
-                for k, v in row.items()
-            }
+            "monthly_turnover": _format_amount(monthly_turnover),
+            "pct_members_input": _format_percent(pct_members_input),
+            "pct_members_output": _format_percent(pct_members_output),
+
+            # raw numeric values for mobile/app/json usage
+            "monthly_turnover_value": _safe_num(monthly_turnover),
+            "pct_members_input_value": _safe_num(pct_members_input),
+            "pct_members_output_value": _safe_num(pct_members_output),
         })
 
     wants_json = (
@@ -1958,22 +2173,21 @@ def pg_mpr(pg_id):
     if wants_json:
         return jsonify({
             "success": True,
-            "pg_id": pg_id,
-            "view": view_mode,
-            "year": query.get("year"),
-            "month": query.get("month"),
+            "pg_id": str(pg_oid),
+            "view": effective_view_mode,
+            "year": selected_year,
+            "month": selected_month,
             "count": len(normalized),
-            "snapshots": normalized
+            "snapshots": normalized,
         })
 
     return render_template(
         "pg_mpr.html",
-        snapshots=snapshots,
-        selected_year=query.get("year"),
-        selected_month=query.get("month"),
-        view_mode=view_mode,
+        snapshots=normalized,
+        selected_year=selected_year,
+        selected_month=selected_month,
+        view_mode=effective_view_mode,
     )
-
 
 @reports_bp.route("/pending_changes")
 @login_required
@@ -2022,7 +2236,22 @@ def export_pg_mpr(pg_id):
     month = int(flask_request.args.get("month") or datetime.utcnow().month)
 
     db = current_app.mongo_db
-    snap = db.mpr_snapshots.find_one({"level": "pg", "ref_id": ObjectId(pg_id), "year": year, "month": month}) or {}
+    pg_oid = ObjectId(str(pg_id)) if ObjectId.is_valid(str(pg_id)) else None
+
+    ref_filters = [{"ref_id": str(pg_id)}, {"pg_id": str(pg_id)}]
+
+    if pg_oid:
+        ref_filters.extend([
+            {"ref_id": pg_oid},
+            {"pg_id": pg_oid},
+        ])
+
+    snap = db.mpr_snapshots.find_one({
+        "level": "pg",
+        "year": year,
+        "month": month,
+        "$or": ref_filters,
+    }) or {}  
     metrics = snap.get("metrics", {})
 
     if fmt == "xlsx":
