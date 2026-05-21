@@ -155,6 +155,9 @@ def create_app():
             "current_clf_name": "",
         }
 
+    from .docs import register_docs
+    register_docs(app)
+
     return app
 
 
