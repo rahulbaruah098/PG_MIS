@@ -1066,7 +1066,7 @@
                     <th class="pmd-col-sector-a" id="thFisheryType">Fishery Activity</th>
                   {% endif %}
                   <th class="pmd-col-contact" id="thContact">Contact</th>
-                  <th class="pmd-col-id" id="thId">AADHAR/Voter/Govt ID</th>
+                  
                   <th class="pmd-col-bank" id="thBank">Bank</th>
                   <th class="pmd-col-branch" id="thBranch">Branch</th>
                   <th class="pmd-col-account" id="thAccount">Account</th>
@@ -1146,10 +1146,6 @@
                     <input class="pmd-input" name="contact" value="{{ r.contact or '' }}" placeholder="Contact" data-field="contact" form="{{ fid }}">
                   </td>
 
-                  <td class="pmd-col-id" style="vertical-align:top;" data-label="AADHAR/Voter/Govt ID">
-                    <input class="pmd-input" name="photo_id_number" value="{{ r.photo_id_number or '' }}" placeholder="ID No" data-field="photo_id_number" form="{{ fid }}">
-                  </td>
-
                   <td class="pmd-col-bank" style="vertical-align:top;" data-label="Bank">
                     <input class="pmd-input" name="bank_name" value="{{ r.bank_name or '' }}" placeholder="Bank" data-field="bank_name" form="{{ fid }}">
                   </td>
@@ -1166,14 +1162,14 @@
                     <input class="pmd-input" name="membership_fee_paid" value="{{ r.membership_fee_paid or '' }}" placeholder="0" inputmode="decimal" data-field="membership_fee_paid" form="{{ fid }}">
                   </td>
 
-                  {#
-<td class="pmd-col-lakhpati" style="vertical-align:top;" data-label="Lakhpati Didi?">
-  <select class="pmd-input" data-field="lakh_pati_didi" name="lakh_pati_didi" form="{{ fid }}" style="font-weight:800;">
-    <option value="no" {% if not r.lakh_pati_didi %}selected{% endif %}>No</option>
-    <option value="yes" {% if r.lakh_pati_didi %}selected{% endif %}>Yes</option>
-  </select>
-</td>
-#}
+                  
+                    <!-- <td class="pmd-col-lakhpati" style="vertical-align:top;" data-label="Lakhpati Didi?">
+                      <select class="pmd-input" data-field="lakh_pati_didi" name="lakh_pati_didi" form="{{ fid }}" style="font-weight:800;">
+                        <option value="no" {% if not r.lakh_pati_didi %}selected{% endif %}>No</option>
+                        <option value="yes" {% if r.lakh_pati_didi %}selected{% endif %}>Yes</option>
+                      </select>
+                    </td> -->
+                  
 
                   <td class="pmd-col-action" style="vertical-align:top; text-align:right;" data-label="Action">
                     <form method="POST" class="m-0 p-0 pmd-editForm" id="{{ fid }}">
@@ -1262,7 +1258,7 @@
                     <th class="pmd-col-sector-a" id="thFisheryTypeV">Fishery Activity</th>
                   {% endif %}
                   <th class="pmd-col-contact" id="thContactV">Contact</th>
-                  <th class="pmd-col-id" id="thIdV">AADHAR/Voter/Govt ID</th>
+                
                   <th class="pmd-col-bank" id="thBankV">Bank</th>
                   <th class="pmd-col-branch" id="thBranchV">Branch</th>
                   <th class="pmd-col-account" id="thAccountV">Account</th>
@@ -1291,7 +1287,6 @@
                     <td class="pmd-col-sector-a" data-label="Fishery Activity"><div class="pmd"><span data-field="fishery_activity">{{ r.fishery_activity or '-' }}</span></div></td>
                   {% endif %}
                   <td class="pmd-col-contact" data-label="Contact"><div class="pmd"><span data-field="contact">{{ r.contact or '-' }}</span></div></td>
-                  <td class="pmd-col-id" data-label="AADHAR/Voter/Govt ID"><div class="pmd"><span data-field="photo_id_number">{{ r.photo_id_number or '-' }}</span></div></td>
                   <td class="pmd-col-bank" data-label="Bank"><div class="pmd"><span data-field="bank_name">{{ r.bank_name or '-' }}</span></div></td>
                   <td class="pmd-col-branch" data-label="Branch"><div class="pmd"><span data-field="branch">{{ r.branch or '-' }}</span></div></td>
                   <td class="pmd-col-account" data-label="Account"><div class="pmd"><span data-field="account_number">{{ r.account_number or '-' }}</span></div></td>
@@ -1423,7 +1418,7 @@
       thArddUnit: "Unit",
       thFisheryType: "Fishery Activity",
       thContact: "Contact",
-      thId: "AADHAR/Voter/Govt ID",
+       
       thBank: "Bank",
       thBranch: "Branch",
       thAccount: "Account",
@@ -1431,7 +1426,7 @@
       thLakhpati: "Lakhpati Didi?",
       thAction: "Action",
       phContact: "Contact",
-      phId: "ID No",
+     
       phBank: "Bank",
       phBranch: "Branch",
       phAccount: "Account",
@@ -1468,15 +1463,14 @@
       thArddUnit: "ইউনিট",
       thFisheryType: "মৎস্য কার্যক্রম",
       thContact: "যোগাযোগ",
-      thId: "আধার/ভোটার/সরকারি আইডি",
-      thBank: "ব্যাংক",
+              thBank: "ব্যাংক",
       thBranch: "শাখা",
       thAccount: "অ্যাকাউন্ট",
       thFee: "ফি",
       thLakhpati: "লাখপতি দিদি?",
       thAction: "অ্যাকশন",
       phContact: "যোগাযোগ",
-      phId: "আইডি নং",
+     
       phBank: "ব্যাংক",
       phBranch: "শাখা",
       phAccount: "অ্যাকাউন্ট",
@@ -1548,7 +1542,7 @@
       ['thSl', t.thSl], ['thMember', t.thMember], ['thSpouse', t.thSpouse], ['thCategory', t.thCategory],
       ['thShg', t.thShg],
       {% if sector == 'Agri' %}['thCrop', t.thCrop], ['thFfs', t.thFfs],{% elif sector == 'ARDD' %}['thArddType', t.thArddType], ['thArddUnit', t.thArddUnit],{% elif sector == 'Fishery' %}['thFisheryType', t.thFisheryType],{% endif %}
-      ['thContact', t.thContact], ['thId', t.thId], ['thBank', t.thBank],
+      ['thContact', t.thContact], ['thBank', t.thBank],
       ['thBranch', t.thBranch], ['thAccount', t.thAccount], ['thFee', t.thFee], ['thLakhpati', t.thLakhpati], ['thAction', t.thAction]
     ];
     thMap.forEach(([id,val]) => { const el = document.getElementById(id); if(el) el.textContent = val; });
@@ -1557,7 +1551,7 @@
       ['thSlV', t.thSl], ['thMemberV', t.thMember], ['thSpouseV', t.thSpouse], ['thCategoryV', t.thCategory],
       ['thShgV', t.thShg],
       {% if sector == 'Agri' %}['thCropV', t.thCrop], ['thFfsV', t.thFfs],{% elif sector == 'ARDD' %}['thArddTypeV', t.thArddType], ['thArddUnitV', t.thArddUnit],{% elif sector == 'Fishery' %}['thFisheryTypeV', t.thFisheryType],{% endif %}
-      ['thContactV', t.thContact], ['thIdV', t.thId], ['thBankV', t.thBank],
+      ['thContactV', t.thContact], ['thBankV', t.thBank],
       ['thBranchV', t.thBranch], ['thAccountV', t.thAccount], ['thFeeV', t.thFee], ['thLakhpatiV', t.thLakhpati]
     ];
     thMapV.forEach(([id,val]) => { const el = document.getElementById(id); if(el) el.textContent = val; });
@@ -1565,7 +1559,6 @@
     document.querySelectorAll('.pmdSaveText').forEach(el => { el.textContent = (L === 'bn') ? 'সেভ' : 'Save'; });
 
     document.querySelectorAll('input.pmd-input[name="contact"]').forEach(i => i.setAttribute('placeholder', t.phContact));
-    document.querySelectorAll('input.pmd-input[name="photo_id_number"]').forEach(i => i.setAttribute('placeholder', t.phId));
     document.querySelectorAll('input.pmd-input[name="bank_name"]').forEach(i => i.setAttribute('placeholder', t.phBank));
     document.querySelectorAll('input.pmd-input[name="branch"]').forEach(i => i.setAttribute('placeholder', t.phBranch));
     document.querySelectorAll('input.pmd-input[name="account_number"]').forEach(i => i.setAttribute('placeholder', t.phAccount));
@@ -1582,7 +1575,7 @@
       const headLabels = [
         t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg,
         {% if sector == 'Agri' %}t.thCrop, t.thFfs,{% elif sector == 'ARDD' %}t.thArddType, t.thArddUnit,{% elif sector == 'Fishery' %}t.thFisheryType,{% endif %}
-        t.thContact, t.thId, t.thBank, t.thBranch, t.thAccount, t.thFee, t.thLakhpati
+        t.thContact,   t.thBank, t.thBranch, t.thAccount, t.thFee, t.thLakhpati
       ];
       const isEdit = tableId === 'pmdEditTable';
       const labels = isEdit ? headLabels.concat([t.thAction]) : headLabels;
@@ -1597,7 +1590,7 @@
     setDataLabels('pmdEditTable');
     setDataLabels('pmdViewTable');
 
-    window.__PMD_MODAL_LABELS__ = [t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg, {% if sector == 'Agri' %}t.thCrop, t.thFfs, {% elif sector == 'ARDD' %}t.thArddType, t.thArddUnit, {% elif sector == 'Fishery' %}t.thFisheryType, {% endif %} t.thContact, t.thId, t.thBank, t.thBranch, t.thAccount, t.thFee, t.thLakhpati];
+    window.__PMD_MODAL_LABELS__ = [t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg, {% if sector == 'Agri' %}t.thCrop, t.thFfs, {% elif sector == 'ARDD' %}t.thArddType, t.thArddUnit, {% elif sector == 'Fishery' %}t.thFisheryType, {% endif %} t.thContact,      t.thBank, t.thBranch, t.thAccount, t.thFee, t.thLakhpati];
   }
 
   window.updatePageLanguage = function(lang){
@@ -1721,7 +1714,6 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
 
   const REQUIRED_FIELDS = [
     { key: 'contact', label: 'Contact' },
-    { key: 'photo_id_number', label: 'AADHAR/Voter/Govt ID' },
     { key: 'bank_name', label: 'Bank' },
     { key: 'branch', label: 'Branch' },
     { key: 'account_number', label: 'Account' },
@@ -1995,7 +1987,7 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
   function getLabels(){
     return (window.__PMD_MODAL_LABELS__ && Array.isArray(window.__PMD_MODAL_LABELS__) && window.__PMD_MODAL_LABELS__.length)
       ? window.__PMD_MODAL_LABELS__
-      : ["Sl. No","Member","Father/Mother/Spouse Name","Category","SHG","Contact","AADHAR/Voter/Govt ID","Bank","Branch","Account","Fee","Lakhpati Didi?"];
+          : ["Sl. No","Member","Father/Mother/Spouse Name","Category","SHG","Contact","Bank","Branch","Account","Fee","Lakhpati Didi?"];
   }
 
   function extractRowCells(tr){

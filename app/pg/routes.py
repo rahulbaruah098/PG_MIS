@@ -2646,7 +2646,7 @@ def pg_members(pg_id):
 
         # Read single row fields
         contact            = _get("contact",            "").strip()
-        photo_id_number    = _get("photo_id_number",    "").strip()
+        
         bank_name          = _get("bank_name",          "").strip()
         branch             = _get("branch",             "").strip()
         account_number     = _get("account_number",     "").strip()
@@ -2696,17 +2696,7 @@ def pg_members(pg_id):
         elif not existing_doc.get("contact"):
             update_set["contact"] = pick(master, "Contact Number", "Mobile", "Mobile No", "Phone")
 
-        if photo_id_number != "":
-            update_set["photo_id_number"] = photo_id_number
-        elif not existing_doc.get("photo_id_number"):
-            update_set["photo_id_number"] = pick(
-                master,
-                "AADHAR/Voter/Govt ID No",
-                "Aadhaar",
-                "Aadhaar No",
-                "Voter ID",
-                "Govt ID No"
-            )
+      
 
         if bank_name != "":
             update_set["bank_name"] = bank_name
@@ -2794,14 +2784,6 @@ def pg_members(pg_id):
             "category": existing.get("category") or pick(master, "Category", "Caste Category", "Social Category"),
             "shg_name": existing.get("shg_name") or pick(master, "SHG Name", "SHG_Name") or m.get("shg_name"),
             "contact": existing.get("contact") or pick(master, "Contact Number", "Mobile", "Mobile No", "Phone"),
-            "photo_id_number": existing.get("photo_id_number") or pick(
-                master,
-                "AADHAR/Voter/Govt ID No",
-                "Aadhaar",
-                "Aadhaar No",
-                "Voter ID",
-                "Govt ID No"
-            ),
             "bank_name": existing.get("bank_name") or "",
             "branch": existing.get("branch") or "",
             "account_number": existing.get("account_number") or "",
@@ -2852,6 +2834,9 @@ def pg_members(pg_id):
         validation_can_edit=(member_validation_status not in VALIDATION_EDIT_LOCK_STATUSES),
         validation_form_type="member_registration",
     )
+
+
+
 
 @pg_bp.route("/lakhpati/<pg_id>")
 @login_required
