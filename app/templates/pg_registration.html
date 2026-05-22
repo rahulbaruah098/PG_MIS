@@ -4,8 +4,9 @@
 {% set _validation = validation or pg.registration_validation or {} %}
 {% set _validation_status = (validation_status or _validation.status or 'draft')|lower %}
 {% set _validation_remarks = validation_remarks or _validation.remarks or '' %}
-{% set _validation_can_edit = validation_can_edit if validation_can_edit is defined else (_validation_status not in ['submitted', 'resubmitted', 'approved']) %}
-{% set _can_submit_validation = session.get('role') in ['PG_DATA_ENTRY', 'CADRE_CC'] and _validation_status in ['draft', 'rejected'] %}
+{% set _validation_can_edit = validation_can_edit if validation_can_edit is defined else (_validation_status not in ['submitted', 'resubmitted']) %}
+{% set _saved_members_count = (pg.members or [])|length %}
+{% set _can_submit_validation = session.get('role') in ['PG_DATA_ENTRY', 'CADRE_CC'] and _validation_status in ['draft', 'rejected'] and _saved_members_count > 0 %}
 {% set _is_validation_locked = not _validation_can_edit %}
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -117,7 +118,6 @@
   box-shadow: 0 0 0 6px rgba(47,125,103,.12);
 }
 
-/* ======= Inner section (like lb-actions-bar separators) ======= */
 .pgr-card{
   margin-top: 12px;
   padding: 0;
@@ -149,7 +149,6 @@
   text-transform: uppercase;
 }
 
-/* ======= Grid ======= */
 .pgr-grid{
   padding-top: 12px;
   display:grid;
@@ -206,7 +205,6 @@
   margin: 6px 0 2px;
 }
 
-/* spans */
 .col-12{grid-column:span 12;}
 .col-9{grid-column:span 9;}
 .col-8{grid-column:span 8;}
@@ -221,7 +219,6 @@
   margin-top: 2px;
 }
 
-/* ======= Preview card -> ledger-ish ======= */
 .pgr-preview{
   border-radius: 16px;
   border: 1px solid var(--line);
@@ -335,7 +332,6 @@
   font-size: 12px;
 }
 
-/* ======= Actions ======= */
 .pgr-actions{
   margin-top: 12px;
   padding-top: 12px;
@@ -384,7 +380,6 @@
   box-shadow: none !important;
 }
 
-/* ======= Select2 (match ledger inputs) ======= */
 .pgr-card .select2-container{ width:100% !important; }
 
 .pgr-card .select2-container--default .select2-selection--multiple{
@@ -420,7 +415,6 @@
   font-weight: 900;
 }
 
-/* ======= NEW: Toast popup (scoped) ======= */
 .pgr-toast{
   position: fixed;
   right: 18px;
@@ -499,14 +493,12 @@
 }
 .pgr-toast--info .pgr-toastTitle{ color: rgba(2,132,199,.95); }
 
-/* ======= Responsive ======= */
 @media(max-width:768px){
   .col-4,.col-3,.col-6,.col-8,.col-9{grid-column:span 12;}
   .pgr-card form{ padding: 12px; }
   .pgr-toast{ right: 12px; top: 12px; }
 }
 
-/* ======= Mobile/Tablet HERO polish ======= */
 .pgr-back{
   display:none;
   position:absolute;
@@ -552,8 +544,8 @@
   }
 
   .pgr-hgroup{
-      padding-left: 56px;
-  padding-right: 28px;
+    padding-left: 56px;
+    padding-right: 28px;
   }
 
   .pgr-h1{
@@ -592,8 +584,8 @@
   }
 
   .pgr-hgroup{
-     padding-left: 52px;
-  padding-right: 24px;
+    padding-left: 52px;
+    padding-right: 24px;
   }
 
   .pgr-h1{
@@ -610,7 +602,6 @@
   }
 }
 
-/* ======= Block Validation Workflow ======= */
 .pgr-validation-card{
   margin-top:12px;
   border:1px solid rgba(15,23,42,.14);
@@ -740,7 +731,6 @@
 
 </style>
 
-<!--  Toast container (scoped, no backend dependency) -->
 <div class="pgr-toast" id="pgrToast" aria-live="polite" aria-atomic="true">
   <div class="pgr-toastTop">
     <p class="pgr-toastTitle" id="pgrToastTitle">Notice</p>
@@ -751,18 +741,16 @@
 
 <div class="pgr-wrap">
 
-  <!-- HERO -->
   <div class="pgr-hero">
     <div class="pgr-hero-top">
-       
-<!--  Mobile/Tablet back button (hidden on web) -->
-    <button type="button" class="pgr-back" aria-label="Back" onclick="history.back()">
-      <!--  Use the 2nd icon style (arrow with line) -->
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M10 6L4 12l6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M4 12h16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-      </svg>
-    </button>
+
+      <button type="button" class="pgr-back" aria-label="Back" onclick="history.back()">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M10 6L4 12l6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 12h16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+
       <div class="pgr-title">
         <div class="pgr-hgroup">
           <div class="pgr-h1">
@@ -781,7 +769,6 @@
     </div>
   </div>
 
-  <!-- BLOCK VALIDATION STATUS -->
   <div class="pgr-validation-card">
     <div class="pgr-validation-head">
       <div class="pgr-validation-title">
@@ -796,7 +783,7 @@
 
     <div class="pgr-validation-body">
       {% if _validation_status == 'approved' %}
-        <p class="pgr-validation-msg">This PG Registration Form has been approved by Block Admin. The form is now locked for editing.</p>
+        <p class="pgr-validation-msg">This PG Registration Form has been approved by Block Admin. You may edit and save corrections if required. After saving, it will be resubmitted to Block Admin for approval.</p>
       {% elif _validation_status in ['submitted', 'resubmitted'] %}
         <p class="pgr-validation-msg">This PG Registration Form has been submitted to Block Admin for validation. Editing is locked until Block Admin approves or rejects it.</p>
       {% elif _validation_status == 'rejected' %}
@@ -836,14 +823,12 @@
     ></form>
   {% endif %}
 
-  <!-- FORM CARD -->
   <div class="pgr-card {% if _is_validation_locked %}is-locked{% endif %}">
     <form method="POST" id="pgRegForm" data-validation-locked="{{ '1' if _is_validation_locked else '0' }}">
       {% if _is_validation_locked %}
         <div class="pgr-locked-note">
           This form is currently locked because the validation status is <strong>{{ _validation_status|capitalize }}</strong>.
           {% if _validation_status in ['submitted', 'resubmitted'] %}Wait for Block Admin review.{% endif %}
-          {% if _validation_status == 'approved' %}Approved forms cannot be edited.{% endif %}
         </div>
       {% endif %}
 
@@ -855,7 +840,6 @@
       </div>
 
       <div class="pgr-grid">
-        <!-- LOCATION -->
         <div class="pgr-field col-4">
           <label class="pgr-label" id="lblState">State</label>
           <input type="text" class="pgr-input" value="{{ pg.State }}" readonly>
@@ -883,7 +867,6 @@
 
         <div class="col-12"><hr class="pgr-hr"></div>
 
-        <!-- BASIC INFO -->
         <div class="pgr-field col-4">
           <label class="pgr-label" id="lblPgType">PG Type</label>
           <input type="text" class="pgr-input" name="pg_type" value="{{ pg.pg_type or '' }}">
@@ -912,7 +895,6 @@
 
         <div class="col-12"><hr class="pgr-hr"></div>
 
-        <!-- BANK -->
         <div class="pgr-field col-3">
           <label class="pgr-label" id="lblBankName">Bank Name</label>
           <input type="text" class="pgr-input" name="bank_name"
@@ -939,7 +921,6 @@
 
         <div class="col-12"><hr class="pgr-hr"></div>
 
-        <!-- AGGREGATION -->
         <div class="pgr-field col-6">
           <label class="pgr-label" id="lblAggCentreName">Aggregation Centre Name</label>
           <input type="text" class="pgr-input" name="agg_centre_name"
@@ -954,20 +935,47 @@
 
         <div class="col-12"><hr class="pgr-hr"></div>
 
-        <!-- MEMBERS -->
+        <div class="pgr-field col-12">
+          <label class="pgr-label" id="lblAddShgs" style="font-size:12px;">Add SHGs</label>
+          <select id="shgSelect" name="selected_shg_keys[]" class="pgr-select" multiple>
+            {% for shg in shg_options or [] %}
+              <option
+                value="{{ shg.shg_key }}"
+                {% if shg.shg_key in (selected_shg_keys or []) %}selected{% endif %}
+              >
+                {{ shg.shg_name or shg.shg_code }}
+                {% if shg.shg_code %} | {{ shg.shg_code }}{% endif %}
+                {% if shg.member_count %} | {{ shg.member_count }} members{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+          <div class="pgr-help" id="pgrShgHelp">
+            Select one or more SHGs first. Members will load only from selected SHGs.
+          </div>
+        </div>
+
         <div class="pgr-field col-12">
           <label class="pgr-label" id="lblAddMembers" style="font-size:12px;">Add PG Members</label>
           <select id="memberSelect" class="pgr-select" multiple>
             {% for m in shg_members %}
-              <option value="{{ m._id }}">
-                {{ m["Member Name"] }} | {{ m["SHG Name"] }} | {{ m["SHG Code"] }}
+              {% set _shg_code = m["SHG Code"] or m["SHG_Code"] or "" %}
+              {% set _shg_name = m["SHG Name"] or m["SHG_Name"] or "" %}
+              {% set _member_name = m["Member Name"] or m["Member_Name"] or "" %}
+              {% set _shg_key = _shg_code or _shg_name %}
+              <option
+                value="{{ m._id }}"
+                data-shg-key="{{ _shg_key }}"
+                data-member-name="{{ _member_name }}"
+                data-shg-name="{{ _shg_name }}"
+                data-shg-code="{{ _shg_code }}"
+              >
+                {{ _member_name }} | {{ _shg_name }} | {{ _shg_code }}
               </option>
             {% endfor %}
           </select>
           <div class="pgr-help" id="pgrMemberHelp">Maximum 40 members allowed.</div>
         </div>
 
-        <!-- Preview -->
         <div class="col-12" style="margin-top:6px;">
           <div class="pgr-preview">
             <div class="pgr-preview-head">
@@ -982,7 +990,6 @@
 
         <div class="col-12"><hr class="pgr-hr"></div>
 
-        <!-- Office Bearers -->
         <div class="pgr-field col-4">
           <label class="pgr-label" id="lblPresident">President</label>
           <select name="president_id" id="presidentSelect" class="pgr-select"></select>
@@ -1003,7 +1010,6 @@
           <input type="number" id="totalMembers" name="total_members" class="pgr-input"
                  value="{{ pg.total_members or 0 }}" readonly>
         </div>
-
       </div>
 
       <div id="hiddenMemberInputs"></div>
@@ -1024,10 +1030,21 @@
           >
             Submit for Block Validation
           </button>
+
+        {% elif _validation_status in ['draft', 'rejected'] and _saved_members_count == 0 %}
+          <button class="pgr-btn pgr-btn-submit-validation pgr-btn-disabled-state" type="button" disabled>
+            Save Members First
+          </button>
+
         {% elif _validation_status in ['submitted', 'resubmitted'] %}
-          <button class="pgr-btn pgr-btn-submit-validation pgr-btn-disabled-state" type="button" disabled>Submitted to Block</button>
+          <button class="pgr-btn pgr-btn-submit-validation pgr-btn-disabled-state" type="button" disabled>
+            Submitted to Block
+          </button>
+
         {% elif _validation_status == 'approved' %}
-          <button class="pgr-btn pgr-btn-submit-validation pgr-btn-disabled-state" type="button" disabled>Approved by Block</button>
+          <button class="pgr-btn pgr-btn-submit-validation pgr-btn-disabled-state" type="button" disabled>
+            Approved — Save edits to resubmit
+          </button>
         {% endif %}
       </div>
     </form>
@@ -1038,6 +1055,11 @@
 <script id="existing-members-data" type="application/json">
 {{ safe_members | tojson | safe }}
 </script>
+
+<script id="selected-shg-keys-data" type="application/json">
+{{ (selected_shg_keys or []) | tojson | safe }}
+</script>
+
 <script>
   const PG_ID = "{{ pg._id|string }}";
   const PGR_VALIDATION_LOCKED = {{ 'true' if _is_validation_locked else 'false' }};
@@ -1047,9 +1069,6 @@
 <script>
 $(document).ready(function() {
 
-    // ===============================
-    // Page language (NEW - hooks into base.html)
-    // ===============================
     const PGR_I18N = {
       en: {
         titlePrefix: "PG Registration –",
@@ -1076,6 +1095,10 @@ $(document).ready(function() {
         lblAggCentreName: "Aggregation Centre Name",
         lblAggCentreAddress: "Aggregation Centre Address",
 
+        lblAddShgs: "Add SHGs",
+        shgHelp: "Select one or more SHGs first. Members will load only from selected SHGs.",
+        shgPlaceholder: "Search and select SHGs",
+
         lblAddMembers: "Add PG Members",
         memberHelp: "Maximum 40 members allowed.",
         selectedMembersTitle: "Selected Members",
@@ -1090,7 +1113,6 @@ $(document).ready(function() {
         saveBtn: "Save",
         selectPlaceholder: "Search and select SHG members",
 
-        // Toast/validation strings used in JS
         toastNotice: "Notice",
         toastCloseAria: "Close",
         limitTitle: "Member limit exceeded",
@@ -1107,6 +1129,7 @@ $(document).ready(function() {
         submittingBody: "<div>Your PG registration is being submitted…</div>",
         savingBtnText: "Saving…",
 
+        issueSelectShg: "Please select at least <b>1 SHG</b>.",
         issueSelectAtLeastOne: "Please select at least <b>1 member</b>.",
         issueMax40: "Maximum <b>40 members</b> allowed.",
         issueSelectPresident: "Please select a <b>President</b>.",
@@ -1144,6 +1167,10 @@ $(document).ready(function() {
         lblAggCentreName: "অ্যাগ্রিগেশন সেন্টারের নাম",
         lblAggCentreAddress: "অ্যাগ্রিগেশন সেন্টারের ঠিকানা",
 
+        lblAddShgs: "SHG যোগ করুন",
+        shgHelp: "আগে এক বা একাধিক SHG নির্বাচন করুন। শুধুমাত্র নির্বাচিত SHG-র সদস্যরা লোড হবে।",
+        shgPlaceholder: "SHG খুঁজে নির্বাচন করুন",
+
         lblAddMembers: "পিজি সদস্য যোগ করুন",
         memberHelp: "সর্বোচ্চ ৪০ জন সদস্য অনুমোদিত।",
         selectedMembersTitle: "নির্বাচিত সদস্য",
@@ -1174,6 +1201,7 @@ $(document).ready(function() {
         submittingBody: "<div>আপনার পিজি রেজিস্ট্রেশন জমা হচ্ছে…</div>",
         savingBtnText: "সেভ হচ্ছে…",
 
+        issueSelectShg: "অন্তত <b>১টি SHG</b> নির্বাচন করুন।",
         issueSelectAtLeastOne: "অন্তত <b>১ জন সদস্য</b> নির্বাচন করুন।",
         issueMax40: "সর্বোচ্চ <b>৪০ জন সদস্য</b> অনুমোদিত।",
         issueSelectPresident: "<b>সভাপতি</b> নির্বাচন করুন।",
@@ -1208,11 +1236,9 @@ $(document).ready(function() {
 
     function updateSelect2Placeholder(txt){
       try{
-        // Update search input placeholder when dropdown opens/exists
         const $search = $('.select2-container--open .select2-search__field');
         if($search.length) $search.attr('placeholder', txt);
 
-        // Update stored selection placeholder if Select2 rendered it
         const $inlineSearch = $('#memberSelect').next('.select2-container').find('.select2-search__field');
         if($inlineSearch.length) $inlineSearch.attr('placeholder', txt);
 
@@ -1249,12 +1275,13 @@ $(document).ready(function() {
       setText('lblAggCentreName', t.lblAggCentreName);
       setText('lblAggCentreAddress', t.lblAggCentreAddress);
 
+      setText('lblAddShgs', t.lblAddShgs);
+      setText('pgrShgHelp', t.shgHelp);
       setText('lblAddMembers', t.lblAddMembers);
       setText('pgrMemberHelp', t.memberHelp);
       setText('pgrSelectedMembersTitle', t.selectedMembersTitle);
       setText('pgrCountLabel', t.countLabel);
 
-      // Only replace "No members selected" text when it's actually empty state
       const preview = document.getElementById('memberPreview');
       if(preview){
         const hasRows = preview.querySelector('.pgr-member-row');
@@ -1277,33 +1304,25 @@ $(document).ready(function() {
         saveBtn.textContent = t.saveBtn;
       }
 
-      // toast base labels
       const toastTitleEl = document.getElementById('pgrToastTitle');
       const toastCloseEl = document.getElementById('pgrToastClose');
       if(toastTitleEl && toastTitleEl.textContent.trim() === 'Notice') toastTitleEl.textContent = t.toastNotice;
       if(toastCloseEl) toastCloseEl.setAttribute('aria-label', t.toastCloseAria);
 
-      // Select2 placeholder without re-init (no selection loss)
       updateSelect2Placeholder(t.selectPlaceholder);
     }
 
-    //  Hook method called by base.html (compat)
-    window.updatePageLanguage = function(lang /*, baseT */){
+    window.updatePageLanguage = function(lang){
       applyPgrLanguage(lang);
     };
 
-    //  Event-based connectivity from base.html
     window.addEventListener('pgmis:language-change', (e)=>{
       const lang = (e && e.detail && e.detail.lang) ? e.detail.lang : getLang();
       applyPgrLanguage(lang);
     });
 
-    // Apply immediately on page load too
     applyPgrLanguage(_pgrLang);
 
-    // ===============================
-    // Toast helpers (NEW)
-    // ===============================
     const toast = document.getElementById('pgrToast');
     const toastTitle = document.getElementById('pgrToastTitle');
     const toastBody = document.getElementById('pgrToastBody');
@@ -1331,10 +1350,6 @@ $(document).ready(function() {
       toastClose.addEventListener('click', () => toast.classList.remove('is-show'));
     }
 
-    // ===============================
-    // Show backend flash messages as popups (NEW, non-breaking)
-    // Looks for common bootstrap alert markup if present in base.html
-    // ===============================
     function findFlashMessages(){
       const alerts = Array.from(document.querySelectorAll('.alert'));
       const msgs = alerts
@@ -1343,14 +1358,12 @@ $(document).ready(function() {
 
       if(!msgs.length) return null;
 
-      // naive classification
       const isError = alerts.some(a => a.classList.contains('alert-danger') || a.classList.contains('alert-warning'));
       const isOk = alerts.some(a => a.classList.contains('alert-success'));
 
       return { msgs, isError, isOk };
     }
 
-    // If user attempted submit before reload, show flash in toast
     try{
       const attempted = sessionStorage.getItem('pgr_submit_attempt') === '1';
       const flash = findFlashMessages();
@@ -1365,30 +1378,91 @@ $(document).ready(function() {
             showToast('info', tkey('infoUpdateTitle'), `<div>${flash.msgs.join('<br>')}</div>`);
           }
         }else{
-          // fallback success if no error flash exists
           showToast('ok', tkey('savedFallbackTitle'), tkey('savedFallbackBody'));
         }
       }
     }catch(e){}
 
-    // ===============================
-    // Load existing members safely
-    // ===============================
     let existingMembers = JSON.parse(
         document.getElementById("existing-members-data").textContent || "[]"
     );
 
-    // ===============================
-    // Initialize Select2
-    // ===============================
+    // Keep a separate permanent copy only for restoring President/Secretary/Cashier.
+    // Do not clear this during early refresh.
+    const existingMembersForRoles = Array.isArray(existingMembers)
+        ? existingMembers.map(m => ({ ...m }))
+        : [];
+
+    let officeBearersRestored = false;
+
+    let selectedShgKeysFromBackend = [];
+    try {
+        selectedShgKeysFromBackend = JSON.parse(
+            document.getElementById("selected-shg-keys-data").textContent || "[]"
+        );
+    } catch(e) {
+        selectedShgKeysFromBackend = [];
+    }
+
+    $('#shgSelect').select2({
+        width: '100%',
+        placeholder: tkey('shgPlaceholder')
+    });
+
     $('#memberSelect').select2({
         width: '100%',
         placeholder: tkey('selectPlaceholder')
     });
 
-    // ===============================
-    // Block validation lock state
-    // ===============================
+    const allMemberOptions = $('#memberSelect option').map(function(){
+        return {
+            id: String(this.value),
+            text: $(this).text(),
+            shgKey: String($(this).data('shg-key') || ''),
+            memberName: String($(this).data('member-name') || ''),
+            shgName: String($(this).data('shg-name') || ''),
+            shgCode: String($(this).data('shg-code') || '')
+        };
+    }).get();
+
+    function getSelectedShgKeys(){
+        return ($('#shgSelect').val() || []).map(String);
+    }
+
+    function getSelectedMemberIds(){
+        return ($('#memberSelect').val() || []).map(String);
+    }
+
+    function rebuildMemberOptionsBySelectedShg(){
+        const selectedShgs = getSelectedShgKeys();
+        const previousSelectedMembers = new Set(getSelectedMemberIds());
+
+        $('#memberSelect').empty();
+
+        if(selectedShgs.length === 0){
+            $('#memberSelect').val(null).trigger('change.select2');
+            refreshUI();
+            return;
+        }
+
+        const allowedMembers = allMemberOptions.filter(item => selectedShgs.includes(item.shgKey));
+
+        allowedMembers.forEach(item => {
+            const isSelected = previousSelectedMembers.has(item.id);
+            const option = new Option(item.text, item.id, isSelected, isSelected);
+
+            option.setAttribute('data-shg-key', item.shgKey);
+            option.setAttribute('data-member-name', item.memberName);
+            option.setAttribute('data-shg-name', item.shgName);
+            option.setAttribute('data-shg-code', item.shgCode);
+
+            $('#memberSelect').append(option);
+        });
+
+        $('#memberSelect').trigger('change.select2');
+        refreshUI();
+    }
+
     function applyValidationLock(){
       if(!PGR_VALIDATION_LOCKED) return;
 
@@ -1402,6 +1476,7 @@ $(document).ready(function() {
       });
 
       try{
+        $('#shgSelect').prop('disabled', true).trigger('change.select2');
         $('#memberSelect').prop('disabled', true).trigger('change.select2');
         $('#presidentSelect').prop('disabled', true);
         $('#secretarySelect').prop('disabled', true);
@@ -1409,19 +1484,18 @@ $(document).ready(function() {
       }catch(_){}
     }
 
-    // keep placeholder updated when opening dropdown (no re-init)
     $('#memberSelect').on('select2:open', function(){
       updateSelect2Placeholder(tkey('selectPlaceholder'));
     });
 
-    // ===============================
-    // Refresh UI
-    // ===============================
+    $('#shgSelect').on('select2:open', function(){
+      updateSelect2Placeholder(tkey('shgPlaceholder'));
+    });
+
     function refreshUI(){
 
       let selected = $('#memberSelect').select2('data') || [];
 
-      // 🔹 Max 40 validation (keep same behavior; now also show toast)
       if (selected.length > 40) {
           showToast('error', tkey('limitTitle'), tkey('limitBody'));
           selected.pop();
@@ -1442,8 +1516,6 @@ $(document).ready(function() {
       }
 
       selected.forEach(member => {
-
-          // 🔹 Extract ONLY member name (before first "|")
           let memberName = member.text.split('|')[0].trim();
 
           preview.append(`
@@ -1476,59 +1548,67 @@ $(document).ready(function() {
       updateOfficeBearers(selected);
     }
 
-    // ===============================
-    // Update Office Bearers
-    // ===============================
     function updateOfficeBearers(selected) {
 
-        let p = $('#presidentSelect');
-        let s = $('#secretarySelect');
-        let c = $('#cashierSelect');
+      let p = $('#presidentSelect');
+      let s = $('#secretarySelect');
+      let c = $('#cashierSelect');
 
-        let selectedIds = selected.map(m => String(m.id));
+      let selectedIds = selected.map(m => String(m.id));
 
-        // Store current selection before rebuilding
-        let currentPresident = p.val();
-        let currentSecretary = s.val();
-        let currentCashier = c.val();
+      // Store current selection before rebuilding
+      let currentPresident = p.val();
+      let currentSecretary = s.val();
+      let currentCashier = c.val();
 
-        p.empty();
-        s.empty();
-        c.empty();
+      p.empty();
+      s.empty();
+      c.empty();
 
-        selected.forEach(member => {
-            let option = `<option value="${member.id}">${member.text}</option>`;
-            p.append(option);
-            s.append(option);
-            c.append(option);
-        });
+      selected.forEach(member => {
+          let cleanName = String(member.text || '').split('|')[0].trim();
+          let label = cleanName || member.text || member.id;
 
-        // Restore previous values if still valid
-        if (selectedIds.includes(currentPresident)) p.val(currentPresident);
-        if (selectedIds.includes(currentSecretary)) s.val(currentSecretary);
-        if (selectedIds.includes(currentCashier)) c.val(currentCashier);
+          let optionP = new Option(label, member.id, false, false);
+          let optionS = new Option(label, member.id, false, false);
+          let optionC = new Option(label, member.id, false, false);
 
-        // First load (edit mode only)
-        if (existingMembers.length > 0) {
-            existingMembers.forEach(m => {
+          p.append(optionP);
+          s.append(optionS);
+          c.append(optionC);
+      });
 
-                let id = String(m.member_id);
+      // First priority: restore saved office bearers from backend.
+      // This must run only after selected members are actually loaded.
+      if (!officeBearersRestored && selectedIds.length > 0 && existingMembersForRoles.length > 0) {
+          existingMembersForRoles.forEach(m => {
+              let id = String(m.member_id || "");
 
-                if (!selectedIds.includes(id)) return;
+              if (!selectedIds.includes(id)) return;
 
-                if (m.role === "president") p.val(id);
-                if (m.role === "secretary") s.val(id);
-                if (m.role === "cashier") c.val(id);
-            });
+              if (m.role === "president") p.val(id);
+              if (m.role === "secretary") s.val(id);
+              if (m.role === "cashier") c.val(id);
+          });
 
-            // Prevent re-running edit preload
-            existingMembers = [];
-        }
-    }
+          officeBearersRestored = true;
+          return;
+      }
 
-    // ===============================
-    // Remove Member
-    // ===============================
+      // Normal edit behavior after first load
+      if (selectedIds.includes(String(currentPresident || ""))) {
+          p.val(currentPresident);
+      }
+
+      if (selectedIds.includes(String(currentSecretary || ""))) {
+          s.val(currentSecretary);
+      }
+
+      if (selectedIds.includes(String(currentCashier || ""))) {
+          c.val(currentCashier);
+      }
+  }
+
     $(document).on('click', '.remove-member', function() {
         let id = String($(this).data('id'));
         let current = $('#memberSelect').val() || [];
@@ -1536,37 +1616,61 @@ $(document).ready(function() {
         $('#memberSelect').val(current).trigger('change');
     });
 
-    // ===============================
-    // Edit Member
-    // ===============================
     $(document).on('click', '.edit-member', function() {
       let memberId = $(this).data('id');
       let url = PG_MEMBERSHIP_URL_TEMPLATE.replace('__PGID__', PG_ID);
       window.location.href = `${url}?member_id=${memberId}`;
     });
 
-    // ===============================
-    // Select Change
-    // ===============================
     $('#memberSelect').on('change', refreshUI);
 
+    $('#shgSelect').on('change', function(){
+        const selectedShgs = getSelectedShgKeys();
+
+        if(selectedShgs.length === 0){
+            $('#memberSelect').val(null).trigger('change');
+        }
+
+        rebuildMemberOptionsBySelectedShg();
+    });
+
     // ===============================
-    // Preload Existing Members
+    // Preload Existing SHGs + Members
     // ===============================
+    let preloadMemberIds = [];
+
     if (existingMembers.length > 0) {
-        let ids = existingMembers.map(m => String(m.member_id));
-        $('#memberSelect').val(ids).trigger('change');
+        preloadMemberIds = existingMembers.map(m => String(m.member_id));
+
+        // If backend selected_shg_keys is missing, derive SHGs from saved members
+        if (selectedShgKeysFromBackend.length === 0) {
+            selectedShgKeysFromBackend = [];
+
+            existingMembers.forEach(m => {
+                const key = String(m.shg_key || m.shg_code || m.shg_name || '').trim();
+                if (key && !selectedShgKeysFromBackend.includes(key)) {
+                    selectedShgKeysFromBackend.push(key);
+                }
+            });
+        }
+    }
+
+    if (selectedShgKeysFromBackend.length > 0) {
+        $('#shgSelect').val(selectedShgKeysFromBackend).trigger('change.select2');
+    }
+
+    rebuildMemberOptionsBySelectedShg();
+
+    if (preloadMemberIds.length > 0) {
+        $('#memberSelect').val(preloadMemberIds).trigger('change');
     } else {
         refreshUI();
     }
 
     applyValidationLock();
 
-    // ===============================
-    // NEW: Pre-submit validation + success feedback
-    // (No backend change; just clear user feedback)
-    // ===============================
     function preSubmitValidate(){
+      const selectedShgs = getSelectedShgKeys();
       const selectedIds = ($('#memberSelect').val() || []).map(String);
       const total = selectedIds.length;
 
@@ -1576,21 +1680,19 @@ $(document).ready(function() {
 
       const issues = [];
 
+      if(selectedShgs.length === 0) issues.push(tkey('issueSelectShg'));
       if(total === 0) issues.push(tkey('issueSelectAtLeastOne'));
       if(total > 40) issues.push(tkey('issueMax40'));
 
-      // Office bearer checks (common backend rules)
       if(total > 0){
         if(!president) issues.push(tkey('issueSelectPresident'));
         if(!secretary) issues.push(tkey('issueSelectSecretary'));
         if(!cashier) issues.push(tkey('issueSelectCashier'));
 
-        // must belong to selected members
         if(president && !selectedIds.includes(president)) issues.push(tkey('issuePresidentFromSelected'));
         if(secretary && !selectedIds.includes(secretary)) issues.push(tkey('issueSecretaryFromSelected'));
         if(cashier && !selectedIds.includes(cashier)) issues.push(tkey('issueCashierFromSelected'));
 
-        // must be distinct
         if(president && secretary && president === secretary) issues.push(tkey('issuePresidentSecretaryDifferent'));
         if(president && cashier && president === cashier) issues.push(tkey('issuePresidentCashierDifferent'));
         if(secretary && cashier && secretary === cashier) issues.push(tkey('issueSecretaryCashierDifferent'));
@@ -1606,7 +1708,7 @@ $(document).ready(function() {
       form.addEventListener('submit', function(e){
         if(PGR_VALIDATION_LOCKED){
           e.preventDefault();
-          showToast('info', 'Form Locked', '<div>This PG Registration Form is locked because it is already submitted or approved.</div>');
+          showToast('info', 'Form Locked', '<div>This PG Registration Form is locked because it is already submitted for Block Admin review.</div>');
           return;
         }
 
@@ -1617,7 +1719,6 @@ $(document).ready(function() {
           return;
         }
 
-        // Passed pre-check: show "saving" feedback
         try{ sessionStorage.setItem('pgr_submit_attempt', '1'); }catch(_){}
 
         saveBtn.disabled = true;
@@ -1626,7 +1727,6 @@ $(document).ready(function() {
 
         showToast('info', tkey('submittingTitle'), tkey('submittingBody'));
 
-        // Allow normal backend submit
         setTimeout(() => { saveBtn.textContent = oldTxt; }, 2000);
       }, true);
     }

@@ -1853,6 +1853,29 @@ def pg_registration(pg_id):
         except Exception:
             return ""
 
+    def _member_shg_key(member_doc):
+        """
+        Stable SHG key for frontend filtering.
+        Prefer SHG Code. If code is missing, fallback to SHG Name.
+        """
+        if not member_doc:
+            return ""
+        shg_code = str(
+            member_doc.get("SHG Code")
+            or member_doc.get("SHG_Code")
+            or member_doc.get("shg_code")
+            or ""
+        ).strip()
+
+        shg_name = str(
+            member_doc.get("SHG Name")
+            or member_doc.get("SHG_Name")
+            or member_doc.get("shg_name")
+            or ""
+        ).strip()
+
+        return shg_code or shg_name
+
     def _serialize_pg_for_json(pg_doc):
         def convert(value):
             if isinstance(value, ObjectId):
@@ -1909,18 +1932,25 @@ def pg_registration(pg_id):
                     return _error("You cannot edit this PG.", 403)
 
     # ----------------------------------------------------------
-    # New Block validation workflow guard
+    # Block validation workflow
     # ----------------------------------------------------------
     registration_validation = _validation_doc(pg, "pg_registration")
     registration_status = str(registration_validation.get("status") or "draft").lower()
+
+    # Important:
+    # Previously approved was fully locked.
+    # New rule:
+    # submitted/resubmitted = locked
+    # approved = editable by PG login, but after save it goes back to resubmitted.
+    REGISTRATION_TEMP_LOCK_STATUSES = ("submitted", "resubmitted")
 
     if request.method == "POST":
         if role not in ("PG_DATA_ENTRY", "CADRE_CC"):
             return _error("Only PG login can edit and save the PG Registration Form.", 403)
 
-        if registration_status in VALIDATION_EDIT_LOCK_STATUSES:
+        if registration_status in REGISTRATION_TEMP_LOCK_STATUSES:
             return _error(
-                "PG Registration Form is already submitted/approved and cannot be edited now.",
+                "PG Registration Form is already submitted for Block Admin approval and cannot be edited until review.",
                 403
             )
 
@@ -1944,6 +1974,7 @@ def pg_registration(pg_id):
                     "member_name": m.get("member_name"),
                     "shg_name": m.get("shg_name"),
                     "shg_code": m.get("shg_code"),
+                    "shg_key": m.get("shg_key") or m.get("shg_code") or m.get("shg_name"),
                     "role": m.get("role"),
                 })
 
@@ -1965,6 +1996,50 @@ def pg_registration(pg_id):
             }
         ))
 
+        # ------------------------------------------------------
+        # NEW: Build unique SHG list from available village members
+        # This powers frontend "Add SHGs" multi-select.
+        # ------------------------------------------------------
+        shg_options_map = {}
+
+        for m in shg_members:
+            shg_code = str(m.get("SHG Code") or m.get("SHG_Code") or "").strip()
+            shg_name = str(m.get("SHG Name") or m.get("SHG_Name") or "").strip()
+
+            if not shg_code and not shg_name:
+                continue
+
+            shg_key = shg_code or shg_name
+
+            if shg_key not in shg_options_map:
+                shg_options_map[shg_key] = {
+                    "shg_key": shg_key,
+                    "shg_code": shg_code,
+                    "shg_name": shg_name,
+                    "member_count": 0,
+                }
+
+            shg_options_map[shg_key]["member_count"] += 1
+
+        shg_options = sorted(
+            shg_options_map.values(),
+            key=lambda x: (x.get("shg_name") or "", x.get("shg_code") or "")
+        )
+
+        # Existing saved PG members should pre-select their SHGs in edit mode.
+        selected_shg_keys = []
+        if pg.get("selected_shg_keys"):
+            selected_shg_keys = [
+                str(x).strip()
+                for x in pg.get("selected_shg_keys", [])
+                if str(x).strip()
+            ]
+        else:
+            for sm in safe_members:
+                shg_key = str(sm.get("shg_code") or sm.get("shg_name") or "").strip()
+                if shg_key and shg_key not in selected_shg_keys:
+                    selected_shg_keys.append(shg_key)
+
         if _wants_json():
             try:
                 sm = []
@@ -1974,17 +2049,20 @@ def pg_registration(pg_id):
                         "Member Name": m.get("Member Name"),
                         "SHG Name": m.get("SHG Name"),
                         "SHG Code": m.get("SHG Code"),
+                        "shg_key": _member_shg_key(m),
                         "Village": m.get("Village"),
                     })
 
                 return jsonify({
                     "ok": True,
                     "pg": _serialize_pg_for_json(pg),
+                    "shg_options": shg_options,
+                    "selected_shg_keys": selected_shg_keys,
                     "shg_members": sm,
                     "safe_members": safe_members,
                     "validation": registration_validation,
                     "validation_status": registration_status,
-                    "validation_can_edit": registration_status not in VALIDATION_EDIT_LOCK_STATUSES,
+                    "validation_can_edit": registration_status not in REGISTRATION_TEMP_LOCK_STATUSES,
                 }), 200
             except Exception as e:
                 current_app.logger.exception("Failed to serialize PG registration response")
@@ -1996,13 +2074,15 @@ def pg_registration(pg_id):
         return render_template(
             "pg_registration.html",
             pg=pg,
+            shg_options=shg_options,
+            selected_shg_keys=selected_shg_keys,
             shg_members=shg_members,
             safe_members=safe_members,
             sector_options=PG_SECTOR_OPTIONS,
             validation=registration_validation,
             validation_status=registration_status,
             validation_remarks=registration_validation.get("remarks") or "",
-            validation_can_edit=(registration_status not in VALIDATION_EDIT_LOCK_STATUSES),
+            validation_can_edit=(registration_status not in REGISTRATION_TEMP_LOCK_STATUSES),
             validation_form_type="pg_registration",
         )
 
@@ -2012,7 +2092,14 @@ def pg_registration(pg_id):
     if request.is_json:
         body = request.get_json(silent=True) or {}
         getv = lambda k, default=None: body.get(k, default)
-        getlist = lambda k: body.get(k, []) if isinstance(body.get(k, []), list) else []
+
+        def getlist(k):
+            val = body.get(k, [])
+            if isinstance(val, list):
+                return val
+            if val in (None, ""):
+                return []
+            return [val]
     else:
         getv = lambda k, default=None: request.form.get(k, default)
 
@@ -2050,12 +2137,23 @@ def pg_registration(pg_id):
         return _error("Contact number must be numeric.", 400)
 
     member_ids = getlist("member_ids[]") or getlist("member_ids")
+    selected_shg_keys = getlist("selected_shg_keys[]") or getlist("selected_shg_keys")
+
+    selected_shg_keys = [
+        str(x).strip()
+        for x in selected_shg_keys
+        if str(x).strip()
+    ]
+
+    # Keep old field names for backend compatibility.
     president_id = getv("president_id")
     secretary_id = getv("secretary_id")
     cashier_id = getv("cashier_id")
 
     if not member_ids:
         return _error("Please select at least one member.", 400)
+
+    member_ids = [str(mid).strip() for mid in member_ids if str(mid).strip()]
 
     if len(member_ids) != len(set(member_ids)):
         return _error("Duplicate members detected.", 400)
@@ -2093,6 +2191,34 @@ def pg_registration(pg_id):
     if len(members_from_db) != len(member_object_ids):
         return _error("Some members are invalid or do not belong to this village.", 400)
 
+    # ----------------------------------------------------------
+    # NEW: Validate selected members belong to selected SHGs.
+    # This only applies if frontend sends selected_shg_keys.
+    # Keeps old frontend backward compatible.
+    # ----------------------------------------------------------
+    if selected_shg_keys:
+        selected_shg_key_set = set(selected_shg_keys)
+        invalid_shg_members = []
+
+        for m in members_from_db:
+            member_shg_key = _member_shg_key(m)
+            if member_shg_key not in selected_shg_key_set:
+                invalid_shg_members.append(m.get("Member Name") or str(m.get("_id")))
+
+        if invalid_shg_members:
+            return _error(
+                "Some selected members do not belong to the selected SHG(s). Please refresh and select again.",
+                400
+            )
+    else:
+        # Backward compatible fallback:
+        # If old frontend does not send selected_shg_keys, derive them from selected members.
+        selected_shg_keys = []
+        for m in members_from_db:
+            member_shg_key = _member_shg_key(m)
+            if member_shg_key and member_shg_key not in selected_shg_keys:
+                selected_shg_keys.append(member_shg_key)
+
     if not president_id or not secretary_id or not cashier_id:
         return _error("Please select President, Secretary and Cashier.", 400)
 
@@ -2125,6 +2251,7 @@ def pg_registration(pg_id):
             "member_name": m.get("Member Name"),
             "shg_name": m.get("SHG Name"),
             "shg_code": m.get("SHG Code"),
+            "shg_key": _member_shg_key(m),
             "role": role_name
         })
 
@@ -2148,12 +2275,22 @@ def pg_registration(pg_id):
             "name": getv("agg_centre_name"),
             "address": getv("agg_centre_address"),
         },
+        "selected_shg_keys": selected_shg_keys,
         "total_members": len(members_array),
         "members": members_array,
         "updated_at": datetime.utcnow(),
     }
 
-    if ensure_pg_locked(pg):
+    # ----------------------------------------------------------
+    # Approved re-edit behavior
+    # ----------------------------------------------------------
+    is_approved_reapproval_edit = (
+        registration_status == "approved"
+        and role in ("PG_DATA_ENTRY", "CADRE_CC")
+    )
+
+    # Existing locked PG behavior remains, except for approved PG Registration re-approval flow.
+    if ensure_pg_locked(pg) and not is_approved_reapproval_edit:
         create_change_request(
             db,
             collection="pgs",
@@ -2267,6 +2404,7 @@ def pg_registration(pg_id):
                         "name": master.get("Member Name"),
                         "shg_name": master.get("SHG Name"),
                         "shg_code": master.get("SHG Code"),
+                        "shg_key": _member_shg_key(master),
                         "role": role_map.get(mid_str, "member"),
                         "is_active": True,
                         "reactivated_at": now,
@@ -2286,6 +2424,7 @@ def pg_registration(pg_id):
             "name": master.get("Member Name"),
             "shg_name": master.get("SHG Name"),
             "shg_code": master.get("SHG Code"),
+            "shg_key": _member_shg_key(master),
             "role": role_map.get(mid_str, "member"),
             "is_active": True,
             "created_at": now,
@@ -2307,6 +2446,7 @@ def pg_registration(pg_id):
                     "name": master.get("Member Name"),
                     "shg_name": master.get("SHG Name"),
                     "shg_code": master.get("SHG Code"),
+                    "shg_key": _member_shg_key(master),
                     "role": role_map.get(mid_str, "member"),
                     "is_active": True,
                     "updated_at": now,
@@ -2321,8 +2461,12 @@ def pg_registration(pg_id):
 
     db.pgs.update_one({"_id": pg["_id"]}, {"$set": data})
 
-    # If Block had rejected the form, saving corrections moves it back to draft.
-    # PG must submit again using "Submit for Validation".
+    # ----------------------------------------------------------
+    # Validation status update after save
+    # ----------------------------------------------------------
+
+    # If Block had rejected the form, saving correction moves it back to draft.
+    # PG must submit again.
     if registration_status == "rejected":
         db.pgs.update_one(
             {"_id": pg["_id"]},
@@ -2330,8 +2474,32 @@ def pg_registration(pg_id):
                 "registration_validation.status": "draft",
                 "registration_validation.corrected_at": datetime.utcnow(),
                 "registration_validation.corrected_by": _current_user_id_value(),
+                "registration_validation.remarks": "",
                 "updated_at": datetime.utcnow(),
             }}
+        )
+
+    # NEW:
+    # If already approved and PG edits it again,
+    # send it back to Block Admin as resubmitted.
+    if registration_status == "approved":
+        db.pgs.update_one(
+            {"_id": pg["_id"]},
+            {"$set": {
+                "registration_validation.status": "resubmitted",
+                "registration_validation.resubmitted_at": datetime.utcnow(),
+                "registration_validation.resubmitted_by": _current_user_id_value(),
+                "registration_validation.remarks": "",
+                "updated_at": datetime.utcnow(),
+            }}
+        )
+
+        add_notification(
+            db,
+            to_role="BLOCK_ADMIN",
+            title="PG Registration resubmitted",
+            body=f'PG "{pg.get("name")}" has edited an approved registration and resubmitted it for Block approval.',
+            link=url_for("pg.pg_registration", pg_id=str(pg["_id"])),
         )
 
     log_audit(
@@ -2343,7 +2511,17 @@ def pg_registration(pg_id):
         after=data
     )
 
+    if registration_status == "approved":
+        return _success(
+            "PG registration updated and resubmitted for Block Admin approval.",
+            payload={
+                "pg_id": str(pg["_id"]),
+                "validation_status": "resubmitted"
+            }
+        )
+
     return _success("PG registration details updated.", payload={"pg_id": str(pg["_id"])})
+
 
 
 @pg_bp.route("/submit/<pg_id>", methods=["POST"])
@@ -7367,6 +7545,7 @@ def clear_active_pg():
 # PG Registration + Membership Validation Routes
 # ============================================================
 
+
 @pg_bp.route("/registration/<pg_id>/submit-validation", methods=["POST"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CADRE_CC")
@@ -7383,6 +7562,116 @@ def submit_pg_registration_validation(pg_id):
             redirect_to=url_for("pg.pg_home")
         )
 
+    # ----------------------------------------------------------
+    # Safety check before submitting to Block Admin
+    # Prevents blank/incomplete PG Registration from getting locked
+    # ----------------------------------------------------------
+    members = pg.get("members") or []
+
+    if not members:
+        return _validation_json_or_redirect(
+            False,
+            "Please save PG Registration with selected PG members before submitting for Block validation.",
+            status=400,
+            redirect_to=url_for("pg.pg_registration", pg_id=str(pg["_id"])),
+            category="danger"
+        )
+
+    bank_details = pg.get("bank_details") or {}
+    office_bearers = pg.get("office_bearers") or {}
+    aggregation_centre = pg.get("aggregation_centre") or {}
+
+    required_checks = {
+        "PG Type": pg.get("pg_type"),
+        "Sector": pg.get("sector"),
+        "Formation Date": pg.get("formation_date"),
+        "Contact Number": office_bearers.get("contact_number"),
+        "Bank Name": bank_details.get("bank_name"),
+        "Branch": bank_details.get("branch"),
+        "Account Number": bank_details.get("account_number"),
+        "IFSC": bank_details.get("ifsc"),
+        "Aggregation Centre Name": aggregation_centre.get("name"),
+        "Aggregation Centre Address": aggregation_centre.get("address"),
+    }
+
+    missing = [
+        field_name
+        for field_name, value in required_checks.items()
+        if not value or str(value).strip() == ""
+    ]
+
+    if missing:
+        return _validation_json_or_redirect(
+            False,
+            "Please save all required PG Registration fields before submitting: " + ", ".join(missing),
+            status=400,
+            redirect_to=url_for("pg.pg_registration", pg_id=str(pg["_id"])),
+            category="danger"
+        )
+
+    # ----------------------------------------------------------
+    # Office bearer validation
+    # ----------------------------------------------------------
+    president_id = office_bearers.get("president_id")
+    secretary_id = office_bearers.get("secretary_id")
+    cashier_id = office_bearers.get("cashier_id")
+
+    if not president_id or not secretary_id or not cashier_id:
+        return _validation_json_or_redirect(
+            False,
+            "Please save President, Secretary and Cashier before submitting for Block validation.",
+            status=400,
+            redirect_to=url_for("pg.pg_registration", pg_id=str(pg["_id"])),
+            category="danger"
+        )
+
+    saved_member_ids = set()
+    for m in members:
+        mid = m.get("member_id")
+        if mid:
+            saved_member_ids.add(str(mid))
+
+    if (
+        str(president_id) not in saved_member_ids
+        or str(secretary_id) not in saved_member_ids
+        or str(cashier_id) not in saved_member_ids
+    ):
+        return _validation_json_or_redirect(
+            False,
+            "President, Secretary and Cashier must be selected from saved PG members.",
+            status=400,
+            redirect_to=url_for("pg.pg_registration", pg_id=str(pg["_id"])),
+            category="danger"
+        )
+
+    if len({str(president_id), str(secretary_id), str(cashier_id)}) != 3:
+        return _validation_json_or_redirect(
+            False,
+            "President, Secretary and Cashier must be different members.",
+            status=400,
+            redirect_to=url_for("pg.pg_registration", pg_id=str(pg["_id"])),
+            category="danger"
+        )
+
+    total_members = pg.get("total_members") or 0
+
+    try:
+        total_members = int(total_members)
+    except Exception:
+        total_members = 0
+
+    if total_members <= 0 or total_members != len(members):
+        return _validation_json_or_redirect(
+            False,
+            "Please save PG members properly before submitting for Block validation.",
+            status=400,
+            redirect_to=url_for("pg.pg_registration", pg_id=str(pg["_id"])),
+            category="danger"
+        )
+
+    # ----------------------------------------------------------
+    # Existing validation submit workflow
+    # ----------------------------------------------------------
     ok, message, status = _submit_validation(db, pg, "pg_registration")
 
     return _validation_json_or_redirect(
@@ -7400,6 +7689,7 @@ def submit_pg_registration_validation(pg_id):
         },
         category="success" if ok else "danger"
     )
+
 
 
 @pg_bp.route("/members/<pg_id>/submit-validation", methods=["POST"])
