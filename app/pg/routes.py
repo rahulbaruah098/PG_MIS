@@ -2607,7 +2607,7 @@ def pg_authorization():
 
 @pg_bp.route("/members/<pg_id>", methods=["GET", "POST"])
 @login_required
-@roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope='pg')
 def pg_members(pg_id):
     print("pg_members HIT | pg_id =", pg_id)
@@ -2627,7 +2627,7 @@ def pg_members(pg_id):
         return redirect(url_for("pg.pg_members", pg_id=pg_id))
 
     try:
-        pg_obj_id = (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))
+        pg_obj_id = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
     except Exception:
         if _wants_json():
             return jsonify({"ok": False, "error": "Invalid PG ID."}), 400
@@ -2642,7 +2642,9 @@ def pg_members(pg_id):
         return redirect(url_for("pg.pg_home"))
 
     # ----------------------------------------------------------
-    # New Block validation workflow guard
+    # Membership validation workflow guard
+    # submitted/resubmitted = locked
+    # approved = editable again row-wise
     # ----------------------------------------------------------
     role = getattr(g, "role", None) or session.get("role")
     member_validation = _validation_doc(pg, "member_registration")
@@ -2652,13 +2654,16 @@ def pg_members(pg_id):
         if role not in ("PG_DATA_ENTRY", "CADRE_CC"):
             return _deny("Only PG login can edit and save the Membership Registration Form.", 403)
 
-        if member_validation_status in VALIDATION_EDIT_LOCK_STATUSES:
+        # IMPORTANT:
+        # Do not lock approved here.
+        # Approved must allow PG to edit saved rows or complete blank rows.
+        if member_validation_status in ("submitted", "resubmitted"):
             return _deny(
-                "Membership Registration Form is already submitted/approved and cannot be edited now.",
+                "Membership Registration Form is already submitted and cannot be edited until Block Admin review.",
                 403
             )
 
-    # Members selected during PG Registration (stored inside pgs.members)
+    # Members selected during PG Registration
     selected = pg.get("members") or []
     selected_ids = []
     selected_id_set = set()
@@ -2674,55 +2679,45 @@ def pg_members(pg_id):
         except Exception:
             pass
 
-    # Load master records for these members
+    # Load master records for these selected members
     master_by_id = {}
     if selected_ids:
         for doc in db.shg_members_master.find({"_id": {"$in": selected_ids}}):
             master_by_id[str(doc["_id"])] = doc
 
-    # ------------------------------------------------------------
-    #  Load only current/active PG member docs for display
-    # ------------------------------------------------------------
+    # Load existing active PG member docs
     existing_by_member = {}
     for doc in db.pg_members.find({
         "pg_id": pg_obj_id,
         "$or": [
             {"is_active": True},
-            {"is_active": {"$exists": False}}  # backward compatibility for old rows
+            {"is_active": {"$exists": False}}
         ]
     }):
         key = str(doc.get("member_id") or doc.get("_id"))
         existing_by_member[key] = doc
 
     def normalize_key(k: str) -> str:
-        """Normalize field names so we can match variants safely."""
         if not isinstance(k, str):
             return ""
         return (
             k.strip()
-             .lower()
-             .replace("_", " ")
-             .replace("-", " ")
-             .replace(".", "")
+            .lower()
+            .replace("_", " ")
+            .replace("-", " ")
+            .replace(".", "")
         )
 
     def pick(master_doc, *keys):
-        """
-        Return first non-empty value among possible master field names.
-        Also supports fuzzy match for slash-based keys like:
-        'Father/Mother/Spouse Name'
-        """
         if not master_doc:
             return None
 
-        # 1) Exact keys first
         for k in keys:
             if k in master_doc:
                 v = master_doc.get(k)
                 if v not in (None, "", []):
                     return v
 
-        # 2) Normalized direct match (handles small differences)
         norm_map = {}
         for mk, mv in master_doc.items():
             nk = normalize_key(mk)
@@ -2736,7 +2731,6 @@ def pg_members(pg_id):
                 if v not in (None, "", []):
                     return v
 
-        # 3) Fuzzy match for composite/slash keys
         for mk, mv in master_doc.items():
             if mv in (None, "", []):
                 continue
@@ -2746,62 +2740,87 @@ def pg_members(pg_id):
 
         return None
 
+    def _member_details_saved(doc, sector_name):
+        """
+        Row-wise saved detection.
+        Master data alone should not mark a member row as saved.
+        A row is saved only when required editable fields are present.
+        """
+        if not doc:
+            return False
+
+        required_common = [
+            "contact",
+            "bank_name",
+            "branch",
+            "account_number",
+            "membership_fee_paid",
+        ]
+
+        for key in required_common:
+            value = doc.get(key)
+            if value in (None, "", []):
+                return False
+
+        sector_name = _normalize_pg_sector(sector_name)
+
+        if sector_name == "Agri":
+            return bool(doc.get("agri_crop") and doc.get("agri_ffs_module"))
+
+        if sector_name == "ARDD":
+            return bool(doc.get("ardd_activity") and doc.get("ardd_unit"))
+
+        if sector_name == "Fishery":
+            return bool(doc.get("fishery_activity"))
+
+        return True
+
     # ============================================================
-    #  INDIVIDUAL SAVE (Row-wise)
+    # Individual row-wise save
     # ============================================================
     if request.method == "POST":
         _is_mobile = _wants_json()
+
         if _is_mobile:
             _body = request.get_json(silent=True) or {}
-            _get  = lambda k, default="": (_body.get(k) or default)
+            _get = lambda k, default="": (_body.get(k) or default)
         else:
-            _get  = lambda k, default="": (request.form.get(k) or default)
+            _get = lambda k, default="": (request.form.get(k) or default)
 
         mid = _get("member_id", "").strip()
         if not mid:
-            if _is_mobile:
-                return jsonify({"ok": False, "error": "Member ID missing."}), 400
-            flash("Member ID missing.", "danger")
-            return redirect(url_for("pg.pg_members", pg_id=pg_id))
+            return _deny("Member ID missing.", 400)
 
         try:
             mid_obj = ObjectId(mid)
         except Exception:
-            if _is_mobile:
-                return jsonify({"ok": False, "error": "Invalid Member ID."}), 400
-            flash("Invalid Member ID.", "danger")
-            return redirect(url_for("pg.pg_members", pg_id=pg_id))
+            return _deny("Invalid Member ID.", 400)
 
-        # ------------------------------------------------------------
-        #  Save allowed only if member is still selected in current PG
-        # ------------------------------------------------------------
+        # Save allowed only if member is still selected in current PG Registration
         if str(mid_obj) not in selected_id_set:
             return _deny("This member is no longer active in the current PG selection.", 403)
 
-        existing_doc = db.pg_members.find_one(
-            {
-                "pg_id": pg_obj_id,
-                "member_id": mid_obj,
-                "$or": [
-                    {"is_active": True},
-                    {"is_active": {"$exists": False}}
-                ]
-            }
-        ) or {}
+        existing_doc = db.pg_members.find_one({
+            "pg_id": pg_obj_id,
+            "member_id": mid_obj,
+            "$or": [
+                {"is_active": True},
+                {"is_active": {"$exists": False}}
+            ]
+        }) or {}
 
-        # Optional extra safety: if a doc exists and is explicitly inactive, block save
-        inactive_doc = db.pg_members.find_one(
-            {
-                "pg_id": pg_obj_id,
-                "member_id": mid_obj,
-                "is_active": False
-            }
-        )
+        inactive_doc = db.pg_members.find_one({
+            "pg_id": pg_obj_id,
+            "member_id": mid_obj,
+            "is_active": False
+        })
+
         if inactive_doc and not existing_doc:
             return _deny("This member is inactive and cannot be edited until re-added in PG Registration.", 403)
 
         master = master_by_id.get(mid)
         current_sector = _normalize_pg_sector(pg.get("sector"))
+
         agri_crop = _get("agri_crop", "").strip()
         agri_ffs_module = _get("agri_ffs_module", "").strip()
         ardd_activity = _get("ardd_activity", "").strip()
@@ -2813,25 +2832,24 @@ def pg_members(pg_id):
                 return _deny("Please select a valid Agri crop.", 400)
             if agri_ffs_module not in AGRI_FFS_MODULE_OPTIONS:
                 return _deny("Please select a valid FFS Module.", 400)
+
         elif current_sector == "ARDD":
             if ardd_activity not in ARDD_ACTIVITY_OPTIONS:
                 return _deny("Please select a valid ARDD activity.", 400)
             if ardd_unit not in ARDD_UNIT_OPTIONS.get(ardd_activity, []):
                 return _deny("Please select a valid ARDD unit.", 400)
+
         elif current_sector == "Fishery":
             if fishery_activity not in FISHERY_ACTIVITY_OPTIONS:
                 return _deny("Please select a valid Fishery activity.", 400)
 
-        # Read single row fields
-        contact            = _get("contact",            "").strip()
-        
-        bank_name          = _get("bank_name",          "").strip()
-        branch             = _get("branch",             "").strip()
-        account_number     = _get("account_number",     "").strip()
-        membership_fee_raw = _get("membership_fee_paid","").strip()
-        lakh_raw           = _get("lakh_pati_didi",     "").strip().lower()
+        contact = _get("contact", "").strip()
+        bank_name = _get("bank_name", "").strip()
+        branch = _get("branch", "").strip()
+        account_number = _get("account_number", "").strip()
+        membership_fee_raw = _get("membership_fee_paid", "").strip()
+        lakh_raw = _get("lakh_pati_didi", "").strip().lower()
 
-        # Safe fee parse
         membership_fee_paid = None
         if membership_fee_raw != "":
             try:
@@ -2839,7 +2857,6 @@ def pg_members(pg_id):
             except Exception:
                 membership_fee_paid = None
 
-        # Always store master snapshot fields (keeps consistent and future-proof)
         update_set = {
             "pg_id": pg_obj_id,
             "member_id": mid_obj,
@@ -2859,7 +2876,6 @@ def pg_members(pg_id):
             "shg_name": pick(master, "SHG Name", "SHG_Name"),
             "shg_code": pick(master, "SHG Code", "SHG_Code"),
 
-            # keep active if being edited in current PG
             "is_active": True,
             "removed_at": None,
             "removed_by": None,
@@ -2867,14 +2883,11 @@ def pg_members(pg_id):
             "updated_at": datetime.utcnow(),
         }
 
-        #  Do NOT overwrite with blank:
-        # Only set when user typed something. Otherwise keep previous/master fallback.
+        # Do not overwrite old values with blank values
         if contact != "":
             update_set["contact"] = contact
         elif not existing_doc.get("contact"):
             update_set["contact"] = pick(master, "Contact Number", "Mobile", "Mobile No", "Phone")
-
-      
 
         if bank_name != "":
             update_set["bank_name"] = bank_name
@@ -2888,7 +2901,6 @@ def pg_members(pg_id):
         if membership_fee_paid is not None:
             update_set["membership_fee_paid"] = membership_fee_paid
 
-        #  Lakhpati Didi flag
         update_set["lakh_pati_didi"] = True if lakh_raw in ("1", "true", "on", "yes") else False
 
         update_set["agri_crop"] = agri_crop if current_sector == "Agri" else ""
@@ -2909,8 +2921,7 @@ def pg_members(pg_id):
             upsert=True
         )
 
-        # If Block had rejected the membership form, any correction moves it back to draft.
-        # PG must submit again using "Submit for Validation".
+        # Rejected correction returns to draft
         if member_validation_status == "rejected":
             db.pgs.update_one(
                 {"_id": pg_obj_id},
@@ -2922,6 +2933,19 @@ def pg_members(pg_id):
                 }}
             )
 
+        # Approved edit returns to resubmitted
+        if member_validation_status == "approved":
+            db.pgs.update_one(
+                {"_id": pg_obj_id},
+                {"$set": {
+                    "member_registration_validation.status": "resubmitted",
+                    "member_registration_validation.resubmitted_at": datetime.utcnow(),
+                    "member_registration_validation.resubmitted_by": _current_user_id_value(),
+                    "member_registration_validation.remarks": "",
+                    "updated_at": datetime.utcnow(),
+                }}
+            )
+
         if _is_mobile:
             return jsonify({"ok": True, "message": "Member details saved successfully."}), 200
 
@@ -2929,9 +2953,12 @@ def pg_members(pg_id):
         return redirect(url_for("pg.pg_members", pg_id=pg_id))
 
     # ============================================================
-    # Build rows in the same order as PG Registration
+    # Build rows in same order as PG Registration
     # ============================================================
     rows = []
+    current_sector = _normalize_pg_sector(pg.get("sector"))
+    page_locked = member_validation_status in ("submitted", "resubmitted")
+
     for m in selected:
         mid = m.get("member_id")
         if not mid:
@@ -2940,6 +2967,13 @@ def pg_members(pg_id):
         mid_str = str(mid)
         master = master_by_id.get(mid_str)
         existing = existing_by_member.get(mid_str) or {}
+
+        details_saved = _member_details_saved(existing, current_sector)
+
+        # submitted/resubmitted = locked all rows
+        # approved/draft/rejected = row-wise behavior
+        row_locked = page_locked
+        row_readonly = True if details_saved else False
 
         spouse_val = (
             existing.get("spouse_name")
@@ -2961,12 +2995,18 @@ def pg_members(pg_id):
             "spouse_name": spouse_val,
             "category": existing.get("category") or pick(master, "Category", "Caste Category", "Social Category"),
             "shg_name": existing.get("shg_name") or pick(master, "SHG Name", "SHG_Name") or m.get("shg_name"),
+
+            "details_saved": details_saved,
+            "row_locked": row_locked,
+            "row_readonly": row_readonly,
+
             "contact": existing.get("contact") or pick(master, "Contact Number", "Mobile", "Mobile No", "Phone"),
             "bank_name": existing.get("bank_name") or "",
             "branch": existing.get("branch") or "",
             "account_number": existing.get("account_number") or "",
             "membership_fee_paid": existing.get("membership_fee_paid") if existing.get("membership_fee_paid") is not None else "",
             "lakh_pati_didi": True if existing.get("lakh_pati_didi") else False,
+
             "agri_crop": existing.get("agri_crop") or "",
             "agri_ffs_module": existing.get("agri_ffs_module") or "",
             "ardd_activity": existing.get("ardd_activity") or "",
@@ -2980,7 +3020,7 @@ def pg_members(pg_id):
             "pg": {
                 "_id": str(pg["_id"]),
                 "name": pg.get("name"),
-                "sector": _normalize_pg_sector(pg.get("sector")),
+                "sector": current_sector,
             },
             "sector_meta": {
                 "sectors": PG_SECTOR_OPTIONS,
@@ -2993,14 +3033,14 @@ def pg_members(pg_id):
             "rows": rows,
             "validation": member_validation,
             "validation_status": member_validation_status,
-            "validation_can_edit": member_validation_status not in VALIDATION_EDIT_LOCK_STATUSES,
+            "validation_can_edit": member_validation_status not in ("submitted", "resubmitted"),
         }), 200
 
     return render_template(
         "pg_members.html",
         pg=pg,
         rows=rows,
-        current_sector=_normalize_pg_sector(pg.get("sector")),
+        current_sector=current_sector,
         agri_crops=AGRI_CROP_OPTIONS,
         agri_ffs_modules=AGRI_FFS_MODULE_OPTIONS,
         ardd_activities=ARDD_ACTIVITY_OPTIONS,
@@ -3009,9 +3049,10 @@ def pg_members(pg_id):
         validation=member_validation,
         validation_status=member_validation_status,
         validation_remarks=member_validation.get("remarks") or "",
-        validation_can_edit=(member_validation_status not in VALIDATION_EDIT_LOCK_STATUSES),
+        validation_can_edit=(member_validation_status not in ("submitted", "resubmitted")),
         validation_form_type="member_registration",
     )
+
 
 
 
@@ -7708,6 +7749,97 @@ def submit_member_registration_validation(pg_id):
             redirect_to=url_for("pg.pg_home")
         )
 
+    pg_obj_id = pg["_id"]
+    selected_members = pg.get("members") or []
+
+    selected_member_ids = []
+    for m in selected_members:
+        mid = m.get("member_id")
+        if not mid:
+            continue
+        try:
+            selected_member_ids.append(ObjectId(mid) if not isinstance(mid, ObjectId) else mid)
+        except Exception:
+            pass
+
+    if not selected_member_ids:
+        return _validation_json_or_redirect(
+            False,
+            "No PG members found. Please complete PG Registration member selection first.",
+            status=400,
+            redirect_to=url_for("pg.pg_members", pg_id=str(pg_obj_id)),
+            category="danger"
+        )
+
+    current_sector = _normalize_pg_sector(pg.get("sector"))
+
+    def _is_blank(v):
+        return v in (None, "", [])
+
+    member_docs = list(db.pg_members.find({
+        "pg_id": pg_obj_id,
+        "member_id": {"$in": selected_member_ids},
+        "$or": [
+            {"is_active": True},
+            {"is_active": {"$exists": False}}
+        ]
+    }))
+
+    docs_by_member = {
+        str(d.get("member_id")): d
+        for d in member_docs
+    }
+
+    missing_rows = []
+
+    for index, mid in enumerate(selected_member_ids, start=1):
+        doc = docs_by_member.get(str(mid))
+
+        if not doc:
+            missing_rows.append(f"Row {index}: details not saved")
+            continue
+
+        required_common = {
+            "contact": "Contact",
+            "bank_name": "Bank",
+            "branch": "Branch",
+            "account_number": "Account",
+            "membership_fee_paid": "Membership Fee",
+        }
+
+        for key, label in required_common.items():
+            if _is_blank(doc.get(key)):
+                missing_rows.append(f"Row {index}: {label} missing")
+
+        if current_sector == "Agri":
+            if _is_blank(doc.get("agri_crop")):
+                missing_rows.append(f"Row {index}: Crop missing")
+            if _is_blank(doc.get("agri_ffs_module")):
+                missing_rows.append(f"Row {index}: FFS Module missing")
+
+        elif current_sector == "ARDD":
+            if _is_blank(doc.get("ardd_activity")):
+                missing_rows.append(f"Row {index}: ARDD activity missing")
+            if _is_blank(doc.get("ardd_unit")):
+                missing_rows.append(f"Row {index}: ARDD unit missing")
+
+        elif current_sector == "Fishery":
+            if _is_blank(doc.get("fishery_activity")):
+                missing_rows.append(f"Row {index}: Fishery activity missing")
+
+    if missing_rows:
+        preview = "; ".join(missing_rows[:8])
+        if len(missing_rows) > 8:
+            preview += f"; and {len(missing_rows) - 8} more issue(s)"
+
+        return _validation_json_or_redirect(
+            False,
+            "Please save all required member-wise details before submitting. " + preview,
+            status=400,
+            redirect_to=url_for("pg.pg_members", pg_id=str(pg_obj_id)),
+            category="danger"
+        )
+
     ok, message, status = _submit_validation(db, pg, "member_registration")
 
     return _validation_json_or_redirect(
@@ -7725,6 +7857,11 @@ def submit_member_registration_validation(pg_id):
         },
         category="success" if ok else "danger"
     )
+
+
+    
+
+
 
 
 @pg_bp.route("/validation/queue", methods=["GET"])

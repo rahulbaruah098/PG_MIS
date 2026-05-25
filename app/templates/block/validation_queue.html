@@ -2,262 +2,555 @@
 
 {% block content %}
 <style>
-  .validation-page {
-    width: 100%;
-    max-width: 1280px;
-    margin: 0 auto;
+  :root{
+    --pg-shell:#eef6f2;
+    --pg-surface:#ffffff;
+    --pg-surface-soft:#f7fbf8;
+    --pg-header:#dfeee7;
+    --pg-brand:#0b4d3a;
+    --pg-brand-2:#12684e;
+    --pg-ink:#0f172a;
+    --pg-muted:#5f6f67;
+    --pg-line:rgba(15,23,42,.10);
+    --pg-line-soft:rgba(15,23,42,.07);
+    --pg-mint:rgba(173,231,196,.38);
+    --pg-mint-strong:rgba(173,231,196,.52);
+    --pg-success:#198754;
+    --pg-danger:#c84343;
+    --pg-warning:#e0a800;
+    --pg-shadow:0 12px 30px rgba(15,23,42,.08);
+    --pg-shadow-soft:0 8px 20px rgba(15,23,42,.06);
+    --pg-radius-xl:22px;
+    --pg-radius-lg:18px;
+    --pg-radius-md:14px;
   }
 
-  .validation-hero {
-    background:
-      radial-gradient(circle at 12% 12%, rgba(255,255,255,.18), transparent 42%),
-      linear-gradient(135deg, #064e3b, #198754);
-    color: #fff;
-    border-radius: 22px;
-    padding: 24px;
-    box-shadow: 0 18px 42px rgba(6, 78, 59, .22);
+  .validation-page{
+    width:100%;
+    max-width:1320px;
+    margin:0 auto;
   }
 
-  .validation-hero h3 {
-    margin: 0;
-    font-weight: 900;
-    letter-spacing: -0.035em;
+  .validation-topbar{
+    background:linear-gradient(180deg, rgba(223,238,231,.94), rgba(255,255,255,.98));
+    border:1px solid var(--pg-line);
+    border-radius:var(--pg-radius-xl);
+    padding:22px 24px;
+    box-shadow:var(--pg-shadow);
+    margin-bottom:18px;
   }
 
-  .validation-hero p {
-    margin: 8px 0 0;
-    color: rgba(255,255,255,.86);
-    font-weight: 600;
+  .validation-topbar-inner{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:18px;
+    flex-wrap:wrap;
   }
 
-  .hero-pill {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 7px 12px;
-    background: rgba(255,255,255,.14);
-    border: 1px solid rgba(255,255,255,.18);
-    color: #fff;
-    font-size: .82rem;
-    font-weight: 800;
-    white-space: nowrap;
+  .validation-topbar h3{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:1.45rem;
+    font-weight:950;
+    letter-spacing:-.03em;
+    line-height:1.15;
   }
 
-  .hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  .validation-topbar p{
+    margin:8px 0 0;
+    max-width:760px;
+    color:var(--pg-muted);
+    font-size:.96rem;
+    font-weight:650;
+    line-height:1.5;
   }
 
-  .hero-actions .btn {
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: .84rem;
+  .validation-topbar-actions{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:10px;
+    min-width:230px;
   }
 
-  .metric-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 14px;
+    border-radius:999px;
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.10);
+    font-size:.82rem;
+    font-weight:900;
+    letter-spacing:.02em;
+    white-space:nowrap;
   }
 
-  .metric-card {
-    background: #fff;
-    border: 1px solid rgba(15,23,42,.08);
-    border-radius: 18px;
-    padding: 16px;
-    box-shadow: 0 12px 30px rgba(15,23,42,.07);
+  .status-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:currentColor;
+    flex:0 0 auto;
   }
 
-  .metric-card small {
-    display: block;
-    color: #64748b;
-    font-weight: 850;
-    text-transform: uppercase;
-    letter-spacing: .035em;
-    font-size: .74rem;
-    margin-bottom: 8px;
+  .topbar-btn-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:flex-end;
   }
 
-  .metric-card strong {
-    display: block;
-    color: #0f172a;
-    font-size: clamp(1.25rem, 2vw, 1.8rem);
-    line-height: 1.05;
-    font-weight: 900;
+  .pg-btn{
+    border-radius:999px;
+    font-weight:850;
+    font-size:.86rem;
+    padding:.62rem 1rem;
+    box-shadow:none !important;
+    transition:none !important;
   }
 
-  .soft-card {
-    background: #fff;
-    border: 1px solid rgba(15,23,42,.08);
-    border-radius: 18px;
-    box-shadow: 0 12px 30px rgba(15,23,42,.07);
-    overflow: hidden;
+  .pg-btn-dashboard{
+    background:#fff;
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.14);
   }
 
-  .card-head {
-    padding: 16px 18px;
-    border-bottom: 1px solid #e9eef3;
-    background: #fff;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+  .pg-btn-dashboard:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.18);
   }
 
-  .card-head h5 {
-    margin: 0;
-    font-weight: 900;
-    color: #0f172a;
-    font-size: 1rem;
+  .pg-btn-outline{
+    background:transparent;
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.18);
   }
 
-  .card-head p {
-    margin: 4px 0 0;
-    color: #64748b;
-    font-size: .84rem;
-    font-weight: 600;
+  .pg-btn-outline:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.18);
   }
 
-  .queue-tools {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+  .metric-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:14px;
+    margin-bottom:18px;
+  }
+
+  .metric-card{
+    position:relative;
+    overflow:hidden;
+    background:var(--pg-surface);
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-lg);
+    padding:17px 18px;
+    box-shadow:var(--pg-shadow);
+    min-height:118px;
+  }
+
+  .metric-card::before{
+    content:"";
+    position:absolute;
+    inset:0 auto 0 0;
+    width:5px;
+    background:linear-gradient(180deg, var(--pg-brand), rgba(173,231,196,.95));
+  }
+
+  .metric-card small{
+    display:block;
+    color:var(--pg-muted);
+    font-size:.73rem;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin-bottom:12px;
+  }
+
+  .metric-card strong{
+    display:block;
+    color:var(--pg-brand);
+    font-size:clamp(1.45rem, 2.4vw, 2rem);
+    font-weight:950;
+    line-height:1;
+  }
+
+  .metric-card span{
+    display:block;
+    margin-top:8px;
+    color:rgba(15,23,42,.55);
+    font-size:.82rem;
+    font-weight:700;
+  }
+
+  .soft-card{
+    background:var(--pg-surface);
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-xl);
+    box-shadow:var(--pg-shadow);
+    overflow:hidden;
+  }
+
+  .card-head{
+    padding:18px 20px;
+    background:linear-gradient(180deg, #ffffff, #f9fcfa);
+    border-bottom:1px solid var(--pg-line-soft);
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+
+  .card-head h5{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:1rem;
+    font-weight:950;
+    line-height:1.2;
+  }
+
+  .card-head p{
+    margin:5px 0 0;
+    color:var(--pg-muted);
+    font-size:.84rem;
+    font-weight:650;
+    line-height:1.45;
+  }
+
+  .queue-tools{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
   }
 
   .queue-search,
-  .queue-filter {
-    border-radius: 999px;
-    min-height: 42px;
-    border: 1px solid #d7dee8;
-    padding: 9px 14px;
-    font-weight: 700;
-    outline: none;
-    background: #fff;
+  .queue-filter{
+    min-height:42px;
+    border-radius:999px;
+    border:1px solid #dce8e1;
+    background:#fff;
+    color:var(--pg-ink);
+    padding:9px 14px;
+    font-size:.88rem;
+    font-weight:750;
+    outline:none;
+    box-shadow:none;
   }
 
-  .queue-search {
-    min-width: 320px;
+  .queue-search{
+    min-width:320px;
+  }
+
+  .queue-search::placeholder{
+    color:rgba(95,111,103,.72);
+    font-weight:650;
   }
 
   .queue-search:focus,
-  .queue-filter:focus {
-    border-color: #198754;
-    box-shadow: 0 0 0 .18rem rgba(25,135,84,.12);
+  .queue-filter:focus{
+    border-color:#8cc9a5;
+    box-shadow:0 0 0 .22rem rgba(173,231,196,.38);
   }
 
-  .table thead th {
-    background: #f8fafc;
-    color: #475569;
-    font-size: .78rem;
-    text-transform: uppercase;
-    letter-spacing: .035em;
-    border-bottom: 1px solid #e2e8f0;
-    white-space: nowrap;
+  .table-shell{
+    border-top:1px solid var(--pg-line-soft);
   }
 
-  .table td {
-    vertical-align: middle;
+  .validation-table{
+    margin:0;
   }
 
-  .pg-name {
-    font-weight: 900;
-    color: #0f172a;
+  .validation-table thead th{
+    background:#f4f9f6;
+    color:var(--pg-brand);
+    font-size:.75rem;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.045em;
+    border-bottom:1px solid #dde9e2;
+    padding:13px 14px;
+    white-space:nowrap;
   }
 
-  .text-soft {
-    color: #64748b;
+  .validation-table tbody td{
+    vertical-align:middle;
+    padding:14px;
+    border-color:#edf2ef;
+    background:#fff;
+    color:var(--pg-ink);
+    font-size:.9rem;
   }
 
-  .badge-soft {
-    border-radius: 999px;
-    padding: 5px 9px;
-    font-size: .72rem;
-    font-weight: 850;
+  .validation-table tbody tr:hover td{
+    background:#fbfefc;
   }
 
-  .action-btn {
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: .8rem;
+  .pg-name{
+    color:var(--pg-ink);
+    font-weight:900;
+    line-height:1.3;
   }
 
-  .reject-inline {
-    min-width: 260px;
+  .text-soft{
+    color:var(--pg-muted);
   }
 
-  .reject-inline textarea {
-    border-radius: 12px;
-    min-height: 72px;
-    resize: vertical;
-    font-size: .84rem;
+  .pg-id-text{
+    display:block;
+    margin-top:3px;
+    color:#64748b;
+    font-size:.76rem;
+    font-weight:700;
+    word-break:break-word;
   }
 
-  .empty-state {
-    padding: 46px 18px;
-    text-align: center;
-    color: #64748b;
+  .soft-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    padding:6px 11px;
+    font-size:.74rem;
+    font-weight:900;
+    border:1px solid transparent;
+    white-space:nowrap;
   }
 
-  .mobile-list {
-    display: none;
+  .soft-badge.form{
+    background:#f8fafc;
+    color:#475569;
+    border-color:#e2e8f0;
   }
 
-  .mobile-card {
-    border: 1px solid #e5e7eb;
-    background: #fff;
-    border-radius: 16px;
-    padding: 14px;
-    margin-bottom: 12px;
-    box-shadow: 0 8px 20px rgba(15,23,42,.06);
+  .soft-badge.submitted{
+    background:rgba(13,110,253,.10);
+    color:#0d6efd;
+    border-color:rgba(13,110,253,.14);
   }
 
-  .hidden-row {
-    display: none !important;
+  .soft-badge.resubmitted{
+    background:rgba(255,193,7,.16);
+    color:#8a6200;
+    border-color:rgba(255,193,7,.20);
   }
 
-  @media (max-width: 1100px) {
-    .metric-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+  .action-btn{
+    border-radius:999px;
+    font-weight:850;
+    font-size:.8rem;
+    padding:.42rem .8rem;
+    box-shadow:none !important;
+    transition:none !important;
+  }
+
+  .btn-review{
+    background:#fff;
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.24);
+  }
+
+  .btn-review:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.26);
+  }
+
+  .btn-approve{
+    background:var(--pg-success);
+    color:#fff;
+    border:1px solid var(--pg-success);
+  }
+
+  .btn-approve:hover{
+    background:#157347;
+    color:#fff;
+    border-color:#157347;
+  }
+
+  .btn-reject{
+    background:#fff;
+    color:var(--pg-danger);
+    border:1px solid rgba(200,67,67,.28);
+  }
+
+  .btn-reject:hover{
+    background:rgba(200,67,67,.08);
+    color:#b42323;
+    border-color:rgba(200,67,67,.30);
+  }
+
+  .btn-send-back{
+    background:var(--pg-danger);
+    color:#fff;
+    border:1px solid var(--pg-danger);
+  }
+
+  .btn-send-back:hover{
+    background:#b93a3a;
+    color:#fff;
+    border-color:#b93a3a;
+  }
+
+  .reject-inline{
+    min-width:270px;
+    padding:10px;
+    border:1px solid var(--pg-line-soft);
+    border-radius:14px;
+    background:#fbfdfc;
+  }
+
+  .reject-inline textarea,
+  .mobile-card textarea{
+    border-radius:12px;
+    min-height:76px;
+    border:1px solid #dce8e1;
+    background:#fff;
+    color:var(--pg-ink);
+    font-size:.86rem;
+    font-weight:650;
+    resize:vertical;
+    box-shadow:none;
+  }
+
+  .reject-inline textarea:focus,
+  .mobile-card textarea:focus{
+    border-color:#8cc9a5;
+    box-shadow:0 0 0 .22rem rgba(173,231,196,.38);
+  }
+
+  .empty-state{
+    padding:46px 18px;
+    text-align:center;
+    color:var(--pg-muted);
+  }
+
+  .empty-state strong{
+    display:block;
+    color:var(--pg-brand);
+    font-size:1rem;
+    font-weight:950;
+    margin-bottom:6px;
+  }
+
+  .mobile-list{
+    display:none;
+  }
+
+  .mobile-card{
+    background:linear-gradient(180deg, #ffffff, #fbfefc);
+    border:1px solid var(--pg-line-soft);
+    border-radius:16px;
+    padding:14px;
+    box-shadow:var(--pg-shadow-soft);
+  }
+
+  .mobile-card + .mobile-card{
+    margin-top:12px;
+  }
+
+  .mobile-info{
+    margin:10px 0 14px;
+    display:grid;
+    gap:6px;
+    color:var(--pg-ink);
+    font-size:.88rem;
+  }
+
+  .mobile-info strong{
+    color:var(--pg-brand);
+    font-weight:850;
+  }
+
+  .hidden-row{
+    display:none !important;
+  }
+
+  @media (max-width:1100px){
+    .metric-grid{
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+
+    .queue-search{
+      min-width:260px;
     }
   }
 
-  @media (max-width: 767px) {
-    .validation-hero {
-      padding: 18px;
-      border-radius: 18px;
+  @media (max-width:767px){
+    .validation-topbar{
+      padding:18px;
+      border-radius:18px;
     }
 
-    .validation-hero h3 {
-      font-size: 1.2rem;
+    .validation-topbar h3{
+      font-size:1.22rem;
     }
 
-    .hero-actions,
-    .hero-actions .btn,
+    .validation-topbar p{
+      font-size:.9rem;
+    }
+
+    .validation-topbar-actions{
+      width:100%;
+      align-items:stretch;
+      min-width:0;
+    }
+
+    .topbar-btn-row{
+      width:100%;
+      justify-content:stretch;
+    }
+
+    .topbar-btn-row .pg-btn{
+      width:100%;
+    }
+
+    .metric-grid{
+      grid-template-columns:1fr;
+    }
+
+    .metric-card{
+      min-height:104px;
+    }
+
+    .card-head{
+      padding:16px;
+    }
+
     .queue-tools,
     .queue-search,
-    .queue-filter {
-      width: 100%;
-      min-width: 0;
+    .queue-filter{
+      width:100%;
+      min-width:0;
     }
 
-    .metric-grid {
-      grid-template-columns: 1fr;
+    .desktop-table-wrap{
+      display:none;
     }
 
-    .desktop-table-wrap {
-      display: none;
+    .mobile-list{
+      display:block;
+      padding:16px;
+      border-top:1px solid var(--pg-line-soft);
     }
 
-    .mobile-list {
-      display: block;
+    .mobile-card .action-btn,
+    .mobile-card form,
+    .mobile-card a{
+      width:100%;
     }
 
-    .reject-inline {
-      min-width: 0;
-      width: 100%;
+    .reject-inline{
+      min-width:0;
+      width:100%;
     }
   }
 </style>
@@ -283,8 +576,9 @@
 {% endfor %}
 
 <div class="validation-page">
-  <div class="validation-hero mb-4">
-    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+
+  <div class="validation-topbar">
+    <div class="validation-topbar-inner">
       <div>
         <h3>Validation Queue</h3>
         <p>
@@ -292,16 +586,17 @@
         </p>
       </div>
 
-      <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
-        <span class="hero-pill">
+      <div class="validation-topbar-actions">
+        <span class="status-pill">
+          <span class="status-dot"></span>
           Pending: {{ pending_count or rows|length }}
         </span>
 
-        <div class="hero-actions">
-          <a href="{{ url_for('reports.hierarchy_dashboard') }}" class="btn btn-light btn-sm">
+        <div class="topbar-btn-row">
+          <a href="{{ url_for('reports.hierarchy_dashboard') }}" class="btn pg-btn pg-btn-dashboard">
             Dashboard
           </a>
-          <a href="{{ url_for('master_data.clf_pg_assignment') }}" class="btn btn-outline-light btn-sm">
+          <a href="{{ url_for('master_data.clf_pg_assignment') }}" class="btn pg-btn pg-btn-outline">
             CLF Assignment
           </a>
         </div>
@@ -309,25 +604,29 @@
     </div>
   </div>
 
-  <div class="metric-grid mb-4">
+  <div class="metric-grid">
     <div class="metric-card">
       <small>Total Pending</small>
       <strong id="mTotal">{{ pending_count or rows|length }}</strong>
+      <span>Forms waiting for validation</span>
     </div>
 
     <div class="metric-card">
       <small>PG Registration</small>
       <strong id="mPgRegistration">0</strong>
+      <span>PG profile submissions</span>
     </div>
 
     <div class="metric-card">
       <small>Membership Registration</small>
       <strong id="mMemberRegistration">0</strong>
+      <span>Member registration submissions</span>
     </div>
 
     <div class="metric-card">
       <small>Resubmitted</small>
       <strong id="mResubmitted">0</strong>
+      <span>Corrected forms returned by PG</span>
     </div>
   </div>
 
@@ -361,17 +660,17 @@
       </div>
     </div>
 
-    <div class="desktop-table-wrap">
-      <table class="table table-hover mb-0">
+    <div class="desktop-table-wrap table-shell">
+      <table class="table table-hover validation-table mb-0">
         <thead>
           <tr>
-            <th style="width: 60px;">#</th>
+            <th style="width:60px;">#</th>
             <th>PG</th>
             <th>Form Type</th>
             <th>Status</th>
             <th>Submitted At</th>
             <th>Location</th>
-            <th style="width: 320px;">Actions</th>
+            <th style="width:320px;">Actions</th>
           </tr>
         </thead>
 
@@ -390,20 +689,20 @@
 
               <td>
                 <div class="pg-name">{{ pg_name }}</div>
-                <small class="text-soft">PG ID: {{ pg._id }}</small>
+                <span class="pg-id-text">PG ID: {{ pg._id }}</span>
               </td>
 
               <td>
-                <span class="badge text-bg-light border badge-soft">
+                <span class="soft-badge form">
                   {{ row.form_label }}
                 </span>
               </td>
 
               <td>
                 {% if status == 'resubmitted' %}
-                  <span class="badge text-bg-warning badge-soft">Resubmitted</span>
+                  <span class="soft-badge resubmitted">Resubmitted</span>
                 {% else %}
-                  <span class="badge text-bg-primary badge-soft">Submitted</span>
+                  <span class="soft-badge submitted">Submitted</span>
                 {% endif %}
               </td>
 
@@ -417,14 +716,14 @@
 
               <td>
                 <div class="fw-semibold">{{ pg['Gram Panchayat'] or '-' }}</div>
-                <small class="text-soft">{{ pg.Village or pg.village or '-' }}</small>
+                <span class="pg-id-text">{{ pg.Village or pg.village or '-' }}</span>
               </td>
 
               <td>
                 <div class="d-flex flex-wrap gap-1">
                   <a
                     href="{{ url_for('pg.validation_review', form_type=row.form_type, pg_id=pg._id|string) }}"
-                    class="btn btn-sm btn-outline-success action-btn"
+                    class="btn btn-sm action-btn btn-review"
                   >
                     Review
                   </a>
@@ -434,14 +733,14 @@
                     action="{{ url_for('pg.validation_approve', form_type=row.form_type, pg_id=pg._id|string) }}"
                     onsubmit="return confirm('Approve this {{ row.form_label }}?');"
                   >
-                    <button type="submit" class="btn btn-sm btn-success action-btn">
+                    <button type="submit" class="btn btn-sm action-btn btn-approve">
                       Approve
                     </button>
                   </form>
 
                   <button
                     type="button"
-                    class="btn btn-sm btn-outline-danger action-btn"
+                    class="btn btn-sm action-btn btn-reject"
                     data-bs-toggle="collapse"
                     data-bs-target="#rejectBox{{ loop.index }}"
                     aria-expanded="false"
@@ -464,7 +763,7 @@
                       required
                     ></textarea>
 
-                    <button type="submit" class="btn btn-sm btn-danger action-btn">
+                    <button type="submit" class="btn btn-sm action-btn btn-send-back">
                       Send Back to PG
                     </button>
                   </form>
@@ -475,7 +774,7 @@
             <tr>
               <td colspan="7">
                 <div class="empty-state">
-                  <strong>No pending validation forms.</strong>
+                  <strong>No pending validation forms</strong>
                   <div>Submitted PG Registration and Membership Registration forms will appear here.</div>
                 </div>
               </td>
@@ -485,7 +784,7 @@
       </table>
     </div>
 
-    <div class="mobile-list p-3">
+    <div class="mobile-list">
       {% for row in rows %}
         {% set pg = row.pg %}
         {% set pg_name = pg.name or pg.pg_name or 'Unnamed PG' %}
@@ -500,17 +799,17 @@
           <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
             <div>
               <div class="pg-name">{{ pg_name }}</div>
-              <small class="text-soft">PG ID: {{ pg._id }}</small>
+              <span class="pg-id-text">PG ID: {{ pg._id }}</span>
             </div>
 
             {% if status == 'resubmitted' %}
-              <span class="badge text-bg-warning badge-soft">Resubmitted</span>
+              <span class="soft-badge resubmitted">Resubmitted</span>
             {% else %}
-              <span class="badge text-bg-primary badge-soft">Submitted</span>
+              <span class="soft-badge submitted">Submitted</span>
             {% endif %}
           </div>
 
-          <div class="small text-soft mb-3">
+          <div class="mobile-info">
             <div><strong>Form:</strong> {{ row.form_label }}</div>
             <div>
               <strong>Submitted:</strong>
@@ -527,7 +826,7 @@
           <div class="d-grid gap-2">
             <a
               href="{{ url_for('pg.validation_review', form_type=row.form_type, pg_id=pg._id|string) }}"
-              class="btn btn-sm btn-outline-success action-btn"
+              class="btn btn-sm action-btn btn-review"
             >
               Review
             </a>
@@ -537,7 +836,7 @@
               action="{{ url_for('pg.validation_approve', form_type=row.form_type, pg_id=pg._id|string) }}"
               onsubmit="return confirm('Approve this {{ row.form_label }}?');"
             >
-              <button type="submit" class="btn btn-sm btn-success action-btn w-100">
+              <button type="submit" class="btn btn-sm action-btn btn-approve w-100">
                 Approve
               </button>
             </form>
@@ -554,7 +853,7 @@
                 required
               ></textarea>
 
-              <button type="submit" class="btn btn-sm btn-danger action-btn w-100">
+              <button type="submit" class="btn btn-sm action-btn btn-send-back w-100">
                 Reject & Send Back
               </button>
             </form>
@@ -562,7 +861,7 @@
         </div>
       {% else %}
         <div class="empty-state">
-          <strong>No pending validation forms.</strong>
+          <strong>No pending validation forms</strong>
           <div>Submitted PG Registration and Membership Registration forms will appear here.</div>
         </div>
       {% endfor %}

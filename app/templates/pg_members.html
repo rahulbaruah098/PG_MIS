@@ -4,8 +4,8 @@
 {% set member_validation = pg.member_registration_validation or {} %}
 {% set member_validation_status = (member_validation.status or pg.member_registration_validation_status or 'draft')|lower %}
 {% set member_validation_remarks = member_validation.remarks or pg.member_registration_validation_remarks or '' %}
-{% set member_validation_locked = member_validation_status in ['submitted', 'resubmitted', 'approved'] %}
-{% set member_validation_can_submit = session.get('role') in ['PG_DATA_ENTRY', 'CADRE_CC'] and member_validation_status in ['draft', 'rejected'] and rows %}
+{% set member_validation_locked = member_validation_status in ['submitted', 'resubmitted'] %}
+{% set member_validation_can_submit = session.get('role') in ['PG_DATA_ENTRY', 'CADRE_CC'] and member_validation_status in ['draft', 'rejected', 'approved'] and rows %}
 
 {% block head_extra %}
   <!-- Ionicons (same look as Meeting Minutes Book) -->
@@ -970,7 +970,7 @@
         <div>
           <div class="pmd-validation-text">
             {% if member_validation_status == 'approved' %}
-              Membership registration has been approved by Block Admin. Editing is locked.
+              Membership registration has been approved by Block Admin. Saved rows can be edited if correction is required, and blank rows can still be completed.
             {% elif member_validation_status in ['submitted', 'resubmitted'] %}
               Membership registration has been submitted to Block Admin. Editing is locked until review.
             {% elif member_validation_status == 'rejected' %}
@@ -1057,8 +1057,8 @@
                   <th class="pmd-col-cat" id="thCategory">Category</th>
                   <th class="pmd-col-shg" id="thShg">SHG</th>
                   {% if sector == 'Agri' %}
+                    
                     <th class="pmd-col-sector-a" id="thCrop">Crop</th>
-                    <th class="pmd-col-sector-b" id="thFfs">FFS Module</th>
                   {% elif sector == 'ARDD' %}
                     <th class="pmd-col-sector-a" id="thArddType">Activity</th>
                     <th class="pmd-col-sector-b" id="thArddUnit">Unit</th>
@@ -1081,7 +1081,12 @@
               <tbody>
                 {% for r in rows %}
                 {% set fid = 'pmdForm_' ~ loop.index %}
-                <tr class="{% if r._just_saved %}pmd-row-saved{% endif %}" data-member-id="{{ r.member_id }}">
+                <tr
+                  class="{% if r._just_saved %}pmd-row-saved{% endif %}"
+                  data-member-id="{{ r.member_id }}"
+                  data-details-saved="{{ '1' if r.details_saved else '0' }}"
+                  data-row-readonly="{{ '1' if r.row_readonly else '0' }}"
+                >
                   <td class="pmd-fixed pmd-col-sl pmd-slno" style="text-align:center;" data-label="Sl. No">{{ '2.' ~ loop.index }}</td>
 
                   <td class="pmd-col-member" data-label="Member">
@@ -1101,25 +1106,25 @@
                   </td>
 
                   {% if sector == 'Agri' %}
-                  <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Crop">
-                    <select class="pmd-input" name="agri_crop" data-field="agri_crop" form="{{ fid }}">
-                      <option value="">Select Crop</option>
-                      {% for opt in agri_crops %}
-                        <option value="{{ opt }}" {% if r.agri_crop == opt %}selected{% endif %}>{{ opt }}</option>
-                      {% endfor %}
-                    </select>
-                  </td>
                   <td class="pmd-col-sector-b" style="vertical-align:top;" data-label="FFS Module">
-                    <select class="pmd-input" name="agri_ffs_module" data-field="agri_ffs_module" form="{{ fid }}">
+                    <select class="pmd-input" name="agri_ffs_module" data-field="agri_ffs_module" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
                       <option value="">Select FFS Module</option>
                       {% for opt in agri_ffs_modules %}
                         <option value="{{ opt }}" {% if r.agri_ffs_module == opt %}selected{% endif %}>{{ opt }}</option>
                       {% endfor %}
                     </select>
                   </td>
+                  <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Crop">
+                    <select class="pmd-input" name="agri_crop" data-field="agri_crop" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
+                      <option value="">Select Crop</option>
+                      {% for opt in agri_crops %}
+                        <option value="{{ opt }}" {% if r.agri_crop == opt %}selected{% endif %}>{{ opt }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
                   {% elif sector == 'ARDD' %}
                   <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Activity">
-                    <select class="pmd-input js-ardd-activity" name="ardd_activity" data-field="ardd_activity" data-row-form="{{ fid }}" form="{{ fid }}">
+                    <select class="pmd-input js-ardd-activity" name="ardd_activity" data-field="ardd_activity" data-row-form="{{ fid }}" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
                       <option value="">Select Activity</option>
                       {% for opt in ardd_activities %}
                         <option value="{{ opt }}" {% if r.ardd_activity == opt %}selected{% endif %}>{{ opt }}</option>
@@ -1127,13 +1132,13 @@
                     </select>
                   </td>
                   <td class="pmd-col-sector-b" style="vertical-align:top;" data-label="Unit">
-                    <select class="pmd-input js-ardd-unit" name="ardd_unit" data-field="ardd_unit" data-row-form="{{ fid }}" data-selected="{{ r.ardd_unit or '' }}" form="{{ fid }}">
+                    <select class="pmd-input js-ardd-unit" name="ardd_unit" data-field="ardd_unit" data-row-form="{{ fid }}" data-selected="{{ r.ardd_unit or '' }}" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
                       <option value="">Select Unit</option>
                     </select>
                   </td>
                   {% elif sector == 'Fishery' %}
                   <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Fishery Activity">
-                    <select class="pmd-input" name="fishery_activity" data-field="fishery_activity" form="{{ fid }}">
+                    <select class="pmd-input" name="fishery_activity" data-field="fishery_activity" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
                       <option value="">Select Fishery Activity</option>
                       {% for opt in fishery_activities %}
                         <option value="{{ opt }}" {% if r.fishery_activity == opt %}selected{% endif %}>{{ opt }}</option>
@@ -1143,23 +1148,23 @@
                   {% endif %}
 
                   <td class="pmd-col-contact" style="vertical-align:top;" data-label="Contact">
-                    <input class="pmd-input" name="contact" value="{{ r.contact or '' }}" placeholder="Contact" data-field="contact" form="{{ fid }}">
+                    <input class="pmd-input" name="contact" value="{{ r.contact or '' }}" placeholder="Contact" data-field="contact" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
                   </td>
 
                   <td class="pmd-col-bank" style="vertical-align:top;" data-label="Bank">
-                    <input class="pmd-input" name="bank_name" value="{{ r.bank_name or '' }}" placeholder="Bank" data-field="bank_name" form="{{ fid }}">
+                    <input class="pmd-input" name="bank_name" value="{{ r.bank_name or '' }}" placeholder="Bank" data-field="bank_name" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
                   </td>
 
                   <td class="pmd-col-branch" style="vertical-align:top;" data-label="Branch">
-                    <input class="pmd-input" name="branch" value="{{ r.branch or '' }}" placeholder="Branch" data-field="branch" form="{{ fid }}">
+                    <input class="pmd-input" name="branch" value="{{ r.branch or '' }}" placeholder="Branch" data-field="branch" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
                   </td>
 
                   <td class="pmd-col-account" style="vertical-align:top;" data-label="Account">
-                    <input class="pmd-input" name="account_number" value="{{ r.account_number or '' }}" placeholder="Account" data-field="account_number" form="{{ fid }}">
+                    <input class="pmd-input" name="account_number" value="{{ r.account_number or '' }}" placeholder="Account" data-field="account_number" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
                   </td>
 
                   <td class="pmd-col-fee" style="vertical-align:top;" data-label="Fee">
-                    <input class="pmd-input" name="membership_fee_paid" value="{{ r.membership_fee_paid or '' }}" placeholder="0" inputmode="decimal" data-field="membership_fee_paid" form="{{ fid }}">
+                    <input class="pmd-input" name="membership_fee_paid" value="{{ r.membership_fee_paid if r.membership_fee_paid is not none else '' }}" placeholder="0" inputmode="decimal" data-field="membership_fee_paid" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
                   </td>
 
                   
@@ -1175,10 +1180,27 @@
                     <form method="POST" class="m-0 p-0 pmd-editForm" id="{{ fid }}">
                       <input type="hidden" name="member_id" value="{{ r.member_id }}">
                       <div class="pmd-actions">
-                        <button class="pmd-btn-save" type="submit" {% if member_validation_locked %}disabled{% endif %}>
-                          <ion-icon name="save"></ion-icon>
-                          <span class="pmdSaveText">Save</span>
-                        </button>
+                        {% if r.row_locked %}
+                          <button class="pmd-btn-save" type="button" disabled>
+                            <ion-icon name="lock-closed-outline"></ion-icon>
+                            <span>Locked</span>
+                          </button>
+                        {% elif r.details_saved %}
+                          <button class="pmd-btn-save pmd-btn-row-edit" type="button">
+                            <ion-icon name="create-outline"></ion-icon>
+                            <span>Edit</span>
+                          </button>
+
+                          <button class="pmd-btn-save pmd-btn-row-save" type="submit" style="display:none;">
+                            <ion-icon name="save"></ion-icon>
+                            <span class="pmdSaveText">Save</span>
+                          </button>
+                        {% else %}
+                          <button class="pmd-btn-save pmd-btn-row-save" type="submit">
+                            <ion-icon name="save"></ion-icon>
+                            <span class="pmdSaveText">Save</span>
+                          </button>
+                        {% endif %}
                         <div class="pmd-toast" aria-live="polite"></div>
                       </div>
                     </form>
@@ -1386,9 +1408,24 @@
   </div>
 </div>
 
+
+
 <script>
 /* ============================================================
-   NEW: Language Translation Hook (NO UI/logic changes)
+   PG Member Details - Combined Script Block
+   Includes:
+   1. Language translation
+   2. Edit/View toggle
+   3. Row-wise Edit/Save lock handling
+   4. Instant View sync + AJAX save
+   5. Search + Pagination
+   6. Full View modal
+   7. ARDD activity/unit sync
+   8. Horizontal drag/swipe scroll
+============================================================ */
+
+/* ============================================================
+   1. Language Translation Hook
 ============================================================ */
 (function(){
   const PMD_I18N = {
@@ -1418,7 +1455,6 @@
       thArddUnit: "Unit",
       thFisheryType: "Fishery Activity",
       thContact: "Contact",
-       
       thBank: "Bank",
       thBranch: "Branch",
       thAccount: "Account",
@@ -1426,7 +1462,6 @@
       thLakhpati: "Lakhpati Didi?",
       thAction: "Action",
       phContact: "Contact",
-     
       phBank: "Bank",
       phBranch: "Branch",
       phAccount: "Account",
@@ -1463,14 +1498,13 @@
       thArddUnit: "ইউনিট",
       thFisheryType: "মৎস্য কার্যক্রম",
       thContact: "যোগাযোগ",
-              thBank: "ব্যাংক",
+      thBank: "ব্যাংক",
       thBranch: "শাখা",
       thAccount: "অ্যাকাউন্ট",
       thFee: "ফি",
       thLakhpati: "লাখপতি দিদি?",
       thAction: "অ্যাকশন",
       phContact: "যোগাযোগ",
-     
       phBank: "ব্যাংক",
       phBranch: "শাখা",
       phAccount: "অ্যাকাউন্ট",
@@ -1490,6 +1524,7 @@
         if(l === 'en' || l === 'bn') return l;
       }
     }catch(_){}
+
     const s = sessionStorage.getItem('PGMIS_LANG_SESSION');
     return (s === 'bn') ? 'bn' : 'en';
   }
@@ -1539,30 +1574,72 @@
     }
 
     const thMap = [
-      ['thSl', t.thSl], ['thMember', t.thMember], ['thSpouse', t.thSpouse], ['thCategory', t.thCategory],
+      ['thSl', t.thSl],
+      ['thMember', t.thMember],
+      ['thSpouse', t.thSpouse],
+      ['thCategory', t.thCategory],
       ['thShg', t.thShg],
-      {% if sector == 'Agri' %}['thCrop', t.thCrop], ['thFfs', t.thFfs],{% elif sector == 'ARDD' %}['thArddType', t.thArddType], ['thArddUnit', t.thArddUnit],{% elif sector == 'Fishery' %}['thFisheryType', t.thFisheryType],{% endif %}
-      ['thContact', t.thContact], ['thBank', t.thBank],
-      ['thBranch', t.thBranch], ['thAccount', t.thAccount], ['thFee', t.thFee], ['thLakhpati', t.thLakhpati], ['thAction', t.thAction]
+      {% if sector == 'Agri' %}
+      ['thCrop', t.thCrop],
+      ['thFfs', t.thFfs],
+      {% elif sector == 'ARDD' %}
+      ['thArddType', t.thArddType],
+      ['thArddUnit', t.thArddUnit],
+      {% elif sector == 'Fishery' %}
+      ['thFisheryType', t.thFisheryType],
+      {% endif %}
+      ['thContact', t.thContact],
+      ['thBank', t.thBank],
+      ['thBranch', t.thBranch],
+      ['thAccount', t.thAccount],
+      ['thFee', t.thFee],
+      ['thLakhpati', t.thLakhpati],
+      ['thAction', t.thAction]
     ];
-    thMap.forEach(([id,val]) => { const el = document.getElementById(id); if(el) el.textContent = val; });
+
+    thMap.forEach(([id,val]) => {
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    });
 
     const thMapV = [
-      ['thSlV', t.thSl], ['thMemberV', t.thMember], ['thSpouseV', t.thSpouse], ['thCategoryV', t.thCategory],
+      ['thSlV', t.thSl],
+      ['thMemberV', t.thMember],
+      ['thSpouseV', t.thSpouse],
+      ['thCategoryV', t.thCategory],
       ['thShgV', t.thShg],
-      {% if sector == 'Agri' %}['thCropV', t.thCrop], ['thFfsV', t.thFfs],{% elif sector == 'ARDD' %}['thArddTypeV', t.thArddType], ['thArddUnitV', t.thArddUnit],{% elif sector == 'Fishery' %}['thFisheryTypeV', t.thFisheryType],{% endif %}
-      ['thContactV', t.thContact], ['thBankV', t.thBank],
-      ['thBranchV', t.thBranch], ['thAccountV', t.thAccount], ['thFeeV', t.thFee], ['thLakhpatiV', t.thLakhpati]
+      {% if sector == 'Agri' %}
+      ['thCropV', t.thCrop],
+      ['thFfsV', t.thFfs],
+      {% elif sector == 'ARDD' %}
+      ['thArddTypeV', t.thArddType],
+      ['thArddUnitV', t.thArddUnit],
+      {% elif sector == 'Fishery' %}
+      ['thFisheryTypeV', t.thFisheryType],
+      {% endif %}
+      ['thContactV', t.thContact],
+      ['thBankV', t.thBank],
+      ['thBranchV', t.thBranch],
+      ['thAccountV', t.thAccount],
+      ['thFeeV', t.thFee],
+      ['thLakhpatiV', t.thLakhpati]
     ];
-    thMapV.forEach(([id,val]) => { const el = document.getElementById(id); if(el) el.textContent = val; });
 
-    document.querySelectorAll('.pmdSaveText').forEach(el => { el.textContent = (L === 'bn') ? 'সেভ' : 'Save'; });
+    thMapV.forEach(([id,val]) => {
+      const el = document.getElementById(id);
+      if(el) el.textContent = val;
+    });
+
+    document.querySelectorAll('.pmdSaveText').forEach(el => {
+      el.textContent = (L === 'bn') ? 'সেভ' : 'Save';
+    });
 
     document.querySelectorAll('input.pmd-input[name="contact"]').forEach(i => i.setAttribute('placeholder', t.phContact));
     document.querySelectorAll('input.pmd-input[name="bank_name"]').forEach(i => i.setAttribute('placeholder', t.phBank));
     document.querySelectorAll('input.pmd-input[name="branch"]').forEach(i => i.setAttribute('placeholder', t.phBranch));
     document.querySelectorAll('input.pmd-input[name="account_number"]').forEach(i => i.setAttribute('placeholder', t.phAccount));
     document.querySelectorAll('input.pmd-input[name="membership_fee_paid"]').forEach(i => i.setAttribute('placeholder', t.phFee));
+
     document.querySelectorAll('select.pmd-input[name="agri_crop"] option:first-child').forEach(i => i.textContent = t.phSelectCrop);
     document.querySelectorAll('select.pmd-input[name="agri_ffs_module"] option:first-child').forEach(i => i.textContent = t.phSelectFfs);
     document.querySelectorAll('select.pmd-input[name="ardd_activity"] option:first-child').forEach(i => i.textContent = t.phSelectArddType);
@@ -1572,11 +1649,30 @@
     const setDataLabels = (tableId) => {
       const table = document.getElementById(tableId);
       if(!table) return;
+
       const headLabels = [
-        t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg,
-        {% if sector == 'Agri' %}t.thCrop, t.thFfs,{% elif sector == 'ARDD' %}t.thArddType, t.thArddUnit,{% elif sector == 'Fishery' %}t.thFisheryType,{% endif %}
-        t.thContact,   t.thBank, t.thBranch, t.thAccount, t.thFee, t.thLakhpati
+        t.thSl,
+        t.thMember,
+        t.thSpouse,
+        t.thCategory,
+        t.thShg,
+        {% if sector == 'Agri' %}
+        t.thCrop,
+        t.thFfs,
+        {% elif sector == 'ARDD' %}
+        t.thArddType,
+        t.thArddUnit,
+        {% elif sector == 'Fishery' %}
+        t.thFisheryType,
+        {% endif %}
+        t.thContact,
+        t.thBank,
+        t.thBranch,
+        t.thAccount,
+        t.thFee,
+        t.thLakhpati
       ];
+
       const isEdit = tableId === 'pmdEditTable';
       const labels = isEdit ? headLabels.concat([t.thAction]) : headLabels;
 
@@ -1587,10 +1683,32 @@
         });
       });
     };
+
     setDataLabels('pmdEditTable');
     setDataLabels('pmdViewTable');
 
-    window.__PMD_MODAL_LABELS__ = [t.thSl, t.thMember, t.thSpouse, t.thCategory, t.thShg, {% if sector == 'Agri' %}t.thCrop, t.thFfs, {% elif sector == 'ARDD' %}t.thArddType, t.thArddUnit, {% elif sector == 'Fishery' %}t.thFisheryType, {% endif %} t.thContact,      t.thBank, t.thBranch, t.thAccount, t.thFee, t.thLakhpati];
+    window.__PMD_MODAL_LABELS__ = [
+      t.thSl,
+      t.thMember,
+      t.thSpouse,
+      t.thCategory,
+      t.thShg,
+      {% if sector == 'Agri' %}
+      t.thCrop,
+      t.thFfs,
+      {% elif sector == 'ARDD' %}
+      t.thArddType,
+      t.thArddUnit,
+      {% elif sector == 'Fishery' %}
+      t.thFisheryType,
+      {% endif %}
+      t.thContact,
+      t.thBank,
+      t.thBranch,
+      t.thAccount,
+      t.thFee,
+      t.thLakhpati
+    ];
   }
 
   window.updatePageLanguage = function(lang){
@@ -1604,34 +1722,130 @@
 
   applyPMDLanguage(getLang());
 })();
-</script>
 
-<script>
-/* Toggle between Edit and View */
+
+/* ============================================================
+   2. Toggle between Edit and View
+============================================================ */
 (function(){
   const btnEdit = document.getElementById('pmdBtnEdit');
   const btnView = document.getElementById('pmdBtnView');
   const secEdit = document.getElementById('pmdSectionEdit');
   const secView = document.getElementById('pmdSectionView');
+
   if(!btnEdit || !btnView || !secEdit || !secView) return;
 
   function setMode(mode){
     const isEdit = mode === 'edit';
+
     secEdit.classList.toggle('is-active', isEdit);
     secView.classList.toggle('is-active', !isEdit);
+
     btnEdit.classList.toggle('is-active', isEdit);
     btnView.classList.toggle('is-active', !isEdit);
   }
+
   btnEdit.addEventListener('click', () => setMode('edit'));
   btnView.addEventListener('click', () => setMode('view'));
 })();
 
+
+/* ============================================================
+   3. Validation lock state + Row-wise Edit/Save helpers
+============================================================ */
 const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 'false' }};
 
-/* Instant View sync + Save confirmations (updated to support lakh_pati_didi) */
+function pmdSetRowInputs(row, disabled){
+  if(!row) return;
+
+  row.querySelectorAll('.pmd-input').forEach((el) => {
+    el.disabled = disabled;
+  });
+}
+
+function pmdEnableRowEdit(row){
+  if(!row || PMD_MEMBER_VALIDATION_LOCKED) return;
+
+  pmdSetRowInputs(row, false);
+
+  const editBtn = row.querySelector('.pmd-btn-row-edit');
+  const saveBtn = row.querySelector('.pmd-btn-row-save');
+
+  if(editBtn){
+    editBtn.style.display = 'none';
+  }
+
+  if(saveBtn){
+    saveBtn.style.display = 'inline-flex';
+    saveBtn.disabled = false;
+  }
+
+  row.setAttribute('data-row-readonly', '0');
+}
+
+function pmdLockRowAfterSave(row){
+  if(!row) return;
+
+  row.setAttribute('data-details-saved', '1');
+  row.setAttribute('data-row-readonly', '1');
+
+  pmdSetRowInputs(row, true);
+
+  let editBtn = row.querySelector('.pmd-btn-row-edit');
+  const saveBtn = row.querySelector('.pmd-btn-row-save');
+  const actions = row.querySelector('.pmd-actions');
+
+  if(!editBtn && actions){
+    editBtn = document.createElement('button');
+    editBtn.className = 'pmd-btn-save pmd-btn-row-edit';
+    editBtn.type = 'button';
+    editBtn.innerHTML = '<ion-icon name="create-outline"></ion-icon><span>Edit</span>';
+
+    editBtn.addEventListener('click', function(){
+      pmdEnableRowEdit(row);
+    });
+
+    actions.insertBefore(editBtn, actions.firstChild);
+  }
+
+  if(editBtn){
+    editBtn.style.display = 'inline-flex';
+  }
+
+  if(saveBtn){
+    saveBtn.style.display = 'none';
+    saveBtn.disabled = false;
+  }
+}
+
+(function(){
+  const table = document.getElementById('pmdEditTable');
+  if(!table) return;
+
+  table.querySelectorAll('tbody tr[data-member-id]').forEach((row) => {
+    const rowReadonly = row.getAttribute('data-row-readonly') === '1';
+
+    if(PMD_MEMBER_VALIDATION_LOCKED || rowReadonly){
+      pmdSetRowInputs(row, true);
+    }
+  });
+
+  table.querySelectorAll('.pmd-btn-row-edit').forEach((btn) => {
+    btn.addEventListener('click', function(){
+      const row = btn.closest('tr');
+      pmdEnableRowEdit(row);
+    });
+  });
+})();
+
+
+/* ============================================================
+   4. Instant View Sync + Save Confirmation + AJAX Row Save
+============================================================ */
 (function(){
   const viewTable = document.getElementById('pmdViewTable');
   const editTable = document.getElementById('pmdEditTable');
+
   if(!viewTable || !editTable) return;
 
   function getViewRowByMemberId(memberId){
@@ -1642,10 +1856,12 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
   function setViewField(memberId, field, value){
     const vr = getViewRowByMemberId(memberId);
     if(!vr) return;
+
     const el = vr.querySelector('[data-field="'+ CSS.escape(field) +'"]');
     if(!el) return;
 
     let v;
+
     if(field === 'lakh_pati_didi'){
       const raw = String(value || '').trim().toLowerCase();
       const yes = (raw === '1' || raw === 'true' || raw === 'on' || raw === 'yes');
@@ -1653,14 +1869,17 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
     }else{
       v = (value === null || value === undefined || String(value).trim() === '') ? '-' : String(value);
     }
+
     el.textContent = v;
   }
 
   function markSaved(memberId){
     const er = editTable.querySelector('tbody tr[data-member-id="'+ CSS.escape(memberId) +'"]');
     const vr = getViewRowByMemberId(memberId);
+
     if(er) er.classList.add('pmd-row-saved');
     if(vr) vr.classList.add('pmd-row-saved');
+
     setTimeout(() => {
       if(er) er.classList.remove('pmd-row-saved');
       if(vr) vr.classList.remove('pmd-row-saved');
@@ -1674,29 +1893,37 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
   function showToast(form, kind, html){
     const toast = getToastForForm(form);
     if(!toast) return;
-    toast.classList.remove('pmd-toast--ok','pmd-toast--info','is-show');
+
+    toast.classList.remove('pmd-toast--ok', 'pmd-toast--info', 'is-show');
     toast.innerHTML = html;
 
-    if(kind === 'ok') toast.classList.add('pmd-toast--ok');
-    else toast.classList.add('pmd-toast--info');
+    if(kind === 'ok'){
+      toast.classList.add('pmd-toast--ok');
+    }else{
+      toast.classList.add('pmd-toast--info');
+    }
 
     toast.classList.add('is-show');
     clearTimeout(toast._t);
-    toast._t = setTimeout(() => toast.classList.remove('is-show'), 2000);
+    toast._t = setTimeout(() => toast.classList.remove('is-show'), 2200);
   }
 
   function getInputsForForm(form){
     const id = form.id;
+
     const inputs = Array.from(document.querySelectorAll('input[data-field][form="'+ CSS.escape(id) +'"]'));
     const selects = Array.from(document.querySelectorAll('select[data-field][form="'+ CSS.escape(id) +'"]'));
+
     return inputs.concat(selects);
   }
 
   function snapshotObject(form){
     const obj = {};
+
     getInputsForForm(form).forEach(inp => {
       obj[inp.getAttribute('data-field')] = (inp.value || '').trim();
     });
+
     return obj;
   }
 
@@ -1718,46 +1945,60 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
     { key: 'branch', label: 'Branch' },
     { key: 'account_number', label: 'Account' },
     { key: 'membership_fee_paid', label: 'Fee' },
-    {% if sector == 'Agri' %}{ key: 'agri_crop', label: 'Crop' }, { key: 'agri_ffs_module', label: 'FFS Module' }{% elif sector == 'ARDD' %}{ key: 'ardd_activity', label: 'Activity' }, { key: 'ardd_unit', label: 'Unit' }{% elif sector == 'Fishery' %}{ key: 'fishery_activity', label: 'Fishery Activity' }{% endif %}
+    {% if sector == 'Agri' %}
+    { key: 'agri_crop', label: 'Crop' },
+    { key: 'agri_ffs_module', label: 'FFS Module' }
+    {% elif sector == 'ARDD' %}
+    { key: 'ardd_activity', label: 'Activity' },
+    { key: 'ardd_unit', label: 'Unit' }
+    {% elif sector == 'Fishery' %}
+    { key: 'fishery_activity', label: 'Fishery Activity' }
+    {% endif %}
   ];
 
   function validateRequired(form){
     const obj = snapshotObject(form);
-
     const missing = [];
+
     REQUIRED_FIELDS.forEach(f => {
       const v = (obj[f.key] || '').trim();
       if(!v) missing.push(f.label);
     });
 
     const fee = (obj.membership_fee_paid || '').trim();
+
     if(fee){
       const n = Number(fee);
       if(Number.isNaN(n)){
-        return { ok:false, message: 'Fee must be a number.' };
+        return { ok:false, message:'Fee must be a number.' };
       }
     }
 
     if(missing.length){
-      return { ok:false, message: 'Please fill: ' + missing.join(', ') };
+      return { ok:false, message:'Please fill: ' + missing.join(', ') };
     }
-    return { ok:true, message: '' };
+
+    return { ok:true, message:'' };
   }
 
   editTable.querySelectorAll('form.pmd-editForm').forEach(form => {
     const midInput = form.querySelector('input[name="member_id"]');
     const memberId = midInput ? midInput.value : null;
+    const row = form.closest('tr');
 
     form.dataset.savedSnapshot = snapshot(form);
     form.dataset.dirty = "0";
 
-    function markDirty(){ form.dataset.dirty = "1"; }
+    function markDirty(){
+      form.dataset.dirty = "1";
+    }
 
     getInputsForForm(form).forEach(inp => {
       inp.addEventListener('input', () => {
         setViewField(memberId, inp.getAttribute('data-field'), inp.value);
         markDirty();
       });
+
       inp.addEventListener('change', () => {
         setViewField(memberId, inp.getAttribute('data-field'), inp.value);
         markDirty();
@@ -1767,15 +2008,17 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
     form.addEventListener('submit', async (e) => {
       if(PMD_MEMBER_VALIDATION_LOCKED){
         e.preventDefault();
-        showToast(form,'info',`<ion-icon name="lock-closed-outline"></ion-icon>This form is locked for validation review.`);
+        showToast(form, 'info', `<ion-icon name="lock-closed-outline"></ion-icon>This form is locked for validation review.`);
         return;
       }
+
       if(!window.fetch) return;
 
       const v = validateRequired(form);
+
       if(!v.ok){
         e.preventDefault();
-        showToast(form,'info',`<ion-icon name="alert-circle-outline"></ion-icon>${v.message}`);
+        showToast(form, 'info', `<ion-icon name="alert-circle-outline"></ion-icon>${v.message}`);
         return;
       }
 
@@ -1783,7 +2026,9 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
       const wasSaved = form.dataset.savedSnapshot || "";
       const dirty = form.dataset.dirty === "1";
 
-      let nowObj = null, savedObj = null;
+      let nowObj = null;
+      let savedObj = null;
+
       try{ nowObj = JSON.parse(nowSnap); }catch(_){ nowObj = {}; }
       try{ savedObj = JSON.parse(wasSaved); }catch(_){ savedObj = {}; }
 
@@ -1792,7 +2037,7 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
 
       if(!dirty && nowSnap === wasSaved && nowHas && savedHas){
         e.preventDefault();
-        showToast(form,'info',`<ion-icon name="information-circle-outline"></ion-icon>Already saved`);
+        showToast(form, 'info', `<ion-icon name="information-circle-outline"></ion-icon>Already saved`);
         return;
       }
 
@@ -1804,8 +2049,9 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
       try{
         const fd = new FormData(form);
 
-        // include inputs + select
-        getInputsForForm(form).forEach(inp => fd.set(inp.name, inp.value));
+        getInputsForForm(form).forEach(inp => {
+          fd.set(inp.name, inp.value);
+        });
 
         const res = await fetch(window.location.href, {
           method: 'POST',
@@ -1820,42 +2066,50 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
           return;
         }
 
-        getInputsForForm(form).forEach(inp => setViewField(memberId, inp.getAttribute('data-field'), inp.value));
+        getInputsForForm(form).forEach(inp => {
+          setViewField(memberId, inp.getAttribute('data-field'), inp.value);
+        });
+
         markSaved(memberId);
 
         form.dataset.savedSnapshot = snapshot(form);
         form.dataset.dirty = "0";
 
-        showToast(form,'ok',`<ion-icon name="checkmark-circle-outline"></ion-icon>Saved successfully`);
+        pmdLockRowAfterSave(row);
+
+        showToast(form, 'ok', `<ion-icon name="checkmark-circle-outline"></ion-icon>Saved successfully`);
 
         if(btn) btn.disabled = false;
       }catch(err){
         if(btn) btn.disabled = false;
         form.submit();
       }
-    }, { capture: true });
+    }, { capture:true });
   });
 })();
-</script>
 
-<script>
+
 /* ============================================================
-    Search + Pagination engine (Edit + View) — updated for lakhpati column
+   5. Search + Pagination Engine
 ============================================================ */
 (function(){
   function normalizeText(s){
-    return (s || '').toString().toLowerCase().replace(/\s+/g,' ').trim();
+    return (s || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
   }
+
   function getRows(table){
     if(!table) return [];
     return Array.from(table.querySelectorAll('tbody tr'));
   }
+
   function rowText(tr){
     let t = normalizeText(tr.innerText || tr.textContent || '');
-    const inputs = Array.from(tr.querySelectorAll('input,select'));
+    const inputs = Array.from(tr.querySelectorAll('input, select'));
+
     if(inputs.length){
       t += ' ' + inputs.map(i => normalizeText(i.value)).join(' ');
     }
+
     return t.trim();
   }
 
@@ -1874,12 +2128,17 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
 
     let page = 1;
     let pageSize = parseInt(perPage.value || '30', 10);
-    if(!pageSize || isNaN(pageSize)) pageSize = 30;
+
+    if(!pageSize || isNaN(pageSize)){
+      pageSize = 30;
+    }
 
     function getFiltered(){
       const q = normalizeText(search.value);
       const rows = getRows(table);
+
       if(!q) return rows;
+
       return rows.filter(tr => rowText(tr).includes(q));
     }
 
@@ -1889,14 +2148,20 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
 
       const total = filtered.length;
       const pages = Math.max(1, Math.ceil(total / pageSize));
+
       if(page > pages) page = pages;
       if(page < 1) page = 1;
 
-      rows.forEach(tr => { tr.style.display = 'none'; });
+      rows.forEach(tr => {
+        tr.style.display = 'none';
+      });
 
       const start = (page - 1) * pageSize;
       const end = start + pageSize;
-      filtered.slice(start, end).forEach(tr => { tr.style.display = ''; });
+
+      filtered.slice(start, end).forEach(tr => {
+        tr.style.display = '';
+      });
 
       info.textContent = `Page ${page} / ${pages}`;
       prev.disabled = (page <= 1);
@@ -1923,8 +2188,15 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
       resetToFirst();
     });
 
-    prev.addEventListener('click', () => { page--; render(); });
-    next.addEventListener('click', () => { page++; render(); });
+    prev.addEventListener('click', () => {
+      page--;
+      render();
+    });
+
+    next.addEventListener('click', () => {
+      page++;
+      render();
+    });
 
     return { render, resetToFirst };
   }
@@ -1954,17 +2226,22 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
 
   try{
     const editTable = document.getElementById('pmdEditTable');
+
     if(editCtrl && viewCtrl && editTable){
-      editTable.addEventListener('input', () => { viewCtrl.render(); }, true);
-      editTable.addEventListener('change', () => { viewCtrl.render(); }, true);
+      editTable.addEventListener('input', () => {
+        viewCtrl.render();
+      }, true);
+
+      editTable.addEventListener('change', () => {
+        viewCtrl.render();
+      }, true);
     }
   }catch(_){}
 })();
-</script>
 
-<script>
+
 /* ============================================================
-    Full View Modal — Build + Search + Pagination (includes lakhpati column)
+   6. Full View Modal
 ============================================================ */
 (function(){
   const modal = document.getElementById('pmdViewModal');
@@ -1973,26 +2250,45 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
   const viewTable = document.getElementById('pmdViewTable');
 
   const fullSearch = document.getElementById('pmdFullSearch');
-  const fullPerPage= document.getElementById('pmdFullPerPage');
-  const fullPrev   = document.getElementById('pmdFullPrev');
-  const fullNext   = document.getElementById('pmdFullNext');
-  const fullInfo   = document.getElementById('pmdFullPageInfo');
-  const host       = document.getElementById('pmdModalTableHost');
+  const fullPerPage = document.getElementById('pmdFullPerPage');
+  const fullPrev = document.getElementById('pmdFullPrev');
+  const fullNext = document.getElementById('pmdFullNext');
+  const fullInfo = document.getElementById('pmdFullPageInfo');
+  const host = document.getElementById('pmdModalTableHost');
 
-  if(!modal || !openBtn || !closeBtn || !viewTable || !host ||
-     !fullSearch || !fullPerPage || !fullPrev || !fullNext || !fullInfo) return;
+  if(
+    !modal ||
+    !openBtn ||
+    !closeBtn ||
+    !viewTable ||
+    !host ||
+    !fullSearch ||
+    !fullPerPage ||
+    !fullPrev ||
+    !fullNext ||
+    !fullInfo
+  ){
+    return;
+  }
 
   let fullTable = null;
 
   function getLabels(){
-    return (window.__PMD_MODAL_LABELS__ && Array.isArray(window.__PMD_MODAL_LABELS__) && window.__PMD_MODAL_LABELS__.length)
+    return (
+      window.__PMD_MODAL_LABELS__ &&
+      Array.isArray(window.__PMD_MODAL_LABELS__) &&
+      window.__PMD_MODAL_LABELS__.length
+    )
       ? window.__PMD_MODAL_LABELS__
-          : ["Sl. No","Member","Father/Mother/Spouse Name","Category","SHG","Contact","Bank","Branch","Account","Fee","Lakhpati Didi?"];
+      : ["Sl. No", "Member", "Father/Mother/Spouse Name", "Category", "SHG", "Contact", "Bank", "Branch", "Account", "Fee", "Lakhpati Didi?"];
   }
 
   function extractRowCells(tr){
     const tds = Array.from(tr.children);
-    return tds.map(td => (td.innerText || td.textContent || '').replace(/\s+/g,' ').trim());
+
+    return tds.map(td => {
+      return (td.innerText || td.textContent || '').replace(/\s+/g, ' ').trim();
+    });
   }
 
   function buildFullTable(){
@@ -2008,14 +2304,17 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
 
     const thead = document.createElement('thead');
     const hr = document.createElement('tr');
+
     LABELS.forEach(lab => {
       const th = document.createElement('th');
       th.textContent = lab;
       hr.appendChild(th);
     });
+
     thead.appendChild(hr);
 
     const tbody = document.createElement('tbody');
+
     rows.forEach(tr => {
       const vals = extractRowCells(tr);
       const r = document.createElement('tr');
@@ -2038,7 +2337,7 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
   }
 
   function normalizeText(s){
-    return (s || '').toString().toLowerCase().replace(/\s+/g,' ').trim();
+    return (s || '').toString().toLowerCase().replace(/\s+/g, ' ').trim();
   }
 
   function fullRender(){
@@ -2048,21 +2347,30 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
     const rows = Array.from(fullTable.querySelectorAll('tbody tr'));
     const pageSize = parseInt(fullPerPage.value || '30', 10) || 30;
 
-    const filtered = (!q) ? rows : rows.filter(tr => normalizeText(tr.innerText || tr.textContent || '').includes(q));
+    const filtered = (!q)
+      ? rows
+      : rows.filter(tr => normalizeText(tr.innerText || tr.textContent || '').includes(q));
 
     const total = filtered.length;
     const pages = Math.max(1, Math.ceil(total / pageSize));
 
     let page = parseInt(fullInfo.dataset.page || '1', 10) || 1;
+
     if(page > pages) page = pages;
     if(page < 1) page = 1;
+
     fullInfo.dataset.page = String(page);
 
-    rows.forEach(tr => tr.style.display = 'none');
+    rows.forEach(tr => {
+      tr.style.display = 'none';
+    });
 
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
-    filtered.slice(start, end).forEach(tr => tr.style.display = '');
+
+    filtered.slice(start, end).forEach(tr => {
+      tr.style.display = '';
+    });
 
     fullInfo.textContent = `Page ${page} / ${pages}`;
     fullPrev.disabled = page <= 1;
@@ -2076,90 +2384,126 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
 
   function open(){
     host.innerHTML = '';
+
     const built = buildFullTable();
     host.appendChild(built.scroll);
-    fullTable = built.table;
 
+    fullTable = built.table;
     fullInfo.dataset.page = '1';
+
     fullRender();
 
     modal.classList.add('is-open');
-    modal.setAttribute('aria-hidden','false');
+    modal.setAttribute('aria-hidden', 'false');
+
     document.documentElement.style.overflow = 'hidden';
+
+    try{
+      if(typeof window.__PMD_INIT_DRAG_SCROLL__ === 'function'){
+        window.__PMD_INIT_DRAG_SCROLL__();
+      }
+    }catch(_){}
   }
 
   function close(){
     modal.classList.remove('is-open');
-    modal.setAttribute('aria-hidden','true');
+    modal.setAttribute('aria-hidden', 'true');
     document.documentElement.style.overflow = '';
   }
 
   openBtn.addEventListener('click', open);
   closeBtn.addEventListener('click', close);
-  modal.addEventListener('click', (e) => { if(e.target === modal) close(); });
-  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && modal.classList.contains('is-open')) close(); });
+
+  modal.addEventListener('click', (e) => {
+    if(e.target === modal) close();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape' && modal.classList.contains('is-open')){
+      close();
+    }
+  });
 
   fullSearch.addEventListener('input', () => setFullPage(1));
   fullPerPage.addEventListener('change', () => setFullPage(1));
-  fullPrev.addEventListener('click', () => setFullPage(Math.max(1, (parseInt(fullInfo.dataset.page||'1',10)||1) - 1)));
-  fullNext.addEventListener('click', () => setFullPage((parseInt(fullInfo.dataset.page||'1',10)||1) + 1));
+
+  fullPrev.addEventListener('click', () => {
+    setFullPage(Math.max(1, (parseInt(fullInfo.dataset.page || '1', 10) || 1) - 1));
+  });
+
+  fullNext.addEventListener('click', () => {
+    setFullPage((parseInt(fullInfo.dataset.page || '1', 10) || 1) + 1);
+  });
 
   try{
     const editTable = document.getElementById('pmdEditTable');
+
     if(editTable){
-      const refresh = () => { if(modal.classList.contains('is-open')) open(); };
+      const refresh = () => {
+        if(modal.classList.contains('is-open')){
+          open();
+        }
+      };
+
       editTable.addEventListener('input', refresh, true);
       editTable.addEventListener('change', refresh, true);
     }
   }catch(_){}
 })();
-</script>
 
-<script>
+
 /* ============================================================
-    Keep Lakhpati Didi labels correct on initial load (for mobile card labels)
-   - Your i18n already sets data-labels, but this ensures it includes lakhpati.
+   7. ARDD Activity / Unit Sync
 ============================================================ */
 (function(){
-  try{
-    // If i18n hasn't run yet for some reason, do a minimal fallback labels set
-    if(!window.__PMD_MODAL_LABELS__) return;
-  }catch(_){}
-})();
-</script>
-
-
-<script>
-(function(){
   const unitMap = {{ (ardd_unit_options or {})|tojson }};
+
+  function escapeOptionText(v){
+    return String(v || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function syncRow(formId){
     const activity = document.querySelector('.js-ardd-activity[data-row-form="' + CSS.escape(formId) + '"]');
     const unit = document.querySelector('.js-ardd-unit[data-row-form="' + CSS.escape(formId) + '"]');
+
     if(!activity || !unit) return;
+
     const prev = unit.value || unit.getAttribute('data-selected') || '';
     const opts = unitMap[activity.value] || [];
-    unit.innerHTML = '<option value="">Select Unit</option>' + opts.map(v => '<option value="' + v.replace(/"/g,'&quot;') + '">' + v + '</option>').join('');
+
+    unit.innerHTML =
+      '<option value="">Select Unit</option>' +
+      opts.map(v => '<option value="' + escapeOptionText(v) + '">' + escapeOptionText(v) + '</option>').join('');
+
     unit.value = opts.includes(prev) ? prev : '';
+
     unit.dispatchEvent(new Event('change', { bubbles:true }));
   }
+
   document.querySelectorAll('.js-ardd-activity').forEach(activity => {
     const formId = activity.getAttribute('data-row-form');
     const unit = document.querySelector('.js-ardd-unit[data-row-form="' + CSS.escape(formId) + '"]');
-    if(unit) {
+
+    if(unit){
       unit.setAttribute('data-selected', unit.dataset.selected || '');
-      unit.addEventListener('change', () => unit.setAttribute('data-selected', unit.value || ''));
+
+      unit.addEventListener('change', () => {
+        unit.setAttribute('data-selected', unit.value || '');
+      });
     }
+
     activity.addEventListener('change', () => syncRow(formId));
     syncRow(formId);
   });
 })();
-</script>
 
 
-<script>
 /* ============================================================
-    Horizontal drag/swipe scroll for Edit, View and Full View tables
-    UI only — no backend/form/save/pagination logic changed
+   8. Horizontal Drag / Swipe Scroll
 ============================================================ */
 (function(){
   function enableHorizontalDragScroll(box){
@@ -2184,6 +2528,7 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
       moved = false;
       startX = e.clientX;
       scrollLeft = box.scrollLeft;
+
       box.classList.add('is-dragging');
 
       try{
@@ -2232,9 +2577,12 @@ const PMD_MEMBER_VALIDATION_LOCKED = {{ 'true' if member_validation_locked else 
     document.querySelectorAll('.pmd-table-scroll, .pmd-fullScroll').forEach(enableHorizontalDragScroll);
   }
 
+  window.__PMD_INIT_DRAG_SCROLL__ = initPmdDragScroll;
+
   initPmdDragScroll();
 
   const modalHost = document.getElementById('pmdModalTableHost');
+
   if(modalHost){
     const observer = new MutationObserver(function(){
       initPmdDragScroll();
