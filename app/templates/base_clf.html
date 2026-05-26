@@ -497,14 +497,7 @@
 
 
           {% if session.get('role') == 'CLF_ADMIN' %}
-          <a class="nav-item {% if request.endpoint in ['clf.assigned_pgs', 'clf.view_pg'] %}active{% endif %}" href="{{ url_for('clf.assigned_pgs') }}">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 6h16"></path>
-              <path d="M4 12h16"></path>
-              <path d="M4 18h16"></path>
-            </svg>
-            <span>Assigned PGs</span>
-          </a>
+          
           {% else %}
           <a class="nav-item {% if request.endpoint == 'master_data.manage_pgs' %}active{% endif %}" href="{{ url_for('master_data.manage_pgs') }}">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
