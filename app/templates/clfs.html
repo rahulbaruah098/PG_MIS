@@ -2,217 +2,831 @@
 
 {% block content %}
 <style>
-  .clf-page-wrap {
-    max-width: 1180px;
-    margin: 0 auto;
+  :root{
+    --pg-shell: #eef6f2;
+    --pg-surface: #ffffff;
+    --pg-surface-soft: #f8fcfa;
+    --pg-header: #dfeee7;
+
+    --pg-brand: #0b4d3a;
+    --pg-brand-dark: #083d2f;
+    --pg-brand-soft: #e7f4ed;
+
+    --pg-mint: rgba(173,231,196,.38);
+    --pg-mint-strong: rgba(173,231,196,.52);
+
+    --pg-ink: #0f172a;
+    --pg-muted: #5f6f67;
+    --pg-muted-2: #64748b;
+
+    --pg-line: rgba(15,23,42,.10);
+    --pg-line-soft: rgba(15,23,42,.07);
+
+    --pg-success: #198754;
+    --pg-success-soft: rgba(25,135,84,.12);
+
+    --pg-warning: #e0a800;
+    --pg-warning-soft: rgba(255,193,7,.16);
+
+    --pg-danger: #c84343;
+    --pg-danger-soft: rgba(200,67,67,.10);
+
+    --pg-neutral-soft: #f8fafc;
+    --pg-neutral-text: #475569;
+
+    --pg-shadow: 0 14px 34px rgba(15,23,42,.08);
+    --pg-shadow-soft: 0 8px 22px rgba(15,23,42,.06);
+
+    --pg-radius-xl: 24px;
+    --pg-radius-lg: 18px;
+    --pg-radius-md: 14px;
   }
 
-  .clf-header {
-    background: linear-gradient(135deg, #0f5132, #198754);
-    color: #fff;
-    border-radius: 18px;
-    padding: 22px 24px;
-    box-shadow: 0 14px 35px rgba(15, 81, 50, 0.18);
+  body{
+    background:var(--pg-shell);
   }
 
-  .clf-header h4 {
-    font-weight: 800;
-    letter-spacing: -0.02em;
+  .clf-page-wrap{
+    width:100%;
+    max-width:1340px;
+    margin:0 auto;
+    padding-bottom:28px;
   }
 
-  .clf-header p {
-    color: rgba(255, 255, 255, 0.85);
+  /* =========================
+     PAGE HERO
+     ========================= */
+  .clf-page-hero{
+    position:relative;
+    overflow:hidden;
+    border-radius:var(--pg-radius-xl);
+    background:
+      radial-gradient(circle at 92% 10%, rgba(173,231,196,.48), transparent 34%),
+      radial-gradient(circle at 8% 95%, rgba(255,255,255,.82), transparent 36%),
+      linear-gradient(135deg, #ffffff 0%, #f7fcf9 48%, #e5f3eb 100%);
+    border:1px solid rgba(11,77,58,.12);
+    box-shadow:var(--pg-shadow);
+    padding:28px;
+    margin-bottom:18px;
   }
 
-  .scope-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    border-radius: 999px;
-    padding: 7px 12px;
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
-    font-size: 0.82rem;
-    font-weight: 700;
-    white-space: nowrap;
+  .clf-page-hero::before{
+    content:"";
+    position:absolute;
+    inset:auto -80px -105px auto;
+    width:260px;
+    height:260px;
+    border-radius:50%;
+    background:rgba(173,231,196,.34);
+    pointer-events:none;
   }
 
-  .clf-card {
-    border: 0;
-    border-radius: 18px;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
-    overflow: hidden;
+  .clf-page-hero::after{
+    content:"";
+    position:absolute;
+    top:-70px;
+    right:210px;
+    width:145px;
+    height:145px;
+    border-radius:50%;
+    background:rgba(255,255,255,.72);
+    border:1px solid rgba(11,77,58,.06);
+    pointer-events:none;
   }
 
-  .clf-card .card-header {
-    background: #fff;
-    border-bottom: 1px solid #e9ecef;
-    padding: 16px 18px;
+  .clf-page-hero-inner{
+    position:relative;
+    z-index:1;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:24px;
+    flex-wrap:wrap;
   }
 
-  .clf-card .card-header h6 {
-    font-weight: 800;
-    margin: 0;
+  .clf-title-area{
+    max-width:780px;
   }
 
-  .clf-form-label {
-    font-size: 0.82rem;
-    font-weight: 800;
-    color: #334155;
-    margin-bottom: 6px;
+  .title-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    margin-bottom:12px;
+    padding:8px 14px;
+    border-radius:999px;
+    background:rgba(255,255,255,.82);
+    border:1px solid rgba(11,77,58,.13);
+    color:var(--pg-brand);
+    font-size:.74rem;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.075em;
+    box-shadow:var(--pg-shadow-soft);
   }
 
-  .clf-input {
-    border-radius: 12px;
-    min-height: 44px;
-    border: 1px solid #d7dee8;
+  .title-dot{
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:var(--pg-brand);
+    box-shadow:0 0 0 5px rgba(11,77,58,.08);
+    flex:0 0 auto;
   }
 
-  .clf-input:focus {
-    border-color: #198754;
-    box-shadow: 0 0 0 0.18rem rgba(25, 135, 84, 0.12);
+  .clf-page-hero h4{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:clamp(1.65rem, 2.7vw, 2.3rem);
+    font-weight:950;
+    letter-spacing:-.045em;
+    line-height:1.05;
   }
 
-  .clf-btn {
-    border-radius: 12px;
-    min-height: 44px;
-    font-weight: 800;
+  .clf-page-hero p{
+    margin:11px 0 0;
+    color:var(--pg-muted);
+    font-size:.98rem;
+    font-weight:650;
+    line-height:1.58;
+    max-width:720px;
   }
 
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+  .hero-actions{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:12px;
+    min-width:270px;
   }
 
-  .info-box {
-    border: 1px solid #e6ecef;
-    background: #f8fafc;
-    border-radius: 14px;
-    padding: 12px 14px;
+  .scope-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    padding:9px 15px;
+    border-radius:999px;
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.13);
+    font-size:.82rem;
+    font-weight:900;
+    white-space:nowrap;
   }
 
-  .info-box small {
-    display: block;
-    color: #64748b;
-    font-weight: 700;
-    font-size: 0.74rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    margin-bottom: 4px;
+  .scope-pill::before{
+    content:"";
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:currentColor;
   }
 
-  .info-box strong {
-    color: #0f172a;
-    font-size: 0.96rem;
+  .quick-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:flex-end;
   }
 
-  .table thead th {
-    background: #f8fafc;
-    color: #475569;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.035em;
-    border-bottom: 1px solid #e2e8f0;
+  /* =========================
+     BUTTONS
+     ========================= */
+  .pg-btn,
+  .pg-soft-action,
+  .clf-submit-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    border-radius:999px;
+    font-weight:900;
+    text-decoration:none;
+    line-height:1;
+    white-space:nowrap;
+    transition:background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
   }
 
-  .table td {
-    vertical-align: middle;
+  .pg-btn{
+    min-height:42px;
+    padding:.72rem 1.12rem;
+    font-size:.86rem;
   }
 
-  .clf-name-main {
-    font-weight: 800;
-    color: #0f172a;
+  .pg-btn:hover,
+  .pg-soft-action:hover,
+  .clf-submit-btn:hover{
+    transform:translateY(-1px);
   }
 
-  .text-soft {
-    color: #64748b;
+  .pg-btn-primary,
+  .clf-submit-btn{
+    background:var(--pg-brand);
+    border:1px solid var(--pg-brand);
+    color:#fff;
+    box-shadow:0 12px 24px rgba(11,77,58,.18);
   }
 
-  .empty-state {
-    padding: 38px 18px;
-    text-align: center;
-    color: #64748b;
+  .pg-btn-primary:hover,
+  .clf-submit-btn:hover{
+    background:var(--pg-brand-dark);
+    border-color:var(--pg-brand-dark);
+    color:#fff;
+    box-shadow:0 16px 28px rgba(11,77,58,.22);
   }
 
-  .quick-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  .pg-btn-soft{
+    background:#fff;
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.18);
+    box-shadow:var(--pg-shadow-soft);
   }
 
-  .quick-actions .btn {
-    border-radius: 999px;
-    font-weight: 700;
-    font-size: 0.82rem;
+  .pg-btn-soft:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.24);
   }
 
-  .mobile-clf-card {
-    display: none;
+  .pg-btn-outline{
+    background:rgba(255,255,255,.62);
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.18);
   }
 
-  @media (max-width: 991px) {
-    .info-grid {
-      grid-template-columns: 1fr;
+  .pg-btn-outline:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.26);
+  }
+
+  .btn-icon{
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:.75rem;
+    font-weight:950;
+    background:rgba(11,77,58,.09);
+  }
+
+  .pg-btn-primary .btn-icon,
+  .clf-submit-btn .btn-icon{
+    background:rgba(255,255,255,.18);
+  }
+
+  /* =========================
+     PANEL
+     ========================= */
+  .clf-panel{
+    background:var(--pg-surface);
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-xl);
+    box-shadow:var(--pg-shadow);
+    overflow:hidden;
+    margin-bottom:18px;
+  }
+
+  .panel-head{
+    padding:20px 22px;
+    background:
+      radial-gradient(circle at 96% 0%, rgba(173,231,196,.24), transparent 30%),
+      linear-gradient(180deg, #ffffff, #f9fcfa);
+    border-bottom:1px solid var(--pg-line-soft);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+
+  .panel-title{
+    display:flex;
+    align-items:flex-start;
+    gap:13px;
+  }
+
+  .panel-icon{
+    width:42px;
+    height:42px;
+    border-radius:16px;
+    background:var(--pg-brand-soft);
+    border:1px solid rgba(11,77,58,.11);
+    color:var(--pg-brand);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:950;
+    font-size:.86rem;
+    flex:0 0 auto;
+    box-shadow:0 8px 18px rgba(11,77,58,.06);
+  }
+
+  .panel-head h6{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:1.1rem;
+    font-weight:950;
+    letter-spacing:-.025em;
+    line-height:1.2;
+  }
+
+  .panel-head p{
+    margin:6px 0 0;
+    color:var(--pg-muted);
+    font-size:.87rem;
+    font-weight:650;
+    line-height:1.45;
+  }
+
+  .panel-body{
+    padding:21px 22px 23px;
+  }
+
+  .count-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    padding:8px 14px;
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.13);
+    font-size:.78rem;
+    font-weight:950;
+    white-space:nowrap;
+  }
+
+  /* =========================
+     INFO CARDS
+     ========================= */
+  .info-grid{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:14px;
+    margin-bottom:18px;
+  }
+
+  .info-box{
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 92% 12%, rgba(173,231,196,.24), transparent 34%),
+      linear-gradient(180deg, #ffffff, var(--pg-surface-soft));
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-lg);
+    padding:17px;
+    min-height:96px;
+    box-shadow:var(--pg-shadow-soft);
+  }
+
+  .info-box::after{
+    content:"";
+    position:absolute;
+    right:-24px;
+    bottom:-30px;
+    width:76px;
+    height:76px;
+    border-radius:50%;
+    background:rgba(173,231,196,.20);
+    pointer-events:none;
+  }
+
+  .info-box small{
+    position:relative;
+    z-index:1;
+    display:block;
+    color:var(--pg-muted);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.065em;
+    font-weight:900;
+    margin-bottom:8px;
+    line-height:1.2;
+  }
+
+  .info-box strong{
+    position:relative;
+    z-index:1;
+    display:block;
+    color:var(--pg-ink);
+    font-size:1rem;
+    font-weight:950;
+    line-height:1.35;
+    word-break:break-word;
+  }
+
+  /* =========================
+     FORM
+     ========================= */
+  .clf-form-label{
+    display:block;
+    font-size:.77rem;
+    font-weight:950;
+    color:var(--pg-brand);
+    margin-bottom:8px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+  }
+
+  .clf-input{
+    min-height:49px;
+    border-radius:999px;
+    border:1px solid #dce8e1;
+    background:#fff;
+    color:var(--pg-ink);
+    padding:10px 17px;
+    font-size:.92rem;
+    font-weight:700;
+    outline:none;
+    box-shadow:none;
+  }
+
+  .clf-input::placeholder{
+    color:rgba(95,111,103,.72);
+    font-weight:650;
+  }
+
+  .clf-input:focus{
+    border-color:#8cc9a5;
+    box-shadow:0 0 0 .22rem rgba(173,231,196,.38);
+  }
+
+  .form-text{
+    color:var(--pg-muted);
+    font-weight:650;
+    font-size:.82rem;
+    margin-top:8px;
+  }
+
+  .clf-submit-btn{
+    width:10%;
+    min-height:49px;
+    padding:.75rem 1.1rem;
+    font-size:.9rem;
+  }
+
+  /* =========================
+     TABLE
+     ========================= */
+  .table-shell{
+    overflow-x:auto;
+  }
+
+  .clf-table{
+    margin:0;
+    min-width:960px;
+    border-collapse:separate;
+    border-spacing:0;
+  }
+
+  .clf-table thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:#f4f9f6;
+    color:var(--pg-brand);
+    font-size:.73rem;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.065em;
+    border-bottom:1px solid #dce9e1;
+    padding:15px 16px;
+    white-space:nowrap;
+  }
+
+  .clf-table thead th:first-child{
+    padding-left:20px;
+  }
+
+  .clf-table tbody td{
+    vertical-align:middle;
+    padding:16px;
+    border-bottom:1px solid #edf2ef;
+    background:#fff;
+    color:var(--pg-ink);
+    font-size:.9rem;
+  }
+
+  .clf-table tbody tr:last-child td{
+    border-bottom:0;
+  }
+
+  .clf-table tbody tr{
+    transition:background .16s ease;
+  }
+
+  .clf-table tbody tr:hover td{
+    background:#fbfefc;
+  }
+
+  .sl-no{
+    width:36px;
+    height:36px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:12px;
+    background:var(--pg-brand-soft);
+    color:var(--pg-brand);
+    font-weight:950;
+    border:1px solid rgba(11,77,58,.10);
+  }
+
+  .clf-identity{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    min-width:0;
+  }
+
+  .clf-name-main{
+    color:var(--pg-ink);
+    font-weight:950;
+    line-height:1.25;
+    letter-spacing:-.01em;
+    word-break:break-word;
+  }
+
+  .clf-id-text{
+    color:var(--pg-muted-2);
+    font-size:.76rem;
+    font-weight:650;
+    word-break:break-word;
+  }
+
+  .location-main{
+    color:var(--pg-ink);
+    font-weight:750;
+    line-height:1.35;
+  }
+
+  .soft-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    border-radius:999px;
+    padding:7px 12px;
+    font-size:.73rem;
+    font-weight:950;
+    border:1px solid transparent;
+    white-space:nowrap;
+    line-height:1;
+    min-height:30px;
+  }
+
+  .soft-badge::before{
+    content:"";
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:currentColor;
+  }
+
+  .soft-badge.active{
+    background:var(--pg-success-soft);
+    color:var(--pg-success);
+    border-color:rgba(25,135,84,.16);
+  }
+
+  .soft-badge.default{
+    background:var(--pg-neutral-soft);
+    color:var(--pg-neutral-text);
+    border-color:#e2e8f0;
+  }
+
+  .pg-soft-action{
+    min-height:38px;
+    padding:.62rem 1rem;
+    color:var(--pg-brand);
+    background:#fff;
+    border:1px solid rgba(11,77,58,.20);
+    font-size:.8rem;
+    box-shadow:0 7px 14px rgba(15,23,42,.04);
+  }
+
+  .pg-soft-action:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.25);
+    box-shadow:0 10px 18px rgba(15,23,42,.06);
+  }
+
+  .empty-state{
+    padding:52px 18px;
+    text-align:center;
+    color:var(--pg-muted);
+  }
+
+  .empty-state-icon{
+    width:54px;
+    height:54px;
+    margin:0 auto 14px;
+    border-radius:19px;
+    background:var(--pg-brand-soft);
+    color:var(--pg-brand);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:950;
+    border:1px solid rgba(11,77,58,.10);
+  }
+
+  .empty-state strong{
+    display:block;
+    color:var(--pg-brand);
+    font-size:1.02rem;
+    font-weight:950;
+    margin-bottom:7px;
+  }
+
+  .empty-state div{
+    font-size:.9rem;
+    font-weight:650;
+  }
+
+  /* =========================
+     MOBILE CARDS
+     ========================= */
+  .mobile-clf-list{
+    display:none;
+  }
+
+  .mobile-card{
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 94% 8%, rgba(173,231,196,.20), transparent 35%),
+      linear-gradient(180deg, #ffffff, #fbfefc);
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-lg);
+    padding:16px;
+    box-shadow:var(--pg-shadow-soft);
+  }
+
+  .mobile-card + .mobile-card{
+    margin-top:12px;
+  }
+
+  .mobile-card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:13px;
+  }
+
+  .mobile-info{
+    display:grid;
+    gap:8px;
+    color:var(--pg-ink);
+    font-size:.88rem;
+    margin-bottom:14px;
+    padding:12px;
+    border-radius:14px;
+    background:rgba(248,252,250,.82);
+    border:1px solid var(--pg-line-soft);
+  }
+
+  .mobile-info strong{
+    color:var(--pg-brand);
+    font-weight:900;
+  }
+
+  .mobile-action-stack{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+
+  .mobile-action-stack .pg-soft-action{
+    width:100%;
+    padding:.78rem 1rem;
+  }
+
+  /* =========================
+     RESPONSIVE
+     ========================= */
+  @media (max-width:991px){
+    .info-grid{
+      grid-template-columns:1fr;
     }
 
-    .clf-header {
-      padding: 18px;
+    .clf-page-hero{
+      padding:22px;
+      border-radius:22px;
+    }
+
+    .hero-actions{
+      min-width:240px;
     }
   }
 
-  @media (max-width: 767px) {
-    .desktop-table-wrap {
-      display: none;
+  @media (max-width:767px){
+    .clf-page-wrap{
+      padding-bottom:18px;
     }
 
-    .mobile-clf-card {
-      display: block;
+    .clf-page-hero{
+      padding:20px;
     }
 
-    .mobile-clf-card .mini-card {
-      border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 14px;
-      background: #fff;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-      margin-bottom: 12px;
+    .clf-page-hero h4{
+      font-size:1.42rem;
     }
 
-    .clf-header h4 {
-      font-size: 1.1rem;
+    .clf-page-hero p{
+      font-size:.9rem;
     }
 
-    .quick-actions {
-      width: 100%;
+    .hero-actions{
+      width:100%;
+      min-width:0;
+      align-items:stretch;
     }
 
-    .quick-actions .btn {
-      width: 100%;
+    .scope-pill{
+      justify-content:center;
+    }
+
+    .quick-actions{
+      width:100%;
+      justify-content:stretch;
+      display:grid;
+      grid-template-columns:1fr;
+    }
+
+    .quick-actions .pg-btn{
+      width:100%;
+      text-align:center;
+    }
+
+    .panel-head,
+    .panel-body{
+      padding:16px;
+    }
+
+    .panel-title{
+      width:100%;
+    }
+
+    .count-badge{
+      width:100%;
+    }
+
+    .desktop-table-wrap{
+      display:none;
+    }
+
+    .mobile-clf-list{
+      display:block;
+      padding:16px;
+    }
+  }
+
+  @media (max-width:420px){
+    .mobile-card-head{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+
+    .soft-badge{
+      width:auto;
     }
   }
 </style>
 
 <div class="clf-page-wrap">
-  <div class="clf-header mb-4">
-    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
-      <div>
-        <h4 class="mb-1">CLF Master</h4>
-        <p class="mb-0">
-          Create and manage CLFs under your mapped Block. CLF login and PG assignment are handled separately.
+
+  <div class="clf-page-hero">
+    <div class="clf-page-hero-inner">
+      <div class="clf-title-area">
+        <div class="title-kicker">
+          <span class="title-dot"></span>
+          Block Scope Master
+        </div>
+
+        <h4>CLF Master</h4>
+        <p>
+          Create and manage Cluster Level Federations under your mapped Block.
+          CLF login and PG assignment are handled separately.
         </p>
       </div>
 
-      <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
-        <span class="scope-pill">
-          Block Scope
-        </span>
+      <div class="hero-actions">
+        <span class="scope-pill">Block Scope</span>
 
         <div class="quick-actions">
-          <a href="{{ url_for('master_data.manage_clf_admins') }}" class="btn btn-light btn-sm">
+          <a href="{{ url_for('master_data.manage_clf_admins') }}" class="pg-btn pg-btn-soft">
+            <span class="btn-icon">👤</span>
             CLF Admins
           </a>
-          <a href="{{ url_for('master_data.clf_pg_assignment') }}" class="btn btn-outline-light btn-sm">
+
+          <a href="{{ url_for('master_data.clf_pg_assignment') }}" class="pg-btn pg-btn-outline">
+            <span class="btn-icon">↗</span>
             Assign PGs
           </a>
         </div>
@@ -220,13 +834,19 @@
     </div>
   </div>
 
-  <div class="card clf-card mb-4">
-    <div class="card-header">
-      <h6>Create CLF</h6>
+  <div class="clf-panel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <div class="panel-icon">+</div>
+        <div>
+          <h6>Create CLF</h6>
+          <p>Add a new Cluster Level Federation under your current Block and District.</p>
+        </div>
+      </div>
     </div>
 
-    <div class="card-body">
-      <div class="info-grid mb-3">
+    <div class="panel-body">
+      <div class="info-grid">
         <div class="info-box">
           <small>State</small>
           <strong>
@@ -261,7 +881,7 @@
         </div>
       </div>
 
-      <form method="post" class="row g-3">
+      <form method="post" class="row g-3 align-items-end">
         <div class="col-lg-8">
           <label class="clf-form-label">CLF Name</label>
           <input
@@ -275,9 +895,11 @@
             This CLF will be automatically mapped to your current Block and District.
           </div>
         </div>
+        <br>
 
-        <div class="col-lg-4 d-flex align-items-end">
-          <button class="btn btn-success clf-btn w-100" type="submit">
+        <div class="col-lg-4">
+          <button class="btn clf-submit-btn" type="submit">
+            <span class="btn-icon">+</span>
             Add CLF
           </button>
         </div>
@@ -285,59 +907,79 @@
     </div>
   </div>
 
-  <div class="card clf-card">
-    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <h6>CLFs under this Block</h6>
-      <span class="badge text-bg-success">{{ clfs|length }} CLF{{ '' if clfs|length == 1 else 's' }}</span>
+  <div class="clf-panel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <div class="panel-icon">CLF</div>
+        <div>
+          <h6>CLFs under this Block</h6>
+          <p>Review created CLFs and continue with login creation when required.</p>
+        </div>
+      </div>
+
+      <span class="count-badge">
+        {{ clfs|length }} CLF{{ '' if clfs|length == 1 else 's' }}
+      </span>
     </div>
 
-    <div class="card-body p-0">
-      <div class="desktop-table-wrap">
-        <table class="table table-hover mb-0">
+    <div class="panel-body p-0">
+      <div class="desktop-table-wrap table-shell">
+        <table class="table table-hover clf-table mb-0">
           <thead>
             <tr>
-              <th style="width: 70px;">#</th>
-              <th>CLF Name</th>
-              <th>Mapped Block</th>
-              <th>Mapped District</th>
-              <th>Status</th>
-              <th style="width: 170px;">Next Action</th>
+              <th style="width:76px;">#</th>
+              <th style="min-width:250px;">CLF Name</th>
+              <th style="min-width:180px;">Mapped Block</th>
+              <th style="min-width:180px;">Mapped District</th>
+              <th style="min-width:130px;">Status</th>
+              <th style="width:180px; min-width:180px;">Next Action</th>
             </tr>
           </thead>
+
           <tbody>
             {% for c in clfs %}
               <tr>
-                <td>{{ loop.index }}</td>
                 <td>
-                  <div class="clf-name-main">{{ c.name or c.clf_name or '-' }}</div>
-                  <small class="text-soft">
-                    ID: {{ c._id }}
-                  </small>
+                  <span class="sl-no">{{ loop.index }}</span>
                 </td>
+
                 <td>
-                  {% if block %}
-                    {{ block.name or '-' }}
-                  {% else %}
-                    -
-                  {% endif %}
+                  <div class="clf-identity">
+                    <div class="clf-name-main">{{ c.name or c.clf_name or '-' }}</div>
+                  </div>
                 </td>
+
                 <td>
-                  {% if district %}
-                    {{ district.name or '-' }}
-                  {% else %}
-                    -
-                  {% endif %}
+                  <div class="location-main">
+                    {% if block %}
+                      {{ block.name or '-' }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </div>
                 </td>
+
+                <td>
+                  <div class="location-main">
+                    {% if district %}
+                      {{ district.name or '-' }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </div>
+                </td>
+
                 <td>
                   {% set status = c.status or 'active' %}
                   {% if status == 'active' %}
-                    <span class="badge text-bg-success">Active</span>
+                    <span class="soft-badge active">Active</span>
                   {% else %}
-                    <span class="badge text-bg-secondary">{{ status|capitalize }}</span>
+                    <span class="soft-badge default">{{ status|capitalize }}</span>
                   {% endif %}
                 </td>
+
                 <td>
-                  <a href="{{ url_for('master_data.manage_clf_admins') }}" class="btn btn-sm btn-outline-success">
+                  <a href="{{ url_for('master_data.manage_clf_admins') }}" class="pg-soft-action">
                     Create Login
                   </a>
                 </td>
@@ -346,7 +988,8 @@
               <tr>
                 <td colspan="6">
                   <div class="empty-state">
-                    <strong>No CLFs created yet.</strong>
+                    <div class="empty-state-icon">CLF</div>
+                    <strong>No CLFs created yet</strong>
                     <div>Create your first CLF using the form above.</div>
                   </div>
                 </td>
@@ -356,46 +999,51 @@
         </table>
       </div>
 
-      <div class="mobile-clf-card p-3">
+      <div class="mobile-clf-list">
         {% for c in clfs %}
-          <div class="mini-card">
-            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-              <div>
+          <div class="mobile-card">
+            <div class="mobile-card-head">
+              <div class="clf-identity">
                 <div class="clf-name-main">{{ c.name or c.clf_name or '-' }}</div>
-                <small class="text-soft">ID: {{ c._id }}</small>
+                <span class="clf-id-text">ID: {{ c._id }}</span>
               </div>
 
               {% set status = c.status or 'active' %}
               {% if status == 'active' %}
-                <span class="badge text-bg-success">Active</span>
+                <span class="soft-badge active">Active</span>
               {% else %}
-                <span class="badge text-bg-secondary">{{ status|capitalize }}</span>
+                <span class="soft-badge default">{{ status|capitalize }}</span>
               {% endif %}
             </div>
 
-            <div class="small text-soft mb-2">
+            <div class="mobile-info">
               <div>
                 <strong>Block:</strong>
                 {% if block %}{{ block.name or '-' }}{% else %}-{% endif %}
               </div>
+
               <div>
                 <strong>District:</strong>
                 {% if district %}{{ district.name or '-' }}{% else %}-{% endif %}
               </div>
             </div>
 
-            <a href="{{ url_for('master_data.manage_clf_admins') }}" class="btn btn-sm btn-outline-success w-100">
-              Create CLF Login
-            </a>
+            <div class="mobile-action-stack">
+              <a href="{{ url_for('master_data.manage_clf_admins') }}" class="pg-soft-action">
+                Create CLF Login
+              </a>
+            </div>
           </div>
         {% else %}
           <div class="empty-state">
-            <strong>No CLFs created yet.</strong>
+            <div class="empty-state-icon">CLF</div>
+            <strong>No CLFs created yet</strong>
             <div>Create your first CLF using the form above.</div>
           </div>
         {% endfor %}
       </div>
     </div>
   </div>
+
 </div>
 {% endblock %}

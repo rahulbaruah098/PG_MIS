@@ -2,283 +2,982 @@
 
 {% block content %}
 <style>
-  .assignment-page {
-    max-width: 1240px;
-    margin: 0 auto;
+  :root{
+    --pg-shell: #eef6f2;
+    --pg-surface: #ffffff;
+    --pg-surface-soft: #f8fcfa;
+    --pg-header: #dfeee7;
+
+    --pg-brand: #0b4d3a;
+    --pg-brand-dark: #083d2f;
+    --pg-brand-soft: #e7f4ed;
+
+    --pg-mint: rgba(173,231,196,.38);
+    --pg-mint-strong: rgba(173,231,196,.52);
+
+    --pg-ink: #0f172a;
+    --pg-muted: #5f6f67;
+    --pg-muted-2: #64748b;
+
+    --pg-line: rgba(15,23,42,.10);
+    --pg-line-soft: rgba(15,23,42,.07);
+
+    --pg-success: #198754;
+    --pg-success-soft: rgba(25,135,84,.12);
+
+    --pg-warning: #e0a800;
+    --pg-warning-soft: rgba(255,193,7,.16);
+
+    --pg-danger: #c84343;
+    --pg-danger-soft: rgba(200,67,67,.10);
+
+    --pg-neutral-soft: #f8fafc;
+    --pg-neutral-text: #475569;
+
+    --pg-shadow: 0 14px 34px rgba(15,23,42,.08);
+    --pg-shadow-soft: 0 8px 22px rgba(15,23,42,.06);
+
+    --pg-radius-xl: 24px;
+    --pg-radius-lg: 18px;
+    --pg-radius-md: 14px;
   }
 
-  .assignment-hero {
-    background: linear-gradient(135deg, #064e3b, #198754);
-    color: #fff;
-    border-radius: 20px;
-    padding: 24px;
-    box-shadow: 0 16px 38px rgba(6, 78, 59, 0.22);
+  body{
+    background:var(--pg-shell);
   }
 
-  .assignment-hero h4 {
-    font-weight: 850;
-    letter-spacing: -0.03em;
+  .assignment-page{
+    width:100%;
+    max-width:1340px;
+    margin:0 auto;
+    padding-bottom:30px;
   }
 
-  .assignment-hero p {
-    color: rgba(255, 255, 255, 0.86);
+  /* =========================
+     PAGE HEADER
+     ========================= */
+  .assignment-hero{
+    position:relative;
+    overflow:hidden;
+    border-radius:var(--pg-radius-xl);
+    border:1px solid rgba(11,77,58,.12);
+    background:
+      radial-gradient(circle at 94% 8%, rgba(173,231,196,.48), transparent 34%),
+      radial-gradient(circle at 8% 94%, rgba(255,255,255,.82), transparent 38%),
+      linear-gradient(135deg, #ffffff 0%, #f8fcfa 48%, #e5f3eb 100%);
+    box-shadow:var(--pg-shadow);
+    padding:28px;
+    margin-bottom:18px;
   }
 
-  .scope-badge {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 7px 12px;
-    font-size: 0.82rem;
-    font-weight: 800;
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
-    white-space: nowrap;
+  .assignment-hero::before{
+    content:"";
+    position:absolute;
+    right:-88px;
+    bottom:-112px;
+    width:285px;
+    height:285px;
+    border-radius:50%;
+    background:rgba(173,231,196,.32);
+    pointer-events:none;
   }
 
-  .top-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  .assignment-hero::after{
+    content:"";
+    position:absolute;
+    top:-70px;
+    right:230px;
+    width:150px;
+    height:150px;
+    border-radius:50%;
+    background:rgba(255,255,255,.70);
+    border:1px solid rgba(11,77,58,.06);
+    pointer-events:none;
   }
 
-  .top-actions .btn {
-    border-radius: 999px;
-    font-weight: 750;
-    font-size: 0.84rem;
+  .hero-inner{
+    position:relative;
+    z-index:1;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:24px;
+    flex-wrap:wrap;
   }
 
-  .soft-card {
-    border: 0;
-    border-radius: 18px;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
-    overflow: hidden;
+  .hero-copy{
+    max-width:790px;
   }
 
-  .soft-card .card-header {
-    background: #fff;
-    border-bottom: 1px solid #e9ecef;
-    padding: 16px 18px;
+  .hero-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    margin-bottom:12px;
+    padding:8px 14px;
+    border-radius:999px;
+    background:rgba(255,255,255,.84);
+    border:1px solid rgba(11,77,58,.13);
+    color:var(--pg-brand);
+    font-size:.74rem;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.075em;
+    box-shadow:var(--pg-shadow-soft);
   }
 
-  .soft-card .card-header h6 {
-    margin: 0;
-    font-weight: 850;
-    color: #0f172a;
+  .hero-dot{
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:var(--pg-brand);
+    box-shadow:0 0 0 5px rgba(11,77,58,.08);
+    flex:0 0 auto;
   }
 
-  .scope-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+  .assignment-hero h4{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:clamp(1.65rem, 2.7vw, 2.3rem);
+    font-weight:950;
+    letter-spacing:-.045em;
+    line-height:1.05;
   }
 
-  .scope-box {
-    background: #f8fafc;
-    border: 1px solid #e6ecef;
-    border-radius: 14px;
-    padding: 12px 14px;
+  .assignment-hero p{
+    margin:11px 0 0;
+    color:var(--pg-muted);
+    font-size:.98rem;
+    font-weight:650;
+    line-height:1.58;
+    max-width:760px;
   }
 
-  .scope-box small {
-    display: block;
-    color: #64748b;
-    font-weight: 750;
-    text-transform: uppercase;
-    font-size: 0.74rem;
-    letter-spacing: 0.035em;
-    margin-bottom: 4px;
+  .hero-actions{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:12px;
+    min-width:270px;
   }
 
-  .scope-box strong {
-    color: #0f172a;
+  .scope-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    border-radius:999px;
+    padding:9px 15px;
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.13);
+    font-size:.82rem;
+    font-weight:950;
+    white-space:nowrap;
   }
 
-  .form-label-mini {
-    font-size: 0.8rem;
-    font-weight: 800;
-    color: #334155;
-    margin-bottom: 6px;
+  .scope-badge::before{
+    content:"";
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:currentColor;
   }
 
-  .form-select,
-  .form-control {
-    border-radius: 12px;
-    min-height: 44px;
-    border: 1px solid #d7dee8;
+  .top-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:flex-end;
   }
 
-  .form-select:focus,
-  .form-control:focus {
-    border-color: #198754;
-    box-shadow: 0 0 0 0.18rem rgba(25, 135, 84, 0.12);
+  /* =========================
+     BUTTONS
+     ========================= */
+  .pg-btn,
+  .pg-submit-btn,
+  .pg-tool-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    border-radius:999px;
+    font-weight:950;
+    text-decoration:none;
+    line-height:1;
+    white-space:nowrap;
+    transition:background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
   }
 
-  .btn-rounded {
-    border-radius: 12px;
-    min-height: 44px;
-    font-weight: 800;
+  .pg-btn:hover,
+  .pg-submit-btn:hover,
+  .pg-tool-btn:hover{
+    transform:translateY(-1px);
   }
 
-  .assignment-summary {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
+  .pg-btn{
+    min-height:42px;
+    padding:.72rem 1.12rem;
+    font-size:.86rem;
   }
 
-  .summary-card {
-    background: #fff;
-    border: 1px solid #e6ecef;
-    border-radius: 16px;
-    padding: 14px;
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+  .pg-btn-soft{
+    background:#fff;
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.18);
+    box-shadow:var(--pg-shadow-soft);
   }
 
-  .summary-card small {
-    color: #64748b;
-    font-size: 0.76rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.035em;
+  .pg-btn-soft:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.25);
   }
 
-  .summary-card strong {
-    display: block;
-    color: #0f172a;
-    font-size: 1.3rem;
-    line-height: 1.25;
-    margin-top: 4px;
+  .pg-btn-outline{
+    background:rgba(255,255,255,.62);
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.18);
   }
 
-  .pg-tools {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
+  .pg-btn-outline:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.26);
   }
 
-  .pg-search {
-    max-width: 360px;
+  .pg-submit-btn{
+    min-height:48px;
+    padding:.78rem 1.24rem;
+    font-size:.9rem;
+    background:var(--pg-brand);
+    border:1px solid var(--pg-brand);
+    color:#fff;
+    box-shadow:0 12px 24px rgba(11,77,58,.18);
   }
 
-  .table thead th {
-    background: #f8fafc;
-    color: #475569;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.035em;
-    border-bottom: 1px solid #e2e8f0;
+  .pg-submit-btn:hover{
+    background:var(--pg-brand-dark);
+    border-color:var(--pg-brand-dark);
+    color:#fff;
+    box-shadow:0 16px 28px rgba(11,77,58,.22);
   }
 
-  .table td {
-    vertical-align: middle;
+  .pg-tool-btn{
+    min-height:40px;
+    padding:.66rem 1rem;
+    font-size:.8rem;
+    background:#fff;
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.20);
+    box-shadow:0 7px 14px rgba(15,23,42,.04);
   }
 
-  .pg-name {
-    font-weight: 850;
-    color: #0f172a;
+  .pg-tool-btn:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.25);
+    box-shadow:0 10px 18px rgba(15,23,42,.06);
   }
 
-  .text-soft {
-    color: #64748b;
+  .pg-tool-danger{
+    color:var(--pg-danger);
+    border-color:rgba(200,67,67,.22);
   }
 
-  .assignment-check {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
+  .pg-tool-danger:hover{
+    color:var(--pg-danger);
+    background:var(--pg-danger-soft);
+    border-color:rgba(200,67,67,.28);
   }
 
-  .assigned-pill {
-    border-radius: 999px;
-    padding: 5px 9px;
-    font-size: 0.75rem;
-    font-weight: 800;
+  .btn-icon{
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:.72rem;
+    font-weight:950;
+    background:rgba(11,77,58,.09);
+    flex:0 0 auto;
   }
 
-  .empty-state {
-    padding: 40px 18px;
-    color: #64748b;
-    text-align: center;
+  .pg-submit-btn .btn-icon{
+    background:rgba(255,255,255,.18);
   }
 
-  .mobile-pg-list {
-    display: none;
+  /* =========================
+     PANELS
+     ========================= */
+  .mis-panel{
+    background:var(--pg-surface);
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-xl);
+    box-shadow:var(--pg-shadow);
+    overflow:hidden;
+    margin-bottom:18px;
   }
 
-  .mobile-pg-card {
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    background: #fff;
-    padding: 14px;
-    margin-bottom: 12px;
-    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+  .mis-panel-head{
+    padding:20px 22px;
+    background:
+      radial-gradient(circle at 96% 0%, rgba(173,231,196,.24), transparent 30%),
+      linear-gradient(180deg, #ffffff, #f9fcfa);
+    border-bottom:1px solid var(--pg-line-soft);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
   }
 
-  .sticky-save {
-    position: sticky;
-    bottom: 12px;
-    z-index: 10;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(10px);
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 12px;
-    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+  .mis-title{
+    display:flex;
+    align-items:flex-start;
+    gap:13px;
   }
 
-  @media (max-width: 991px) {
+  .mis-icon{
+    width:42px;
+    height:42px;
+    border-radius:16px;
+    background:var(--pg-brand-soft);
+    border:1px solid rgba(11,77,58,.11);
+    color:var(--pg-brand);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:950;
+    font-size:.86rem;
+    flex:0 0 auto;
+    box-shadow:0 8px 18px rgba(11,77,58,.06);
+  }
+
+  .mis-panel-head h6{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:1.1rem;
+    font-weight:950;
+    letter-spacing:-.025em;
+    line-height:1.2;
+  }
+
+  .mis-panel-head p{
+    margin:6px 0 0;
+    color:var(--pg-muted);
+    font-size:.87rem;
+    font-weight:650;
+    line-height:1.45;
+  }
+
+  .mis-panel-body{
+    padding:21px 22px 23px;
+  }
+
+  /* =========================
+     SCOPE CARDS
+     ========================= */
+  .scope-grid{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:14px;
+  }
+
+  .scope-box{
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 92% 12%, rgba(173,231,196,.24), transparent 34%),
+      linear-gradient(180deg, #ffffff, var(--pg-surface-soft));
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-lg);
+    padding:17px;
+    min-height:96px;
+    box-shadow:var(--pg-shadow-soft);
+  }
+
+  .scope-box::after{
+    content:"";
+    position:absolute;
+    right:-24px;
+    bottom:-30px;
+    width:76px;
+    height:76px;
+    border-radius:50%;
+    background:rgba(173,231,196,.20);
+    pointer-events:none;
+  }
+
+  .scope-box small,
+  .summary-card small{
+    position:relative;
+    z-index:1;
+    display:block;
+    color:var(--pg-muted);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.065em;
+    font-weight:950;
+    margin-bottom:8px;
+    line-height:1.2;
+  }
+
+  .scope-box strong{
+    position:relative;
+    z-index:1;
+    display:block;
+    color:var(--pg-ink);
+    font-size:1rem;
+    font-weight:950;
+    line-height:1.35;
+    word-break:break-word;
+  }
+
+  /* =========================
+     FORM
+     ========================= */
+  .form-label-mini{
+    display:block;
+    font-size:.77rem;
+    font-weight:950;
+    color:var(--pg-brand);
+    margin-bottom:8px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+  }
+
+  .assignment-page .form-control,
+  .assignment-page .form-select{
+    min-height:48px;
+    border-radius:999px;
+    border:1px solid #dce8e1;
+    background:#fff;
+    color:var(--pg-ink);
+    padding:10px 16px;
+    font-size:.9rem;
+    font-weight:700;
+    outline:none;
+    box-shadow:none;
+  }
+
+  .assignment-page .form-select{
+    padding-right:38px;
+  }
+
+  .assignment-page .form-control::placeholder{
+    color:rgba(95,111,103,.72);
+    font-weight:650;
+  }
+
+  .assignment-page .form-control:focus,
+  .assignment-page .form-select:focus{
+    border-color:#8cc9a5;
+    box-shadow:0 0 0 .22rem rgba(173,231,196,.38);
+  }
+
+  .assignment-page .form-text{
+    color:var(--pg-muted);
+    font-weight:650;
+    font-size:.81rem;
+    margin-top:8px;
+  }
+
+  .no-data-alert{
+    border:1px solid rgba(224,168,0,.24);
+    background:var(--pg-warning-soft);
+    color:#7a5b00;
+    border-radius:var(--pg-radius-lg);
+    padding:15px 16px;
+    font-weight:750;
+    line-height:1.45;
+  }
+
+  .no-data-alert a{
+    color:var(--pg-brand);
+    font-weight:950;
+  }
+
+  /* =========================
+     SUMMARY
+     ========================= */
+  .assignment-summary{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:14px;
+    margin-bottom:18px;
+  }
+
+  .summary-card{
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 92% 12%, rgba(173,231,196,.22), transparent 34%),
+      linear-gradient(180deg, #ffffff, var(--pg-surface-soft));
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-lg);
+    padding:17px;
+    min-height:105px;
+    box-shadow:var(--pg-shadow-soft);
+  }
+
+  .summary-card::after{
+    content:"";
+    position:absolute;
+    right:-28px;
+    bottom:-34px;
+    width:86px;
+    height:86px;
+    border-radius:50%;
+    background:rgba(173,231,196,.18);
+    pointer-events:none;
+  }
+
+  .summary-card strong{
+    position:relative;
+    z-index:1;
+    display:block;
+    color:var(--pg-ink);
+    font-size:1.48rem;
+    font-weight:950;
+    line-height:1.2;
+    word-break:break-word;
+  }
+
+  .summary-card .summary-name{
+    font-size:1rem;
+    line-height:1.35;
+  }
+
+  /* =========================
+     PG TOOLS
+     ========================= */
+  .pg-tools{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+    width:100%;
+  }
+
+  .pg-tools-title{
+    display:flex;
+    align-items:flex-start;
+    gap:13px;
+  }
+
+  .pg-tools-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:9px;
+    flex-wrap:wrap;
+  }
+
+  .pg-search{
+    width:360px;
+    max-width:100%;
+  }
+
+  /* =========================
+     TABLE
+     ========================= */
+  .table-shell{
+    overflow-x:auto;
+  }
+
+  .pg-table{
+    margin:0;
+    min-width:1080px;
+    border-collapse:separate;
+    border-spacing:0;
+  }
+
+  .pg-table thead th{
+    background:#f4f9f6;
+    color:var(--pg-brand);
+    font-size:.73rem;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.065em;
+    border-bottom:1px solid #dce9e1;
+    padding:15px 16px;
+    white-space:nowrap;
+  }
+
+  .pg-table thead th:first-child{
+    padding-left:20px;
+  }
+
+  .pg-table tbody td{
+    vertical-align:middle;
+    padding:16px;
+    border-bottom:1px solid #edf2ef;
+    background:#fff;
+    color:var(--pg-ink);
+    font-size:.9rem;
+  }
+
+  .pg-table tbody tr:last-child td{
+    border-bottom:0;
+  }
+
+  .pg-table tbody tr:hover td{
+    background:#fbfefc;
+  }
+
+  .pg-name{
+    color:var(--pg-ink);
+    font-weight:950;
+    line-height:1.25;
+    letter-spacing:-.01em;
+    word-break:break-word;
+  }
+
+  .text-soft{
+    color:var(--pg-muted-2);
+    font-size:.76rem;
+    font-weight:650;
+    word-break:break-word;
+  }
+
+  .location-text{
+    color:var(--pg-ink);
+    font-weight:750;
+    line-height:1.35;
+  }
+
+  .assignment-check{
+    width:19px;
+    height:19px;
+    cursor:pointer;
+    border-color:rgba(11,77,58,.32);
+  }
+
+  .assignment-check:checked{
+    background-color:var(--pg-brand);
+    border-color:var(--pg-brand);
+  }
+
+  .assignment-check:focus{
+    box-shadow:0 0 0 .22rem rgba(173,231,196,.38);
+    border-color:#8cc9a5;
+  }
+
+  .check-cell{
+    width:44px;
+    height:44px;
+    border-radius:15px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--pg-brand-soft);
+    border:1px solid rgba(11,77,58,.10);
+  }
+
+  .assigned-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    border-radius:999px;
+    padding:7px 12px;
+    font-size:.73rem;
+    font-weight:950;
+    border:1px solid transparent;
+    white-space:nowrap;
+    line-height:1;
+    min-height:30px;
+  }
+
+  .assigned-pill::before{
+    content:"";
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:currentColor;
+  }
+
+  .pill-selected{
+    background:var(--pg-success-soft);
+    color:var(--pg-success);
+    border-color:rgba(25,135,84,.16);
+  }
+
+  .pill-warning{
+    background:var(--pg-warning-soft);
+    color:#9a7100;
+    border-color:rgba(224,168,0,.22);
+  }
+
+  .pill-neutral{
+    background:var(--pg-neutral-soft);
+    color:var(--pg-neutral-text);
+    border-color:#e2e8f0;
+  }
+
+  .pill-brand{
+    background:var(--pg-brand-soft);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.12);
+  }
+
+  .empty-state{
+    padding:52px 18px;
+    text-align:center;
+    color:var(--pg-muted);
+  }
+
+  .empty-state-icon{
+    width:54px;
+    height:54px;
+    margin:0 auto 14px;
+    border-radius:19px;
+    background:var(--pg-brand-soft);
+    color:var(--pg-brand);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:950;
+    border:1px solid rgba(11,77,58,.10);
+  }
+
+  .empty-state strong{
+    display:block;
+    color:var(--pg-brand);
+    font-size:1.02rem;
+    font-weight:950;
+    margin-bottom:7px;
+  }
+
+  .empty-state div{
+    font-size:.9rem;
+    font-weight:650;
+  }
+
+  /* =========================
+     MOBILE PG CARDS
+     ========================= */
+  .mobile-pg-list{
+    display:none;
+  }
+
+  .mobile-pg-card{
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 94% 8%, rgba(173,231,196,.20), transparent 35%),
+      linear-gradient(180deg, #ffffff, #fbfefc);
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-lg);
+    padding:16px;
+    box-shadow:var(--pg-shadow-soft);
+  }
+
+  .mobile-pg-card + .mobile-pg-card{
+    margin-top:12px;
+  }
+
+  .mobile-card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+    margin-bottom:13px;
+  }
+
+  .mobile-meta{
+    display:grid;
+    gap:8px;
+    color:var(--pg-ink);
+    font-size:.88rem;
+    margin-bottom:14px;
+    padding:12px;
+    border-radius:14px;
+    background:rgba(248,252,250,.82);
+    border:1px solid var(--pg-line-soft);
+  }
+
+  .mobile-meta strong{
+    color:var(--pg-brand);
+    font-weight:900;
+  }
+
+  /* =========================
+     STICKY SAVE
+     ========================= */
+  .sticky-save{
+    position:sticky;
+    bottom:14px;
+    z-index:10;
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    border:1px solid rgba(11,77,58,.12);
+    border-radius:var(--pg-radius-lg);
+    padding:14px;
+    box-shadow:0 16px 34px rgba(15,23,42,.14);
+  }
+
+  .sticky-save-inner{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+
+  .sticky-save strong{
+    display:block;
+    color:var(--pg-brand);
+    font-size:.96rem;
+    font-weight:950;
+    margin-bottom:3px;
+  }
+
+  .sticky-save .text-soft{
+    font-size:.82rem;
+  }
+
+  /* =========================
+     RESPONSIVE
+     ========================= */
+  @media (max-width:991px){
     .scope-grid,
-    .assignment-summary {
-      grid-template-columns: 1fr;
+    .assignment-summary{
+      grid-template-columns:1fr;
     }
 
-    .assignment-hero {
-      padding: 18px;
+    .assignment-hero{
+      padding:22px;
+      border-radius:22px;
+    }
+
+    .hero-actions{
+      min-width:240px;
     }
   }
 
-  @media (max-width: 767px) {
-    .desktop-table {
-      display: none;
+  @media (max-width:767px){
+    .assignment-page{
+      padding-bottom:18px;
     }
 
-    .mobile-pg-list {
-      display: block;
+    .assignment-hero{
+      padding:20px;
     }
 
-    .top-actions,
-    .top-actions .btn,
-    .pg-search {
-      width: 100%;
-      max-width: 100%;
+    .assignment-hero h4{
+      font-size:1.42rem;
     }
 
-    .assignment-hero h4 {
-      font-size: 1.12rem;
+    .assignment-hero p{
+      font-size:.9rem;
+    }
+
+    .hero-actions{
+      width:100%;
+      min-width:0;
+      align-items:stretch;
+    }
+
+    .scope-badge{
+      justify-content:center;
+    }
+
+    .top-actions{
+      width:100%;
+      justify-content:stretch;
+      display:grid;
+      grid-template-columns:1fr;
+    }
+
+    .top-actions .pg-btn{
+      width:100%;
+    }
+
+    .mis-panel-head,
+    .mis-panel-body{
+      padding:16px;
+    }
+
+    .mis-title,
+    .pg-tools-title{
+      width:100%;
+    }
+
+    .pg-tools-actions{
+      width:100%;
+      display:grid;
+      grid-template-columns:1fr;
+    }
+
+    .pg-search,
+    .pg-tool-btn{
+      width:100%;
+    }
+
+    .desktop-table{
+      display:none;
+    }
+
+    .mobile-pg-list{
+      display:block;
+      padding:16px;
+    }
+
+    .sticky-save{
+      bottom:10px;
+      border-radius:18px;
+    }
+
+    .sticky-save-inner{
+      display:grid;
+      grid-template-columns:1fr;
+    }
+
+    .pg-submit-btn{
+      width:100%;
+    }
+  }
+
+  @media (max-width:420px){
+    .mobile-card-head{
+      flex-direction:column;
+      align-items:flex-start;
     }
   }
 </style>
 
 <div class="assignment-page">
-  <div class="assignment-hero mb-4">
-    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
-      <div>
-        <h4 class="mb-1">Assign PGs to CLF</h4>
-        <p class="mb-0">
-          Map PGs under your Block to a CLF Admin. The selected CLF Admin will only operate the assigned PGs.
+
+  <div class="assignment-hero">
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <div class="hero-kicker">
+          <span class="hero-dot"></span>
+          CLF PG Mapping
+        </div>
+
+        <h4>Assign PGs to CLF</h4>
+        <p>
+          Map Producer Groups under your Block to a selected CLF Admin. The selected account will operate only the assigned PGs within its mapped CLF scope.
         </p>
       </div>
 
-      <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
+      <div class="hero-actions">
         <span class="scope-badge">Block Scope</span>
 
         <div class="top-actions">
-          <a href="{{ url_for('master_data.manage_clfs') }}" class="btn btn-light btn-sm">
+          <a href="{{ url_for('master_data.manage_clfs') }}" class="pg-btn pg-btn-soft">
+            <span class="btn-icon">M</span>
             CLF Master
           </a>
-          <a href="{{ url_for('master_data.manage_clf_admins') }}" class="btn btn-outline-light btn-sm">
+
+          <a href="{{ url_for('master_data.manage_clf_admins') }}" class="pg-btn pg-btn-outline">
+            <span class="btn-icon">A</span>
             CLF Admins
           </a>
         </div>
@@ -286,12 +985,18 @@
     </div>
   </div>
 
-  <div class="card soft-card mb-4">
-    <div class="card-header">
-      <h6>Current Scope</h6>
+  <div class="mis-panel">
+    <div class="mis-panel-head">
+      <div class="mis-title">
+        <div class="mis-icon">SCP</div>
+        <div>
+          <h6>Current Scope</h6>
+          <p>Assignment is restricted to the State, District, and Block mapped to your login.</p>
+        </div>
+      </div>
     </div>
 
-    <div class="card-body">
+    <div class="mis-panel-body">
       <div class="scope-grid">
         <div class="scope-box">
           <small>State</small>
@@ -329,12 +1034,18 @@
     </div>
   </div>
 
-  <div class="card soft-card mb-4">
-    <div class="card-header">
-      <h6>Select CLF Admin</h6>
+  <div class="mis-panel">
+    <div class="mis-panel-head">
+      <div class="mis-title">
+        <div class="mis-icon">ADM</div>
+        <div>
+          <h6>Select CLF Admin</h6>
+          <p>Select one CLF Admin first. Then assign or unassign PGs below.</p>
+        </div>
+      </div>
     </div>
 
-    <div class="card-body">
+    <div class="mis-panel-body">
       {% if clf_admins %}
         <form method="get" class="row g-3 align-items-end">
           <div class="col-lg-8">
@@ -352,20 +1063,21 @@
               {% endfor %}
             </select>
             <div class="form-text">
-              Select one CLF Admin first. Then assign or unassign PGs below.
+              The assignment table will load for the selected CLF Admin.
             </div>
           </div>
 
           <div class="col-lg-4">
-            <button type="submit" class="btn btn-success btn-rounded w-100">
+            <button type="submit" class="btn pg-submit-btn w-100">
+              <span class="btn-icon">↗</span>
               Load Assignment
             </button>
           </div>
         </form>
       {% else %}
-        <div class="alert alert-warning mb-0">
+        <div class="no-data-alert mb-0">
           No active CLF Admin found under your Block. Please create one from
-          <a href="{{ url_for('master_data.manage_clf_admins') }}" class="alert-link">CLF Admins</a>.
+          <a href="{{ url_for('master_data.manage_clf_admins') }}">CLF Admins</a>.
         </div>
       {% endif %}
     </div>
@@ -375,17 +1087,17 @@
     {% set selected_count = selected_assigned_ids|length %}
     {% set total_pgs = pgs|length %}
 
-    <div class="assignment-summary mb-4">
+    <div class="assignment-summary">
       <div class="summary-card">
         <small>Selected CLF Admin</small>
-        <strong style="font-size: 1rem;">
+        <strong class="summary-name">
           {{ selected_admin.full_name or selected_admin.name or selected_admin.username or '-' }}
         </strong>
       </div>
 
       <div class="summary-card">
         <small>Mapped CLF</small>
-        <strong style="font-size: 1rem;">
+        <strong class="summary-name">
           {% for clf in clfs %}
             {% if clf._id|string == selected_admin.clf_id|string %}
               {{ clf.name or clf.clf_name or '-' }}
@@ -408,12 +1120,18 @@
     <form method="post" id="assignmentForm">
       <input type="hidden" name="clf_admin_id" value="{{ selected_admin._id }}">
 
-      <div class="card soft-card">
-        <div class="card-header">
+      <div class="mis-panel">
+        <div class="mis-panel-head">
           <div class="pg-tools">
-            <h6>PG Assignment List</h6>
+            <div class="pg-tools-title">
+              <div class="mis-icon">PG</div>
+              <div>
+                <h6>PG Assignment List</h6>
+                <p>Search, select visible PGs, clear visible PGs, and save final CLF Admin assignment.</p>
+              </div>
+            </div>
 
-            <div class="d-flex flex-wrap gap-2">
+            <div class="pg-tools-actions">
               <input
                 type="text"
                 class="form-control pg-search"
@@ -422,30 +1140,31 @@
                 autocomplete="off"
               >
 
-              <button type="button" class="btn btn-outline-success btn-sm" id="selectAllBtn">
+              <button type="button" class="btn pg-tool-btn" id="selectAllBtn">
                 Select All Visible
               </button>
 
-              <button type="button" class="btn btn-outline-danger btn-sm" id="clearVisibleBtn">
+              <button type="button" class="btn pg-tool-btn pg-tool-danger" id="clearVisibleBtn">
                 Clear Visible
               </button>
             </div>
           </div>
         </div>
 
-        <div class="card-body p-0">
-          <div class="desktop-table">
-            <table class="table table-hover mb-0" id="pgTable">
+        <div class="mis-panel-body p-0">
+          <div class="desktop-table table-shell">
+            <table class="table table-hover pg-table mb-0" id="pgTable">
               <thead>
                 <tr>
-                  <th style="width: 62px;">Assign</th>
-                  <th>PG Name</th>
-                  <th>Gram Panchayat</th>
-                  <th>Village</th>
-                  <th>Current CLF</th>
-                  <th>Current Status</th>
+                  <th style="width:82px;">Assign</th>
+                  <th style="min-width:260px;">PG Name</th>
+                  <th style="min-width:170px;">Gram Panchayat</th>
+                  <th style="min-width:160px;">Village</th>
+                  <th style="min-width:190px;">Current CLF</th>
+                  <th style="min-width:170px;">Current Status</th>
                 </tr>
               </thead>
+
               <tbody>
                 {% for pg in pgs %}
                   {% set pg_id = pg._id|string %}
@@ -456,13 +1175,15 @@
                     data-search="{{ (pg.display_name or pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or '')|lower }} {{ (pg.Block or '')|lower }}"
                   >
                     <td>
-                      <input
-                        type="checkbox"
-                        class="form-check-input assignment-check pg-checkbox"
-                        name="pg_ids"
-                        value="{{ pg._id }}"
-                        {% if checked %}checked{% endif %}
-                      >
+                      <span class="check-cell">
+                        <input
+                          type="checkbox"
+                          class="form-check-input assignment-check pg-checkbox"
+                          name="pg_ids"
+                          value="{{ pg._id }}"
+                          {% if checked %}checked{% endif %}
+                        >
+                      </span>
                     </td>
 
                     <td>
@@ -470,17 +1191,22 @@
                       <small class="text-soft">PG ID: {{ pg._id }}</small>
                     </td>
 
-                    <td>{{ pg['Gram Panchayat'] or '-' }}</td>
-                    <td>{{ pg.Village or '-' }}</td>
+                    <td>
+                      <div class="location-text">{{ pg['Gram Panchayat'] or '-' }}</div>
+                    </td>
+
+                    <td>
+                      <div class="location-text">{{ pg.Village or '-' }}</div>
+                    </td>
 
                     <td>
                       {% if pg.clf_id %}
-                        <span class="badge text-bg-light border assigned-pill">
+                        <span class="assigned-pill pill-brand">
                           Mapped
                         </span>
-                        <div class="small text-soft mt-1">CLF ID: {{ pg.clf_id }}</div>
+                        <div class="text-soft mt-1">CLF ID: {{ pg.clf_id }}</div>
                       {% else %}
-                        <span class="badge text-bg-warning assigned-pill">
+                        <span class="assigned-pill pill-warning">
                           Not mapped
                         </span>
                       {% endif %}
@@ -488,11 +1214,11 @@
 
                     <td>
                       {% if checked %}
-                        <span class="badge text-bg-success assigned-pill live-status">Selected</span>
+                        <span class="assigned-pill pill-selected live-status">Selected</span>
                       {% elif currently_assigned_user %}
-                        <span class="badge text-bg-secondary assigned-pill live-status">Assigned elsewhere</span>
+                        <span class="assigned-pill pill-neutral live-status">Assigned elsewhere</span>
                       {% else %}
-                        <span class="badge text-bg-light border assigned-pill live-status">Unassigned</span>
+                        <span class="assigned-pill pill-neutral live-status">Unassigned</span>
                       {% endif %}
                     </td>
                   </tr>
@@ -500,7 +1226,8 @@
                   <tr>
                     <td colspan="6">
                       <div class="empty-state">
-                        <strong>No PGs found under this Block.</strong>
+                        <div class="empty-state-icon">PG</div>
+                        <strong>No PGs found under this Block</strong>
                         <div>Create PGs first, then assign them to CLFs.</div>
                       </div>
                     </td>
@@ -510,7 +1237,7 @@
             </table>
           </div>
 
-          <div class="mobile-pg-list p-3" id="mobilePgList">
+          <div class="mobile-pg-list" id="mobilePgList">
             {% for pg in pgs %}
               {% set pg_id = pg._id|string %}
               {% set checked = pg_id in selected_assigned_ids %}
@@ -519,38 +1246,41 @@
                 class="mobile-pg-card pg-row"
                 data-search="{{ (pg.display_name or pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or '')|lower }} {{ (pg.Block or '')|lower }}"
               >
-                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                <div class="mobile-card-head">
                   <div>
                     <div class="pg-name">{{ pg.display_name or pg.name or pg.pg_name or '-' }}</div>
                     <small class="text-soft">PG ID: {{ pg._id }}</small>
                   </div>
 
-                  <input
-                    type="checkbox"
-                    class="form-check-input assignment-check pg-checkbox"
-                    name="pg_ids"
-                    value="{{ pg._id }}"
-                    {% if checked %}checked{% endif %}
-                  >
+                  <span class="check-cell">
+                    <input
+                      type="checkbox"
+                      class="form-check-input assignment-check pg-checkbox"
+                      name="pg_ids"
+                      value="{{ pg._id }}"
+                      {% if checked %}checked{% endif %}
+                    >
+                  </span>
                 </div>
 
-                <div class="small text-soft mb-2">
+                <div class="mobile-meta">
                   <div><strong>Gram Panchayat:</strong> {{ pg['Gram Panchayat'] or '-' }}</div>
                   <div><strong>Village:</strong> {{ pg.Village or '-' }}</div>
                   <div><strong>CLF ID:</strong> {{ pg.clf_id or 'Not mapped' }}</div>
                 </div>
 
                 {% if checked %}
-                  <span class="badge text-bg-success assigned-pill live-status">Selected</span>
+                  <span class="assigned-pill pill-selected live-status">Selected</span>
                 {% elif currently_assigned_user %}
-                  <span class="badge text-bg-secondary assigned-pill live-status">Assigned elsewhere</span>
+                  <span class="assigned-pill pill-neutral live-status">Assigned elsewhere</span>
                 {% else %}
-                  <span class="badge text-bg-light border assigned-pill live-status">Unassigned</span>
+                  <span class="assigned-pill pill-neutral live-status">Unassigned</span>
                 {% endif %}
               </div>
             {% else %}
               <div class="empty-state">
-                <strong>No PGs found under this Block.</strong>
+                <div class="empty-state-icon">PG</div>
+                <strong>No PGs found under this Block</strong>
                 <div>Create PGs first, then assign them to CLFs.</div>
               </div>
             {% endfor %}
@@ -559,29 +1289,31 @@
       </div>
 
       <div class="sticky-save mt-3">
-        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="sticky-save-inner">
           <div>
             <strong>Ready to save assignment?</strong>
-            <div class="small text-soft">
+            <div class="text-soft">
               Selected PGs will be mapped to this CLF Admin’s CLF. Unselected previously assigned PGs will be removed from this CLF Admin.
             </div>
           </div>
 
           <button
             type="submit"
-            class="btn btn-success btn-rounded px-4"
+            class="btn pg-submit-btn"
             onclick="return confirm('Save this PG assignment for the selected CLF Admin?');"
           >
+            <span class="btn-icon">✓</span>
             Save Assignment
           </button>
         </div>
       </div>
     </form>
   {% else %}
-    <div class="card soft-card">
-      <div class="card-body">
+    <div class="mis-panel">
+      <div class="mis-panel-body">
         <div class="empty-state">
-          <strong>Select a CLF Admin to begin.</strong>
+          <div class="empty-state-icon">ADM</div>
+          <strong>Select a CLF Admin to begin</strong>
           <div>After selecting a CLF Admin, PG assignment checkboxes will appear here.</div>
         </div>
       </div>
@@ -629,10 +1361,10 @@
         if (!status) return;
 
         if (checked) {
-          status.className = "badge text-bg-success assigned-pill live-status";
+          status.className = "assigned-pill pill-selected live-status";
           status.textContent = "Selected";
         } else {
-          status.className = "badge text-bg-light border assigned-pill live-status";
+          status.className = "assigned-pill pill-neutral live-status";
           status.textContent = "Unassigned";
         }
       });
