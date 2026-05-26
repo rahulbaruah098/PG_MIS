@@ -4,7 +4,7 @@ from app.services.guards import require_unlocked_period
 from flask import render_template, request, redirect, url_for, flash, current_app, session,jsonify, abort,g
 from bson import ObjectId
 from app.utils import safe_objectid
-from datetime import datetime
+from datetime import datetime,timedelta
 from . import pg_bp
 from ..rbac import login_required, roles_required
 from ..services.workflow import ensure_pg_locked, create_change_request, add_notification, save_uploaded_document
@@ -3052,6 +3052,326 @@ def pg_members(pg_id):
         validation_can_edit=(member_validation_status not in ("submitted", "resubmitted")),
         validation_form_type="member_registration",
     )
+
+
+
+
+def _add_six_months(dt):
+    if not isinstance(dt, datetime):
+        return None
+
+    month = dt.month + 6
+    year = dt.year + ((month - 1) // 12)
+    month = ((month - 1) % 12) + 1
+
+    day = min(dt.day, 28)
+
+    try:
+        return dt.replace(year=year, month=month, day=day)
+    except Exception:
+        return dt + timedelta(days=180)
+
+
+def _parse_pg_formation_date(pg_doc):
+    formation_date = pg_doc.get("formation_date")
+
+    if isinstance(formation_date, datetime):
+        return formation_date
+
+    if isinstance(formation_date, str) and formation_date.strip():
+        try:
+            return datetime.strptime(formation_date.strip(), "%Y-%m-%d")
+        except Exception:
+            pass
+
+    return datetime.utcnow()
+
+
+
+
+# ============================================================
+# AGRI CROP MANAGEMENT / CROP PLANNING
+# ============================================================
+
+@pg_bp.route("/crop-management/<pg_id>", methods=["GET"])
+@login_required
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN","CADRE_CC")
+def crop_management(pg_id):
+    db = current_app.mongo_db
+    pg_doc = _load_pg_or_404(db, pg_id)
+
+    sector = (pg_doc.get("sector") or pg_doc.get("pg_sector") or "").strip()
+
+    if sector.lower() != "agri":
+        flash("Crop Management is currently available only for Agri PGs.", "warning")
+        return redirect(request.referrer or url_for("pg.pg_home"))
+
+    role = session.get("role") or ""
+
+    if role == "PG_DATA_ENTRY":
+        base_template = "base.html"
+    elif role in ["CLF_MANAGER", "CLF_ADMIN"]:
+        base_template = "base_clf.html"
+    elif role == "CADRE_CC":
+        base_template = "base_cadre.html"
+    else:
+        base_template = "base.html"
+
+    return render_template(
+        "crop_management.html",
+        base_template=base_template,
+        pg=pg_doc,
+        pg_id=str(pg_doc["_id"]),
+        agri_ffs_modules=AGRI_FFS_MODULE_OPTIONS,
+        agri_crops=AGRI_CROP_OPTIONS,
+    )
+
+
+
+@pg_bp.route("/api/crop-management/<pg_id>/members", methods=["GET"])
+@login_required
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN","CADRE_CC")
+def api_crop_management_members(pg_id):
+    db = current_app.mongo_db
+    pg_doc = _load_pg_or_404(db, pg_id)
+
+    sector = (pg_doc.get("sector") or pg_doc.get("pg_sector") or "").strip()
+    if sector.lower() != "agri":
+        return jsonify({
+            "ok": False,
+            "message": "Crop Management is currently available only for Agri PGs.",
+            "members": []
+        }), 400
+
+    ffs_module = (request.args.get("ffs_module") or "").strip()
+
+    if not ffs_module:
+        return jsonify({
+            "ok": False,
+            "message": "Please select FFS Module.",
+            "members": []
+        }), 400
+
+    members_cursor = db.pg_members.find({
+        "pg_id": pg_doc["_id"],
+        "is_active": True,
+        "agri_ffs_module": ffs_module
+    }).sort("name", 1)
+
+    pg_first_cycle_date = _parse_pg_formation_date(pg_doc)
+
+    members = []
+    for m in members_cursor:
+        first_cycle_date = m.get("first_crop_cycle_date") or pg_first_cycle_date
+        current_cycle_start = m.get("crop_cycle_start") or first_cycle_date
+        next_crop_cycle_date = m.get("next_crop_cycle_date") or m.get("crop_cycle_end") or _add_six_months(current_cycle_start)
+
+        members.append({
+            "member_pg_id": str(m.get("_id")),
+            "member_id": str(m.get("member_id")) if m.get("member_id") else "",
+            "name": m.get("name") or "",
+            "spouse_name": m.get("spouse_name") or "",
+            "shg_name": m.get("shg_name") or "",
+            "shg_code": m.get("shg_code") or "",
+            "role": m.get("role") or "",
+            "current_ffs_module": m.get("agri_ffs_module") or "",
+            "current_crop": m.get("agri_crop") or "",
+            "crop_cycle_no": int(m.get("crop_cycle_no") or 1),
+
+            "first_crop_cycle_date": first_cycle_date.strftime("%Y-%m-%d") if isinstance(first_cycle_date, datetime) else "",
+            "crop_cycle_start": current_cycle_start.strftime("%Y-%m-%d") if isinstance(current_cycle_start, datetime) else "",
+            "next_crop_cycle_date": next_crop_cycle_date.strftime("%Y-%m-%d") if isinstance(next_crop_cycle_date, datetime) else "",
+        })
+
+
+    return jsonify({
+        "ok": True,
+        "message": "Members loaded successfully.",
+        "pg_id": str(pg_doc["_id"]),
+        "ffs_module": ffs_module,
+        "members": members,
+        "ffs_modules": AGRI_FFS_MODULE_OPTIONS,
+        "crops": AGRI_CROP_OPTIONS,
+    })
+
+
+@pg_bp.route("/api/crop-management/<pg_id>/save", methods=["POST"])
+@login_required
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN","CADRE_CC")
+@require_unlocked_period(scope="pg")
+def api_crop_management_save(pg_id):
+    db = current_app.mongo_db
+    pg_doc = _load_pg_or_404(db, pg_id)
+
+    sector = (pg_doc.get("sector") or pg_doc.get("pg_sector") or "").strip()
+    if sector.lower() != "agri":
+        return jsonify({
+            "ok": False,
+            "message": "Crop Management is currently available only for Agri PGs."
+        }), 400
+
+    payload = request.get_json(silent=True) or {}
+    rows = payload.get("rows") or []
+
+    if not isinstance(rows, list) or not rows:
+        return jsonify({
+            "ok": False,
+            "message": "No member crop changes received."
+        }), 400
+
+    cycle_start_raw = (payload.get("cycle_start") or "").strip()
+    cycle_end_raw = (payload.get("cycle_end") or "").strip()
+
+    now = datetime.utcnow()
+
+    try:
+        if cycle_start_raw:
+            cycle_start = datetime.strptime(cycle_start_raw, "%Y-%m-%d")
+        else:
+            cycle_start = now
+
+        if cycle_end_raw:
+            cycle_end = datetime.strptime(cycle_end_raw, "%Y-%m-%d")
+        else:
+            cycle_end = _add_six_months(cycle_start)
+    except Exception:
+        return jsonify({
+            "ok": False,
+            "message": "Invalid cycle start or cycle end date."
+        }), 400
+
+    user_oid = safe_objectid(session.get("user_id"))
+    user_role = session.get("role") or session.get("user_role") or ""
+
+    changed_count = 0
+    skipped_count = 0
+    history_docs = []
+
+    for row in rows:
+        member_pg_id_raw = row.get("member_pg_id") or row.get("_id")
+        member_pg_oid = safe_objectid(member_pg_id_raw)
+
+        if not member_pg_oid:
+            skipped_count += 1
+            continue
+
+        new_ffs_module = (row.get("new_ffs_module") or "").strip()
+        new_crop = (row.get("new_crop") or "").strip()
+
+        if not new_ffs_module or not new_crop:
+            skipped_count += 1
+            continue
+
+        if new_ffs_module not in AGRI_FFS_MODULE_OPTIONS:
+            skipped_count += 1
+            continue
+
+        if new_crop not in AGRI_CROP_OPTIONS:
+            skipped_count += 1
+            continue
+
+        member_doc = db.pg_members.find_one({
+            "_id": member_pg_oid,
+            "pg_id": pg_doc["_id"],
+            "is_active": True
+        })
+
+        if not member_doc:
+            skipped_count += 1
+            continue
+
+        old_ffs_module = member_doc.get("agri_ffs_module") or ""
+        old_crop = member_doc.get("agri_crop") or ""
+
+        # Skip if nothing changed
+        if old_ffs_module == new_ffs_module and old_crop == new_crop:
+            skipped_count += 1
+            continue
+
+        next_cycle_no = int(member_doc.get("crop_cycle_no") or 1) + 1
+
+        history_docs.append({
+            "pg_id": pg_doc["_id"],
+            "member_pg_id": member_doc["_id"],
+            "member_id": member_doc.get("member_id"),
+
+            "member_name": member_doc.get("name") or "",
+            "spouse_name": member_doc.get("spouse_name") or "",
+            "shg_name": member_doc.get("shg_name") or "",
+            "shg_code": member_doc.get("shg_code") or "",
+
+            "sector": "Agri",
+
+            "previous_ffs_module": old_ffs_module,
+            "previous_crop": old_crop,
+
+            "new_ffs_module": new_ffs_module,
+            "new_crop": new_crop,
+
+            "cycle_no": next_cycle_no,
+            "first_crop_cycle_date": member_doc.get("first_crop_cycle_date") or _parse_pg_formation_date(pg_doc),
+            "cycle_start": cycle_start,
+            "cycle_end": cycle_end,
+            "current_cycle_start": cycle_start,
+            "next_crop_cycle_date": cycle_end,
+
+            "created_by": user_oid,
+            "created_by_role": user_role,
+            "created_at": now,
+        })
+
+        db.pg_members.update_one(
+            {
+                "_id": member_doc["_id"],
+                "pg_id": pg_doc["_id"]
+            },
+            {
+                "$set": {
+                    "agri_ffs_module": new_ffs_module,
+                    "agri_crop": new_crop,
+
+                    "first_crop_cycle_date": member_doc.get("first_crop_cycle_date") or _parse_pg_formation_date(pg_doc),
+                    "crop_cycle_no": next_cycle_no,
+                    "crop_cycle_start": cycle_start,
+                    "crop_cycle_end": cycle_end,
+                    "next_crop_cycle_date": cycle_end,
+
+                    "crop_cycle_updated_at": now,
+                    "crop_cycle_updated_by": user_oid,
+
+                    "updated_at": now,
+                }
+            }
+        )
+
+        changed_count += 1
+
+    if history_docs:
+        db.pg_crop_cycles.insert_many(history_docs)
+
+    try:
+        log_audit(
+            "crop_management_save",
+            "pg_members",
+            str(pg_doc["_id"]),
+            {
+                "changed_count": changed_count,
+                "skipped_count": skipped_count,
+                "sector": "Agri",
+            }
+        )
+    except Exception:
+        pass
+
+    return jsonify({
+        "ok": True,
+        "message": f"Crop cycle updated for {changed_count} member(s).",
+        "changed_count": changed_count,
+        "skipped_count": skipped_count,
+    })
+
+
+
 
 
 
@@ -7857,10 +8177,6 @@ def submit_member_registration_validation(pg_id):
         },
         category="success" if ok else "danger"
     )
-
-
-    
-
 
 
 

@@ -14,7 +14,7 @@ import jwt
 
 
 # ------------------------------------------------------------
-# Role constants / aliases
+# Role constants / aliases.  
 # ------------------------------------------------------------
 
 ROLE_SUPER_ADMIN = "SUPER_ADMIN"

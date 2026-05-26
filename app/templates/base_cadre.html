@@ -1063,6 +1063,23 @@
   <span class="nav-text">PG Validation Status</span>
 </a>
 
+{% set crop_pg_id = session.get('active_pg_id') or session.get('pg_id') %}
+
+{% if crop_pg_id %}
+<a class="nav-item {% if request.endpoint == 'pg.crop_management' %}active{% endif %}"
+   href="{{ url_for('pg.crop_management', pg_id=crop_pg_id) }}">
+  <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 20A7 7 0 0 1 4 13c0-4 3-7 7-7 2 0 4 1 5 3"></path>
+    <path d="M16 4c0 4-2 8-7 8"></path>
+    <path d="M15 13h6"></path>
+    <path d="M18 10v6"></path>
+  </svg>
+  <span class="nav-text">Crop Management</span>
+</a>
+{% endif %}
+
+
 
   </nav>
 
