@@ -2,266 +2,632 @@
 
 {% block content %}
 <style>
-  .cashflow-page {
-    width: 100%;
-    max-width: 1280px;
-    margin: 0 auto;
+  :root{
+    --pg-shell:#eef6f2;
+    --pg-surface:#ffffff;
+    --pg-surface-soft:#f8fcfa;
+    --pg-header:#dfeee7;
+    --pg-brand:#0b4d3a;
+    --pg-brand-dark:#083d2f;
+    --pg-brand-soft:#e7f4ed;
+    --pg-ink:#0f172a;
+    --pg-muted:#5f6f67;
+    --pg-line:rgba(15,23,42,.10);
+    --pg-line-soft:rgba(15,23,42,.07);
+    --pg-mint:rgba(173,231,196,.38);
+    --pg-mint-strong:rgba(173,231,196,.52);
+    --pg-success:#198754;
+    --pg-danger:#c84343;
+    --pg-warning:#e0a800;
+    --pg-shadow:0 14px 34px rgba(15,23,42,.08);
+    --pg-shadow-soft:0 8px 22px rgba(15,23,42,.06);
+    --pg-radius-xl:24px;
+    --pg-radius-lg:18px;
+    --pg-radius-md:14px;
   }
 
-  .cashflow-hero {
+  .cashflow-page{
+    width:100%;
+    max-width:1320px;
+    margin:0 auto;
+  }
+
+  .cashflow-topbar{
+    position:relative;
+    overflow:hidden;
     background:
-      radial-gradient(circle at 12% 12%, rgba(255,255,255,.18), transparent 42%),
-      linear-gradient(135deg, #064e3b, #198754);
-    color: #fff;
-    border-radius: 22px;
-    padding: 24px;
-    box-shadow: 0 18px 42px rgba(6, 78, 59, .22);
+      radial-gradient(circle at 88% 18%, rgba(173,231,196,.38), transparent 32%),
+      linear-gradient(180deg, rgba(223,238,231,.96), rgba(255,255,255,.99));
+    border:1px solid var(--pg-line);
+    border-radius:var(--pg-radius-xl);
+    padding:24px;
+    box-shadow:var(--pg-shadow);
+    margin-bottom:18px;
   }
 
-  .cashflow-hero h3 {
-    margin: 0;
-    font-weight: 900;
-    letter-spacing: -0.035em;
+  .cashflow-topbar::after{
+    content:"";
+    position:absolute;
+    right:-70px;
+    bottom:-80px;
+    width:210px;
+    height:210px;
+    border-radius:50%;
+    background:rgba(173,231,196,.35);
+    pointer-events:none;
   }
 
-  .cashflow-hero p {
-    margin: 8px 0 0;
-    color: rgba(255,255,255,.86);
-    font-weight: 600;
+  .cashflow-topbar-inner{
+    position:relative;
+    z-index:1;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:18px;
+    flex-wrap:wrap;
   }
 
-  .hero-pill {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 7px 12px;
-    background: rgba(255,255,255,.14);
-    border: 1px solid rgba(255,255,255,.18);
-    color: #fff;
-    font-size: .82rem;
-    font-weight: 800;
-    white-space: nowrap;
+  .cashflow-title-block{
+    max-width:780px;
   }
 
-  .hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  .title-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+    padding:7px 12px;
+    border-radius:999px;
+    background:rgba(255,255,255,.78);
+    border:1px solid rgba(11,77,58,.12);
+    color:var(--pg-brand);
+    font-size:.76rem;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.06em;
   }
 
-  .hero-actions .btn {
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: .84rem;
+  .title-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--pg-brand);
+    flex:0 0 auto;
   }
 
-  .metric-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
+  .cashflow-topbar h3{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:clamp(1.45rem, 2.4vw, 2.05rem);
+    font-weight:1000;
+    letter-spacing:-.045em;
+    line-height:1.08;
   }
 
-  .metric-card {
-    background: #fff;
-    border: 1px solid rgba(15,23,42,.08);
-    border-radius: 18px;
-    padding: 16px;
-    box-shadow: 0 12px 30px rgba(15,23,42,.07);
+  .cashflow-topbar p{
+    margin:9px 0 0;
+    color:var(--pg-muted);
+    font-size:.96rem;
+    font-weight:650;
+    line-height:1.52;
   }
 
-  .metric-card small {
-    display: block;
-    color: #64748b;
-    font-weight: 850;
-    text-transform: uppercase;
-    letter-spacing: .035em;
-    font-size: .74rem;
-    margin-bottom: 8px;
+  .topbar-actions{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:10px;
+    min-width:240px;
   }
 
-  .metric-card strong {
-    display: block;
-    color: #0f172a;
-    font-size: clamp(1.25rem, 2vw, 1.8rem);
-    line-height: 1.05;
-    font-weight: 900;
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 14px;
+    border-radius:999px;
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.10);
+    font-size:.82rem;
+    font-weight:900;
+    white-space:nowrap;
   }
 
-  .metric-card span {
-    display: block;
-    margin-top: 8px;
-    color: #64748b;
-    font-size: .82rem;
-    font-weight: 700;
+  .status-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:currentColor;
+    flex:0 0 auto;
   }
 
-  .soft-card {
-    background: #fff;
-    border: 1px solid rgba(15,23,42,.08);
-    border-radius: 18px;
-    box-shadow: 0 12px 30px rgba(15,23,42,.07);
-    overflow: hidden;
+  .topbar-btn-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:flex-end;
   }
 
-  .card-head {
-    padding: 16px 18px;
-    border-bottom: 1px solid #e9eef3;
-    background: #fff;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+  .pg-btn{
+    border-radius:999px;
+    font-weight:900;
+    font-size:.86rem;
+    padding:.64rem 1rem;
+    text-decoration:none;
+    box-shadow:none !important;
+    transition:none !important;
   }
 
-  .card-head h5 {
-    margin: 0;
-    font-weight: 900;
-    color: #0f172a;
-    font-size: 1rem;
+  .pg-btn-soft{
+    background:#fff;
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.15);
   }
 
-  .card-head p {
-    margin: 4px 0 0;
-    color: #64748b;
-    font-size: .84rem;
-    font-weight: 600;
+  .pg-btn-soft:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.18);
   }
 
-  .detail-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+  .pg-btn-outline{
+    background:transparent;
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.18);
   }
 
-  .detail-box {
-    border: 1px solid #e6ecef;
-    background: #f8fafc;
-    border-radius: 14px;
-    padding: 14px;
+  .pg-btn-outline:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.18);
   }
 
-  .detail-box small {
-    display: block;
-    color: #64748b;
-    font-size: .74rem;
-    text-transform: uppercase;
-    letter-spacing: .035em;
-    font-weight: 850;
-    margin-bottom: 6px;
+  .metric-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:14px;
+    margin-bottom:18px;
   }
 
-  .detail-box strong {
-    color: #0f172a;
-    font-weight: 900;
-    font-size: 1.05rem;
+  .metric-card{
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 92% 12%, rgba(173,231,196,.34), transparent 34%),
+      linear-gradient(180deg, #ffffff, #fbfefc);
+    border:1px solid var(--pg-line-soft);
+    border-radius:20px;
+    padding:18px;
+    box-shadow:var(--pg-shadow);
+    min-height:122px;
   }
 
-  .section-note {
-    background: #f8fafc;
-    border: 1px dashed #d7dee8;
-    border-radius: 16px;
-    padding: 14px 16px;
-    color: #475569;
-    font-size: .9rem;
-    font-weight: 650;
+  .metric-card::before{
+    content:none !important;
   }
 
-  .table thead th {
-    background: #f8fafc;
-    color: #475569;
-    font-size: .78rem;
-    text-transform: uppercase;
-    letter-spacing: .035em;
-    border-bottom: 1px solid #e2e8f0;
-    white-space: nowrap;
+  .metric-card small{
+    display:inline-flex;
+    align-items:center;
+    color:var(--pg-muted);
+    font-size:.72rem;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.065em;
+    margin-bottom:13px;
   }
 
-  .table td {
-    vertical-align: middle;
+  .metric-card strong{
+    display:block;
+    color:var(--pg-brand);
+    font-size:clamp(1.38rem, 2.3vw, 1.95rem);
+    font-weight:1000;
+    line-height:1.05;
+    word-break:break-word;
   }
 
-  .pg-name {
-    font-weight: 900;
-    color: #0f172a;
+  .metric-card span{
+    display:block;
+    margin-top:8px;
+    color:rgba(15,23,42,.55);
+    font-size:.82rem;
+    font-weight:750;
+    line-height:1.35;
   }
 
-  .text-soft {
-    color: #64748b;
+  .soft-card{
+    background:var(--pg-surface);
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-xl);
+    box-shadow:var(--pg-shadow);
+    overflow:hidden;
+    margin-bottom:18px;
   }
 
-  .action-btn {
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: .8rem;
+  .card-head{
+    padding:19px 21px;
+    background:
+      radial-gradient(circle at 96% 0%, rgba(173,231,196,.24), transparent 30%),
+      linear-gradient(180deg, #ffffff, #f9fcfa);
+    border-bottom:1px solid var(--pg-line-soft);
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    flex-wrap:wrap;
   }
 
-  .empty-state {
-    padding: 42px 18px;
-    text-align: center;
-    color: #64748b;
+  .section-title{
+    display:flex;
+    align-items:flex-start;
+    gap:11px;
   }
 
-  .mobile-pg-list {
-    display: none;
+  .section-icon{
+    width:38px;
+    height:38px;
+    border-radius:14px;
+    background:var(--pg-brand-soft);
+    border:1px solid rgba(11,77,58,.10);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--pg-brand);
+    font-weight:1000;
+    flex:0 0 auto;
   }
 
-  .mobile-pg-card {
-    border: 1px solid #e5e7eb;
-    background: #fff;
-    border-radius: 16px;
-    padding: 14px;
-    margin-bottom: 12px;
-    box-shadow: 0 8px 20px rgba(15,23,42,.06);
+  .card-head h5{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:1.05rem;
+    font-weight:1000;
+    letter-spacing:-.025em;
+    line-height:1.2;
   }
 
-  @media (max-width: 1100px) {
-    .metric-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+  .card-head p{
+    margin:5px 0 0;
+    color:var(--pg-muted);
+    font-size:.85rem;
+    font-weight:650;
+    line-height:1.45;
+  }
+
+  .card-body-clean{
+    padding:18px 20px 20px;
+  }
+
+  .detail-grid{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:13px;
+  }
+
+  .detail-box{
+    background:linear-gradient(180deg, #ffffff, var(--pg-surface-soft));
+    border:1px solid var(--pg-line-soft);
+    border-radius:16px;
+    padding:15px;
+    min-height:92px;
+    box-shadow:var(--pg-shadow-soft);
+  }
+
+  .detail-box small{
+    display:block;
+    color:var(--pg-muted);
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    font-weight:950;
+    margin-bottom:7px;
+    line-height:1.2;
+  }
+
+  .detail-box strong{
+    display:block;
+    color:var(--pg-ink);
+    font-size:1.02rem;
+    font-weight:950;
+    line-height:1.35;
+    word-break:break-word;
+  }
+
+  .section-note{
+    position:relative;
+    background:
+      radial-gradient(circle at 98% 0%, rgba(173,231,196,.22), transparent 28%),
+      #fbfefc;
+    border:1px dashed rgba(11,77,58,.20);
+    border-radius:18px;
+    padding:15px 17px;
+    color:var(--pg-muted);
+    font-size:.9rem;
+    font-weight:750;
+    line-height:1.45;
+    margin-bottom:18px;
+  }
+
+  .table-shell{
+    border-top:1px solid var(--pg-line-soft);
+    overflow-x:auto;
+  }
+
+  .pg-table{
+    margin:0;
+    min-width:980px;
+    border-collapse:separate;
+    border-spacing:0;
+  }
+
+  .pg-table thead th{
+    background:#f4f9f6;
+    color:var(--pg-brand);
+    font-size:.74rem;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.055em;
+    border-bottom:1px solid #dde9e2;
+    padding:14px 16px;
+    white-space:nowrap;
+  }
+
+  .pg-table thead th:first-child{
+    padding-left:18px;
+  }
+
+  .pg-table tbody td{
+    vertical-align:middle;
+    padding:16px;
+    border-bottom:1px solid #edf2ef;
+    background:#fff;
+    color:var(--pg-ink);
+    font-size:.9rem;
+  }
+
+  .pg-table tbody tr:last-child td{
+    border-bottom:0;
+  }
+
+  .pg-table tbody tr:hover td{
+    background:#fbfefc;
+  }
+
+  .pg-identity{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    min-width:0;
+  }
+
+  .pg-name{
+    color:var(--pg-ink);
+    font-weight:950;
+    line-height:1.25;
+    letter-spacing:-.01em;
+    word-break:break-word;
+  }
+
+  .pg-id-text{
+    display:block;
+    color:#64748b;
+    font-size:.76rem;
+    font-weight:700;
+    word-break:break-word;
+  }
+
+  .location-main{
+    color:var(--pg-ink);
+    font-weight:750;
+    line-height:1.35;
+  }
+
+  .text-soft{
+    color:var(--pg-muted);
+  }
+
+  .soft-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    padding:7px 12px;
+    font-size:.73rem;
+    font-weight:950;
+    border:1px solid transparent;
+    white-space:nowrap;
+    line-height:1;
+    min-height:29px;
+  }
+
+  .soft-badge.active{
+    background:rgba(25,135,84,.12);
+    color:#198754;
+    border-color:rgba(25,135,84,.16);
+  }
+
+  .soft-badge.inactive{
+    background:rgba(200,67,67,.10);
+    color:#b42323;
+    border-color:rgba(200,67,67,.18);
+  }
+
+  .soft-badge.default{
+    background:#f8fafc;
+    color:#475569;
+    border-color:#e2e8f0;
+  }
+
+  .pg-primary-action{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    background:var(--pg-brand);
+    color:#fff;
+    border:1px solid var(--pg-brand);
+    font-size:.8rem;
+    font-weight:900;
+    padding:.58rem 1.05rem;
+    line-height:1;
+    white-space:nowrap;
+    text-decoration:none;
+    box-shadow:0 10px 18px -14px rgba(11,77,58,.65);
+    transition:none !important;
+  }
+
+  .pg-primary-action:hover{
+    background:var(--pg-brand-dark);
+    color:#fff;
+    border-color:var(--pg-brand-dark);
+  }
+
+  .empty-state{
+    padding:46px 18px;
+    text-align:center;
+    color:var(--pg-muted);
+  }
+
+  .empty-state strong{
+    display:block;
+    color:var(--pg-brand);
+    font-size:1rem;
+    font-weight:950;
+    margin-bottom:6px;
+  }
+
+  .mobile-pg-list{
+    display:none;
+  }
+
+  .mobile-pg-card{
+    background:linear-gradient(180deg, #ffffff, #fbfefc);
+    border:1px solid var(--pg-line-soft);
+    border-radius:16px;
+    padding:15px;
+    box-shadow:var(--pg-shadow-soft);
+  }
+
+  .mobile-pg-card + .mobile-pg-card{
+    margin-top:12px;
+  }
+
+  .mobile-card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:10px;
+  }
+
+  .mobile-info{
+    display:grid;
+    gap:7px;
+    color:var(--pg-ink);
+    font-size:.88rem;
+    margin-bottom:13px;
+  }
+
+  .mobile-info strong{
+    color:var(--pg-brand);
+    font-weight:850;
+  }
+
+  .mobile-action-stack{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+
+  .mobile-action-stack .pg-primary-action{
+    width:100%;
+    padding:.72rem 1rem;
+  }
+
+  @media (max-width:1100px){
+    .metric-grid{
+      grid-template-columns:repeat(2, minmax(0,1fr));
     }
 
-    .detail-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .detail-grid{
+      grid-template-columns:repeat(2, minmax(0,1fr));
     }
   }
 
-  @media (max-width: 767px) {
-    .cashflow-hero {
-      padding: 18px;
-      border-radius: 18px;
+  @media (max-width:767px){
+    .cashflow-topbar{
+      padding:18px;
+      border-radius:18px;
     }
 
-    .cashflow-hero h3 {
-      font-size: 1.2rem;
+    .cashflow-topbar h3{
+      font-size:1.35rem;
     }
 
-    .hero-actions {
-      width: 100%;
+    .cashflow-topbar p{
+      font-size:.9rem;
     }
 
-    .hero-actions .btn {
-      width: 100%;
+    .topbar-actions{
+      width:100%;
+      min-width:0;
+      align-items:stretch;
+    }
+
+    .topbar-btn-row{
+      width:100%;
+      justify-content:stretch;
+    }
+
+    .topbar-btn-row .pg-btn{
+      width:100%;
+      text-align:center;
     }
 
     .metric-grid,
-    .detail-grid {
-      grid-template-columns: 1fr;
+    .detail-grid{
+      grid-template-columns:1fr;
     }
 
-    .desktop-table-wrap {
-      display: none;
+    .metric-card{
+      min-height:105px;
     }
 
-    .mobile-pg-list {
-      display: block;
+    .card-head,
+    .card-body-clean{
+      padding:16px;
+    }
+
+    .desktop-table-wrap{
+      display:none;
+    }
+
+    .mobile-pg-list{
+      display:block;
+      padding:16px;
+      border-top:1px solid var(--pg-line-soft);
+    }
+  }
+
+  @media (max-width:420px){
+    .mobile-card-head{
+      flex-direction:column;
+      align-items:flex-start;
     }
   }
 </style>
 
 <div class="cashflow-page">
-  <div class="cashflow-hero mb-4">
-    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
-      <div>
+
+  <div class="cashflow-topbar">
+    <div class="cashflow-topbar-inner">
+      <div class="cashflow-title-block">
+        <div class="title-kicker">
+          <span class="title-dot"></span>
+          CLF Financial Monitoring
+        </div>
+
         <h3>CLF Cashflow</h3>
         <p>
           {% if clf %}
@@ -273,16 +639,17 @@
         </p>
       </div>
 
-      <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
-        <span class="hero-pill">
+      <div class="topbar-actions">
+        <span class="status-pill">
+          <span class="status-dot"></span>
           {{ pgs|length }} Assigned PG{{ '' if pgs|length == 1 else 's' }}
         </span>
 
-        <div class="hero-actions">
-          <a href="{{ url_for('clf.dashboard') }}" class="btn btn-light btn-sm">
+        <div class="topbar-btn-row">
+          <a href="{{ url_for('clf.dashboard') }}" class="btn pg-btn pg-btn-soft">
             Dashboard
           </a>
-          <a href="{{ url_for('clf.assigned_pgs') }}" class="btn btn-outline-light btn-sm">
+          <a href="{{ url_for('clf.assigned_pgs') }}" class="btn pg-btn pg-btn-outline">
             Assigned PGs
           </a>
         </div>
@@ -290,7 +657,7 @@
     </div>
   </div>
 
-  <div class="metric-grid mb-4">
+  <div class="metric-grid">
     <div class="metric-card">
       <small>Total Cash In</small>
       <strong>₹{{ "%.2f"|format(cashflow.cash_in or 0) }}</strong>
@@ -316,15 +683,18 @@
     </div>
   </div>
 
-  <div class="soft-card mb-4">
+  <div class="soft-card">
     <div class="card-head">
-      <div>
-        <h5>Cashflow Breakdown</h5>
-        <p>Aggregated values from available PG-level finance collections.</p>
+      <div class="section-title">
+        <div class="section-icon">₹</div>
+        <div>
+          <h5>Cashflow Breakdown</h5>
+          <p>Aggregated values from available PG-level finance collections.</p>
+        </div>
       </div>
     </div>
 
-    <div class="p-3">
+    <div class="card-body-clean">
       <div class="detail-grid">
         <div class="detail-box">
           <small>Grant Received</small>
@@ -374,29 +744,32 @@
     </div>
   </div>
 
-  <div class="section-note mb-4">
+  <div class="section-note">
     This CLF cashflow page is read-only. Operational editing will remain inside the assigned PG modules based on role permissions.
   </div>
 
   <div class="soft-card">
     <div class="card-head">
-      <div>
-        <h5>Assigned PG Coverage</h5>
-        <p>PGs included in this CLF cashflow calculation.</p>
+      <div class="section-title">
+        <div class="section-icon">PG</div>
+        <div>
+          <h5>Assigned PG Coverage</h5>
+          <p>PGs included in this CLF cashflow calculation.</p>
+        </div>
       </div>
     </div>
 
-    <div class="desktop-table-wrap">
-      <table class="table table-hover mb-0">
+    <div class="desktop-table-wrap table-shell">
+      <table class="table table-hover pg-table mb-0">
         <thead>
           <tr>
-            <th style="width: 60px;">#</th>
-            <th>PG</th>
-            <th>Sector</th>
-            <th>Gram Panchayat</th>
-            <th>Village</th>
-            <th>Status</th>
-            <th style="width: 150px;">Action</th>
+            <th style="width:60px;">#</th>
+            <th style="min-width:220px;">PG</th>
+            <th style="min-width:120px;">Sector</th>
+            <th style="min-width:170px;">Gram Panchayat</th>
+            <th style="min-width:150px;">Village</th>
+            <th style="min-width:120px;">Status</th>
+            <th style="width:140px; min-width:140px;">Action</th>
           </tr>
         </thead>
 
@@ -406,27 +779,37 @@
               <td>{{ loop.index }}</td>
 
               <td>
-                <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
-                <small class="text-soft">ID: {{ pg._id }}</small>
+                <div class="pg-identity">
+                  <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
+                  <span class="pg-id-text">ID: {{ pg._id }}</span>
+                </div>
               </td>
 
-              <td>{{ pg.sector or '-' }}</td>
-              <td>{{ pg['Gram Panchayat'] or '-' }}</td>
-              <td>{{ pg.Village or pg.village or '-' }}</td>
+              <td>
+                <div class="location-main">{{ pg.sector or '-' }}</div>
+              </td>
+
+              <td>
+                <div class="location-main">{{ pg['Gram Panchayat'] or '-' }}</div>
+              </td>
+
+              <td>
+                <div class="location-main">{{ pg.Village or pg.village or '-' }}</div>
+              </td>
 
               <td>
                 {% set status = pg.status or 'draft' %}
                 {% if status == 'active' %}
-                  <span class="badge text-bg-success">Active</span>
+                  <span class="soft-badge active">Active</span>
                 {% elif status == 'inactive' %}
-                  <span class="badge text-bg-danger">Inactive</span>
+                  <span class="soft-badge inactive">Inactive</span>
                 {% else %}
-                  <span class="badge text-bg-light border">{{ status|capitalize }}</span>
+                  <span class="soft-badge default">{{ status|capitalize }}</span>
                 {% endif %}
               </td>
 
               <td>
-                <a href="{{ url_for('clf.view_pg', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-success action-btn">
+                <a href="{{ url_for('clf.view_pg', pg_id=pg._id|string) }}" class="pg-primary-action">
                   View
                 </a>
               </td>
@@ -435,7 +818,7 @@
             <tr>
               <td colspan="7">
                 <div class="empty-state">
-                  <strong>No PG assigned yet.</strong>
+                  <strong>No PG assigned yet</strong>
                   <div>Ask Block Admin to assign PGs to this CLF Admin.</div>
                 </div>
               </td>
@@ -445,30 +828,41 @@
       </table>
     </div>
 
-    <div class="mobile-pg-list p-3">
+    <div class="mobile-pg-list">
       {% for pg in pgs %}
         <div class="mobile-pg-card">
-          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-            <div>
+          <div class="mobile-card-head">
+            <div class="pg-identity">
               <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
-              <small class="text-soft">ID: {{ pg._id }}</small>
+              <span class="pg-id-text">ID: {{ pg._id }}</span>
             </div>
 
-            <a href="{{ url_for('clf.view_pg', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-success action-btn">
-              View
-            </a>
+            {% set status = pg.status or 'draft' %}
+            {% if status == 'active' %}
+              <span class="soft-badge active">Active</span>
+            {% elif status == 'inactive' %}
+              <span class="soft-badge inactive">Inactive</span>
+            {% else %}
+              <span class="soft-badge default">{{ status|capitalize }}</span>
+            {% endif %}
           </div>
 
-          <div class="small text-soft">
+          <div class="mobile-info">
             <div><strong>Sector:</strong> {{ pg.sector or '-' }}</div>
             <div><strong>Gram Panchayat:</strong> {{ pg['Gram Panchayat'] or '-' }}</div>
             <div><strong>Village:</strong> {{ pg.Village or pg.village or '-' }}</div>
             <div><strong>Status:</strong> {{ pg.status or 'draft' }}</div>
           </div>
+
+          <div class="mobile-action-stack">
+            <a href="{{ url_for('clf.view_pg', pg_id=pg._id|string) }}" class="pg-primary-action">
+              View PG
+            </a>
+          </div>
         </div>
       {% else %}
         <div class="empty-state">
-          <strong>No PG assigned yet.</strong>
+          <strong>No PG assigned yet</strong>
           <div>Ask Block Admin to assign PGs to this CLF Admin.</div>
         </div>
       {% endfor %}

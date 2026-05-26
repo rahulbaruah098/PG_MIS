@@ -2,246 +2,610 @@
 
 {% block content %}
 <style>
-  .assigned-page {
-    width: 100%;
-    max-width: 1280px;
-    margin: 0 auto;
+  :root{
+    --pg-shell:#eef6f2;
+    --pg-surface:#ffffff;
+    --pg-surface-soft:#f7fbf8;
+    --pg-header:#dfeee7;
+    --pg-brand:#0b4d3a;
+    --pg-brand-dark:#083d2f;
+    --pg-brand-2:#12684e;
+    --pg-ink:#0f172a;
+    --pg-muted:#5f6f67;
+    --pg-line:rgba(15,23,42,.10);
+    --pg-line-soft:rgba(15,23,42,.07);
+    --pg-mint:rgba(173,231,196,.38);
+    --pg-mint-strong:rgba(173,231,196,.52);
+    --pg-success:#198754;
+    --pg-danger:#c84343;
+    --pg-warning:#e0a800;
+    --pg-shadow:0 12px 30px rgba(15,23,42,.08);
+    --pg-shadow-soft:0 8px 20px rgba(15,23,42,.06);
+    --pg-radius-xl:22px;
+    --pg-radius-lg:18px;
+    --pg-radius-md:14px;
   }
 
-  .assigned-hero {
-    background:
-      radial-gradient(circle at 12% 12%, rgba(255, 255, 255, 0.18), transparent 42%),
-      linear-gradient(135deg, #064e3b, #198754);
-    color: #fff;
-    border-radius: 22px;
-    padding: 24px;
-    box-shadow: 0 18px 42px rgba(6, 78, 59, 0.22);
-    overflow: hidden;
+  .assigned-page{
+    width:100%;
+    max-width:1320px;
+    margin:0 auto;
   }
 
-  .assigned-hero h3 {
-    margin: 0;
-    font-weight: 900;
-    letter-spacing: -0.035em;
+  .assigned-topbar{
+    background:linear-gradient(180deg, rgba(223,238,231,.94), rgba(255,255,255,.98));
+    border:1px solid var(--pg-line);
+    border-radius:var(--pg-radius-xl);
+    padding:22px 24px;
+    box-shadow:var(--pg-shadow);
+    margin-bottom:18px;
   }
 
-  .assigned-hero p {
-    margin: 8px 0 0;
-    color: rgba(255,255,255,.86);
-    font-weight: 600;
+  .assigned-topbar-inner{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:18px;
+    flex-wrap:wrap;
   }
 
-  .hero-pill {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 7px 12px;
-    background: rgba(255,255,255,.14);
-    border: 1px solid rgba(255,255,255,.18);
-    color: #fff;
-    font-size: .82rem;
-    font-weight: 800;
-    white-space: nowrap;
+  .assigned-topbar h3{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:1.45rem;
+    font-weight:950;
+    letter-spacing:-.03em;
+    line-height:1.15;
   }
 
-  .hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  .assigned-topbar p{
+    margin:8px 0 0;
+    max-width:760px;
+    color:var(--pg-muted);
+    font-size:.96rem;
+    font-weight:650;
+    line-height:1.5;
   }
 
-  .hero-actions .btn {
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: .84rem;
+  .assigned-topbar-actions{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:10px;
+    min-width:230px;
   }
 
-  .metric-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 14px;
+    border-radius:999px;
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.10);
+    font-size:.82rem;
+    font-weight:900;
+    letter-spacing:.02em;
+    white-space:nowrap;
   }
 
-  .metric-card {
-    background: #fff;
-    border: 1px solid rgba(15,23,42,.08);
-    border-radius: 18px;
-    padding: 16px;
-    box-shadow: 0 12px 30px rgba(15,23,42,.07);
+  .status-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:currentColor;
+    flex:0 0 auto;
   }
 
-  .metric-card small {
-    display: block;
-    color: #64748b;
-    font-weight: 850;
-    text-transform: uppercase;
-    letter-spacing: .035em;
-    font-size: .74rem;
-    margin-bottom: 8px;
+  .topbar-btn-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:flex-end;
   }
 
-  .metric-card strong {
-    display: block;
-    color: #0f172a;
-    font-size: clamp(1.35rem, 2vw, 1.9rem);
-    line-height: 1.05;
-    font-weight: 900;
+  .pg-btn{
+    border-radius:999px;
+    font-weight:850;
+    font-size:.86rem;
+    padding:.62rem 1rem;
+    box-shadow:none !important;
+    transition:none !important;
   }
 
-  .soft-card {
-    background: #fff;
-    border: 1px solid rgba(15,23,42,.08);
-    border-radius: 18px;
-    box-shadow: 0 12px 30px rgba(15,23,42,.07);
-    overflow: hidden;
+  .pg-btn-dashboard{
+    background:#fff;
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.14);
   }
 
-  .card-head {
-    padding: 16px 18px;
-    border-bottom: 1px solid #e9eef3;
-    background: #fff;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+  .pg-btn-dashboard:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.18);
   }
 
-  .card-head h5 {
-    margin: 0;
-    font-weight: 900;
-    color: #0f172a;
-    font-size: 1rem;
+  .pg-btn-outline{
+    background:transparent;
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.18);
   }
 
-  .card-head p {
-    margin: 4px 0 0;
-    color: #64748b;
-    font-size: .84rem;
-    font-weight: 600;
+  .pg-btn-outline:hover{
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.18);
   }
 
-  .table-tools {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+  .metric-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:14px;
+    margin-bottom:18px;
   }
 
-  .pg-search {
-    border-radius: 999px;
-    min-height: 42px;
-    border: 1px solid #d7dee8;
-    padding: 9px 14px;
-    min-width: 300px;
-    font-weight: 700;
-    outline: none;
+  .metric-card{
+    position:relative;
+    overflow:hidden;
+    background:var(--pg-surface);
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-lg);
+    padding:17px 18px;
+    box-shadow:var(--pg-shadow);
+    min-height:118px;
   }
 
-  .pg-search:focus {
-    border-color: #198754;
-    box-shadow: 0 0 0 .18rem rgba(25,135,84,.12);
+  .metric-card::before{
+    content:"";
+    position:absolute;
+    inset:0 auto 0 0;
+    width:5px;
+    background:linear-gradient(180deg, var(--pg-brand), rgba(173,231,196,.95));
   }
 
-  .table thead th {
-    background: #f8fafc;
-    color: #475569;
-    font-size: .78rem;
-    text-transform: uppercase;
-    letter-spacing: .035em;
-    border-bottom: 1px solid #e2e8f0;
-    white-space: nowrap;
+  .metric-card small{
+    display:block;
+    color:var(--pg-muted);
+    font-size:.73rem;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin-bottom:12px;
   }
 
-  .table td {
-    vertical-align: middle;
+  .metric-card strong{
+    display:block;
+    color:var(--pg-brand);
+    font-size:clamp(1.45rem, 2.4vw, 2rem);
+    font-weight:950;
+    line-height:1;
   }
 
-  .pg-name {
-    font-weight: 900;
-    color: #0f172a;
+  .metric-card span{
+    display:block;
+    margin-top:8px;
+    color:rgba(15,23,42,.55);
+    font-size:.82rem;
+    font-weight:700;
   }
 
-  .text-soft {
-    color: #64748b;
+  .soft-card{
+    background:var(--pg-surface);
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-xl);
+    box-shadow:var(--pg-shadow);
+    overflow:hidden;
   }
 
-  .badge-soft {
-    border-radius: 999px;
-    padding: 5px 9px;
-    font-size: .72rem;
-    font-weight: 850;
+  .card-head{
+    padding:18px 20px;
+    background:linear-gradient(180deg, #ffffff, #f9fcfa);
+    border-bottom:1px solid var(--pg-line-soft);
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    flex-wrap:wrap;
   }
 
-  .action-btn {
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: .8rem;
+  .card-head h5{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:1rem;
+    font-weight:950;
+    line-height:1.2;
   }
 
-  .empty-state {
-    padding: 42px 18px;
-    text-align: center;
-    color: #64748b;
+  .card-head p{
+    margin:5px 0 0;
+    color:var(--pg-muted);
+    font-size:.84rem;
+    font-weight:650;
+    line-height:1.45;
   }
 
-  .mobile-pg-list {
-    display: none;
+  .table-tools{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
   }
 
-  .mobile-pg-card {
-    border: 1px solid #e5e7eb;
-    background: #fff;
-    border-radius: 16px;
-    padding: 14px;
-    margin-bottom: 12px;
-    box-shadow: 0 8px 20px rgba(15,23,42,.06);
+  .pg-search{
+    min-height:42px;
+    min-width:320px;
+    border-radius:999px;
+    border:1px solid #dce8e1;
+    background:#fff;
+    color:var(--pg-ink);
+    padding:9px 14px;
+    font-size:.88rem;
+    font-weight:750;
+    outline:none;
+    box-shadow:none;
   }
 
-  .hidden-row {
-    display: none !important;
+  .pg-search::placeholder{
+    color:rgba(95,111,103,.72);
+    font-weight:650;
   }
 
-  @media (max-width: 1100px) {
-    .metric-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+  .pg-search:focus{
+    border-color:#8cc9a5;
+    box-shadow:0 0 0 .22rem rgba(173,231,196,.38);
+  }
+
+  .table-shell{
+    border-top:1px solid var(--pg-line-soft);
+    overflow-x:auto;
+  }
+
+  .assigned-table{
+    margin:0;
+    min-width:1040px;
+    border-collapse:separate;
+    border-spacing:0;
+  }
+
+  .assigned-table thead th{
+    background:#f4f9f6;
+    color:var(--pg-brand);
+    font-size:.74rem;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.055em;
+    border-bottom:1px solid #dde9e2;
+    padding:14px 16px;
+    white-space:nowrap;
+  }
+
+  .assigned-table thead th:first-child{
+    padding-left:18px;
+  }
+
+  .assigned-table tbody td{
+    vertical-align:middle;
+    padding:16px;
+    border-bottom:1px solid #edf2ef;
+    background:#fff;
+    color:var(--pg-ink);
+    font-size:.9rem;
+  }
+
+  .assigned-table tbody tr:last-child td{
+    border-bottom:0;
+  }
+
+  .assigned-table tbody tr:hover td{
+    background:#fbfefc;
+  }
+
+  .pg-identity{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    min-width:0;
+  }
+
+  .pg-name{
+    color:var(--pg-ink);
+    font-weight:950;
+    line-height:1.25;
+    letter-spacing:-.01em;
+    word-break:break-word;
+  }
+
+  .pg-id-text{
+    display:block;
+    color:#64748b;
+    font-size:.76rem;
+    font-weight:700;
+    word-break:break-word;
+  }
+
+  .location-main{
+    color:var(--pg-ink);
+    font-weight:750;
+    line-height:1.35;
+  }
+
+  .text-soft{
+    color:var(--pg-muted);
+  }
+
+  .soft-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    padding:6px 12px;
+    font-size:.73rem;
+    font-weight:900;
+    border:1px solid transparent;
+    white-space:nowrap;
+    line-height:1;
+    min-height:27px;
+  }
+
+  .soft-badge.approved{
+    background:rgba(25,135,84,.12);
+    color:#198754;
+    border-color:rgba(25,135,84,.16);
+  }
+
+  .soft-badge.pending{
+    background:rgba(255,193,7,.16);
+    color:#8a6200;
+    border-color:rgba(255,193,7,.20);
+  }
+
+  .soft-badge.rejected{
+    background:rgba(200,67,67,.10);
+    color:#b42323;
+    border-color:rgba(200,67,67,.18);
+  }
+
+  .soft-badge.draft{
+    background:#f8fafc;
+    color:#475569;
+    border-color:#e2e8f0;
+  }
+
+  .pg-action-cell{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:nowrap;
+    min-width:265px;
+  }
+
+  .pg-primary-action{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    background:var(--pg-brand);
+    color:#fff;
+    border:1px solid var(--pg-brand);
+    font-size:.8rem;
+    font-weight:900;
+    padding:.58rem 1.05rem;
+    line-height:1;
+    white-space:nowrap;
+    text-decoration:none;
+    box-shadow:0 10px 18px -14px rgba(11,77,58,.65);
+    transition:none !important;
+  }
+
+  .pg-primary-action:hover{
+    background:var(--pg-brand-dark);
+    color:#fff;
+    border-color:var(--pg-brand-dark);
+  }
+
+  .pg-secondary-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+  }
+
+  .pg-secondary-actions a{
+    color:var(--pg-brand);
+    text-decoration:none;
+    font-size:.78rem;
+    font-weight:850;
+    padding:.38rem .62rem;
+    border-radius:999px;
+    background:rgba(173,231,196,.26);
+    border:1px solid rgba(11,77,58,.10);
+    line-height:1;
+    transition:none !important;
+  }
+
+  .pg-secondary-actions a:hover{
+    background:rgba(173,231,196,.48);
+    color:var(--pg-brand);
+  }
+
+  .pg-secondary-actions span{
+    width:1px;
+    height:16px;
+    background:rgba(15,23,42,.12);
+    flex:0 0 auto;
+  }
+
+  .empty-state{
+    padding:46px 18px;
+    text-align:center;
+    color:var(--pg-muted);
+  }
+
+  .empty-state strong{
+    display:block;
+    color:var(--pg-brand);
+    font-size:1rem;
+    font-weight:950;
+    margin-bottom:6px;
+  }
+
+  .mobile-pg-list{
+    display:none;
+  }
+
+  .mobile-pg-card{
+    background:linear-gradient(180deg, #ffffff, #fbfefc);
+    border:1px solid var(--pg-line-soft);
+    border-radius:16px;
+    padding:15px;
+    box-shadow:var(--pg-shadow-soft);
+  }
+
+  .mobile-pg-card + .mobile-pg-card{
+    margin-top:12px;
+  }
+
+  .mobile-card-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:10px;
+  }
+
+  .mobile-info{
+    margin:10px 0 14px;
+    display:grid;
+    gap:7px;
+    color:var(--pg-ink);
+    font-size:.88rem;
+  }
+
+  .mobile-info strong{
+    color:var(--pg-brand);
+    font-weight:850;
+  }
+
+  .mobile-action-stack{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+    margin-top:12px;
+  }
+
+  .mobile-action-stack .pg-primary-action{
+    width:100%;
+    padding:.72rem 1rem;
+  }
+
+  .mobile-secondary-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+
+  .mobile-secondary-grid a{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--pg-brand);
+    text-decoration:none;
+    font-size:.82rem;
+    font-weight:900;
+    padding:.7rem .75rem;
+    border-radius:999px;
+    background:rgba(173,231,196,.26);
+    border:1px solid rgba(11,77,58,.10);
+    line-height:1;
+  }
+
+  .mobile-secondary-grid a:hover{
+    background:rgba(173,231,196,.48);
+    color:var(--pg-brand);
+  }
+
+  .hidden-row{
+    display:none !important;
+  }
+
+  @media (max-width:1100px){
+    .metric-grid{
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+
+    .pg-search{
+      min-width:260px;
     }
   }
 
-  @media (max-width: 767px) {
-    .assigned-hero {
-      padding: 18px;
-      border-radius: 18px;
+  @media (max-width:767px){
+    .assigned-topbar{
+      padding:18px;
+      border-radius:18px;
     }
 
-    .assigned-hero h3 {
-      font-size: 1.2rem;
+    .assigned-topbar h3{
+      font-size:1.22rem;
     }
 
-    .hero-actions {
-      width: 100%;
+    .assigned-topbar p{
+      font-size:.9rem;
     }
 
-    .hero-actions .btn {
-      width: 100%;
+    .assigned-topbar-actions{
+      width:100%;
+      align-items:stretch;
+      min-width:0;
     }
 
-    .metric-grid {
-      grid-template-columns: 1fr;
+    .topbar-btn-row{
+      width:100%;
+      justify-content:stretch;
     }
 
-    .desktop-table-wrap {
-      display: none;
+    .topbar-btn-row .pg-btn{
+      width:100%;
     }
 
-    .mobile-pg-list {
-      display: block;
+    .metric-grid{
+      grid-template-columns:1fr;
+    }
+
+    .metric-card{
+      min-height:104px;
+    }
+
+    .card-head{
+      padding:16px;
     }
 
     .table-tools,
-    .pg-search {
-      width: 100%;
-      min-width: 0;
+    .pg-search{
+      width:100%;
+      min-width:0;
+    }
+
+    .desktop-table-wrap{
+      display:none;
+    }
+
+    .mobile-pg-list{
+      display:block;
+      padding:16px;
+      border-top:1px solid var(--pg-line-soft);
+    }
+  }
+
+  @media (max-width:420px){
+    .mobile-card-head{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+
+    .mobile-secondary-grid{
+      grid-template-columns:1fr;
     }
   }
 </style>
@@ -273,8 +637,9 @@
 {% endfor %}
 
 <div class="assigned-page">
-  <div class="assigned-hero mb-4">
-    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+
+  <div class="assigned-topbar">
+    <div class="assigned-topbar-inner">
       <div>
         <h3>Assigned PGs</h3>
         <p>
@@ -287,16 +652,17 @@
         </p>
       </div>
 
-      <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
-        <span class="hero-pill">
+      <div class="assigned-topbar-actions">
+        <span class="status-pill">
+          <span class="status-dot"></span>
           Total Assigned PGs: {{ total_pgs or 0 }}
         </span>
 
-        <div class="hero-actions">
-          <a href="{{ url_for('clf.dashboard') }}" class="btn btn-light btn-sm">
+        <div class="topbar-btn-row">
+          <a href="{{ url_for('clf.dashboard') }}" class="btn pg-btn pg-btn-dashboard">
             Dashboard
           </a>
-          <a href="{{ url_for('clf.cashflow') }}" class="btn btn-outline-light btn-sm">
+          <a href="{{ url_for('clf.cashflow') }}" class="btn pg-btn pg-btn-outline">
             Cashflow
           </a>
         </div>
@@ -304,25 +670,29 @@
     </div>
   </div>
 
-  <div class="metric-grid mb-4">
+  <div class="metric-grid">
     <div class="metric-card">
       <small>Total Assigned PGs</small>
       <strong>{{ total_pgs or 0 }}</strong>
+      <span>PGs mapped under this CLF</span>
     </div>
 
     <div class="metric-card">
       <small>PG Registration Approved</small>
       <strong id="approvedPgCount">0</strong>
+      <span>Registration forms approved</span>
     </div>
 
     <div class="metric-card">
       <small>PG Registration Pending</small>
       <strong id="pendingPgCount">0</strong>
+      <span>Draft, submitted, or resubmitted</span>
     </div>
 
     <div class="metric-card">
       <small>Rejected PG Forms</small>
       <strong id="rejectedPgCount">0</strong>
+      <span>Returned for correction</span>
     </div>
   </div>
 
@@ -344,17 +714,17 @@
       </div>
     </div>
 
-    <div class="desktop-table-wrap">
-      <table class="table table-hover mb-0" id="assignedPgTable">
+    <div class="desktop-table-wrap table-shell">
+      <table class="table table-hover assigned-table mb-0" id="assignedPgTable">
         <thead>
           <tr>
-            <th style="width: 60px;">#</th>
-            <th>PG</th>
-            <th>Gram Panchayat</th>
-            <th>Village</th>
-            <th>PG Registration</th>
-            <th>Membership</th>
-            <th style="width: 210px;">Action</th>
+            <th style="width:60px;">#</th>
+            <th style="min-width:210px;">PG</th>
+            <th style="min-width:160px;">Gram Panchayat</th>
+            <th style="min-width:150px;">Village</th>
+            <th style="min-width:150px;">PG Registration</th>
+            <th style="min-width:140px;">Membership</th>
+            <th style="width:300px; min-width:300px;">Action</th>
           </tr>
         </thead>
 
@@ -363,6 +733,7 @@
             {% set pg = row.pg %}
             {% set reg_status = row.registration_status or 'draft' %}
             {% set mem_status = row.member_registration_status or 'draft' %}
+
             <tr
               class="pg-row"
               data-reg-status="{{ reg_status }}"
@@ -372,50 +743,64 @@
               <td>{{ loop.index }}</td>
 
               <td>
-                <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
-                <small class="text-soft">ID: {{ pg._id }}</small>
+                <div class="pg-identity">
+                  <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
+                  <span class="pg-id-text">ID: {{ pg._id }}</span>
+                </div>
               </td>
 
-              <td>{{ pg['Gram Panchayat'] or '-' }}</td>
-              <td>{{ pg.Village or pg.village or '-' }}</td>
+              <td>
+                <div class="location-main">{{ pg['Gram Panchayat'] or '-' }}</div>
+              </td>
+
+              <td>
+                <div class="location-main">{{ pg.Village or pg.village or '-' }}</div>
+              </td>
 
               <td>
                 {% if reg_status == 'approved' %}
-                  <span class="badge text-bg-success badge-soft">Approved</span>
+                  <span class="soft-badge approved">Approved</span>
                 {% elif reg_status == 'submitted' or reg_status == 'resubmitted' %}
-                  <span class="badge text-bg-warning badge-soft">{{ reg_status|capitalize }}</span>
+                  <span class="soft-badge pending">{{ reg_status|capitalize }}</span>
                 {% elif reg_status == 'rejected' %}
-                  <span class="badge text-bg-danger badge-soft">Rejected</span>
+                  <span class="soft-badge rejected">Rejected</span>
                 {% else %}
-                  <span class="badge text-bg-light border badge-soft">Draft</span>
+                  <span class="soft-badge draft">Draft</span>
                 {% endif %}
               </td>
 
               <td>
                 {% if mem_status == 'approved' %}
-                  <span class="badge text-bg-success badge-soft">Approved</span>
+                  <span class="soft-badge approved">Approved</span>
                 {% elif mem_status == 'submitted' or mem_status == 'resubmitted' %}
-                  <span class="badge text-bg-warning badge-soft">{{ mem_status|capitalize }}</span>
+                  <span class="soft-badge pending">{{ mem_status|capitalize }}</span>
                 {% elif mem_status == 'rejected' %}
-                  <span class="badge text-bg-danger badge-soft">Rejected</span>
+                  <span class="soft-badge rejected">Rejected</span>
                 {% else %}
-                  <span class="badge text-bg-light border badge-soft">Draft</span>
+                  <span class="soft-badge draft">Draft</span>
                 {% endif %}
               </td>
 
               <td>
-                <div class="d-flex flex-wrap gap-1">
-                  <a href="{{ url_for('clf.view_pg', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-success action-btn">
-                    View
+                <div class="pg-action-cell" style=" margin-left: 20px;">
+
+                  <a href="{{ url_for('pg.pg_view', pg_id=pg._id|string) }}" class="pg-primary-action" style=" margin-left: 20px;">
+                    Open PG
                   </a>
 
-                  <a href="{{ url_for('pg.pg_registration', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-primary action-btn">
-                    Registration
+                  <a href="{{ url_for('clf.view_pg', pg_id=pg._id|string) }}" class="pg-primary-action" style=" margin-left: 20px;">
+                    View PG
                   </a>
 
-                  <a href="{{ url_for('pg.pg_members', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-secondary action-btn">
-                    Members
-                  </a>
+                  <!-- <div class="pg-secondary-actions">
+                    <a href="{{ url_for('pg.pg_registration', pg_id=pg._id|string) }}">
+                      Registration
+                    </a>
+                    <span></span>
+                    <a href="{{ url_for('pg.pg_members', pg_id=pg._id|string) }}">
+                      Members
+                    </a>
+                  </div> -->
                 </div>
               </td>
             </tr>
@@ -423,7 +808,7 @@
             <tr>
               <td colspan="7">
                 <div class="empty-state">
-                  <strong>No PG assigned yet.</strong>
+                  <strong>No PG assigned yet</strong>
                   <div>Ask Block Admin to assign PGs to this CLF Admin.</div>
                 </div>
               </td>
@@ -433,7 +818,7 @@
       </table>
     </div>
 
-    <div class="mobile-pg-list p-3">
+    <div class="mobile-pg-list">
       {% for row in rows %}
         {% set pg = row.pg %}
         {% set reg_status = row.registration_status or 'draft' %}
@@ -445,47 +830,49 @@
           data-mem-status="{{ mem_status }}"
           data-search="{{ (pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ reg_status|lower }} {{ mem_status|lower }}"
         >
-          <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-            <div>
+          <div class="mobile-card-head">
+            <div class="pg-identity">
               <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
-              <small class="text-soft">ID: {{ pg._id }}</small>
+              <span class="pg-id-text">ID: {{ pg._id }}</span>
             </div>
 
             {% if reg_status == 'approved' %}
-              <span class="badge text-bg-success badge-soft">Approved</span>
+              <span class="soft-badge approved">Approved</span>
             {% elif reg_status == 'submitted' or reg_status == 'resubmitted' %}
-              <span class="badge text-bg-warning badge-soft">{{ reg_status|capitalize }}</span>
+              <span class="soft-badge pending">{{ reg_status|capitalize }}</span>
             {% elif reg_status == 'rejected' %}
-              <span class="badge text-bg-danger badge-soft">Rejected</span>
+              <span class="soft-badge rejected">Rejected</span>
             {% else %}
-              <span class="badge text-bg-light border badge-soft">Draft</span>
+              <span class="soft-badge draft">Draft</span>
             {% endif %}
           </div>
 
-          <div class="small text-soft mb-3">
+          <div class="mobile-info">
             <div><strong>Gram Panchayat:</strong> {{ pg['Gram Panchayat'] or '-' }}</div>
             <div><strong>Village:</strong> {{ pg.Village or pg.village or '-' }}</div>
             <div><strong>PG Registration:</strong> {{ reg_status|capitalize }}</div>
             <div><strong>Membership:</strong> {{ mem_status|capitalize }}</div>
           </div>
 
-          <div class="d-grid gap-2">
-            <a href="{{ url_for('clf.view_pg', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-success action-btn">
+          <div class="mobile-action-stack">
+            <a href="{{ url_for('clf.view_pg', pg_id=pg._id|string) }}" class="pg-primary-action">
               View PG
             </a>
 
-            <a href="{{ url_for('pg.pg_registration', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-primary action-btn">
-              Registration
-            </a>
+            <div class="mobile-secondary-grid">
+              <a href="{{ url_for('pg.pg_registration', pg_id=pg._id|string) }}">
+                Registration
+              </a>
 
-            <a href="{{ url_for('pg.pg_members', pg_id=pg._id|string) }}" class="btn btn-sm btn-outline-secondary action-btn">
-              Members
-            </a>
+              <a href="{{ url_for('pg.pg_members', pg_id=pg._id|string) }}">
+                Members
+              </a>
+            </div>
           </div>
         </div>
       {% else %}
         <div class="empty-state">
-          <strong>No PG assigned yet.</strong>
+          <strong>No PG assigned yet</strong>
           <div>Ask Block Admin to assign PGs to this CLF Admin.</div>
         </div>
       {% endfor %}
