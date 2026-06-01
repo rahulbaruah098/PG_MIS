@@ -1049,6 +1049,7 @@
         <div class="pmd-table-wrap">
           <div class="pmd-table-scroll">
             <table class="pmd-table" id="pmdEditTable">
+
               <thead>
                 <tr>
                   <th class="pmd-col-sl" id="thSl">Sl. No</th>
@@ -1056,24 +1057,22 @@
                   <th class="pmd-col-spouse" id="thSpouse">Father/Mother/Spouse Name</th>
                   <th class="pmd-col-cat" id="thCategory">Category</th>
                   <th class="pmd-col-shg" id="thShg">SHG</th>
+
                   {% if sector == 'Agri' %}
-                    
-                    <th class="pmd-col-sector-a" id="thCrop">Crop</th>
+                  <th class="pmd-col-sector-b" id="thFfs">FFS Module</th>
+                  <th class="pmd-col-sector-a" id="thCrop">Crop</th>
                   {% elif sector == 'ARDD' %}
                     <th class="pmd-col-sector-a" id="thArddType">Activity</th>
                     <th class="pmd-col-sector-b" id="thArddUnit">Unit</th>
                   {% elif sector == 'Fishery' %}
                     <th class="pmd-col-sector-a" id="thFisheryType">Fishery Activity</th>
                   {% endif %}
+
                   <th class="pmd-col-contact" id="thContact">Contact</th>
-                  
                   <th class="pmd-col-bank" id="thBank">Bank</th>
                   <th class="pmd-col-branch" id="thBranch">Branch</th>
                   <th class="pmd-col-account" id="thAccount">Account</th>
                   <th class="pmd-col-fee" id="thFee">Fee</th>
-{#
-<th class="pmd-col-lakhpati" id="thLakhpati">Lakhpati Didi?</th>
-#}
                   <th class="pmd-col-action" style="text-align:right;" id="thAction">Action</th>
                 </tr>
               </thead>
@@ -1106,45 +1105,49 @@
                   </td>
 
                   {% if sector == 'Agri' %}
-                  <td class="pmd-col-sector-b" style="vertical-align:top;" data-label="FFS Module">
-                    <select class="pmd-input" name="agri_ffs_module" data-field="agri_ffs_module" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
-                      <option value="">Select FFS Module</option>
-                      {% for opt in agri_ffs_modules %}
-                        <option value="{{ opt }}" {% if r.agri_ffs_module == opt %}selected{% endif %}>{{ opt }}</option>
-                      {% endfor %}
-                    </select>
-                  </td>
-                  <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Crop">
-                    <select class="pmd-input" name="agri_crop" data-field="agri_crop" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
-                      <option value="">Select Crop</option>
-                      {% for opt in agri_crops %}
-                        <option value="{{ opt }}" {% if r.agri_crop == opt %}selected{% endif %}>{{ opt }}</option>
-                      {% endfor %}
-                    </select>
-                  </td>
+
+                   <td class="pmd-col-sector-b" style="vertical-align:top;" data-label="FFS Module">
+                      <select class="pmd-input" name="agri_ffs_module" data-field="agri_ffs_module" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
+                        <option value="">Select FFS Module</option>
+                        {% for opt in agri_ffs_modules %}
+                          <option value="{{ opt }}" {% if r.agri_ffs_module == opt %}selected{% endif %}>{{ opt }}</option>
+                        {% endfor %}
+                      </select>
+                    </td>
+                    
+                    <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Crop">
+                      <select class="pmd-input" name="agri_crop" data-field="agri_crop" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
+                        <option value="">Select Crop</option>
+                        {% for opt in agri_crops %}
+                          <option value="{{ opt }}" {% if r.agri_crop == opt %}selected{% endif %}>{{ opt }}</option>
+                        {% endfor %}
+                      </select>
+                    </td>
+
+                   
                   {% elif sector == 'ARDD' %}
-                  <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Activity">
-                    <select class="pmd-input js-ardd-activity" name="ardd_activity" data-field="ardd_activity" data-row-form="{{ fid }}" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
-                      <option value="">Select Activity</option>
-                      {% for opt in ardd_activities %}
-                        <option value="{{ opt }}" {% if r.ardd_activity == opt %}selected{% endif %}>{{ opt }}</option>
-                      {% endfor %}
-                    </select>
-                  </td>
-                  <td class="pmd-col-sector-b" style="vertical-align:top;" data-label="Unit">
-                    <select class="pmd-input js-ardd-unit" name="ardd_unit" data-field="ardd_unit" data-row-form="{{ fid }}" data-selected="{{ r.ardd_unit or '' }}" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
-                      <option value="">Select Unit</option>
-                    </select>
-                  </td>
+                    <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Activity">
+                      <select class="pmd-input js-ardd-activity" name="ardd_activity" data-field="ardd_activity" data-row-form="{{ fid }}" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
+                        <option value="">Select Activity</option>
+                        {% for opt in ardd_activities %}
+                          <option value="{{ opt }}" {% if r.ardd_activity == opt %}selected{% endif %}>{{ opt }}</option>
+                        {% endfor %}
+                      </select>
+                    </td>
+                    <td class="pmd-col-sector-b" style="vertical-align:top;" data-label="Unit">
+                      <select class="pmd-input js-ardd-unit" name="ardd_unit" data-field="ardd_unit" data-row-form="{{ fid }}" data-selected="{{ r.ardd_unit or '' }}" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
+                        <option value="">Select Unit</option>
+                      </select>
+                    </td>
                   {% elif sector == 'Fishery' %}
-                  <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Fishery Activity">
-                    <select class="pmd-input" name="fishery_activity" data-field="fishery_activity" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
-                      <option value="">Select Fishery Activity</option>
-                      {% for opt in fishery_activities %}
-                        <option value="{{ opt }}" {% if r.fishery_activity == opt %}selected{% endif %}>{{ opt }}</option>
-                      {% endfor %}
-                    </select>
-                  </td>
+                    <td class="pmd-col-sector-a" style="vertical-align:top;" data-label="Fishery Activity">
+                      <select class="pmd-input" name="fishery_activity" data-field="fishery_activity" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
+                        <option value="">Select Fishery Activity</option>
+                        {% for opt in fishery_activities %}
+                          <option value="{{ opt }}" {% if r.fishery_activity == opt %}selected{% endif %}>{{ opt }}</option>
+                        {% endfor %}
+                      </select>
+                    </td>
                   {% endif %}
 
                   <td class="pmd-col-contact" style="vertical-align:top;" data-label="Contact">
@@ -1166,15 +1169,6 @@
                   <td class="pmd-col-fee" style="vertical-align:top;" data-label="Fee">
                     <input class="pmd-input" name="membership_fee_paid" value="{{ r.membership_fee_paid if r.membership_fee_paid is not none else '' }}" placeholder="0" inputmode="decimal" data-field="membership_fee_paid" form="{{ fid }}" {% if r.row_locked or r.row_readonly %}disabled{% endif %}>
                   </td>
-
-                  
-                    <!-- <td class="pmd-col-lakhpati" style="vertical-align:top;" data-label="Lakhpati Didi?">
-                      <select class="pmd-input" data-field="lakh_pati_didi" name="lakh_pati_didi" form="{{ fid }}" style="font-weight:800;">
-                        <option value="no" {% if not r.lakh_pati_didi %}selected{% endif %}>No</option>
-                        <option value="yes" {% if r.lakh_pati_didi %}selected{% endif %}>Yes</option>
-                      </select>
-                    </td> -->
-                  
 
                   <td class="pmd-col-action" style="vertical-align:top; text-align:right;" data-label="Action">
                     <form method="POST" class="m-0 p-0 pmd-editForm" id="{{ fid }}">
@@ -1208,6 +1202,8 @@
                 </tr>
                 {% endfor %}
               </tbody>
+
+
             </table>
           </div>
         </div>
