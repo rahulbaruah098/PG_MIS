@@ -734,20 +734,20 @@
             {% set reg_status = row.registration_status or 'draft' %}
             {% set mem_status = row.member_registration_status or 'draft' %}
 
-            <tr
-              class="pg-row"
-              data-reg-status="{{ reg_status }}"
-              data-mem-status="{{ mem_status }}"
-              data-search="{{ (pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ reg_status|lower }} {{ mem_status|lower }}"
-            >
+              <tr
+                class="pg-row"
+                data-pg-id="{{ pg._id }}"
+                data-reg-status="{{ reg_status }}"
+                data-mem-status="{{ mem_status }}"
+                data-search="{{ (pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ reg_status|lower }} {{ mem_status|lower }}"
+              >
               <td>{{ loop.index }}</td>
 
-              <td>
-                <div class="pg-identity">
-                  <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
-                  <span class="pg-id-text">ID: {{ pg._id }}</span>
-                </div>
-              </td>
+                <td>
+            <div class="pg-identity">
+              <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
+            </div>
+                </td>
 
               <td>
                 <div class="location-main">{{ pg['Gram Panchayat'] or '-' }}</div>
@@ -824,17 +824,17 @@
         {% set reg_status = row.registration_status or 'draft' %}
         {% set mem_status = row.member_registration_status or 'draft' %}
 
-        <div
-          class="mobile-pg-card pg-row"
-          data-reg-status="{{ reg_status }}"
-          data-mem-status="{{ mem_status }}"
-          data-search="{{ (pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ reg_status|lower }} {{ mem_status|lower }}"
-        >
+            <div
+              class="mobile-pg-card pg-row"
+              data-pg-id="{{ pg._id }}"
+              data-reg-status="{{ reg_status }}"
+              data-mem-status="{{ mem_status }}"
+              data-search="{{ (pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ reg_status|lower }} {{ mem_status|lower }}"
+            >
           <div class="mobile-card-head">
-            <div class="pg-identity">
-              <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
-              <span class="pg-id-text">ID: {{ pg._id }}</span>
-            </div>
+              <div class="pg-identity">
+                <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
+              </div>
 
             {% if reg_status == 'approved' %}
               <span class="soft-badge approved">Approved</span>
@@ -892,18 +892,16 @@
     function updateCounts() {
       const unique = new Map();
 
-      rows.forEach((row) => {
-        const pgIdText = row.innerText || "";
-        const keyMatch = pgIdText.match(/ID:\s*([a-f0-9]{24})/i);
-        const key = keyMatch ? keyMatch[1] : pgIdText.slice(0, 80);
+            rows.forEach((row) => {
+              const key = row.dataset.pgId || (row.dataset.search || row.innerText || "").slice(0, 80);
 
-        if (!unique.has(key)) {
-          unique.set(key, {
-            reg: (row.dataset.regStatus || "draft").toLowerCase(),
-            mem: (row.dataset.memStatus || "draft").toLowerCase()
-          });
-        }
-      });
+              if (!unique.has(key)) {
+                unique.set(key, {
+                  reg: (row.dataset.regStatus || "draft").toLowerCase(),
+                  mem: (row.dataset.memStatus || "draft").toLowerCase()
+                });
+              }
+            });
 
       let approved = 0;
       let pending = 0;

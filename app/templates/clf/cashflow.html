@@ -350,16 +350,20 @@
   }
 
   .table-shell{
+    width:100%;
+    max-width:100%;
     border-top:1px solid var(--pg-line-soft);
     overflow-x:auto;
   }
 
-  .pg-table{
-    margin:0;
-    min-width:980px;
-    border-collapse:separate;
-    border-spacing:0;
-  }
+    .pg-table{
+      margin:0;
+      width:100%;
+      min-width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      table-layout:fixed;
+    }
 
   .pg-table thead th{
     background:#f4f9f6;
@@ -409,6 +413,42 @@
     word-break:break-word;
   }
 
+  .pg-table th:nth-child(1),
+.pg-table td:nth-child(1){
+  width:60px;
+}
+
+.pg-table th:nth-child(2),
+.pg-table td:nth-child(2){
+  width:22%;
+}
+
+.pg-table th:nth-child(3),
+.pg-table td:nth-child(3){
+  width:12%;
+}
+
+.pg-table th:nth-child(4),
+.pg-table td:nth-child(4){
+  width:20%;
+}
+
+.pg-table th:nth-child(5),
+.pg-table td:nth-child(5){
+  width:20%;
+}
+
+.pg-table th:nth-child(6),
+.pg-table td:nth-child(6){
+  width:12%;
+  text-align:center;
+}
+
+.pg-table th:nth-child(7),
+.pg-table td:nth-child(7){
+  width:14%;
+  text-align:center;
+}
   .pg-id-text{
     display:block;
     color:#64748b;
@@ -555,60 +595,60 @@
     }
   }
 
-  @media (max-width:767px){
-    .cashflow-topbar{
-      padding:18px;
-      border-radius:18px;
-    }
-
-    .cashflow-topbar h3{
-      font-size:1.35rem;
-    }
-
-    .cashflow-topbar p{
-      font-size:.9rem;
-    }
-
-    .topbar-actions{
-      width:100%;
-      min-width:0;
-      align-items:stretch;
-    }
-
-    .topbar-btn-row{
-      width:100%;
-      justify-content:stretch;
-    }
-
-    .topbar-btn-row .pg-btn{
-      width:100%;
-      text-align:center;
-    }
-
-    .metric-grid,
-    .detail-grid{
-      grid-template-columns:1fr;
-    }
-
-    .metric-card{
-      min-height:105px;
-    }
-
-    .card-head,
-    .card-body-clean{
-      padding:16px;
-    }
-
-    .desktop-table-wrap{
-      display:none;
-    }
-
-    .mobile-pg-list{
-      display:block;
-      padding:16px;
-      border-top:1px solid var(--pg-line-soft);
-    }
+@media (max-width:767px){
+  .cashflow-topbar{
+    padding:18px;
+    border-radius:18px;
   }
+
+  .cashflow-topbar h3{
+    font-size:1.35rem;
+  }
+
+  .cashflow-topbar p{
+    font-size:.9rem;
+  }
+
+  .topbar-actions{
+    width:100%;
+    min-width:0;
+    align-items:stretch;
+  }
+
+  .topbar-btn-row{
+    width:100%;
+    justify-content:stretch;
+  }
+
+  .topbar-btn-row .pg-btn{
+    width:100%;
+    text-align:center;
+  }
+
+  .metric-grid,
+  .detail-grid{
+    grid-template-columns:1fr;
+  }
+
+  .metric-card{
+    min-height:105px;
+  }
+
+  .card-head,
+  .card-body-clean{
+    padding:16px;
+  }
+
+  .desktop-table-wrap{
+    display:none;
+  }
+
+  .mobile-pg-list{
+    display:block;
+    padding:16px;
+    border-top:1px solid var(--pg-line-soft);
+  }
+}
 
   @media (max-width:420px){
     .mobile-card-head{
@@ -778,12 +818,11 @@
             <tr>
               <td>{{ loop.index }}</td>
 
-              <td>
-                <div class="pg-identity">
-                  <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
-                  <span class="pg-id-text">ID: {{ pg._id }}</span>
-                </div>
-              </td>
+                <td>
+                  <div class="pg-identity">
+                    <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
+                  </div>
+                </td>
 
               <td>
                 <div class="location-main">{{ pg.sector or '-' }}</div>
@@ -833,9 +872,9 @@
         <div class="mobile-pg-card">
           <div class="mobile-card-head">
             <div class="pg-identity">
-              <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
-              <span class="pg-id-text">ID: {{ pg._id }}</span>
-            </div>
+              <div class="pg-identity">
+                <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
+              </div>
 
             {% set status = pg.status or 'draft' %}
             {% if status == 'active' %}

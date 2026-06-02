@@ -339,17 +339,55 @@
     margin-bottom:18px;
   }
 
-  .table-shell{
-    border-top:1px solid var(--pg-line-soft);
-    overflow-x:auto;
-  }
+.table-shell{
+  width:100%;
+  max-width:100%;
+  border-top:1px solid var(--pg-line-soft);
+  overflow-x:auto;
+}
 
-  .pg-table{
-    margin:0;
-    min-width:900px;
-    border-collapse:separate;
-    border-spacing:0;
-  }
+.pg-table{
+  margin:0;
+  width:100%;
+  min-width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  table-layout:fixed;
+}
+
+
+.pg-table th:nth-child(1),
+.pg-table td:nth-child(1){
+  width:60px;
+}
+
+.pg-table th:nth-child(2),
+.pg-table td:nth-child(2){
+  width:24%;
+}
+
+.pg-table th:nth-child(3),
+.pg-table td:nth-child(3){
+  width:22%;
+}
+
+.pg-table th:nth-child(4),
+.pg-table td:nth-child(4){
+  width:18%;
+  text-align:center;
+}
+
+.pg-table th:nth-child(5),
+.pg-table td:nth-child(5){
+  width:18%;
+  text-align:center;
+}
+
+.pg-table th:nth-child(6),
+.pg-table td:nth-child(6){
+  width:18%;
+  text-align:center;
+}
 
   .pg-table thead th{
     background:#f4f9f6;
@@ -864,12 +902,11 @@
             <tr>
               <td>{{ loop.index }}</td>
 
-              <td>
-                <div class="pg-identity">
-                  <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
-                  <span class="pg-id-text">ID: {{ pg._id }}</span>
-                </div>
-              </td>
+                <td>
+                  <div class="pg-identity">
+                    <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
+                  </div>
+                </td>
 
               <td>
                 <div class="location-main">{{ pg.Village or pg.village or '-' }}</div>
@@ -926,10 +963,9 @@
 
         <div class="mobile-pg-card">
           <div class="mobile-card-head">
-            <div class="pg-identity">
-              <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
-              <span class="pg-id-text">ID: {{ pg._id }}</span>
-            </div>
+              <div class="pg-identity">
+                <div class="pg-name">{{ pg.name or pg.pg_name or 'Unnamed PG' }}</div>
+              </div>
 
             {% if reg_status == 'approved' %}
               <span class="soft-badge approved">Approved</span>
