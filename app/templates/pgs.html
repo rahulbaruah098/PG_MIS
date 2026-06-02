@@ -924,11 +924,13 @@
                       <td class="pgb-num" data-label="#">{{ loop.index }}</td>
 
                       <td class="pgb-name" data-label="PG">
-                        {{ pg.display_name or pg.name or pg.pg_name or '-' }}
-                        <div class="pgb-subtle" style="font-size:11px; margin-top:3px;">
-                          ID: {{ pg._id }}
-                        </div>
-                      </td>
+  {{ pg.display_name or pg.name or pg.pg_name or '-' }}
+  {#
+  <div class="pgb-subtle" style="font-size:11px; margin-top:3px;">
+    ID: {{ pg._id }}
+  </div>
+  #}
+</td>
 
                       <td class="pgb-subtle" data-label="Sector">{{ pg.sector or '-' }}</td>
 
@@ -939,14 +941,16 @@
                       </td>
 
                       <td data-label="Mapped CLF">
-                        {% if is_mapped %}
-                          <span class="pgb-badge is-assigned">{{ clf_name or 'Mapped' }}</span>
-                          <div class="pgb-subtle" style="font-size:11px; margin-top:4px;">
-                            CLF ID: {{ pg.clf_id }}
-                          </div>
-                        {% else %}
-                          <span class="pgb-badge is-unassigned">not assigned</span>
-                        {% endif %}
+                       {% if is_mapped %}
+  <span class="pgb-badge is-assigned">{{ clf_name or 'Mapped' }}</span>
+  {#
+  <div class="pgb-subtle" style="font-size:11px; margin-top:4px;">
+    CLF ID: {{ pg.clf_id }}
+  </div>
+  #}
+{% else %}
+  <span class="pgb-badge is-unassigned">not assigned</span>
+{% endif %}
                       </td>
 
                       <td data-label="CLF Admin">

@@ -478,13 +478,16 @@ def _reports_export_filters(db):
 def export_members_csv():
     import csv, io
     db = current_app.mongo_db
+
     base_match = _pg_match_from_session(session)
     filters = _reports_export_filters(db)
     group_by = (request.args.get("group_by") or "").strip().lower()
     q = (request.args.get("q") or "").strip()
+
     pg_ids, pg_by_id = _pgs_in_scope(db, base_match, filters)
 
     match = {"pg_id": {"$in": pg_ids}} if pg_ids else {"pg_id": {"$in": []}}
+
     if q:
         match["$or"] = [
             {"name": {"$regex": re.escape(q), "$options": "i"}},
@@ -513,24 +516,46 @@ def export_members_csv():
             return ""
 
         agg = {}
-        for mdoc in db.pg_members.find(match, {"pg_id": 1, "lakh_pati_didi": 1}):
+
+        # Lakhpati intentionally hidden/commented out from reports export.
+        for mdoc in db.pg_members.find(match, {"pg_id": 1}):
             pg = pg_by_id.get(mdoc.get("pg_id")) or {}
             key = gkey(pg)
-            if key not in agg:
-                agg[key] = {"members": 0, "lakhpati": 0}
-            agg[key]["members"] += 1
-            if mdoc.get("lakh_pati_didi"):
-                agg[key]["lakhpati"] += 1
 
-        w.writerow(["Group", "Members Count", "Lakhpati Count"])
+            if key not in agg:
+                agg[key] = {"members": 0}
+
+            agg[key]["members"] += 1
+
+        w.writerow(["Group", "Members Count"])
+
         for k in sorted(agg.keys()):
-            w.writerow([k, agg[k]["members"], agg[k]["lakhpati"]])
+            w.writerow([
+                k,
+                agg[k]["members"],
+            ])
+
     else:
         # Row-level export
-        fields = ["PG Name","State","District","Block","Gram Panchayat","Village","Member Name","SHG Name","Category","Contact","Lakhpati Didi"]
+        # Lakhpati Didi column intentionally hidden/commented out from reports export.
+        fields = [
+            "PG Name",
+            "State",
+            "District",
+            "Block",
+            "Gram Panchayat",
+            "Village",
+            "Member Name",
+            "SHG Name",
+            "Category",
+            "Contact",
+        ]
+
         w.writerow(fields)
+
         for mdoc in db.pg_members.find(match).sort([("name", 1)]):
             pg = pg_by_id.get(mdoc.get("pg_id")) or {}
+
             w.writerow([
                 pg.get("name") or "",
                 pg.get("State") or "",
@@ -542,11 +567,15 @@ def export_members_csv():
                 mdoc.get("shg_name") or "",
                 mdoc.get("category") or "",
                 mdoc.get("contact") or "",
-                "Yes" if mdoc.get("lakh_pati_didi") else "No",
             ])
 
     mem.seek(0)
-    return current_app.response_class(mem.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=members.csv"})
+
+    return current_app.response_class(
+        mem.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=members.csv"},
+    )
 
 
 @reports_bp.route("/export/cashbook.csv", methods=["GET"])

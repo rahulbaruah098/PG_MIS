@@ -47,8 +47,30 @@ def _fmt_inr(amount):
         amt = float(amount or 0)
     except Exception:
         amt = 0.0
-    # Format like ₹4,95,000 (no decimals for dashboard display)
-    return "₹{:,.0f}".format(amt)
+
+    sign = "-" if amt < 0 else ""
+    amt = abs(amt)
+
+    # No decimals for dashboard KPI display.
+    n = str(int(round(amt)))
+
+    if len(n) <= 3:
+        formatted = n
+    else:
+        last3 = n[-3:]
+        rest = n[:-3]
+        groups = []
+
+        while len(rest) > 2:
+            groups.insert(0, rest[-2:])
+            rest = rest[:-2]
+
+        if rest:
+            groups.insert(0, rest)
+
+        formatted = ",".join(groups + [last3])
+
+    return f"{sign}₹{formatted}"
 
 
 def _sum_cashbook_rows(rows):
@@ -1030,8 +1052,30 @@ def _fmt_inr(amount):
         amt = float(amount or 0)
     except Exception:
         amt = 0.0
-    # Format like ₹4,95,000 (no decimals for dashboard display)
-    return "₹{:,.0f}".format(amt)
+
+    sign = "-" if amt < 0 else ""
+    amt = abs(amt)
+
+    # No decimals for dashboard KPI display.
+    n = str(int(round(amt)))
+
+    if len(n) <= 3:
+        formatted = n
+    else:
+        last3 = n[-3:]
+        rest = n[:-3]
+        groups = []
+
+        while len(rest) > 2:
+            groups.insert(0, rest[-2:])
+            rest = rest[:-2]
+
+        if rest:
+            groups.insert(0, rest)
+
+        formatted = ",".join(groups + [last3])
+
+    return f"{sign}₹{formatted}"
 
 
 def _count_rows_from_register_doc(doc):

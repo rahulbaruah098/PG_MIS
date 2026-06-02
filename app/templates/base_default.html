@@ -1193,6 +1193,24 @@ transition:none !important;
               </a>
             </li>
             <li>
+          </ul>
+
+                    {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN'] %}
+          <div class="nav-section">PG Operations</div>
+          <ul class="nav-item-group">
+            <li>
+              <a class="nav-item" data-page="pg-management" href="{{ url_for('master_data.manage_pgs') }}">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <path d="M20 8v6"></path>
+                  <path d="M23 11h-6"></path>
+                </svg>
+                <span class="nav-text">PG Management</span>
+              </a>
+            </li>
+
+            <li>
               <a class="nav-item" data-page="pg-overall-export" href="{{ url_for('reports.pg_overall_report') }}">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -1203,6 +1221,7 @@ transition:none !important;
               </a>
             </li>
           </ul>
+          {% endif %}
 
           {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN'] %}
           <div class="nav-section">CLF Surveillance</div>
@@ -1229,17 +1248,6 @@ transition:none !important;
                   <path d="M17 16v-4"></path>
                 </svg>
                 <span class="nav-text">CLF-wise Monitoring</span>
-              </a>
-            </li>
-            <li>
-              <a class="nav-item" data-page="district-pg-master" href="{{ url_for('master_data.manage_pgs') }}">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="8.5" cy="7" r="4"></circle>
-                  <path d="M20 8v6"></path>
-                  <path d="M23 11h-6"></path>
-                </svg>
-                <span class="nav-text">PG Master View</span>
               </a>
             </li>
           </ul>
@@ -1305,20 +1313,6 @@ transition:none !important;
                     <rect x="3" y="14" width="7" height="7"></rect>
                   </svg>
                   <span class="nav-text">Blocks</span>
-                </a>
-              </li>
-              {% endif %}
-
-              {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN','BLOCK_ADMIN'] %}
-              <li>
-                <a class="nav-item" data-page="pgs" href="{{ url_for('master_data.manage_pgs') }}">
-                  <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="8.5" cy="7" r="4"></circle>
-                    <path d="M20 8v6"></path>
-                    <path d="M23 11h-6"></path>
-                  </svg>
-                  <span class="nav-text">PGs</span>
                 </a>
               </li>
               {% endif %}
@@ -1403,19 +1397,6 @@ transition:none !important;
             {% endif %}
           </ul>
           {% endif %}
-
-          <div class="nav-section">PG Operations</div>
-          <ul class="nav-item-group">
-            <li>
-              <a class="nav-item" data-page="pg-management" href="{{ url_for('master_data.manage_pgs') }}">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M12 20h9"></path>
-                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-                </svg>
-                <span class="nav-text">PG Management</span>
-              </a>
-            </li>
-          </ul>
 
           {% endif %}
 

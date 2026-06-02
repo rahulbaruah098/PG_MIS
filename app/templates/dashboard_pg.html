@@ -995,12 +995,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
             {{ pg.name if pg and pg.name else "USER" }}
           </h1>
 
-          <p class="text-sm md:text-[15px] text-slate-700 mt-2"
-             data-i18n="dash_snapshot_line"
-             data-en="Here’s a quick snapshot of your registers, books and key trends."
-             data-bn="আপনার রেজিস্টার, বই এবং গুরুত্বপূর্ণ ট্রেন্ডগুলোর একটি দ্রুত সারাংশ দেখুন।">
-            Here’s a quick snapshot of your registers, books and key trends.
-          </p>
+          
         </div>
 
         <div class="welcome-pill">
@@ -1022,7 +1017,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
         <div class="pg-validation-head">
           <div>
             <div class="pg-validation-title">PG Registration Validation</div>
-            <div class="pg-validation-sub">Block Admin approval status for your PG Registration Form.</div>
+           
           </div>
           <span class="pg-validation-status is-{{ _reg_status|lower }}">
             {{ _reg_status|replace('_', ' ')|capitalize }}
@@ -1042,9 +1037,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
             Your PG Registration Form has been approved. Editing is locked unless reopened by the authority.
           </div>
         {% else %}
-          <div class="pg-validation-note">
-            Complete your PG Registration Form and submit it for Block Admin validation.
-          </div>
+          
         {% endif %}
 
         <div class="pg-validation-actions">
@@ -1067,7 +1060,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
         <div class="pg-validation-head">
           <div>
             <div class="pg-validation-title">Membership Registration Validation</div>
-            <div class="pg-validation-sub">Block Admin approval status for your PG Membership Register.</div>
+           
           </div>
           <span class="pg-validation-status is-{{ _member_status|lower }}">
             {{ _member_status|replace('_', ' ')|capitalize }}
@@ -1087,9 +1080,7 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
             Your Membership Register has been approved. Editing is locked unless reopened by the authority.
           </div>
         {% else %}
-          <div class="pg-validation-note">
-            Complete the Membership Register and submit it for Block Admin validation.
-          </div>
+          
         {% endif %}
 
         <div class="pg-validation-actions">
@@ -1259,7 +1250,7 @@ function __closeGate(){
       // Welcome
       dash_tripura_pg_systems: { en: "Tripura PG Systems", bn: "ত্রিপুরা পিজি সিস্টেমস" },
       dash_welcome_pg: { en: "WELCOME", bn: "স্বাগতম" },
-      dash_snapshot_line: { en: "Here’s a quick snapshot of your registers, books and key trends.", bn: "আপনার রেজিস্টার, বই এবং গুরুত্বপূর্ণ ট্রেন্ডগুলোর একটি দ্রুত সারাংশ দেখুন।" },
+
       dash_live_view: { en: "Dashboard • Live View", bn: "ড্যাশবোর্ড • লাইভ ভিউ" },
 
       // Quick stats
@@ -1386,6 +1377,101 @@ tx_view_all: { en: "View All Transactions", bn: "সব লেনদেন দ�
       if (!hit) return key;
       return hit[lang] || hit.en || key;
     }
+
+
+    function __toNumber(value){
+  try{
+    if (value === null || value === undefined) return 0;
+
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    const raw = String(value)
+      .replace(/₹/g, "")
+      .replace(/,/g, "")
+      .replace(/kg/gi, "")
+      .replace(/members/gi, "")
+      .replace(/loans/gi, "")
+      .trim();
+
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : 0;
+  }catch(e){
+    return 0;
+  }
+}
+
+function __formatIndianNumber(value, decimals = 0){
+  const n = __toNumber(value);
+  const sign = n < 0 ? "-" : "";
+  const abs = Math.abs(n);
+
+  const fixed = decimals > 0
+    ? abs.toFixed(decimals)
+    : String(Math.round(abs));
+
+  const parts = fixed.split(".");
+  let intPart = parts[0];
+  const decimalPart = parts[1] ? "." + parts[1] : "";
+
+  if (intPart.length <= 3) {
+    return sign + intPart + decimalPart;
+  }
+
+  const last3 = intPart.slice(-3);
+  let rest = intPart.slice(0, -3);
+  const groups = [];
+
+  while (rest.length > 2) {
+    groups.unshift(rest.slice(-2));
+    rest = rest.slice(0, -2);
+  }
+
+  if (rest) groups.unshift(rest);
+
+  return sign + groups.join(",") + "," + last3 + decimalPart;
+}
+
+function __formatINR(value){
+  return "₹" + __formatIndianNumber(value, 0).replace(/^-/, value < 0 || String(value).trim().startsWith("-") ? "-" : "");
+}
+
+function __formatDashboardValue(value){
+  const text = String(value ?? "").trim();
+
+  if (!text) return "0";
+
+  if (text.includes("₹")) {
+    return __formatINR(__toNumber(text));
+  }
+
+  // Keep dates/period labels untouched, for example 2026-06.
+  if (/^\d{4}-\d{2}$/.test(text)) {
+    return text;
+  }
+
+  // Format pure numbers only.
+  if (/^-?[\d,]+(\.\d+)?$/.test(text)) {
+    return __formatIndianNumber(text);
+  }
+
+  return text;
+}
+
+function __chartTickIndian(value){
+  return __formatIndianNumber(value);
+}
+
+function __chartTooltipIndian(context){
+  const label = context.dataset && context.dataset.label ? context.dataset.label + ": " : "";
+  return label + __formatIndianNumber(context.parsed?.y ?? context.parsed ?? context.raw);
+}
+
+function __chartTooltipINR(context){
+  const label = context.dataset && context.dataset.label ? context.dataset.label + ": " : "";
+  return label + __formatINR(context.parsed?.y ?? context.parsed ?? context.raw);
+}
 
     function __applyDomI18n(){
       const lang = __getLang();
@@ -2400,8 +2486,7 @@ function renderPgKpiGraphs(){
           const expenseStr = (statsData.expense_7d || '').toString();
           const toNum = (s)=>{ const n = parseFloat((s||'').replace(/[^0-9.\-]/g,'')) || 0; return n; };
           const net = toNum(incomeStr) - toNum(expenseStr);
-          const fmt = (n)=>'₹' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-          statsData.net_balance = fmt(net);
+          statsData.net_balance = __formatINR(net);
         }catch(e){}
       })();
 
@@ -2413,7 +2498,7 @@ function renderPgKpiGraphs(){
             </div>
           </div>
           <h3 class="text-slate-600 text-xs font-semibold mb-2 uppercase tracking-wider">${stat.title}</h3>
-          <p class="text-3xl font-extrabold text-slate-900 mb-2 human-title">${stat.value}</p>
+<p class="text-3xl font-extrabold text-slate-900 mb-2 human-title">${__formatDashboardValue(stat.value)}</p>
           <p class="${stat.textColor} text-sm font-medium human-subtitle">${stat.change}</p>
         </div>
       `).join('');
@@ -2490,14 +2575,17 @@ function renderPgKpiGraphs(){
           plugins: {
             legend: { display: true, labels: { font: { size: 13, weight: 500 } } },
             tooltip: {
-              backgroundColor: '#ffffff',
-              titleColor: '#000',
-              bodyColor: '#000',
-              borderColor: 'rgba(15,118,110,0.55)',
-              borderWidth: 2,
-              padding: 12,
-              cornerRadius: 12,
-            },
+  backgroundColor: '#ffffff',
+  titleColor: '#000',
+  bodyColor: '#000',
+  borderColor: 'rgba(15,118,110,0.55)',
+  borderWidth: 2,
+  padding: 12,
+  cornerRadius: 12,
+  callbacks: {
+    label: __chartTooltipIndian
+  }
+},
           },
           scales: {
             y: {
@@ -2555,15 +2643,18 @@ function renderPgKpiGraphs(){
           maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
-            tooltip: {
-              backgroundColor: '#ffffff',
-              titleColor: '#000',
-              bodyColor: '#000',
-              borderColor: 'rgba(15,118,110,0.55)',
-              borderWidth: 2,
-              padding: 12,
-              cornerRadius: 12,
-            },
+tooltip: {
+  backgroundColor: '#ffffff',
+  titleColor: '#000',
+  bodyColor: '#000',
+  borderColor: 'rgba(15,118,110,0.55)',
+  borderWidth: 2,
+  padding: 12,
+  cornerRadius: 12,
+  callbacks: {
+    label: __chartTooltipIndian
+  }
+},
           },
           scales: {
             y: {
@@ -2618,14 +2709,17 @@ function renderPgKpiGraphs(){
           plugins: {
             legend: { display: true, labels: { font: { size: 13, weight: 500 } } },
             tooltip: {
-              backgroundColor: '#ffffff',
-              titleColor: '#000',
-              bodyColor: '#000',
-              borderColor: 'rgba(15,118,110,0.55)',
-              borderWidth: 2,
-              padding: 12,
-              cornerRadius: 12,
-            },
+  backgroundColor: '#ffffff',
+  titleColor: '#000',
+  bodyColor: '#000',
+  borderColor: 'rgba(15,118,110,0.55)',
+  borderWidth: 2,
+  padding: 12,
+  cornerRadius: 12,
+  callbacks: {
+    label: __chartTooltipIndian
+  }
+},
           },
           scales: {
             y: {
@@ -2711,14 +2805,17 @@ const categoriesCount =
           }
         },
         tooltip: {
-          backgroundColor: '#ffffff',
-          titleColor: '#000',
-          bodyColor: '#000',
-          borderColor: 'rgba(15,118,110,0.55)',
-          borderWidth: 2,
-          padding: 12,
-          cornerRadius: 12
-        }
+  backgroundColor: '#ffffff',
+  titleColor: '#000',
+  bodyColor: '#000',
+  borderColor: 'rgba(15,118,110,0.55)',
+  borderWidth: 2,
+  padding: 12,
+  cornerRadius: 12,
+  callbacks: {
+    label: __chartTooltipIndian
+  }
+},
       },
       scales: {
         y: {
