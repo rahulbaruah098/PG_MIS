@@ -282,10 +282,11 @@
     gap:12px 14px;
     align-items:start;
   }
-  .pgb-span-3{ grid-column:span 3; }
-  .pgb-span-4{ grid-column:span 4; }
-  .pgb-span-6{ grid-column:span 6; }
-  .pgb-span-12{ grid-column:span 12; }
+.pgb-span-3{ grid-column:span 3; }
+.pgb-span-4{ grid-column:span 4; }
+.pgb-span-6{ grid-column:span 6; }
+.pgb-span-9{ grid-column:span 9; }
+.pgb-span-12{ grid-column:span 12; }
 
   .pgb-stack{
     display:flex;
@@ -368,6 +369,29 @@
     font-size:12px;
     color:rgba(15,23,42,.78);
   }
+
+.pgb-create-note{
+  width:100%;
+  max-width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  padding:12px 14px;
+  border-radius:16px;
+  border:1px solid rgba(11,77,58,.16);
+  background:rgba(232,247,239,.72);
+  color:#0b4d3a;
+  font-size:12px;
+  font-weight:850;
+  line-height:1.45;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+.pgb-create-note strong{
+  color:#063f2f;
+  font-weight:950;
+}
 
   /* Table shell */
   .pgb-table-area{
@@ -523,11 +547,12 @@
   @media (max-width: 900px){
     .pgb-wrap{ padding:12px; }
     .pgb-workflow-note{ grid-template-columns:1fr; }
-    .pgb-form{ grid-template-columns:repeat(6,minmax(0,1fr)); }
-    .pgb-span-3{ grid-column:span 3; }
-    .pgb-span-4{ grid-column:span 6; }
-    .pgb-span-6{ grid-column:span 6; }
-    .pgb-span-12{ grid-column:span 6; }
+      .pgb-form{ grid-template-columns:repeat(6,minmax(0,1fr)); }
+      .pgb-span-3{ grid-column:span 3; }
+      .pgb-span-4{ grid-column:span 6; }
+      .pgb-span-6{ grid-column:span 6; }
+      .pgb-span-9{ grid-column:span 6; }
+      .pgb-span-12{ grid-column:span 6; }
     .pgb-search{ min-width:100%; }
     .pgb-search input{ width:100%; }
   }
@@ -574,12 +599,13 @@
       grid-template-columns:1fr;
       gap:12px;
     }
-    .pgb-span-3,
-    .pgb-span-4,
-    .pgb-span-6,
-    .pgb-span-12{
-      grid-column:1 / -1 !important;
-    }
+.pgb-span-3,
+.pgb-span-4,
+.pgb-span-6,
+.pgb-span-9,
+.pgb-span-12{
+  grid-column:1 / -1 !important;
+}
 
     .pgb-input,
     .pgb-select{
@@ -826,7 +852,7 @@
             </div>
 
             <div class="pgb-span-9 pgb-stack" style="justify-content:end;">
-              <div class="pgb-pill">
+              <div class="pgb-create-note">
                 After creation, use <strong>Assign PG to CLF</strong> to map this PG with a CLF Admin.
               </div>
             </div>

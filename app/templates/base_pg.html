@@ -1566,6 +1566,51 @@
       display:none !important;
     }
 
+.pg-access-alert{
+  position:fixed;
+  right:24px;
+  bottom:24px;
+  z-index:9999;
+  width:min(420px, calc(100vw - 32px));
+  padding:14px 16px;
+  border-radius:18px;
+  border:1px solid rgba(217,119,6,.26);
+  background:rgba(255,251,235,.98);
+  color:#7c2d12;
+  box-shadow:0 18px 44px rgba(15,23,42,.16);
+  font-size:13px;
+  font-weight:850;
+  line-height:1.45;
+  display:none;
+}
+
+.pg-access-alert.show{
+  display:block;
+  animation:pgAccessAlertIn .18s ease-out both;
+}
+
+.pg-access-alert strong{
+  display:block;
+  color:#431407;
+  font-size:14px;
+  font-weight:950;
+  margin-bottom:3px;
+}
+
+@keyframes pgAccessAlertIn{
+  from{ opacity:0; transform:translateY(10px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+@media(max-width:640px){
+  .pg-access-alert{
+    left:16px;
+    right:16px;
+    bottom:18px;
+    width:auto;
+  }
+}
+
   </style>
 
   
@@ -1574,6 +1619,13 @@
 </head>
 
 <body>
+
+<div id="pgAccessAlert" class="pg-access-alert" role="alert" aria-live="polite">
+  <strong>Access Restricted</strong>
+  <span id="pgAccessAlertText">
+    You cannot access Crop Management now. Please complete PG Registration and Membership Registration, then wait for Block Admin validation approval.
+  </span>
+</div>
 
 {% set _pgv = namespace(
   has_doc=false,
@@ -1753,21 +1805,28 @@
             {% endif %}
           </a>
 
-          {% set crop_pg_id = session.get('pg_id') or session.get('active_pg_id') %}
+{% set crop_pg_id = session.get('pg_id') or session.get('active_pg_id') %}
+{% set crop_access_allowed = (_pgv.reg_status|string|lower == 'approved' and _pgv.member_status|string|lower == 'approved') %}
 
-          {% if crop_pg_id %}
-          <a class="nav-item {% if request.endpoint == 'pg.crop_management' %}active{% endif %}"
-            href="{{ url_for('pg.crop_management', pg_id=crop_pg_id) }}">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-              <path d="M11 20A7 7 0 0 1 4 13c0-4 3-7 7-7 2 0 4 1 5 3"></path>
-              <path d="M16 4c0 4-2 8-7 8"></path>
-              <path d="M15 13h6"></path>
-              <path d="M18 10v6"></path>
-            </svg>
-            <span class="nav-text">Crop Management</span>
-          </a>
-          {% endif %}
+{% if crop_pg_id %}
+<a class="nav-item {% if request.endpoint == 'pg.crop_management' %}active{% endif %}"
+  {% if crop_access_allowed %}
+    href="{{ url_for('pg.crop_management', pg_id=crop_pg_id) }}"
+  {% else %}
+    href="javascript:void(0)"
+    data-pg-locked="1"
+    data-pg-lock-message="You cannot access Crop Management now. Please complete PG Registration and Membership Registration, then wait for Block Admin validation approval."
+  {% endif %}>
+  <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 20A7 7 0 0 1 4 13c0-4 3-7 7-7 2 0 4 1 5 3"></path>
+    <path d="M16 4c0 4-2 8-7 8"></path>
+    <path d="M15 13h6"></path>
+    <path d="M18 10v6"></path>
+  </svg>
+  <span class="nav-text">Crop Management</span>
+</a>
+{% endif %}
 
           <!-- <a class="nav-item" data-page="meeting-register" href="{{ url_for('pg.meeting_register', pg_id=session.get('pg_id')) }}">
             <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -3199,6 +3258,41 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
     })();
   </script>
 
+<script>
+  (function(){
+    const alertBox = document.getElementById("pgAccessAlert");
+    const alertText = document.getElementById("pgAccessAlertText");
+    let alertTimer = null;
+
+    function showPgAccessAlert(message){
+      if(!alertBox) return;
+
+      if(alertText && message){
+        alertText.textContent = message;
+      }
+
+      alertBox.classList.add("show");
+
+      clearTimeout(alertTimer);
+      alertTimer = setTimeout(function(){
+        alertBox.classList.remove("show");
+      }, 4200);
+    }
+
+    document.addEventListener("click", function(e){
+      const lockedLink = e.target.closest("[data-pg-locked='1']");
+      if(!lockedLink) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      showPgAccessAlert(
+        lockedLink.getAttribute("data-pg-lock-message") ||
+        "You cannot access this module now. Please complete registration and validation first."
+      );
+    });
+  })();
+</script>
 
 <script>
   //  Touch feedback for sidebar items ONLY in app/webview (fix hover malfunction)

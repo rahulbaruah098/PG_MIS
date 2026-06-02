@@ -1113,10 +1113,19 @@
                     <small>Members</small>
                     <strong>{{ c.member_count|default(0) }}</strong>
                   </div>
-                  <div class="rd-clf-mini">
-                    <small>Cashflow</small>
-                    <strong>₹{{ c.cashflow|default(c.cashflow_total|default(c.balance|default(0))) }}</strong>
-                  </div>
+                    <div class="rd-clf-mini">
+                      <small>Cashflow</small>
+
+                      {% set _cashflow_raw = c.cashflow|default(c.cashflow_total|default(c.balance|default(0))) %}
+
+                      {% if _cashflow_raw is mapping %}
+                        {% set _cashflow_value = _cashflow_raw.balance|default(_cashflow_raw.cash_in|default(0)) %}
+                      {% else %}
+                        {% set _cashflow_value = _cashflow_raw %}
+                      {% endif %}
+
+                      <strong>₹{{ "{:,.2f}".format(_cashflow_value|float) }}</strong>
+                    </div>
                   <div class="rd-clf-mini">
                     <small>Validation</small>
                     <strong>{{ c.pending_validation_count|default(0) }}</strong>
