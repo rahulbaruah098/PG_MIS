@@ -1143,46 +1143,77 @@
     -webkit-overflow-scrolling:touch;
   }
 
-  .opr-print-preview-page-paper-wrap{
-    min-width:max-content;
+ .opr-print-preview-page-paper-wrap{
     width:100%;
+    min-width:0;
     display:flex;
     justify-content:center;
+    align-items:flex-start;
   }
 
-  .opr-print-preview-paper{
-    width:1400px;
-    min-width:1400px;
+ .opr-print-preview-paper{
+    width:1120px;
+    max-width:calc(100vw - 36px);
+    min-width:0;
     background:#ffffff;
     border:1.5px solid #7c8ea6;
     box-shadow:none;
     padding:16px;
     display:block;
+    overflow:visible;
   }
 
-  #oprPrintPreviewContent{
+ #oprPrintPreviewContent{
     width:100%;
+    max-width:100%;
     min-width:0;
+    overflow:visible;
   }
 
-  .opr-print-preview-paper table{
-    width:100%;
-    border-collapse:collapse;
-    table-layout:fixed;
+  #oprPrintPreviewContent table,
+#oprPrintPreviewContent table.opr-table,
+.opr-print-preview-paper table,
+.opr-print-preview-paper table.opr-table{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    border-collapse:collapse !important;
+    border-spacing:0 !important;
+    table-layout:fixed !important;
   }
 
-  .opr-print-preview-paper th,
-  .opr-print-preview-paper td{
-    min-width:0;
-    border:1.25px solid #7c8ea6;
-    padding:6px 8px;
-    font-size:11px;
-    color:#111827;
+  .opr-print-preview-paper table.opr-table th,
+  .opr-print-preview-paper table.opr-table td,
+  .opr-print-preview-paper table.opr-table th:not(.opr-stickyLeft),
+  .opr-print-preview-paper table.opr-table td:not(.opr-stickyLeft),
+  .opr-print-preview-paper table.opr-table th[data-col],
+  .opr-print-preview-paper table.opr-table td[data-col]{
+    min-width:0 !important;
+    width:auto !important;
+    border:1.25px solid #7c8ea6 !important;
+    padding:5px 5px !important;
+    font-size:9.2px !important;
+    line-height:1.15 !important;
+    color:#111827 !important;
+    word-break:break-word !important;
+    overflow-wrap:anywhere !important;
+    white-space:normal !important;
+    vertical-align:middle !important;
+    text-align:center !important;
+    position:static !important;
+    background:#ffffff !important;
+  }
+
+  .opr-print-preview-paper table.opr-table td[data-col="farmer"],
+  .opr-print-preview-paper table.opr-table td[data-col="buyer"]{
+    text-align:left !important;
+  }
+
+  .opr-print-preview-paper table.opr-table span{
+    display:block;
+    max-width:100%;
     word-break:break-word;
-    overflow-wrap:break-word;
-    white-space:normal;
-    vertical-align:top;
-    text-align:center;
+    overflow-wrap:anywhere;
   }
 
   .opr-print-preview-paper thead th{
@@ -1322,10 +1353,12 @@
       justify-content:flex-start;
     }
 
-    .opr-print-preview-paper{
-      width:1400px;
-      min-width:1400px;
+   .opr-print-preview-paper{
+      width:1120px;
+      min-width:1120px;
+      max-width:none;
       padding:12px;
+      overflow:visible;
     }
   }
 
@@ -1569,6 +1602,76 @@
     }
   }
 
+@media print{
+  body *{
+    visibility:hidden !important;
+  }
+
+  #oprPrintPreviewModal,
+  #oprPrintPreviewModal *{
+    visibility:visible !important;
+  }
+
+  #oprPrintPreviewModal{
+    position:absolute !important;
+    inset:0 !important;
+    display:block !important;
+    background:#ffffff !important;
+    overflow:visible !important;
+    z-index:999999 !important;
+  }
+
+  .opr-print-preview-page-head{
+    display:none !important;
+  }
+
+  .opr-print-preview-page-body{
+    overflow:visible !important;
+    padding:0 !important;
+  }
+
+  .opr-print-preview-page-paper-wrap{
+    display:block !important;
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  .opr-print-preview-paper{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    border:none !important;
+    padding:0 !important;
+    overflow:visible !important;
+  }
+
+  #oprPrintPreviewContent,
+  #oprPrintPreviewContent table,
+  #oprPrintPreviewContent table.opr-table{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    table-layout:fixed !important;
+    border-collapse:collapse !important;
+    overflow:visible !important;
+  }
+
+  #oprPrintPreviewContent th,
+  #oprPrintPreviewContent td{
+    font-size:8px !important;
+    padding:3px 3px !important;
+    line-height:1.1 !important;
+    word-break:break-word !important;
+    overflow-wrap:anywhere !important;
+    white-space:normal !important;
+    position:static !important;
+  }
+
+  @page{
+    size:A4 landscape;
+    margin:7mm;
+  }
+}
 
 /* ===== OUTPUT REGISTER FIX: match Input Register field layout + stable typing + wider table ===== */
 .opr-topfields{
@@ -3202,8 +3305,8 @@
     iframe.style.position = "fixed";
     iframe.style.left = "-10000px";
     iframe.style.top = "0";
-    iframe.style.width = "1400px";
-    iframe.style.height = "1200px";
+    iframe.style.width = "1120px";
+iframe.style.height = "900px";
     iframe.style.border = "0";
     iframe.style.opacity = "0.01";
     iframe.style.pointerEvents = "none";
@@ -3218,7 +3321,7 @@
       <head>
         <title></title>
         <style>
-          @page{ size:A4 landscape; margin:10mm; }
+@page{ size:A4 landscape; margin:7mm; }
           html,body{
             margin:0;
             padding:0;
@@ -3259,24 +3362,49 @@
             font-weight:700;
             margin-bottom:5px;
           }
-          table{
-            width:100%;
-            border-collapse:collapse;
-            table-layout:fixed;
-          }
-          th,td{
-            border:1px solid #94a3b8;
-            padding:6px 8px;
-            font-size:11px;
-            text-align:center;
-            vertical-align:top;
-            word-break:break-word;
-            white-space:normal;
-          }
-          thead th{
-            background:#f8fafc;
-            font-weight:700;
-          }
+         table,
+table.opr-table{
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  border-collapse:collapse !important;
+  border-spacing:0 !important;
+  table-layout:fixed !important;
+}
+
+th,
+td,
+table.opr-table th,
+table.opr-table td,
+table.opr-table th:not(.opr-stickyLeft),
+table.opr-table td:not(.opr-stickyLeft),
+table.opr-table th[data-col],
+table.opr-table td[data-col]{
+  min-width:0 !important;
+  width:auto !important;
+  border:1px solid #94a3b8 !important;
+  padding:3px 3px !important;
+  font-size:8px !important;
+  line-height:1.1 !important;
+  text-align:center !important;
+  vertical-align:middle !important;
+  word-break:break-word !important;
+  overflow-wrap:anywhere !important;
+  white-space:normal !important;
+  position:static !important;
+  background:#ffffff !important;
+}
+
+thead th,
+table.opr-table thead th{
+  background:#f8fafc !important;
+  font-weight:700 !important;
+}
+
+td[data-col="farmer"],
+td[data-col="buyer"]{
+  text-align:left !important;
+}
         </style>
       </head>
       <body>

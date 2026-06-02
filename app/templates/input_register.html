@@ -878,45 +878,68 @@ body.force-desktop-print .input-register-page table.input-register{
 }
 
 .print-preview-page-paper-wrap{
-  min-width: max-content;
-  width: 100%;
+  width:100%;
+  min-width:0;
   display:flex;
   justify-content:center;
+  align-items:flex-start;
 }
 
 .print-preview-paper{
-  width: 1400px;
-  min-width: 1400px;
+  width:1120px;
+  max-width:calc(100vw - 36px);
+  min-width:0;
   background:#ffffff;
   border:1px solid #cbd5e1;
   box-shadow:none;
   padding:16px;
   display:block;
+  overflow:visible;
 }
 
 #printPreviewContent{
   width:100%;
   min-width:0;
+  overflow:visible;
 }
 
-.print-preview-paper table{
-  width:100%;
-  border-collapse:collapse;
-  table-layout:fixed;
+#printPreviewContent table,
+#printPreviewContent table.input-register,
+.print-preview-paper table,
+.print-preview-paper table.input-register{
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  border-collapse:collapse !important;
+  border-spacing:0 !important;
+  table-layout:fixed !important;
 }
 
-.print-preview-paper th,
-.print-preview-paper td{
-  min-width:0;
-  border:1px solid #94a3b8;
-  padding:6px 8px;
-  font-size:11px;
-  color:#111827;
-  word-break:break-word;
-  overflow-wrap:break-word;
-  white-space:normal;
-  vertical-align:top;
-  text-align:center;
+.print-preview-paper table.input-register th,
+.print-preview-paper table.input-register td,
+.print-preview-paper table.input-register td.chk,
+.print-preview-paper table.input-register td.small,
+.print-preview-paper table.input-register td.med,
+.print-preview-paper table.input-register td.num,
+.print-preview-paper table.input-register td.name{
+  min-width:0 !important;
+  width:auto !important;
+  border:1px solid #94a3b8 !important;
+  padding:5px 5px !important;
+  font-size:9.2px !important;
+  line-height:1.15 !important;
+  color:#111827 !important;
+  word-break:break-word !important;
+  overflow-wrap:anywhere !important;
+  white-space:normal !important;
+  vertical-align:middle !important;
+  text-align:center !important;
+  position:static !important;
+  background:#ffffff !important;
+}
+
+.print-preview-paper table.input-register td.name{
+  text-align:left !important;
 }
 
 .print-preview-paper thead tr.group th{
@@ -954,13 +977,85 @@ body.force-desktop-print .input-register-page table.input-register{
     justify-content:flex-start;
   }
 
- .print-preview-paper{
-  min-width: 1400px;
-  width: 1400px;
+  .print-preview-paper{
+  width:1120px;
+  min-width:1120px;
+  max-width:none;
   padding:12px;
+  overflow:visible;
 }
 }
 
+@media print{
+  body *{
+    visibility:hidden !important;
+  }
+
+  #printPreviewModal,
+  #printPreviewModal *{
+    visibility:visible !important;
+  }
+
+  #printPreviewModal{
+    position:absolute !important;
+    inset:0 !important;
+    display:block !important;
+    background:#ffffff !important;
+    overflow:visible !important;
+    z-index:999999 !important;
+  }
+
+  .print-preview-page-head{
+    display:none !important;
+  }
+
+  .print-preview-page-body{
+    overflow:visible !important;
+    padding:0 !important;
+  }
+
+  .print-preview-page-paper-wrap{
+    display:block !important;
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  .print-preview-paper{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    border:none !important;
+    padding:0 !important;
+    overflow:visible !important;
+  }
+
+  #printPreviewContent,
+  #printPreviewContent table,
+  #printPreviewContent table.input-register{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    table-layout:fixed !important;
+    border-collapse:collapse !important;
+    overflow:visible !important;
+  }
+
+  #printPreviewContent th,
+  #printPreviewContent td{
+    font-size:8px !important;
+    padding:3px 3px !important;
+    line-height:1.1 !important;
+    word-break:break-word !important;
+    overflow-wrap:anywhere !important;
+    white-space:normal !important;
+    position:static !important;
+  }
+
+  @page{
+    size:A4 landscape;
+    margin:7mm;
+  }
+}
 
 /* ===== User-friendly input name combo dropdown ===== */
 .input-register-page .input-combo-field{

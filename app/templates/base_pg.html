@@ -1731,16 +1731,20 @@
           <span id="profileToggleText">Profile</span>
         </button>
 
-        <!--  Top right logout (RED) -->
-        <button id="logoutTopBtn" class="control-button logout-top" type="button" title="Logout">
-          <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-            <polyline points="16 17 21 12 16 7"></polyline>
-            <line x1="21" y1="12" x2="9" y2="12"></line>
-          </svg>
-          <span id="logoutTopText" class="sr-only">Logout</span>
-        </button>
+       <!--  Top right logout (RED) -->
+<a id="logoutTopBtn"
+   href="{{ url_for('auth.logout') }}"
+   class="control-button logout-top"
+   title="Logout"
+   aria-label="Logout">
+  <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+    <polyline points="16 17 21 12 16 7"></polyline>
+    <line x1="21" y1="12" x2="9" y2="12"></line>
+  </svg>
+  <span id="logoutTopText" class="sr-only">Logout</span>
+</a>
       </div>
     </header>
 
@@ -2725,19 +2729,19 @@ function clearBaseMenuSessionState(){
   }catch(_){}
 }
 
-function goLogout(){
+function goLogout(targetHref){
   clearBaseMenuSessionState();
-  window.location.href = "{{ url_for('auth.logout') }}";
+  window.location.href = targetHref || "{{ url_for('auth.logout') }}";
 }
 
 document.getElementById('logoutTopBtn')?.addEventListener('click', function(e){
   e.preventDefault();
-  goLogout();
+  goLogout(this.getAttribute('href'));
 });
 
 document.getElementById('menuLogout')?.addEventListener('click', function(e){
   e.preventDefault();
-  goLogout();
+  goLogout(this.getAttribute('href'));
 });
 
 // ------------------------------------------------------------

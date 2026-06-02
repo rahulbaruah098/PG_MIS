@@ -7470,6 +7470,24 @@ def api_generic_register(name, pg_id):
     def _name_key(value):
         return _norm_name(value).lower()
 
+    def _producer_key(value):
+        key = _name_key(value)
+        safe = []
+
+        for ch in key:
+            if ch.isalnum():
+                safe.append(ch)
+            elif ch in (" ", "-", "_"):
+                safe.append("_")
+
+        key = "".join(safe).strip("_")
+
+        while "__" in key:
+            key = key.replace("__", "_")
+
+        return key[:120] or "producer"
+       
+
     def _safe_regex_exact(value):
         value = str(value or "")
         for ch in ["\\", ".", "+", "*", "?", "^", "$", "(", ")", "[", "]", "{", "}", "|"]:
@@ -7668,6 +7686,119 @@ def api_generic_register(name, pg_id):
                 "rows": [],
             },
         }
+    
+    def _normalize_member_ledger_data(raw_data):
+        data = raw_data if isinstance(raw_data, dict) else {}
+
+        pg_name = data.get("pgName") or data.get("pg_name") or _blank_pg_name()
+        active_tab = data.get("activeTab") if data.get("activeTab") in ("purchases", "sales") else "purchases"
+
+        producers = data.get("producers")
+        clean_producers = []
+
+        if isinstance(producers, list):
+            for idx, item in enumerate(producers):
+                if not isinstance(item, dict):
+                    continue
+
+                producer_name = _norm_name(item.get("producerName") or item.get("producer_name") or "")
+                stocking_unit = str(item.get("stockingUnit") or item.get("stocking_unit") or "").strip()
+
+                purchases = item.get("purchases") if isinstance(item.get("purchases"), list) else []
+                sales = item.get("sales") if isinstance(item.get("sales"), list) else []
+
+                producer_id = str(item.get("producerId") or item.get("producer_id") or "").strip()
+                if not producer_id:
+                    base = _producer_key(producer_name) if producer_name else f"producer_{idx + 1}"
+                    producer_id = base
+
+                clean_producers.append({
+                    "producerId": producer_id,
+                    "producerName": producer_name,
+                    "stockingUnit": stocking_unit,
+                    "purchases": purchases,
+                    "sales": sales,
+                })
+
+        # Backward compatibility for old single-producer saved data
+        if not clean_producers:
+            old_producer_name = _norm_name(data.get("producerName") or data.get("producer_name") or "")
+            old_stocking_unit = str(data.get("stockingUnit") or data.get("stocking_unit") or "").strip()
+            old_purchases = data.get("purchases") if isinstance(data.get("purchases"), list) else []
+            old_sales = data.get("sales") if isinstance(data.get("sales"), list) else []
+
+            if old_producer_name or old_stocking_unit or old_purchases or old_sales:
+                clean_producers.append({
+                    "producerId": _producer_key(old_producer_name) if old_producer_name else "producer_1",
+                    "producerName": old_producer_name,
+                    "stockingUnit": old_stocking_unit,
+                    "purchases": old_purchases,
+                    "sales": old_sales,
+                })
+
+        # Ensure unique producer IDs
+        seen = {}
+        unique_producers = []
+
+        for item in clean_producers:
+            base_id = _producer_key(item.get("producerId") or item.get("producerName") or "producer")
+            final_id = base_id
+            counter = 2
+
+            while final_id in seen:
+                final_id = f"{base_id}_{counter}"
+                counter += 1
+
+            seen[final_id] = True
+            item["producerId"] = final_id
+            unique_producers.append(item)
+
+        active_producer_id = str(data.get("activeProducerId") or "").strip()
+
+        if not active_producer_id and unique_producers:
+            active_producer_id = unique_producers[0]["producerId"]
+
+        if active_producer_id and not any(p.get("producerId") == active_producer_id for p in unique_producers):
+            active_producer_id = unique_producers[0]["producerId"] if unique_producers else ""
+
+        active_producer = None
+        for producer in unique_producers:
+            if producer.get("producerId") == active_producer_id:
+                active_producer = producer
+                break
+
+        if active_producer is None:
+            active_producer = {}
+
+        return {
+            "pgName": pg_name,
+            "producerName": active_producer.get("producerName", ""),
+            "stockingUnit": active_producer.get("stockingUnit", ""),
+            "purchases": active_producer.get("purchases", []),
+            "sales": active_producer.get("sales", []),
+            "producers": unique_producers,
+            "activeProducerId": active_producer_id,
+            "activeTab": active_tab,
+            "isDraft": bool(data.get("isDraft", False)),
+            "savedAt": data.get("savedAt") or datetime.utcnow().isoformat(),
+        }
+
+    def _blank_member_ledger_response():
+        return {
+            "ok": True,
+            "year": year,
+            "month": month,
+            "data": {
+                "pgName": _blank_pg_name(),
+                "producerName": "",
+                "stockingUnit": "",
+                "purchases": [],
+                "sales": [],
+                "producers": [],
+                "activeProducerId": "",
+                "activeTab": "purchases",
+            },
+        }
 
     # ============================================================
     # GET
@@ -7795,6 +7926,45 @@ def api_generic_register(name, pg_id):
             # No selected produce: return blank + saved output names only.
             return jsonify(_blank_output_response("")), 200
 
+
+        # --------------------------------------------------------
+        # MEMBER LEDGER SPECIAL FLOW
+        # Save/load producer-wise data separately inside one PG/month document:
+        # data.producers[].producerName
+        # data.producers[].stockingUnit
+        # data.producers[].purchases
+        # data.producers[].sales
+        # --------------------------------------------------------
+        if name == "member_ledger":
+            base_q = {"pg_id": base_pg_id}
+
+            if request.args.get("history") in ("1", "true", "yes"):
+                return jsonify({"history": _period_history(db, coll, base_q)})
+
+            doc_id = (request.args.get("doc_id") or "").strip()
+            if doc_id:
+                doc = db[coll].find_one({**base_q, "_id": safe_objectid(doc_id)})
+                if not doc:
+                    return jsonify({"ok": False, "error": "Record not found"}), 404
+
+                doc = _serialize_doc(doc)
+                doc["ok"] = True
+                doc["data"] = _normalize_member_ledger_data(doc.get("data") or {})
+                return jsonify(doc), 200
+
+            doc = (
+                db[coll].find_one({**base_q, "year": year, "month": month})
+                if (year and month)
+                else db[coll].find_one(base_q, sort=[("updated_at", -1)])
+            )
+
+            if not doc:
+                return jsonify(_blank_member_ledger_response()), 200
+
+            doc = _serialize_doc(doc)
+            doc["ok"] = True
+            doc["data"] = _normalize_member_ledger_data(doc.get("data") or {})
+            return jsonify(doc), 200
         # --------------------------------------------------------
         # EXISTING GENERIC GET FLOW FOR OTHER REGISTERS
         # --------------------------------------------------------
@@ -8068,6 +8238,95 @@ def api_generic_register(name, pg_id):
                 "saved_output_names": _get_saved_names("output"),
             }), 200
 
+
+        # --------------------------------------------------------
+        # MEMBER LEDGER SPECIAL SAVE FLOW
+        # Keeps each producer's header + table rows separate.
+        # --------------------------------------------------------
+        if name == "member_ledger":
+            raw_data = payload.get("data", payload) or {}
+            data = _normalize_member_ledger_data(raw_data)
+
+            now = datetime.utcnow()
+
+            q = {"pg_id": base_pg_id}
+
+            if year is not None:
+                q["year"] = int(year)
+            if month is not None:
+                q["month"] = int(month)
+
+            before = db[coll].find_one(q)
+
+            doc_set = {
+                "pg_id": base_pg_id,
+                "year": int(year) if year is not None else None,
+                "month": int(month) if month is not None else None,
+                "producer_count": len(data.get("producers") or []),
+                "producer_names": [
+                    p.get("producerName")
+                    for p in (data.get("producers") or [])
+                    if p.get("producerName")
+                ],
+                "data": data,
+                "updated_at": now,
+            }
+
+            if before:
+                db[coll].update_one({"_id": before["_id"]}, {"$set": doc_set})
+                saved_id = before["_id"]
+
+                try:
+                    log_audit(
+                        db,
+                        action=f"{coll}:update",
+                        collection=coll,
+                        doc_id=before["_id"],
+                        user=_current_user_dict(),
+                        before=before,
+                        after=doc_set,
+                        meta={
+                            "pg_id": pg_id,
+                            "year": year,
+                            "month": month,
+                            "register": "member_ledger",
+                            "producer_count": doc_set["producer_count"],
+                        },
+                    )
+                except Exception:
+                    current_app.logger.exception("member_ledger audit update failed")
+            else:
+                doc_set["created_at"] = now
+                res = db[coll].insert_one(doc_set)
+                saved_id = res.inserted_id
+
+                try:
+                    log_audit(
+                        db,
+                        action=f"{coll}:create",
+                        collection=coll,
+                        doc_id=saved_id,
+                        user=_current_user_dict(),
+                        after=doc_set,
+                        meta={
+                            "pg_id": pg_id,
+                            "year": year,
+                            "month": month,
+                            "register": "member_ledger",
+                            "producer_count": doc_set["producer_count"],
+                        },
+                    )
+                except Exception:
+                    current_app.logger.exception("member_ledger audit create failed")
+
+            return jsonify({
+                "ok": True,
+                "message": "Member Ledger saved successfully.",
+                "id": str(saved_id),
+                "producer_count": doc_set["producer_count"],
+                "producer_names": doc_set["producer_names"],
+                "data": data,
+            }), 200
         # --------------------------------------------------------
         # EXISTING GENERIC SAVE FLOW FOR OTHER REGISTERS
         # --------------------------------------------------------

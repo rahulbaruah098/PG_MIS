@@ -261,12 +261,22 @@
     box-shadow:0 0 0 .22rem rgba(173,231,196,.38);
   }
 
-  .table-shell{
+   .table-shell{
     border-top:1px solid var(--pg-line-soft);
+  }
+
+  .desktop-table-wrap{
+    width:100%;
+    overflow-x:auto;
+    overflow-y:visible;
+    -webkit-overflow-scrolling:touch;
   }
 
   .validation-table{
     margin:0;
+    width:100%;
+    min-width:1080px;
+    table-layout:fixed;
   }
 
   .validation-table thead th{
@@ -281,13 +291,49 @@
     white-space:nowrap;
   }
 
-  .validation-table tbody td{
-    vertical-align:middle;
+   .validation-table tbody td{
+    vertical-align:top;
     padding:14px;
     border-color:#edf2ef;
     background:#fff;
     color:var(--pg-ink);
     font-size:.9rem;
+  }
+
+  .validation-table th:nth-child(1),
+  .validation-table td:nth-child(1){
+    width:58px;
+    text-align:center;
+  }
+
+  .validation-table th:nth-child(2),
+  .validation-table td:nth-child(2){
+    width:210px;
+  }
+
+  .validation-table th:nth-child(3),
+  .validation-table td:nth-child(3){
+    width:160px;
+  }
+
+  .validation-table th:nth-child(4),
+  .validation-table td:nth-child(4){
+    width:140px;
+  }
+
+  .validation-table th:nth-child(5),
+  .validation-table td:nth-child(5){
+    width:180px;
+  }
+
+  .validation-table th:nth-child(6),
+  .validation-table td:nth-child(6){
+    width:190px;
+  }
+
+  .validation-table th:nth-child(7),
+  .validation-table td:nth-child(7){
+    width:300px;
   }
 
   .validation-table tbody tr:hover td{
@@ -400,8 +446,43 @@
     border-color:#b93a3a;
   }
 
+   .queue-action-cell{
+    width:100%;
+  }
+
+  .queue-actions-row{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:8px;
+    align-items:center;
+    width:100%;
+  }
+
+  .queue-actions-row .action-btn,
+  .queue-actions-row form,
+  .queue-actions-row form button{
+    width:100%;
+  }
+
+  .queue-actions-row .action-btn{
+    min-height:38px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+  }
+  .reject-box{
+  margin-top:10px;
+}
+
+.reject-box[hidden]{
+  display:none !important;
+}
+
   .reject-inline{
-    min-width:270px;
+    width:100%;
+    min-width:0;
+    margin-top:10px;
     padding:10px;
     border:1px solid var(--pg-line-soft);
     border-radius:14px;
@@ -410,8 +491,9 @@
 
   .reject-inline textarea,
   .mobile-card textarea{
+    width:100%;
     border-radius:12px;
-    min-height:76px;
+    min-height:82px;
     border:1px solid #dce8e1;
     background:#fff;
     color:var(--pg-ink);
@@ -419,6 +501,15 @@
     font-weight:650;
     resize:vertical;
     box-shadow:none;
+  }
+
+  .reject-inline .btn-send-back{
+    width:100%;
+    min-height:40px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    margin-top:4px;
   }
 
   .reject-inline textarea:focus,
@@ -474,13 +565,169 @@
     display:none !important;
   }
 
-  @media (max-width:1100px){
+    /* Uniform validation action confirmation modal */
+  .validation-confirm-modal{
+    position:fixed;
+    inset:0;
+    z-index:12000;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    background:rgba(2,6,23,.58);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+  }
+
+  .validation-confirm-modal.is-open{
+    display:flex;
+  }
+
+  .validation-confirm-card{
+    width:min(520px, 100%);
+    background:#ffffff;
+    border-radius:18px;
+    border:1px solid rgba(15,23,42,.12);
+    box-shadow:0 24px 70px -40px rgba(0,0,0,.60);
+    overflow:hidden;
+  }
+
+  .validation-confirm-head{
+    padding:12px 14px;
+    background:linear-gradient(135deg, rgba(240,253,244,.95), rgba(255,255,255,.98));
+    border-bottom:1px solid rgba(15,23,42,.10);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:950;
+    color:var(--pg-brand);
+  }
+
+  .validation-confirm-icon{
+    width:22px;
+    height:22px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+    background:rgba(16,185,129,.13);
+    color:var(--pg-brand);
+  }
+
+  .validation-confirm-modal.is-danger .validation-confirm-icon{
+    background:rgba(200,67,67,.12);
+    color:var(--pg-danger);
+  }
+
+  .validation-confirm-body{
+    padding:15px 14px;
+    color:rgba(15,23,42,.82);
+    font-weight:800;
+    line-height:1.45;
+    font-size:13px;
+  }
+
+  .validation-confirm-note{
+    margin-top:10px;
+    padding:10px 12px;
+    border-radius:12px;
+    border:1px dashed rgba(15,23,42,.16);
+    background:rgba(247,250,249,.82);
+    color:rgba(15,23,42,.68);
+    font-size:12px;
+    font-weight:800;
+  }
+
+  .validation-confirm-actions{
+    padding:12px 14px 14px;
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+  }
+
+  .validation-confirm-btn{
+    border:1px solid rgba(15,23,42,.14);
+    background:rgba(247,250,249,.85);
+    color:rgba(15,23,42,.82);
+    border-radius:999px;
+    padding:10px 14px;
+    font-weight:900;
+    font-size:12px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-width:120px;
+  }
+
+  .validation-confirm-btn.cancel{
+    background:rgba(241,245,249,.82);
+  }
+
+  .validation-confirm-btn.confirm{
+    border-color:rgba(16,185,129,.35);
+    background:rgba(16,185,129,.12);
+    color:var(--pg-brand);
+  }
+
+  .validation-confirm-modal.is-danger .validation-confirm-btn.confirm{
+    border-color:rgba(200,67,67,.30);
+    background:rgba(200,67,67,.12);
+    color:var(--pg-danger);
+  }
+
+  .validation-confirm-btn:hover{
+    transform:translateY(-1px);
+    background:#fff;
+    box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+  }
+
+  .validation-confirm-btn.confirm:hover{
+    background:rgba(16,185,129,.17);
+  }
+
+  .validation-confirm-modal.is-danger .validation-confirm-btn.confirm:hover{
+    background:rgba(200,67,67,.16);
+  }
+
+  @media(max-width:560px){
+    .validation-confirm-actions{
+      display:grid;
+      grid-template-columns:1fr;
+    }
+
+    .validation-confirm-btn{
+      width:100%;
+    }
+  }
+
+    @media (max-width:1100px){
     .metric-grid{
       grid-template-columns:repeat(2, minmax(0,1fr));
     }
 
+    .card-head{
+      align-items:stretch;
+    }
+
+    .queue-tools{
+      width:100%;
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:10px;
+    }
+
     .queue-search{
-      min-width:260px;
+      grid-column:1 / -1;
+      min-width:0;
+      width:100%;
+    }
+
+    .queue-filter{
+      width:100%;
+      min-width:0;
     }
   }
 
@@ -679,12 +926,13 @@
             {% set pg = row.pg %}
             {% set pg_name = pg.name or pg.pg_name or 'Unnamed PG' %}
             {% set status = row.status or 'submitted' %}
-            <tr
-              class="queue-row"
-              data-form-type="{{ row.form_type }}"
-              data-status="{{ status }}"
-              data-search="{{ pg_name|lower }} {{ row.form_label|lower }} {{ status|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ (pg.Block or '')|lower }}"
-            >
+           <tr
+  class="queue-row"
+  data-pg-id="{{ pg._id|string }}"
+  data-form-type="{{ row.form_type }}"
+  data-status="{{ status }}"
+  data-search="{{ pg_name|lower }} {{ row.form_label|lower }} {{ status|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ (pg.Block or '')|lower }}"
+>
               <td>{{ loop.index }}</td>
 
               <td>
@@ -719,54 +967,55 @@
                 <span class="pg-id-text">{{ pg.Village or pg.village or '-' }}</span>
               </td>
 
-              <td>
-                <div class="d-flex flex-wrap gap-1">
-                  <a
-                    href="{{ url_for('pg.validation_review', form_type=row.form_type, pg_id=pg._id|string) }}"
-                    class="btn btn-sm action-btn btn-review"
-                  >
-                    Review
-                  </a>
+                            <td>
+                <div class="queue-action-cell">
+                  <div class="queue-actions-row">
+                    <a
+                      href="{{ url_for('pg.validation_review', form_type=row.form_type, pg_id=pg._id|string) }}"
+                      class="btn btn-sm action-btn btn-review"
+                    >
+                      Review
+                    </a>
 
-                  <form
-                    method="post"
-                    action="{{ url_for('pg.validation_approve', form_type=row.form_type, pg_id=pg._id|string) }}"
-                    onsubmit="return confirm('Approve this {{ row.form_label }}?');"
-                  >
-                    <button type="submit" class="btn btn-sm action-btn btn-approve">
-                      Approve
-                    </button>
-                  </form>
+                    <form
+  method="post"
+  action="{{ url_for('pg.validation_approve', form_type=row.form_type, pg_id=pg._id|string) }}"
+  class="js-validation-approve-form"
+  data-form-label="{{ row.form_label }}"
+>
+                      <button type="submit" class="btn btn-sm action-btn btn-approve">
+                        Approve
+                      </button>
+                    </form>
 
-                  <button
-                    type="button"
-                    class="btn btn-sm action-btn btn-reject"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#rejectBox{{ loop.index }}"
-                    aria-expanded="false"
-                  >
-                    Reject
-                  </button>
-                </div>
+                    <button
+  type="button"
+  class="btn btn-sm action-btn btn-reject js-open-reject-box"
+  data-target="rejectBox{{ loop.index }}"
+  aria-expanded="false"
+>
+  Reject
+</button>
+                  </div>
 
-                <div class="collapse mt-2" id="rejectBox{{ loop.index }}">
-                  <form
-                    method="post"
-                    action="{{ url_for('pg.validation_reject', form_type=row.form_type, pg_id=pg._id|string) }}"
-                    class="reject-inline"
-                    onsubmit="return validateRejectForm(this);"
-                  >
-                    <textarea
-                      name="remarks"
-                      class="form-control mb-2"
-                      placeholder="Write exact correction remarks before rejecting..."
-                      required
-                    ></textarea>
+                 <div class="reject-box" id="rejectBox{{ loop.index }}" hidden>
+                    <form
+  method="post"
+  action="{{ url_for('pg.validation_reject', form_type=row.form_type, pg_id=pg._id|string) }}"
+  class="reject-inline js-validation-reject-form"
+>
+                      <textarea
+                        name="remarks"
+                        class="form-control"
+                        placeholder="Write exact correction remarks before rejecting..."
+                        required
+                      ></textarea>
 
-                    <button type="submit" class="btn btn-sm action-btn btn-send-back">
-                      Send Back to PG
-                    </button>
-                  </form>
+                      <button type="submit" class="btn btn-sm action-btn btn-send-back">
+                        Send Back to PG
+                      </button>
+                    </form>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -791,15 +1040,18 @@
         {% set status = row.status or 'submitted' %}
 
         <div
-          class="mobile-card queue-row"
-          data-form-type="{{ row.form_type }}"
-          data-status="{{ status }}"
-          data-search="{{ pg_name|lower }} {{ row.form_label|lower }} {{ status|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ (pg.Block or '')|lower }}"
-        >
+  class="mobile-card queue-row"
+  data-pg-id="{{ pg._id|string }}"
+  data-form-type="{{ row.form_type }}"
+  data-status="{{ status }}"
+  data-search="{{ pg_name|lower }} {{ row.form_label|lower }} {{ status|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or pg.village or '')|lower }} {{ (pg.Block or '')|lower }}"
+>
           <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
             <div>
               <div class="pg-name">{{ pg_name }}</div>
-              <span class="pg-id-text">PG ID: {{ pg._id }}</span>
+{#
+<span class="pg-id-text">PG ID: {{ pg._id }}</span>
+#}
             </div>
 
             {% if status == 'resubmitted' %}
@@ -831,21 +1083,22 @@
               Review
             </a>
 
-            <form
-              method="post"
-              action="{{ url_for('pg.validation_approve', form_type=row.form_type, pg_id=pg._id|string) }}"
-              onsubmit="return confirm('Approve this {{ row.form_label }}?');"
-            >
+           <form
+  method="post"
+  action="{{ url_for('pg.validation_approve', form_type=row.form_type, pg_id=pg._id|string) }}"
+  class="js-validation-approve-form"
+  data-form-label="{{ row.form_label }}"
+>
               <button type="submit" class="btn btn-sm action-btn btn-approve w-100">
                 Approve
               </button>
             </form>
 
             <form
-              method="post"
-              action="{{ url_for('pg.validation_reject', form_type=row.form_type, pg_id=pg._id|string) }}"
-              onsubmit="return validateRejectForm(this);"
-            >
+  method="post"
+  action="{{ url_for('pg.validation_reject', form_type=row.form_type, pg_id=pg._id|string) }}"
+  class="js-validation-reject-form"
+>
               <textarea
                 name="remarks"
                 class="form-control mb-2"
@@ -869,6 +1122,33 @@
   </div>
 </div>
 
+<!-- Validation Action Confirmation Modal -->
+<div class="validation-confirm-modal" id="validationConfirmModal" aria-hidden="true">
+  <div class="validation-confirm-card" role="dialog" aria-modal="true" aria-labelledby="validationConfirmTitle">
+    <div class="validation-confirm-head">
+      <span class="validation-confirm-icon" id="validationConfirmIcon">✓</span>
+      <span id="validationConfirmTitle">Confirm Action</span>
+    </div>
+
+    <div class="validation-confirm-body">
+      <div id="validationConfirmMessage">Are you sure?</div>
+      <div class="validation-confirm-note" id="validationConfirmNote">
+        This action will update the validation status.
+      </div>
+    </div>
+
+    <div class="validation-confirm-actions">
+      <button type="button" class="validation-confirm-btn cancel" id="validationConfirmCancel">
+        Cancel
+      </button>
+
+      <button type="button" class="validation-confirm-btn confirm" id="validationConfirmProceed">
+        Confirm
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
   (function () {
     const rows = Array.from(document.querySelectorAll(".queue-row"));
@@ -882,21 +1162,20 @@
     const mResubmitted = document.getElementById("mResubmitted");
 
     function uniqueRows() {
-      const map = new Map();
+  const map = new Map();
 
-      rows.forEach((row) => {
-        const text = row.innerText || "";
-        const idMatch = text.match(/PG ID:\s*([a-f0-9]{24})/i);
-        const pgId = idMatch ? idMatch[1] : text.slice(0, 80);
-        const key = pgId + "::" + (row.dataset.formType || "");
+  rows.forEach((row) => {
+    const pgId = row.dataset.pgId || "";
+    const formType = row.dataset.formType || "";
+    const key = pgId + "::" + formType;
 
-        if (!map.has(key)) {
-          map.set(key, row);
-        }
-      });
-
-      return Array.from(map.values());
+    if (!map.has(key)) {
+      map.set(key, row);
     }
+  });
+
+  return Array.from(map.values());
+}
 
     function updateMetrics() {
       const list = uniqueRows();
@@ -940,17 +1219,167 @@
     filterRows();
   })();
 
-  function validateRejectForm(form) {
-    const remarks = form.querySelector('[name="remarks"]');
-    const value = remarks ? remarks.value.trim() : "";
+   function validationShowConfirm(options) {
+    const modal = document.getElementById("validationConfirmModal");
+    const title = document.getElementById("validationConfirmTitle");
+    const icon = document.getElementById("validationConfirmIcon");
+    const message = document.getElementById("validationConfirmMessage");
+    const note = document.getElementById("validationConfirmNote");
+    const cancel = document.getElementById("validationConfirmCancel");
+    const proceed = document.getElementById("validationConfirmProceed");
 
-    if (!value) {
-      alert("Please write rejection remarks before sending the form back to PG.");
-      if (remarks) remarks.focus();
-      return false;
+    if (!modal || !title || !icon || !message || !note || !cancel || !proceed) {
+      if (options && typeof options.onConfirm === "function") {
+        options.onConfirm();
+      }
+      return;
     }
 
-    return confirm("Reject this form and send it back to PG for correction?");
+    modal.classList.remove("is-danger");
+
+    if (options.kind === "danger") {
+      modal.classList.add("is-danger");
+      icon.textContent = "!";
+    } else {
+      icon.textContent = "✓";
+    }
+
+    title.textContent = options.title || "Confirm Action";
+    message.textContent = options.message || "Are you sure?";
+    note.textContent = options.note || "This action will update the validation status.";
+    proceed.textContent = options.confirmText || "Confirm";
+
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+
+    const close = function(){
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      proceed.onclick = null;
+      cancel.onclick = null;
+    };
+
+    cancel.onclick = close;
+
+    proceed.onclick = function(){
+      close();
+      if (typeof options.onConfirm === "function") {
+        options.onConfirm();
+      }
+    };
+
+    modal.onclick = function(e){
+      if (e.target === modal) close();
+    };
+
+    setTimeout(function(){
+      try { cancel.focus(); } catch(e){}
+    }, 30);
   }
+
+  document.querySelectorAll(".js-validation-approve-form").forEach(function(form){
+    form.addEventListener("submit", function(e){
+      if (form.dataset.confirmed === "1") return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const label = form.dataset.formLabel || "this form";
+
+      validationShowConfirm({
+        kind: "success",
+        title: "Approve Form?",
+        message: "Approve this " + label + "?",
+        note: "After approval, this form will be marked as approved and will move ahead in the validation workflow.",
+        confirmText: "Approve",
+        onConfirm: function(){
+          form.dataset.confirmed = "1";
+          form.submit();
+        }
+      });
+    });
+  });
+
+  document.querySelectorAll(".js-open-reject-box").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    const targetId = btn.getAttribute("data-target");
+    const box = targetId ? document.getElementById(targetId) : null;
+
+    if (!box) return;
+
+    const isHidden = box.hasAttribute("hidden");
+
+    document.querySelectorAll(".reject-box").forEach(function(otherBox){
+      if (otherBox !== box) {
+        otherBox.setAttribute("hidden", "hidden");
+      }
+    });
+
+    document.querySelectorAll(".js-open-reject-box").forEach(function(otherBtn){
+      if (otherBtn !== btn) {
+        otherBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    if (isHidden) {
+      box.removeAttribute("hidden");
+      btn.setAttribute("aria-expanded", "true");
+
+      const remarks = box.querySelector('[name="remarks"]');
+      setTimeout(function(){
+        try { if (remarks) remarks.focus(); } catch(e){}
+      }, 30);
+    } else {
+      box.setAttribute("hidden", "hidden");
+      btn.setAttribute("aria-expanded", "false");
+    }
+  });
+});
+
+  document.querySelectorAll(".js-validation-reject-form").forEach(function(form){
+    form.addEventListener("submit", function(e){
+      if (form.dataset.confirmed === "1") return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const remarks = form.querySelector('[name="remarks"]');
+      const value = remarks ? remarks.value.trim() : "";
+
+      if (!value) {
+        validationShowConfirm({
+          kind: "danger",
+          title: "Remarks Required",
+          message: "Please write rejection remarks before sending the form back to PG.",
+          note: "Clear correction remarks are required so the PG user knows exactly what to fix.",
+          confirmText: "OK",
+          onConfirm: function(){
+            if (remarks) remarks.focus();
+          }
+        });
+        return;
+      }
+
+      validationShowConfirm({
+        kind: "danger",
+        title: "Send Back to PG?",
+        message: "Reject this form and send it back to PG for correction?",
+        note: "The submitted form will be returned to the PG with your correction remarks.",
+        confirmText: "Send Back",
+        onConfirm: function(){
+          form.dataset.confirmed = "1";
+          form.submit();
+        }
+      });
+    });
+  });
+
+  document.addEventListener("keydown", function(e){
+    const modal = document.getElementById("validationConfirmModal");
+    if (e.key === "Escape" && modal && modal.classList.contains("is-open")) {
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+    }
+  });
 </script>
 {% endblock %}

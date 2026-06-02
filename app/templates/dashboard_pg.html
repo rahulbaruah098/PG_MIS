@@ -1626,6 +1626,17 @@ function __saveDashboardScroll(){
   if (__dashboardIsRestoringScroll) return;
 
   try {
+
+    const topLimit = 260;
+
+if ((window.scrollY || document.documentElement.scrollTop || 0) <= topLimit) {
+  sessionStorage.setItem(__DASHBOARD_SCROLL_KEY, JSON.stringify({
+    type: "top",
+    y: 0,
+    at: Date.now()
+  }));
+  return;
+}
     const info = __currentDashboardSectionInfo();
     if (!info || !info.id) return;
     sessionStorage.setItem(__DASHBOARD_SCROLL_KEY, JSON.stringify(info));
@@ -1638,7 +1649,13 @@ function __getSavedDashboardScroll(){
     if (!raw) return null;
 
     const info = JSON.parse(raw);
-    if (!info || !info.id) return null;
+    if (!info) return null;
+
+    if (info.type === "top") {
+      return info;
+    }
+
+    if (!info.id) return null;
 
     return info;
   } catch(e){
@@ -1650,6 +1667,23 @@ function __restoreDashboardScrollInstant(){
   try {
     const info = __getSavedDashboardScroll();
     if (!info) return false;
+
+    if (info.type === "top") {
+      __dashboardIsRestoringScroll = true;
+
+      const oldBehavior = document.documentElement.style.scrollBehavior;
+      document.documentElement.style.scrollBehavior = 'auto';
+
+      window.scrollTo(0, 0);
+
+      document.documentElement.style.scrollBehavior = oldBehavior || '';
+
+      setTimeout(function(){
+        __dashboardIsRestoringScroll = false;
+      }, 120);
+
+      return true;
+    }
 
     const el = document.getElementById(info.id);
     if (!el) return false;

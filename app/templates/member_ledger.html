@@ -351,9 +351,19 @@
   .member-ledger-page .card-content-producer{
     padding:16px 18px 18px;
     display:grid;
-    grid-template-columns:1.2fr 1fr;
+    grid-template-columns:1.2fr 1fr 1fr auto;
     gap:12px 16px;
     background:#fff;
+    align-items:end;
+  }
+
+  .member-ledger-page .producer-new-btn{
+    min-height:44px;
+    padding:11px 16px;
+  }
+
+  .member-ledger-page .producer-view-select{
+    min-width:0;
   }
 
   .member-ledger-page .input-group-full{
@@ -752,6 +762,16 @@
     color:var(--ink);
     transition:box-shadow .2s ease, border-color .2s ease, background .2s ease, opacity .2s ease;
   }
+  .member-ledger-page input[type="date"].mini-input{
+  cursor:pointer;
+  pointer-events:auto;
+  touch-action:manipulation;
+}
+
+.member-ledger-page.is-editing input[type="date"].mini-input{
+  background:#fff;
+  cursor:pointer;
+}
   .member-ledger-page .mini-input:focus{
     border-color:rgba(15,23,42,.24);
     box-shadow:0 0 0 3px rgba(15,23,42,.05);
@@ -1534,16 +1554,28 @@
               <h2 id="producer-info-title">Producer Information</h2>
             </div>
 
-            <div class="card-content-producer">
-              <div class="input-group-full">
-                <label id="pg-name-label" class="label">Name of Producer Group</label>
-                <input type="text" id="pg-name" class="input" value="{{ current_pg_name }}" readonly />
-              </div>
+           <div class="card-content-producer">
+  <div class="input-group-full">
+    <label id="pg-name-label" class="label">Name of Producer Group</label>
+    <input type="text" id="pg-name" class="input" value="{{ current_pg_name }}" readonly />
+  </div>
 
-              <div class="input-group-full">
-                <label id="producer-name-label" class="label">Name of the Producer</label>
-                <input type="text" id="producer-name" class="input" placeholder="Enter producer name" />
-              </div>
+  <div class="input-group-full">
+    <label class="label">View Existing Producer</label>
+    <div class="select-wrapper">
+      <select id="producer-selector" class="select producer-view-select">
+        <option value="">No producer saved yet</option>
+      </select>
+      <svg class="select-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+  </div>
+
+  <div class="input-group-full">
+    <label id="producer-name-label" class="label">Name of the Producer</label>
+    <input type="text" id="producer-name" class="input" placeholder="Enter producer name" />
+  </div>
 
               <div class="input-group-full">
                 <label id="stocking-unit-label" class="label">Unit of Stocking</label>
@@ -1560,6 +1592,19 @@
                   </svg>
                 </div>
               </div>
+
+       <div class="input-group-full">
+  <label class="label">&nbsp;</label>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <button id="new-producer-btn" class="btn btn-soft-green producer-new-btn show-when-editing" type="button">
+      + New Producer
+    </button>
+
+    <button id="delete-producer-btn" class="btn btn-soft-red producer-new-btn show-when-editing" type="button">
+      Delete Producer
+    </button>
+  </div>
+</div>
             </div>
           </div>
 
@@ -1794,13 +1839,17 @@
   // ============================================================
   // Application State
   // ============================================================
-  let state = {
-    language: "en",
-    producerName: "",
-    stockingUnit: "",
-    purchases: [],
-    sales: [],
-    activeTab: "purchases",
+ let state = {
+  language: "en",
+  producerName: "",
+  stockingUnit: "",
+  purchases: [],
+  sales: [],
+
+  producers: [],
+  activeProducerId: "",
+
+  activeTab: "purchases",
 
     editMode: false,
     snapshot: null,
@@ -1972,53 +2021,322 @@
     return `${MEMBER_LEDGER_STORAGE_PREFIX}${getMemberLedgerId()}`;
   }
 
-  function buildPayload(isDraft = true){
-    return {
-      pgName: (document.getElementById("pg-name")?.value || "{{ current_pg_name }}" || ""),
+  function makeProducerId(name){
+  const base = (name || "producer")
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 80) || "producer";
+
+  let id = base;
+  let n = 2;
+
+  while ((state.producers || []).some(p => p.producerId === id)) {
+    id = `${base}_${n}`;
+    n += 1;
+  }
+
+  return id;
+}
+
+function getActiveProducer(){
+  if (!Array.isArray(state.producers)) state.producers = [];
+
+  let producer = state.producers.find(p => p.producerId === state.activeProducerId);
+
+  if (!producer && state.producers.length) {
+    producer = state.producers[0];
+    state.activeProducerId = producer.producerId;
+  }
+
+  return producer || null;
+}
+
+function syncActiveProducerFromFlatState(){
+  if (!Array.isArray(state.producers)) state.producers = [];
+
+  let producer = getActiveProducer();
+
+  if (!producer) {
+    const hasAnyData =
+      (state.producerName || "").trim() ||
+      (state.stockingUnit || "").trim() ||
+      (Array.isArray(state.purchases) && state.purchases.length) ||
+      (Array.isArray(state.sales) && state.sales.length);
+
+    if (!hasAnyData) return null;
+
+    producer = {
+      producerId: makeProducerId(state.producerName || "producer"),
       producerName: state.producerName || "",
       stockingUnit: state.stockingUnit || "",
-      purchases: Array.isArray(state.purchases) ? state.purchases : [],
-      sales: Array.isArray(state.sales) ? state.sales : [],
-      activeTab: state.activeTab || "purchases",
-      isDraft: !!isDraft,
-      savedAt: new Date().toISOString()
+      purchases: [],
+      sales: []
     };
+
+    state.producers.push(producer);
+    state.activeProducerId = producer.producerId;
   }
 
-  function syncFormFieldsFromState(){
-    const pn = document.getElementById("producer-name");
-    if (pn) pn.value = state.producerName || "";
+  producer.producerName = state.producerName || "";
+  producer.stockingUnit = state.stockingUnit || "";
+  producer.purchases = Array.isArray(state.purchases) ? state.purchases.map(x => ({...x})) : [];
+  producer.sales = Array.isArray(state.sales) ? state.sales.map(x => ({...x})) : [];
 
-    const su = document.getElementById("stocking-unit");
-    if (su) su.value = state.stockingUnit || "";
+  return producer;
+}
+
+function loadFlatStateFromProducer(producer){
+  producer = producer || getActiveProducer();
+
+  state.producerName = producer ? (producer.producerName || "") : "";
+  state.stockingUnit = producer ? (producer.stockingUnit || "") : "";
+  state.purchases = producer && Array.isArray(producer.purchases) ? producer.purchases.map(x => ({...x})) : [];
+  state.sales = producer && Array.isArray(producer.sales) ? producer.sales.map(x => ({...x})) : [];
+
+  state.ui.purchases.selected.clear();
+  state.ui.sales.selected.clear();
+  state.ui.purchases.page = 1;
+  state.ui.sales.page = 1;
+
+  syncFormFieldsFromState();
+}
+
+function renderProducerSelector(){
+  const sel = document.getElementById("producer-selector");
+  if (!sel) return;
+
+  const producers = Array.isArray(state.producers) ? state.producers : [];
+
+  sel.innerHTML = "";
+
+  if (!producers.length) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "No producer saved yet";
+    sel.appendChild(opt);
+    sel.value = "";
+    return;
   }
 
-  function hydrateFromData(data){
-    if (!data || typeof data !== "object") return false;
+  producers.forEach((producer, index) => {
+    const opt = document.createElement("option");
+    opt.value = producer.producerId || "";
+    opt.textContent = producer.producerName || `Producer ${index + 1}`;
+    sel.appendChild(opt);
+  });
 
-    memberLedgerHydrating = true;
+  sel.value = state.activeProducerId || producers[0].producerId || "";
+}
+
+function switchProducer(producerId){
+  if (state.editMode) {
+    syncActiveProducerFromFlatState();
+  }
+
+  const producer = (state.producers || []).find(p => p.producerId === producerId);
+  if (!producer) return;
+
+  state.activeProducerId = producer.producerId;
+  loadFlatStateFromProducer(producer);
+
+  renderProducerSelector();
+  renderPurchasesTable();
+  renderSalesTable();
+  updateEditableStates();
+
+  if (state.editMode) {
+    scheduleDraftSync();
+  }
+}
+
+function createNewProducer(){
+  if (!state.editMode) return;
+
+  syncActiveProducerFromFlatState();
+
+  const nextNumber = (state.producers || []).length + 1;
+  const producer = {
+    producerId: makeProducerId(`producer_${nextNumber}`),
+    producerName: "",
+    stockingUnit: "",
+    purchases: [],
+    sales: []
+  };
+
+  state.producers.push(producer);
+  state.activeProducerId = producer.producerId;
+
+  loadFlatStateFromProducer(producer);
+  renderProducerSelector();
+  renderPurchasesTable();
+  renderSalesTable();
+  updateEditableStates();
+  scheduleDraftSync();
+
+  setTimeout(function(){
     try {
-      state.producerName = data.producerName || "";
-      state.stockingUnit = data.stockingUnit || "";
-      state.purchases = Array.isArray(data.purchases) ? data.purchases.map(item => ({...item})) : [];
-      state.sales = Array.isArray(data.sales) ? data.sales.map(item => ({...item})) : [];
-      state.activeTab = (data.activeTab === "sales") ? "sales" : "purchases";
+      document.getElementById("producer-name")?.focus();
+    } catch(e){}
+  }, 30);
+}
+
+function deleteActiveProducer(){
+  if (!state.editMode) return;
+
+  const active = getActiveProducer();
+
+  if (!active) {
+    openLockModal("No producer selected to delete.");
+    return;
+  }
+
+  const label = active.producerName || "this producer";
+
+  askConfirm(
+    `Delete "${label}" and all related purchase/sale rows?`,
+    function(){
+      const activeId = active.producerId;
+
+      state.producers = (state.producers || []).filter(function(item){
+        return item.producerId !== activeId;
+      });
+
+      const nextProducer = state.producers[0] || null;
+
+      if (nextProducer) {
+        state.activeProducerId = nextProducer.producerId;
+        loadFlatStateFromProducer(nextProducer);
+      } else {
+        state.activeProducerId = "";
+        state.producerName = "";
+        state.stockingUnit = "";
+        state.purchases = [];
+        state.sales = [];
+        syncFormFieldsFromState();
+      }
 
       state.ui.purchases.selected.clear();
       state.ui.sales.selected.clear();
       state.ui.purchases.page = 1;
       state.ui.sales.page = 1;
 
-      syncFormFieldsFromState();
-      switchTab(state.activeTab);
+      renderProducerSelector();
       renderPurchasesTable();
       renderSalesTable();
       updateEditableStates();
-      return true;
-    } finally {
-      memberLedgerHydrating = false;
+      scheduleDraftSync();
+    },
+    {
+      danger: true,
+      title: "Delete Producer",
+      yesText: "Delete",
+      noText: "Cancel"
+    }
+  );
+}
+
+function normalizeProducersFromData(data){
+  const list = [];
+
+  if (data && Array.isArray(data.producers)) {
+    data.producers.forEach((item, index) => {
+      if (!item || typeof item !== "object") return;
+
+      list.push({
+        producerId: item.producerId || item.producer_id || makeProducerId(item.producerName || `producer_${index + 1}`),
+        producerName: item.producerName || item.producer_name || "",
+        stockingUnit: item.stockingUnit || item.stocking_unit || "",
+        purchases: Array.isArray(item.purchases) ? item.purchases.map(x => ({...x})) : [],
+        sales: Array.isArray(item.sales) ? item.sales.map(x => ({...x})) : [],
+      });
+    });
+  }
+
+  if (!list.length && data) {
+    const hasOldData =
+      (data.producerName || "").trim() ||
+      (data.stockingUnit || "").trim() ||
+      (Array.isArray(data.purchases) && data.purchases.length) ||
+      (Array.isArray(data.sales) && data.sales.length);
+
+    if (hasOldData) {
+      list.push({
+        producerId: makeProducerId(data.producerName || "producer_1"),
+        producerName: data.producerName || "",
+        stockingUnit: data.stockingUnit || "",
+        purchases: Array.isArray(data.purchases) ? data.purchases.map(x => ({...x})) : [],
+        sales: Array.isArray(data.sales) ? data.sales.map(x => ({...x})) : [],
+      });
     }
   }
+
+  return list;
+}
+
+  function buildPayload(isDraft = true){
+  syncActiveProducerFromFlatState();
+
+  const activeProducer = getActiveProducer() || {};
+
+  return {
+    pgName: (document.getElementById("pg-name")?.value || "{{ current_pg_name }}" || ""),
+
+    // Backward-compatible active producer fields
+    producerName: activeProducer.producerName || "",
+    stockingUnit: activeProducer.stockingUnit || "",
+    purchases: Array.isArray(activeProducer.purchases) ? activeProducer.purchases : [],
+    sales: Array.isArray(activeProducer.sales) ? activeProducer.sales : [],
+
+    // New producer-wise structure
+    producers: Array.isArray(state.producers) ? state.producers : [],
+    activeProducerId: state.activeProducerId || "",
+
+    activeTab: state.activeTab || "purchases",
+    isDraft: !!isDraft,
+    savedAt: new Date().toISOString()
+  };
+}
+
+ function syncFormFieldsFromState(){
+  const pn = document.getElementById("producer-name");
+  if (pn) pn.value = state.producerName || "";
+
+  const su = document.getElementById("stocking-unit");
+  if (su) su.value = state.stockingUnit || "";
+
+  renderProducerSelector();
+}
+
+  function hydrateFromData(data){
+  if (!data || typeof data !== "object") return false;
+
+  memberLedgerHydrating = true;
+  try {
+    state.producers = normalizeProducersFromData(data);
+    state.activeProducerId = data.activeProducerId || "";
+
+    if (!state.activeProducerId && state.producers.length) {
+      state.activeProducerId = state.producers[0].producerId;
+    }
+
+    state.activeTab = (data.activeTab === "sales") ? "sales" : "purchases";
+
+    loadFlatStateFromProducer(getActiveProducer());
+
+    switchTab(state.activeTab);
+    renderProducerSelector();
+    renderPurchasesTable();
+    renderSalesTable();
+    updateEditableStates();
+
+    return true;
+  } finally {
+    memberLedgerHydrating = false;
+  }
+}
 
   function persistLocalPayload(payload){
     try {
@@ -2047,16 +2365,17 @@
     return data;
   }
 
-  async function persistMemberLedger(payload){
-    persistLocalPayload(payload);
+ async function persistMemberLedger(payload){
+  persistLocalPayload(payload);
 
-    try {
-      await persistServerPayload(payload);
-      return true;
-    } catch (_) {
-      return false;
-    }
+  try {
+    await persistServerPayload(payload);
+    return true;
+  } catch (err) {
+    console.error("Member ledger server save failed:", err);
+    throw err;
   }
+}
 
   async function loadMemberLedger(){
   const endpoint = `/pg/api/register/member_ledger/${encodeURIComponent(window.PG_ID || "")}`;
@@ -2076,13 +2395,14 @@
           : null;
 
       const hasSavedLedger =
-        ledgerData &&
-        (
-          (Array.isArray(ledgerData.purchases) && ledgerData.purchases.length > 0) ||
-          (Array.isArray(ledgerData.sales) && ledgerData.sales.length > 0) ||
-          ledgerData.producerName ||
-          ledgerData.stockingUnit
-        );
+  ledgerData &&
+  (
+    (Array.isArray(ledgerData.producers) && ledgerData.producers.length > 0) ||
+    (Array.isArray(ledgerData.purchases) && ledgerData.purchases.length > 0) ||
+    (Array.isArray(ledgerData.sales) && ledgerData.sales.length > 0) ||
+    ledgerData.producerName ||
+    ledgerData.stockingUnit
+  );
 
       if (hasSavedLedger) {
         hydrateFromData(ledgerData);
@@ -2312,12 +2632,16 @@
   function enterEditMode(){
     if (state.editMode) return;
 
-    state.snapshot = JSON.parse(JSON.stringify({
-      producerName: state.producerName,
-      stockingUnit: state.stockingUnit,
-      purchases: state.purchases,
-      sales: state.sales
-    }));
+   syncActiveProducerFromFlatState();
+
+state.snapshot = JSON.parse(JSON.stringify({
+  producerName: state.producerName,
+  stockingUnit: state.stockingUnit,
+  purchases: state.purchases,
+  sales: state.sales,
+  producers: state.producers,
+  activeProducerId: state.activeProducerId
+}));
 
     state.editMode = true;
     setEditingUI(true);
@@ -2331,12 +2655,16 @@
   function exitEditMode(commit){
     if (!state.editMode) return;
 
-    if (!commit && state.snapshot){
-      state.producerName = state.snapshot.producerName || "";
-      state.stockingUnit = state.snapshot.stockingUnit || "";
-      state.purchases = state.snapshot.purchases || [];
-      state.sales = state.snapshot.sales || [];
-    }
+   if (!commit && state.snapshot){
+  state.producerName = state.snapshot.producerName || "";
+  state.stockingUnit = state.snapshot.stockingUnit || "";
+  state.purchases = state.snapshot.purchases || [];
+  state.sales = state.snapshot.sales || [];
+  state.producers = Array.isArray(state.snapshot.producers) ? state.snapshot.producers : [];
+  state.activeProducerId = state.snapshot.activeProducerId || "";
+} else if (commit) {
+  syncActiveProducerFromFlatState();
+}
 
     state.snapshot = null;
     state.editMode = false;
@@ -2363,8 +2691,11 @@
 
   // Toolbar placement is handled after load, tab switch, and resize.
 
-  const producerName = document.getElementById("producer-name");
-    const stockingUnit = document.getElementById("stocking-unit");
+ const producerName = document.getElementById("producer-name");
+const stockingUnit = document.getElementById("stocking-unit");
+const producerSelector = document.getElementById("producer-selector");
+const newProducerBtn = document.getElementById("new-producer-btn");
+const deleteProducerBtn = document.getElementById("delete-producer-btn");
 
     if (producerName){
       producerName.disabled = !canEdit;
@@ -2373,6 +2704,17 @@
     if (stockingUnit){
       stockingUnit.disabled = !canEdit;
     }
+
+    if (producerSelector){
+  producerSelector.disabled = false;
+}
+
+if (newProducerBtn){
+  newProducerBtn.disabled = !canEdit;
+}
+if (deleteProducerBtn){
+  deleteProducerBtn.disabled = !canEdit || !(state.producers && state.producers.length);
+}
 
     const psa = document.getElementById("purchases-select-all");
     const ssa = document.getElementById("sales-select-all");
@@ -2565,19 +2907,25 @@
   // Save / Cancel
   // ============================================================
   function saveData() {
-    if (!state.editMode) return;
+  if (!state.editMode) return;
 
-    askConfirm(t("confirmSavePage"), async () => {
-      if (memberLedgerDraftTimer) {
-        clearTimeout(memberLedgerDraftTimer);
-        memberLedgerDraftTimer = null;
-      }
+  askConfirm(t("confirmSavePage"), async () => {
+    if (memberLedgerDraftTimer) {
+      clearTimeout(memberLedgerDraftTimer);
+      memberLedgerDraftTimer = null;
+    }
 
-      const data = buildPayload(false);
+    const data = buildPayload(false);
+
+    try {
       await persistMemberLedger(data);
       exitEditMode(true);
-    }, {danger:false});
-  }
+    } catch (err) {
+      const msg = err && err.message ? err.message : "Member Ledger could not be saved to database.";
+      openLockModal(msg);
+    }
+  }, {danger:false});
+}
 
   function cancelEdits(){
     if (!state.editMode) return;
@@ -3305,14 +3653,40 @@
     document.getElementById("delete-all-btn")?.addEventListener("click", deleteAllHandler);
     document.getElementById("m-delete-all-btn")?.addEventListener("click", deleteAllHandler);
 
-    document.getElementById("producer-name")?.addEventListener("input", (e) => {
-      state.producerName = e.target.value;
-      scheduleDraftSync();
-    });
-    document.getElementById("stocking-unit")?.addEventListener("change", (e) => {
-      state.stockingUnit = e.target.value;
-      scheduleDraftSync();
-    });
+    document.getElementById("producer-selector")?.addEventListener("change", (e) => {
+  switchProducer(e.target.value);
+});
+
+document.getElementById("new-producer-btn")?.addEventListener("click", () => {
+  createNewProducer();
+});
+
+document.getElementById("delete-producer-btn")?.addEventListener("click", () => {
+  deleteActiveProducer();
+});
+
+document.getElementById("producer-name")?.addEventListener("input", (e) => {
+  state.producerName = e.target.value;
+
+  const active = getActiveProducer();
+  if (active) {
+    active.producerName = state.producerName || "";
+    renderProducerSelector();
+  }
+
+  scheduleDraftSync();
+});
+
+document.getElementById("stocking-unit")?.addEventListener("change", (e) => {
+  state.stockingUnit = e.target.value;
+
+  const active = getActiveProducer();
+  if (active) {
+    active.stockingUnit = state.stockingUnit || "";
+  }
+
+  scheduleDraftSync();
+});
 
   function placeMemberLedgerSharedToolbar(){
   const toolbar = document.getElementById("memberLedgerSharedToolbar");
@@ -3407,9 +3781,8 @@ document.getElementById("tab-sales")?.addEventListener("click", () => {
       loadMemberLedger();
     });
 
-    setEditingUI(false);
-    updateEditableStates();
-    syncFormFieldsFromState();
+setEditingUI(false);
+syncFormFieldsFromState();
 
 restoreActiveTab();
 renderPurchasesTable();
@@ -3418,8 +3791,21 @@ placeMemberLedgerSharedToolbar();
 enableMemberLedgerTableSwipe();
 
 await loadCurrentPgName();
-await loadMemberLedger();
-updateUI();
+
+const loaded = await loadMemberLedger();
+
+if (!loaded) {
+  updateUI();
+  restoreActiveTab();
+  renderProducerSelector();
+  updateEditableStates();
+  renderPurchasesTable();
+  renderSalesTable();
+} else {
+  renderProducerSelector();
+  updateEditableStates();
+}
+
 placeMemberLedgerSharedToolbar();
 enableMemberLedgerTableSwipe();
 
@@ -3456,14 +3842,15 @@ function enableMemberLedgerTableSwipe(){
     let hasMoved = false;
 
     wrap.addEventListener("pointerdown", function(e){
-      // Do not drag from real action controls
-      if (
-        e.target &&
-        e.target.closest &&
-        e.target.closest("button, a, select, input[type='checkbox']")
-      ) {
-        return;
-      }
+     // Do not drag from real form/action controls.
+// Important: date inputs must receive the click directly so browser calendar opens.
+if (
+  e.target &&
+  e.target.closest &&
+  e.target.closest("button, a, select, input, textarea, label, .mini-input, .chk")
+) {
+  return;
+}
 
       // Only left mouse button for desktop mouse
       if (e.pointerType === "mouse" && e.button !== 0) return;

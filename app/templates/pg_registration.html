@@ -729,6 +729,124 @@
   pointer-events:none;
 }
 
+/* Submit Block Validation custom modal */
+.pgr-validation-modal{
+  position:fixed;
+  inset:0;
+  z-index:12000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  background:rgba(2,6,23,.58);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
+
+.pgr-validation-modal.is-open{
+  display:flex;
+}
+
+.pgr-validation-modal-card{
+  width:min(520px, 100%);
+  background:#fff;
+  border-radius:18px;
+  border:1px solid rgba(15,23,42,.12);
+  box-shadow:0 24px 70px -40px rgba(0,0,0,.6);
+  overflow:hidden;
+}
+
+.pgr-validation-modal-head{
+  padding:12px 14px;
+  background:linear-gradient(135deg, rgba(240,253,244,.95), rgba(255,255,255,.98));
+  border-bottom:1px solid rgba(15,23,42,.10);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:950;
+  color:#0b4d3a;
+}
+
+.pgr-validation-modal-head svg{
+  width:20px;
+  height:20px;
+  color:#0b4d3a;
+  flex:0 0 auto;
+}
+
+.pgr-validation-modal-body{
+  padding:15px 14px;
+  color:rgba(15,23,42,.82);
+  font-weight:800;
+  line-height:1.45;
+  font-size:13px;
+}
+
+.pgr-validation-modal-note{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px dashed rgba(15,23,42,.16);
+  background:rgba(247,250,249,.82);
+  color:rgba(15,23,42,.68);
+  font-size:12px;
+  font-weight:800;
+}
+
+.pgr-validation-modal-btns{
+  padding:12px 14px 14px;
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+}
+
+.pgr-validation-modal-btn{
+  border:1px solid rgba(15,23,42,.14);
+  background:rgba(247,250,249,.85);
+  color:rgba(15,23,42,.82);
+  border-radius:999px;
+  padding:10px 14px;
+  font-weight:900;
+  font-size:12px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+}
+
+.pgr-validation-modal-btn.cancel{
+  background:rgba(241,245,249,.82);
+}
+
+.pgr-validation-modal-btn.submit{
+  border-color:rgba(217,119,6,.28);
+  background:rgba(251,191,36,.16);
+  color:#92400e;
+}
+
+.pgr-validation-modal-btn:hover{
+  transform:translateY(-1px);
+  background:#fff;
+  box-shadow:0 16px 22px -18px rgba(15,23,42,.25);
+}
+
+.pgr-validation-modal-btn.submit:hover{
+  background:rgba(251,191,36,.22);
+}
+
+@media(max-width:560px){
+  .pgr-validation-modal-btns{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  .pgr-validation-modal-btn{
+    width:100%;
+  }
+}
+
 </style>
 
 <div class="pgr-toast" id="pgrToast" aria-live="polite" aria-atomic="true">
@@ -815,13 +933,12 @@
   </div>
 
   {% if _can_submit_validation %}
-    <form
-      method="POST"
-      id="pgValidationSubmitForm"
-      action="{{ url_for('pg.submit_pg_registration_validation', pg_id=pg._id|string) }}"
-      onsubmit="return confirm('Submit this PG Registration Form to Block Admin for validation?');"
-    ></form>
-  {% endif %}
+  <form
+    method="POST"
+    id="pgValidationSubmitForm"
+    action="{{ url_for('pg.submit_pg_registration_validation', pg_id=pg._id|string) }}"
+  ></form>
+{% endif %}
 
   <div class="pgr-card {% if _is_validation_locked %}is-locked{% endif %}">
     <form method="POST" id="pgRegForm" data-validation-locked="{{ '1' if _is_validation_locked else '0' }}">
@@ -1050,6 +1167,37 @@
     </form>
   </div>
 
+</div>
+
+<!-- Submit Block Validation Confirmation Modal -->
+<div class="pgr-validation-modal" id="pgrValidationSubmitModal" aria-hidden="true">
+  <div class="pgr-validation-modal-card" role="dialog" aria-modal="true" aria-labelledby="pgrValidationSubmitTitle">
+    <div class="pgr-validation-modal-head">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z" stroke="currentColor" stroke-width="2.1"></path>
+      </svg>
+      <span id="pgrValidationSubmitTitle">Submit for Block Validation?</span>
+    </div>
+
+    <div class="pgr-validation-modal-body">
+      Submit this PG Registration Form to Block Admin for validation?
+
+      <div class="pgr-validation-modal-note">
+        After submission, this registration form will be locked until Block Admin reviews it.
+      </div>
+    </div>
+
+    <div class="pgr-validation-modal-btns">
+      <button type="button" class="pgr-validation-modal-btn cancel" id="pgrValidationSubmitCancel">
+        <span>Cancel</span>
+      </button>
+
+      <button type="button" class="pgr-validation-modal-btn submit" id="pgrValidationSubmitConfirm">
+        <span>Submit</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 <script id="existing-members-data" type="application/json">
@@ -1730,6 +1878,73 @@ $(document).ready(function() {
         setTimeout(() => { saveBtn.textContent = oldTxt; }, 2000);
       }, true);
     }
+
+
+
+    /* ============================================================
+       Submit for Block Validation - custom modal confirmation
+    ============================================================ */
+    const validationSubmitForm = document.getElementById('pgValidationSubmitForm');
+    const validationSubmitModal = document.getElementById('pgrValidationSubmitModal');
+    const validationSubmitCancel = document.getElementById('pgrValidationSubmitCancel');
+    const validationSubmitConfirm = document.getElementById('pgrValidationSubmitConfirm');
+
+    if(validationSubmitForm && validationSubmitModal && validationSubmitCancel && validationSubmitConfirm){
+      let validationConfirmedSubmit = false;
+
+      function openValidationSubmitModal(){
+        validationSubmitModal.classList.add('is-open');
+        validationSubmitModal.setAttribute('aria-hidden', 'false');
+
+        setTimeout(function(){
+          try{ validationSubmitCancel.focus(); }catch(_){}
+        }, 30);
+      }
+
+      function closeValidationSubmitModal(){
+        validationSubmitModal.classList.remove('is-open');
+        validationSubmitModal.setAttribute('aria-hidden', 'true');
+      }
+
+      validationSubmitForm.addEventListener('submit', function(e){
+        if(validationConfirmedSubmit) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        openValidationSubmitModal();
+      });
+
+      validationSubmitCancel.addEventListener('click', function(){
+        closeValidationSubmitModal();
+      });
+
+      validationSubmitConfirm.addEventListener('click', function(){
+        validationConfirmedSubmit = true;
+        closeValidationSubmitModal();
+
+        try{ sessionStorage.setItem('pgr_submit_attempt', '1'); }catch(_){}
+
+        if(typeof validationSubmitForm.requestSubmit === 'function'){
+          validationSubmitForm.requestSubmit();
+        }else{
+          HTMLFormElement.prototype.submit.call(validationSubmitForm);
+        }
+      });
+
+      validationSubmitModal.addEventListener('click', function(e){
+        if(e.target === validationSubmitModal){
+          closeValidationSubmitModal();
+        }
+      });
+
+      document.addEventListener('keydown', function(e){
+        if(e.key === 'Escape' && validationSubmitModal.classList.contains('is-open')){
+          closeValidationSubmitModal();
+        }
+      });
+    }
+
 
 });
 </script>

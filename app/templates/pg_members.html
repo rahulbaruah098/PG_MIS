@@ -887,6 +887,121 @@
   box-shadow: var(--shadow2);
 }
 
+/* Submit Validation custom confirmation modal */
+.pmd-validation-modal{
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(2,6,23,.58);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.pmd-validation-modal.is-open{
+  display: flex;
+}
+
+.pmd-validation-modal-card{
+  width: min(520px, 100%);
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid rgba(15,23,42,.12);
+  box-shadow: 0 24px 70px -40px rgba(0,0,0,.6);
+  overflow: hidden;
+}
+
+.pmd-validation-modal-head{
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(240,253,244,.95), rgba(255,255,255,.98));
+  border-bottom: 1px solid rgba(15,23,42,.10);
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  font-weight: 950;
+  color: var(--accent);
+}
+
+.pmd-validation-modal-head ion-icon{
+  font-size: 20px;
+  color: rgba(11,77,58,.95);
+}
+
+.pmd-validation-modal-body{
+  padding: 15px 14px;
+  color: rgba(15,23,42,.82);
+  font-weight: 800;
+  line-height: 1.45;
+  font-size: 13px;
+}
+
+.pmd-validation-modal-note{
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed rgba(15,23,42,.16);
+  background: rgba(247,250,249,.82);
+  color: rgba(15,23,42,.68);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pmd-validation-modal-btns{
+  padding: 12px 14px 14px;
+  display:flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.pmd-validation-modal-btn{
+  border: 1px solid rgba(15,23,42,.14);
+  background: rgba(247,250,249,.85);
+  color: rgba(15,23,42,.82);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 900;
+  font-size: 12px;
+  cursor: pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+
+.pmd-validation-modal-btn.cancel{
+  background: rgba(241,245,249,.82);
+}
+
+.pmd-validation-modal-btn.submit{
+  border-color: rgba(16,185,129,.35);
+  background: rgba(16,185,129,.12);
+  color: var(--accent);
+}
+
+.pmd-validation-modal-btn:hover{
+  transform: translateY(-1px);
+  background: #fff;
+  box-shadow: var(--shadow2);
+}
+
+.pmd-validation-modal-btn.submit:hover{
+  background: rgba(16,185,129,.17);
+}
+
+@media(max-width: 560px){
+  .pmd-validation-modal-btns{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+
+  .pmd-validation-modal-btn{
+    width:100%;
+  }
+}
+
 .pmd-lock-note{
   margin-top:10px;
   padding:10px 12px;
@@ -1000,12 +1115,12 @@
         </div>
 
         {% if member_validation_can_submit %}
-          <form
-            method="POST"
-            class="pmd-submitValidationForm"
-            action="{{ url_for('pg.submit_member_registration_validation', pg_id=pg._id|string) }}"
-            onsubmit="return confirm('Submit membership registration for Block Admin validation?');"
-          >
+         <form
+  method="POST"
+  class="pmd-submitValidationForm"
+  id="pmdSubmitValidationForm"
+  action="{{ url_for('pg.submit_member_registration_validation', pg_id=pg._id|string) }}"
+>
             <button type="submit" class="pmd-btn-submitValidation">
               <ion-icon name="send-outline"></ion-icon>
               {% if member_validation_status == 'rejected' %}
@@ -1347,6 +1462,36 @@
 
     <div class="pmd-foot" id="pmdFooterText">PGMIS • PG Member Details</div>
 
+  </div>
+</div>
+
+<!-- Submit Validation Confirmation Modal -->
+<div class="pmd-validation-modal" id="pmdValidationSubmitModal" aria-hidden="true">
+  <div class="pmd-validation-modal-card" role="dialog" aria-modal="true" aria-labelledby="pmdValidationSubmitTitle">
+    <div class="pmd-validation-modal-head">
+      <ion-icon name="shield-checkmark-outline"></ion-icon>
+      <span id="pmdValidationSubmitTitle">Submit for Validation?</span>
+    </div>
+
+    <div class="pmd-validation-modal-body">
+      Submit membership registration for Block Admin validation?
+
+      <div class="pmd-validation-modal-note">
+        After submission, the membership registration will be locked until Block Admin reviews it.
+      </div>
+    </div>
+
+    <div class="pmd-validation-modal-btns">
+      <button type="button" class="pmd-validation-modal-btn cancel" id="pmdValidationSubmitCancel">
+        <ion-icon name="close-circle-outline"></ion-icon>
+        <span>Cancel</span>
+      </button>
+
+      <button type="button" class="pmd-validation-modal-btn submit" id="pmdValidationSubmitConfirm">
+        <ion-icon name="send-outline"></ion-icon>
+        <span>Submit</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -2591,6 +2736,71 @@ function pmdLockRowAfterSave(row){
   }
 
   window.addEventListener('resize', initPmdDragScroll);
+})();
+
+
+/* ============================================================
+   Submit for Validation - custom modal confirmation
+============================================================ */
+(function(){
+  const form = document.getElementById("pmdSubmitValidationForm");
+  const modal = document.getElementById("pmdValidationSubmitModal");
+  const btnCancel = document.getElementById("pmdValidationSubmitCancel");
+  const btnConfirm = document.getElementById("pmdValidationSubmitConfirm");
+
+  if(!form || !modal || !btnCancel || !btnConfirm) return;
+
+  let confirmedSubmit = false;
+
+  function openModal(){
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+
+    setTimeout(function(){
+      try { btnCancel.focus(); } catch(e){}
+    }, 30);
+  }
+
+  function closeModal(){
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+  form.addEventListener("submit", function(e){
+    if(confirmedSubmit) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    openModal();
+  });
+
+  btnCancel.addEventListener("click", function(){
+    closeModal();
+  });
+
+  btnConfirm.addEventListener("click", function(){
+    confirmedSubmit = true;
+    closeModal();
+
+    if(typeof form.requestSubmit === "function"){
+      form.requestSubmit();
+    }else{
+      HTMLFormElement.prototype.submit.call(form);
+    }
+  });
+
+  modal.addEventListener("click", function(e){
+    if(e.target === modal){
+      closeModal();
+    }
+  });
+
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && modal.classList.contains("is-open")){
+      closeModal();
+    }
+  });
 })();
 </script>
 
