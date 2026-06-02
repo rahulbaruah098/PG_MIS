@@ -1195,7 +1195,7 @@ transition:none !important;
             <li>
           </ul>
 
-                    {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN'] %}
+          {% if session.get('role') in ['SUPER_ADMIN','ADMIN','DISTRICT_ADMIN'] %}
           <div class="nav-section">PG Operations</div>
           <ul class="nav-item-group">
             <li>
@@ -1227,7 +1227,7 @@ transition:none !important;
           <div class="nav-section">CLF Surveillance</div>
           <ul class="nav-item-group">
             <li>
-              <a class="nav-item" data-page="clf-surveillance" href="{{ url_for('reports.hierarchy_dashboard') }}">
+              <a class="nav-item {% if request.endpoint == 'reports.clf_console' %}active{% endif %}" data-page="clf-surveillance" href="{{ url_for('reports.clf_console') }}">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M3 21V7l6-4 6 4v14"></path>
                   <path d="M15 11l6-4v14"></path>
@@ -1239,17 +1239,7 @@ transition:none !important;
                 <span class="nav-text">CLF Surveillance</span>
               </a>
             </li>
-            <li>
-              <a class="nav-item" data-page="clf-wise-monitoring" href="{{ url_for('reports.hierarchy_dashboard') }}#clf-surveillance">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M3 3v18h18"></path>
-                  <path d="M7 16V8"></path>
-                  <path d="M12 16V5"></path>
-                  <path d="M17 16v-4"></path>
-                </svg>
-                <span class="nav-text">CLF-wise Monitoring</span>
-              </a>
-            </li>
+
           </ul>
           {% endif %}
 
