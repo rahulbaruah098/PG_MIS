@@ -107,6 +107,7 @@ def _reports_hub_defaults_from_session(db):
         "state": "",
         "district": "",
         "block": "",
+        "clf": "",
         "gp": "",
         "village": "",
         "pg_name": "",
@@ -126,15 +127,18 @@ def _reports_hub_defaults_from_session(db):
         if raw_pg_id and ObjectId.is_valid(str(raw_pg_id)):
             pg = db.pgs.find_one(
                 {"_id": ObjectId(str(raw_pg_id))},
-                {
-                    "name": 1,
-                    "State": 1,
-                    "District": 1,
-                    "Block": 1,
-                    "Gram Panchayat": 1,
-                    "Village": 1,
-                },
-            )
+        {
+                "name": 1,
+                "State": 1,
+                "District": 1,
+                "Block": 1,
+                "Gram Panchayat": 1,
+                "Village": 1,
+                "clf_id": 1,
+                "assigned_clf_user_id": 1,
+                "assigned_clf_username": 1,
+        },
+    )
 
         # fallback: if JWT has assigned_pg_ids but no direct pg_id
         if not pg:
@@ -150,28 +154,134 @@ def _reports_hub_defaults_from_session(db):
 
             if possible_pg_id and ObjectId.is_valid(str(possible_pg_id)):
                 pg = db.pgs.find_one(
-                    {"_id": ObjectId(str(possible_pg_id))},
-                    {
-                        "name": 1,
-                        "State": 1,
-                        "District": 1,
-                        "Block": 1,
-                        "Gram Panchayat": 1,
-                        "Village": 1,
-                    },
-                )
+                {"_id": ObjectId(str(possible_pg_id))},
+                {
+                "name": 1,
+                "State": 1,
+                "District": 1,
+                "Block": 1,
+                "Gram Panchayat": 1,
+                "Village": 1,
+                "clf_id": 1,
+                "assigned_clf_user_id": 1,
+                "assigned_clf_username": 1,
+        },
+    )
 
         if pg:
+            clf_name = ""
+
+            try:
+                clf_id = (
+                    pg.get("clf_id")
+                    or pg.get("clfId")
+                    or pg.get("mapped_clf_id")
+                    or pg.get("assigned_clf_id")
+                )
+                assigned_clf_user_id = pg.get("assigned_clf_user_id")
+
+                clf_doc = None
+
+                # Case 1: PG document directly stores clf_id
+                if clf_id:
+                    if isinstance(clf_id, ObjectId):
+                        clf_doc = db.clfs.find_one(
+                            {"_id": clf_id},
+                            {"name": 1, "clf_name": 1, "CLF Name": 1},
+                        )
+                    elif ObjectId.is_valid(str(clf_id)):
+                        clf_doc = db.clfs.find_one(
+                            {"_id": ObjectId(str(clf_id))},
+                            {"name": 1, "clf_name": 1, "CLF Name": 1},
+                        )
+
+                # Case 2 fallback: CLF document stores assigned PG ids
+                if not clf_doc:
+                    pg_oid = pg.get("_id")
+                    pg_oid_str = str(pg_oid) if pg_oid else ""
+
+                    clf_doc = db.clfs.find_one(
+                        {
+                            "$or": [
+                                {"pg_ids": pg_oid},
+                                {"pg_ids": pg_oid_str},
+                                {"assigned_pg_ids": pg_oid},
+                                {"assigned_pg_ids": pg_oid_str},
+                                {"mapped_pg_ids": pg_oid},
+                                {"mapped_pg_ids": pg_oid_str},
+                                {"pgs": pg_oid},
+                                {"pgs": pg_oid_str},
+                            ]
+                        },
+                        {"name": 1, "clf_name": 1, "CLF Name": 1},
+                    )
+
+                if clf_doc:
+                    clf_name = (
+                        clf_doc.get("name")
+                        or clf_doc.get("clf_name")
+                        or clf_doc.get("CLF Name")
+                        or ""
+                    )
+
+            except Exception:
+                clf_name = ""
+
             defaults.update({
                 "state": pg.get("State") or "",
                 "district": pg.get("District") or "",
                 "block": pg.get("Block") or "",
+                "clf": clf_name,
                 "gp": pg.get("Gram Panchayat") or "",
                 "village": pg.get("Village") or "",
                 "pg_name": pg.get("name") or "",
             })
 
-        locked_fields = ["state", "district", "block", "gp", "village", "pg"]
+        locked_fields = ["state", "district", "block", "clf", "gp", "village", "pg"]
+        return defaults, locked_fields
+
+    # Block Admin: lock State/District/Block from login scope.
+    # Below Block, user can select CLF / GP / Village / PG under that block.
+    if role == "BLOCK_ADMIN":
+        state_id = _reports_ctx_value("state_id")
+        district_id = _reports_ctx_value("district_id")
+        block_id = _reports_ctx_value("block_id")
+
+        try:
+            if block_id and ObjectId.is_valid(str(block_id)):
+                blk = db.blocks.find_one(
+                    {"_id": ObjectId(str(block_id))},
+                    {"name": 1, "district_id": 1},
+                )
+                if blk:
+                    defaults["block"] = blk.get("name") or ""
+
+                    if not district_id and blk.get("district_id"):
+                        district_id = str(blk.get("district_id"))
+
+            if district_id and ObjectId.is_valid(str(district_id)):
+                dist = db.districts.find_one(
+                    {"_id": ObjectId(str(district_id))},
+                    {"name": 1, "state_id": 1},
+                )
+                if dist:
+                    defaults["district"] = dist.get("name") or ""
+
+                    if not state_id and dist.get("state_id"):
+                        state_id = str(dist.get("state_id"))
+
+            if state_id and ObjectId.is_valid(str(state_id)):
+                st = db.states.find_one(
+                    {"_id": ObjectId(str(state_id))},
+                    {"name": 1, "code": 1},
+                )
+                if st:
+                    defaults["state"] = st.get("name") or st.get("code") or ""
+
+        except Exception:
+            current_app.logger.exception("Reports Hub Block Admin default scope failed")
+
+        locked_fields = ["state", "district", "block"]
         return defaults, locked_fields
 
     # State/Admin scoped users
@@ -197,6 +307,7 @@ def _reports_hub_effective_filters(db):
         "state": request.args.get("state") or defaults["state"],
         "district": request.args.get("district") or defaults["district"],
         "block": request.args.get("block") or defaults["block"],
+        "clf": request.args.get("clf") or defaults.get("clf", ""),
         "gp": request.args.get("gp") or defaults["gp"],
         "village": request.args.get("village") or defaults["village"],
         "pg_name": request.args.get("pg_name") or defaults["pg_name"],
@@ -327,10 +438,11 @@ def reports_hub_filter_options():
     state = (request.args.get("state") or "").strip()
     district = (request.args.get("district") or "").strip()
     block = (request.args.get("block") or "").strip()
+    clf = (request.args.get("clf") or "").strip()
     gp = (request.args.get("gp") or "").strip()
     village = (request.args.get("village") or "").strip()
 
-    allowed_levels = {"state", "district", "block", "gp", "village", "pg"}
+    allowed_levels = {"state", "district", "block", "clf", "gp", "village", "pg"}
 
     if level not in allowed_levels:
         return jsonify({
@@ -348,6 +460,7 @@ def reports_hub_filter_options():
             "state": defaults.get("state", ""),
             "district": defaults.get("district", ""),
             "block": defaults.get("block", ""),
+            "clf": defaults.get("clf", ""),
             "gp": defaults.get("gp", ""),
             "village": defaults.get("village", ""),
             "pg": defaults.get("pg_name", ""),
@@ -391,6 +504,75 @@ def reports_hub_filter_options():
 
     if village:
         mongo_filter["Village"] = village
+
+
+    if level == "clf":
+        try:
+            clf_filter = {}
+
+            block_name_for_clf = block or defaults.get("block") or ""
+            block_id_for_clf = _reports_ctx_value("block_id")
+
+            if block_id_for_clf and ObjectId.is_valid(str(block_id_for_clf)):
+                clf_filter["block_id"] = ObjectId(str(block_id_for_clf))
+            elif block_name_for_clf:
+                block_doc = db.blocks.find_one({"name": block_name_for_clf}, {"_id": 1})
+                if block_doc:
+                    clf_filter["block_id"] = block_doc["_id"]
+
+            rows = list(
+                db.clfs.find(
+                    clf_filter,
+                    {"name": 1, "clf_name": 1, "CLF Name": 1},
+                ).sort([("name", 1), ("clf_name", 1)])
+            )
+
+            options = []
+            seen = set()
+
+            for row in rows:
+                label = (
+                    row.get("name")
+                    or row.get("clf_name")
+                    or row.get("CLF Name")
+                    or ""
+                )
+                label = str(label).strip()
+
+                if label and label not in seen:
+                    seen.add(label)
+                    options.append(label)
+
+            return jsonify({
+                "success": True,
+                "level": level,
+                "locked": level in locked_fields,
+                "options": options,
+            })
+
+        except Exception as e:
+            current_app.logger.exception("Reports Hub CLF dropdown loading failed")
+            return jsonify({
+                "success": False,
+                "message": str(e),
+                "level": level,
+                "options": [],
+            }), 500
+
+    if clf:
+        try:
+            clf_doc = db.clfs.find_one({
+                "$or": [
+                    {"name": clf},
+                    {"clf_name": clf},
+                    {"CLF Name": clf},
+                ]
+            }, {"_id": 1})
+
+            if clf_doc and clf_doc.get("_id"):
+                mongo_filter["clf_id"] = clf_doc["_id"]
+        except Exception:
+            pass
 
     selected_field = field_map[level]
 
@@ -444,13 +626,14 @@ def _pgs_in_scope(db, base_match: dict, filters: dict):
     pgs = list(db.pgs.find(
         match_pg,
         {
-            "name": 1,
-            "State": 1,
-            "District": 1,
-            "Block": 1,
-            "Gram Panchayat": 1,
-            "Village": 1,
-        }
+    "name": 1,
+    "State": 1,
+    "District": 1,
+    "Block": 1,
+    "Gram Panchayat": 1,
+    "Village": 1,
+    "clf_id": 1,
+},
     ))
 
     pg_by_id = {p["_id"]: p for p in pgs}
@@ -467,6 +650,7 @@ def _reports_export_filters(db):
         "State": effective.get("state") or "",
         "District": effective.get("district") or "",
         "Block": effective.get("block") or "",
+        "clf": effective.get("clf") or "",
         "Gram Panchayat": effective.get("gp") or "",
         "Village": effective.get("village") or "",
         "pg_name": effective.get("pg_name") or "",
@@ -4322,6 +4506,7 @@ def _pg_match_with_filters(db, base_match: dict, filters: dict):
     block = (filters.get("Block") or filters.get("block") or "").strip()
     gp = (filters.get("Gram Panchayat") or filters.get("gp") or "").strip()
     village = (filters.get("Village") or filters.get("village") or "").strip()
+    clf = (filters.get("clf") or filters.get("CLF") or filters.get("clf_name") or "").strip()
     pg_name = (filters.get("pg_name") or "").strip()
 
     if state:
@@ -4338,6 +4523,21 @@ def _pg_match_with_filters(db, base_match: dict, filters: dict):
 
     if village:
         match["Village"] = village
+
+    if clf:
+        try:
+            clf_doc = db.clfs.find_one({
+                "$or": [
+                    {"name": clf},
+                    {"clf_name": clf},
+                    {"CLF Name": clf},
+                ]
+            }, {"_id": 1})
+
+            if clf_doc and clf_doc.get("_id"):
+                match["clf_id"] = clf_doc["_id"]
+        except Exception:
+            pass
 
     if pg_name:
         match["name"] = pg_name

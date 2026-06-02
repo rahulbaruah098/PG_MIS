@@ -560,19 +560,26 @@
                   </select>
                 </div>
 
-                <div class="rh-field s2">
-                  <label id="rhLblBlock" for="rhPhBlock">Block</label>
-                    <select name="block" id="rhPhBlock" data-selected="{{ (hub_filters.block if hub_filters is defined else request.args.get('block',''))|e }}">                    
-                      <option value="" id="rhOptBlockPlaceholder">Block</option>
-                  </select>
-                </div>
+                       <div class="rh-field s2">
+  <label id="rhLblBlock" for="rhPhBlock">Block</label>
+  <select name="block" id="rhPhBlock" data-selected="{{ (hub_filters.block if hub_filters is defined else request.args.get('block',''))|e }}">
+    <option value="" id="rhOptBlockPlaceholder">Block</option>
+  </select>
+</div>
 
-                <div class="rh-field s2">
-                  <label id="rhLblGp" for="rhPhGp">Gram Panchayat</label>
-                    <select name="gp" id="rhPhGp" data-selected="{{ (hub_filters.gp if hub_filters is defined else request.args.get('gp',''))|e }}">                    
-                      <option value="" id="rhOptGpPlaceholder">GP</option>
-                  </select>
-                </div>
+<div class="rh-field s2">
+  <label id="rhLblClf" for="rhPhClf">CLF</label>
+  <select name="clf" id="rhPhClf" data-selected="{{ (hub_filters.clf if hub_filters is defined else request.args.get('clf',''))|e }}">
+    <option value="" id="rhOptClfPlaceholder">CLF</option>
+  </select>
+</div>
+
+<div class="rh-field s2">
+  <label id="rhLblGp" for="rhPhGp">Gram Panchayat</label>
+  <select name="gp" id="rhPhGp" data-selected="{{ (hub_filters.gp if hub_filters is defined else request.args.get('gp',''))|e }}">
+    <option value="" id="rhOptGpPlaceholder">GP</option>
+  </select>
+</div>
 
                 <div class="rh-field s2">
                   <label id="rhLblVillage" for="rhPhVillage">Village</label>
@@ -653,8 +660,10 @@
             </div>
 
             <div class="rh-tip" id="rhTip">
-              {% if hub_role == 'CLF_ADMIN' %}
+                            {% if hub_role == 'CLF_ADMIN' %}
                 Tip: Your report filters are locked to your assigned/mapped CLF PGs. You cannot export outside-scope PG data.
+              {% elif hub_role == 'BLOCK_ADMIN' %}
+                Tip: State, District and Block are locked to your login scope. You can filter CLF, Gram Panchayat, Village and PG under your Block.
               {% else %}
                 Tip: Set Group By for summary tables (district/block/clf/gp/village/pg). If Group By is blank, downloads give row-level data.
               {% endif %}
@@ -715,10 +724,11 @@
     const qs = () => {
       const params = new URLSearchParams(new FormData(form));
 
-      const forcedFields = [
+            const forcedFields = [
         ['state', 'rhPhState'],
         ['district', 'rhPhDistrict'],
         ['block', 'rhPhBlock'],
+        ['clf', 'rhPhClf'],
         ['gp', 'rhPhGp'],
         ['village', 'rhPhVillage'],
         ['pg_name', 'rhPhPgName'],
@@ -769,7 +779,8 @@
 
         state: "State",
         district: "District",
-        block: "Block",
+                block: "Block",
+        clf: "CLF",
         gp: "Gram Panchayat",
         village: "Village",
         pgName: "PG Name",
@@ -777,6 +788,7 @@
         phState: "State",
         phDistrict: "District",
         phBlock: "Block",
+        phClf: "CLF",
         phGp: "GP",
         phVillage: "Village",
         phPgName: "PG Name",
@@ -820,7 +832,7 @@
         turnover: "Download Turnover CSV",
         overallZip: "Download Overall ZIP",
 
-        tip: "Tip: Set Group By for summary tables (district/block/gp/village/pg). If Group By is blank, downloads give row-level data.",
+        tip: "Tip: Set Group By for summary tables (district/block/clf/gp/village/pg). If Group By is blank, downloads give row-level data.",
 
         quickTitle: "Quick Reports",
         quickSub: "Open commonly used report pages directly.",
@@ -844,7 +856,8 @@
 
         state: "রাজ্য",
         district: "জেলা",
-        block: "ব্লক",
+                block: "ব্লক",
+        clf: "CLF",
         gp: "গ্রাম পঞ্চায়েত",
         village: "গ্রাম",
         pgName: "পিজি নাম",
@@ -852,6 +865,7 @@
         phState: "রাজ্য",
         phDistrict: "জেলা",
         phBlock: "ব্লক",
+        phClf: "CLF",
         phGp: "জিপি",
         phVillage: "গ্রাম",
         phPgName: "পিজি নাম",
@@ -895,7 +909,7 @@
         turnover: "টার্নওভার CSV ডাউনলোড",
         overallZip: "ওভারঅল ZIP ডাউনলোড",
 
-        tip: "টিপ: summary table-এর জন্য Group By ব্যবহার করুন (district/block/gp/village/pg)। Group By ফাঁকা থাকলে row-level data ডাউনলোড হবে।",
+        tip: "টিপ: summary table-এর জন্য Group By ব্যবহার করুন (district/block/clf/gp/village/pg)। Group By ফাঁকা থাকলে row-level data ডাউনলোড হবে।",
 
         quickTitle: "দ্রুত রিপোর্ট",
         quickSub: "প্রচলিত রিপোর্ট পেজ সরাসরি খুলুন।",
@@ -921,16 +935,21 @@
         labelKey: 'phDistrict',
         placeholderId: 'rhOptDistrictPlaceholder'
       },
-      block: {
-        id: 'rhPhBlock',
-        labelKey: 'phBlock',
-        placeholderId: 'rhOptBlockPlaceholder'
-      },
-      gp: {
-        id: 'rhPhGp',
-        labelKey: 'phGp',
-        placeholderId: 'rhOptGpPlaceholder'
-      },
+         block: {
+  id: 'rhPhBlock',
+  labelKey: 'phBlock',
+  placeholderId: 'rhOptBlockPlaceholder'
+},
+clf: {
+  id: 'rhPhClf',
+  labelKey: 'phClf',
+  placeholderId: 'rhOptClfPlaceholder'
+},
+gp: {
+  id: 'rhPhGp',
+  labelKey: 'phGp',
+  placeholderId: 'rhOptGpPlaceholder'
+},
       village: {
         id: 'rhPhVillage',
         labelKey: 'phVillage',
@@ -943,7 +962,7 @@
       }
     };
 
-    const hierarchy = ['state', 'district', 'block', 'gp', 'village', 'pg'];
+    const hierarchy = ['state', 'district', 'block', 'clf', 'gp', 'village', 'pg'];
 
     function getEl(id){
       return document.getElementById(id);
@@ -1105,13 +1124,14 @@
       if(select) select.dataset.selected = '';
     }
 
-    function getFilterParams(level){
+        function getFilterParams(level){
       const params = new URLSearchParams();
 
       params.set('level', level);
       params.set('state', getValue('state'));
       params.set('district', getValue('district'));
       params.set('block', getValue('block'));
+      params.set('clf', getValue('clf'));
       params.set('gp', getValue('gp'));
       params.set('village', getValue('village'));
 
@@ -1178,9 +1198,17 @@
       await reloadPg('');
     }
 
-    async function onBlockChange(){
+       async function onBlockChange(){
       resetAfter('block');
+      await loadLevel('clf', '');
       await loadLevel('gp', '');
+      await reloadPg('');
+    }
+
+    async function onClfChange(){
+      resetAfter('clf');
+      await loadLevel('gp', '');
+      await loadLevel('village', '');
       await reloadPg('');
     }
 
@@ -1195,24 +1223,27 @@
       await reloadPg('');
     }
 
-    function bindDropdownEvents(){
+        function bindDropdownEvents(){
       const state = getEl('rhPhState');
       const district = getEl('rhPhDistrict');
       const block = getEl('rhPhBlock');
+      const clf = getEl('rhPhClf');
       const gp = getEl('rhPhGp');
       const village = getEl('rhPhVillage');
 
       if(state) state.addEventListener('change', onStateChange);
       if(district) district.addEventListener('change', onDistrictChange);
       if(block) block.addEventListener('change', onBlockChange);
+      if(clf) clf.addEventListener('change', onClfChange);
       if(gp) gp.addEventListener('change', onGpChange);
       if(village) village.addEventListener('change', onVillageChange);
     }
 
-    async function initDropdowns(){
+        async function initDropdowns(){
       clearSelect('state', false);
       clearSelect('district', false);
       clearSelect('block', false);
+      clearSelect('clf', false);
       clearSelect('gp', false);
       clearSelect('village', false);
       clearSelect('pg', false);
@@ -1220,13 +1251,13 @@
       const selectedState = getInitialSelected('state');
       const selectedDistrict = getInitialSelected('district');
       const selectedBlock = getInitialSelected('block');
+      const selectedClf = getInitialSelected('clf');
       const selectedGp = getInitialSelected('gp');
       const selectedVillage = getInitialSelected('village');
       const selectedPg = getInitialSelected('pg');
 
       await loadLevel('state', selectedState);
 
-      // If state is auto-filled, continue loading child dropdowns.
       if(selectedState || getValue('state')){
         await loadLevel('district', selectedDistrict);
       }
@@ -1236,7 +1267,12 @@
       }
 
       if(selectedBlock || getValue('block')){
+        await loadLevel('clf', selectedClf);
         await loadLevel('gp', selectedGp);
+      }
+
+      if(selectedClf || getValue('clf')){
+        await reloadPg(selectedPg);
       }
 
       if(selectedGp || getValue('gp')){
@@ -1260,9 +1296,10 @@
       safeText('rhFiltersTitle', tr.filtersTitle);
       safeText('rhFiltersSub', tr.filtersSub);
 
-      safeText('rhLblState', tr.state);
+            safeText('rhLblState', tr.state);
       safeText('rhLblDistrict', tr.district);
       safeText('rhLblBlock', tr.block);
+      safeText('rhLblClf', tr.clf);
       safeText('rhLblGp', tr.gp);
       safeText('rhLblVillage', tr.village);
       safeText('rhLblPgName', tr.pgName);
@@ -1270,6 +1307,7 @@
       setSelectPlaceholder('state');
       setSelectPlaceholder('district');
       setSelectPlaceholder('block');
+      setSelectPlaceholder('clf');
       setSelectPlaceholder('gp');
       setSelectPlaceholder('village');
       setSelectPlaceholder('pg');
@@ -1315,9 +1353,9 @@ safeText('rhLoans', tr.loans);
 safeText('rhTurnover', tr.turnover);
 safeText('rhOverallZip', tr.overallZip);
 
-      if (RH_ROLE !== 'CLF_ADMIN') {
-        safeText('rhTip', tr.tip);
-      }
+      if (RH_ROLE !== 'CLF_ADMIN' && RH_ROLE !== 'BLOCK_ADMIN') {
+  safeText('rhTip', tr.tip);
+}
 
       safeText('rhQuickTitle', tr.quickTitle);
       safeText('rhQuickSub', tr.quickSub);
