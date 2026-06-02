@@ -555,52 +555,307 @@ def export_members_csv():
 def export_cashbook_csv():
     import csv, io
     db = current_app.mongo_db
+
     base_match = _pg_match_from_session(session)
     filters = _reports_export_filters(db)
     group_by = (request.args.get("group_by") or "").strip().lower()
+
     pg_ids, pg_by_id = _pgs_in_scope(db, base_match, filters)
 
     match = {"pg_id": {"$in": pg_ids}} if pg_ids else {"pg_id": {"$in": []}}
+
+    # Keep existing report period behavior intact.
     _apply_period(match, "updated_at", dict(request.args))
 
-    mem = io.StringIO(); w = csv.writer(mem)
+    mem = io.StringIO()
+    w = csv.writer(mem)
 
-    def totals(arr):
-        t = 0.0
-        if isinstance(arr, list):
-            for r in arr:
-                try:
-                    t += float((r or {}).get("amount") or 0)
-                except Exception:
-                    pass
-        return t
+    def num(value):
+        try:
+            if value in (None, "", "null", "None", "-", "NaN"):
+                return 0.0
+            if isinstance(value, (int, float)):
+                return float(value)
+            return float(str(value).replace("₹", "").replace(",", "").strip() or 0)
+        except Exception:
+            return 0.0
+
+    def is_contra(row):
+        return isinstance(row, dict) and str(row.get("entryType") or "").strip().lower() == "contra"
+
+    def row_parts(row):
+        if not isinstance(row, dict):
+            return 0.0, 0.0
+
+        cash = num(
+            row.get("amount")
+            or row.get("cashAmount")
+            or row.get("cash_amount")
+            or 0
+        )
+
+        bank = num(
+            row.get("bankAmount")
+            or row.get("bank_amount")
+            or row.get("bank")
+            or 0
+        )
+
+        return round(cash, 2), round(bank, 2)
+
+    def sum_parts(rows, *, include_contra=True):
+        cash_total = 0.0
+        bank_total = 0.0
+
+        if isinstance(rows, list):
+            for row in rows:
+                if not include_contra and is_contra(row):
+                    continue
+
+                cash, bank = row_parts(row)
+                cash_total += cash
+                bank_total += bank
+
+        return {
+            "cash": round(cash_total, 2),
+            "bank": round(bank_total, 2),
+            "total": round(cash_total + bank_total, 2),
+        }
+
+    def contra_totals(receipts, payments):
+        cash_to_bank = 0.0
+        bank_to_cash = 0.0
+
+        for row in list(receipts or []) + list(payments or []):
+            if not is_contra(row):
+                continue
+
+            cash, bank = row_parts(row)
+            row_total = cash + bank
+            contra_type = str(row.get("contraType") or "").strip().lower()
+
+            if contra_type == "cash_to_bank":
+                cash_to_bank += row_total
+            elif contra_type == "bank_to_cash":
+                bank_to_cash += row_total
+
+        cash_to_bank = round(cash_to_bank / 2, 2)
+        bank_to_cash = round(bank_to_cash / 2, 2)
+
+        return {
+            "cash_to_bank": cash_to_bank,
+            "bank_to_cash": bank_to_cash,
+            "total": round(cash_to_bank + bank_to_cash, 2),
+        }
+
+    def opening_parts(doc):
+        opening = doc.get("opening") if isinstance(doc.get("opening"), dict) else {}
+
+        cash = num(
+            opening.get("cash")
+            if "cash" in opening else
+            doc.get("opening_cash")
+        )
+
+        bank = num(
+            opening.get("bank")
+            if "bank" in opening else
+            doc.get("opening_bank")
+        )
+
+        return {
+            "cash": round(cash, 2),
+            "bank": round(bank, 2),
+            "total": round(cash + bank, 2),
+        }
+
+    def cashbook_summary(doc):
+        opening = opening_parts(doc)
+        receipts = doc.get("receipts") or []
+        payments = doc.get("payments") or []
+
+        # Balance includes contra.
+        receipt_for_balance = sum_parts(receipts, include_contra=True)
+        payment_for_balance = sum_parts(payments, include_contra=True)
+
+        # Real report receipt/payment excludes contra.
+        receipt_real = sum_parts(receipts, include_contra=False)
+        payment_real = sum_parts(payments, include_contra=False)
+
+        contra = contra_totals(receipts, payments)
+
+        closing_cash = opening["cash"] + receipt_for_balance["cash"] - payment_for_balance["cash"]
+        closing_bank = opening["bank"] + receipt_for_balance["bank"] - payment_for_balance["bank"]
+
+        receipt_rows = [r for r in receipts if not is_contra(r)] if isinstance(receipts, list) else []
+        payment_rows = [r for r in payments if not is_contra(r)] if isinstance(payments, list) else []
+        contra_rows = [r for r in list(receipts or []) + list(payments or []) if is_contra(r)]
+
+        return {
+            "opening_cash": round(opening["cash"], 2),
+            "opening_bank": round(opening["bank"], 2),
+            "opening_total": round(opening["total"], 2),
+
+            "receipt_cash": round(receipt_real["cash"], 2),
+            "receipt_bank": round(receipt_real["bank"], 2),
+            "receipt_total": round(receipt_real["total"], 2),
+
+            "payment_cash": round(payment_real["cash"], 2),
+            "payment_bank": round(payment_real["bank"], 2),
+            "payment_total": round(payment_real["total"], 2),
+
+            "contra_cash_to_bank": round(contra["cash_to_bank"], 2),
+            "contra_bank_to_cash": round(contra["bank_to_cash"], 2),
+            "contra_total": round(contra["total"], 2),
+
+            "closing_cash": round(closing_cash, 2),
+            "closing_bank": round(closing_bank, 2),
+            "closing_total": round(closing_cash + closing_bank, 2),
+
+            "receipt_count": len(receipt_rows),
+            "payment_count": len(payment_rows),
+            "contra_count": int(len(contra_rows) / 2),
+        }
 
     if group_by:
         def gkey(pg):
-            if group_by == "district": return pg.get("District") or ""
-            if group_by == "block": return pg.get("Block") or ""
-            if group_by == "gp": return pg.get("Gram Panchayat") or ""
-            if group_by == "village": return pg.get("Village") or ""
-            if group_by == "pg": return pg.get("name") or ""
+            if group_by == "district":
+                return pg.get("District") or ""
+            if group_by == "block":
+                return pg.get("Block") or ""
+            if group_by == "gp":
+                return pg.get("Gram Panchayat") or ""
+            if group_by == "village":
+                return pg.get("Village") or ""
+            if group_by == "pg":
+                return pg.get("name") or ""
             return ""
+
         agg = {}
-        for doc in db.pg_cashbooks.find(match, {"pg_id": 1, "receipts": 1, "payments": 1}):
+
+        cursor = db.pg_cashbooks.find(
+            match,
+            {
+                "pg_id": 1,
+                "year": 1,
+                "month": 1,
+                "opening": 1,
+                "opening_cash": 1,
+                "opening_bank": 1,
+                "receipts": 1,
+                "payments": 1,
+                "totals": 1,
+            },
+        )
+
+        for doc in cursor:
             pg = pg_by_id.get(doc.get("pg_id")) or {}
             key = gkey(pg)
+
             if key not in agg:
-                agg[key] = {"receipt_total": 0.0, "payment_total": 0.0, "entries": 0}
-            agg[key]["receipt_total"] += totals(doc.get("receipts"))
-            agg[key]["payment_total"] += totals(doc.get("payments"))
+                agg[key] = {
+                    "entries": 0,
+                    "receipt_count": 0,
+                    "payment_count": 0,
+                    "contra_count": 0,
+                    "opening_total": 0.0,
+                    "receipt_total": 0.0,
+                    "payment_total": 0.0,
+                    "contra_cash_to_bank": 0.0,
+                    "contra_bank_to_cash": 0.0,
+                    "contra_total": 0.0,
+                    "closing_total": 0.0,
+                }
+
+            s = cashbook_summary(doc)
+
             agg[key]["entries"] += 1
-        w.writerow(["Group","Cashbook Entries","Receipt Total","Payment Total"])
+            agg[key]["receipt_count"] += s["receipt_count"]
+            agg[key]["payment_count"] += s["payment_count"]
+            agg[key]["contra_count"] += s["contra_count"]
+
+            agg[key]["opening_total"] += s["opening_total"]
+            agg[key]["receipt_total"] += s["receipt_total"]
+            agg[key]["payment_total"] += s["payment_total"]
+
+            agg[key]["contra_cash_to_bank"] += s["contra_cash_to_bank"]
+            agg[key]["contra_bank_to_cash"] += s["contra_bank_to_cash"]
+            agg[key]["contra_total"] += s["contra_total"]
+
+            agg[key]["closing_total"] += s["closing_total"]
+
+        w.writerow([
+            "Group",
+            "Cashbook Entries",
+            "Receipt Rows",
+            "Payment Rows",
+            "Contra Entries",
+            "Opening Total",
+            "Receipt Total",
+            "Payment Total",
+            "Cash To Bank Transfer",
+            "Bank To Cash Transfer",
+            "Contra Transfer Total",
+            "Closing Total",
+        ])
+
         for k in sorted(agg.keys()):
-            w.writerow([k, agg[k]["entries"], round(agg[k]["receipt_total"],2), round(agg[k]["payment_total"],2)])
+            row = agg[k]
+            w.writerow([
+                k,
+                row["entries"],
+                row["receipt_count"],
+                row["payment_count"],
+                row["contra_count"],
+                round(row["opening_total"], 2),
+                round(row["receipt_total"], 2),
+                round(row["payment_total"], 2),
+                round(row["contra_cash_to_bank"], 2),
+                round(row["contra_bank_to_cash"], 2),
+                round(row["contra_total"], 2),
+                round(row["closing_total"], 2),
+            ])
+
     else:
-        w.writerow(["PG Name","State","District","Block","GP","Village","Year","Month","Receipt Total","Payment Total","Balanced?"])
-        for doc in db.pg_cashbooks.find(match).sort([("year",-1),("month",-1)]):
+        w.writerow([
+            "PG Name",
+            "State",
+            "District",
+            "Block",
+            "GP",
+            "Village",
+            "Year",
+            "Month",
+
+            "Opening Cash",
+            "Opening Bank",
+            "Opening Total",
+
+            "Receipt Cash",
+            "Receipt Bank",
+            "Receipt Total",
+
+            "Payment Cash",
+            "Payment Bank",
+            "Payment Total",
+
+            "Cash To Bank Transfer",
+            "Bank To Cash Transfer",
+            "Contra Transfer Total",
+
+            "Closing Cash",
+            "Closing Bank",
+            "Closing Total",
+
+            "Receipt Rows",
+            "Payment Rows",
+            "Contra Entries",
+        ])
+
+        for doc in db.pg_cashbooks.find(match).sort([("year", -1), ("month", -1)]):
             pg = pg_by_id.get(doc.get("pg_id")) or {}
-            rt = totals(doc.get("receipts"))
-            pt = totals(doc.get("payments"))
+            s = cashbook_summary(doc)
+
             w.writerow([
                 pg.get("name") or "",
                 pg.get("State") or "",
@@ -610,13 +865,39 @@ def export_cashbook_csv():
                 pg.get("Village") or "",
                 doc.get("year") or "",
                 doc.get("month") or "",
-                round(rt,2),
-                round(pt,2),
-                "YES" if abs(rt-pt) < 0.01 else "NO",
+
+                s["opening_cash"],
+                s["opening_bank"],
+                s["opening_total"],
+
+                s["receipt_cash"],
+                s["receipt_bank"],
+                s["receipt_total"],
+
+                s["payment_cash"],
+                s["payment_bank"],
+                s["payment_total"],
+
+                s["contra_cash_to_bank"],
+                s["contra_bank_to_cash"],
+                s["contra_total"],
+
+                s["closing_cash"],
+                s["closing_bank"],
+                s["closing_total"],
+
+                s["receipt_count"],
+                s["payment_count"],
+                s["contra_count"],
             ])
 
     mem.seek(0)
-    return current_app.response_class(mem.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=cashbook.csv"})
+
+    return current_app.response_class(
+        mem.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=cashbook.csv"},
+    )
 
 
 @reports_bp.route("/export/loans.csv", methods=["GET"])

@@ -379,6 +379,9 @@ def _dashboard_cash_metrics(db, oid, limit=10):
     - pg_income_expenditure
     - pg_receipt_vouchers
     - pg_payment_vouchers if available
+
+    Contra cashbook rows are skipped from income/expense because they are only
+    internal cash-bank transfers.
     """
     from datetime import timedelta
 
@@ -422,6 +425,9 @@ def _dashboard_cash_metrics(db, oid, limit=10):
                 "status": status or "Completed",
             })
 
+    def is_contra_row(row):
+        return isinstance(row, dict) and str(row.get("entryType") or "").strip().lower() == "contra"
+
     # 1) Cash Book
     try:
         cash_docs = list(
@@ -435,6 +441,9 @@ def _dashboard_cash_metrics(db, oid, limit=10):
             doc_date = _dash_month_date(doc)
 
             for row in doc.get("receipts", []) or []:
+                if is_contra_row(row):
+                    continue
+
                 amount = _dash_row_amount(row)
                 add_txn(
                     _dash_date(row.get("date"), doc_date),
@@ -445,6 +454,9 @@ def _dashboard_cash_metrics(db, oid, limit=10):
                 )
 
             for row in doc.get("payments", []) or []:
+                if is_contra_row(row):
+                    continue
+
                 amount = _dash_row_amount(row)
                 add_txn(
                     _dash_date(row.get("date"), doc_date),
@@ -453,6 +465,7 @@ def _dashboard_cash_metrics(db, oid, limit=10):
                     expense=amount,
                     raw_id=doc.get("_id")
                 )
+
     except Exception:
         pass
 
@@ -466,7 +479,10 @@ def _dashboard_cash_metrics(db, oid, limit=10):
         )
 
         for doc in ie_docs:
-            dt = _dash_date(doc.get("date") or doc.get("created_at") or doc.get("updated_at"), datetime.utcnow())
+            dt = _dash_date(
+                doc.get("date") or doc.get("created_at") or doc.get("updated_at"),
+                datetime.utcnow()
+            )
             amount = _dash_num(doc.get("amount"))
             ttype = str(doc.get("type") or doc.get("txn_type") or "").lower()
 
@@ -478,6 +494,7 @@ def _dashboard_cash_metrics(db, oid, limit=10):
                     income=amount,
                     raw_id=doc.get("_id")
                 )
+
             elif ttype in ("expense", "payment", "payments", "debit"):
                 add_txn(
                     dt,
@@ -486,10 +503,11 @@ def _dashboard_cash_metrics(db, oid, limit=10):
                     expense=amount,
                     raw_id=doc.get("_id")
                 )
+
     except Exception:
         pass
 
-        # 3) Receipt Voucher
+    # 3) Receipt Voucher
     try:
         receipt_docs = list(
             db.pg_receipt_vouchers
@@ -690,6 +708,7 @@ def _dashboard_cash_metrics(db, oid, limit=10):
                         expense=amount,
                         raw_id=doc.get("_id")
                     )
+
     except Exception:
         pass
 
@@ -5997,9 +6016,29 @@ def _get_period_from_args():
 
 
 def _period_history(db, collection, query, limit=60):
+    projection = {
+        "year": 1,
+        "month": 1,
+        "updated_at": 1,
+        "created_at": 1,
+        "data": 1,
+    }
+
+    # Cashbook history needs these fields for saved month summary cards.
+    if collection == "pg_cashbooks":
+        projection.update({
+            "opening": 1,
+            "opening_cash": 1,
+            "opening_bank": 1,
+            "receipts": 1,
+            "payments": 1,
+            "totals": 1,
+            "meta": 1,
+        })
+
     docs = list(
         db[collection]
-        .find(query, {"year": 1, "month": 1, "updated_at": 1, "created_at": 1, "data": 1})
+        .find(query, projection)
         .sort([("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)])
         .limit(limit)
     )
@@ -6037,7 +6076,7 @@ def _period_history(db, collection, query, limit=60):
             else f"Saved {doc.get('updated_at').strftime('%d %b %Y')}" if doc.get("updated_at") else "Saved Record"
         )
 
-        history.append({
+        item = {
             "_id": str(doc.get("_id")),
             "year": int(year) if year else None,
             "month": int(month) if month else None,
@@ -6046,10 +6085,581 @@ def _period_history(db, collection, query, limit=60):
             "row_count": len(rows) if isinstance(rows, list) else 0,
             "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else "",
             "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else "",
-        })
+        }
+
+        # Extra summary only for cashbook.
+        # Other register histories remain unchanged.
+        if collection == "pg_cashbooks":
+            receipts = _cashbook_clean_rows(doc.get("receipts") or [])
+            payments = _cashbook_clean_rows(doc.get("payments") or [])
+
+            opening = doc.get("opening") if isinstance(doc.get("opening"), dict) else {}
+            opening_cash = _cashbook_float(opening.get("cash") if "cash" in opening else doc.get("opening_cash"))
+            opening_bank = _cashbook_float(opening.get("bank") if "bank" in opening else doc.get("opening_bank"))
+
+            normalized_opening = {
+                "cash": round(opening_cash, 2),
+                "bank": round(opening_bank, 2),
+                "total": round(opening_cash + opening_bank, 2),
+                "source": opening.get("source") or "saved",
+                "source_year": opening.get("source_year"),
+                "source_month": opening.get("source_month"),
+            }
+
+            totals = _cashbook_calculate_totals(normalized_opening, receipts, payments)
+
+            item.update({
+                "receipt_count": len(receipts),
+                "payment_count": len(payments),
+                "row_count": len(receipts) + len(payments),
+                "opening": normalized_opening,
+                "totals": totals,
+               "summary": {
+    "opening_total": totals.get("opening_total", 0),
+
+    "receipt_total": totals.get("receipt_total", 0),
+    "payment_total": totals.get("payment_total", 0),
+
+    "contra_cash_to_bank": totals.get("contra_cash_to_bank", 0),
+    "contra_bank_to_cash": totals.get("contra_bank_to_cash", 0),
+    "contra_total": totals.get("contra_total", 0),
+
+    "closing_total": totals.get("closing_total", 0),
+    "closing_cash": totals.get("closing_cash", 0),
+    "closing_bank": totals.get("closing_bank", 0),
+},
+            })
+
+        history.append(item)
 
     return history
 
+
+# ============================================================
+# Cash Book balance helpers
+# ============================================================
+
+def _cashbook_float(value, default=0.0):
+    try:
+        if value in (None, "", "null", "None", "-", "NaN"):
+            return float(default)
+        if isinstance(value, (int, float)):
+            return float(value)
+        cleaned = (
+            str(value)
+            .replace("₹", "")
+            .replace(",", "")
+            .strip()
+        )
+        return float(cleaned) if cleaned else float(default)
+    except Exception:
+        return float(default)
+
+
+def _cashbook_int(value, default=None):
+    try:
+        if value in (None, "", "null", "None"):
+            return default
+        return int(value)
+    except Exception:
+        return default
+
+
+def _cashbook_month_bounds(year, month):
+    try:
+        year = int(year)
+        month = int(month)
+        start = datetime(year, month, 1)
+
+        if month == 12:
+            end = datetime(year + 1, 1, 1)
+        else:
+            end = datetime(year, month + 1, 1)
+
+        return start, end
+    except Exception:
+        return None, None
+
+
+def _cashbook_parse_row_date(value):
+    if isinstance(value, datetime):
+        return value
+
+    text = str(value or "").strip()
+    if not text:
+        return None
+
+    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(text[:10], fmt)
+        except Exception:
+            pass
+
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+    except Exception:
+        return None
+
+
+def _cashbook_clean_rows(rows):
+    """
+    Normalize cashbook rows before save/load.
+
+    amount     = cash amount
+    bankAmount = bank amount
+
+    Keeps contra metadata:
+      entryType, contraType, contraGroupId
+    """
+    clean = []
+
+    if not isinstance(rows, list):
+        return clean
+
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+
+        new_row = dict(row)
+
+        new_row["id"] = str(
+            new_row.get("id")
+            or new_row.get("_id")
+            or f"row_{datetime.utcnow().timestamp()}"
+        ).strip()
+
+        new_row["date"] = str(new_row.get("date") or "").strip()
+
+        new_row["particulars"] = str(
+            new_row.get("particulars")
+            or new_row.get("description")
+            or ""
+        ).strip()
+
+        new_row["lf"] = str(
+            new_row.get("lf")
+            or new_row.get("ledgerFolio")
+            or ""
+        ).strip()
+
+        new_row["ledgerFolio"] = str(
+            new_row.get("ledgerFolio")
+            or new_row.get("lf")
+            or ""
+        ).strip()
+
+        new_row["amount"] = round(_cashbook_float(
+            new_row.get("amount")
+            or new_row.get("cashAmount")
+            or new_row.get("cash_amount")
+            or 0
+        ), 2)
+
+        new_row["bankAmount"] = round(_cashbook_float(
+            new_row.get("bankAmount")
+            or new_row.get("bank_amount")
+            or new_row.get("bank")
+            or 0
+        ), 2)
+
+        new_row["remarks"] = str(new_row.get("remarks") or "").strip()
+
+        if new_row.get("entryType"):
+            new_row["entryType"] = str(new_row.get("entryType") or "").strip()
+
+        if new_row.get("contraType"):
+            new_row["contraType"] = str(new_row.get("contraType") or "").strip()
+
+        if new_row.get("contraGroupId"):
+            new_row["contraGroupId"] = str(new_row.get("contraGroupId") or "").strip()
+
+        has_text = any(
+            str(new_row.get(k) or "").strip()
+            for k in (
+                "date",
+                "particulars",
+                "lf",
+                "ledgerFolio",
+                "remarks",
+                "entryType",
+                "contraType",
+                "contraGroupId",
+            )
+        )
+
+        has_amount = bool(new_row["amount"] or new_row["bankAmount"])
+
+        if has_text or has_amount:
+            clean.append(new_row)
+
+    return clean
+
+
+def _cashbook_validate_row_dates(rows, year, month, label):
+    """
+    Every filled cashbook row must have a valid date inside selected month/year.
+    """
+    try:
+        year = int(year)
+        month = int(month)
+    except Exception:
+        return False, "Invalid cashbook period."
+
+    for idx, row in enumerate(rows or [], start=1):
+        if not isinstance(row, dict):
+            continue
+
+        has_value = bool(
+            str(row.get("particulars") or "").strip()
+            or str(row.get("lf") or "").strip()
+            or str(row.get("ledgerFolio") or "").strip()
+            or str(row.get("remarks") or "").strip()
+            or _cashbook_float(row.get("amount"))
+            or _cashbook_float(row.get("bankAmount"))
+        )
+
+        if not has_value:
+            continue
+
+        row_date = _cashbook_parse_row_date(row.get("date"))
+
+        if not row_date:
+            return False, f"{label} row {idx} must have a valid date."
+
+        if int(row_date.year) != year or int(row_date.month) != month:
+            month_name = datetime(year, month, 1).strftime("%b %Y")
+            return False, f"{label} row {idx} date must be inside {month_name}."
+
+    return True, ""
+
+
+def _cashbook_amount_parts(row):
+    """
+    Existing frontend/backend convention:
+      amount     = cash amount
+      bankAmount = bank amount
+    """
+    if not isinstance(row, dict):
+        return 0.0, 0.0
+
+    cash = _cashbook_float(
+        row.get("amount")
+        or row.get("cashAmount")
+        or row.get("cash_amount")
+        or 0
+    )
+
+    bank = _cashbook_float(
+        row.get("bankAmount")
+        or row.get("bank_amount")
+        or row.get("bank")
+        or 0
+    )
+
+    return round(cash, 2), round(bank, 2)
+
+
+def _cashbook_is_contra(row):
+    return isinstance(row, dict) and str(row.get("entryType") or "").strip().lower() == "contra"
+
+
+def _cashbook_sum_parts(rows, *, include_contra=True, only_contra=False):
+    cash_total = 0.0
+    bank_total = 0.0
+
+    for row in (rows or []):
+        is_contra = _cashbook_is_contra(row)
+
+        if not include_contra and is_contra:
+            continue
+
+        if only_contra and not is_contra:
+            continue
+
+        cash, bank = _cashbook_amount_parts(row)
+        cash_total += cash
+        bank_total += bank
+
+    return {
+        "cash": round(cash_total, 2),
+        "bank": round(bank_total, 2),
+        "total": round(cash_total + bank_total, 2),
+    }
+
+
+def _cashbook_contra_totals(receipts, payments):
+    """
+    Contra entries are internal cash/bank transfers.
+
+    Frontend creates 2 rows per contra:
+      Cash -> Bank:
+        receipt bankAmount + payment cash amount
+      Bank -> Cash:
+        receipt cash amount + payment bankAmount
+
+    Because each transfer appears twice, divide by 2 for display/report transfer total.
+    """
+    cash_to_bank = 0.0
+    bank_to_cash = 0.0
+
+    for row in list(receipts or []) + list(payments or []):
+        if not _cashbook_is_contra(row):
+            continue
+
+        cash, bank = _cashbook_amount_parts(row)
+        row_total = cash + bank
+        contra_type = str(row.get("contraType") or "").strip().lower()
+
+        if contra_type == "cash_to_bank":
+            cash_to_bank += row_total
+
+        elif contra_type == "bank_to_cash":
+            bank_to_cash += row_total
+
+    cash_to_bank = round(cash_to_bank / 2, 2)
+    bank_to_cash = round(bank_to_cash / 2, 2)
+
+    return {
+        "cash_to_bank": cash_to_bank,
+        "bank_to_cash": bank_to_cash,
+        "total": round(cash_to_bank + bank_to_cash, 2),
+    }
+
+
+def _cashbook_calculate_totals(opening, receipts, payments):
+    opening_cash = _cashbook_float((opening or {}).get("cash"))
+    opening_bank = _cashbook_float((opening or {}).get("bank"))
+
+    # Closing balance must include contra rows because contra changes cash/bank split.
+    receipt_for_balance = _cashbook_sum_parts(receipts, include_contra=True)
+    payment_for_balance = _cashbook_sum_parts(payments, include_contra=True)
+
+    # Real receipt/payment totals must exclude contra rows.
+    receipt_real = _cashbook_sum_parts(receipts, include_contra=False)
+    payment_real = _cashbook_sum_parts(payments, include_contra=False)
+
+    contra = _cashbook_contra_totals(receipts, payments)
+
+    closing_cash = opening_cash + receipt_for_balance["cash"] - payment_for_balance["cash"]
+    closing_bank = opening_bank + receipt_for_balance["bank"] - payment_for_balance["bank"]
+
+    return {
+        "opening_cash": round(opening_cash, 2),
+        "opening_bank": round(opening_bank, 2),
+        "opening_total": round(opening_cash + opening_bank, 2),
+
+        # Real receipt totals only.
+        "receipt_cash": receipt_real["cash"],
+        "receipt_bank": receipt_real["bank"],
+        "receipt_total": receipt_real["total"],
+
+        # Real payment totals only.
+        "payment_cash": payment_real["cash"],
+        "payment_bank": payment_real["bank"],
+        "payment_total": payment_real["total"],
+
+        # Internal transfers.
+        "contra_cash_to_bank": contra["cash_to_bank"],
+        "contra_bank_to_cash": contra["bank_to_cash"],
+        "contra_total": contra["total"],
+
+        # Closing balance includes both real rows and contra rows.
+        "closing_cash": round(closing_cash, 2),
+        "closing_bank": round(closing_bank, 2),
+        "closing_total": round(closing_cash + closing_bank, 2),
+
+        "left_cash_total": round(opening_cash + receipt_for_balance["cash"], 2),
+        "left_bank_total": round(opening_bank + receipt_for_balance["bank"], 2),
+        "right_cash_total": round(payment_for_balance["cash"] + closing_cash, 2),
+        "right_bank_total": round(payment_for_balance["bank"] + closing_bank, 2),
+    }
+
+
+def _cashbook_json_safe_doc(doc):
+    if not isinstance(doc, dict):
+        return doc
+
+    out = dict(doc)
+
+    if out.get("_id") is not None:
+        out["_id"] = str(out["_id"])
+
+    if out.get("pg_id") is not None:
+        out["pg_id"] = str(out["pg_id"])
+
+    for key in ("created_at", "updated_at"):
+        if isinstance(out.get(key), datetime):
+            out[key] = out[key].isoformat()
+
+    return out
+
+
+def _cashbook_previous_doc(db, pg_oid, year, month):
+    """
+    Find the latest saved cashbook before the selected year/month.
+    Used to carry forward previous closing balance.
+    """
+    try:
+        year = int(year)
+        month = int(month)
+    except Exception:
+        return None
+
+    if not pg_oid or not year or not month:
+        return None
+
+    return db.pg_cashbooks.find_one(
+        {
+            "pg_id": pg_oid,
+            "$or": [
+                {"year": {"$lt": year}},
+                {"year": year, "month": {"$lt": month}},
+            ],
+        },
+        sort=[("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)],
+    )
+
+
+def _cashbook_opening_from_payload(payload):
+    """
+    Build opening balance from frontend payload.
+    """
+    if not isinstance(payload, dict):
+        payload = {}
+
+    opening = payload.get("opening") if isinstance(payload.get("opening"), dict) else {}
+
+    cash = _cashbook_float(
+        opening.get("cash")
+        if "cash" in opening else
+        opening.get("opening_cash")
+        if "opening_cash" in opening else
+        payload.get("opening_cash")
+    )
+
+    bank = _cashbook_float(
+        opening.get("bank")
+        if "bank" in opening else
+        opening.get("opening_bank")
+        if "opening_bank" in opening else
+        payload.get("opening_bank")
+    )
+
+    source = (
+        opening.get("source")
+        or payload.get("opening_source")
+        or "manual"
+    )
+
+    source_year = opening.get("source_year") or payload.get("source_year")
+    source_month = opening.get("source_month") or payload.get("source_month")
+
+    return {
+        "cash": round(cash, 2),
+        "bank": round(bank, 2),
+        "total": round(cash + bank, 2),
+        "source": source,
+        "source_year": source_year,
+        "source_month": source_month,
+        "readonly": False,
+    }
+
+
+def _cashbook_opening_for_period(db, pg_oid, year, month, current_doc=None):
+    """
+    Opening balance priority:
+    1. If selected month already has saved opening, use it.
+    2. Else carry forward previous saved month's closing balance.
+    3. Else allow manual opening balance.
+    """
+    try:
+        year = int(year)
+        month = int(month)
+    except Exception:
+        year = None
+        month = None
+
+    if isinstance(current_doc, dict) and isinstance(current_doc.get("opening"), dict):
+        opening = current_doc.get("opening") or {}
+
+        cash = _cashbook_float(
+            opening.get("cash")
+            if "cash" in opening else
+            current_doc.get("opening_cash")
+        )
+
+        bank = _cashbook_float(
+            opening.get("bank")
+            if "bank" in opening else
+            current_doc.get("opening_bank")
+        )
+
+        return {
+            "cash": round(cash, 2),
+            "bank": round(bank, 2),
+            "total": round(cash + bank, 2),
+            "source": opening.get("source") or "saved",
+            "source_year": opening.get("source_year"),
+            "source_month": opening.get("source_month"),
+            "readonly": True,
+        }
+
+    prev_doc = _cashbook_previous_doc(db, pg_oid, year, month)
+
+    if isinstance(prev_doc, dict):
+        prev_totals = prev_doc.get("totals") if isinstance(prev_doc.get("totals"), dict) else {}
+
+        cash = _cashbook_float(prev_totals.get("closing_cash"))
+        bank = _cashbook_float(prev_totals.get("closing_bank"))
+
+        if not prev_totals:
+            prev_opening = prev_doc.get("opening") if isinstance(prev_doc.get("opening"), dict) else {}
+            prev_receipts = _cashbook_clean_rows(prev_doc.get("receipts") or [])
+            prev_payments = _cashbook_clean_rows(prev_doc.get("payments") or [])
+            recalculated = _cashbook_calculate_totals(prev_opening, prev_receipts, prev_payments)
+            cash = _cashbook_float(recalculated.get("closing_cash"))
+            bank = _cashbook_float(recalculated.get("closing_bank"))
+
+        return {
+            "cash": round(cash, 2),
+            "bank": round(bank, 2),
+            "total": round(cash + bank, 2),
+            "source": "carried_forward",
+            "source_year": prev_doc.get("year"),
+            "source_month": prev_doc.get("month"),
+            "readonly": True,
+        }
+
+    return {
+        "cash": 0.0,
+        "bank": 0.0,
+        "total": 0.0,
+        "source": "manual",
+        "source_year": None,
+        "source_month": None,
+        "readonly": False,
+    }
+
+
+
+def _cashbook_error_response(message, *, status=400, title="Cash Book Error", details=None, debug=None, totals=None):
+    payload = {
+        "ok": False,
+        "title": title,
+        "error": message,
+        "message": message,
+    }
+
+    if details:
+        payload["details"] = details
+
+    if debug:
+        payload["debug"] = str(debug)
+
+    if totals is not None:
+        payload["totals"] = totals
+
+    return jsonify(payload), status
 
 # ---------- Cash Book (used by finance.cashbook template) ----------
 @pg_bp.route("/api/cashbook/<pg_id>", methods=["GET", "POST"])
@@ -6059,50 +6669,244 @@ def _period_history(db, collection, query, limit=60):
 def api_cashbook(pg_id):
     db = current_app.mongo_db
     _load_pg_or_404(db, pg_id)
+
     year, month = _get_period_from_args()
     coll = "pg_cashbooks"
 
+    pg_oid = safe_objectid(pg_id) or safe_objectid(session.get("pg_id"))
+    if not pg_oid:
+        return jsonify({"ok": False, "error": "Invalid PG ID."}), 400
+
+    base_q = {"pg_id": pg_oid}
+
     if request.method == "GET":
-        base_q = {"pg_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}
         if request.args.get("history") in ("1", "true", "yes"):
             return jsonify({"history": _period_history(db, coll, base_q)})
-        doc = db[coll].find_one({**base_q, "year": year, "month": month}) if (year and month) else db[coll].find_one(base_q, sort=[("updated_at", -1)])
+
+        doc = None
+
+        if year and month:
+            doc = db[coll].find_one({**base_q, "year": year, "month": month})
+        else:
+            doc = db[coll].find_one(
+                base_q,
+                sort=[("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)]
+            )
+
+            if doc:
+                year = doc.get("year")
+                month = doc.get("month")
+
+        pg_doc = db.pgs.find_one({"_id": pg_oid}, {"name": 1, "pg_name": 1, "PG Name": 1}) or {}
+        pg_name = pg_doc.get("name") or pg_doc.get("pg_name") or pg_doc.get("PG Name") or ""
+
+        opening = _cashbook_opening_for_period(db, pg_oid, year, month, current_doc=doc) if (year and month) else {
+            "cash": 0.0,
+            "bank": 0.0,
+            "total": 0.0,
+            "source": "manual",
+            "readonly": False,
+        }
+
         if not doc:
-            pg_doc = db.pgs.find_one({"_id": (safe_objectid(pg_id) or safe_objectid(session.get('pg_id')))}, {"name": 1}) or {}
-            return jsonify({"receipts": [], "payments": [], "pg_name": pg_doc.get("name", ""), "year": year, "month": month})
-        doc["_id"] = str(doc["_id"])
-        doc["pg_id"] = str(doc["pg_id"])
+            receipts = []
+            payments = []
+            totals = _cashbook_calculate_totals(opening, receipts, payments)
+
+            return jsonify({
+                "ok": True,
+                "exists": False,
+                "pg_id": str(pg_oid),
+                "pg_name": pg_name,
+                "year": year,
+                "month": month,
+                "opening": opening,
+                "receipts": receipts,
+                "payments": payments,
+                "totals": totals,
+                "meta": {},
+            })
+
+        doc = _cashbook_json_safe_doc(doc)
+
+        receipts = _cashbook_clean_rows(doc.get("receipts") or [])
+        payments = _cashbook_clean_rows(doc.get("payments") or [])
+
+        # For old docs where totals are missing/wrong, return recalculated totals.
+        totals = _cashbook_calculate_totals(opening, receipts, payments)
+
+        doc["ok"] = True
+        doc["exists"] = True
+        doc["pg_name"] = pg_name
+        doc["year"] = year or doc.get("year")
+        doc["month"] = month or doc.get("month")
+        doc["opening"] = opening
+        doc["receipts"] = receipts
+        doc["payments"] = payments
+        doc["totals"] = totals
+
         return jsonify(doc)
 
-    # POST (only PG should write)
+    # POST: only PG login can write cashbook.
     role = getattr(g, "role", None) or session.get("role")
     if role != "PG_DATA_ENTRY":
         abort(403)
 
     payload = request.get_json(silent=True) or {}
 
-    #  Validation: Cash Book must balance before saving
-    # If receipts grand total != payments grand total, do not accept/save.
-    receipts = payload.get("receipts", [])
-    payments = payload.get("payments", [])
-    r_total = _sum_cashbook_rows(receipts)
-    p_total = _sum_cashbook_rows(payments)
-    if round(r_total, 2) != round(p_total, 2):
+    # Support both query/form period and JSON period.
+    payload_year = _cashbook_int(payload.get("year"), year)
+    payload_month = _cashbook_int(payload.get("month"), month)
+
+    year = payload_year
+    month = payload_month
+
+    if not year or not month:
         return jsonify({
             "ok": False,
-            "error": "Cash Book cannot be saved because Receipt total and Payment total are not equal.",
-            "receipt_total": r_total,
-            "payment_total": p_total,
+            "error": "Cashbook year and month are required.",
         }), 400
 
-    _upsert_pg_period_doc(db, collection=coll, pg_id=pg_id, year=year, month=month, payload={
+    if month < 1 or month > 12:
+        return jsonify({
+            "ok": False,
+            "error": "Invalid cashbook month.",
+        }), 400
+
+    existing_doc = db[coll].find_one({**base_q, "year": year, "month": month})
+
+    receipts = _cashbook_clean_rows(payload.get("receipts", []))
+    payments = _cashbook_clean_rows(payload.get("payments", []))
+
+    valid, error = _cashbook_validate_row_dates(receipts, year, month, "Receipt")
+    if not valid:
+        return jsonify({"ok": False, "error": error}), 400
+
+    valid, error = _cashbook_validate_row_dates(payments, year, month, "Payment")
+    if not valid:
+        return jsonify({"ok": False, "error": error}), 400
+
+    # Opening source:
+    # - existing saved month: keep posted opening unless payload explicitly sends opening
+    # - first unsaved month: use payload opening if manual, otherwise carried-forward previous closing
+    payload_opening = _cashbook_opening_from_payload(payload)
+
+    if existing_doc:
+        existing_opening = _cashbook_opening_for_period(db, pg_oid, year, month, current_doc=existing_doc)
+
+        # If frontend sends opening, accept it only if old source/manual or existing doc had no opening.
+        existing_has_opening = isinstance(existing_doc.get("opening"), dict) and existing_doc.get("opening")
+
+        if existing_has_opening:
+            opening = {
+                "cash": existing_opening["cash"],
+                "bank": existing_opening["bank"],
+                "total": existing_opening["total"],
+                "source": existing_opening.get("source") or "saved",
+                "readonly": True,
+            }
+        else:
+            opening = payload_opening
+            opening["readonly"] = payload_opening.get("source") != "manual"
+    else:
+        carried_opening = _cashbook_opening_for_period(db, pg_oid, year, month, current_doc=None)
+
+        # If no previous record exists, user can set manual opening from frontend.
+        if carried_opening.get("source") == "manual":
+            opening = payload_opening
+            opening["source"] = "manual"
+            opening["readonly"] = False
+        else:
+            opening = carried_opening
+
+    totals = _cashbook_calculate_totals(opening, receipts, payments)
+
+    if totals["closing_cash"] < -0.009:
+        return _cashbook_error_response(
+            "Cash payment exceeds available cash balance.",
+            status=400,
+            title="Insufficient Cash Balance",
+            details=(
+            "Cash balance cannot be negative.\n\n"
+            "Formula:\n"
+            "Closing Cash = Opening Cash + Real Receipt Cash + Bank to Cash Transfer "
+            "- Real Payment Cash - Cash to Bank Transfer\n\n"
+            "Please add opening cash / receipt cash, or reduce cash payment / cash-to-bank transfer."
+            ),
+            totals=totals,
+        )
+
+    if totals["closing_bank"] < -0.009:
+        return _cashbook_error_response(
+            "Bank payment exceeds available bank balance.",
+            status=400,
+            title="Insufficient Bank Balance",
+            details=(
+                "Bank balance cannot be negative.\n\n"
+                "Formula:\n"
+                "Closing Bank = Opening Bank + Real Receipt Bank + Cash to Bank Transfer "
+                "- Real Payment Bank - Bank to Cash Transfer\n\n"
+                "Please add opening bank / receipt bank, or reduce bank payment / bank-to-cash transfer."
+            ),
+            totals=totals,
+        )
+
+    meta = payload.get("meta") if isinstance(payload.get("meta"), dict) else {}
+
+    save_payload = {
+        "opening": {
+            "cash": round(_cashbook_float(opening.get("cash")), 2),
+            "bank": round(_cashbook_float(opening.get("bank")), 2),
+            "total": round(_cashbook_float(opening.get("cash")) + _cashbook_float(opening.get("bank")), 2),
+            "source": opening.get("source") or "manual",
+            "source_year": opening.get("source_year"),
+            "source_month": opening.get("source_month"),
+        },
+        "opening_cash": totals["opening_cash"],
+        "opening_bank": totals["opening_bank"],
         "receipts": receipts,
         "payments": payments,
-        "meta": payload.get("meta", {}),
-    }, user=_current_user_dict())
-    return jsonify({"ok": True, "message": "Saved successfully"})
+        "totals": totals,
+        "meta": meta,
+    }
 
+    try:
+        _upsert_pg_period_doc(
+            db,
+            collection=coll,
+            pg_id=pg_id,
+            year=year,
+            month=month,
+            payload=save_payload,
+            user=_current_user_dict(),
+        )
 
+        saved_doc = db[coll].find_one({**base_q, "year": year, "month": month})
+        saved_doc = _cashbook_json_safe_doc(saved_doc or {})
+
+        return jsonify({
+            "ok": True,
+            "message": "Cash Book saved successfully.",
+            "year": year,
+            "month": month,
+            "opening": save_payload["opening"],
+            "receipts": receipts,
+            "payments": payments,
+            "totals": totals,
+            "doc": saved_doc,
+        })
+
+    except Exception as e:
+        current_app.logger.exception("Cash Book save failed")
+
+        return _cashbook_error_response(
+            "Backend failed while saving Cash Book.",
+            status=500,
+            title="Save failed",
+            details="The server could not write the Cash Book record. Check the technical issue below.",
+            debug=str(e),
+            totals=totals,
+        )
 
 # ---------- Ledger Book ----------
 @pg_bp.route("/ledger/<pg_id>", methods=["GET", "POST"])
