@@ -985,11 +985,15 @@ def clf_pg_assignment():
     for c in clfs:
         clf_name_by_id[str(c["_id"])] = c.get("name") or c.get("clf_name") or "Mapped CLF"
 
+        clf_admin_clf_name_by_user_id = {}
+
     # Add CLF name and assigned count into CLF admin records
     for admin in clf_admins:
         admin["clf_id_str"] = str(admin.get("clf_id") or "")
         admin["clf_name"] = clf_name_by_id.get(admin["clf_id_str"], "Mapped CLF")
         admin["assigned_pg_count"] = len(admin.get("assigned_pg_ids") or [])
+
+        clf_admin_clf_name_by_user_id[str(admin.get("_id") or "")] = admin["clf_name"]
 
     # ---------------------------------------------------------
     # PGs under this block
@@ -1006,7 +1010,20 @@ def clf_pg_assignment():
 
     for pg in pgs:
         pg["display_name"] = pg.get("name") or pg.get("pg_name") or "Unnamed PG"
+
         pg["assigned_clf_user_id_str"] = str(pg.get("assigned_clf_user_id") or "")
+        pg["current_clf_id_str"] = str(pg.get("clf_id") or "")
+
+        current_clf_name = clf_name_by_id.get(pg["current_clf_id_str"], "")
+
+        if not current_clf_name and pg["assigned_clf_user_id_str"]:
+            current_clf_name = clf_admin_clf_name_by_user_id.get(
+                pg["assigned_clf_user_id_str"],
+                ""
+            )
+
+        pg["current_clf_name"] = current_clf_name or "another CLF"
+        pg["assignment_conflict"] = False
 
     # ---------------------------------------------------------
     # GET selected CLF admin from URL
@@ -1019,8 +1036,18 @@ def clf_pg_assignment():
         or ""
     ).strip()
 
+    assignment_mode = (
+        request.args.get("mode")
+        or request.form.get("mode")
+        or "overview"
+    ).strip().lower()
+
+    if assignment_mode not in ("overview", "manage"):
+        assignment_mode = "overview"
+
     selected_admin = None
     selected_assigned_ids = []
+    mapped_pgs = []
 
     if selected_user_id and ObjectId.is_valid(selected_user_id):
         selected_admin = db.users.find_one({
@@ -1044,11 +1071,77 @@ def clf_pg_assignment():
                 str(x) for x in (selected_admin.get("assigned_pg_ids") or [])
             ]
 
+            mapped_pg_oids = []
+            for pg_id in selected_admin.get("assigned_pg_ids") or []:
+                if ObjectId.is_valid(str(pg_id)):
+                    mapped_pg_oids.append(ObjectId(str(pg_id)))
+
+            if mapped_pg_oids:
+                mapped_pgs = list(
+                    db.pgs.find({
+                        "_id": {"$in": mapped_pg_oids},
+                        "$or": [
+                            {"block_id": block_oid},
+                            {"block_id": str(block_oid)},
+                        ],
+                    }).sort("name", 1)
+                )
+
+                for pg in mapped_pgs:
+                    pg["display_name"] = pg.get("name") or pg.get("pg_name") or "Unnamed PG"
+                    pg["assigned_clf_user_id_str"] = str(pg.get("assigned_clf_user_id") or "")
+            else:
+                mapped_pgs = []
+
+
+
+                   # ---------------------------------------------------------
+    # Mark conflict PGs for frontend warning popup
+    # Conflict means: PG is already mapped to another CLF/Admin
+    # and current action may transfer it to selected CLF Admin.
+    # ---------------------------------------------------------
+    if selected_admin:
+        selected_clf_id_str = str(selected_admin.get("clf_id") or "")
+        selected_admin_id_str = str(selected_admin.get("_id") or "")
+
+        for pg in pgs:
+            pg_clf_id_str = str(pg.get("clf_id") or "")
+            pg_assigned_user_id_str = str(pg.get("assigned_clf_user_id") or "")
+
+            has_existing_mapping = bool(pg_clf_id_str or pg_assigned_user_id_str)
+
+            belongs_to_selected_admin = (
+                pg_assigned_user_id_str
+                and selected_admin_id_str
+                and pg_assigned_user_id_str == selected_admin_id_str
+            )
+
+            belongs_to_selected_clf_without_other_admin = (
+                pg_clf_id_str
+                and selected_clf_id_str
+                and pg_clf_id_str == selected_clf_id_str
+                and not pg_assigned_user_id_str
+            )
+
+            pg["assignment_conflict"] = (
+                has_existing_mapping
+                and not belongs_to_selected_admin
+                and not belongs_to_selected_clf_without_other_admin
+            )
+
     # ---------------------------------------------------------
     # POST save assignment
     # ---------------------------------------------------------
     if request.method == "POST":
         clf_admin_id = (request.form.get("clf_admin_id") or "").strip()
+
+        assignment_action = (
+            request.form.get("assignment_action")
+            or "replace"
+        ).strip().lower()
+
+        if assignment_action not in ("add", "replace", "delete"):
+            assignment_action = "replace"
 
         # IMPORTANT:
         # Template checkboxes must use name="pg_ids"
@@ -1093,39 +1186,48 @@ def clf_pg_assignment():
                 old_assigned_pg_ids.append(ObjectId(str(old_pg_id)))
 
         if not clean_pg_oids:
-            db.users.update_one(
-                {"_id": ObjectId(clf_admin_id)},
-                {
-                    "$set": {
-                        "assigned_pg_ids": [],
-                        "updated_at": now,
-                    }
-                }
-            )
-
-            if old_assigned_pg_ids:
-                db.pgs.update_many(
+            if assignment_action == "replace":
+                db.users.update_one(
+                    {"_id": ObjectId(clf_admin_id)},
                     {
-                        "_id": {"$in": old_assigned_pg_ids},
-                        "$or": [
-                            {"block_id": block_oid},
-                            {"block_id": str(block_oid)},
-                        ],
-                    },
-                    {
-                        "$unset": {
-                            "clf_id": "",
-                            "assigned_clf_user_id": "",
-                            "assigned_clf_username": "",
-                        },
                         "$set": {
+                            "assigned_pg_ids": [],
                             "updated_at": now,
-                        },
+                        }
                     }
                 )
 
-            flash("All PG assignments removed from selected CLF Admin.", "success")
-            return redirect(url_for("master_data.clf_pg_assignment", clf_admin_id=clf_admin_id))
+                if old_assigned_pg_ids:
+                    db.pgs.update_many(
+                        {
+                            "_id": {"$in": old_assigned_pg_ids},
+                            "$or": [
+                                {"block_id": block_oid},
+                                {"block_id": str(block_oid)},
+                            ],
+                            "assigned_clf_user_id": ObjectId(clf_admin_id),
+                        },
+                        {
+                            "$unset": {
+                                "clf_id": "",
+                                "assigned_clf_user_id": "",
+                                "assigned_clf_username": "",
+                            },
+                            "$set": {
+                                "updated_at": now,
+                            },
+                        }
+                    )
+
+                flash("All PG assignments removed from selected CLF Admin.", "success")
+                return redirect(url_for("master_data.clf_pg_assignment", clf_admin_id=clf_admin_id))
+
+            flash("Please select at least one PG.", "danger")
+            return redirect(url_for(
+                "master_data.clf_pg_assignment",
+                clf_admin_id=clf_admin_id,
+                mode="manage"
+            ))
 
         # Security: only allow PGs from same block
         allowed_pg_ids = [
@@ -1141,8 +1243,134 @@ def clf_pg_assignment():
         if not allowed_pg_ids:
             flash("No valid PG found under your block for assignment.", "danger")
             return redirect(url_for("master_data.clf_pg_assignment", clf_admin_id=clf_admin_id))
+        
 
-        # Remove selected PGs from other CLF Admin users of the same block
+                # ---------------------------------------------------------
+        # Strict backend safety:
+        # If Add/Replace includes PGs already mapped to another CLF/Admin,
+        # frontend must send transfer_confirmed=1.
+        # ---------------------------------------------------------
+        transfer_confirmed = (request.form.get("transfer_confirmed") or "").strip() == "1"
+
+        if assignment_action in ("add", "replace"):
+            conflict_pgs = []
+
+            for pg_doc in db.pgs.find({
+                "_id": {"$in": allowed_pg_ids},
+                "$or": [
+                    {"block_id": block_oid},
+                    {"block_id": str(block_oid)},
+                ],
+            }, {
+                "name": 1,
+                "pg_name": 1,
+                "clf_id": 1,
+                "assigned_clf_user_id": 1,
+            }):
+                pg_clf_id_str = str(pg_doc.get("clf_id") or "")
+                pg_assigned_user_id_str = str(pg_doc.get("assigned_clf_user_id") or "")
+
+                has_existing_mapping = bool(pg_clf_id_str or pg_assigned_user_id_str)
+
+                belongs_to_selected_clf = (
+                    pg_clf_id_str
+                    and str(clf_oid)
+                    and pg_clf_id_str == str(clf_oid)
+                )
+
+                belongs_to_selected_admin = (
+                    pg_assigned_user_id_str
+                    and pg_assigned_user_id_str == str(clf_admin_id)
+                )
+
+                if has_existing_mapping and not belongs_to_selected_clf and not belongs_to_selected_admin:
+                    conflict_pgs.append(pg_doc)
+
+            if conflict_pgs and not transfer_confirmed:
+                flash("Strict warning required: one or more selected PGs are already mapped to another CLF. Please confirm transfer before saving.", "danger")
+                return redirect(url_for(
+                    "master_data.clf_pg_assignment",
+                    clf_admin_id=clf_admin_id,
+                    mode="manage",
+                    _anchor="managePgAssignmentSection",
+                ))
+
+             # ---------------------------------------------------------
+        # DELETE action:
+        # Remove selected PGs from this CLF Admin only.
+        # ---------------------------------------------------------
+        if assignment_action == "delete":
+            delete_pg_ids = [
+                pg_id for pg_id in allowed_pg_ids
+                if pg_id in old_assigned_pg_ids
+            ]
+
+            if not delete_pg_ids:
+                flash("Selected PGs are not currently assigned to this CLF Admin.", "danger")
+                return redirect(url_for(
+                    "master_data.clf_pg_assignment",
+                    clf_admin_id=clf_admin_id,
+                    mode="manage"
+                ))
+
+            remaining_pg_ids = [
+                pg_id for pg_id in old_assigned_pg_ids
+                if pg_id not in delete_pg_ids
+            ]
+
+            db.users.update_one(
+                {"_id": ObjectId(clf_admin_id)},
+                {
+                    "$set": {
+                        "assigned_pg_ids": remaining_pg_ids,
+                        "updated_at": now,
+                    }
+                }
+            )
+
+            db.pgs.update_many(
+                {
+                    "_id": {"$in": delete_pg_ids},
+                    "assigned_clf_user_id": ObjectId(clf_admin_id),
+                    "$or": [
+                        {"block_id": block_oid},
+                        {"block_id": str(block_oid)},
+                    ],
+                },
+                {
+                    "$unset": {
+                        "clf_id": "",
+                        "assigned_clf_user_id": "",
+                        "assigned_clf_username": "",
+                    },
+                    "$set": {
+                        "updated_at": now,
+                    },
+                }
+            )
+
+            flash(f"{len(delete_pg_ids)} PG(s) removed from selected CLF Admin.", "success")
+            return redirect(url_for("master_data.clf_pg_assignment", clf_admin_id=clf_admin_id))
+
+        # ---------------------------------------------------------
+        # ADD action:
+        # Keep existing assigned PGs and add newly selected PGs.
+        # ---------------------------------------------------------
+        if assignment_action == "add":
+            final_pg_ids = []
+
+            for pg_id in old_assigned_pg_ids + allowed_pg_ids:
+                if pg_id not in final_pg_ids:
+                    final_pg_ids.append(pg_id)
+
+        # ---------------------------------------------------------
+        # REPLACE action:
+        # Replace existing assignment with selected PGs.
+        # ---------------------------------------------------------
+        else:
+            final_pg_ids = allowed_pg_ids
+
+        # Remove newly selected PGs from other CLF Admin users of same block
         db.users.update_many(
             {
                 "role": "CLF_ADMIN",
@@ -1154,7 +1382,7 @@ def clf_pg_assignment():
             },
             {
                 "$pull": {
-                    "assigned_pg_ids": {"$in": allowed_pg_ids}
+                    "assigned_pg_ids": {"$in": final_pg_ids}
                 },
                 "$set": {
                     "updated_at": now
@@ -1162,29 +1390,29 @@ def clf_pg_assignment():
             }
         )
 
-        # Save PG ids in selected CLF Admin user
+        # Save final PG ids in selected CLF Admin user
         db.users.update_one(
             {"_id": ObjectId(clf_admin_id)},
             {
                 "$set": {
-                    "assigned_pg_ids": allowed_pg_ids,
+                    "assigned_pg_ids": final_pg_ids,
                     "updated_at": now,
                 }
             }
         )
 
-        # Clear old PG mappings previously assigned to this CLF Admin but now unselected
-        if old_assigned_pg_ids:
+        # For REPLACE only: clear old PG mappings that are no longer selected
+        if assignment_action == "replace" and old_assigned_pg_ids:
             db.pgs.update_many(
-                        {
-                            "_id": {
-                                "$in": [
-                                    x for x in old_assigned_pg_ids
-                                    if x not in allowed_pg_ids
-                                ]
-                            },
-                            "assigned_clf_user_id": ObjectId(clf_admin_id),
-                        },
+                {
+                    "_id": {
+                        "$in": [
+                            x for x in old_assigned_pg_ids
+                            if x not in final_pg_ids
+                        ]
+                    },
+                    "assigned_clf_user_id": ObjectId(clf_admin_id),
+                },
                 {
                     "$unset": {
                         "clf_id": "",
@@ -1200,7 +1428,7 @@ def clf_pg_assignment():
         # Save CLF mapping directly into PG records
         db.pgs.update_many(
             {
-                "_id": {"$in": allowed_pg_ids},
+                "_id": {"$in": final_pg_ids},
                 "$or": [
                     {"block_id": block_oid},
                     {"block_id": str(block_oid)},
@@ -1216,7 +1444,11 @@ def clf_pg_assignment():
             }
         )
 
-        flash(f"{len(allowed_pg_ids)} PG(s) assigned to CLF successfully.", "success")
+        if assignment_action == "add":
+            flash(f"{len(allowed_pg_ids)} PG(s) added to CLF successfully.", "success")
+        else:
+            flash(f"{len(final_pg_ids)} PG assignment list updated successfully.", "success")
+
         return redirect(url_for("master_data.clf_pg_assignment", clf_admin_id=clf_admin_id))
 
     return render_template(
@@ -1227,6 +1459,8 @@ def clf_pg_assignment():
         clfs=clfs,
         clf_admins=clf_admins,
         pgs=pgs,
+        mapped_pgs=mapped_pgs,
+        assignment_mode=assignment_mode,
         selected_user_id=selected_user_id,
         selected_admin=selected_admin,
         selected_assigned_ids=selected_assigned_ids,

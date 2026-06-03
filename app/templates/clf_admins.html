@@ -56,43 +56,15 @@
   /* =========================
      HEADER
      ========================= */
-  .clf-admin-hero{
+   .clf-admin-hero{
     position:relative;
     overflow:hidden;
     border-radius:var(--pg-radius-xl);
     border:1px solid rgba(11,77,58,.12);
-    background:
-      radial-gradient(circle at 94% 8%, rgba(173,231,196,.48), transparent 34%),
-      radial-gradient(circle at 8% 94%, rgba(255,255,255,.82), transparent 38%),
-      linear-gradient(135deg, #ffffff 0%, #f8fcfa 48%, #e5f3eb 100%);
+    background:linear-gradient(180deg, #ffffff, #f8fcfa);
     box-shadow:var(--pg-shadow);
     padding:28px;
     margin-bottom:18px;
-  }
-
-  .clf-admin-hero::before{
-    content:"";
-    position:absolute;
-    right:-88px;
-    bottom:-112px;
-    width:285px;
-    height:285px;
-    border-radius:50%;
-    background:rgba(173,231,196,.32);
-    pointer-events:none;
-  }
-
-  .clf-admin-hero::after{
-    content:"";
-    position:absolute;
-    top:-70px;
-    right:230px;
-    width:150px;
-    height:150px;
-    border-radius:50%;
-    background:rgba(255,255,255,.70);
-    border:1px solid rgba(11,77,58,.06);
-    pointer-events:none;
   }
 
   .hero-inner{
@@ -331,11 +303,9 @@
     margin-bottom:18px;
   }
 
-  .mis-panel-head{
+   .mis-panel-head{
     padding:20px 22px;
-    background:
-      radial-gradient(circle at 96% 0%, rgba(173,231,196,.24), transparent 30%),
-      linear-gradient(180deg, #ffffff, #f9fcfa);
+    background:linear-gradient(180deg, #ffffff, #f9fcfa);
     border-bottom:1px solid var(--pg-line-soft);
     display:flex;
     align-items:flex-start;
@@ -414,9 +384,7 @@
   .scope-box{
     position:relative;
     overflow:hidden;
-    background:
-      radial-gradient(circle at 92% 12%, rgba(173,231,196,.24), transparent 34%),
-      linear-gradient(180deg, #ffffff, var(--pg-surface-soft));
+    background:linear-gradient(180deg, #ffffff, var(--pg-surface-soft));
     border:1px solid var(--pg-line-soft);
     border-radius:var(--pg-radius-lg);
     padding:17px;
@@ -424,17 +392,6 @@
     box-shadow:var(--pg-shadow-soft);
   }
 
-  .scope-box::after{
-    content:"";
-    position:absolute;
-    right:-24px;
-    bottom:-30px;
-    width:76px;
-    height:76px;
-    border-radius:50%;
-    background:rgba(173,231,196,.20);
-    pointer-events:none;
-  }
 
   .scope-box small{
     position:relative;
@@ -720,6 +677,156 @@
     font-weight:650;
   }
 
+    /* =========================
+     UNIFORM ACTION MODAL
+     ========================= */
+  .pg-modal-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(15,23,42,.42);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+  }
+
+  .pg-modal-backdrop.show{
+    display:flex;
+  }
+
+  .pg-modal{
+    width:min(560px, 100%);
+    overflow:hidden;
+    border-radius:24px;
+    background:#fff;
+    border:1px solid rgba(11,77,58,.14);
+    box-shadow:0 28px 70px rgba(15,23,42,.24);
+  }
+
+  .pg-modal-head{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:18px 20px;
+    background:linear-gradient(180deg, #f0fbf5, #ffffff);
+    border-bottom:1px solid rgba(11,77,58,.10);
+  }
+
+  .pg-modal-dot{
+    width:34px;
+    height:34px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(200,67,67,.10);
+    color:var(--pg-danger);
+    font-weight:950;
+    flex:0 0 auto;
+  }
+
+  .pg-modal-title{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:1.05rem;
+    font-weight:950;
+    line-height:1.25;
+  }
+
+  .pg-modal-body{
+    padding:20px;
+  }
+
+  .pg-modal-body p{
+    margin:0;
+    color:var(--pg-ink);
+    font-size:.95rem;
+    font-weight:750;
+    line-height:1.55;
+  }
+
+  .pg-modal-note{
+    margin-top:12px;
+    padding:12px 14px;
+    border-radius:16px;
+    background:var(--pg-brand-soft);
+    border:1px solid rgba(11,77,58,.10);
+    color:var(--pg-muted);
+    font-size:.86rem;
+    font-weight:750;
+    line-height:1.45;
+  }
+
+  .pg-modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    padding:0 20px 20px;
+    flex-wrap:wrap;
+  }
+
+  .pg-modal-btn{
+    min-height:44px;
+    border-radius:999px;
+    padding:.72rem 1.2rem;
+    font-size:.86rem;
+    font-weight:950;
+    border:1px solid transparent;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    transition:background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
+  }
+
+  .pg-modal-btn:hover{
+    transform:translateY(-1px);
+  }
+
+  .pg-modal-cancel{
+    background:#fff;
+    color:var(--pg-danger);
+    border-color:rgba(200,67,67,.22);
+  }
+
+  .pg-modal-cancel:hover{
+    background:var(--pg-danger-soft);
+    color:var(--pg-danger);
+    border-color:rgba(200,67,67,.30);
+  }
+
+  .pg-modal-confirm{
+    background:var(--pg-brand);
+    color:#fff;
+    border-color:var(--pg-brand);
+    box-shadow:0 12px 24px rgba(11,77,58,.18);
+  }
+
+  .pg-modal-confirm:hover{
+    background:var(--pg-brand-dark);
+    color:#fff;
+    border-color:var(--pg-brand-dark);
+  }
+
+  @media (max-width:560px){
+    .pg-modal{
+      border-radius:20px;
+    }
+
+    .pg-modal-actions{
+      display:grid;
+      grid-template-columns:1fr;
+    }
+
+    .pg-modal-btn{
+      width:100%;
+    }
+  }
+
   /* =========================
      MOBILE
      ========================= */
@@ -730,9 +837,7 @@
   .mini-admin-card{
     position:relative;
     overflow:hidden;
-    background:
-      radial-gradient(circle at 94% 8%, rgba(173,231,196,.20), transparent 35%),
-      linear-gradient(180deg, #ffffff, #fbfefc);
+    background:linear-gradient(180deg, #ffffff, #fbfefc);
     border:1px solid var(--pg-line-soft);
     border-radius:var(--pg-radius-lg);
     padding:16px;
@@ -894,7 +999,7 @@
       </div>
 
       <div class="hero-actions">
-        <span class="scope-badge">Block Scope</span>
+        
 
         <div class="top-actions">
           <a href="{{ url_for('master_data.manage_clfs') }}" class="pg-btn pg-btn-soft">
@@ -1067,13 +1172,10 @@
                 </td>
 
                 <td>
-                  <div class="name-main">
-                    {{ admin.full_name or admin.name or admin.username or '-' }}
-                  </div>
-                  <small class="text-soft">
-                    User ID: {{ admin._id }}
-                  </small>
-                </td>
+  <div class="name-main">
+    {{ admin.full_name or admin.name or admin.username or '-' }}
+  </div>
+</td>
 
                 <td>
                   <span class="username-pill">
@@ -1081,14 +1183,11 @@
                   </span>
                 </td>
 
-                <td>
-                  <div class="name-main">
-                    {{ admin.clf_name or '-' }}
-                  </div>
-                  <small class="text-soft">
-                    CLF ID: {{ admin.clf_id or '-' }}
-                  </small>
-                </td>
+               <td>
+  <div class="name-main">
+    {{ admin.clf_name or '-' }}
+  </div>
+</td>
 
                 <td>
                   <span class="pg-count-pill">
@@ -1116,12 +1215,13 @@
                       Assign PGs
                     </a>
 
-                    <form
-                      method="post"
-                      action="{{ url_for('master_data.toggle_clf_admin_status', user_id=admin._id) }}"
-                      class="danger-form"
-                      onsubmit="return confirm('Are you sure you want to change this CLF Admin status?');"
-                    >
+                  <form
+  method="post"
+  action="{{ url_for('master_data.toggle_clf_admin_status', user_id=admin._id) }}"
+  class="danger-form js-status-toggle-form"
+  data-admin-name="{{ admin.full_name or admin.name or admin.username or '-' }}"
+  data-action-label="{% if (admin.status or 'active') == 'active' %}Disable{% else %}Enable{% endif %}"
+>
                       {% if (admin.status or 'active') == 'active' %}
                         <button type="submit" class="btn pg-action-btn pg-action-danger">
                           Disable
@@ -1183,11 +1283,6 @@
                 <strong>Assigned PGs:</strong>
                 {{ admin.assigned_pg_count or 0 }}
               </div>
-
-              <div>
-                <strong>User ID:</strong>
-                {{ admin._id }}
-              </div>
             </div>
 
             <div class="mobile-actions">
@@ -1199,10 +1294,12 @@
               </a>
 
               <form
-                method="post"
-                action="{{ url_for('master_data.toggle_clf_admin_status', user_id=admin._id) }}"
-                onsubmit="return confirm('Are you sure you want to change this CLF Admin status?');"
-              >
+  method="post"
+  action="{{ url_for('master_data.toggle_clf_admin_status', user_id=admin._id) }}"
+  class="js-status-toggle-form"
+  data-admin-name="{{ admin.full_name or admin.name or admin.username or '-' }}"
+  data-action-label="{% if (admin.status or 'active') == 'active' %}Disable{% else %}Enable{% endif %}"
+>
                 {% if (admin.status or 'active') == 'active' %}
                   <button type="submit" class="btn pg-action-btn pg-action-danger">
                     Disable
@@ -1227,4 +1324,118 @@
   </div>
 
 </div>
+
+<div class="pg-modal-backdrop" id="statusConfirmModal" aria-hidden="true">
+  <div class="pg-modal" role="dialog" aria-modal="true" aria-labelledby="statusConfirmTitle">
+    <div class="pg-modal-head">
+      <div class="pg-modal-dot">!</div>
+      <h5 class="pg-modal-title" id="statusConfirmTitle">Confirm Status Change</h5>
+    </div>
+
+    <div class="pg-modal-body">
+      <p id="statusConfirmMessage">
+        Are you sure you want to change this CLF Admin status?
+      </p>
+
+      <div class="pg-modal-note">
+        This action will update the selected CLF Admin login access status. Existing mapped CLF and assigned PG records will remain unchanged.
+      </div>
+    </div>
+
+    <div class="pg-modal-actions">
+      <button type="button" class="pg-modal-btn pg-modal-cancel" id="statusCancelBtn">
+        Cancel
+      </button>
+      <button type="button" class="pg-modal-btn pg-modal-confirm" id="statusConfirmBtn">
+        Confirm
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const modal = document.getElementById("statusConfirmModal");
+    const message = document.getElementById("statusConfirmMessage");
+    const cancelBtn = document.getElementById("statusCancelBtn");
+    const confirmBtn = document.getElementById("statusConfirmBtn");
+    const forms = Array.from(document.querySelectorAll(".js-status-toggle-form"));
+
+    let pendingForm = null;
+
+    function openModal(form){
+      pendingForm = form;
+
+      const adminName = form.getAttribute("data-admin-name") || "this CLF Admin";
+      const actionLabel = form.getAttribute("data-action-label") || "change status";
+
+      if(message){
+        message.textContent = actionLabel + " access for " + adminName + "?";
+      }
+
+      if(confirmBtn){
+        confirmBtn.textContent = "Yes, " + actionLabel;
+      }
+
+      if(modal){
+        modal.classList.add("show");
+        modal.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      }
+    }
+
+    function closeModal(){
+      pendingForm = null;
+
+      if(modal){
+        modal.classList.remove("show");
+        modal.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+      }
+    }
+
+    forms.forEach(function(form){
+      form.addEventListener("submit", function(event){
+        event.preventDefault();
+        openModal(form);
+      });
+    });
+
+    if(cancelBtn){
+      cancelBtn.addEventListener("click", closeModal);
+    }
+
+    if(confirmBtn){
+      confirmBtn.addEventListener("click", function(){
+        if(!pendingForm) return;
+
+        const formToSubmit = pendingForm;
+        pendingForm = null;
+
+        if(modal){
+          modal.classList.remove("show");
+          modal.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+        }
+
+        formToSubmit.submit();
+      });
+    }
+
+    if(modal){
+      modal.addEventListener("click", function(event){
+        if(event.target === modal){
+          closeModal();
+        }
+      });
+    }
+
+    document.addEventListener("keydown", function(event){
+      if(event.key === "Escape"){
+        closeModal();
+      }
+    });
+  })();
+</script>
+
 {% endblock %}

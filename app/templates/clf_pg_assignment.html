@@ -61,38 +61,10 @@
     overflow:hidden;
     border-radius:var(--pg-radius-xl);
     border:1px solid rgba(11,77,58,.12);
-    background:
-      radial-gradient(circle at 94% 8%, rgba(173,231,196,.48), transparent 34%),
-      radial-gradient(circle at 8% 94%, rgba(255,255,255,.82), transparent 38%),
-      linear-gradient(135deg, #ffffff 0%, #f8fcfa 48%, #e5f3eb 100%);
+    background:linear-gradient(180deg, #ffffff, #f8fcfa);
     box-shadow:var(--pg-shadow);
     padding:28px;
     margin-bottom:18px;
-  }
-
-  .assignment-hero::before{
-    content:"";
-    position:absolute;
-    right:-88px;
-    bottom:-112px;
-    width:285px;
-    height:285px;
-    border-radius:50%;
-    background:rgba(173,231,196,.32);
-    pointer-events:none;
-  }
-
-  .assignment-hero::after{
-    content:"";
-    position:absolute;
-    top:-70px;
-    right:230px;
-    width:150px;
-    height:150px;
-    border-radius:50%;
-    background:rgba(255,255,255,.70);
-    border:1px solid rgba(11,77,58,.06);
-    pointer-events:none;
   }
 
   .hero-inner{
@@ -291,6 +263,96 @@
     border-color:rgba(200,67,67,.28);
   }
 
+    .pg-tool-primary{
+    background:var(--pg-brand);
+    color:#fff;
+    border-color:var(--pg-brand);
+    box-shadow:0 12px 24px rgba(11,77,58,.16);
+  }
+
+  .pg-tool-primary:hover{
+    background:var(--pg-brand-dark);
+    color:#fff;
+    border-color:var(--pg-brand-dark);
+  }
+
+  .pg-tool-warning{
+    color:#9a7100;
+    border-color:rgba(224,168,0,.25);
+    background:rgba(255,193,7,.10);
+  }
+
+  .pg-tool-warning:hover{
+    color:#7a5b00;
+    background:rgba(255,193,7,.18);
+    border-color:rgba(224,168,0,.34);
+  }
+
+  .pg-overview-actions,
+  .pg-manage-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:9px;
+    flex-wrap:wrap;
+  }
+
+  .pg-row-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .pg-action-column{
+    min-width:150px;
+  }
+
+  .pg-section-note{
+    padding:13px 15px;
+    border-radius:16px;
+    background:var(--pg-brand-soft);
+    border:1px solid rgba(11,77,58,.10);
+    color:var(--pg-muted);
+    font-size:.86rem;
+    font-weight:750;
+    line-height:1.45;
+  }
+
+  .pg-manage-action-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+
+  .pg-manage-btns{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:9px;
+    flex-wrap:wrap;
+  }
+
+  @media (max-width:767px){
+    .pg-overview-actions,
+    .pg-manage-actions,
+    .pg-manage-action-bar,
+    .pg-manage-btns{
+      display:grid;
+      grid-template-columns:1fr;
+      width:100%;
+    }
+
+    .pg-overview-actions .pg-tool-btn,
+    .pg-manage-actions .pg-tool-btn,
+    .pg-manage-btns .pg-submit-btn,
+    .pg-manage-btns .pg-tool-btn{
+      width:100%;
+    }
+  }
+
   .btn-icon{
     width:18px;
     height:18px;
@@ -322,9 +384,7 @@
 
   .mis-panel-head{
     padding:20px 22px;
-    background:
-      radial-gradient(circle at 96% 0%, rgba(173,231,196,.24), transparent 30%),
-      linear-gradient(180deg, #ffffff, #f9fcfa);
+    background:linear-gradient(180deg, #ffffff, #f9fcfa);
     border-bottom:1px solid var(--pg-line-soft);
     display:flex;
     align-items:flex-start;
@@ -385,29 +445,15 @@
     gap:14px;
   }
 
-  .scope-box{
+    .scope-box{
     position:relative;
     overflow:hidden;
-    background:
-      radial-gradient(circle at 92% 12%, rgba(173,231,196,.24), transparent 34%),
-      linear-gradient(180deg, #ffffff, var(--pg-surface-soft));
+    background:linear-gradient(180deg, #ffffff, var(--pg-surface-soft));
     border:1px solid var(--pg-line-soft);
     border-radius:var(--pg-radius-lg);
     padding:17px;
     min-height:96px;
     box-shadow:var(--pg-shadow-soft);
-  }
-
-  .scope-box::after{
-    content:"";
-    position:absolute;
-    right:-24px;
-    bottom:-30px;
-    width:76px;
-    height:76px;
-    border-radius:50%;
-    background:rgba(173,231,196,.20);
-    pointer-events:none;
   }
 
   .scope-box small,
@@ -433,6 +479,23 @@
     font-weight:950;
     line-height:1.35;
     word-break:break-word;
+  }
+
+    /* =========================
+     CLF ADMIN LOAD FORM
+     ========================= */
+  .clf-admin-load-form{
+    row-gap:22px;
+  }
+
+  .clf-load-action{
+    padding-top:28px;
+  }
+
+  @media (max-width:991px){
+    .clf-load-action{
+      padding-top:4px;
+    }
   }
 
   /* =========================
@@ -509,12 +572,10 @@
     margin-bottom:18px;
   }
 
-  .summary-card{
+    .summary-card{
     position:relative;
     overflow:hidden;
-    background:
-      radial-gradient(circle at 92% 12%, rgba(173,231,196,.22), transparent 34%),
-      linear-gradient(180deg, #ffffff, var(--pg-surface-soft));
+    background:linear-gradient(180deg, #ffffff, var(--pg-surface-soft));
     border:1px solid var(--pg-line-soft);
     border-radius:var(--pg-radius-lg);
     padding:17px;
@@ -522,17 +583,6 @@
     box-shadow:var(--pg-shadow-soft);
   }
 
-  .summary-card::after{
-    content:"";
-    position:absolute;
-    right:-28px;
-    bottom:-34px;
-    width:86px;
-    height:86px;
-    border-radius:50%;
-    background:rgba(173,231,196,.18);
-    pointer-events:none;
-  }
 
   .summary-card strong{
     position:relative;
@@ -764,12 +814,10 @@
     display:none;
   }
 
-  .mobile-pg-card{
+   .mobile-pg-card{
     position:relative;
     overflow:hidden;
-    background:
-      radial-gradient(circle at 94% 8%, rgba(173,231,196,.20), transparent 35%),
-      linear-gradient(180deg, #ffffff, #fbfefc);
+    background:linear-gradient(180deg, #ffffff, #fbfefc);
     border:1px solid var(--pg-line-soft);
     border-radius:var(--pg-radius-lg);
     padding:16px;
@@ -839,6 +887,222 @@
 
   .sticky-save .text-soft{
     font-size:.82rem;
+  }
+
+  /* =========================
+     UNIFORM ACTION MODAL
+     ========================= */
+  .pg-modal-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(15,23,42,.42);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+  }
+
+  .pg-modal-backdrop.show{
+    display:flex;
+  }
+
+  .pg-modal{
+    width:min(560px, 100%);
+    overflow:hidden;
+    border-radius:24px;
+    background:#fff;
+    border:1px solid rgba(11,77,58,.14);
+    box-shadow:0 28px 70px rgba(15,23,42,.24);
+  }
+
+  .pg-modal-head{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:18px 20px;
+    background:linear-gradient(180deg, #f0fbf5, #ffffff);
+    border-bottom:1px solid rgba(11,77,58,.10);
+  }
+
+  .pg-modal-dot{
+    width:34px;
+    height:34px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(11,77,58,.10);
+    color:var(--pg-brand);
+    font-weight:950;
+    flex:0 0 auto;
+  }
+
+  .pg-modal-title{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:1.05rem;
+    font-weight:950;
+    line-height:1.25;
+  }
+
+  .pg-modal-body{
+    padding:20px;
+  }
+
+  .pg-modal-body p{
+    margin:0;
+    color:var(--pg-ink);
+    font-size:.95rem;
+    font-weight:750;
+    line-height:1.55;
+  }
+
+  .pg-modal-note{
+    margin-top:12px;
+    padding:12px 14px;
+    border-radius:16px;
+    background:var(--pg-brand-soft);
+    border:1px solid rgba(11,77,58,.10);
+    color:var(--pg-muted);
+    font-size:.86rem;
+    font-weight:750;
+    line-height:1.45;
+  }
+
+  .pg-modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    padding:0 20px 20px;
+    flex-wrap:wrap;
+  }
+
+  .pg-modal-btn{
+    min-height:44px;
+    border-radius:999px;
+    padding:.72rem 1.2rem;
+    font-size:.86rem;
+    font-weight:950;
+    border:1px solid transparent;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    transition:background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
+  }
+
+  .pg-modal-btn:hover{
+    transform:translateY(-1px);
+  }
+
+  .pg-modal-cancel{
+    background:#fff;
+    color:var(--pg-danger);
+    border-color:rgba(200,67,67,.22);
+  }
+
+  .pg-modal-cancel:hover{
+    background:var(--pg-danger-soft);
+    color:var(--pg-danger);
+    border-color:rgba(200,67,67,.30);
+  }
+
+  .pg-modal-confirm{
+    background:var(--pg-brand);
+    color:#fff;
+    border-color:var(--pg-brand);
+    box-shadow:0 12px 24px rgba(11,77,58,.18);
+  }
+
+  .pg-modal-confirm:hover{
+    background:var(--pg-brand-dark);
+    color:#fff;
+    border-color:var(--pg-brand-dark);
+  }
+
+    .pg-modal-confirm:disabled{
+    opacity:.48;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+
+  .pg-conflict-list{
+    margin-top:14px;
+    display:grid;
+    gap:10px;
+    max-height:260px;
+    overflow:auto;
+  }
+
+  .pg-conflict-item{
+    border:1px solid rgba(200,67,67,.18);
+    background:rgba(200,67,67,.06);
+    border-radius:16px;
+    padding:12px 14px;
+  }
+
+  .pg-conflict-item strong{
+    display:block;
+    color:var(--pg-ink);
+    font-size:.92rem;
+    font-weight:950;
+    line-height:1.35;
+  }
+
+  .pg-conflict-item span{
+    display:block;
+    margin-top:4px;
+    color:var(--pg-danger);
+    font-size:.82rem;
+    font-weight:850;
+    line-height:1.35;
+  }
+
+  .pg-confirm-check{
+    margin-top:14px;
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    padding:13px 14px;
+    border-radius:16px;
+    background:#fff;
+    border:1px solid rgba(200,67,67,.22);
+  }
+
+  .pg-confirm-check input{
+    margin-top:3px;
+    width:18px;
+    height:18px;
+    accent-color:var(--pg-danger);
+    flex:0 0 auto;
+  }
+
+  .pg-confirm-check label{
+    color:var(--pg-ink);
+    font-size:.88rem;
+    font-weight:850;
+    line-height:1.45;
+    cursor:pointer;
+  }
+
+  @media (max-width:560px){
+    .pg-modal{
+      border-radius:20px;
+    }
+
+    .pg-modal-actions{
+      display:grid;
+      grid-template-columns:1fr;
+    }
+
+    .pg-modal-btn{
+      width:100%;
+    }
   }
 
   /* =========================
@@ -968,7 +1232,7 @@
       </div>
 
       <div class="hero-actions">
-        <span class="scope-badge">Block Scope</span>
+       
 
         <div class="top-actions">
           <a href="{{ url_for('master_data.manage_clfs') }}" class="pg-btn pg-btn-soft">
@@ -1047,7 +1311,7 @@
 
     <div class="mis-panel-body">
       {% if clf_admins %}
-        <form method="get" class="row g-3 align-items-end">
+        <form method="get" class="row g-4 align-items-end clf-admin-load-form">
           <div class="col-lg-8">
             <label class="form-label-mini">CLF Admin</label>
             <select name="clf_admin_id" class="form-select" onchange="this.form.submit()" required>
@@ -1067,12 +1331,12 @@
             </div>
           </div>
 
-          <div class="col-lg-4">
-            <button type="submit" class="btn pg-submit-btn w-100">
-              <span class="btn-icon">↗</span>
-              Load Assignment
-            </button>
-          </div>
+        <div class="col-lg-4 clf-load-action">
+  <button type="submit" class="btn pg-submit-btn w-100">
+    <span class="btn-icon">↗</span>
+    Load Assignment
+  </button>
+</div>
         </form>
       {% else %}
         <div class="no-data-alert mb-0">
@@ -1117,8 +1381,240 @@
       </div>
     </div>
 
-    <form method="post" id="assignmentForm">
-      <input type="hidden" name="clf_admin_id" value="{{ selected_admin._id }}">
+    {% if assignment_mode == "manage" %}
+
+      <form method="post" id="assignmentForm">
+        <input type="hidden" name="clf_admin_id" value="{{ selected_admin._id }}">
+        <input type="hidden" name="mode" value="manage">
+        <input type="hidden" name="assignment_action" id="assignmentAction" value="">
+        <input type="hidden" name="transfer_confirmed" id="transferConfirmed" value="0">
+
+       <div class="mis-panel" id="managePgAssignmentSection">
+  <div class="mis-panel-head">
+    <div class="pg-tools">
+              <div class="pg-tools-title">
+                <div class="mis-icon">PG</div>
+                <div>
+                  <h6>Manage PG Assignment</h6>
+                  <p>Select PGs from the full Block list, then Add, Replace, or Delete based on the required action.</p>
+                </div>
+              </div>
+
+              <div class="pg-tools-actions">
+                <input
+                  type="text"
+                  class="form-control pg-search"
+                  id="pgSearch"
+                  placeholder="Search PG by name, village, GP..."
+                  autocomplete="off"
+                >
+
+                <button type="button" class="btn pg-tool-btn" id="selectAllBtn">
+                  Select All Visible
+                </button>
+
+                <button type="button" class="btn pg-tool-btn pg-tool-danger" id="clearVisibleBtn">
+                  Clear Visible
+                </button>
+
+                <a
+                  href="{{ url_for('master_data.clf_pg_assignment', clf_admin_id=selected_admin._id) }}"
+                  class="pg-tool-btn"
+                >
+                  Back to Mapped PGs
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="mis-panel-body p-0">
+            <div class="desktop-table table-shell">
+              <table class="table table-hover pg-table mb-0" id="pgTable">
+                <thead>
+                  <tr>
+                    <th style="width:82px;">Select</th>
+                    <th style="min-width:260px;">PG Name</th>
+                    <th style="min-width:170px;">Gram Panchayat</th>
+                    <th style="min-width:160px;">Village</th>
+                    <th style="min-width:190px;">Current CLF</th>
+                    <th style="min-width:170px;">Current Status</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {% for pg in pgs %}
+                    {% set pg_id = pg._id|string %}
+                    {% set checked = pg_id in selected_assigned_ids %}
+                    {% set currently_assigned_user = pg.assigned_clf_user_id_str %}
+
+                    <tr
+                      class="pg-row"
+                      data-search="{{ (pg.display_name or pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or '')|lower }} {{ (pg.Block or '')|lower }}"
+                    >
+                      <td>
+                        <span class="check-cell">
+                        <input
+  type="checkbox"
+  class="form-check-input assignment-check pg-checkbox"
+  name="pg_ids"
+  value="{{ pg._id }}"
+  data-conflict="{% if pg.assignment_conflict %}1{% else %}0{% endif %}"
+  data-pg-name="{{ (pg.display_name or pg.name or pg.pg_name or '-')|e }}"
+  data-clf-name="{{ (pg.current_clf_name or 'another CLF')|e }}"
+  {% if checked %}checked{% endif %}
+>
+                        </span>
+                      </td>
+
+                      <td>
+                        <div class="pg-name">{{ pg.display_name or pg.name or pg.pg_name or '-' }}</div>
+                      </td>
+
+                      <td>
+                        <div class="location-text">{{ pg['Gram Panchayat'] or '-' }}</div>
+                      </td>
+
+                      <td>
+                        <div class="location-text">{{ pg.Village or '-' }}</div>
+                      </td>
+
+            <td>
+  {% if pg.clf_id or pg.assigned_clf_user_id_str %}
+    <span class="assigned-pill pill-brand">
+      {{ pg.current_clf_name or 'Mapped' }}
+    </span>
+  {% else %}
+    <span class="assigned-pill pill-warning">Not mapped</span>
+  {% endif %}
+</td>
+
+                      <td>
+                        {% if checked %}
+                          <span class="assigned-pill pill-selected live-status">Selected</span>
+                        {% elif currently_assigned_user %}
+                          <span class="assigned-pill pill-neutral live-status">Assigned elsewhere</span>
+                        {% else %}
+                          <span class="assigned-pill pill-neutral live-status">Unassigned</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% else %}
+                    <tr>
+                      <td colspan="6">
+                        <div class="empty-state">
+                          <div class="empty-state-icon">PG</div>
+                          <strong>No PGs found under this Block</strong>
+                          <div>Create PGs first, then assign them to CLFs.</div>
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mobile-pg-list" id="mobilePgList">
+              {% for pg in pgs %}
+                {% set pg_id = pg._id|string %}
+                {% set checked = pg_id in selected_assigned_ids %}
+                {% set currently_assigned_user = pg.assigned_clf_user_id_str %}
+
+                <div
+                  class="mobile-pg-card pg-row"
+                  data-search="{{ (pg.display_name or pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or '')|lower }} {{ (pg.Block or '')|lower }}"
+                >
+                  <div class="mobile-card-head">
+                    <div>
+                      <div class="pg-name">{{ pg.display_name or pg.name or pg.pg_name or '-' }}</div>
+                    </div>
+
+                    <span class="check-cell">
+                     <input
+  type="checkbox"
+  class="form-check-input assignment-check pg-checkbox"
+  name="pg_ids"
+  value="{{ pg._id }}"
+  data-conflict="{% if pg.assignment_conflict %}1{% else %}0{% endif %}"
+  data-pg-name="{{ (pg.display_name or pg.name or pg.pg_name or '-')|e }}"
+  data-clf-name="{{ (pg.current_clf_name or 'another CLF')|e }}"
+  {% if checked %}checked{% endif %}
+>
+                    </span>
+                  </div>
+
+                  <div class="mobile-meta">
+                    <div><strong>Gram Panchayat:</strong> {{ pg['Gram Panchayat'] or '-' }}</div>
+                    <div><strong>Village:</strong> {{ pg.Village or '-' }}</div>
+                    <div>
+                      <strong>Mapping:</strong>
+                      {% if pg.clf_id %}Mapped{% else %}Not mapped{% endif %}
+                    </div>
+                  </div>
+
+                  {% if checked %}
+                    <span class="assigned-pill pill-selected live-status">Selected</span>
+                  {% elif currently_assigned_user %}
+                    <span class="assigned-pill pill-neutral live-status">Assigned elsewhere</span>
+                  {% else %}
+                    <span class="assigned-pill pill-neutral live-status">Unassigned</span>
+                  {% endif %}
+                </div>
+              {% else %}
+                <div class="empty-state">
+                  <div class="empty-state-icon">PG</div>
+                  <strong>No PGs found under this Block</strong>
+                  <div>Create PGs first, then assign them to CLFs.</div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="sticky-save mt-3">
+          <div class="sticky-save-inner">
+            <div>
+              <strong>Choose assignment action</strong>
+              <div class="text-soft">
+                Add keeps existing PGs and appends selected PGs. Replace overwrites the mapped list. Delete removes selected mapped PGs from this CLF Admin.
+              </div>
+            </div>
+
+            <div class="pg-manage-btns">
+              <button
+                type="submit"
+                class="btn pg-submit-btn"
+                data-assignment-action="add"
+                data-action-title="Add PGs"
+              >
+                <span class="btn-icon">+</span>
+                Add Selected PGs
+              </button>
+
+              {% if selected_count > 0 %}
+                <button
+                  type="submit"
+                  class="btn pg-tool-btn pg-tool-warning"
+                  data-assignment-action="replace"
+                  data-action-title="Replace PGs"
+                >
+                  Replace With Selected PGs
+                </button>
+
+                <button
+                  type="submit"
+                  class="btn pg-tool-btn pg-tool-danger"
+                  data-assignment-action="delete"
+                  data-action-title="Delete PGs"
+                >
+                  Delete Selected PGs
+                </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </form>
+
+    {% else %}
 
       <div class="mis-panel">
         <div class="mis-panel-head">
@@ -1127,187 +1623,129 @@
               <div class="mis-icon">PG</div>
               <div>
                 <h6>PG Assignment List</h6>
-                <p>Search, select visible PGs, clear visible PGs, and save final CLF Admin assignment.</p>
+                <p>Currently mapped PGs for the selected CLF Admin.</p>
               </div>
             </div>
 
-            <div class="pg-tools-actions">
-              <input
-                type="text"
-                class="form-control pg-search"
-                id="pgSearch"
-                placeholder="Search PG by name, village, GP..."
-                autocomplete="off"
-              >
-
-              <button type="button" class="btn pg-tool-btn" id="selectAllBtn">
-                Select All Visible
-              </button>
-
-              <button type="button" class="btn pg-tool-btn pg-tool-danger" id="clearVisibleBtn">
-                Clear Visible
-              </button>
+            <div class="pg-overview-actions">
+              {% if selected_count > 0 %}
+                <a
+href="{{ url_for('master_data.clf_pg_assignment', clf_admin_id=selected_admin._id, mode='manage', _anchor='managePgAssignmentSection') }}"
+                  class="pg-tool-btn pg-tool-primary"
+                >
+                  Edit PGs
+                </a>
+              {% else %}
+                <a
+                  href="{{ url_for('master_data.clf_pg_assignment', clf_admin_id=selected_admin._id, mode='manage', _anchor='managePgAssignmentSection') }}"
+                  class="pg-tool-btn pg-tool-primary"
+                >
+                  Add PGs
+                </a>
+              {% endif %}
             </div>
           </div>
         </div>
 
         <div class="mis-panel-body p-0">
-          <div class="desktop-table table-shell">
-            <table class="table table-hover pg-table mb-0" id="pgTable">
-              <thead>
-                <tr>
-                  <th style="width:82px;">Assign</th>
-                  <th style="min-width:260px;">PG Name</th>
-                  <th style="min-width:170px;">Gram Panchayat</th>
-                  <th style="min-width:160px;">Village</th>
-                  <th style="min-width:190px;">Current CLF</th>
-                  <th style="min-width:170px;">Current Status</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {% for pg in pgs %}
-                  {% set pg_id = pg._id|string %}
-                  {% set checked = pg_id in selected_assigned_ids %}
-                  {% set currently_assigned_user = pg.assigned_clf_user_id_str %}
-                  <tr
-                    class="pg-row"
-                    data-search="{{ (pg.display_name or pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or '')|lower }} {{ (pg.Block or '')|lower }}"
-                  >
-                    <td>
-                      <span class="check-cell">
-                        <input
-                          type="checkbox"
-                          class="form-check-input assignment-check pg-checkbox"
-                          name="pg_ids"
-                          value="{{ pg._id }}"
-                          {% if checked %}checked{% endif %}
-                        >
-                      </span>
-                    </td>
-
-                    <td>
-                      <div class="pg-name">{{ pg.display_name or pg.name or pg.pg_name or '-' }}</div>
-                      
-                    </td>
-
-                    <td>
-                      <div class="location-text">{{ pg['Gram Panchayat'] or '-' }}</div>
-                    </td>
-
-                    <td>
-                      <div class="location-text">{{ pg.Village or '-' }}</div>
-                    </td>
-
-                    <td>
-                      {% if pg.clf_id %}
-                        <span class="assigned-pill pill-brand">
-                          Mapped
-                        </span>
-                        
-                      {% else %}
-                        <span class="assigned-pill pill-warning">
-                          Not mapped
-                        </span>
-                      {% endif %}
-                    </td>
-
-                    <td>
-                      {% if checked %}
-                        <span class="assigned-pill pill-selected live-status">Selected</span>
-                      {% elif currently_assigned_user %}
-                        <span class="assigned-pill pill-neutral live-status">Assigned elsewhere</span>
-                      {% else %}
-                        <span class="assigned-pill pill-neutral live-status">Unassigned</span>
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% else %}
+          {% if mapped_pgs %}
+            <div class="desktop-table table-shell">
+              <table class="table table-hover pg-table mb-0">
+                <thead>
                   <tr>
-                    <td colspan="6">
-                      <div class="empty-state">
-                        <div class="empty-state-icon">PG</div>
-                        <strong>No PGs found under this Block</strong>
-                        <div>Create PGs first, then assign them to CLFs.</div>
-                      </div>
-                    </td>
+                    <th style="width:76px;">#</th>
+                    <th style="min-width:260px;">PG Name</th>
+                    <th style="min-width:170px;">Gram Panchayat</th>
+                    <th style="min-width:160px;">Village</th>
+                    <th style="min-width:170px;">Current Status</th>
+                    <th style="width:160px; min-width:160px;">Action</th>
                   </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+                </thead>
 
-          <div class="mobile-pg-list" id="mobilePgList">
-            {% for pg in pgs %}
-              {% set pg_id = pg._id|string %}
-              {% set checked = pg_id in selected_assigned_ids %}
-              {% set currently_assigned_user = pg.assigned_clf_user_id_str %}
-              <div
-                class="mobile-pg-card pg-row"
-                data-search="{{ (pg.display_name or pg.name or pg.pg_name or '')|lower }} {{ (pg['Gram Panchayat'] or '')|lower }} {{ (pg.Village or '')|lower }} {{ (pg.Block or '')|lower }}"
-              >
-                <div class="mobile-card-head">
-                  <div>
-                    <div class="pg-name">{{ pg.display_name or pg.name or pg.pg_name or '-' }}</div>
-                    <small class="text-soft">PG ID: {{ pg._id }}</small>
+                <tbody>
+                  {% for pg in mapped_pgs %}
+                    <tr>
+                      <td>
+                        <span class="check-cell">{{ loop.index }}</span>
+                      </td>
+
+                      <td>
+                        <div class="pg-name">{{ pg.display_name or pg.name or pg.pg_name or '-' }}</div>
+                      </td>
+
+                      <td>
+                        <div class="location-text">{{ pg['Gram Panchayat'] or '-' }}</div>
+                      </td>
+
+                      <td>
+                        <div class="location-text">{{ pg.Village or '-' }}</div>
+                      </td>
+
+                      <td>
+                        <span class="assigned-pill pill-selected">Mapped</span>
+                      </td>
+
+                      <td class="pg-action-column">
+                        <div class="pg-row-actions">
+                          <a
+                           href="{{ url_for('master_data.clf_pg_assignment', clf_admin_id=selected_admin._id, mode='manage', _anchor='managePgAssignmentSection') }}"
+                            class="pg-tool-btn"
+                          >
+                            Edit
+                          </a>
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mobile-pg-list">
+              {% for pg in mapped_pgs %}
+                <div class="mobile-pg-card">
+                  <div class="mobile-card-head">
+                    <div>
+                      <div class="pg-name">{{ pg.display_name or pg.name or pg.pg_name or '-' }}</div>
+                    </div>
+
+                    <span class="assigned-pill pill-selected">Mapped</span>
                   </div>
 
-                  <span class="check-cell">
-                    <input
-                      type="checkbox"
-                      class="form-check-input assignment-check pg-checkbox"
-                      name="pg_ids"
-                      value="{{ pg._id }}"
-                      {% if checked %}checked{% endif %}
-                    >
-                  </span>
-                </div>
+                  <div class="mobile-meta">
+                    <div><strong>Gram Panchayat:</strong> {{ pg['Gram Panchayat'] or '-' }}</div>
+                    <div><strong>Village:</strong> {{ pg.Village or '-' }}</div>
+                  </div>
 
-                <div class="mobile-meta">
-                  <div><strong>Gram Panchayat:</strong> {{ pg['Gram Panchayat'] or '-' }}</div>
-                  <div><strong>Village:</strong> {{ pg.Village or '-' }}</div>
-                  <div><strong>CLF ID:</strong> {{ pg.clf_id or 'Not mapped' }}</div>
+                  <a
+                    href="{{ url_for('master_data.clf_pg_assignment', clf_admin_id=selected_admin._id, mode='manage', _anchor='managePgAssignmentSection') }}"
+                    class="pg-tool-btn w-100"
+                  >
+                    Edit PGs
+                  </a>
                 </div>
-
-                {% if checked %}
-                  <span class="assigned-pill pill-selected live-status">Selected</span>
-                {% elif currently_assigned_user %}
-                  <span class="assigned-pill pill-neutral live-status">Assigned elsewhere</span>
-                {% else %}
-                  <span class="assigned-pill pill-neutral live-status">Unassigned</span>
-                {% endif %}
-              </div>
-            {% else %}
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="mis-panel-body">
               <div class="empty-state">
                 <div class="empty-state-icon">PG</div>
-                <strong>No PGs found under this Block</strong>
-                <div>Create PGs first, then assign them to CLFs.</div>
+                <strong>No PGs mapped to this CLF Admin yet</strong>
+                <div class="mb-3">Use Add PGs to assign Producer Groups under this Block.</div>
+
+                <a
+href="{{ url_for('master_data.clf_pg_assignment', clf_admin_id=selected_admin._id, mode='manage', _anchor='managePgAssignmentSection') }}"
+                  class="pg-tool-btn pg-tool-primary"
+                >
+                  Add PGs
+                </a>
               </div>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-
-      <div class="sticky-save mt-3">
-        <div class="sticky-save-inner">
-          <div>
-            <strong>Ready to save assignment?</strong>
-            <div class="text-soft">
-              Selected PGs will be mapped to this CLF Admin’s CLF. Unselected previously assigned PGs will be removed from this CLF Admin.
             </div>
-          </div>
-
-          <button
-            type="submit"
-            class="btn pg-submit-btn"
-            onclick="return confirm('Save this PG assignment for the selected CLF Admin?');"
-          >
-            <span class="btn-icon">✓</span>
-            Save Assignment
-          </button>
+          {% endif %}
         </div>
       </div>
-    </form>
+
+    {% endif %}
   {% else %}
     <div class="mis-panel">
       <div class="mis-panel-body">
@@ -1321,6 +1759,68 @@
   {% endif %}
 </div>
 
+<div class="pg-modal-backdrop" id="assignmentConfirmModal" aria-hidden="true">
+  <div class="pg-modal" role="dialog" aria-modal="true" aria-labelledby="assignmentConfirmTitle">
+    <div class="pg-modal-head">
+      <div class="pg-modal-dot">✓</div>
+      <h5 class="pg-modal-title" id="assignmentConfirmTitle">Confirm PG Assignment</h5>
+    </div>
+
+        <div class="pg-modal-body">
+      <p id="assignmentConfirmText">
+        Save this PG assignment for the selected CLF Admin?
+      </p>
+      <div class="pg-modal-note" id="assignmentConfirmNote">
+        Selected PGs will be mapped to this CLF Admin’s CLF.
+      </div>
+    </div>
+
+    <div class="pg-modal-actions">
+      <button type="button" class="pg-modal-btn pg-modal-cancel" id="assignmentCancelBtn">
+        Cancel
+      </button>
+      <button type="button" class="pg-modal-btn pg-modal-confirm" id="assignmentConfirmBtn">
+        Yes, Save Assignment
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="pg-modal-backdrop" id="assignmentConflictModal" aria-hidden="true">
+  <div class="pg-modal" role="dialog" aria-modal="true" aria-labelledby="assignmentConflictTitle">
+    <div class="pg-modal-head">
+      <div class="pg-modal-dot" style="background:rgba(200,67,67,.10); color:var(--pg-danger);">!</div>
+      <h5 class="pg-modal-title" id="assignmentConflictTitle">
+        Strict Warning: PG Already Mapped
+      </h5>
+    </div>
+
+    <div class="pg-modal-body">
+      <p id="assignmentConflictMessage">
+        The selected PG is already mapped to another CLF. Continuing will transfer the PG to the currently selected CLF Admin.
+      </p>
+
+      <div class="pg-conflict-list" id="assignmentConflictList"></div>
+
+      <div class="pg-confirm-check">
+        <input type="checkbox" id="assignmentConflictAccept">
+        <label for="assignmentConflictAccept">
+          Yes, I accept the changes to be made and understand that the selected PG mapping will be transferred.
+        </label>
+      </div>
+    </div>
+
+    <div class="pg-modal-actions">
+      <button type="button" class="pg-modal-btn pg-modal-cancel" id="assignmentConflictCancelBtn">
+        Cancel
+      </button>
+      <button type="button" class="pg-modal-btn pg-modal-confirm" id="assignmentConflictSaveBtn" disabled>
+        Save
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
   (function () {
     const searchInput = document.getElementById("pgSearch");
@@ -1329,10 +1829,104 @@
     const assignedCount = document.getElementById("assignedCount");
     const selectAllBtn = document.getElementById("selectAllBtn");
     const clearVisibleBtn = document.getElementById("clearVisibleBtn");
+    const assignmentForm = document.getElementById("assignmentForm");
+   const assignmentAction = document.getElementById("assignmentAction");
+const transferConfirmed = document.getElementById("transferConfirmed");
 
-    function updateCount() {
-      if (!assignedCount) return;
+const confirmModal = document.getElementById("assignmentConfirmModal");
+const cancelBtn = document.getElementById("assignmentCancelBtn");
+const confirmBtn = document.getElementById("assignmentConfirmBtn");
+const confirmText = document.getElementById("assignmentConfirmText");
+const confirmNote = document.getElementById("assignmentConfirmNote");
 
+const conflictModal = document.getElementById("assignmentConflictModal");
+const conflictMessage = document.getElementById("assignmentConflictMessage");
+const conflictList = document.getElementById("assignmentConflictList");
+const conflictAccept = document.getElementById("assignmentConflictAccept");
+const conflictCancelBtn = document.getElementById("assignmentConflictCancelBtn");
+const conflictSaveBtn = document.getElementById("assignmentConflictSaveBtn");
+
+    let allowSubmit = false;
+    let pendingAction = "";
+    let pendingActionTitle = "";
+
+    function selectedConflictRows() {
+  const seen = new Set();
+  const conflicts = [];
+
+  checkboxes.forEach(function(box){
+    if (!box.checked) return;
+    if (box.getAttribute("data-conflict") !== "1") return;
+
+    const pgId = box.value || "";
+    if (seen.has(pgId)) return;
+
+    seen.add(pgId);
+
+    conflicts.push({
+      pgName: box.getAttribute("data-pg-name") || "Selected PG",
+      clfName: box.getAttribute("data-clf-name") || "another CLF"
+    });
+  });
+
+  return conflicts;
+}
+
+function openConflictModal(conflicts) {
+  if (!conflictModal) return;
+
+  const count = conflicts.length || 0;
+  const pgWord = count === 1 ? "PG is" : "PGs are";
+
+  if (conflictMessage) {
+    conflictMessage.textContent =
+      count + " selected " + pgWord +
+      " already mapped to another CLF. Continuing will transfer the selected PG mapping to the currently selected CLF Admin.";
+  }
+
+  if (conflictList) {
+    conflictList.innerHTML = conflicts.map(function(item){
+      return (
+        '<div class="pg-conflict-item">' +
+          '<strong>PG: ' + escapeHtml(item.pgName) + '</strong>' +
+          '<span>Currently mapped to CLF: ' + escapeHtml(item.clfName) + '</span>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
+  if (conflictAccept) {
+    conflictAccept.checked = false;
+  }
+
+  if (conflictSaveBtn) {
+    conflictSaveBtn.disabled = true;
+    conflictSaveBtn.textContent = "Save";
+  }
+
+  conflictModal.classList.add("show");
+  conflictModal.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+}
+
+function closeConflictModal() {
+  if (!conflictModal) return;
+
+  conflictModal.classList.remove("show");
+  conflictModal.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+    function checkedCount() {
       const uniqueChecked = new Set();
 
       checkboxes.forEach((box) => {
@@ -1341,7 +1935,12 @@
         }
       });
 
-      assignedCount.textContent = uniqueChecked.size;
+      return uniqueChecked.size;
+    }
+
+    function updateCount() {
+      if (!assignedCount) return;
+      assignedCount.textContent = checkedCount();
     }
 
     function syncDuplicateCheckboxes(source) {
@@ -1378,6 +1977,80 @@
         const visible = !term || haystack.includes(term);
         row.style.display = visible ? "" : "none";
       });
+    }
+
+    function setModalContent(action) {
+      const count = checkedCount();
+
+      if (action === "add") {
+        if (confirmText) {
+          confirmText.textContent = "Add " + count + " selected PG(s) to this CLF Admin?";
+        }
+        if (confirmNote) {
+          confirmNote.textContent = "Existing mapped PGs will remain unchanged. Selected PGs will be added to this CLF Admin’s CLF.";
+        }
+        if (confirmBtn) {
+          confirmBtn.textContent = "Yes, Add PGs";
+        }
+        return;
+      }
+
+      if (action === "replace") {
+        if (confirmText) {
+          confirmText.textContent = "Replace current mapped PGs with " + count + " selected PG(s)?";
+        }
+        if (confirmNote) {
+          confirmNote.textContent = "Current mapped PG list will be overwritten with the selected PGs.";
+        }
+        if (confirmBtn) {
+          confirmBtn.textContent = "Yes, Replace";
+        }
+        return;
+      }
+
+      if (action === "delete") {
+        if (confirmText) {
+          confirmText.textContent = "Delete " + count + " selected PG(s) from this CLF Admin?";
+        }
+        if (confirmNote) {
+          confirmNote.textContent = "Selected PGs will be removed from this CLF Admin’s mapped list. Other PGs will remain unchanged.";
+        }
+        if (confirmBtn) {
+          confirmBtn.textContent = "Yes, Delete";
+        }
+        return;
+      }
+
+      if (confirmText) {
+        confirmText.textContent = "Save this PG assignment for the selected CLF Admin?";
+      }
+      if (confirmNote) {
+        confirmNote.textContent = "Selected PGs will be mapped to this CLF Admin’s CLF.";
+      }
+      if (confirmBtn) {
+        confirmBtn.textContent = "Yes, Save Assignment";
+      }
+    }
+
+    function openAssignmentModal(action, title) {
+      if (!confirmModal) return;
+
+      pendingAction = action || "add";
+      pendingActionTitle = title || "Save Assignment";
+
+      setModalContent(pendingAction);
+
+      confirmModal.classList.add("show");
+      confirmModal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeAssignmentModal() {
+      if (!confirmModal) return;
+
+      confirmModal.classList.remove("show");
+      confirmModal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
     }
 
     checkboxes.forEach((box) => {
@@ -1426,7 +2099,132 @@
       });
     }
 
+   if (assignmentForm) {
+  assignmentForm.addEventListener("submit", function (event) {
+    if (allowSubmit) return;
+
+    event.preventDefault();
+
+    const submitter = event.submitter;
+    const action = submitter ? submitter.getAttribute("data-assignment-action") : "add";
+    const title = submitter ? submitter.getAttribute("data-action-title") : "Save Assignment";
+
+    if (!checkedCount()) {
+      alert("Please select at least one PG.");
+      return;
+    }
+
+    pendingAction = action || "add";
+    pendingActionTitle = title || "Save Assignment";
+
+    if (transferConfirmed) {
+      transferConfirmed.value = "0";
+    }
+
+    if (action === "add" || action === "replace") {
+      const conflicts = selectedConflictRows();
+
+      if (conflicts.length > 0) {
+        openConflictModal(conflicts);
+        return;
+      }
+    }
+
+    openAssignmentModal(action, title);
+  });
+}
+
+if (conflictAccept && conflictSaveBtn) {
+  conflictAccept.addEventListener("change", function(){
+    conflictSaveBtn.disabled = !this.checked;
+  });
+}
+
+if (conflictCancelBtn) {
+  conflictCancelBtn.addEventListener("click", closeConflictModal);
+}
+
+if (conflictSaveBtn && assignmentForm) {
+  conflictSaveBtn.addEventListener("click", function(){
+    if (!conflictAccept || !conflictAccept.checked) return;
+
+    allowSubmit = true;
+
+    if (assignmentAction) {
+      assignmentAction.value = pendingAction || "add";
+    }
+
+    if (transferConfirmed) {
+      transferConfirmed.value = "1";
+    }
+
+    closeConflictModal();
+    assignmentForm.submit();
+  });
+}
+
+if (conflictModal) {
+  conflictModal.addEventListener("click", function(event){
+    if (event.target === conflictModal) {
+      closeConflictModal();
+    }
+  });
+}
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", closeAssignmentModal);
+    }
+
+   if (confirmBtn && assignmentForm) {
+  confirmBtn.addEventListener("click", function () {
+    allowSubmit = true;
+
+    if (assignmentAction) {
+      assignmentAction.value = pendingAction || "add";
+    }
+
+    if (transferConfirmed) {
+      transferConfirmed.value = "0";
+    }
+
+    closeAssignmentModal();
+    assignmentForm.submit();
+  });
+}
+
+    if (confirmModal) {
+      confirmModal.addEventListener("click", function (event) {
+        if (event.target === confirmModal) {
+          closeAssignmentModal();
+        }
+      });
+    }
+
+   document.addEventListener("keydown", function (event) {
+  if (event.key === "Escape") {
+    closeAssignmentModal();
+    closeConflictModal();
+  }
+});
+
+       function scrollToManageSectionIfNeeded(){
+      const isManageMode = "{{ assignment_mode or 'overview' }}" === "manage";
+      const target = document.getElementById("managePgAssignmentSection");
+
+      if (!isManageMode || !target) return;
+
+      setTimeout(function(){
+        target.scrollIntoView({
+          behavior: "auto",
+          block: "start"
+        });
+
+        window.scrollBy(0, -90);
+      }, 80);
+    }
+
     updateCount();
+    scrollToManageSectionIfNeeded();
   })();
 </script>
 {% endblock %}
