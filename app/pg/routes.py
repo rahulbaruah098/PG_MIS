@@ -1644,10 +1644,28 @@ def pg_home():
         metrics = _pg_metrics(db, pg_id)
         display_name = _get_display_name()
 
+        reg_validation = _validation_doc(pg_doc or {}, "pg_registration")
+        member_validation = _validation_doc(pg_doc or {}, "member_registration")
+
+        def _safe_validation(v):
+            return {
+                "status": str(v.get("status") or "draft").lower(),
+                "remarks": v.get("remarks") or "",
+                "submitted_at": v.get("submitted_at").isoformat() if isinstance(v.get("submitted_at"), datetime) else v.get("submitted_at"),
+                "reviewed_at": v.get("reviewed_at").isoformat() if isinstance(v.get("reviewed_at"), datetime) else v.get("reviewed_at"),
+            }
+
+        metrics["pg_registration_validation"] = _safe_validation(reg_validation)
+        metrics["member_registration_validation"] = _safe_validation(member_validation)
+
         if _wants_json():
             return jsonify({
                 "ok": True,
-                "pg": _serialize_pg(pg_doc),
+                "pg": {
+                    **(_serialize_pg(pg_doc) or {}),
+                    "registration_validation": metrics["pg_registration_validation"],
+                    "member_registration_validation": metrics["member_registration_validation"],
+                },
                 "metrics": metrics,
                 "user_name": display_name
             }), 200
@@ -1719,14 +1737,30 @@ def pg_dashboard_live_data():
 
     metrics = _pg_metrics(db, str(requested_pg_id))
 
+    reg_validation = _validation_doc(pg_doc or {}, "pg_registration")
+    member_validation = _validation_doc(pg_doc or {}, "member_registration")
+
+    def _safe_validation(v):
+        return {
+            "status": str(v.get("status") or "draft").lower(),
+            "remarks": v.get("remarks") or "",
+            "submitted_at": v.get("submitted_at").isoformat() if isinstance(v.get("submitted_at"), datetime) else v.get("submitted_at"),
+            "reviewed_at": v.get("reviewed_at").isoformat() if isinstance(v.get("reviewed_at"), datetime) else v.get("reviewed_at"),
+        }
+
+    metrics["pg_registration_validation"] = _safe_validation(reg_validation)
+    metrics["member_registration_validation"] = _safe_validation(member_validation)
+
     return jsonify({
         "ok": True,
         "pg": {
-            "_id": str(pg_doc.get("_id")),
-            "name": pg_doc.get("name") or pg_doc.get("pg_name") or "",
-        },
-        "metrics": metrics,
-        "updated_at": datetime.utcnow().isoformat(),
+                "_id": str(pg_doc.get("_id")),
+                "name": pg_doc.get("name") or pg_doc.get("pg_name") or "",
+                "registration_validation": metrics["pg_registration_validation"],
+                "member_registration_validation": metrics["member_registration_validation"],
+            },
+            "metrics": metrics,
+            "updated_at": datetime.utcnow().isoformat(),
     }), 200
 
 @pg_bp.route("/dashboard/all-transactions/<pg_id>", methods=["GET"])
@@ -2160,11 +2194,11 @@ def pg_registration(pg_id):
                 return jsonify({
                     "ok": True,
                     "pg": _serialize_pg_for_json(pg),
-                    "shg_options": shg_options,
-                    "selected_shg_keys": selected_shg_keys,
-                    "shg_members": sm,
-                    "safe_members": safe_members,
-                    "validation": registration_validation,
+                    "shg_options": _serialize_pg_for_json(shg_options),
+                    "selected_shg_keys": _serialize_pg_for_json(selected_shg_keys),
+                    "shg_members": _serialize_pg_for_json(sm),
+                    "safe_members": _serialize_pg_for_json(safe_members),
+                    "validation": _serialize_pg_for_json(registration_validation),
                     "validation_status": registration_status,
                     "validation_can_edit": registration_status not in REGISTRATION_TEMP_LOCK_STATUSES,
                 }), 200
@@ -3134,7 +3168,12 @@ def pg_members(pg_id):
                 "fishery_activities": FISHERY_ACTIVITY_OPTIONS,
             },
             "rows": rows,
-            "validation": member_validation,
+            "validation": {
+                "status": str(member_validation.get("status") or "draft").lower(),
+                "remarks": member_validation.get("remarks") or "",
+                "submitted_at": member_validation.get("submitted_at").isoformat() if isinstance(member_validation.get("submitted_at"), datetime) else member_validation.get("submitted_at"),
+                "reviewed_at": member_validation.get("reviewed_at").isoformat() if isinstance(member_validation.get("reviewed_at"), datetime) else member_validation.get("reviewed_at"),
+            },
             "validation_status": member_validation_status,
             "validation_can_edit": member_validation_status not in ("submitted", "resubmitted"),
         }), 200

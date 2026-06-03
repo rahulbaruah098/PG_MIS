@@ -1,9 +1,10 @@
 from services.audit_engine import AuditLogger
 import os
-from flask import render_template,send_from_directory, request, redirect, url_for, flash, current_app, session, jsonify
+from flask import render_template, send_from_directory, request, redirect, url_for, flash, current_app, session, jsonify, g
 from app.services.guards import require_unlocked_period
 from bson import ObjectId
 from datetime import datetime
+import jwt
 
 from . import finance_bp
 from ..rbac import login_required, roles_required
@@ -12,8 +13,152 @@ from ..rbac import login_required, roles_required
 # CLF / Block / PG finance scope helpers
 # ============================================================
 
+def _auth_context_dicts():
+    """
+    Collect authenticated user context from:
+    - Flask session/web
+    - flask.g if rbac.py stores user there
+    - Authorization Bearer JWT from mobile app
+    """
+    contexts = []
+
+    jwt_payload = _jwt_payload_from_authorization_header()
+    if isinstance(jwt_payload, dict) and jwt_payload:
+        contexts.append(jwt_payload)
+
+    for obj_name in (
+        "current_user",
+        "user",
+        "auth_user",
+        "jwt_user",
+        "token_user",
+        "decoded_token",
+        "jwt_payload",
+    ):
+        value = getattr(g, obj_name, None)
+        if isinstance(value, dict):
+            contexts.append(value)
+
+    for obj_name in (
+        "current_user",
+        "user",
+        "auth_user",
+        "jwt_user",
+        "token_user",
+        "decoded_token",
+        "jwt_payload",
+    ):
+        value = getattr(request, obj_name, None)
+        if isinstance(value, dict):
+            contexts.append(value)
+
+    return contexts
+
+def _current_user_doc():
+    """
+    Resolve authenticated user for both:
+    - web session
+    - mobile JWT/Bearer token
+    """
+    try:
+        db = current_app.mongo_db
+    except Exception:
+        return None
+
+    contexts = _auth_context_dicts()
+
+    possible_ids = [
+        session.get("user_id"),
+        session.get("_id"),
+        session.get("id"),
+    ]
+
+    for ctx in contexts:
+        possible_ids.extend([
+            ctx.get("user_id"),
+            ctx.get("_id"),
+            ctx.get("id"),
+            ctx.get("sub"),
+            ctx.get("uid"),
+        ])
+
+    for raw_id in possible_ids:
+        oid = _to_object_id(raw_id)
+        if oid:
+            user = db.users.find_one({"_id": oid})
+            if user:
+                return user
+
+    possible_usernames = [session.get("username")]
+    possible_emails = [session.get("email")]
+
+    for ctx in contexts:
+        possible_usernames.extend([
+            ctx.get("username"),
+            ctx.get("user_name"),
+            ctx.get("name"),
+        ])
+        possible_emails.extend([
+            ctx.get("email"),
+            ctx.get("mail"),
+        ])
+
+    for username in possible_usernames:
+        if username:
+            user = db.users.find_one({"username": username})
+            if user:
+                return user
+
+    for email in possible_emails:
+        if email:
+            user = db.users.find_one({"email": email})
+            if user:
+                return user
+
+    for ctx in contexts:
+        if ctx:
+            return ctx
+
+    return None
+
+def _session_or_user_value(key, user=None):
+    """
+    Prefer Flask session.
+    Then check mobile/JWT context.
+    Then check loaded user document.
+    """
+    value = session.get(key)
+    if value not in (None, "", []):
+        return value
+
+    for ctx in _auth_context_dicts():
+        value = ctx.get(key)
+        if value not in (None, "", []):
+            return value
+
+    if user is None:
+        user = _current_user_doc()
+
+    if isinstance(user, dict):
+        value = user.get(key)
+        if value not in (None, "", []):
+            return value
+
+    return None
+
 def _role():
-    return (session.get("role") or "").strip().upper()
+    user = _current_user_doc()
+
+    for value in (
+        session.get("role"),
+        session.get("user_role"),
+        _session_or_user_value("role", user),
+        _session_or_user_value("user_role", user),
+    ):
+        if value:
+            return str(value).strip().upper()
+
+    return ""
 
 
 def _is_json_request():
@@ -33,63 +178,195 @@ def _to_object_id(value):
         pass
     return None
 
+def _jwt_payload_from_authorization_header():
+    """
+    Mobile app sends Authorization: Bearer <token>.
+    Finance routes must decode it because Flask session is empty for app calls.
+    """
+    auth_header = request.headers.get("Authorization") or ""
+    if not auth_header.lower().startswith("bearer "):
+        return {}
 
-def _assigned_pg_oid_set():
+    token = auth_header.split(" ", 1)[1].strip()
+    if not token:
+        return {}
+
+    secret_candidates = [
+        current_app.config.get("JWT_SECRET_KEY"),
+        current_app.config.get("JWT_SECRET"),
+        current_app.config.get("SECRET_KEY"),
+        os.getenv("JWT_SECRET_KEY"),
+        os.getenv("JWT_SECRET"),
+        os.getenv("SECRET_KEY"),
+    ]
+
+    for secret in secret_candidates:
+        if not secret:
+            continue
+
+        try:
+            payload = jwt.decode(token, secret, algorithms=["HS256"])
+            return payload if isinstance(payload, dict) else {}
+        except jwt.ExpiredSignatureError:
+            return {}
+        except Exception:
+            pass
+
+    # Fallback:
+    # login_required/roles_required already allowed this request to reach here,
+    # so use unverified payload only to recover user_id/role/pg scope.
+    try:
+        payload = jwt.decode(token, options={"verify_signature": False})
+        return payload if isinstance(payload, dict) else {}
+    except Exception:
+        return {}
+
+def _assigned_pg_identifier_set():
+    """
+    Returns all assigned PG identifiers as strings.
+
+    Important:
+    Mobile/user records may store assigned PG as Mongo ObjectId OR as PG code
+    like PG001. So do not drop non-ObjectId values.
+    """
+    user = _current_user_doc()
+
+    raw_values = []
+
+    for key in ("assigned_pg_ids", "assigned_pgs", "pg_ids"):
+        value = session.get(key)
+        if isinstance(value, list):
+            raw_values.extend(value)
+        elif value not in (None, ""):
+            raw_values.append(value)
+
+    if user:
+        for key in ("assigned_pg_ids", "assigned_pgs", "pg_ids"):
+            value = user.get(key)
+            if isinstance(value, list):
+                raw_values.extend(value)
+            elif value not in (None, ""):
+                raw_values.append(value)
+
     out = set()
-    for raw in session.get("assigned_pg_ids") or []:
-        oid = _to_object_id(raw)
+
+    for raw in raw_values:
+        if raw in (None, ""):
+            continue
+
+        raw_str = str(raw).strip()
+        if not raw_str:
+            continue
+
+        out.add(raw_str)
+
+        oid = _to_object_id(raw_str)
         if oid:
             out.add(str(oid))
-    return out
 
+    return out
 
 def _pg_allowed_for_current_user(pg):
     """
     Finance jurisdiction guard.
 
-    New workflow:
-    - CLF_ADMIN/CLF_MANAGER can access only PGs mapped to their clf_id or explicitly assigned.
-    - BLOCK_ADMIN can access only PGs under own block, but write access is separately restricted.
-    - DISTRICT_ADMIN / ADMIN / SUPER_ADMIN keep jurisdiction-level read access.
-    - PG_DATA_ENTRY can access only own PG.
-    - CADRE_CC can access assigned PGs only if any finance links are reused from mobile/web.
+    Supports:
+    - Web Flask session
+    - Mobile JWT/Bearer auth context
+    - PG id stored as ObjectId
+    - PG code/name stored as PG001
     """
     if not pg:
         return False
 
+    user = _current_user_doc()
     role = _role()
-    pg_id = str(pg.get("_id") or "")
+
+    pg_identifiers = {
+        str(pg.get("_id") or "").strip(),
+        str(pg.get("pg_id") or "").strip(),
+        str(pg.get("pgId") or "").strip(),
+        str(pg.get("active_pg_id") or "").strip(),
+        str(pg.get("pg_code") or "").strip(),
+        str(pg.get("code") or "").strip(),
+        str(pg.get("producer_group_code") or "").strip(),
+        str(pg.get("pg_name") or "").strip(),
+        str(pg.get("name") or "").strip(),
+    }
+    pg_identifiers = {x for x in pg_identifiers if x}
+
+    def same_id(a, b):
+        if a in (None, "") or b in (None, ""):
+            return False
+
+        a = str(a).strip()
+        b = str(b).strip()
+
+        if not a or not b:
+            return False
+
+        if a == b:
+            return True
+
+        a_oid = _to_object_id(a)
+        b_oid = _to_object_id(b)
+
+        return bool(a_oid and b_oid and str(a_oid) == str(b_oid))
+
+    def matches_pg(value):
+        if value in (None, ""):
+            return False
+
+        value_str = str(value).strip()
+        if not value_str:
+            return False
+
+        if value_str in pg_identifiers:
+            return True
+
+        return any(same_id(value_str, pg_value) for pg_value in pg_identifiers)
 
     if role == "SUPER_ADMIN":
         return True
 
     if role in {"ADMIN", "STATE_ADMIN"}:
-        state_id = session.get("state_id")
-        return bool(state_id and str(pg.get("state_id")) == str(state_id))
+        state_id = _session_or_user_value("state_id", user)
+        return bool(state_id and same_id(pg.get("state_id"), state_id))
 
     if role == "DISTRICT_ADMIN":
-        district_id = session.get("district_id")
-        return bool(district_id and str(pg.get("district_id")) == str(district_id))
+        district_id = _session_or_user_value("district_id", user)
+        return bool(district_id and same_id(pg.get("district_id"), district_id))
 
     if role == "BLOCK_ADMIN":
-        block_id = session.get("block_id")
-        return bool(block_id and str(pg.get("block_id")) == str(block_id))
+        block_id = _session_or_user_value("block_id", user)
+        return bool(block_id and same_id(pg.get("block_id"), block_id))
 
     if role in {"CLF_ADMIN", "CLF_MANAGER"}:
-        clf_id = session.get("clf_id")
-        if clf_id and str(pg.get("clf_id")) == str(clf_id):
+        clf_id = _session_or_user_value("clf_id", user)
+
+        if clf_id and same_id(pg.get("clf_id"), clf_id):
             return True
-        return pg_id in _assigned_pg_oid_set()
+
+        assigned_pg_ids = _assigned_pg_identifier_set()
+        return bool(pg_identifiers.intersection(assigned_pg_ids))
 
     if role == "PG_DATA_ENTRY":
-        active_pg_id = session.get("active_pg_id") or session.get("pg_id")
-        return bool(active_pg_id and str(active_pg_id) == pg_id)
+        possible_pg_values = [
+            _session_or_user_value("active_pg_id", user),
+            _session_or_user_value("pg_id", user),
+            _session_or_user_value("pgId", user),
+            _session_or_user_value("pg_code", user),
+            _session_or_user_value("active_pg_code", user),
+            _session_or_user_value("producer_group_code", user),
+        ]
+
+        return any(matches_pg(v) for v in possible_pg_values)
 
     if role == "CADRE_CC":
-        return pg_id in _assigned_pg_oid_set()
+        assigned_pg_ids = _assigned_pg_identifier_set()
+        return bool(pg_identifiers.intersection(assigned_pg_ids))
 
     return False
-
 
 def _deny(message, is_json=None, status_code=403, redirect_endpoint="pg.pg_home"):
     if is_json is None:
@@ -101,12 +378,10 @@ def _deny(message, is_json=None, status_code=403, redirect_endpoint="pg.pg_home"
     flash(message, "danger" if status_code == 403 else "warning")
     return redirect(url_for(redirect_endpoint))
 
-
 def _require_pg_access(pg, is_json=None):
     if not _pg_allowed_for_current_user(pg):
         return _deny("This PG is outside your finance scope.", is_json=is_json, status_code=403)
     return None
-
 
 def _can_write_finance():
     """
@@ -754,6 +1029,26 @@ def member_loan_accounts(pg_id):
         return redirect(url_for("pg.pg_home"))
 
     access_response = _require_pg_access(pg, is_json=_is_json_request())
+    debug_user = _current_user_doc()
+
+    print("MEMBER_LOAN_SCOPE_DEBUG =>", {
+        "authorization_present": bool(request.headers.get("Authorization")),
+        "jwt_payload": _jwt_payload_from_authorization_header(),
+        "requested_pg_id": str(pg_id),
+        "role": _role(),
+        "session_keys": list(session.keys()),
+        "session_pg_id": session.get("pg_id"),
+        "session_active_pg_id": session.get("active_pg_id"),
+        "user_found": bool(debug_user),
+        "user_id": str(debug_user.get("_id")) if isinstance(debug_user, dict) and debug_user.get("_id") else None,
+        "user_role": debug_user.get("role") if isinstance(debug_user, dict) else None,
+        "user_pg_id": debug_user.get("pg_id") if isinstance(debug_user, dict) else None,
+        "user_active_pg_id": debug_user.get("active_pg_id") if isinstance(debug_user, dict) else None,
+        "pg_doc_id": str(pg.get("_id")),
+        "pg_doc_name": pg.get("pg_name") or pg.get("name"),
+        "allowed": _pg_allowed_for_current_user(pg),
+    })
+    
     if access_response:
         return access_response
 
