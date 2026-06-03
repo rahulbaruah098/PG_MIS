@@ -2804,4 +2804,75 @@ function pmdLockRowAfterSave(row){
 })();
 </script>
 
+
+<script>
+  (function () {
+    const form = document.getElementById("pmdSubmitValidationForm");
+    const modal = document.getElementById("pmdValidationSubmitModal");
+    const cancelBtn = document.getElementById("pmdValidationSubmitCancel");
+    const confirmBtn = document.getElementById("pmdValidationSubmitConfirm");
+
+    if (!form) return;
+
+    let allowSubmit = false;
+
+    function openSubmitModal() {
+      if (!modal) {
+        allowSubmit = true;
+        form.submit();
+        return;
+      }
+
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeSubmitModal() {
+      if (!modal) return;
+
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    form.addEventListener("submit", function (event) {
+      if (allowSubmit) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      openSubmitModal();
+    });
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", function () {
+        closeSubmitModal();
+      });
+    }
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener("click", function () {
+        allowSubmit = true;
+        closeSubmitModal();
+        form.submit();
+      });
+    }
+
+    if (modal) {
+      modal.addEventListener("click", function (event) {
+        if (event.target === modal) {
+          closeSubmitModal();
+        }
+      });
+    }
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        closeSubmitModal();
+      }
+    });
+  })();
+</script>
+
 {% endblock %}

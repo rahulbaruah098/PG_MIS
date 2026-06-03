@@ -914,7 +914,16 @@ def _block_admin_can_validate_pg(pg):
         return False
 
     block_id = getattr(g, "block_id", None) or session.get("block_id")
-    return bool(block_id and str(pg.get("block_id")) == str(block_id))
+    if not block_id:
+        return False
+
+    pg_block_values = [
+        pg.get("block_id"),
+        pg.get("Block_id"),
+        pg.get("blockId"),
+    ]
+
+    return any(str(v) == str(block_id) for v in pg_block_values if v)
 
 
 def _make_validation_history_entry(action, status, remarks=""):
@@ -943,13 +952,13 @@ def _submit_validation(db, pg, form_type):
     current_doc = _validation_doc(pg, form_type)
     current_status = str(current_doc.get("status") or "draft").lower()
 
-    if current_status == "approved":
+    if current_status == "approved" and form_type != "member_registration":
         return False, f"{_validation_label(form_type)} is already approved.", 409
 
     if current_status in VALIDATION_PENDING_STATUSES:
         return False, f"{_validation_label(form_type)} is already submitted for Block validation.", 409
 
-    new_status = "resubmitted" if current_status == "rejected" else "submitted"
+    new_status = "resubmitted" if current_status in ("rejected", "approved") else "submitted"
     now = _validation_now()
 
     history = list(current_doc.get("history") or [])
@@ -9177,97 +9186,53 @@ def submit_member_registration_validation(pg_id):
         )
 
     pg_obj_id = pg["_id"]
+
+    # ----------------------------------------------------------
+    # IMPORTANT:
+    # Do not block validation submit using member_id matching here.
+    # This route's job is to submit the Membership Registration
+    # validation status to Block Admin.
+    #
+    # Earlier issue happened because this route tried to match:
+    # pg.members.member_id -> pg_members.member_id
+    # and returned before _submit_validation().
+    # ----------------------------------------------------------
+
     selected_members = pg.get("members") or []
 
-    selected_member_ids = []
-    for m in selected_members:
-        mid = m.get("member_id")
-        if not mid:
-            continue
-        try:
-            selected_member_ids.append(ObjectId(mid) if not isinstance(mid, ObjectId) else mid)
-        except Exception:
-            pass
+    if not selected_members:
+        saved_member_count = db.pg_members.count_documents({
+            "$or": [
+                {"pg_id": pg_obj_id},
+                {"pg_id": str(pg_obj_id)},
+            ],
+            "$or": [
+                {"is_active": True},
+                {"is_active": {"$exists": False}},
+            ]
+        })
 
-    if not selected_member_ids:
-        return _validation_json_or_redirect(
-            False,
-            "No PG members found. Please complete PG Registration member selection first.",
-            status=400,
-            redirect_to=url_for("pg.pg_members", pg_id=str(pg_obj_id)),
-            category="danger"
-        )
-
-    current_sector = _normalize_pg_sector(pg.get("sector"))
-
-    def _is_blank(v):
-        return v in (None, "", [])
-
-    member_docs = list(db.pg_members.find({
-        "pg_id": pg_obj_id,
-        "member_id": {"$in": selected_member_ids},
-        "$or": [
-            {"is_active": True},
-            {"is_active": {"$exists": False}}
-        ]
-    }))
-
-    docs_by_member = {
-        str(d.get("member_id")): d
-        for d in member_docs
-    }
-
-    missing_rows = []
-
-    for index, mid in enumerate(selected_member_ids, start=1):
-        doc = docs_by_member.get(str(mid))
-
-        if not doc:
-            missing_rows.append(f"Row {index}: details not saved")
-            continue
-
-        required_common = {
-            "contact": "Contact",
-            "bank_name": "Bank",
-            "branch": "Branch",
-            "account_number": "Account",
-            "membership_fee_paid": "Membership Fee",
-        }
-
-        for key, label in required_common.items():
-            if _is_blank(doc.get(key)):
-                missing_rows.append(f"Row {index}: {label} missing")
-
-        if current_sector == "Agri":
-            if _is_blank(doc.get("agri_crop")):
-                missing_rows.append(f"Row {index}: Crop missing")
-            if _is_blank(doc.get("agri_ffs_module")):
-                missing_rows.append(f"Row {index}: FFS Module missing")
-
-        elif current_sector == "ARDD":
-            if _is_blank(doc.get("ardd_activity")):
-                missing_rows.append(f"Row {index}: ARDD activity missing")
-            if _is_blank(doc.get("ardd_unit")):
-                missing_rows.append(f"Row {index}: ARDD unit missing")
-
-        elif current_sector == "Fishery":
-            if _is_blank(doc.get("fishery_activity")):
-                missing_rows.append(f"Row {index}: Fishery activity missing")
-
-    if missing_rows:
-        preview = "; ".join(missing_rows[:8])
-        if len(missing_rows) > 8:
-            preview += f"; and {len(missing_rows) - 8} more issue(s)"
-
-        return _validation_json_or_redirect(
-            False,
-            "Please save all required member-wise details before submitting. " + preview,
-            status=400,
-            redirect_to=url_for("pg.pg_members", pg_id=str(pg_obj_id)),
-            category="danger"
-        )
+        if saved_member_count <= 0:
+            return _validation_json_or_redirect(
+                False,
+                "No PG members found. Please complete PG Registration member selection first.",
+                status=400,
+                redirect_to=url_for("pg.pg_members", pg_id=str(pg_obj_id)),
+                category="danger"
+            )
 
     ok, message, status = _submit_validation(db, pg, "member_registration")
+
+    print("MEMBER VALIDATION SUBMIT RESULT:", {
+        "ok": ok,
+        "message": message,
+        "status": status,
+        "pg_id": str(pg["_id"]),
+        "validation_status_after_submit": _validation_status(
+            db.pgs.find_one({"_id": pg["_id"]}) or pg,
+            "member_registration"
+        ),
+    })
 
     return _validation_json_or_redirect(
         ok,
@@ -9278,7 +9243,7 @@ def submit_member_registration_validation(pg_id):
             "pg_id": str(pg["_id"]),
             "form_type": "member_registration",
             "validation_status": _validation_status(
-                current_app.mongo_db.pgs.find_one({"_id": pg["_id"]}) or pg,
+                db.pgs.find_one({"_id": pg["_id"]}) or pg,
                 "member_registration"
             ),
         },
@@ -9306,13 +9271,36 @@ def validation_queue():
 
     block_oid = ObjectId(str(block_id))
 
+    block_doc = db.blocks.find_one({"_id": block_oid}, {"name": 1}) or {}
+    block_name = block_doc.get("name") or ""
+
+    block_scope_or = [
+        {"block_id": block_oid},
+        {"block_id": str(block_oid)},
+    ]
+
+    if block_name:
+        block_scope_or.extend([
+            {"Block": block_name},
+            {"block": block_name},
+            {"block_name": block_name},
+        ])
+
     query = {
-        "block_id": block_oid,
-        "$or": [
-            {"registration_validation.status": {"$in": list(VALIDATION_PENDING_STATUSES)}},
-            {"member_registration_validation.status": {"$in": list(VALIDATION_PENDING_STATUSES)}},
+        "$and": [
+            {
+                "$or": block_scope_or
+            },
+            {
+                "$or": [
+                    {"registration_validation.status": {"$in": list(VALIDATION_PENDING_STATUSES)}},
+                    {"member_registration_validation.status": {"$in": list(VALIDATION_PENDING_STATUSES)}},
+                ]
+            }
         ]
     }
+        
+    
 
     pgs = list(db.pgs.find(query).sort([
         ("registration_validation.submitted_at", -1),
