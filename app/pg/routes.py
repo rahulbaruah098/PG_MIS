@@ -1,4 +1,6 @@
-﻿from services.audit_engine import AuditLogger
+﻿import re
+
+from services.audit_engine import AuditLogger
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
 from app.services.guards import require_unlocked_period
 from flask import render_template, request, redirect, url_for, flash, current_app, session,jsonify, abort,g
@@ -3732,6 +3734,23 @@ def meeting_minute_book():
     if request.headers.get("Authorization") or request.is_json:
         return jsonify({"ok": True, "pg_id": str(pg_id or ""), "register": "meeting-minutes"})
     return render_template('meeting_minute_book.html', pg_id=pg_id)
+
+
+
+@pg_bp.route('/registers/meeting-minutes/history')
+@login_required
+@roles_required('PG_DATA_ENTRY','CADRE_CC','CLF_MANAGER','CLF_ADMIN','BLOCK_ADMIN','DISTRICT_ADMIN','ADMIN','SUPER_ADMIN')
+def meeting_minutes_history():
+    pg_id = getattr(g, "pg_id", None) or session.get('pg_id') or session.get('active_pg_id')
+
+    if request.headers.get("Authorization") or request.is_json:
+        return jsonify({
+            "ok": True,
+            "pg_id": str(pg_id or ""),
+            "register": "meeting-minutes-history"
+        })
+
+    return render_template('meeting_minutes_history.html', pg_id=pg_id)
 
 
 @pg_bp.route('/registers/member-ledger')
@@ -8590,6 +8609,176 @@ def meeting_register(pg_id):
         ).sort([("name", 1)]).limit(500)
     )
 
+
+    # =========================================================
+    # GET JSON → LIST / LOAD SAVED MEETING MINUTES
+    # Used by Meeting Minutes Book frontend for dynamic multiple meetings.
+    # Normal browser page rendering remains unchanged.
+    # =========================================================
+    if request.method == "GET" and _wants_json():
+        def _json_safe(value):
+            if isinstance(value, ObjectId):
+                return str(value)
+            if isinstance(value, datetime):
+                return value.isoformat()
+            if isinstance(value, list):
+                return [_json_safe(v) for v in value]
+            if isinstance(value, dict):
+                return {k: _json_safe(v) for k, v in value.items()}
+            return value
+
+        def _date_pretty(date_text):
+            try:
+                return datetime.strptime(str(date_text), "%Y-%m-%d").strftime("%d %b %Y")
+            except Exception:
+                return str(date_text or "")
+
+        def _doc_meeting_date(doc):
+            if not isinstance(doc, dict):
+                return ""
+
+            if doc.get("meeting_date"):
+                return str(doc.get("meeting_date"))
+
+            data = doc.get("data") or {}
+            minutes = data.get("minutes") or {}
+
+            date_iso = minutes.get("dateISO")
+            if date_iso:
+                return str(date_iso)[:10]
+
+            date_pretty = minutes.get("datePretty")
+            if date_pretty:
+                try:
+                    return datetime.strptime(str(date_pretty), "%d %b %Y").strftime("%Y-%m-%d")
+                except Exception:
+                    return ""
+
+            return ""
+
+        def _serialize_meeting_doc(doc):
+            data = doc.get("data") or {}
+            minutes = data.get("minutes") or {}
+            members = data.get("members") or []
+
+            meeting_date_value = _doc_meeting_date(doc)
+
+            return {
+                "_id": str(doc.get("_id") or ""),
+                "pg_id": str(doc.get("pg_id") or ""),
+                "meeting_date": meeting_date_value,
+                "meeting_date_pretty": _date_pretty(meeting_date_value),
+                "meeting_type": doc.get("meeting_type") or "general",
+                "year": doc.get("year") or (int(meeting_date_value[:4]) if meeting_date_value else None),
+                "month": doc.get("month") or (int(meeting_date_value[5:7]) if meeting_date_value else None),
+                "agenda_count": len(minutes.get("agendaItems") or []),
+                "deliberation_count": len(minutes.get("deliberations") or []),
+                "decision_count": len(minutes.get("decisions") or []),
+                "members_count": len(members) if isinstance(members, list) else 0,
+                "data": _json_safe(data),
+                "meta": _json_safe(doc.get("meta") or {}),
+                "created_at": _json_safe(doc.get("created_at")),
+                "updated_at": _json_safe(doc.get("updated_at")),
+            }
+
+        pg_id_values = [
+    pg_obj_id,
+    str(pg_obj_id),
+]
+
+        pg_scope = {
+        "$or": [
+        {"pg_id": {"$in": pg_id_values}},
+        {"PG_ID": {"$in": pg_id_values}},
+        {"active_pg_id": {"$in": pg_id_values}},
+        {"producer_group_id": {"$in": pg_id_values}},
+    ]
+}
+
+        requested_date = (request.args.get("meeting_date") or request.args.get("date") or "").strip()
+
+        if requested_date:
+            requested_pretty = _date_pretty(requested_date)
+
+            doc = db.pg_meeting_minutes.find_one({
+    "$and": [
+        pg_scope,
+        {
+            "$or": [
+                {"meeting_date": requested_date},
+                {"date": requested_date},
+                {"entry_date": requested_date},
+                {"meta.meetingDate": requested_date},
+                {"data.meta.meetingDate": requested_date},
+                {"data.minutes.dateISO": {"$regex": f"^{re.escape(requested_date)}"}},
+                {"data.minutes.datePretty": requested_pretty},
+            ]
+        }
+    ]
+})
+
+            if not doc:
+                return jsonify({
+                    "ok": False,
+                    "error": "No saved meeting minutes found for the selected date.",
+                    "meeting": None,
+                }), 404
+
+            return jsonify({
+                "ok": True,
+                "meeting": _serialize_meeting_doc(doc),
+                "members": [
+                    {
+                        "_id": str(m.get("_id") or ""),
+                        "name": m.get("name") or m.get("member_name") or "",
+                    }
+                    for m in member_docs
+                ],
+            }), 200
+        
+        print("MEETING MINUTES LIST DEBUG:", {
+    "pg_id": str(pg_obj_id),
+    "pg_scope": pg_scope,
+    "total_found": db.pg_meeting_minutes.count_documents(pg_scope),
+})
+
+        docs = list(
+            db.pg_meeting_minutes
+            .find(pg_scope)
+            .sort([
+                ("meeting_date", -1),
+                ("year", -1),
+                ("month", -1),
+                ("updated_at", -1),
+                ("created_at", -1),
+            ])
+            .limit(300)
+        )
+
+        meetings = [_serialize_meeting_doc(doc) for doc in docs]
+
+        meetings = sorted(
+            meetings,
+            key=lambda x: x.get("meeting_date") or "",
+            reverse=True
+        )
+
+        return jsonify({
+            "ok": True,
+            "pg": {
+                "_id": str(pg.get("_id") or ""),
+                "name": pg.get("name") or pg.get("pg_name") or "",
+            },
+            "meetings": meetings,
+            "members": [
+                {
+                    "_id": str(m.get("_id") or ""),
+                    "name": m.get("name") or m.get("member_name") or "",
+                }
+                for m in member_docs
+            ],
+            "count": len(meetings),
+        }), 200
     # =========================================================
     # POST → SAVE / UPDATE MEETING
     # =========================================================
@@ -8667,6 +8856,8 @@ def meeting_register(pg_id):
 
             web_minutes_doc = {
                 "pg_id": pg_obj_id,
+                "meeting_date": meeting_date,
+                "meeting_type": meeting_type or "general",
                 "year": int(body.get("year") or meeting_date[:4]),
                 "month": int(body.get("month") or meeting_date[5:7]),
                 "data": {

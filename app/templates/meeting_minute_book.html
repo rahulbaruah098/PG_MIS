@@ -900,6 +900,149 @@
       color:var(--ink);
       box-shadow:inset 0 0 0 1px rgba(11,77,58,.08);
     }
+
+    .mmb-historyList{
+  display:grid;
+  gap:10px;
+}
+
+.mmb-historyRow{
+  width:100%;
+  border:1px solid rgba(15,23,42,.12);
+  border-radius:14px;
+  background:#fff;
+  padding:12px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+}
+
+.mmb-historyRow.active{
+  border-color:rgba(16,185,129,.32);
+  background:rgba(240,253,244,.55);
+}
+
+.mmb-historyMeta{
+  min-width:0;
+}
+
+.mmb-historyDate{
+  font-size:13px;
+  font-weight:950;
+  color:var(--accent);
+  line-height:1.25;
+}
+
+.mmb-historyStats{
+  margin-top:5px;
+  font-size:12px;
+  font-weight:850;
+  color:var(--muted);
+  line-height:1.35;
+}
+
+.mmb-historyActions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.mmb-historyActionBtn{
+  border:1px solid rgba(15,23,42,.14);
+  background:#fff;
+  color:var(--ink);
+  border-radius:999px;
+  padding:8px 12px;
+  font-size:12px;
+  font-weight:950;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+}
+
+.mmb-historyActionBtn:hover{
+  background:rgba(248,250,252,.9);
+  box-shadow:var(--shadow2);
+}
+
+.mmb-historyActionBtn.primary{
+  color:var(--accent);
+  border-color:rgba(11,77,58,.20);
+  background:rgba(240,253,244,.62);
+}
+
+.mmb-historyActionBtn.summary{
+  color:#7a4a00;
+  border-color:rgba(224,168,0,.28);
+  background:rgba(255,193,7,.10);
+}
+.mmb-historyViewAllWrap{
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid rgba(15,23,42,.08);
+}
+
+.mmb-historyViewAll{
+  width:100%;
+  margin-top:10px;
+  border:1px dashed rgba(11,77,58,.24);
+  background:rgba(240,253,244,.75);
+  color:var(--accent);
+  border-radius:14px;
+  padding:12px 14px;
+  font-size:13px;
+  font-weight:950;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+
+@media (max-width:560px){
+  .mmb-historyRow{
+    grid-template-columns:1fr;
+  }
+
+  .mmb-historyActions{
+    display:grid;
+    grid-template-columns:1fr;
+    width:100%;
+  }
+
+  .mmb-historyActionBtn{
+    width:100%;
+  }
+}
+
+.mmb-quickDateGrid{
+  margin-top:14px;
+  display:grid;
+  grid-template-columns:minmax(220px, 340px);
+  gap:12px;
+}
+
+@media (max-width:560px){
+  .mmb-quickDateGrid{
+    grid-template-columns:1fr;
+  }
+}
+
+    .mmb-sectionNote{
+  border:1px solid rgba(11,77,58,.12);
+  background:rgba(240,253,244,.72);
+  color:rgba(15,23,42,.74);
+  border-radius:14px;
+  padding:12px 14px;
+  font-size:12.5px;
+  font-weight:850;
+  line-height:1.5;
+}
     .mmb-stepActions{
       display:flex;
       justify-content:flex-end;
@@ -1493,70 +1636,83 @@
           </div>
         </div>
 
-        <!-- Period + History -->
-        <div class="mmb-periodSection">
-          <div class="mmb-periodGrid">
-            <div class="mmb-periodCard">
-              <div class="mmb-periodCardHead">
-                <h3 class="mmb-cardTitle">
-                  <ion-icon name="time"></ion-icon>
-                  <span id="mmbPeriodTitleTxt">Record Interval</span>
-                </h3>
-                <div class="mmb-chip">
-                  <ion-icon name="archive"></ion-icon>
-                  <span id="mmbCurrentPeriodInfo">Current interval</span>
-                </div>
-              </div>
-              <div class="mmb-periodCardBody">
-                <div class="mmb-periodControls">
-                  <div class="mmb-field">
-                    <div class="mmb-labelRow">
-                      <ion-icon name="calendar-clear"></ion-icon>
-                      <span id="mmbPeriodMonthLbl">Month</span>
-                    </div>
-                    <select id="mmbPeriodMonth" class="mmb-select" style="width:100%;">
-                      <option value="1">January</option>
-                      <option value="2">February</option>
-                      <option value="3">March</option>
-                      <option value="4">April</option>
-                      <option value="5">May</option>
-                      <option value="6">June</option>
-                      <option value="7">July</option>
-                      <option value="8">August</option>
-                      <option value="9">September</option>
-                      <option value="10">October</option>
-                      <option value="11">November</option>
-                      <option value="12">December</option>
-                    </select>
-                  </div>
-                  <div class="mmb-field">
-                    <div class="mmb-labelRow">
-                      <ion-icon name="calendar-number"></ion-icon>
-                      <span id="mmbPeriodYearLbl">Year</span>
-                    </div>
-                    <select id="mmbPeriodYear" class="mmb-select" style="width:100%;"></select>
-                  </div>
-                  <button class="mmb-btn" id="mmbLoadPeriodBtn" type="button" style="justify-content:center; border-radius:12px; padding:12px 14px;">
-                    <ion-icon name="sync"></ion-icon>
-                    <span id="mmbLoadPeriodTxt">Load Interval</span>
-                  </button>
-                </div>
-              </div>
-            </div>
+<!-- Meeting Selector + Past Meetings -->
+<div class="mmb-periodSection">
+  <div class="mmb-periodGrid">
+    <div class="mmb-periodCard">
+      <div class="mmb-periodCardHead">
+        <h3 class="mmb-cardTitle">
+          <ion-icon name="calendar"></ion-icon>
+          <span id="mmbPeriodTitleTxt">Meeting Record</span>
+        </h3>
 
-            <div class="mmb-periodCard">
-              <div class="mmb-periodCardHead">
-                <h3 class="mmb-cardTitle">
-                  <ion-icon name="albums"></ion-icon>
-                  <span id="mmbHistoryTitleTxt">Record History</span>
-                </h3>
-              </div>
-              <div class="mmb-periodCardBody">
-                <div class="mmb-historyList" id="mmbHistoryList"></div>
-              </div>
-            </div>
-          </div>
+        <div class="mmb-chip">
+          <ion-icon name="document-text"></ion-icon>
+          <span id="mmbCurrentPeriodInfo">Step 1 • MEETING MINUTES</span>
         </div>
+      </div>
+
+      <div class="mmb-periodCardBody">
+       <div class="mmb-sectionNote">
+  Select the meeting date, then use “Load Meeting” to load an existing record for that date, or “New Meeting” to start a fresh meeting record.
+</div>
+
+<div class="mmb-quickDateGrid">
+  <div class="mmb-field">
+    <div class="mmb-labelRow">
+      <ion-icon name="calendar"></ion-icon>
+      <span>Meeting Date</span>
+    </div>
+
+    <div class="mmb-dateBtn">
+      <ion-icon name="calendar-outline" style="color:rgba(11,77,58,.95)"></ion-icon>
+      <input id="mmbMeetingDateQuick" class="mmb-dateInput" type="date" />
+    </div>
+  </div>
+</div>
+
+<div class="mmb-stepActions">
+  <button class="mmb-btn" id="mmbLoadPeriodBtn" type="button" style="justify-content:center; border-radius:12px; padding:12px 14px;">
+    <ion-icon name="sync"></ion-icon>
+    <span id="mmbLoadPeriodTxt">Load Meeting</span>
+  </button>
+
+          <button class="mmb-ghostBtn" id="mmbNewMeetingBtn" type="button">
+            <ion-icon name="add-circle"></ion-icon>
+            <span>New Meeting</span>
+          </button>
+
+          <button class="mmb-ghostBtn" id="mmbRefreshMeetingsBtn" type="button">
+            <ion-icon name="refresh"></ion-icon>
+            <span>Refresh Past Records</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mmb-periodCard">
+      <div class="mmb-periodCardHead">
+        <h3 class="mmb-cardTitle">
+          <ion-icon name="albums"></ion-icon>
+          <span id="mmbHistoryTitleTxt">Past Meeting Records</span>
+        </h3>
+      </div>
+
+      <div class="mmb-periodCardBody">
+  <div class="mmb-historyList" id="mmbHistoryList">
+    <button class="mmb-historyBtn" type="button">Loading...</button>
+  </div>
+
+  <div class="mmb-historyViewAllWrap">
+    <button class="mmb-historyViewAll" id="mmbViewAllMeetingsBtn" type="button">
+      <ion-icon name="albums-outline"></ion-icon>
+      View all past meetings
+    </button>
+  </div>
+</div>
+    </div>
+  </div>
+</div>
 
         <!-- Steps -->
         <div class="mmb-stepBar">
@@ -4070,9 +4226,16 @@ function setTab(tab){
         ensureUniqueRowIds();
         clampUiPages();
         applyTranslations();
+        const loadTxt = $("mmbLoadPeriodTxt");
+if(loadTxt) loadTxt.textContent = "Load Meeting";
 
-        const dateEl = $("mmbMeetingDate");
-        dateEl.value = toDateInputValue(meetingDate);
+       const dateValue = toDateInputValue(meetingDate);
+
+const dateEl = $("mmbMeetingDate");
+if(dateEl) dateEl.value = dateValue;
+
+const quickDateEl = $("mmbMeetingDateQuick");
+if(quickDateEl) quickDateEl.value = dateValue;
 
         renderTableLikeTextRows(
           "agenda", agendaItems,
@@ -4123,84 +4286,93 @@ window.onPGMISLanguageChange = function(lang){
         return `PGMIS_MMB_${MMB_PG || "anon"}_${year}_${month}`;
       }
 
-      function getSelectedPeriod(){
-        const monthEl = $("mmbPeriodMonth");
-        const yearEl = $("mmbPeriodYear");
-        const y = parseInt((yearEl || {}).value, 10);
-        const m = parseInt((monthEl || {}).value, 10);
-        if(Number.isFinite(y) && Number.isFinite(m) && m >= 1 && m <= 12){
-          return { year: y, month: m };
-        }
-        return {
-          year: loadedPeriod?.year || meetingDate.getFullYear(),
-          month: loadedPeriod?.month || (meetingDate.getMonth() + 1)
-        };
-      }
+   function getMeetingDateValue(){
+  const quickInput = $("mmbMeetingDateQuick");
+  const mainInput = $("mmbMeetingDate");
 
-      function getActivePeriod(){
-        return loadedPeriod || getSelectedPeriod();
-      }
+  const quickRaw = quickInput && quickInput.value ? String(quickInput.value).trim() : "";
+  if (quickRaw) return quickRaw;
 
-      function formatPeriodLabel(period){
-        return new Date(period.year, period.month - 1, 1).toLocaleDateString("en-GB", { month:"long", year:"numeric" });
-      }
+  const mainRaw = mainInput && mainInput.value ? String(mainInput.value).trim() : "";
+  if (mainRaw) return mainRaw;
 
-      function updatePeriodVisualState(){
-        const selected = getSelectedPeriod();
-        const loaded = getActivePeriod();
-        const info = $("mmbCurrentPeriodInfo");
-        if(info){
-          if(selected.year === loaded.year && selected.month === loaded.month){
-            info.textContent = `Loaded interval: ${formatPeriodLabel(loaded)}`;
-          }else{
-            info.textContent = `Loaded: ${formatPeriodLabel(loaded)} • Selected: ${formatPeriodLabel(selected)}`;
-          }
-        }
-        renderHistoryList(selected, loaded);
-      }
+  return toDateInputValue(meetingDate instanceof Date ? meetingDate : new Date());
+}
 
-      function syncPeriodControls(){
-        const p = getActivePeriod();
-        const monthEl = $("mmbPeriodMonth");
-        const yearEl = $("mmbPeriodYear");
-        if(monthEl) monthEl.value = String(p.month);
-        if(yearEl) yearEl.value = String(p.year);
-        updatePeriodVisualState();
-      }
+function getActivePeriod(){
+  const value = getMeetingDateValue();
+  const parts = value.split("-").map(Number);
 
-      function populatePeriodYears(){
-        const host = $("mmbPeriodYear");
-        if(!host) return;
-        const currentYear = new Date().getFullYear();
-        const selected = getActivePeriod().year;
-        host.innerHTML = "";
-        for(let y = currentYear + 2; y >= currentYear - 7; y--){
-          const opt = document.createElement("option");
-          opt.value = String(y);
-          opt.textContent = String(y);
-          if(y === selected) opt.selected = true;
-          host.appendChild(opt);
-        }
-      }
+  return {
+    year: parts[0] || new Date().getFullYear(),
+    month: parts[1] || (new Date().getMonth() + 1)
+  };
+}
 
-      function buildEmptyPayloadForCurrentPeriod(year, month){
-        const active = {
-          year: Number(year) || getActivePeriod().year,
-          month: Number(month) || getActivePeriod().month
-        };
-        const baseDate = new Date(active.year, active.month - 1, 1);
-        return {
-          minutes: {
-            dateISO: baseDate.toISOString(),
-            datePretty: formatDatePretty(baseDate),
-            agendaItems: [""],
-            deliberations: [""],
-            decisions: [""],
-          },
-          members: [{ id: uid(), name: "", member_id: "", member_code: "", signature: null }],
-          meta: { savedAt: null, periodYear: active.year, periodMonth: active.month }
-        };
-      }
+function formatPeriodLabel(period){
+  if (!period || !period.year || !period.month) return "Selected Meeting";
+  return new Date(period.year, period.month - 1, 1).toLocaleDateString("en-GB", {
+    month:"long",
+    year:"numeric"
+  });
+}
+
+function formatMeetingDateLabel(dateText){
+  try{
+    const parts = String(dateText || "").split("-").map(Number);
+    if(parts.length >= 3 && parts[0] && parts[1] && parts[2]){
+      return new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString("en-GB", {
+        day:"2-digit",
+        month:"short",
+        year:"numeric"
+      });
+    }
+  }catch(_e){}
+  return dateText || "Meeting";
+}
+
+function updatePeriodVisualState(){
+  const info = $("mmbCurrentPeriodInfo");
+  if(info){
+    const t = translations[language] || translations.en;
+    info.textContent = currentStep === "members"
+      ? (t.currentStepMembers || "Step 2 • MEMBERS PRESENT")
+      : (t.currentStepMinutes || "Step 1 • MEETING MINUTES");
+  }
+}
+
+function syncPeriodControls(){
+  updatePeriodVisualState();
+}
+
+function populatePeriodYears(){
+  return;
+}
+
+function buildEmptyPayloadForCurrentPeriod(year, month){
+  const dateText = getMeetingDateValue();
+  const parts = dateText.split("-").map(Number);
+  const baseDate = parts.length >= 3
+    ? new Date(parts[0], parts[1] - 1, parts[2])
+    : new Date();
+
+  return {
+    minutes: {
+      dateISO: baseDate.toISOString(),
+      datePretty: formatDatePretty(baseDate),
+      agendaItems: [""],
+      deliberations: [""],
+      decisions: [""],
+    },
+    members: [{ id: uid(), name: "", member_id: "", member_code: "", signature: null }],
+    meta: {
+      savedAt: null,
+      meetingDate: dateText,
+      periodYear: baseDate.getFullYear(),
+      periodMonth: baseDate.getMonth() + 1
+    }
+  };
+}
 
       function findDuplicateMemberRow(currentRowId, candidateMemberId, candidateName){
         const cmpId = String(candidateMemberId || "").trim();
@@ -4215,69 +4387,197 @@ window.onPGMISLanguageChange = function(lang){
         }) || null;
       }
 
-      function renderHistoryList(selectedArg, loadedArg){
-        const host = $("mmbHistoryList");
-        if(!host) return;
-        const selected = selectedArg || getSelectedPeriod();
-        const loaded = loadedArg || getActivePeriod();
-        const now = new Date();
-        host.innerHTML = "";
-        for(let i = 0; i < 12; i++){
-          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "mmb-historyBtn";
-          const by = d.getFullYear();
-          const bm = d.getMonth() + 1;
-          if(by === loaded.year && bm === loaded.month){
-            btn.classList.add("active");
-          } else if(by === selected.year && bm === selected.month){
-            btn.classList.add("pending");
-          }
-          btn.textContent = d.toLocaleDateString("en-GB", { month:"short", year:"numeric" });
-          btn.addEventListener("click", async () => {
-            if($("mmbPeriodYear")) $("mmbPeriodYear").value = String(by);
-            if($("mmbPeriodMonth")) $("mmbPeriodMonth").value = String(bm);
-            await applySelectedPeriodAndLoad();
-          });
-          host.appendChild(btn);
+      let mmbPastMeetings = [];
+
+async function fetchPastMeetings(){
+  if(!MMB_PG) return [];
+
+  try{
+    const res = await fetch(`/pg/meetings/${encodeURIComponent(MMB_PG)}?list=1`, {
+      method:"GET",
+      headers:{ "Accept":"application/json" }
+    });
+
+    const data = await res.json().catch(()=>null);
+
+    if(!res.ok || !data || !Array.isArray(data.meetings)){
+  console.error("Past meetings fetch failed:", {
+    status: res.status,
+    response: data
+  });
+
+  showPopup("Past meeting records could not be loaded from database. Check backend response in console/terminal.", "danger");
+  return [];
+}
+
+    mmbPastMeetings = data.meetings;
+    return mmbPastMeetings;
+ }catch(e){
+  console.error("Past meetings fetch error:", e);
+  showPopup("Past meeting records fetch failed. Backend JSON route may not be returning valid JSON.", "danger");
+  mmbPastMeetings = [];
+  return [];
+}
+}
+
+function renderHistoryList(){
+  const host = $("mmbHistoryList");
+  if(!host) return;
+
+  const activeDate = getMeetingDateValue();
+
+  host.innerHTML = "";
+
+  if(!mmbPastMeetings.length){
+    const empty = document.createElement("div");
+    empty.className = "mmb-historyRow";
+    empty.innerHTML = `
+      <div class="mmb-historyMeta">
+        <div class="mmb-historyDate">No past meetings found</div>
+        <div class="mmb-historyStats">Saved meeting records will appear here.</div>
+      </div>
+    `;
+    host.appendChild(empty);
+    return;
+  }
+
+  const recentMeetings = mmbPastMeetings.slice(0, 5);
+
+  recentMeetings.forEach((item) => {
+    const meetingDateText = item.meeting_date || "";
+    const row = document.createElement("div");
+
+    row.className = "mmb-historyRow";
+    if(meetingDateText === activeDate){
+      row.classList.add("active");
+    }
+
+    const agendaCount = Number(item.agenda_count || 0);
+    const memberCount = Number(item.members_count || 0);
+    const decisionCount = Number(item.decision_count || 0);
+
+    row.innerHTML = `
+      <div class="mmb-historyMeta">
+        <div class="mmb-historyDate">
+          ${escapeHtml(item.meeting_date_pretty || formatMeetingDateLabel(meetingDateText))}
+        </div>
+        <div class="mmb-historyStats">
+          Agenda ${agendaCount}<br>
+          Decision ${decisionCount}<br>
+          Members ${memberCount}
+        </div>
+      </div>
+
+      <div class="mmb-historyActions">
+        <button type="button" class="mmb-historyActionBtn primary" data-action="view">
+          <ion-icon name="open-outline"></ion-icon>
+          View
+        </button>
+
+        <button type="button" class="mmb-historyActionBtn summary" data-action="summary">
+          <ion-icon name="reader-outline"></ion-icon>
+          Official Summary
+        </button>
+      </div>
+    `;
+
+    const viewBtn = row.querySelector('[data-action="view"]');
+    const summaryBtn = row.querySelector('[data-action="summary"]');
+
+    if(viewBtn){
+      viewBtn.addEventListener("click", async () => {
+        if(meetingDateText){
+          await loadMeetingByDate(meetingDateText);
         }
-      }
+      });
+    }
 
-      async function applySelectedPeriodAndLoad(){
-        const month = parseInt(($("mmbPeriodMonth") && $("mmbPeriodMonth").value) || "1", 10);
-        const year = parseInt(($("mmbPeriodYear") && $("mmbPeriodYear").value) || String(new Date().getFullYear()), 10);
-
-        const currentDay = (meetingDate instanceof Date && !isNaN(meetingDate.getTime())) ? meetingDate.getDate() : 1;
-        const maxDay = new Date(year, month, 0).getDate();
-        const safeDay = Math.min(currentDay, maxDay);
-
-        meetingDate = new Date(year, month - 1, safeDay);
-        $("mmbMeetingDate").value = toDateInputValue(meetingDate);
-        loadedPeriod = { year, month };
-        saveSelectedPeriodSession(loadedPeriod);
-        syncPeriodControls();
-
-        const payload = await mmbLoadFromServer(year, month);
-        if(payload){
-          mmbRestorePayload(payload);
-          showPopup(`Loaded ${formatPeriodLabel({ year, month })}.`, "success");
-        }else{
-          agendaItems = [{ id: uid(), content: "" }];
-          deliberations = [{ id: uid(), content: "" }];
-          decisions = [{ id: uid(), content: "" }];
-          members = [{ id: uid(), name: "", member_id: "", member_code: "", signature: null }];
-          ensureUniqueRowIds();
-          clampUiPages();
-          currentStep = getSavedActiveTab();
-          activeTab = currentStep;
-          if(currentStep === "members") step2Visited = true;
-          renderAll();
-          showPopup(`Started a new record for ${formatPeriodLabel({ year, month })}.`, "success");
+    if(summaryBtn){
+      summaryBtn.addEventListener("click", async () => {
+        if(meetingDateText){
+          await loadMeetingByDate(meetingDateText);
+          setTimeout(function(){
+            openOfficialSummaryModal();
+          }, 250);
         }
+      });
+    }
 
-        setStep("minutes");
-      }
+    host.appendChild(row);
+  });
+}
+
+async function refreshPastMeetings(){
+  await fetchPastMeetings();
+  renderHistoryList();
+}
+
+async function applySelectedPeriodAndLoad(){
+  await loadMeetingByDate(getMeetingDateValue());
+}
+
+async function loadMeetingByDate(meetingDateText){
+  if(!meetingDateText){
+    showPopup("Please select a meeting date first.", "danger");
+    return;
+  }
+
+  try{
+    const parts = meetingDateText.split("-").map(Number);
+    if(parts.length >= 3 && parts[0] && parts[1] && parts[2]){
+      meetingDate = new Date(parts[0], parts[1] - 1, parts[2]);
+      const input = $("mmbMeetingDate");
+      if(input) input.value = meetingDateText;
+    }
+  }catch(_e){}
+
+  const payload = await mmbLoadFromServer(null, null, meetingDateText);
+
+  if(payload){
+    mmbRestorePayload(payload);
+    await refreshPastMeetings();
+    showPopup(`Loaded meeting record for ${formatMeetingDateLabel(meetingDateText)}.`, "success");
+  }else{
+    startNewMeetingRecord(meetingDateText, false);
+    await refreshPastMeetings();
+    showPopup(`No saved meeting found for ${formatMeetingDateLabel(meetingDateText)}. Fresh record is ready.`, "success");
+  }
+
+  setStep("minutes");
+}
+
+function startNewMeetingRecord(dateText, showMsg){
+  const selectedDate = dateText || getMeetingDateValue();
+  const parts = selectedDate.split("-").map(Number);
+
+  if(parts.length >= 3 && parts[0] && parts[1] && parts[2]){
+    meetingDate = new Date(parts[0], parts[1] - 1, parts[2]);
+  }else{
+    meetingDate = new Date();
+  }
+
+  const input = $("mmbMeetingDate");
+  if(input) input.value = toDateInputValue(meetingDate);
+
+  agendaItems = [{ id: uid(), content: "" }];
+  deliberations = [{ id: uid(), content: "" }];
+  decisions = [{ id: uid(), content: "" }];
+  members = [{ id: uid(), name: "", member_id: "", member_code: "", signature: null }];
+
+  ui.agendaPage = 1;
+  ui.delibPage = 1;
+  ui.decPage = 1;
+  ui.membersPage = 1;
+
+  ensureUniqueRowIds();
+  clampUiPages();
+  setStep("minutes");
+  renderAll();
+
+  if(showMsg){
+    showPopup(`Fresh meeting record started for ${formatMeetingDateLabel(toDateInputValue(meetingDate))}.`, "success");
+  }
+}
 
       /* =========================
          Backend persistence (original)
@@ -4384,48 +4684,78 @@ function readSelectedPeriodSession(){
         }catch(_e){}
       }
 
-      async function mmbLoadFromServer(periodYear, periodMonth){
-        if(!MMB_PG) return null;
-        const active = {
-          year: Number(periodYear) || getActivePeriod().year,
-          month: Number(periodMonth) || getActivePeriod().month
-        };
-        const qs = `?year=${encodeURIComponent(active.year)}&month=${encodeURIComponent(active.month)}`;
-        try{
-          const res = await fetch(`/pg/api/register/minutes/${encodeURIComponent(MMB_PG)}${qs}`, { method:"GET" });
-          if(!res.ok) return null;
-          const doc = await res.json().catch(()=>null);
-          const payload = doc && (doc.data || doc) ? (doc.data || doc) : null;
-          if(payload){
-            try{ localStorage.setItem(getPeriodStorageKey(active.year, active.month), JSON.stringify(payload)); }catch(e){}
-            try{ localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(payload)); }catch(e){}
-            return payload;
-          }
-        }catch(_e){}
-        return null;
+      async function mmbLoadFromServer(periodYear, periodMonth, meetingDateText){
+  if(!MMB_PG) return null;
+
+  const selectedDate = meetingDateText || getMeetingDateValue();
+
+  try{
+    const res = await fetch(
+      `/pg/meetings/${encodeURIComponent(MMB_PG)}?meeting_date=${encodeURIComponent(selectedDate)}`,
+      {
+        method:"GET",
+        headers:{ "Accept":"application/json" }
       }
+    );
+
+    if(!res.ok) return null;
+
+    const doc = await res.json().catch(()=>null);
+    const meeting = doc && doc.meeting ? doc.meeting : null;
+    const data = meeting && meeting.data ? meeting.data : null;
+
+    if(data){
+      try{ localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(data)); }catch(e){}
+      return data;
+    }
+  }catch(_e){}
+
+  return null;
+}
 
       async function mmbSaveToServer(payload, periodYear, periodMonth){
-        if(!MMB_PG) return {ok:false, message:"Missing PG context"};
-        const active = {
-          year: Number(periodYear) || getActivePeriod().year,
-          month: Number(periodMonth) || getActivePeriod().month
-        };
-        const qs = `?year=${encodeURIComponent(active.year)}&month=${encodeURIComponent(active.month)}`;
-        try{
-          const res = await fetch(`/pg/api/register/minutes/${encodeURIComponent(MMB_PG)}${qs}`, {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({ data: payload })
-          });
-          const data = await res.json().catch(()=>null);
-          if(!res.ok) return {ok:false, message:(data && (data.message||data.error)) || "Save failed"};
-          return {ok:true, message:(data && data.message) || "Saved"};
-        }catch(_e){
-          return {ok:false, message:"Network error"};
-        }
-      }
+  if(!MMB_PG) return {ok:false, message:"Missing PG context"};
 
+  const active = getActivePeriod();
+  const selectedDate = getMeetingDateValue();
+
+  const finalPayload = {
+    year: active.year,
+    month: active.month,
+    meeting_date: selectedDate,
+    meeting_type: "general",
+    data: payload
+  };
+
+  try{
+    const res = await fetch(`/pg/meetings/${encodeURIComponent(MMB_PG)}`, {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Accept":"application/json"
+      },
+      body: JSON.stringify(finalPayload)
+    });
+
+    const data = await res.json().catch(()=>null);
+
+    if(!res.ok){
+      return {
+        ok:false,
+        message:(data && (data.message || data.error)) || "Save failed"
+      };
+    }
+
+    await refreshPastMeetings();
+
+    return {
+      ok:true,
+      message:(data && data.message) || "Meeting saved"
+    };
+  }catch(_e){
+    return {ok:false, message:"Network error"};
+  }
+}
       function hasDuplicateMembersInMeeting(){
         const seenIds = new Set();
         const seenNames = new Set();
@@ -4453,9 +4783,12 @@ function readSelectedPeriodSession(){
         };
 
         const continueBtn = $("mmbContinueBtn");
-        const stepBackBtn = $("mmbStepBackBtn");
-        const loadPeriodBtn = $("mmbLoadPeriodBtn");
-        const openSummaryBtn = $("mmbOpenSummaryBtn");
+const stepBackBtn = $("mmbStepBackBtn");
+const loadPeriodBtn = $("mmbLoadPeriodBtn");
+const newMeetingBtn = $("mmbNewMeetingBtn");
+const refreshMeetingsBtn = $("mmbRefreshMeetingsBtn");
+const viewAllMeetingsBtn = $("mmbViewAllMeetingsBtn");
+const openSummaryBtn = $("mmbOpenSummaryBtn");
         const openSummaryBtnMembers = $("mmbOpenSummaryBtnMembers");
         const previewCloseBtn = $("mmbPreviewCloseBtn");
         const previewPrintBtn = $("mmbPreviewPrintBtn");
@@ -4464,23 +4797,51 @@ function readSelectedPeriodSession(){
         if(continueBtn) continueBtn.onclick = () => setStep("members");
         if(stepBackBtn) stepBackBtn.onclick = () => setStep("minutes");
         if(loadPeriodBtn) loadPeriodBtn.onclick = () => { applySelectedPeriodAndLoad(); };
+        if(newMeetingBtn) newMeetingBtn.onclick = () => {
+  startNewMeetingRecord(getMeetingDateValue(), true);
+};
+
+if(refreshMeetingsBtn) refreshMeetingsBtn.onclick = async () => {
+  await refreshPastMeetings();
+  showPopup("Past meeting records refreshed.", "success");
+};
+
+if(viewAllMeetingsBtn){
+  viewAllMeetingsBtn.onclick = () => {
+    window.location.href = "/pg/registers/meeting-minutes/history";
+  };
+}
         if(openSummaryBtn) openSummaryBtn.onclick = () => openOfficialSummaryModal();
         if(openSummaryBtnMembers) openSummaryBtnMembers.onclick = () => openOfficialSummaryModal();
         if(previewCloseBtn) previewCloseBtn.onclick = () => closeOfficialSummaryModal();
         if(previewPrintBtn) previewPrintBtn.onclick = () => printOfficialSummary();
         if(previewModal) previewModal.addEventListener("click", (e) => { if(e.target && e.target.id === "mmbPreviewModal") closeOfficialSummaryModal(); });
 
-        $("mmbMeetingDate").onchange = (e) => {
-          const v = e.target.value;
-          if(v){
-            const [y,m,d] = v.split("-").map(Number);
-            meetingDate = new Date(y, (m-1), d);
-            loadedPeriod = { year:y, month:m };
-            saveSelectedPeriodSession(loadedPeriod);
-            syncPeriodControls();
-            renderAll();
-          }
-        };
+   function handleMeetingDateChange(v){
+  if(v){
+    const [y,m,d] = v.split("-").map(Number);
+    meetingDate = new Date(y, (m-1), d);
+    loadedPeriod = { year:y, month:m };
+    syncPeriodControls();
+    renderAll();
+    renderHistoryList();
+  }
+}
+
+const mainMeetingDateInput = $("mmbMeetingDate");
+const quickMeetingDateInput = $("mmbMeetingDateQuick");
+
+if(mainMeetingDateInput){
+  mainMeetingDateInput.onchange = async (e) => {
+    handleMeetingDateChange(e.target.value);
+  };
+}
+
+if(quickMeetingDateInput){
+  quickMeetingDateInput.onchange = async (e) => {
+    handleMeetingDateChange(e.target.value);
+  };
+}
 
         $("mmbMinutesSearch").oninput = (e) => {
           ui.minutesSearch = e.target.value || "";
@@ -4509,9 +4870,6 @@ function readSelectedPeriodSession(){
           ui.membersPage = 1;
           renderAll();
         };
-
-        if($("mmbPeriodMonth")) $("mmbPeriodMonth").onchange = () => { applySelectedPeriodAndLoad(); };
-        if($("mmbPeriodYear")) $("mmbPeriodYear").onchange = () => { applySelectedPeriodAndLoad(); };
 
         $("mmbAddAgenda").onclick = () => {
           agendaItems = [...agendaItems, { id: uid(), content:"" }];
@@ -4550,8 +4908,9 @@ function readSelectedPeriodSession(){
           const payload = mmbBuildPayload(activePeriod.year, activePeriod.month);
           localStorage.setItem(getPeriodStorageKey(activePeriod.year, activePeriod.month), JSON.stringify(payload));
           try{ localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(payload)); }catch(e){}
-          const r = await mmbSaveToServer(payload, activePeriod.year, activePeriod.month);
-          showPopup(r.ok ? t.savedMinutes : (r.message||t.savedMinutes), r.ok ? "success" : "danger");
+         const r = await mmbSaveToServer(payload, activePeriod.year, activePeriod.month);
+if(r.ok) await refreshPastMeetings();
+showPopup(r.ok ? t.savedMinutes : (r.message||t.savedMinutes), r.ok ? "success" : "danger");
         };
 
         if($("mmbSaveMembers")) $("mmbSaveMembers").onclick = async () => {
@@ -4574,8 +4933,9 @@ function readSelectedPeriodSession(){
           const payload = mmbBuildPayload(activePeriod.year, activePeriod.month);
           localStorage.setItem(getPeriodStorageKey(activePeriod.year, activePeriod.month), JSON.stringify(payload));
           try{ localStorage.setItem(MMB_STORAGE_KEY, JSON.stringify(payload)); }catch(e){}
-          const r = await mmbSaveToServer(payload, activePeriod.year, activePeriod.month);
-          showPopup(r.ok ? t.saveFullRecord : (r.message||t.saveFullRecord), r.ok ? "success" : "danger");
+        const r = await mmbSaveToServer(payload, activePeriod.year, activePeriod.month);
+if(r.ok) await refreshPastMeetings();
+showPopup(r.ok ? t.saveFullRecord : (r.message||t.saveFullRecord), r.ok ? "success" : "danger");
         };
       }
 
@@ -4592,19 +4952,28 @@ function readSelectedPeriodSession(){
         wirePopup();
         wireEvents();
 
-        (async ()=>{
-          await loadPgMembers();
-          const server = await mmbLoadFromServer();
-          if(server){ mmbRestorePayload(server); return; }
-          try{
-            const p = mmbPeriodFromDate(meetingDate);
-            const local = JSON.parse(localStorage.getItem(getPeriodStorageKey(p.year, p.month)) || "null");
-            const legacy = JSON.parse(localStorage.getItem(MMB_STORAGE_KEY) || "null");
-            if(local && payloadMatchesPeriod(local, p.year, p.month)) mmbRestorePayload(local);
-            else if(legacy && payloadMatchesPeriod(legacy, p.year, p.month)) mmbRestorePayload(legacy);
-            else resetIntervalStateToBlank(p.year, p.month);
-          }catch(_e){}
-        })();
+            (async ()=>{
+  await loadPgMembers();
+  await refreshPastMeetings();
+
+  const params = new URLSearchParams(window.location.search || "");
+  const dateFromUrl = params.get("meeting_date");
+  const shouldOpenSummary = params.get("summary") === "1";
+
+  if(dateFromUrl){
+    await loadMeetingByDate(dateFromUrl);
+
+    if(shouldOpenSummary){
+      setTimeout(function(){
+        openOfficialSummary();
+      }, 250);
+    }
+
+    return;
+  }
+
+  renderAll();
+})();
 
    wireSignatureModal();
 window.updatePageLanguage(detectLanguageStrict());
