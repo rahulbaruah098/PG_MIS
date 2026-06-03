@@ -1828,7 +1828,7 @@
     <path d="M15 13h6"></path>
     <path d="M18 10v6"></path>
   </svg>
-  <span class="nav-text">Crop Management</span>
+ <span class="nav-text" id="navCropManagement">Crop Management</span>
 </a>
 {% endif %}
 
@@ -2658,6 +2658,17 @@ document.querySelectorAll('#sidebarNav .nav-item[href]').forEach(function(link){
   if(link.classList.contains('nav-logout')) return;
 
   link.addEventListener('click', function(){
+    const activeLang = (
+      normalizeBaseLang(window.__PGMIS_LANG) ||
+      normalizeBaseLang(window.PGMIS_LANG) ||
+      normalizeBaseLang(currentLanguage) ||
+      readSavedBaseLang() ||
+      "en"
+    );
+
+    currentLanguage = activeLang;
+    persistLang(activeLang);
+
     saveSidebarScroll();
 
     sessionStorage.setItem(ACTIVE_KEY, link.getAttribute('href'));
@@ -2763,7 +2774,31 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
     // LANGUAGE (single source) +  RESTORED CONNECTIVITY FOR OTHER PAGES
     // ------------------------------------------------------------
     const LANG_KEY = 'PGMIS_LANG_SESSION';
-    let currentLanguage = sessionStorage.getItem(LANG_KEY) || 'en';
+
+function normalizeBaseLang(value){
+  const v = String(value || "").trim().toLowerCase();
+  if(v === "bn" || v === "bangla" || v === "বাংলা") return "bn";
+  if(v === "en" || v === "english") return "en";
+  return null;
+}
+
+function readSavedBaseLang(){
+  try{
+    return (
+      normalizeBaseLang(localStorage.getItem("pgmis_lang")) ||
+      normalizeBaseLang(localStorage.getItem("PGMIS_LANG")) ||
+      normalizeBaseLang(localStorage.getItem("language")) ||
+      normalizeBaseLang(localStorage.getItem("lang")) ||
+      normalizeBaseLang(sessionStorage.getItem(LANG_KEY)) ||
+      normalizeBaseLang(document.documentElement.getAttribute("data-lang")) ||
+      "en"
+    );
+  }catch(_){
+    return "en";
+  }
+}
+
+let currentLanguage = readSavedBaseLang();
 
     const baseTranslations = {
       en: {
@@ -2780,8 +2815,9 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
         navDashboard: "Dashboard",
         navPgRegistration: "PG Registration",
         navMembershipRegister: "Membership Register",
-        navMeetingRegister: "Meeting Register",
-        navCashBook: "Cash Book",
+navCropManagement: "Crop Management",
+navMeetingRegister: "Meeting Register",
+navCashBook: "Cash Book",
         navMeeting: "Meeting Minute Book",
         navMemberLedger: "Member Ledger",
         navLoanLedger: "Loan Ledger",
@@ -2857,6 +2893,7 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
         navDashboard: "ড্যাশবোর্ড",
         navPgRegistration: "পিজি রেজিস্ট্রেশন",
         navMembershipRegister: "সদস্যপদ রেজিস্টার",
+        navCropManagement: "ফসল ব্যবস্থাপনা",
         navMeetingRegister: "মিটিং রেজিস্টার",
         navCashBook: "নগদ বই",
         navMeeting: "মিটিং মিনিট বুক",
@@ -2923,13 +2960,24 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
     };
 
     window.PGMIS = window.PGMIS || {};
-    window.PGMIS.getLanguage = () => currentLanguage;
-    window.PGMIS.setLanguage = (lang) => {
-      if(lang !== 'en' && lang !== 'bn') return;
-      currentLanguage = lang;
-      sessionStorage.setItem(LANG_KEY, currentLanguage);
-      updateLanguage(true);
-    };
+window.PGMIS.getLanguage = () => {
+  return (
+    normalizeBaseLang(window.__PGMIS_LANG) ||
+    normalizeBaseLang(window.PGMIS_LANG) ||
+    normalizeBaseLang(currentLanguage) ||
+    readSavedBaseLang() ||
+    "en"
+  );
+};
+
+window.PGMIS.setLanguage = (lang) => {
+  const fixedLang = normalizeBaseLang(lang);
+  if(!fixedLang) return;
+
+  currentLanguage = fixedLang;
+  persistLang(currentLanguage);
+  updateLanguage(true);
+};
 
     function broadcastLanguage(){
       try{
@@ -2967,20 +3015,39 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
     const languageText = document.getElementById('languageText');
 
     function persistLang(lang){
-      try{
-        localStorage.setItem("pgmis_lang", lang);
-        sessionStorage.setItem(LANG_KEY, lang);
-        document.documentElement.setAttribute("data-lang", lang);
-        window.__PGMIS_LANG = lang;
-        window.dispatchEvent(new CustomEvent("pgmis:lang", { detail: { lang } }));
-      }catch(_){}
-    }
+  const fixedLang = normalizeBaseLang(lang) || "en";
+
+  try{
+    currentLanguage = fixedLang;
+
+    localStorage.setItem("pgmis_lang", fixedLang);
+    localStorage.setItem("PGMIS_LANG", fixedLang);
+    localStorage.setItem("language", fixedLang);
+    localStorage.setItem("lang", fixedLang);
+
+    sessionStorage.setItem(LANG_KEY, fixedLang);
+
+    document.documentElement.setAttribute("lang", fixedLang);
+    document.documentElement.setAttribute("data-lang", fixedLang);
+
+    window.__PGMIS_LANG = fixedLang;
+    window.PGMIS_LANG = fixedLang;
+
+    window.dispatchEvent(new CustomEvent("pgmis:lang", {
+      detail: { lang: fixedLang, t: baseTranslations[fixedLang] || baseTranslations.en }
+    }));
+
+    window.dispatchEvent(new CustomEvent("pgmis:language-change", {
+      detail: { lang: fixedLang, t: baseTranslations[fixedLang] || baseTranslations.en }
+    }));
+  }catch(_){}
+}
 
     function toggleLanguage(){
-      currentLanguage = (currentLanguage === 'en') ? 'bn' : 'en';
-      persistLang(currentLanguage);
-      updateLanguage(true);
-    }
+  currentLanguage = (readSavedBaseLang() === 'en') ? 'bn' : 'en';
+  persistLang(currentLanguage);
+  updateLanguage(true);
+}
     languageToggle?.addEventListener('click', toggleLanguage);
 
     // ------------------------------------------------------------
@@ -2996,7 +3063,7 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
     const dashboardContainer = document.getElementById('dashboardContainer');
     const profilePageContainer = document.getElementById('profilePageContainer');
 
-    const PG_ID = "{{ (pg._id|string) if pg else session.get('pg_id') }}";
+   const BASE_PROFILE_PG_ID = "{{ (pg._id|string) if pg else session.get('pg_id') }}";
 
     function toYYYYMMDD(value){
   if(!value) return "";
@@ -3018,13 +3085,13 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
 }
 
     async function loadProfileData(){
-    if(!PG_ID){
+   if(!BASE_PROFILE_PG_ID){
       clearProfileFields();
       return;
     }
 
     try{
-      const res = await fetch(`/pg/profile/${PG_ID}/data`, {
+      const res = await fetch(`/pg/profile/${BASE_PROFILE_PG_ID}/data`, {
         method: "GET",
         headers: {
           "Accept": "application/json"
@@ -3131,9 +3198,19 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
     }
 
     function updateLanguage(shouldBroadcast){
-      const t = baseTranslations[currentLanguage];
+  currentLanguage = (
+    normalizeBaseLang(currentLanguage) ||
+    normalizeBaseLang(window.__PGMIS_LANG) ||
+    normalizeBaseLang(window.PGMIS_LANG) ||
+    readSavedBaseLang() ||
+    "en"
+  );
 
-      if(languageText) languageText.textContent = t.languageToggle;
+  persistLang(currentLanguage);
+
+  const t = baseTranslations[currentLanguage] || baseTranslations.en;
+
+  if(languageText) languageText.textContent = t.languageToggle;
 
        safeSetText('brandTitle', t.brandTitle);
   safeSetText('brandSubtitle', t.brandSubtitle);
@@ -3143,10 +3220,11 @@ document.querySelectorAll('#sidebarNav .nav-item').forEach(function(item){
       safeSetText('navSectionReports', t.navSectionReports);
 
       safeSetText('navDashboard', t.navDashboard);
-      safeSetText('navPgRegistration', t.navPgRegistration);
-      safeSetText('navMembershipRegister', t.navMembershipRegister);
-      safeSetText('navMeetingRegister', t.navMeetingRegister);
-      safeSetText('navCashBook', t.navCashBook);
+    safeSetText('navPgRegistration', t.navPgRegistration);
+safeSetText('navMembershipRegister', t.navMembershipRegister);
+safeSetText('navCropManagement', t.navCropManagement);
+safeSetText('navMeetingRegister', t.navMeetingRegister);
+safeSetText('navCashBook', t.navCashBook);
       safeSetText('navMeeting', t.navMeeting);
       safeSetText('navMemberLedger', t.navMemberLedger);
       safeSetText('navLoanLedger', t.navLoanLedger);

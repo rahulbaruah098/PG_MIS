@@ -1364,18 +1364,41 @@ $(document).ready(function() {
       }
     };
 
-    function getLang(){
-      try{
-        if(window.PGMIS && typeof window.PGMIS.getLanguage === 'function'){
-          const l = window.PGMIS.getLanguage();
-          if(l === 'en' || l === 'bn') return l;
-        }
-      }catch(_){}
-      const s = sessionStorage.getItem('PGMIS_LANG_SESSION');
-      return (s === 'bn') ? 'bn' : 'en';
-    }
+    function normalizePgrLang(value){
+  const v = String(value || "").trim().toLowerCase();
 
-    let _pgrLang = getLang();
+  if(v === "bn" || v === "bangla" || v === "বাংলা") return "bn";
+  if(v === "en" || v === "english") return "en";
+
+  return null;
+}
+
+function getLang(){
+  try{
+    if(window.PGMIS && typeof window.PGMIS.getLanguage === 'function'){
+      const l = normalizePgrLang(window.PGMIS.getLanguage());
+      if(l) return l;
+    }
+  }catch(_){}
+
+  try{
+    return (
+      normalizePgrLang(window.__PGMIS_LANG) ||
+      normalizePgrLang(window.PGMIS_LANG) ||
+      normalizePgrLang(localStorage.getItem("pgmis_lang")) ||
+      normalizePgrLang(localStorage.getItem("PGMIS_LANG")) ||
+      normalizePgrLang(localStorage.getItem("language")) ||
+      normalizePgrLang(localStorage.getItem("lang")) ||
+      normalizePgrLang(sessionStorage.getItem("PGMIS_LANG_SESSION")) ||
+      normalizePgrLang(document.documentElement.getAttribute("data-lang")) ||
+      "en"
+    );
+  }catch(_){
+    return "en";
+  }
+}
+
+let _pgrLang = getLang();
 
     function setText(id, txt){
       const el = document.getElementById(id);
@@ -1461,15 +1484,21 @@ $(document).ready(function() {
     }
 
     window.updatePageLanguage = function(lang){
-      applyPgrLanguage(lang);
-    };
+  const fixedLang = normalizePgrLang(lang) || getLang();
+  applyPgrLanguage(fixedLang);
+};
 
-    window.addEventListener('pgmis:language-change', (e)=>{
-      const lang = (e && e.detail && e.detail.lang) ? e.detail.lang : getLang();
-      applyPgrLanguage(lang);
-    });
+window.addEventListener('pgmis:lang', (e)=>{
+  const fixedLang = normalizePgrLang(e && e.detail && e.detail.lang) || getLang();
+  applyPgrLanguage(fixedLang);
+});
 
-    applyPgrLanguage(_pgrLang);
+window.addEventListener('pgmis:language-change', (e)=>{
+  const fixedLang = normalizePgrLang(e && e.detail && e.detail.lang) || getLang();
+  applyPgrLanguage(fixedLang);
+});
+
+applyPgrLanguage(getLang());
 
     const toast = document.getElementById('pgrToast');
     const toastTitle = document.getElementById('pgrToastTitle');

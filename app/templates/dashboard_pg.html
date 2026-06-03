@@ -1016,25 +1016,34 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
       <div class="pg-validation-card">
         <div class="pg-validation-head">
           <div>
-            <div class="pg-validation-title">PG Registration Validation</div>
+<div class="pg-validation-title"
+     data-i18n="pg_validation_reg_title"
+     data-en="PG Registration Validation"
+     data-bn="পিজি নিবন্ধন যাচাইকরণ">PG Registration Validation</div>
            
           </div>
-          <span class="pg-validation-status is-{{ _reg_status|lower }}">
-            {{ _reg_status|replace('_', ' ')|capitalize }}
-          </span>
+         <span class="pg-validation-status is-{{ _reg_status|lower }}" data-status="{{ _reg_status|lower }}">
+  {{ _reg_status|replace('_', ' ')|capitalize }}
+</span>
         </div>
 
         {% if _reg_status|lower == 'rejected' and _reg_remarks %}
           <div class="pg-validation-remarks">
-            <strong>Correction Remarks:</strong> {{ _reg_remarks }}
+<strong data-i18n="pg_validation_correction_remarks"
+        data-en="Correction Remarks:"
+        data-bn="সংশোধনের মন্তব্য:">Correction Remarks:</strong> {{ _reg_remarks }}
           </div>
         {% elif _reg_status|lower in ['submitted', 'resubmitted'] %}
           <div class="pg-validation-note">
-            Your PG Registration Form is submitted and waiting for Block Admin validation.
+<span data-i18n="pg_validation_reg_submitted"
+      data-en="Your PG Registration Form is submitted and waiting for Block Admin validation."
+      data-bn="আপনার পিজি নিবন্ধন ফর্ম জমা হয়েছে এবং ব্লক অ্যাডমিন যাচাইকরণের অপেক্ষায় আছে।">Your PG Registration Form is submitted and waiting for Block Admin validation.</span>
           </div>
         {% elif _reg_status|lower == 'approved' %}
           <div class="pg-validation-note">
-            Your PG Registration Form has been approved. Editing is locked unless reopened by the authority.
+<span data-i18n="pg_validation_reg_approved"
+      data-en="Your PG Registration Form has been approved. Editing is locked unless reopened by the authority."
+      data-bn="আপনার পিজি নিবন্ধন ফর্ম অনুমোদিত হয়েছে। কর্তৃপক্ষ পুনরায় না খুললে সম্পাদনা বন্ধ থাকবে।">Your PG Registration Form has been approved. Editing is locked unless reopened by the authority.</span>
           </div>
         {% else %}
           
@@ -1042,14 +1051,18 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
 
         <div class="pg-validation-actions">
           <a class="pg-validation-btn" href="{{ url_for('pg.pg_registration', pg_id=PGID) }}">
-            Open Registration
+<span data-i18n="pg_open_registration"
+      data-en="Open Registration"
+      data-bn="নিবন্ধন খুলুন">Open Registration</span>
           </a>
 
           {% if _reg_status|lower in ['draft', 'rejected'] %}
             <form method="post" action="{{ url_for('pg.submit_pg_registration_validation', pg_id=PGID) }}"
                   onsubmit="return confirm('Submit PG Registration Form for Block Admin validation?');">
               <button type="submit" class="pg-validation-btn submit">
-                Submit for Validation
+               <span data-i18n="pg_submit_validation"
+      data-en="Submit for Validation"
+      data-bn="যাচাইকরণের জন্য জমা দিন">Submit for Validation</span>
               </button>
             </form>
           {% endif %}
@@ -1059,25 +1072,34 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
       <div class="pg-validation-card">
         <div class="pg-validation-head">
           <div>
-            <div class="pg-validation-title">Membership Registration Validation</div>
+            <div class="pg-validation-title"
+     data-i18n="pg_validation_member_title"
+     data-en="Membership Registration Validation"
+     data-bn="সদস্য নিবন্ধন যাচাইকরণ">Membership Registration Validation</div>
            
           </div>
-          <span class="pg-validation-status is-{{ _member_status|lower }}">
-            {{ _member_status|replace('_', ' ')|capitalize }}
-          </span>
+         <span class="pg-validation-status is-{{ _member_status|lower }}" data-status="{{ _member_status|lower }}">
+  {{ _member_status|replace('_', ' ')|capitalize }}
+</span>
         </div>
 
         {% if _member_status|lower == 'rejected' and _member_remarks %}
           <div class="pg-validation-remarks">
-            <strong>Correction Remarks:</strong> {{ _member_remarks }}
+<strong data-i18n="pg_validation_correction_remarks"
+        data-en="Correction Remarks:"
+        data-bn="সংশোধনের মন্তব্য:">Correction Remarks:</strong> {{ _member_remarks }}
           </div>
         {% elif _member_status|lower in ['submitted', 'resubmitted'] %}
           <div class="pg-validation-note">
-            Your Membership Register is submitted and waiting for Block Admin validation.
+<span data-i18n="pg_validation_member_submitted"
+      data-en="Your Membership Register is submitted and waiting for Block Admin validation."
+      data-bn="আপনার সদস্য নিবন্ধন জমা হয়েছে এবং ব্লক অ্যাডমিন যাচাইকরণের অপেক্ষায় আছে।">Your Membership Register is submitted and waiting for Block Admin validation.</span>
           </div>
         {% elif _member_status|lower == 'approved' %}
           <div class="pg-validation-note">
-            Your Membership Register has been approved. Editing is locked unless reopened by the authority.
+<span data-i18n="pg_validation_member_approved"
+      data-en="Your Membership Register has been approved. Editing is locked unless reopened by the authority."
+      data-bn="আপনার সদস্য নিবন্ধন অনুমোদিত হয়েছে। কর্তৃপক্ষ পুনরায় না খুললে সম্পাদনা বন্ধ থাকবে।">Your Membership Register has been approved. Editing is locked unless reopened by the authority.</span>
           </div>
         {% else %}
           
@@ -1085,14 +1107,18 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
 
         <div class="pg-validation-actions">
           <a class="pg-validation-btn" href="{{ url_for('pg.pg_members', pg_id=PGID) }}">
-            Open Membership
+           <span data-i18n="pg_open_membership"
+      data-en="Open Membership"
+      data-bn="সদস্য নিবন্ধন খুলুন">Open Membership</span>
           </a>
 
           {% if _member_status|lower in ['draft', 'rejected'] %}
             <form method="post" action="{{ url_for('pg.submit_member_registration_validation', pg_id=PGID) }}"
                   onsubmit="return confirm('Submit Membership Registration for Block Admin validation?');">
               <button type="submit" class="pg-validation-btn submit">
-                Submit for Validation
+<span data-i18n="pg_submit_validation"
+      data-en="Submit for Validation"
+      data-bn="যাচাইকরণের জন্য জমা দিন">Submit for Validation</span>
               </button>
             </form>
           {% endif %}
@@ -1115,10 +1141,19 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
   <div class="pg-kpi-graph-card">
     <div class="pg-kpi-graph-titlebar">
       <div>
-        <div class="pg-kpi-graph-title">PG KPI Graphs</div>
-        <div class="pg-kpi-graph-sub">Working visual summary of all PG dashboard KPI values</div>
+      <div class="pg-kpi-graph-title"
+     data-i18n="pg_kpi_graphs_title"
+     data-en="PG KPI Graphs"
+     data-bn="পিজি KPI গ্রাফ">PG KPI Graphs</div>
+<div class="pg-kpi-graph-sub"
+     data-i18n="pg_kpi_graphs_sub"
+     data-en="Working visual summary of all PG dashboard KPI values"
+     data-bn="পিজি ড্যাশবোর্ডের সব KPI মানের ভিজ্যুয়াল সারাংশ">Working visual summary of all PG dashboard KPI values</div>
       </div>
-      <span class="pg-kpi-graph-pill">Live PG Metrics</span>
+     <span class="pg-kpi-graph-pill"
+      data-i18n="pg_kpi_live_metrics"
+      data-en="Live PG Metrics"
+      data-bn="লাইভ পিজি মেট্রিক্স">Live PG Metrics</span>
     </div>
 
     <div class="pg-kpi-graph-body">
@@ -1127,10 +1162,19 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
         <div class="pg-kpi-graph-card pg-kpi-graph-wide">
           <div class="pg-kpi-graph-titlebar">
             <div>
-              <div class="pg-kpi-graph-title">All PG KPI Values</div>
-              <div class="pg-kpi-graph-sub">Members, loans, turnover, profit, loss, grants and stock</div>
+              <div class="pg-kpi-graph-title"
+     data-i18n="pg_all_kpi_values"
+     data-en="All PG KPI Values"
+     data-bn="সব পিজি KPI মান">All PG KPI Values</div>
+<div class="pg-kpi-graph-sub"
+     data-i18n="pg_all_kpi_values_sub"
+     data-en="Members, loans, turnover, profit, loss, grants and stock"
+     data-bn="সদস্য, ঋণ, টার্নওভার, লাভ, ক্ষতি, অনুদান এবং স্টক">Members, loans, turnover, profit, loss, grants and stock</div>
             </div>
-            <span class="pg-kpi-graph-pill">3D Bar</span>
+           <span class="pg-kpi-graph-pill"
+      data-i18n="pg_chart_type_3d_bar"
+      data-en="3D Bar"
+      data-bn="৩ডি বার">3D Bar</span>
           </div>
           <div class="pg-kpi-graph-body">
             <div class="pg-kpi-chart-box">
@@ -1142,10 +1186,19 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
         <div class="pg-kpi-graph-card">
           <div class="pg-kpi-graph-titlebar">
             <div>
-             <div class="pg-kpi-graph-title">Member Coverage</div>
-<div class="pg-kpi-graph-sub">Total members and new members</div>
+      <div class="pg-kpi-graph-title"
+     data-i18n="pg_member_coverage"
+     data-en="Member Coverage"
+     data-bn="সদস্য কভারেজ">Member Coverage</div>
+<div class="pg-kpi-graph-sub"
+     data-i18n="pg_member_coverage_sub"
+     data-en="Total members and new members"
+     data-bn="মোট সদস্য এবং নতুন সদস্য">Total members and new members</div>
             </div>
-            <span class="pg-kpi-graph-pill">Radar</span>
+            <span class="pg-kpi-graph-pill"
+      data-i18n="pg_chart_type_radar"
+      data-en="Radar"
+      data-bn="রাডার">Radar</span>
           </div>
           <div class="pg-kpi-graph-body">
             <div class="pg-kpi-chart-box">
@@ -1157,10 +1210,19 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
         <div class="pg-kpi-graph-card">
           <div class="pg-kpi-graph-titlebar">
             <div>
-              <div class="pg-kpi-graph-title">Finance KPI Summary</div>
-              <div class="pg-kpi-graph-sub">Turnover, profit, loss, grants and loan outstanding</div>
+              <div class="pg-kpi-graph-title"
+     data-i18n="pg_finance_kpi_summary"
+     data-en="Finance KPI Summary"
+     data-bn="আর্থিক KPI সারাংশ">Finance KPI Summary</div>
+<div class="pg-kpi-graph-sub"
+     data-i18n="pg_finance_kpi_summary_sub"
+     data-en="Turnover, profit, loss, grants and loan outstanding"
+     data-bn="টার্নওভার, লাভ, ক্ষতি, অনুদান এবং বকেয়া ঋণ">Turnover, profit, loss, grants and loan outstanding</div>
             </div>
-            <span class="pg-kpi-graph-pill">3D Bar</span>
+            <span class="pg-kpi-graph-pill"
+      data-i18n="pg_chart_type_3d_bar"
+      data-en="3D Bar"
+      data-bn="৩ডি বার">3D Bar</span>
           </div>
           <div class="pg-kpi-graph-body">
             <div class="pg-kpi-chart-box">
@@ -1172,10 +1234,19 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
         <div class="pg-kpi-graph-card">
           <div class="pg-kpi-graph-titlebar">
             <div>
-              <div class="pg-kpi-graph-title">Loan Status</div>
-              <div class="pg-kpi-graph-sub">Active loans and outstanding amount</div>
+             <div class="pg-kpi-graph-title"
+     data-i18n="pg_loan_status"
+     data-en="Loan Status"
+     data-bn="ঋণের অবস্থা">Loan Status</div>
+<div class="pg-kpi-graph-sub"
+     data-i18n="pg_loan_status_sub"
+     data-en="Active loans and outstanding amount"
+     data-bn="সক্রিয় ঋণ এবং বকেয়া পরিমাণ">Active loans and outstanding amount</div>
             </div>
-            <span class="pg-kpi-graph-pill">Doughnut</span>
+          <span class="pg-kpi-graph-pill"
+      data-i18n="pg_chart_type_doughnut"
+      data-en="Doughnut"
+      data-bn="ডোনাট">Doughnut</span>
           </div>
           <div class="pg-kpi-graph-body">
             <div class="pg-kpi-chart-box">
@@ -1187,10 +1258,19 @@ html.no-js .pg-gate { opacity: 1 !important; transform: none !important; }
         <div class="pg-kpi-graph-card">
           <div class="pg-kpi-graph-titlebar">
             <div>
-              <div class="pg-kpi-graph-title">Grant and Stock Status</div>
-              <div class="pg-kpi-graph-sub">Grant amount, grant count, stock and categories</div>
+             <div class="pg-kpi-graph-title"
+     data-i18n="pg_grant_stock_status"
+     data-en="Grant and Stock Status"
+     data-bn="অনুদান ও স্টকের অবস্থা">Grant and Stock Status</div>
+<div class="pg-kpi-graph-sub"
+     data-i18n="pg_grant_stock_status_sub"
+     data-en="Grant amount, grant count, stock and categories"
+     data-bn="অনুদানের পরিমাণ, অনুদানের সংখ্যা, স্টক এবং বিভাগ">Grant amount, grant count, stock and categories</div>
             </div>
-            <span class="pg-kpi-graph-pill">Polar</span>
+            <span class="pg-kpi-graph-pill"
+      data-i18n="pg_chart_type_polar"
+      data-en="Polar"
+      data-bn="পোলার">Polar</span>
           </div>
           <div class="pg-kpi-graph-body">
             <div class="pg-kpi-chart-box">
@@ -1252,6 +1332,95 @@ function __closeGate(){
       dash_welcome_pg: { en: "WELCOME", bn: "স্বাগতম" },
 
       dash_live_view: { en: "Dashboard • Live View", bn: "ড্যাশবোর্ড • লাইভ ভিউ" },
+
+      // PG validation status cards
+pg_validation_reg_title: { en: "PG Registration Validation", bn: "পিজি নিবন্ধন যাচাইকরণ" },
+pg_validation_member_title: { en: "Membership Registration Validation", bn: "সদস্য নিবন্ধন যাচাইকরণ" },
+
+pg_validation_correction_remarks: { en: "Correction Remarks:", bn: "সংশোধনের মন্তব্য:" },
+
+pg_validation_reg_submitted: {
+  en: "Your PG Registration Form is submitted and waiting for Block Admin validation.",
+  bn: "আপনার পিজি নিবন্ধন ফর্ম জমা হয়েছে এবং ব্লক অ্যাডমিন যাচাইকরণের অপেক্ষায় আছে।"
+},
+pg_validation_reg_approved: {
+  en: "Your PG Registration Form has been approved. Editing is locked unless reopened by the authority.",
+  bn: "আপনার পিজি নিবন্ধন ফর্ম অনুমোদিত হয়েছে। কর্তৃপক্ষ পুনরায় না খুললে সম্পাদনা বন্ধ থাকবে।"
+},
+pg_validation_member_submitted: {
+  en: "Your Membership Register is submitted and waiting for Block Admin validation.",
+  bn: "আপনার সদস্য নিবন্ধন জমা হয়েছে এবং ব্লক অ্যাডমিন যাচাইকরণের অপেক্ষায় আছে।"
+},
+pg_validation_member_approved: {
+  en: "Your Membership Register has been approved. Editing is locked unless reopened by the authority.",
+  bn: "আপনার সদস্য নিবন্ধন অনুমোদিত হয়েছে। কর্তৃপক্ষ পুনরায় না খুললে সম্পাদনা বন্ধ থাকবে।"
+},
+
+pg_open_registration: { en: "Open Registration", bn: "নিবন্ধন খুলুন" },
+pg_open_membership: { en: "Open Membership", bn: "সদস্য নিবন্ধন খুলুন" },
+pg_submit_validation: { en: "Submit for Validation", bn: "যাচাইকরণের জন্য জমা দিন" },
+
+pg_status_draft: { en: "Draft", bn: "খসড়া" },
+pg_status_submitted: { en: "Submitted", bn: "জমা হয়েছে" },
+pg_status_resubmitted: { en: "Resubmitted", bn: "পুনরায় জমা হয়েছে" },
+pg_status_approved: { en: "Approved", bn: "অনুমোদিত" },
+pg_status_rejected: { en: "Rejected", bn: "প্রত্যাখ্যাত" },
+
+// PG KPI graph static text
+pg_kpi_graphs_title: { en: "PG KPI Graphs", bn: "পিজি KPI গ্রাফ" },
+pg_kpi_graphs_sub: {
+  en: "Working visual summary of all PG dashboard KPI values",
+  bn: "পিজি ড্যাশবোর্ডের সব KPI মানের ভিজ্যুয়াল সারাংশ"
+},
+pg_kpi_live_metrics: { en: "Live PG Metrics", bn: "লাইভ পিজি মেট্রিক্স" },
+
+pg_all_kpi_values: { en: "All PG KPI Values", bn: "সব পিজি KPI মান" },
+pg_all_kpi_values_sub: {
+  en: "Members, loans, turnover, profit, loss, grants and stock",
+  bn: "সদস্য, ঋণ, টার্নওভার, লাভ, ক্ষতি, অনুদান এবং স্টক"
+},
+pg_member_coverage: { en: "Member Coverage", bn: "সদস্য কভারেজ" },
+pg_member_coverage_sub: { en: "Total members and new members", bn: "মোট সদস্য এবং নতুন সদস্য" },
+pg_finance_kpi_summary: { en: "Finance KPI Summary", bn: "আর্থিক KPI সারাংশ" },
+pg_finance_kpi_summary_sub: {
+  en: "Turnover, profit, loss, grants and loan outstanding",
+  bn: "টার্নওভার, লাভ, ক্ষতি, অনুদান এবং বকেয়া ঋণ"
+},
+pg_loan_status: { en: "Loan Status", bn: "ঋণের অবস্থা" },
+pg_loan_status_sub: { en: "Active loans and outstanding amount", bn: "সক্রিয় ঋণ এবং বকেয়া পরিমাণ" },
+pg_grant_stock_status: { en: "Grant and Stock Status", bn: "অনুদান ও স্টকের অবস্থা" },
+pg_grant_stock_status_sub: {
+  en: "Grant amount, grant count, stock and categories",
+  bn: "অনুদানের পরিমাণ, অনুদানের সংখ্যা, স্টক এবং বিভাগ"
+},
+
+pg_chart_type_3d_bar: { en: "3D Bar", bn: "৩ডি বার" },
+pg_chart_type_radar: { en: "Radar", bn: "রাডার" },
+pg_chart_type_doughnut: { en: "Doughnut", bn: "ডোনাট" },
+pg_chart_type_polar: { en: "Polar", bn: "পোলার" },
+
+// PG KPI chart labels
+pg_lbl_members: { en: "Members", bn: "সদস্য" },
+pg_lbl_new_members: { en: "New Members", bn: "নতুন সদস্য" },
+pg_lbl_active_loans: { en: "Active Loans", bn: "সক্রিয় ঋণ" },
+pg_lbl_outstanding: { en: "Outstanding", bn: "বকেয়া" },
+pg_lbl_turnover: { en: "Turnover", bn: "টার্নওভার" },
+pg_lbl_profit: { en: "Profit", bn: "লাভ" },
+pg_lbl_loss: { en: "Loss", bn: "ক্ষতি" },
+pg_lbl_grants: { en: "Grants", bn: "অনুদান" },
+pg_lbl_grant_count: { en: "Grant Count", bn: "অনুদানের সংখ্যা" },
+pg_lbl_categories: { en: "Categories", bn: "বিভাগ" },
+pg_lbl_stock: { en: "Stock", bn: "স্টক" },
+pg_lbl_pg_kpi_value: { en: "PG KPI Value", bn: "পিজি KPI মান" },
+pg_lbl_financial_kpi: { en: "Financial KPI", bn: "আর্থিক KPI" },
+pg_lbl_outstanding_loan: { en: "Outstanding Loan", bn: "বকেয়া ঋণ" },
+pg_lbl_outstanding_amount: { en: "Outstanding Amount", bn: "বকেয়া পরিমাণ" },
+pg_lbl_grant_amount: { en: "Grant Amount", bn: "অনুদানের পরিমাণ" },
+pg_lbl_stock_kg: { en: "Stock Kg", bn: "স্টক কেজি" },
+pg_lbl_input_stock: { en: "Input Stock", bn: "ইনপুট স্টক" },
+pg_lbl_output_sold: { en: "Output Sold", bn: "আউটপুট বিক্রি" },
+pg_lbl_available: { en: "Available", bn: "উপলব্ধ" },
+pg_lbl_value: { en: "Value", bn: "মান" },
 
       // Quick stats
       stat_total_members: { en: "Total Members", bn: "মোট সদস্য" },
@@ -1473,15 +1642,22 @@ function __chartTooltipINR(context){
   return label + __formatINR(context.parsed?.y ?? context.parsed ?? context.raw);
 }
 
-    function __applyDomI18n(){
-      const lang = __getLang();
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const en = el.getAttribute('data-en');
-        const bn = el.getAttribute('data-bn');
-        if (lang === 'bn' && bn) el.textContent = bn;
-        else if (en) el.textContent = en;
-      });
-    }
+   function __applyDomI18n(){
+  const lang = __getLang();
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const en = el.getAttribute('data-en');
+    const bn = el.getAttribute('data-bn');
+    if (lang === 'bn' && bn) el.textContent = bn;
+    else if (en) el.textContent = en;
+  });
+
+  document.querySelectorAll('[data-status]').forEach(el => {
+    const status = String(el.getAttribute('data-status') || 'draft').toLowerCase().replace(/\s+/g, '_');
+    const key = 'pg_status_' + status;
+    el.textContent = __t(key);
+  });
+}
 
     // ============================================================
     // Lucide Icons as SVG strings
@@ -2058,22 +2234,22 @@ function getProduceStockData(){
   }
 
   return {
-    labels: ['Stock'],
-    datasets: [
-      {
-        label: 'Input Stock',
+    labels: [__t('pg_lbl_stock')],
+datasets: [
+  {
+    label: __t('pg_lbl_input_stock'),
         data: [inputStock],
         backgroundColor: '#0f766e',
         borderRadius: 8
       },
       {
-        label: 'Output Sold',
+       label: __t('pg_lbl_output_sold'),
         data: [outputSold],
         backgroundColor: '#15803d',
         borderRadius: 8
       },
       {
-        label: 'Available',
+label: __t('pg_lbl_available'),
         data: [available],
         backgroundColor: '#f59e0b',
         borderRadius: 8
@@ -2380,7 +2556,7 @@ function makePgPolar(chartKey, canvasId, labels, values, labelText){
     data:{
       labels:labels || [],
       datasets:[{
-        label:labelText || 'Value',
+       label:labelText || __t('pg_lbl_value'),
         data:(values || []).map(__num),
         backgroundColor:__pgChartPalette(),
         borderColor:__pgChartBorderPalette(),
@@ -2442,19 +2618,19 @@ function renderPgKpiGraphs(){
   makePg3DBar(
   'pgAllKpi',
   'pgAllKpi3dChart',
-  [
-    'Members',
-    'New Members',
-    'Active Loans',
-    'Outstanding',
-    'Turnover',
-    'Profit',
-    'Loss',
-    'Grants',
-    'Grant Count',
-    'Categories',
-    'Stock'
-  ],
+ [
+  __t('pg_lbl_members'),
+  __t('pg_lbl_new_members'),
+  __t('pg_lbl_active_loans'),
+  __t('pg_lbl_outstanding'),
+  __t('pg_lbl_turnover'),
+  __t('pg_lbl_profit'),
+  __t('pg_lbl_loss'),
+  __t('pg_lbl_grants'),
+  __t('pg_lbl_grant_count'),
+  __t('pg_lbl_categories'),
+  __t('pg_lbl_stock')
+],
   [
     members,
     newMembers,
@@ -2468,41 +2644,52 @@ function renderPgKpiGraphs(){
     categories,
     stockKg
   ],
-  'PG KPI Value',
+__t('pg_lbl_pg_kpi_value'),
   false
 );
 
  makePgRadar(
   'pgMemberRadar',
   'pgMemberRadarChart',
-  ['Total Members', 'New Members'],
+  [__t('stat_total_members'), __t('pg_lbl_new_members')],
   [members, newMembers],
-  'Member Coverage'
+  __t('pg_member_coverage')
 );
 
   makePg3DBar(
     'pgFinanceKpi',
     'pgFinanceKpiChart',
-    ['Turnover', 'Profit', 'Loss', 'Grants', 'Outstanding Loan'],
+    [
+  __t('pg_lbl_turnover'),
+  __t('pg_lbl_profit'),
+  __t('pg_lbl_loss'),
+  __t('pg_lbl_grants'),
+  __t('pg_lbl_outstanding_loan')
+],
     [turnover, profit, loss, grantsAmount, outstanding],
-    'Financial KPI',
+   __t('pg_lbl_financial_kpi'),
     false
   );
 
   makePgDoughnut(
     'pgLoanKpi',
     'pgLoanKpiChart',
-    ['Active Loans', 'Outstanding Amount'],
+   [__t('pg_lbl_active_loans'), __t('pg_lbl_outstanding_amount')],
     [activeLoans, outstanding],
-    'Loan Status'
+   __t('pg_loan_status')
   );
 
   makePgPolar(
     'pgGrantStock',
     'pgGrantStockChart',
-    ['Grant Amount', 'Grant Count', 'Stock Kg', 'Categories'],
+    [
+  __t('pg_lbl_grant_amount'),
+  __t('pg_lbl_grant_count'),
+  __t('pg_lbl_stock_kg'),
+  __t('pg_lbl_categories')
+],
     [grantsAmount, grantsCount, stockKg, categories],
-    'Grant and Stock Status'
+    __t('pg_grant_stock_status')
   );
 }
 
@@ -3034,6 +3221,12 @@ href="${__PG_ALL_TRANSACTIONS_URL}"
         </div>
       `;
     }
+
+
+let __dashboardLiveLoaded = false;
+let __dashboardChartsRenderToken = 0;
+let __dashboardLangTimer = null;
+
  async function initChartsAsync(){
   safeChartsFallback();
 
@@ -3099,17 +3292,21 @@ href="${__PG_ALL_TRANSACTIONS_URL}"
     });
   }
 
-  async function __rerenderForLang(){
+ async function __rerenderForLang(){
+  clearTimeout(__dashboardLangTimer);
+
+  __dashboardLangTimer = setTimeout(async function(){
     __applyDomI18n();
 
-    // re-render non-chart sections immediately
     try { renderQuickStats(); } catch(e){}
     try { renderDashboardOverview(); } catch(e){}
     try { renderRecentTransactions(); } catch(e){}
 
-    // re-render charts async
-    initChartsAsync();
-  }
+    try {
+      await initChartsAsync({ skipLiveFetch: true });
+    } catch(e){}
+  }, 80);
+}
   document.addEventListener('DOMContentLoaded', async () => {
     try { document.documentElement.classList.remove('no-js'); } catch(e){}
 
@@ -3122,13 +3319,13 @@ __applyDomI18n();
 // setup scroll memory before rendering
 __setupDashboardScrollMemory();
 
-// render static sections while page is hidden
+// fetch live metrics + render charts first while page is hidden
+await initChartsAsync();
+
+// render dashboard boxes only once, using final live metrics
 try { renderQuickStats(); } catch(e){ console.warn("quickStats failed", e); }
 try { renderDashboardOverview(); } catch(e){ console.warn("overview failed", e); }
 try { renderRecentTransactions(); } catch(e){ console.warn("recentTx failed", e); }
-
-// render charts while page is hidden
-await initChartsAsync();
 
 // restore position while whole page is still hidden
 __restoreDashboardScrollInstant();
