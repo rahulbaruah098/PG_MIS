@@ -631,9 +631,9 @@
           <ion-icon name="leaf-outline" style="font-size:25px;"></ion-icon>
         </div>
         <div>
-          <div class="crop-kicker">Agri Crop Planning</div>
-          <div class="crop-title">Crop Management & Cycle Analytics</div>
-          <div class="crop-subtitle">
+          <div class="crop-kicker" data-crop-i18n="heroKicker">Agri Crop Planning</div>
+          <div class="crop-title" data-crop-i18n="heroTitle">Crop Management & Cycle Analytics</div>
+          <div class="crop-subtitle" data-crop-i18n="heroSubtitle">
             Select the current FFS Module, review member-wise crop distribution, cycle due status, and update the next 6-month crop cycle.
           </div>
         </div>
@@ -646,7 +646,7 @@
         </div>
         <div class="crop-sector-pill">
           <ion-icon name="analytics-outline"></ion-icon>
-          <span>Sector: {{ pg.sector or 'Agri' }}</span>
+          <span><span data-crop-i18n="sectorLabel">Sector:</span> {{ pg.sector or 'Agri' }}</span>
         </div>
       </div>
     </div>
@@ -657,18 +657,18 @@
       <div>
         <div class="crop-card-title">
           <ion-icon name="filter-outline"></ion-icon>
-          Select Cycle / Module
+          <span data-crop-i18n="selectCycleModule">Select Cycle / Module</span>
         </div>
-        <div class="crop-card-sub">Load members by current FFS Module before planning the next cycle.</div>
+        <div class="crop-card-sub" data-crop-i18n="loadMembersBeforePlanning">Load members by current FFS Module before planning the next cycle.</div>
       </div>
     </div>
 
     <div class="crop-card-body">
       <div class="crop-filter-grid">
         <div class="crop-field">
-          <label class="crop-label" for="currentFfsModule">Current FFS Module</label>
+          <label class="crop-label" for="currentFfsModule" data-crop-i18n="currentFfsModule">Current FFS Module</label>
           <select id="currentFfsModule" class="crop-select">
-            <option value="">Select FFS Module</option>
+            <option value="" data-crop-i18n="selectFfsModule">Select FFS Module</option>
             {% for module in agri_ffs_modules %}
               <option value="{{ module }}">{{ module }}</option>
             {% endfor %}
@@ -676,14 +676,14 @@
         </div>
 
         <div class="crop-field">
-          <label class="crop-label" for="cycleStart">New Cycle Start Date</label>
+          <label class="crop-label" for="cycleStart" data-crop-i18n="newCycleStartDate">New Cycle Start Date</label>
           <input id="cycleStart" class="crop-input" type="date">
         </div>
 
         <div class="crop-actions">
           <button id="loadMembersBtn" type="button" class="crop-btn crop-btn-green">
             <ion-icon name="search-outline"></ion-icon>
-            Load Members
+            <span data-crop-i18n="loadMembers">Load Members</span>
           </button>
         </div>
       </div>
@@ -693,38 +693,38 @@
   <section class="crop-analytics-grid">
     <div class="crop-kpi">
       <div class="crop-kpi-top">
-        <div class="crop-kpi-label">Loaded Members</div>
+        <div class="crop-kpi-label" data-crop-i18n="loadedMembers">Loaded Members</div>
         <div class="crop-kpi-icon"><ion-icon name="people-outline"></ion-icon></div>
       </div>
       <div id="kpiMembers" class="crop-kpi-value">0</div>
-      <div class="crop-kpi-sub">Members under selected FFS Module</div>
+      <div class="crop-kpi-sub" data-crop-i18n="membersUnderSelectedModule">Members under selected FFS Module</div>
     </div>
 
     <div class="crop-kpi">
       <div class="crop-kpi-top">
-        <div class="crop-kpi-label">Unique Crops</div>
+        <div class="crop-kpi-label" data-crop-i18n="uniqueCrops">Unique Crops</div>
         <div class="crop-kpi-icon"><ion-icon name="nutrition-outline"></ion-icon></div>
       </div>
       <div id="kpiCrops" class="crop-kpi-value">0</div>
-      <div class="crop-kpi-sub">Current crop diversity</div>
+      <div class="crop-kpi-sub" data-crop-i18n="currentCropDiversity">Current crop diversity</div>
     </div>
 
     <div class="crop-kpi">
       <div class="crop-kpi-top">
-        <div class="crop-kpi-label">Pending Changes</div>
+        <div class="crop-kpi-label" data-crop-i18n="pendingChanges">Pending Changes</div>
         <div class="crop-kpi-icon"><ion-icon name="create-outline"></ion-icon></div>
       </div>
       <div id="kpiPending" class="crop-kpi-value">0</div>
-      <div class="crop-kpi-sub">Rows edited before save</div>
+      <div class="crop-kpi-sub" data-crop-i18n="rowsEditedBeforeSave">Rows edited before save</div>
     </div>
 
     <div class="crop-kpi">
       <div class="crop-kpi-top">
-        <div class="crop-kpi-label">Due / Overdue</div>
+        <div class="crop-kpi-label" data-crop-i18n="dueOverdue">Due / Overdue</div>
         <div class="crop-kpi-icon"><ion-icon name="time-outline"></ion-icon></div>
       </div>
       <div id="kpiDue" class="crop-kpi-value">0</div>
-      <div class="crop-kpi-sub">Cycle date reached or near</div>
+      <div class="crop-kpi-sub" data-crop-i18n="cycleDateReached">Cycle date reached or near</div>
     </div>
   </section>
 
@@ -734,14 +734,14 @@
         <div>
           <div class="crop-card-title">
             <ion-icon name="bar-chart-outline"></ion-icon>
-            Current Crop Distribution
+            <span data-crop-i18n="currentCropDistribution">Current Crop Distribution</span>
           </div>
-          <div class="crop-card-sub">Top crops among loaded members.</div>
+          <div class="crop-card-sub" data-crop-i18n="topCropsAmongLoaded">Top crops among loaded members.</div>
         </div>
       </div>
       <div class="crop-card-body">
         <div id="cropDistribution" class="crop-bars">
-          <div class="crop-empty">Load members to view crop distribution.</div>
+          <div class="crop-empty" data-crop-i18n="loadMembersToViewDistribution">Load members to view crop distribution.</div>
         </div>
       </div>
     </div>
@@ -751,27 +751,27 @@
         <div>
           <div class="crop-card-title">
             <ion-icon name="calendar-outline"></ion-icon>
-            Crop Cycle Timeline
+            <span data-crop-i18n="cropCycleTimeline">Crop Cycle Timeline</span>
           </div>
-          <div class="crop-card-sub">Cycle dates are read from member data when available.</div>
+          <div class="crop-card-sub" data-crop-i18n="cycleDatesRead">Cycle dates are read from member data when available.</div>
         </div>
       </div>
       <div class="crop-card-body">
         <div class="crop-cycle-box">
           <div class="crop-cycle-item">
-            <div class="crop-cycle-label">First Cycle</div>
+            <div class="crop-cycle-label" data-crop-i18n="firstCycle">First Cycle</div>
             <div id="timelineFirst" class="crop-cycle-value">-</div>
-            <div class="crop-cycle-sub">Initial crop cycle date</div>
+            <div class="crop-cycle-sub" data-crop-i18n="initialCropCycleDate">Initial crop cycle date</div>
           </div>
           <div class="crop-cycle-item">
-            <div class="crop-cycle-label">Current Start</div>
+            <div class="crop-cycle-label" data-crop-i18n="currentStart">Current Start</div>
             <div id="timelineCurrent" class="crop-cycle-value">-</div>
-            <div class="crop-cycle-sub">Current running cycle</div>
+            <div class="crop-cycle-sub" data-crop-i18n="currentRunningCycle">Current running cycle</div>
           </div>
           <div class="crop-cycle-item">
-            <div class="crop-cycle-label">Next Cycle</div>
+            <div class="crop-cycle-label" data-crop-i18n="nextCycle">Next Cycle</div>
             <div id="timelineNext" class="crop-cycle-value">-</div>
-            <div class="crop-cycle-sub">Expected next planning date</div>
+            <div class="crop-cycle-sub" data-crop-i18n="expectedNextPlanningDate">Expected next planning date</div>
           </div>
         </div>
       </div>
@@ -783,43 +783,43 @@
       <div>
         <div class="crop-card-title">
           <ion-icon name="list-outline"></ion-icon>
-          Member-wise Crop Update
+          <span data-crop-i18n="memberWiseCropUpdate">Member-wise Crop Update</span>
         </div>
-        <div class="crop-card-sub">Changing values here updates the latest crop details in Membership Register after save.</div>
+        <div class="crop-card-sub" data-crop-i18n="changingValuesUpdatesRegister">Changing values here updates the latest crop details in Membership Register after save.</div>
       </div>
 
       <div class="crop-actions">
         <button id="applySameModuleBtn" type="button" class="crop-btn crop-btn-green" disabled>
           <ion-icon name="copy-outline"></ion-icon>
-          Apply Same New Module
+          <span data-crop-i18n="applySameNewModule">Apply Same New Module</span>
         </button>
 
         <button id="saveCropBtn" type="button" class="crop-btn crop-btn-dark" disabled>
           <ion-icon name="save-outline"></ion-icon>
-          Save Crop Cycle
+          <span data-crop-i18n="saveCropCycle">Save Crop Cycle</span>
         </button>
       </div>
     </div>
 
     <div class="crop-card-body">
       <div id="memberEmpty" class="crop-empty">
-        Select a current FFS Module and click Load Members.
+        <span data-crop-i18n="selectCurrentAndLoad">Select a current FFS Module and click Load Members.</span>
       </div>
 
       <div id="memberTableWrap" class="crop-table-wrap" style="display:none;">
         <table class="crop-table">
           <thead>
             <tr>
-              <th>Member</th>
-              <th>SHG</th>
-              <th>Current Module</th>
-              <th>Current Crop</th>
-              <th>First Cycle Date</th>
-              <th>Current Cycle Start</th>
-              <th>Next Cycle Date</th>
-              <th>New FFS Module</th>
-              <th>New Crop</th>
-              <th>Next Cycle</th>
+              <th data-crop-i18n="member">Member</th>
+              <th data-crop-i18n="shg">SHG</th>
+              <th data-crop-i18n="currentModule">Current Module</th>
+              <th data-crop-i18n="currentCrop">Current Crop</th>
+              <th data-crop-i18n="firstCycleDate">First Cycle Date</th>
+              <th data-crop-i18n="currentCycleStart">Current Cycle Start</th>
+              <th data-crop-i18n="nextCycleDate">Next Cycle Date</th>
+              <th data-crop-i18n="newFfsModule">New FFS Module</th>
+              <th data-crop-i18n="newCrop">New Crop</th>
+              <th data-crop-i18n="nextCycle">Next Cycle</th>
             </tr>
           </thead>
           <tbody id="memberTableBody"></tbody>
@@ -864,6 +864,225 @@
   const timelineNext = document.getElementById("timelineNext");
 
   let loadedMembers = [];
+
+  let cropLang = "en";
+
+  const CROP_TRANSLATIONS = {
+    en: {
+      heroKicker: "Agri Crop Planning",
+      heroTitle: "Crop Management & Cycle Analytics",
+      heroSubtitle: "Select the current FFS Module, review member-wise crop distribution, cycle due status, and update the next 6-month crop cycle.",
+      sectorLabel: "Sector:",
+      selectCycleModule: "Select Cycle / Module",
+      loadMembersBeforePlanning: "Load members by current FFS Module before planning the next cycle.",
+      currentFfsModule: "Current FFS Module",
+      selectFfsModule: "Select FFS Module",
+      newCycleStartDate: "New Cycle Start Date",
+      loadMembers: "Load Members",
+      loadedMembers: "Loaded Members",
+      membersUnderSelectedModule: "Members under selected FFS Module",
+      uniqueCrops: "Unique Crops",
+      currentCropDiversity: "Current crop diversity",
+      pendingChanges: "Pending Changes",
+      rowsEditedBeforeSave: "Rows edited before save",
+      dueOverdue: "Due / Overdue",
+      cycleDateReached: "Cycle date reached or near",
+      currentCropDistribution: "Current Crop Distribution",
+      topCropsAmongLoaded: "Top crops among loaded members.",
+      loadMembersToViewDistribution: "Load members to view crop distribution.",
+      cropCycleTimeline: "Crop Cycle Timeline",
+      cycleDatesRead: "Cycle dates are read from member data when available.",
+      firstCycle: "First Cycle",
+      initialCropCycleDate: "Initial crop cycle date",
+      currentStart: "Current Start",
+      currentRunningCycle: "Current running cycle",
+      nextCycle: "Next Cycle",
+      expectedNextPlanningDate: "Expected next planning date",
+      memberWiseCropUpdate: "Member-wise Crop Update",
+      changingValuesUpdatesRegister: "Changing values here updates the latest crop details in Membership Register after save.",
+      applySameNewModule: "Apply Same New Module",
+      saveCropCycle: "Save Crop Cycle",
+      selectCurrentAndLoad: "Select a current FFS Module and click Load Members.",
+      member: "Member",
+      shg: "SHG",
+      currentModule: "Current Module",
+      currentCrop: "Current Crop",
+      firstCycleDate: "First Cycle Date",
+      currentCycleStart: "Current Cycle Start",
+      nextCycleDate: "Next Cycle Date",
+      newFfsModule: "New FFS Module",
+      newCrop: "New Crop",
+      selectNewModule: "Select New Module",
+      selectNewCrop: "Select New Crop",
+      notSelected: "Not selected",
+      cycle: "Cycle",
+      overdue: "Overdue",
+      dueIn: "Due in",
+      daysShort: "d",
+      loading: "Loading...",
+      saving: "Saving...",
+      pleaseSelectCurrentModule: "Please select Current FFS Module.",
+      failedToLoadMembers: "Failed to load members.",
+      membersLoadedSuffix: "member(s) loaded.",
+      noMembersFound: "No members found under this FFS Module.",
+      noChangeFound: "No crop/module change found. Please change at least one member row.",
+      saveConfirm: "Save crop cycle changes? This will update Membership Register also.",
+      failedToSave: "Failed to save crop cycle.",
+      cropCycleSaved: "Crop cycle saved successfully.",
+      promptNewModule: "Enter New FFS Module exactly, example: FFS Module 2",
+      invalidFfsModule: "Invalid FFS Module.",
+      appliedPrefix: "Applied",
+      appliedSuffix: "to all visible members."
+    },
+    bn: {
+      heroKicker: "কৃষি ফসল পরিকল্পনা",
+      heroTitle: "ফসল ব্যবস্থাপনা ও চক্র বিশ্লেষণ",
+      heroSubtitle: "বর্তমান FFS মডিউল নির্বাচন করুন, সদস্যভিত্তিক ফসল বণ্টন, চক্রের নির্ধারিত অবস্থা দেখুন এবং পরবর্তী ৬ মাসের ফসল চক্র আপডেট করুন।",
+      sectorLabel: "সেক্টর:",
+      selectCycleModule: "চক্র / মডিউল নির্বাচন",
+      loadMembersBeforePlanning: "পরবর্তী চক্র পরিকল্পনার আগে বর্তমান FFS মডিউল অনুযায়ী সদস্য লোড করুন।",
+      currentFfsModule: "বর্তমান FFS মডিউল",
+      selectFfsModule: "FFS মডিউল নির্বাচন করুন",
+      newCycleStartDate: "নতুন চক্র শুরুর তারিখ",
+      loadMembers: "সদস্য লোড করুন",
+      loadedMembers: "লোড হওয়া সদস্য",
+      membersUnderSelectedModule: "নির্বাচিত FFS মডিউলের অধীনে সদস্য",
+      uniqueCrops: "ভিন্ন ফসল",
+      currentCropDiversity: "বর্তমান ফসল বৈচিত্র্য",
+      pendingChanges: "অপেক্ষমাণ পরিবর্তন",
+      rowsEditedBeforeSave: "সংরক্ষণের আগে সম্পাদিত সারি",
+      dueOverdue: "নির্ধারিত / অতিবাহিত",
+      cycleDateReached: "চক্রের তারিখ পৌঁছেছে বা কাছাকাছি",
+      currentCropDistribution: "বর্তমান ফসল বণ্টন",
+      topCropsAmongLoaded: "লোড হওয়া সদস্যদের মধ্যে শীর্ষ ফসল।",
+      loadMembersToViewDistribution: "ফসল বণ্টন দেখতে সদস্য লোড করুন।",
+      cropCycleTimeline: "ফসল চক্র টাইমলাইন",
+      cycleDatesRead: "চক্রের তারিখ উপলব্ধ থাকলে সদস্য ডেটা থেকে নেওয়া হয়।",
+      firstCycle: "প্রথম চক্র",
+      initialCropCycleDate: "প্রাথমিক ফসল চক্রের তারিখ",
+      currentStart: "বর্তমান শুরু",
+      currentRunningCycle: "বর্তমান চলমান চক্র",
+      nextCycle: "পরবর্তী চক্র",
+      expectedNextPlanningDate: "সম্ভাব্য পরবর্তী পরিকল্পনার তারিখ",
+      memberWiseCropUpdate: "সদস্যভিত্তিক ফসল আপডেট",
+      changingValuesUpdatesRegister: "এখানে পরিবর্তন করলে সংরক্ষণের পর Membership Register-এ সর্বশেষ ফসল তথ্য আপডেট হবে।",
+      applySameNewModule: "একই নতুন মডিউল প্রয়োগ করুন",
+      saveCropCycle: "ফসল চক্র সংরক্ষণ করুন",
+      selectCurrentAndLoad: "বর্তমান FFS মডিউল নির্বাচন করে সদস্য লোড করুন।",
+      member: "সদস্য",
+      shg: "SHG",
+      currentModule: "বর্তমান মডিউল",
+      currentCrop: "বর্তমান ফসল",
+      firstCycleDate: "প্রথম চক্রের তারিখ",
+      currentCycleStart: "বর্তমান চক্র শুরু",
+      nextCycleDate: "পরবর্তী চক্রের তারিখ",
+      newFfsModule: "নতুন FFS মডিউল",
+      newCrop: "নতুন ফসল",
+      selectNewModule: "নতুন মডিউল নির্বাচন করুন",
+      selectNewCrop: "নতুন ফসল নির্বাচন করুন",
+      notSelected: "নির্বাচিত নয়",
+      cycle: "চক্র",
+      overdue: "অতিবাহিত",
+      dueIn: "বাকি",
+      daysShort: "দিন",
+      loading: "লোড হচ্ছে...",
+      saving: "সংরক্ষণ হচ্ছে...",
+      pleaseSelectCurrentModule: "অনুগ্রহ করে বর্তমান FFS মডিউল নির্বাচন করুন।",
+      failedToLoadMembers: "সদস্য লোড করতে ব্যর্থ হয়েছে।",
+      membersLoadedSuffix: "জন সদস্য লোড হয়েছে।",
+      noMembersFound: "এই FFS মডিউলের অধীনে কোনো সদস্য পাওয়া যায়নি।",
+      noChangeFound: "কোনো ফসল/মডিউল পরিবর্তন পাওয়া যায়নি। অনুগ্রহ করে অন্তত একটি সদস্য সারি পরিবর্তন করুন।",
+      saveConfirm: "ফসল চক্রের পরিবর্তন সংরক্ষণ করবেন? এটি Membership Register-ও আপডেট করবে।",
+      failedToSave: "ফসল চক্র সংরক্ষণ করতে ব্যর্থ হয়েছে।",
+      cropCycleSaved: "ফসল চক্র সফলভাবে সংরক্ষণ হয়েছে।",
+      promptNewModule: "নতুন FFS মডিউল ঠিকভাবে লিখুন, উদাহরণ: FFS Module 2",
+      invalidFfsModule: "অবৈধ FFS মডিউল।",
+      appliedPrefix: "প্রয়োগ করা হয়েছে",
+      appliedSuffix: "সব দৃশ্যমান সদস্যের জন্য।"
+    }
+  };
+
+  function normalizeCropLang(lang){
+    const value = String(lang || "").toLowerCase().trim();
+    if(value === "bn" || value === "bengali" || value === "বাংলা") return "bn";
+    return "en";
+  }
+
+  function getSavedCropLang(){
+    try{
+      if(window.PGMIS && typeof window.PGMIS.getLanguage === "function"){
+        return normalizeCropLang(window.PGMIS.getLanguage());
+      }
+      return normalizeCropLang(
+        window.__PGMIS_LANG ||
+        window.PGMIS_LANG ||
+        sessionStorage.getItem("PGMIS_LANG_SESSION") ||
+        localStorage.getItem("PGMIS_LANG_SESSION") ||
+        localStorage.getItem("pgmis_lang") ||
+        localStorage.getItem("PGMIS_LANG") ||
+        localStorage.getItem("language") ||
+        localStorage.getItem("lang") ||
+        "en"
+      );
+    }catch(_){
+      return "en";
+    }
+  }
+
+  function cropT(key){
+    return (CROP_TRANSLATIONS[cropLang] && CROP_TRANSLATIONS[cropLang][key])
+      || CROP_TRANSLATIONS.en[key]
+      || key;
+  }
+
+  function applyCropTranslations(lang){
+    cropLang = normalizeCropLang(lang || getSavedCropLang());
+
+    document.querySelectorAll("[data-crop-i18n]").forEach(function(el){
+      const key = el.getAttribute("data-crop-i18n");
+      if(key){
+        el.textContent = cropT(key);
+      }
+    });
+
+    if(currentFfsModule && currentFfsModule.options && currentFfsModule.options[0]){
+      currentFfsModule.options[0].textContent = cropT("selectFfsModule");
+    }
+
+    if(loadMembersBtn && !loadMembersBtn.disabled){
+      loadMembersBtn.innerHTML = `<ion-icon name="search-outline"></ion-icon> <span data-crop-i18n="loadMembers">${cropT("loadMembers")}</span>`;
+    }
+
+    if(saveCropBtn && !saveCropBtn.disabled){
+      saveCropBtn.innerHTML = `<ion-icon name="save-outline"></ion-icon> <span data-crop-i18n="saveCropCycle">${cropT("saveCropCycle")}</span>`;
+    }
+
+    if(applySameModuleBtn){
+      applySameModuleBtn.innerHTML = `<ion-icon name="copy-outline"></ion-icon> <span data-crop-i18n="applySameNewModule">${cropT("applySameNewModule")}</span>`;
+    }
+
+    renderDistribution();
+    renderTimeline();
+
+    if(loadedMembers.length){
+      renderMembers();
+    }
+  }
+
+  window.applyTranslations = applyCropTranslations;
+  window.translatePage = applyCropTranslations;
+  window.updatePageLanguage = function(lang){
+    applyCropTranslations(lang);
+  };
+
+  window.addEventListener("pgmis:language-change", function(e){
+    applyCropTranslations(e.detail && e.detail.lang);
+  });
+
+  window.addEventListener("pgmis:lang", function(e){
+    applyCropTranslations(e.detail && e.detail.lang);
+  });
+
 
   function escapeHtml(value){
     return String(value ?? "")
@@ -921,8 +1140,8 @@
   function cycleChip(dateValue){
     const days = daysUntil(dateValue);
     if(days === null) return `<span class="status-chip neutral">-</span>`;
-    if(days < 0) return `<span class="status-chip danger">Overdue ${Math.abs(days)}d</span>`;
-    if(days <= 30) return `<span class="status-chip warn">Due in ${days}d</span>`;
+    if(days < 0) return `<span class="status-chip danger">${cropT("overdue")} ${Math.abs(days)}${cropLang === "bn" ? " " + cropT("daysShort") : cropT("daysShort")}</span>`;
+    if(days <= 30) return `<span class="status-chip warn">${cropT("dueIn")} ${days}${cropLang === "bn" ? " " + cropT("daysShort") : cropT("daysShort")}</span>`;
     return `<span class="status-chip">${escapeHtml(dateValue)}</span>`;
   }
 
@@ -965,13 +1184,13 @@
 
   function renderDistribution(){
     if(!loadedMembers.length){
-      cropDistribution.innerHTML = `<div class="crop-empty">Load members to view crop distribution.</div>`;
+      cropDistribution.innerHTML = `<div class="crop-empty" data-crop-i18n="loadMembersToViewDistribution">${cropT("loadMembersToViewDistribution")}</div>`;
       return;
     }
 
     const counts = {};
     loadedMembers.forEach(m => {
-      const crop = m.current_crop || "Not selected";
+      const crop = m.current_crop || cropT("notSelected");
       counts[crop] = (counts[crop] || 0) + 1;
     });
 
@@ -1058,18 +1277,18 @@
         <td>${cycleChip(nextCycleDate)}</td>
         <td>
           <select class="crop-select row-new-module" data-index="${index}" data-field="new_ffs_module">
-            <option value="">Select New Module</option>
+            <option value="">${cropT("selectNewModule")}</option>
             ${optionHtml(AGRI_FFS_MODULES, m.new_ffs_module)}
           </select>
         </td>
         <td>
           <select class="crop-select row-new-crop" data-index="${index}" data-field="new_crop">
-            <option value="">Select New Crop</option>
+            <option value="">${cropT("selectNewCrop")}</option>
             ${optionHtml(AGRI_CROPS, m.new_crop)}
           </select>
         </td>
         <td>
-          <span class="status-chip">Cycle ${Number(m.crop_cycle_no || 1) + 1}</span>
+          <span class="status-chip">${cropT("cycle")} ${Number(m.crop_cycle_no || 1) + 1}</span>
         </td>
       `;
       memberTableBody.appendChild(tr);
@@ -1082,37 +1301,37 @@
 
         <div class="crop-mobile-grid">
           <div>
-            <div class="crop-label">Current Module</div>
+            <div class="crop-label">${cropT("currentModule")}</div>
             <span class="status-chip">${escapeHtml(currentModule || "-")}</span>
           </div>
 
           <div>
-            <div class="crop-label">Current Crop</div>
+            <div class="crop-label">${cropT("currentCrop")}</div>
             <div style="font-weight:900;margin-top:6px;">${escapeHtml(currentCrop || "-")}</div>
           </div>
 
           <div>
-            <div class="crop-label">First Cycle Date</div>
+            <div class="crop-label">${cropT("firstCycleDate")}</div>
             <div style="font-weight:900;margin-top:6px;">${escapeHtml(m.first_crop_cycle_date || "-")}</div>
           </div>
 
           <div>
-            <div class="crop-label">Next Cycle Date</div>
+            <div class="crop-label">${cropT("nextCycleDate")}</div>
             <div style="font-weight:900;margin-top:6px;">${cycleChip(nextCycleDate)}</div>
           </div>
 
           <div class="crop-field">
-            <label class="crop-label">New FFS Module</label>
+            <label class="crop-label">${cropT("newFfsModule")}</label>
             <select class="crop-select row-new-module" data-index="${index}" data-field="new_ffs_module">
-              <option value="">Select New Module</option>
+              <option value="">${cropT("selectNewModule")}</option>
               ${optionHtml(AGRI_FFS_MODULES, m.new_ffs_module)}
             </select>
           </div>
 
           <div class="crop-field">
-            <label class="crop-label">New Crop</label>
+            <label class="crop-label">${cropT("newCrop")}</label>
             <select class="crop-select row-new-crop" data-index="${index}" data-field="new_crop">
-              <option value="">Select New Crop</option>
+              <option value="">${cropT("selectNewCrop")}</option>
               ${optionHtml(AGRI_CROPS, m.new_crop)}
             </select>
           </div>
@@ -1128,12 +1347,12 @@
     const selectedModule = currentFfsModule.value.trim();
 
     if(!selectedModule){
-      showToast("Please select Current FFS Module.", true);
+      showToast(cropT("pleaseSelectCurrentModule"), true);
       return;
     }
 
     loadMembersBtn.disabled = true;
-    loadMembersBtn.innerHTML = `<ion-icon name="hourglass-outline"></ion-icon> Loading...`;
+    loadMembersBtn.innerHTML = `<ion-icon name="hourglass-outline"></ion-icon> ${cropT("loading")}`;
 
     try{
       const url = `${membersUrl}?ffs_module=${encodeURIComponent(selectedModule)}`;
@@ -1147,7 +1366,7 @@
       const data = await res.json();
 
       if(!res.ok || !data.ok){
-        throw new Error(data.message || "Failed to load members.");
+        throw new Error(data.message || cropT("failedToLoadMembers"));
       }
 
       loadedMembers = (data.members || []).map(m => ({
@@ -1159,18 +1378,18 @@
       renderMembers();
 
       if(loadedMembers.length){
-        showToast(`${loadedMembers.length} member(s) loaded.`);
+        showToast(`${loadedMembers.length} ${cropT("membersLoadedSuffix")}`);
       }else{
-        showToast("No members found under this FFS Module.", true);
+        showToast(cropT("noMembersFound"), true);
       }
 
     }catch(err){
       loadedMembers = [];
       renderMembers();
-      showToast(err.message || "Failed to load members.", true);
+      showToast(err.message || cropT("failedToLoadMembers"), true);
     }finally{
       loadMembersBtn.disabled = false;
-      loadMembersBtn.innerHTML = `<ion-icon name="search-outline"></ion-icon> Load Members`;
+      loadMembersBtn.innerHTML = `<ion-icon name="search-outline"></ion-icon> <span data-crop-i18n="loadMembers">${cropT("loadMembers")}</span>`;
     }
   }
 
@@ -1186,15 +1405,15 @@
     const rows = collectRows();
 
     if(!rows.length){
-      showToast("No crop/module change found. Please change at least one member row.", true);
+      showToast(cropT("noChangeFound"), true);
       return;
     }
 
-    const confirmed = window.confirm("Save crop cycle changes? This will update Membership Register also.");
+    const confirmed = window.confirm(cropT("saveConfirm"));
     if(!confirmed) return;
 
     saveCropBtn.disabled = true;
-    saveCropBtn.innerHTML = `<ion-icon name="hourglass-outline"></ion-icon> Saving...`;
+    saveCropBtn.innerHTML = `<ion-icon name="hourglass-outline"></ion-icon> ${cropT("saving")}`;
 
     try{
       const res = await fetch(saveUrl, {
@@ -1212,29 +1431,29 @@
       const data = await res.json();
 
       if(!res.ok || !data.ok){
-        throw new Error(data.message || "Failed to save crop cycle.");
+        throw new Error(data.message || cropT("failedToSave"));
       }
 
-      showToast(data.message || "Crop cycle saved successfully.");
+      showToast(data.message || cropT("cropCycleSaved"));
       await loadMembers();
 
     }catch(err){
-      showToast(err.message || "Failed to save crop cycle.", true);
+      showToast(err.message || cropT("failedToSave"), true);
     }finally{
       saveCropBtn.disabled = false;
-      saveCropBtn.innerHTML = `<ion-icon name="save-outline"></ion-icon> Save Crop Cycle`;
+      saveCropBtn.innerHTML = `<ion-icon name="save-outline"></ion-icon> <span data-crop-i18n="saveCropCycle">${cropT("saveCropCycle")}</span>`;
     }
   }
 
   function applySameNewModule(){
     if(!loadedMembers.length) return;
 
-    const selected = prompt("Enter New FFS Module exactly, example: FFS Module 2");
+    const selected = prompt(cropT("promptNewModule"));
 
     if(!selected) return;
 
     if(!AGRI_FFS_MODULES.includes(selected)){
-      showToast("Invalid FFS Module.", true);
+      showToast(cropT("invalidFfsModule"), true);
       return;
     }
 
@@ -1244,7 +1463,7 @@
     }));
 
     renderMembers();
-    showToast(`Applied ${selected} to all visible members.`);
+    showToast(`${cropT("appliedPrefix")} ${selected} ${cropT("appliedSuffix")}`);
   }
 
   document.addEventListener("change", function(e){
@@ -1264,6 +1483,8 @@
   saveCropBtn.addEventListener("click", saveCropCycle);
   applySameModuleBtn.addEventListener("click", applySameNewModule);
 
+  cropLang = getSavedCropLang();
+  applyCropTranslations(cropLang);
   updateAnalytics();
 </script>
 

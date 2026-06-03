@@ -938,7 +938,7 @@
         </svg>
       </button>
 
-      <h2 class="ll-title" id="llTitle">Loan Ledger</h2>
+      <h2 class="ll-title" id="llTitle" data-ll-i18n="loanLedger">Loan Ledger</h2>
 
       <div class="ll-head-actions">
         <button class="ll-btn ll-red ll-hidden" id="llCancelBtn" type="button">
@@ -946,7 +946,7 @@
             <path d="M18 6 6 18"></path>
             <path d="M6 6l12 12"></path>
           </svg>
-          <span id="llCancelText">Cancel</span>
+          <span id="llCancelText" data-ll-i18n="cancel">Cancel</span>
         </button>
 
         <button class="ll-btn ll-red" id="llEditSaveBtn" type="button">
@@ -959,83 +959,83 @@
             <polyline points="17 21 17 13 7 13 7 21"></polyline>
             <polyline points="7 3 7 8 15 8"></polyline>
           </svg>
-          <span id="llEditSaveText">Edit</span>
+          <span id="llEditSaveText" data-ll-i18n="edit">Edit</span>
         </button>
       </div>
     </div>
 
-    <div class="ll-sector-note" id="llSectorNote">
+    <div class="ll-sector-note" id="llSectorNote" data-ll-i18n="loadingSectorLoanLedger">
       Loading sector-based loan ledger...
     </div>
 
     <div class="ll-topfields">
       <div class="ll-field">
-        <div class="ll-label">Name of Producer Group</div>
+        <div class="ll-label" data-ll-i18n="producerGroupName">Name of Producer Group</div>
         <input class="ll-input" id="llPgName" type="text" value="{{ current_pg_name|default('') }}" readonly>
       </div>
 
       <div class="ll-field">
-        <div class="ll-label">PG Sector</div>
-        <input class="ll-input" id="llPgSector" type="text" placeholder="Sector will appear automatically" readonly>
+        <div class="ll-label" data-ll-i18n="pgSector">PG Sector</div>
+        <input class="ll-input" id="llPgSector" type="text" placeholder="Sector will appear automatically" data-ll-placeholder="sectorAuto" readonly>
       </div>
 
       <div class="ll-field">
-        <div class="ll-label" id="llMemberLabel">Name of Member</div>
+        <div class="ll-label" id="llMemberLabel" data-ll-i18n="memberName">Name of Member</div>
         <select class="ll-input" id="llMemberName">
-          <option value="">Select member</option>
+          <option value="" data-ll-i18n="selectMember">Select member</option>
         </select>
       </div>
 
       <div class="ll-field">
-        <div class="ll-label" id="llItemLabel">Crop / Activity / Unit</div>
+        <div class="ll-label" id="llItemLabel" data-ll-i18n="cropActivityUnit">Crop / Activity / Unit</div>
         <select class="ll-input" id="llSectorItem">
-          <option value="">Select item</option>
+          <option value="" data-ll-i18n="selectItem">Select item</option>
         </select>
       </div>
 
       <div class="ll-field">
-        <div class="ll-label" id="llSpouseLabel">Father/Mother/Spouse</div>
-        <input class="ll-input" id="llSpouseName" type="text" placeholder="Father/Mother/Spouse name will appear automatically" readonly>
+        <div class="ll-label" id="llSpouseLabel" data-ll-i18n="fatherMotherSpouse">Father/Mother/Spouse</div>
+        <input class="ll-input" id="llSpouseName" type="text" placeholder="Father/Mother/Spouse name will appear automatically" data-ll-placeholder="spouseAuto" readonly>
       </div>
 
       <div class="ll-field">
-        <div class="ll-label" id="llLoanAmountLabel">Assigned Loan Amount</div>
-        <input class="ll-input" id="llLoanAmount" type="number" min="0" step="0.01" placeholder="Enter assigned loan amount">
+        <div class="ll-label" id="llLoanAmountLabel" data-ll-i18n="assignedLoanAmount">Assigned Loan Amount</div>
+        <input class="ll-input" id="llLoanAmount" type="number" min="0" step="0.01" placeholder="Enter assigned loan amount" data-ll-placeholder="enterAssignedLoanAmount">
       </div>
 
       <div class="ll-field">
-        <div class="ll-label" id="llStartDateLabel">Loan Start Date</div>
+        <div class="ll-label" id="llStartDateLabel" data-ll-i18n="loanStartDate">Loan Start Date</div>
         <input class="ll-input" id="llLoanStartDate" type="date">
       </div>
 
       <div class="ll-field">
-        <div class="ll-label" id="llRuleLabel">Sector Rule</div>
-        <input class="ll-input" id="llSectorRule" type="text" placeholder="Sector rule will appear automatically" readonly>
+        <div class="ll-label" id="llRuleLabel" data-ll-i18n="sectorRule">Sector Rule</div>
+        <input class="ll-input" id="llSectorRule" type="text" placeholder="Sector rule will appear automatically" data-ll-placeholder="sectorRuleAuto" readonly>
       </div>
 
       <div class="ll-field">
-        <div class="ll-label" id="llPurposeLabel">Loan Purpose</div>
-        <input class="ll-input" id="llLoanPurpose" type="text" placeholder="Loan purpose">
+        <div class="ll-label" id="llPurposeLabel" data-ll-i18n="loanPurpose">Loan Purpose</div>
+        <input class="ll-input" id="llLoanPurpose" type="text" placeholder="Loan purpose" data-ll-placeholder="loanPurposePlaceholder">
       </div>
 
       <div class="ll-field">
-        <div class="ll-label">Working Period</div>
+        <div class="ll-label" data-ll-i18n="workingPeriod">Working Period</div>
         <input class="ll-input" id="llWorkingPeriod" type="text" readonly>
       </div>
     </div>
 
-    <div class="ll-hint-text" id="llHintText">
+    <div class="ll-hint-text" id="llHintText" data-ll-i18n="selectMemberAndItemToLoadLedger">
       Select a member and crop/activity/unit to load the sector-based ledger.
     </div>
 
     <div class="ll-controls">
       <div class="ll-controls-left">
-        <div class="ll-search" title="Search">
-          <input id="llSearch" type="text" placeholder="Search...">
+        <div class="ll-search" title="Search" data-ll-title="search">
+          <input id="llSearch" type="text" placeholder="Search..." data-ll-placeholder="searchPlaceholder">
         </div>
 
-        <div class="ll-pill" title="Rows per page">
-          <span id="llRowsLabel">Rows</span>
+        <div class="ll-pill" title="Rows per page" data-ll-title="rowsPerPage">
+          <span id="llRowsLabel" data-ll-i18n="rows">Rows</span>
           <select id="llRowsPerPage">
             <option value="10">10</option>
             <option value="25" selected>25</option>
@@ -1056,7 +1056,7 @@
             <path d="M10 11v6"></path>
             <path d="M14 11v6"></path>
           </svg>
-          <span id="llDeleteSelectedText">Delete Selected</span>
+          <span id="llDeleteSelectedText" data-ll-i18n="deleteSelected">Delete Selected</span>
         </button>
 
         <button class="ll-btn ll-soft-red" id="llDeleteAllTop" type="button" disabled>
@@ -1067,7 +1067,7 @@
             <path d="M10 11v6"></path>
             <path d="M14 11v6"></path>
           </svg>
-          <span id="llDeleteAllText">Delete All</span>
+          <span id="llDeleteAllText" data-ll-i18n="deleteAll">Delete All</span>
         </button>
 
         <button class="ll-btn ll-soft-green" id="llAddRowTop" type="button" disabled>
@@ -1075,55 +1075,55 @@
             <path d="M12 5v14"></path>
             <path d="M5 12h14"></path>
           </svg>
-          <span id="llAddRowText">Add Row</span>
+          <span id="llAddRowText" data-ll-i18n="addRow">Add Row</span>
         </button>
       </div>
     </div>
 
     <div class="ll-mobilebar ll-hidden" id="llMobileBar">
-      <button class="ll-btn ll-red" id="llMobileCancel" type="button">Cancel</button>
-      <button class="ll-btn ll-soft-green" id="llMobileAddRow" type="button">Add Row</button>
-      <button class="ll-btn ll-soft-red" id="llMobileDeleteSelected" type="button" disabled>Delete Selected</button>
-      <button class="ll-btn ll-soft-red" id="llMobileDeleteAll" type="button" disabled>Delete All</button>
-      <button class="ll-btn ll-green" id="llMobileSave" type="button">Save</button>
+      <button class="ll-btn ll-red" id="llMobileCancel" type="button" data-ll-i18n="cancel">Cancel</button>
+      <button class="ll-btn ll-soft-green" id="llMobileAddRow" type="button" data-ll-i18n="addRow">Add Row</button>
+      <button class="ll-btn ll-soft-red" id="llMobileDeleteSelected" type="button" disabled data-ll-i18n="deleteSelected">Delete Selected</button>
+      <button class="ll-btn ll-soft-red" id="llMobileDeleteAll" type="button" disabled data-ll-i18n="deleteAll">Delete All</button>
+      <button class="ll-btn ll-green" id="llMobileSave" type="button" data-ll-i18n="save">Save</button>
     </div>
 
     <div class="ll-table-wrap">
       <div class="ll-table">
         <div class="ll-th-row">
-          <div class="ll-th"><input type="checkbox" class="ll-check" id="llSelectAll" title="Select all"></div>
-          <div class="ll-th" id="llHSl">SL</div>
-          <div class="ll-th" id="llHDate">Date</div>
-          <div class="ll-th" id="llHOpening">Opening Loan Amount</div>
-          <div class="ll-th" id="llHNewLoan">New Loan Amount</div>
-          <div class="ll-th" id="llHPrPaid">Principal Paid</div>
-          <div class="ll-th" id="llHIntPaid">Interest Paid</div>
-          <div class="ll-th" id="llHTotalPaid">Total Repayment</div>
+          <div class="ll-th"><input type="checkbox" class="ll-check" id="llSelectAll" title="Select all" data-ll-title="selectAll"></div>
+          <div class="ll-th" id="llHSl" data-ll-i18n="sl">SL</div>
+          <div class="ll-th" id="llHDate" data-ll-i18n="date">Date</div>
+          <div class="ll-th" id="llHOpening" data-ll-i18n="openingLoanAmount">Opening Loan Amount</div>
+          <div class="ll-th" id="llHNewLoan" data-ll-i18n="newLoanAmount">New Loan Amount</div>
+          <div class="ll-th" id="llHPrPaid" data-ll-i18n="principalPaid">Principal Paid</div>
+          <div class="ll-th" id="llHIntPaid" data-ll-i18n="interestPaid">Interest Paid</div>
+          <div class="ll-th" id="llHTotalPaid" data-ll-i18n="totalRepayment">Total Repayment</div>
           
-          <div class="ll-th" id="llHClosing">Outstanding Balance</div>
-          <div class="ll-th" id="llHRemarks">Remarks</div>
-          <div class="ll-th" id="llHAction">Action</div>
+          <div class="ll-th" id="llHClosing" data-ll-i18n="outstandingBalance">Outstanding Balance</div>
+          <div class="ll-th" id="llHRemarks" data-ll-i18n="remarks">Remarks</div>
+          <div class="ll-th" id="llHAction" data-ll-i18n="action">Action</div>
         </div>
 
-        <div class="ll-empty" id="llEmpty">No rows found.</div>
+        <div class="ll-empty" id="llEmpty" data-ll-i18n="noRowsFound">No rows found.</div>
         <div class="ll-body" id="llBody"></div>
       </div>
     </div>
 
     <div class="ll-summary">
-      <div class="ll-kpi">Base Loan: <b id="llKpiBaseLoan">0</b></div>
-      <div class="ll-kpi">Additional Loan: <b id="llKpiAdditionalLoan">0</b></div>
-      <div class="ll-kpi">Principal Paid: <b id="llKpiPrincipalPaid">0</b></div>
-      <div class="ll-kpi">Interest Paid: <b id="llKpiInterestPaid">0</b></div>
-      <div class="ll-kpi">Total Repaid: <b id="llKpiTotalRepaid">0</b></div>
-      <div class="ll-kpi">Outstanding: <b id="llKpiOutstanding">0</b></div>
+      <div class="ll-kpi"><span data-ll-i18n="baseLoan">Base Loan:</span> <b id="llKpiBaseLoan">0</b></div>
+      <div class="ll-kpi"><span data-ll-i18n="additionalLoan">Additional Loan:</span> <b id="llKpiAdditionalLoan">0</b></div>
+      <div class="ll-kpi"><span data-ll-i18n="principalPaidLabel">Principal Paid:</span> <b id="llKpiPrincipalPaid">0</b></div>
+      <div class="ll-kpi"><span data-ll-i18n="interestPaidLabel">Interest Paid:</span> <b id="llKpiInterestPaid">0</b></div>
+      <div class="ll-kpi"><span data-ll-i18n="totalRepaid">Total Repaid:</span> <b id="llKpiTotalRepaid">0</b></div>
+      <div class="ll-kpi"><span data-ll-i18n="outstanding">Outstanding:</span> <b id="llKpiOutstanding">0</b></div>
     </div>
 
     <div class="ll-footer-controls">
       <div class="ll-pager">
-        <button class="ll-btn" id="llPrevBottom" type="button">Prev</button>
+        <button class="ll-btn" id="llPrevBottom" type="button" data-ll-i18n="prev">Prev</button>
         <div class="ll-pageinfo" id="llPageInfoBottom">Page 1 / 1</div>
-        <button class="ll-btn" id="llNextBottom" type="button">Next</button>
+        <button class="ll-btn" id="llNextBottom" type="button" data-ll-i18n="next">Next</button>
       </div>
     </div>
   </div>
@@ -1131,65 +1131,65 @@
 
 <div id="llSaveOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
-    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle">Confirm Save</div></div>
-    <div class="ll-mbody">Do you want to save these changes?</div>
+    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle" data-ll-i18n="confirmSave">Confirm Save</div></div>
+    <div class="ll-mbody" data-ll-i18n="doYouWantSave">Do you want to save these changes?</div>
     <div class="ll-mactions">
-      <button id="llSaveCancel" class="ll-ghost" type="button">Cancel</button>
-      <button id="llSaveYes" class="ll-solid" type="button">Confirm</button>
+      <button id="llSaveCancel" class="ll-ghost" type="button" data-ll-i18n="cancel">Cancel</button>
+      <button id="llSaveYes" class="ll-solid" type="button" data-ll-i18n="confirm">Confirm</button>
     </div>
   </div>
 </div>
 
 <div id="llCancelOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
-    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle">Discard changes?</div></div>
-    <div class="ll-mbody">This will revert all unsaved changes.</div>
+    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle" data-ll-i18n="discardChanges">Discard changes?</div></div>
+    <div class="ll-mbody" data-ll-i18n="revertUnsavedChanges">This will revert all unsaved changes.</div>
     <div class="ll-mactions">
-      <button id="llCancelNo" class="ll-ghost" type="button">Cancel</button>
-      <button id="llCancelYes" class="ll-solid" type="button">Discard</button>
+      <button id="llCancelNo" class="ll-ghost" type="button" data-ll-i18n="cancel">Cancel</button>
+      <button id="llCancelYes" class="ll-solid" type="button" data-ll-i18n="discard">Discard</button>
     </div>
   </div>
 </div>
 
 <div id="llDeleteOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
-    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle">Delete row?</div></div>
-    <div class="ll-mbody">This row will be removed. Save to confirm or Cancel to revert.</div>
+    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle" data-ll-i18n="deleteRowQuestion">Delete row?</div></div>
+    <div class="ll-mbody" data-ll-i18n="rowRemovedSaveConfirm">This row will be removed. Save to confirm or Cancel to revert.</div>
     <div class="ll-mactions">
-      <button id="llDeleteNo" class="ll-ghost" type="button">Cancel</button>
-      <button id="llDeleteYes" class="ll-solid ll-danger" type="button">Delete</button>
+      <button id="llDeleteNo" class="ll-ghost" type="button" data-ll-i18n="cancel">Cancel</button>
+      <button id="llDeleteYes" class="ll-solid ll-danger" type="button" data-ll-i18n="delete">Delete</button>
     </div>
   </div>
 </div>
 
 <div id="llDeleteMultiOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
-    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle">Delete Selected?</div></div>
-    <div class="ll-mbody" id="llDeleteMultiMsg">Selected rows will be removed.</div>
+    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle" data-ll-i18n="deleteSelectedQuestion">Delete Selected?</div></div>
+    <div class="ll-mbody" id="llDeleteMultiMsg" data-ll-i18n="selectedRowsRemoved">Selected rows will be removed.</div>
     <div class="ll-mactions">
-      <button id="llDeleteMultiNo" class="ll-ghost" type="button">Cancel</button>
-      <button id="llDeleteMultiYes" class="ll-solid ll-danger" type="button">Delete</button>
+      <button id="llDeleteMultiNo" class="ll-ghost" type="button" data-ll-i18n="cancel">Cancel</button>
+      <button id="llDeleteMultiYes" class="ll-solid ll-danger" type="button" data-ll-i18n="delete">Delete</button>
     </div>
   </div>
 </div>
 
 <div id="llDeleteAllOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
-    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle">Delete All?</div></div>
-    <div class="ll-mbody">All rows will be removed. Save to confirm or Cancel to revert.</div>
+    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle" data-ll-i18n="deleteAllQuestion">Delete All?</div></div>
+    <div class="ll-mbody" data-ll-i18n="allRowsRemovedSaveConfirm">All rows will be removed. Save to confirm or Cancel to revert.</div>
     <div class="ll-mactions">
-      <button id="llDeleteAllNo" class="ll-ghost" type="button">Cancel</button>
-      <button id="llDeleteAllYes" class="ll-solid ll-danger" type="button">Delete All</button>
+      <button id="llDeleteAllNo" class="ll-ghost" type="button" data-ll-i18n="cancel">Cancel</button>
+      <button id="llDeleteAllYes" class="ll-solid ll-danger" type="button" data-ll-i18n="deleteAll">Delete All</button>
     </div>
   </div>
 </div>
 
 <div id="llInfoOverlay" class="ll-modal-overlay" role="dialog" aria-modal="true">
   <div class="ll-modal">
-    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle" id="llInfoTitle">Message</div></div>
+    <div class="ll-mhead"><span class="ll-dot"></span><div class="ll-mtitle" id="llInfoTitle" data-ll-i18n="message">Message</div></div>
     <div class="ll-mbody" id="llInfoMsg"></div>
     <div class="ll-mactions">
-      <button id="llInfoOk" class="ll-solid" type="button">OK</button>
+      <button id="llInfoOk" class="ll-solid" type="button" data-ll-i18n="ok">OK</button>
     </div>
   </div>
 </div>
@@ -1199,6 +1199,298 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
+
+  let llLang = "en";
+
+  const LL_TRANSLATIONS = {
+    en: {
+      loanLedger: "Loan Ledger",
+      cancel: "Cancel",
+      edit: "Edit",
+      save: "Save",
+      loadingSectorLoanLedger: "Loading sector-based loan ledger...",
+      producerGroupName: "Name of Producer Group",
+      pgSector: "PG Sector",
+      sectorAuto: "Sector will appear automatically",
+      memberName: "Name of Member",
+      selectMember: "Select member",
+      cropActivityUnit: "Crop / Activity / Unit",
+      selectItem: "Select item",
+      fatherMotherSpouse: "Father/Mother/Spouse",
+      spouseAuto: "Father/Mother/Spouse name will appear automatically",
+      assignedLoanAmount: "Assigned Loan Amount",
+      enterAssignedLoanAmount: "Enter assigned loan amount",
+      loanStartDate: "Loan Start Date",
+      sectorRule: "Sector Rule",
+      sectorRuleAuto: "Sector rule will appear automatically",
+      loanPurpose: "Loan Purpose",
+      loanPurposePlaceholder: "Loan purpose",
+      workingPeriod: "Working Period",
+      selectMemberAndItemToLoadLedger: "Select a member and crop/activity/unit to load the sector-based ledger.",
+      search: "Search",
+      searchPlaceholder: "Search...",
+      rowsPerPage: "Rows per page",
+      rows: "Rows",
+      deleteSelected: "Delete Selected",
+      deleteAll: "Delete All",
+      addRow: "Add Row",
+      selectAll: "Select all",
+      sl: "SL",
+      date: "Date",
+      openingLoanAmount: "Opening Loan Amount",
+      newLoanAmount: "New Loan Amount",
+      principalPaid: "Principal Paid",
+      interestPaid: "Interest Paid",
+      totalRepayment: "Total Repayment",
+      outstandingBalance: "Outstanding Balance",
+      remarks: "Remarks",
+      action: "Action",
+      noRowsFound: "No rows found.",
+      baseLoan: "Base Loan:",
+      additionalLoan: "Additional Loan:",
+      principalPaidLabel: "Principal Paid:",
+      interestPaidLabel: "Interest Paid:",
+      totalRepaid: "Total Repaid:",
+      outstanding: "Outstanding:",
+      prev: "Prev",
+      next: "Next",
+      page: "Page",
+      confirmSave: "Confirm Save",
+      doYouWantSave: "Do you want to save these changes?",
+      confirm: "Confirm",
+      discardChanges: "Discard changes?",
+      revertUnsavedChanges: "This will revert all unsaved changes.",
+      discard: "Discard",
+      deleteRowQuestion: "Delete row?",
+      rowRemovedSaveConfirm: "This row will be removed. Save to confirm or Cancel to revert.",
+      delete: "Delete",
+      deleteSelectedQuestion: "Delete Selected?",
+      selectedRowsRemoved: "Selected rows will be removed.",
+      deleteAllQuestion: "Delete All?",
+      allRowsRemovedSaveConfirm: "All rows will be removed. Save to confirm or Cancel to revert.",
+      message: "Message",
+      ok: "OK",
+      sector: "Sector",
+      basedLoanLedger: "based Loan Ledger. Select member and",
+      arddHint: "ARDD: in each row, enter Date, New Loan Amount if released, Principal Paid and Interest Paid. Balance will auto-calculate.",
+      agriHint: "Agri: first 4 months no repayment. In each row, enter Date, Principal Paid and Interest Paid only.",
+      fisheryHint: "Fishery: first month no repayment. In each row, enter Date, Principal Paid and Interest Paid only.",
+      selectMemberAndItemGeneric: "Select member and item to load the sector-based ledger.",
+      crop: "Crop",
+      fisheryActivity: "Fishery Activity",
+      arddUnit: "ARDD Unit",
+      itemGeneric: "Crop / Activity / Unit",
+      noItemSaved: "No item saved",
+      memberFallback: "Member",
+      noActiveMembers: "No active PG members found. Please update PG Registration / Membership Register first.",
+      noItemForMemberPrefix: "No",
+      noItemForMemberSuffix: "found for this member. Please update PG Membership Details first.",
+      couldNotLoadSectorLedger: "Could not load sector Loan Ledger:",
+      couldNotLoadMember: "Could not load member",
+      couldNotLoadAccountLedger: "Could not load loan account/ledger:",
+      couldNotLoadRows: "Could not load ledger rows:",
+      pleaseSelectMemberAnd: "Please select member and",
+      first: "first.",
+      enterAssignedBeforeRow: "Please enter assigned loan amount before adding repayment row.",
+      assignedLoanRequired: "Assigned loan amount is required.",
+      ledgerSaved: "Sector-based Loan Ledger saved successfully.",
+      saveFailed: "Save failed:",
+      editModeLeave: "You are in Edit mode. Please Save or Cancel before leaving this page.",
+      saveOrCancelBeforeMember: "Please Save or Cancel before changing member.",
+      saveOrCancelBeforeChanging: "Please Save or Cancel before changing",
+      selected: "Selected",
+      rowsWillBeRemoved: "row(s) will be removed. Save to confirm or Cancel to revert.",
+      monthNoRepayment: "month(s) no repayment",
+      monthNames: ["January","February","March","April","May","June","July","August","September","October","November","December"],
+      select: "Select",
+      onlyArdd: "Only ARDD",
+      deleteRowTitle: "Delete row"
+    },
+    bn: {
+      loanLedger: "ঋণ লেজার",
+      cancel: "বাতিল",
+      edit: "সম্পাদনা",
+      save: "সংরক্ষণ",
+      loadingSectorLoanLedger: "সেক্টর ভিত্তিক ঋণ লেজার লোড হচ্ছে...",
+      producerGroupName: "Producer Group-এর নাম",
+      pgSector: "PG সেক্টর",
+      sectorAuto: "সেক্টর স্বয়ংক্রিয়ভাবে দেখা যাবে",
+      memberName: "সদস্যের নাম",
+      selectMember: "সদস্য নির্বাচন করুন",
+      cropActivityUnit: "ফসল / কার্যক্রম / ইউনিট",
+      selectItem: "আইটেম নির্বাচন করুন",
+      fatherMotherSpouse: "পিতা/মাতা/স্বামী/স্ত্রী",
+      spouseAuto: "পিতা/মাতা/স্বামী/স্ত্রীর নাম স্বয়ংক্রিয়ভাবে দেখা যাবে",
+      assignedLoanAmount: "বরাদ্দকৃত ঋণের পরিমাণ",
+      enterAssignedLoanAmount: "বরাদ্দকৃত ঋণের পরিমাণ লিখুন",
+      loanStartDate: "ঋণ শুরুর তারিখ",
+      sectorRule: "সেক্টর নিয়ম",
+      sectorRuleAuto: "সেক্টর নিয়ম স্বয়ংক্রিয়ভাবে দেখা যাবে",
+      loanPurpose: "ঋণের উদ্দেশ্য",
+      loanPurposePlaceholder: "ঋণের উদ্দেশ্য",
+      workingPeriod: "কার্যকাল",
+      selectMemberAndItemToLoadLedger: "সেক্টর ভিত্তিক লেজার লোড করতে সদস্য এবং ফসল/কার্যক্রম/ইউনিট নির্বাচন করুন।",
+      search: "অনুসন্ধান",
+      searchPlaceholder: "অনুসন্ধান করুন...",
+      rowsPerPage: "প্রতি পাতায় সারি",
+      rows: "সারি",
+      deleteSelected: "নির্বাচিত মুছুন",
+      deleteAll: "সব মুছুন",
+      addRow: "সারি যোগ করুন",
+      selectAll: "সব নির্বাচন করুন",
+      sl: "ক্রমিক",
+      date: "তারিখ",
+      openingLoanAmount: "প্রারম্ভিক ঋণের পরিমাণ",
+      newLoanAmount: "নতুন ঋণের পরিমাণ",
+      principalPaid: "আসল পরিশোধ",
+      interestPaid: "সুদ পরিশোধ",
+      totalRepayment: "মোট পরিশোধ",
+      outstandingBalance: "বকেয়া ব্যালেন্স",
+      remarks: "মন্তব্য",
+      action: "অ্যাকশন",
+      noRowsFound: "কোনো সারি পাওয়া যায়নি।",
+      baseLoan: "মূল ঋণ:",
+      additionalLoan: "অতিরিক্ত ঋণ:",
+      principalPaidLabel: "আসল পরিশোধ:",
+      interestPaidLabel: "সুদ পরিশোধ:",
+      totalRepaid: "মোট পরিশোধ:",
+      outstanding: "বকেয়া:",
+      prev: "পূর্ববর্তী",
+      next: "পরবর্তী",
+      page: "পৃষ্ঠা",
+      confirmSave: "সংরক্ষণ নিশ্চিত করুন",
+      doYouWantSave: "আপনি কি এই পরিবর্তনগুলি সংরক্ষণ করতে চান?",
+      confirm: "নিশ্চিত করুন",
+      discardChanges: "পরিবর্তন বাতিল করবেন?",
+      revertUnsavedChanges: "এতে সব অসংরক্ষিত পরিবর্তন আগের অবস্থায় ফিরে যাবে।",
+      discard: "বাতিল করুন",
+      deleteRowQuestion: "সারি মুছবেন?",
+      rowRemovedSaveConfirm: "এই সারিটি সরানো হবে। নিশ্চিত করতে Save করুন অথবা আগের অবস্থায় ফিরতে Cancel করুন।",
+      delete: "মুছুন",
+      deleteSelectedQuestion: "নির্বাচিত সারি মুছবেন?",
+      selectedRowsRemoved: "নির্বাচিত সারিগুলি সরানো হবে।",
+      deleteAllQuestion: "সব সারি মুছবেন?",
+      allRowsRemovedSaveConfirm: "সব সারি সরানো হবে। নিশ্চিত করতে Save করুন অথবা আগের অবস্থায় ফিরতে Cancel করুন।",
+      message: "বার্তা",
+      ok: "ঠিক আছে",
+      sector: "সেক্টর",
+      basedLoanLedger: "ভিত্তিক ঋণ লেজার। সদস্য এবং নির্বাচন করুন",
+      arddHint: "ARDD: প্রতিটি সারিতে তারিখ, ঋণ ছাড়া হলে নতুন ঋণের পরিমাণ, আসল পরিশোধ এবং সুদ পরিশোধ লিখুন। ব্যালেন্স স্বয়ংক্রিয়ভাবে হিসাব হবে।",
+      agriHint: "কৃষি: প্রথম ৪ মাস কোনো পরিশোধ নেই। প্রতিটি সারিতে শুধুমাত্র তারিখ, আসল পরিশোধ এবং সুদ পরিশোধ লিখুন।",
+      fisheryHint: "মৎস্য: প্রথম মাস কোনো পরিশোধ নেই। প্রতিটি সারিতে শুধুমাত্র তারিখ, আসল পরিশোধ এবং সুদ পরিশোধ লিখুন।",
+      selectMemberAndItemGeneric: "সেক্টর ভিত্তিক লেজার লোড করতে সদস্য এবং আইটেম নির্বাচন করুন।",
+      crop: "ফসল",
+      fisheryActivity: "মৎস্য কার্যক্রম",
+      arddUnit: "ARDD ইউনিট",
+      itemGeneric: "ফসল / কার্যক্রম / ইউনিট",
+      noItemSaved: "কোনো আইটেম সংরক্ষিত নেই",
+      memberFallback: "সদস্য",
+      noActiveMembers: "কোনো সক্রিয় PG সদস্য পাওয়া যায়নি। অনুগ্রহ করে PG Registration / Membership Register আপডেট করুন।",
+      noItemForMemberPrefix: "এই সদস্যের জন্য কোনো",
+      noItemForMemberSuffix: "পাওয়া যায়নি। অনুগ্রহ করে PG Membership Details আপডেট করুন।",
+      couldNotLoadSectorLedger: "সেক্টর ঋণ লেজার লোড করা যায়নি:",
+      couldNotLoadMember: "সদস্যের তথ্য লোড করা যায়নি",
+      couldNotLoadAccountLedger: "ঋণ অ্যাকাউন্ট/লেজার লোড করা যায়নি:",
+      couldNotLoadRows: "লেজার সারি লোড করা যায়নি:",
+      pleaseSelectMemberAnd: "অনুগ্রহ করে আগে সদস্য এবং",
+      first: "নির্বাচন করুন।",
+      enterAssignedBeforeRow: "পরিশোধ সারি যোগ করার আগে বরাদ্দকৃত ঋণের পরিমাণ লিখুন।",
+      assignedLoanRequired: "বরাদ্দকৃত ঋণের পরিমাণ আবশ্যক।",
+      ledgerSaved: "সেক্টর ভিত্তিক ঋণ লেজার সফলভাবে সংরক্ষণ হয়েছে।",
+      saveFailed: "সংরক্ষণ ব্যর্থ হয়েছে:",
+      editModeLeave: "আপনি Edit mode-এ আছেন। এই পেজ ছাড়ার আগে Save অথবা Cancel করুন।",
+      saveOrCancelBeforeMember: "সদস্য পরিবর্তনের আগে Save অথবা Cancel করুন।",
+      saveOrCancelBeforeChanging: "পরিবর্তনের আগে Save অথবা Cancel করুন:",
+      selected: "নির্বাচিত",
+      rowsWillBeRemoved: "টি সারি সরানো হবে। নিশ্চিত করতে Save করুন অথবা আগের অবস্থায় ফিরতে Cancel করুন।",
+      monthNoRepayment: "মাস কোনো পরিশোধ নেই",
+      monthNames: ["জানুয়ারি","ফেব্রুয়ারি","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টেম্বর","অক্টোবর","নভেম্বর","ডিসেম্বর"],
+      select: "নির্বাচন",
+      onlyArdd: "শুধু ARDD",
+      deleteRowTitle: "সারি মুছুন"
+    }
+  };
+
+  function normalizeLLLang(lang){
+    const value = String(lang || "").toLowerCase().trim();
+    if (value === "bn" || value === "bengali") return "bn";
+    return "en";
+  }
+
+  function getSavedLLLang(){
+    try{
+      if (window.PGMIS && typeof window.PGMIS.getLanguage === "function"){
+        return normalizeLLLang(window.PGMIS.getLanguage());
+      }
+      return normalizeLLLang(
+        window.__PGMIS_LANG ||
+        window.PGMIS_LANG ||
+        localStorage.getItem("pgmis_lang") ||
+        localStorage.getItem("PGMIS_LANG") ||
+        localStorage.getItem("language") ||
+        localStorage.getItem("lang") ||
+        sessionStorage.getItem("pgmis_lang") ||
+        sessionStorage.getItem("language") ||
+        "en"
+      );
+    }catch(_){
+      return "en";
+    }
+  }
+
+  function llT(key){
+    return (LL_TRANSLATIONS[llLang] && LL_TRANSLATIONS[llLang][key]) ||
+      (LL_TRANSLATIONS.en && LL_TRANSLATIONS.en[key]) ||
+      key;
+  }
+
+  function applyLLTranslations(lang){
+    llLang = normalizeLLLang(lang || getSavedLLLang());
+
+    document.querySelectorAll("[data-ll-i18n]").forEach(el => {
+      const key = el.getAttribute("data-ll-i18n");
+      if (key) el.textContent = llT(key);
+    });
+
+    document.querySelectorAll("[data-ll-placeholder]").forEach(el => {
+      const key = el.getAttribute("data-ll-placeholder");
+      if (key) el.setAttribute("placeholder", llT(key));
+    });
+
+    document.querySelectorAll("[data-ll-title]").forEach(el => {
+      const key = el.getAttribute("data-ll-title");
+      if (key) el.setAttribute("title", llT(key));
+    });
+
+    if ($("llMemberName") && $("llMemberName").options[0]){
+      $("llMemberName").options[0].textContent = llT("selectMember");
+    }
+
+    if ($("llSectorItem") && $("llSectorItem").options[0]){
+      $("llSectorItem").options[0].textContent = selectedMemberId
+        ? `${llT("select")} ${itemLabelText().toLowerCase()}`
+        : llT("selectItem");
+    }
+
+    if ($("llEditSaveText")){
+      $("llEditSaveText").textContent = llIsEditing ? llT("save") : llT("edit");
+    }
+
+    if (pgInfo){
+      renderSectorNoteAndHint();
+      $("llItemLabel").textContent = itemLabelText();
+      $("llWorkingPeriod").value = monthLabel(selectedPeriod.month, selectedPeriod.year);
+    }
+
+    renderPage();
+  }
+
+  window.applyTranslations = applyLLTranslations;
+  window.translatePage = applyLLTranslations;
+  window.updatePageLanguage = function(lang){ applyLLTranslations(lang); };
+
+  window.addEventListener("pgmis:language-change", e => applyLLTranslations(e.detail && e.detail.lang));
+  window.addEventListener("pgmis:lang", e => applyLLTranslations(e.detail && e.detail.lang));
 
   const API = {
     bootstrap: "/pg/loan-ledger/sector/bootstrap",
@@ -1265,7 +1557,8 @@
   }
 
   function monthLabel(month, year){
-    return `${monthNames[(Number(month) || 1) - 1] || "Month"} ${year || ""}`.trim();
+    const months = llT("monthNames") || monthNames;
+    return `${months[(Number(month) || 1) - 1] || "Month"} ${year || ""}`.trim();
   }
 
   function openOverlay(el){
@@ -1282,8 +1575,8 @@
     document.body.style.overflow = "";
   }
 
-  function info(message, title="Loan Ledger"){
-    $("llInfoTitle").textContent = title;
+  function info(message, title){
+    $("llInfoTitle").textContent = title || llT("loanLedger");
     $("llInfoMsg").textContent = message || "";
     openOverlay($("llInfoOverlay"));
   }
@@ -1499,7 +1792,7 @@
       if (sl) sl.textContent = String(start + i + 1);
     });
 
-    $("llPageInfoBottom").textContent = `Page ${page} / ${totalPages}`;
+    $("llPageInfoBottom").textContent = `${llT("page")} ${page} / ${totalPages}`;
     $("llPrevBottom").disabled = page <= 1;
     $("llNextBottom").disabled = page >= totalPages;
     $("llEmpty").classList.toggle("show", filteredRows.length === 0);
@@ -1568,7 +1861,7 @@
 
     $("llEditIcon").classList.toggle("ll-hidden", llIsEditing);
     $("llSaveIcon").classList.toggle("ll-hidden", !llIsEditing);
-    $("llEditSaveText").textContent = llIsEditing ? "Save" : "Edit";
+    $("llEditSaveText").textContent = llIsEditing ? llT("save") : llT("edit");
 
     $("llEditSaveBtn").classList.toggle("ll-red", !llIsEditing);
     $("llEditSaveBtn").classList.toggle("ll-green", llIsEditing);
@@ -1606,48 +1899,48 @@
     const remarks = entry.remarks || "";
 
     row.innerHTML = `
-      <div class="ll-cell" data-label="Select" data-llcell="sel">
+      <div class="ll-cell" data-label="${llT("select")}" data-llcell="sel">
         <input type="checkbox" class="ll-check" data-ll="sel" ${llIsEditing ? "" : "disabled"}>
       </div>
 
-      <div class="ll-cell" data-label="SL" data-llcell="sl">
+      <div class="ll-cell" data-label="${llT("sl")}" data-llcell="sl">
         <span class="ll-slno" data-ll="slno"></span>
       </div>
 
-      <div class="ll-cell" data-label="Date">
+      <div class="ll-cell" data-label="${llT("date")}">
         <input class="ll-in" data-ll="date" type="date" value="${esc(dateValue)}" ${llIsEditing ? "" : "readonly"}>
       </div>
 
-      <div class="ll-cell" data-label="Opening Loan Amount">
+      <div class="ll-cell" data-label="${llT("openingLoanAmount")}">
         <input class="ll-in num" data-ll="opening" type="text" value="${esc(opening)}" readonly>
       </div>
 
-      <div class="ll-cell" data-label="New Loan Amount">
-        <input class="ll-in num" data-ll="new_loan" type="number" step="0.01" min="0" placeholder="${sector === "ARDD" ? "0.00" : "Only ARDD"}" value="${esc(newLoan)}">
+      <div class="ll-cell" data-label="${llT("newLoanAmount")}">
+        <input class="ll-in num" data-ll="new_loan" type="number" step="0.01" min="0" placeholder="${sector === "ARDD" ? "0.00" : llT("onlyArdd")}" value="${esc(newLoan)}">
       </div>
 
-      <div class="ll-cell" data-label="Principal Paid">
+      <div class="ll-cell" data-label="${llT("principalPaid")}">
         <input class="ll-in num" data-ll="principal_paid" type="number" step="0.01" min="0" placeholder="0.00" value="${esc(principalPaid)}" ${llIsEditing ? "" : "readonly"}>
       </div>
 
-      <div class="ll-cell" data-label="Interest Paid">
+      <div class="ll-cell" data-label="${llT("interestPaid")}">
         <input class="ll-in num" data-ll="interest_paid" type="number" step="0.01" min="0" placeholder="0.00" value="${esc(interestPaid)}" ${llIsEditing ? "" : "readonly"}>
       </div>
 
-      <div class="ll-cell" data-label="Total Repayment">
+      <div class="ll-cell" data-label="${llT("totalRepayment")}">
         <input class="ll-in num" data-ll="total_repayment" type="text" value="${esc(totalRepayment)}" readonly>
       </div>
 
-      <div class="ll-cell" data-label="Outstanding Balance">
+      <div class="ll-cell" data-label="${llT("outstandingBalance")}">
         <input class="ll-in num" data-ll="closing" type="text" value="${esc(closing)}" readonly>
       </div>
 
-      <div class="ll-cell" data-label="Remarks">
-        <input class="ll-in" data-ll="remarks" type="text" placeholder="Remarks" value="${esc(remarks)}" ${llIsEditing ? "" : "readonly"}>
+      <div class="ll-cell" data-label="${llT("remarks")}">
+        <input class="ll-in" data-ll="remarks" type="text" placeholder="${llT("remarks")}" value="${esc(remarks)}" ${llIsEditing ? "" : "readonly"}>
       </div>
 
-      <div class="ll-cell" data-label="Action">
-        <button class="ll-del" data-ll="delete" type="button" title="Delete row" ${llIsEditing ? "" : "disabled"}>
+      <div class="ll-cell" data-label="${llT("action")}">
+        <button class="ll-del" data-ll="delete" type="button" title="${llT("deleteRowTitle")}" ${llIsEditing ? "" : "disabled"}>
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 6h18"></path>
             <path d="M8 6V4h8v2"></path>
@@ -1709,6 +2002,22 @@
     setEditMode(false);
   }
 
+  function renderSectorNoteAndHint(){
+    const moratorium = Number((currentAccount && currentAccount.moratorium_months) ?? rules.moratorium_months ?? 0);
+    $("llSectorRule").value = `${moratorium} ${llT("monthNoRepayment")}.`;
+    $("llSectorNote").innerHTML = `<b>${esc(sector || llT("sector"))}</b> ${llT("basedLoanLedger")} ${esc(itemLabelText().toLowerCase())}.`;
+
+    if (sector === "ARDD"){
+      $("llHintText").textContent = llT("arddHint");
+    } else if (sector === "Agri"){
+      $("llHintText").textContent = llT("agriHint");
+    } else if (sector === "Fishery"){
+      $("llHintText").textContent = llT("fisheryHint");
+    } else {
+      $("llHintText").textContent = llT("selectMemberAndItemGeneric");
+    }
+  }
+
   function updateKpiFromSummary(summary = {}){
     $("llKpiBaseLoan").textContent = money(summary.base_loan_amount ?? getBaseLoanAmount());
     $("llKpiAdditionalLoan").textContent = money(summary.additional_loan_amount ?? 0);
@@ -1728,31 +2037,18 @@
     $("llPgSector").value = sector || "";
     $("llWorkingPeriod").value = monthLabel(selectedPeriod.month, selectedPeriod.year);
 
-    const moratorium = Number(rules.moratorium_months || 0);
-    const rate = Number(rules.interest_rate || 0);
-
-    $("llSectorRule").value = `${moratorium} month(s) no repayment `;
-    $("llSectorNote").innerHTML = `<b>${esc(sector || "Sector")}</b> based Loan Ledger. Select member and ${esc(itemLabelText().toLowerCase())}.`;
+    renderSectorNoteAndHint();
     $("llItemLabel").textContent = itemLabelText();
 
-    if (sector === "ARDD"){
-      $("llHintText").textContent = "ARDD: in each row, enter Date, New Loan Amount if released, Principal Paid and Interest Paid. Balance will auto-calculate.";
-    } else if (sector === "Agri"){
-      $("llHintText").textContent = "Agri: first 4 months no repayment. In each row, enter Date, Principal Paid and Interest Paid only.";
-    } else if (sector === "Fishery"){
-      $("llHintText").textContent = "Fishery: first month no repayment. In each row, enter Date, Principal Paid and Interest Paid only.";
-    } else {
-      $("llHintText").textContent = "Select member and item to load the sector-based ledger.";
-    }
-
     populateMembers();
+    applyLLTranslations(llLang);
   }
 
   function itemLabelText(){
-    if (sector === "Agri") return "Crop";
-    if (sector === "Fishery") return "Fishery Activity";
-    if (sector === "ARDD") return "ARDD Unit";
-    return "Crop / Activity / Unit";
+    if (sector === "Agri") return llT("crop");
+    if (sector === "Fishery") return llT("fisheryActivity");
+    if (sector === "ARDD") return llT("arddUnit");
+    return llT("itemGeneric");
   }
 
   function memberIdOf(member){
@@ -1761,7 +2057,7 @@
 
   function populateMembers(){
     const select = $("llMemberName");
-    select.innerHTML = '<option value="">Select member</option>';
+    select.innerHTML = '<option value="" data-ll-i18n="selectMember">Select member</option>';
 
     members
       .slice()
@@ -1770,21 +2066,21 @@
         const id = memberIdOf(member);
         if (!id) return;
 
-        const suffix = Number(member.items_count || 0) ? "" : " (No item saved)";
+        const suffix = Number(member.items_count || 0) ? "" : ` (${llT("noItemSaved")})`;
         select.insertAdjacentHTML(
           "beforeend",
-          `<option value="${esc(id)}">${esc(member.name || "Member")}${esc(suffix)}</option>`
+          `<option value="${esc(id)}">${esc(member.name || llT("memberFallback"))}${esc(suffix)}</option>`
         );
       });
 
     if (!members.length){
-      info("No active PG members found. Please update PG Registration / Membership Register first.");
+      info(llT("noActiveMembers"));
     }
   }
 
   function populateItems(items){
     const select = $("llSectorItem");
-    select.innerHTML = `<option value="">Select ${esc(itemLabelText().toLowerCase())}</option>`;
+    select.innerHTML = `<option value="">${llT("select")} ${esc(itemLabelText().toLowerCase())}</option>`;
 
     currentItems = Array.isArray(items) ? items : [];
 
@@ -1796,7 +2092,7 @@
     });
 
     if (!currentItems.length && selectedMemberId){
-      info(`No ${itemLabelText().toLowerCase()} found for this member. Please update PG Membership Details first.`);
+      info(`${llT("noItemForMemberPrefix")} ${itemLabelText().toLowerCase()} ${llT("noItemForMemberSuffix")}`);
     }
   }
 
@@ -1806,7 +2102,7 @@
       applyBootstrap(data);
     } catch (err){
       console.error(err);
-      info(`Could not load sector Loan Ledger: ${err.message || err}`);
+      info(`${llT("couldNotLoadSectorLedger")} ${err.message || err}`);
     }
   }
 
@@ -1835,7 +2131,7 @@
       console.error(err);
       populateItems([]);
       clearLedgerState();
-      info(`Could not load member ${itemLabelText().toLowerCase()}: ${err.message || err}`);
+      info(`${llT("couldNotLoadMember")} ${itemLabelText().toLowerCase()}: ${err.message || err}`);
     }
   }
 
@@ -1852,7 +2148,7 @@
     setValueSafe("llLoanPurpose", currentAccount.loan_purpose || "");
 
     const moratorium = Number(currentAccount.moratorium_months ?? rules.moratorium_months ?? 0);
-    setValueSafe("llSectorRule", `${moratorium} month(s) no repayment.`);
+    setValueSafe("llSectorRule", `${moratorium} ${llT("monthNoRepayment")}.`);
   }
 
   async function loadAccountAndLedger(){
@@ -1875,7 +2171,7 @@
     } catch (err){
       console.error(err);
       clearLedgerState();
-      info(`Could not load loan account/ledger: ${err.message || err}`);
+      info(`${llT("couldNotLoadAccountLedger")} ${err.message || err}`);
     }
   }
 
@@ -1902,7 +2198,7 @@
       console.error(err);
       hydrateEntries([]);
       llSnapshot = takeSnapshot();
-      info(`Could not load ledger rows: ${err.message || err}`);
+      info(`${llT("couldNotLoadRows")} ${err.message || err}`);
     }
   }
 
@@ -1910,12 +2206,12 @@
     if (!llIsEditing) return;
 
     if (!selectedMemberId || !selectedItemKey){
-      info(`Please select member and ${itemLabelText().toLowerCase()} first.`);
+      info(`${llT("pleaseSelectMemberAnd")} ${itemLabelText().toLowerCase()} ${llT("first")}`);
       return;
     }
 
     if (!getBaseLoanAmount() && sector !== "ARDD"){
-      info("Please enter assigned loan amount before adding repayment row.");
+      info(llT("enterAssignedBeforeRow"));
       return;
     }
 
@@ -1975,14 +2271,14 @@
 
   async function saveLoanLedger(){
     if (!selectedMemberId || !selectedItemKey){
-      info(`Please select member and ${itemLabelText().toLowerCase()} first.`);
+      info(`${llT("pleaseSelectMemberAnd")} ${itemLabelText().toLowerCase()} ${llT("first")}`);
       return;
     }
 
     const payload = buildPayload();
 
     if (!payload.loan_amount && sector !== "ARDD"){
-      info("Assigned loan amount is required.");
+      info(llT("assignedLoanRequired"));
       return;
     }
 
@@ -2001,10 +2297,10 @@
       hydrateEntries(Array.isArray(res.entries) ? res.entries : []);
       setEditMode(false);
       llSnapshot = takeSnapshot();
-      info(res.message || "Sector-based Loan Ledger saved successfully.");
+      info(res.message || llT("ledgerSaved"));
     } catch (err){
       console.error(err);
-      info(`Save failed: ${err.message || err}`);
+      info(`${llT("saveFailed")} ${err.message || err}`);
     }
   }
 
@@ -2039,7 +2335,7 @@
 
   function handleBack(){
     if (llIsEditing){
-      info("You are in Edit mode. Please Save or Cancel before leaving this page.");
+      info(llT("editModeLeave"));
       return;
     }
 
@@ -2050,7 +2346,7 @@
   $("llMemberName").addEventListener("change", async () => {
     if (llIsEditing){
       $("llMemberName").value = selectedMemberId;
-      info("Please Save or Cancel before changing member.");
+      info(llT("saveOrCancelBeforeMember"));
       return;
     }
 
@@ -2063,7 +2359,7 @@
   $("llSectorItem").addEventListener("change", async () => {
     if (llIsEditing){
       $("llSectorItem").value = selectedItemKey;
-      info(`Please Save or Cancel before changing ${itemLabelText().toLowerCase()}.`);
+      info(`${llT("saveOrCancelBeforeChanging")} ${itemLabelText().toLowerCase()}.`);
       return;
     }
 
@@ -2081,7 +2377,7 @@
 
   $("llEditSaveBtn").addEventListener("click", () => {
     if (!selectedMemberId || !selectedItemKey){
-      info(`Please select member and ${itemLabelText().toLowerCase()} first.`);
+      info(`${llT("pleaseSelectMemberAnd")} ${itemLabelText().toLowerCase()} ${llT("first")}`);
       return;
     }
 
@@ -2124,7 +2420,7 @@
 
   $("llDeleteSelectedTop").addEventListener("click", () => {
     if (!llIsEditing || !selectedRows().length) return;
-    $("llDeleteMultiMsg").textContent = `Selected ${selectedRows().length} row(s) will be removed. Save to confirm or Cancel to revert.`;
+    $("llDeleteMultiMsg").textContent = `${llT("selected")} ${selectedRows().length} ${llT("rowsWillBeRemoved")}`;
     openOverlay($("llDeleteMultiOverlay"));
   });
 
@@ -2201,7 +2497,7 @@
     const href = a.getAttribute("href") || "";
     if (!href || href === "#" || href.startsWith("#") || href.toLowerCase().startsWith("javascript:")) return;
     e.preventDefault();
-    info("You are in Edit mode. Please Save or Cancel before leaving this page.");
+    info(llT("editModeLeave"));
   }, true);
 
   window.addEventListener("beforeunload", e => {
@@ -2210,6 +2506,8 @@
     e.returnValue = "";
   });
 
+  llLang = getSavedLLLang();
+  applyLLTranslations(llLang);
   setEditMode(false);
   rebuildFiltered();
   loadBootstrap();

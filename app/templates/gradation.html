@@ -382,34 +382,34 @@
   <div class="grad-hero">
     <div class="grad-hero-top">
       <div>
-        <h2 class="grad-title">PG Gradation - Quarterly Manual Format</h2>
+        <h2 class="grad-title" data-grad-i18n="pageTitle">PG Gradation - Quarterly Manual Format</h2>
         <div class="grad-sub">
           {{ pg.name or pg.pg_name or "Producer Group" }} |
-          Year {{ year }} |
-          Quarter Q{{ quarter }}
+          <span data-grad-i18n="yearLabel">Year</span> {{ year }} |
+          <span data-grad-i18n="quarterLabel">Quarter</span> Q{{ quarter }}
         </div>
       </div>
-      <span class="grad-pill">100 Marks Format</span>
+      <span class="grad-pill" data-grad-i18n="hundredMarksFormat">100 Marks Format</span>
     </div>
 
     <div class="grad-summary-grid">
       <div class="grad-summary-card">
-        <div class="grad-summary-label">Total Score</div>
+        <div class="grad-summary-label" data-grad-i18n="totalScore">Total Score</div>
         <div class="grad-summary-value">{{ "%.2f"|format(total_score|float) }} / 100</div>
       </div>
 
       <div class="grad-summary-card">
-        <div class="grad-summary-label">Grade</div>
-        <div class="grad-summary-value grad-grade-{{ grade }}">{{ grade }} - {{ grade_label }}</div>
+        <div class="grad-summary-label" data-grad-i18n="grade">Grade</div>
+        <div class="grad-summary-value grad-grade-{{ grade }}">{{ grade }} - <span data-grad-grade-label="{{ grade_label }}">{{ grade_label }}</span></div>
       </div>
 
       <div class="grad-summary-card">
-        <div class="grad-summary-label">Quarter Turnover</div>
+        <div class="grad-summary-label" data-grad-i18n="quarterTurnover">Quarter Turnover</div>
         <div class="grad-summary-value">₹{{ "{:,.2f}".format((metrics.turnover or 0)|float) }}</div>
       </div>
 
       <div class="grad-summary-card">
-        <div class="grad-summary-label">Turnover %</div>
+        <div class="grad-summary-label" data-grad-i18n="turnoverPercent">Turnover %</div>
         <div class="grad-summary-value">{{ "%.2f"|format((data.turnover_percent or metrics.turnover_percent or 0)|float) }}%</div>
       </div>
     </div>
@@ -417,51 +417,50 @@
 
   {% if grade == "A" %}
     <div class="grad-alert grad-alert-success">
-      This PG is marked as Excellent / A Grade for the selected quarter.
+      <span data-grad-i18n="alertAGrade">This PG is marked as Excellent / A Grade for the selected quarter.</span>
     </div>
   {% elif grade == "B" %}
     <div class="grad-alert grad-alert-warning">
-      This PG is marked as Average / B Grade for the selected quarter.
+      <span data-grad-i18n="alertBGrade">This PG is marked as Average / B Grade for the selected quarter.</span>
     </div>
   {% else %}
     <div class="grad-alert grad-alert-danger">
-      This PG is marked as Poor / C Grade for the selected quarter.
+      <span data-grad-i18n="alertCGrade">This PG is marked as Poor / C Grade for the selected quarter.</span>
     </div>
   {% endif %}
 
   {% if total_score|float >= 75 and not data.turnover_condition_met %}
     <div class="grad-alert grad-alert-warning">
-      Total score is 75 or more, but A Grade is not allowed because the turnover condition is not satisfied.
-      Turnover must achieve at least 75% of the quarterly target.
+      <span data-grad-i18n="alertTurnoverCondition">Total score is 75 or more, but A Grade is not allowed because the turnover condition is not satisfied. Turnover must achieve at least 75% of the quarterly target.</span>
     </div>
   {% endif %}
 
   <div class="grad-card">
     <div class="grad-card-head">
       <div>
-        <h5 class="grad-card-title">Select Year and Quarter</h5>
-        <div class="grad-card-sub">PG Gradation is calculated quarterly.</div>
+        <h5 class="grad-card-title" data-grad-i18n="selectYearQuarter">Select Year and Quarter</h5>
+        <div class="grad-card-sub" data-grad-i18n="calculatedQuarterly">PG Gradation is calculated quarterly.</div>
       </div>
     </div>
 
     <div class="grad-card-body">
       <form method="get" class="grad-filter-form">
         <div class="grad-field">
-          <label>Financial / Calendar Year</label>
+          <label data-grad-i18n="financialCalendarYear">Financial / Calendar Year</label>
           <input class="grad-input" type="number" name="year" value="{{ year }}" min="2020" max="2100" required>
         </div>
 
         <div class="grad-field">
-          <label>Quarter</label>
+          <label data-grad-i18n="quarter">Quarter</label>
           <select class="grad-select" name="quarter" required>
-            <option value="1" {% if quarter == 1 %}selected{% endif %}>Q1 - January to March</option>
-            <option value="2" {% if quarter == 2 %}selected{% endif %}>Q2 - April to June</option>
-            <option value="3" {% if quarter == 3 %}selected{% endif %}>Q3 - July to September</option>
-            <option value="4" {% if quarter == 4 %}selected{% endif %}>Q4 - October to December</option>
+            <option value="1" {% if quarter == 1 %}selected{% endif %} data-grad-i18n="q1Option">Q1 - January to March</option>
+            <option value="2" {% if quarter == 2 %}selected{% endif %} data-grad-i18n="q2Option">Q2 - April to June</option>
+            <option value="3" {% if quarter == 3 %}selected{% endif %} data-grad-i18n="q3Option">Q3 - July to September</option>
+            <option value="4" {% if quarter == 4 %}selected{% endif %} data-grad-i18n="q4Option">Q4 - October to December</option>
           </select>
         </div>
 
-        <button class="grad-btn" type="submit">Load Gradation</button>
+        <button class="grad-btn" type="submit" data-grad-i18n="loadGradation">Load Gradation</button>
       </form>
     </div>
   </div>
@@ -473,9 +472,9 @@
     <div class="grad-card">
       <div class="grad-card-head">
         <div>
-          <h5 class="grad-card-title">Manual Inputs Required for Gradation</h5>
+          <h5 class="grad-card-title" data-grad-i18n="manualInputsTitle">Manual Inputs Required for Gradation</h5>
           <div class="grad-card-sub">
-            Some gradation indicators cannot be fully calculated from transaction tables, so enter those values here.
+            <span data-grad-i18n="manualInputsSub">Some gradation indicators cannot be fully calculated from transaction tables, so enter those values here.</span>
           </div>
         </div>
       </div>
@@ -484,7 +483,7 @@
         <div class="grad-manual-grid">
 
           <div class="grad-field">
-            <label>Sub-committee Meetings Conducted</label>
+            <label data-grad-i18n="subcommitteeMeetings">Sub-committee Meetings Conducted</label>
             <input
               class="grad-input"
               type="number"
@@ -495,7 +494,7 @@
           </div>
 
           <div class="grad-field">
-            <label>Members Linked with Standard PoP</label>
+            <label data-grad-i18n="standardPopMembers">Members Linked with Standard PoP</label>
             <input
               class="grad-input"
               type="number"
@@ -506,57 +505,43 @@
           </div>
 
           <div class="grad-field">
-            <label>Record Keeping</label>
+            <label data-grad-i18n="recordKeeping">Record Keeping</label>
             <select class="grad-select" name="record_keeping">
-              <option value="" {% if not manual.record_keeping %}selected{% endif %}>Auto detect from records</option>
-              <option value="yes" {% if manual.record_keeping == "yes" %}selected{% endif %}>Yes - Transactions recorded</option>
-              <option value="no" {% if manual.record_keeping == "no" %}selected{% endif %}>No - Not recorded</option>
+              <option value="" {% if not manual.record_keeping %}selected{% endif %} data-grad-i18n="autoDetectFromRecords">Auto detect from records</option>
+              <option value="yes" {% if manual.record_keeping == "yes" %}selected{% endif %} data-grad-i18n="yesTransactionsRecorded">Yes - Transactions recorded</option>
+              <option value="no" {% if manual.record_keeping == "no" %}selected{% endif %} data-grad-i18n="noNotRecorded">No - Not recorded</option>
             </select>
           </div>
 
           <div class="grad-field">
-            <label>Office & Infrastructure Status</label>
+            <label data-grad-i18n="officeInfraStatus">Office & Infrastructure Status</label>
             <select class="grad-select" name="office_infrastructure_status">
-              <option value="functional" {% if manual.office_infrastructure_status == "functional" %}selected{% endif %}>
-                Possessing & Functional - 5 Marks
-              </option>
-              <option value="possessing_not_operational" {% if manual.office_infrastructure_status == "possessing_not_operational" %}selected{% endif %}>
-                Possessing but not operational - 4 Marks
-              </option>
-              <option value="not_possessing_operating" {% if manual.office_infrastructure_status == "not_possessing_operating" or not manual.office_infrastructure_status %}selected{% endif %}>
-                No office but operating - 3 Marks
-              </option>
-              <option value="irregular" {% if manual.office_infrastructure_status == "irregular" %}selected{% endif %}>
-                Irregular operation - 0 Marks
-              </option>
+              <option value="functional" {% if manual.office_infrastructure_status == "functional" %}selected{% endif %} data-grad-i18n="functional5">Possessing & Functional - 5 Marks</option>
+              <option value="possessing_not_operational" {% if manual.office_infrastructure_status == "possessing_not_operational" %}selected{% endif %} data-grad-i18n="possessingNotOperational4">Possessing but not operational - 4 Marks</option>
+              <option value="not_possessing_operating" {% if manual.office_infrastructure_status == "not_possessing_operating" or not manual.office_infrastructure_status %}selected{% endif %} data-grad-i18n="noOfficeOperating3">No office but operating - 3 Marks</option>
+              <option value="irregular" {% if manual.office_infrastructure_status == "irregular" %}selected{% endif %} data-grad-i18n="irregular0">Irregular operation - 0 Marks</option>
             </select>
           </div>
 
           <div class="grad-field">
-            <label>Business Plan Status</label>
+            <label data-grad-i18n="businessPlanStatus">Business Plan Status</label>
             <select class="grad-select" name="business_plan_status">
-              <option value="as_per_plan" {% if manual.business_plan_status == "as_per_plan" %}selected{% endif %}>
-                Operating as per business plan - 10 Marks
-              </option>
-              <option value="functioning_not_as_per_plan" {% if manual.business_plan_status == "functioning_not_as_per_plan" or not manual.business_plan_status %}selected{% endif %}>
-                Functioning but not as per plan - 8 Marks
-              </option>
-              <option value="none" {% if manual.business_plan_status == "none" %}selected{% endif %}>
-                Not available / Not functioning - 0 Marks
-              </option>
+              <option value="as_per_plan" {% if manual.business_plan_status == "as_per_plan" %}selected{% endif %} data-grad-i18n="asPerPlan10">Operating as per business plan - 10 Marks</option>
+              <option value="functioning_not_as_per_plan" {% if manual.business_plan_status == "functioning_not_as_per_plan" or not manual.business_plan_status %}selected{% endif %} data-grad-i18n="functioningNotAsPerPlan8">Functioning but not as per plan - 8 Marks</option>
+              <option value="none" {% if manual.business_plan_status == "none" %}selected{% endif %} data-grad-i18n="none0">Not available / Not functioning - 0 Marks</option>
             </select>
           </div>
 
           <div class="grad-field">
-            <label>Training / Exposure Visit</label>
+            <label data-grad-i18n="trainingExposureVisit">Training / Exposure Visit</label>
             <select class="grad-select" name="training_conducted">
-              <option value="yes" {% if manual.training_conducted %}selected{% endif %}>Conducted - 10 Marks</option>
-              <option value="no" {% if not manual.training_conducted %}selected{% endif %}>Not Conducted - 0 Marks</option>
+              <option value="yes" {% if manual.training_conducted %}selected{% endif %} data-grad-i18n="conducted10">Conducted - 10 Marks</option>
+              <option value="no" {% if not manual.training_conducted %}selected{% endif %} data-grad-i18n="notConducted0">Not Conducted - 0 Marks</option>
             </select>
           </div>
 
           <div class="grad-field">
-            <label>Average Grievance Disposal Days</label>
+            <label data-grad-i18n="avgGrievanceDays">Average Grievance Disposal Days</label>
             <input
               class="grad-input"
               type="number"
@@ -567,12 +552,12 @@
           </div>
 
           <div class="grad-field" style="grid-column:1 / -1;">
-            <label>Remarks</label>
+            <label data-grad-i18n="remarks">Remarks</label>
             <textarea
               class="grad-textarea"
               name="remarks"
               rows="3"
-              placeholder="Optional remarks for this quarter gradation"
+              placeholder="Optional remarks for this quarter gradation" data-grad-placeholder="optionalRemarks"
             >{{ manual.remarks or "" }}</textarea>
           </div>
 
@@ -580,16 +565,16 @@
 
         <div class="grad-save-row">
           <a class="grad-btn grad-btn-secondary" href="{{ url_for('reports.gradation', pg_id=pg._id, year=year, quarter=quarter) }}">
-            Reset
+            <span data-grad-i18n="reset">Reset</span>
           </a>
 
           {% if session.get("role") not in ["PG_DATA_ENTRY", "CADRE_CC"] %}
             <button class="grad-btn" type="submit">
-              Save Quarterly Gradation
+              <span data-grad-i18n="saveQuarterlyGradation">Save Quarterly Gradation</span>
             </button>
           {% else %}
             <button class="grad-btn" type="button" disabled style="opacity:.55; cursor:not-allowed;">
-              View Only
+              <span data-grad-i18n="viewOnly">View Only</span>
             </button>
           {% endif %}
         </div>
@@ -599,9 +584,9 @@
     <div class="grad-card">
       <div class="grad-card-head">
         <div>
-          <h5 class="grad-card-title">PG Gradation Score Sheet</h5>
+          <h5 class="grad-card-title" data-grad-i18n="scoreSheetTitle">PG Gradation Score Sheet</h5>
           <div class="grad-card-sub">
-            10 indicators with total 100 marks as per PG MIS manual.
+            <span data-grad-i18n="scoreSheetSub">10 indicators with total 100 marks as per PG MIS manual.</span>
           </div>
         </div>
         <span class="grad-pill">Q{{ quarter }} / {{ year }}</span>
@@ -612,13 +597,13 @@
           <table class="grad-table">
             <thead>
               <tr>
-                <th style="width:60px;">Sl No.</th>
-                <th>Indicator</th>
-                <th style="width:90px;">Max Marks</th>
-                <th>Formula / Rule</th>
-                <th>Current Metric</th>
-                <th style="width:110px;">Percentage</th>
-                <th style="width:120px;">Marks Obtained</th>
+                <th style="width:60px;" data-grad-i18n="slNo">Sl No.</th>
+                <th data-grad-i18n="indicator">Indicator</th>
+                <th style="width:90px;" data-grad-i18n="maxMarks">Max Marks</th>
+                <th data-grad-i18n="formulaRule">Formula / Rule</th>
+                <th data-grad-i18n="currentMetric">Current Metric</th>
+                <th style="width:110px;" data-grad-i18n="percentage">Percentage</th>
+                <th style="width:120px;" data-grad-i18n="marksObtained">Marks Obtained</th>
               </tr>
             </thead>
 
@@ -653,7 +638,7 @@
             <tfoot>
               <tr>
                 <td colspan="6" style="text-align:right; font-weight:950; font-size:15px;">
-                  Total Score
+                  <span data-grad-i18n="totalScore">Total Score</span>
                 </td>
                 <td class="grad-marks">
                   {{ "%.2f"|format(total_score|float) }}
@@ -664,15 +649,219 @@
         </div>
 
         <div class="grad-note" style="margin-top:14px;">
-          <strong>Grade Rule:</strong>
-          Score 75 or more = Excellent / A Grade, but turnover must satisfy the 75% condition.
-          Score 60 to 74.9 = Average / B Grade.
-          Score below 60 = Poor / C Grade.
+          <strong data-grad-i18n="gradeRuleLabel">Grade Rule:</strong>
+          <span data-grad-i18n="gradeRuleText">Score 75 or more = Excellent / A Grade, but turnover must satisfy the 75% condition. Score 60 to 74.9 = Average / B Grade. Score below 60 = Poor / C Grade.</span>
         </div>
       </div>
     </div>
   </form>
 
 </div>
+
+
+<script>
+(function(){
+  "use strict";
+
+  let gradLang = "en";
+
+  const GRAD_TRANSLATIONS = {
+    en: {
+      pageTitle: "PG Gradation - Quarterly Manual Format",
+      yearLabel: "Year",
+      quarterLabel: "Quarter",
+      hundredMarksFormat: "100 Marks Format",
+      totalScore: "Total Score",
+      grade: "Grade",
+      quarterTurnover: "Quarter Turnover",
+      turnoverPercent: "Turnover %",
+      Excellent: "Excellent",
+      Average: "Average",
+      Poor: "Poor",
+      alertAGrade: "This PG is marked as Excellent / A Grade for the selected quarter.",
+      alertBGrade: "This PG is marked as Average / B Grade for the selected quarter.",
+      alertCGrade: "This PG is marked as Poor / C Grade for the selected quarter.",
+      alertTurnoverCondition: "Total score is 75 or more, but A Grade is not allowed because the turnover condition is not satisfied. Turnover must achieve at least 75% of the quarterly target.",
+      selectYearQuarter: "Select Year and Quarter",
+      calculatedQuarterly: "PG Gradation is calculated quarterly.",
+      financialCalendarYear: "Financial / Calendar Year",
+      quarter: "Quarter",
+      q1Option: "Q1 - January to March",
+      q2Option: "Q2 - April to June",
+      q3Option: "Q3 - July to September",
+      q4Option: "Q4 - October to December",
+      loadGradation: "Load Gradation",
+      manualInputsTitle: "Manual Inputs Required for Gradation",
+      manualInputsSub: "Some gradation indicators cannot be fully calculated from transaction tables, so enter those values here.",
+      subcommitteeMeetings: "Sub-committee Meetings Conducted",
+      standardPopMembers: "Members Linked with Standard PoP",
+      recordKeeping: "Record Keeping",
+      autoDetectFromRecords: "Auto detect from records",
+      yesTransactionsRecorded: "Yes - Transactions recorded",
+      noNotRecorded: "No - Not recorded",
+      officeInfraStatus: "Office & Infrastructure Status",
+      functional5: "Possessing & Functional - 5 Marks",
+      possessingNotOperational4: "Possessing but not operational - 4 Marks",
+      noOfficeOperating3: "No office but operating - 3 Marks",
+      irregular0: "Irregular operation - 0 Marks",
+      businessPlanStatus: "Business Plan Status",
+      asPerPlan10: "Operating as per business plan - 10 Marks",
+      functioningNotAsPerPlan8: "Functioning but not as per plan - 8 Marks",
+      none0: "Not available / Not functioning - 0 Marks",
+      trainingExposureVisit: "Training / Exposure Visit",
+      conducted10: "Conducted - 10 Marks",
+      notConducted0: "Not Conducted - 0 Marks",
+      avgGrievanceDays: "Average Grievance Disposal Days",
+      remarks: "Remarks",
+      optionalRemarks: "Optional remarks for this quarter gradation",
+      reset: "Reset",
+      saveQuarterlyGradation: "Save Quarterly Gradation",
+      viewOnly: "View Only",
+      scoreSheetTitle: "PG Gradation Score Sheet",
+      scoreSheetSub: "10 indicators with total 100 marks as per PG MIS manual.",
+      slNo: "Sl No.",
+      indicator: "Indicator",
+      maxMarks: "Max Marks",
+      formulaRule: "Formula / Rule",
+      currentMetric: "Current Metric",
+      percentage: "Percentage",
+      marksObtained: "Marks Obtained",
+      gradeRuleLabel: "Grade Rule:",
+      gradeRuleText: "Score 75 or more = Excellent / A Grade, but turnover must satisfy the 75% condition. Score 60 to 74.9 = Average / B Grade. Score below 60 = Poor / C Grade."
+    },
+    bn: {
+      pageTitle: "PG গ্রেডেশন - ত্রৈমাসিক ম্যানুয়াল ফরম্যাট",
+      yearLabel: "বছর",
+      quarterLabel: "ত্রৈমাসিক",
+      hundredMarksFormat: "১০০ নম্বরের ফরম্যাট",
+      totalScore: "মোট স্কোর",
+      grade: "গ্রেড",
+      quarterTurnover: "ত্রৈমাসিক টার্নওভার",
+      turnoverPercent: "টার্নওভার %",
+      Excellent: "উৎকৃষ্ট",
+      Average: "গড়",
+      Poor: "দুর্বল",
+      alertAGrade: "নির্বাচিত ত্রৈমাসিকের জন্য এই PG-কে উৎকৃষ্ট / A গ্রেড হিসেবে চিহ্নিত করা হয়েছে।",
+      alertBGrade: "নির্বাচিত ত্রৈমাসিকের জন্য এই PG-কে গড় / B গ্রেড হিসেবে চিহ্নিত করা হয়েছে।",
+      alertCGrade: "নির্বাচিত ত্রৈমাসিকের জন্য এই PG-কে দুর্বল / C গ্রেড হিসেবে চিহ্নিত করা হয়েছে।",
+      alertTurnoverCondition: "মোট স্কোর ৭৫ বা তার বেশি, কিন্তু টার্নওভার শর্ত পূরণ না হওয়ায় A গ্রেড অনুমোদিত নয়। ত্রৈমাসিক লক্ষ্যমাত্রার কমপক্ষে ৭৫% টার্নওভার অর্জন করতে হবে।",
+      selectYearQuarter: "বছর ও ত্রৈমাসিক নির্বাচন করুন",
+      calculatedQuarterly: "PG গ্রেডেশন ত্রৈমাসিক ভিত্তিতে গণনা করা হয়।",
+      financialCalendarYear: "আর্থিক / ক্যালেন্ডার বছর",
+      quarter: "ত্রৈমাসিক",
+      q1Option: "Q1 - জানুয়ারি থেকে মার্চ",
+      q2Option: "Q2 - এপ্রিল থেকে জুন",
+      q3Option: "Q3 - জুলাই থেকে সেপ্টেম্বর",
+      q4Option: "Q4 - অক্টোবর থেকে ডিসেম্বর",
+      loadGradation: "গ্রেডেশন লোড করুন",
+      manualInputsTitle: "গ্রেডেশনের জন্য প্রয়োজনীয় ম্যানুয়াল ইনপুট",
+      manualInputsSub: "কিছু গ্রেডেশন সূচক সম্পূর্ণভাবে লেনদেন টেবিল থেকে গণনা করা যায় না, তাই সেই মানগুলি এখানে লিখুন।",
+      subcommitteeMeetings: "সাব-কমিটি সভা অনুষ্ঠিত",
+      standardPopMembers: "স্ট্যান্ডার্ড PoP-এর সাথে সংযুক্ত সদস্য",
+      recordKeeping: "রেকর্ড সংরক্ষণ",
+      autoDetectFromRecords: "রেকর্ড থেকে স্বয়ংক্রিয়ভাবে শনাক্ত করুন",
+      yesTransactionsRecorded: "হ্যাঁ - লেনদেন রেকর্ড করা হয়েছে",
+      noNotRecorded: "না - রেকর্ড করা হয়নি",
+      officeInfraStatus: "অফিস ও অবকাঠামোর অবস্থা",
+      functional5: "মালিকানাধীন ও কার্যকর - ৫ নম্বর",
+      possessingNotOperational4: "মালিকানাধীন কিন্তু চালু নয় - ৪ নম্বর",
+      noOfficeOperating3: "অফিস নেই কিন্তু কার্যক্রম চলছে - ৩ নম্বর",
+      irregular0: "অনিয়মিত কার্যক্রম - ০ নম্বর",
+      businessPlanStatus: "ব্যবসায়িক পরিকল্পনার অবস্থা",
+      asPerPlan10: "ব্যবসায়িক পরিকল্পনা অনুযায়ী চলছে - ১০ নম্বর",
+      functioningNotAsPerPlan8: "চলছে কিন্তু পরিকল্পনা অনুযায়ী নয় - ৮ নম্বর",
+      none0: "উপলব্ধ নয় / কার্যকর নয় - ০ নম্বর",
+      trainingExposureVisit: "প্রশিক্ষণ / এক্সপোজার ভিজিট",
+      conducted10: "অনুষ্ঠিত - ১০ নম্বর",
+      notConducted0: "অনুষ্ঠিত হয়নি - ০ নম্বর",
+      avgGrievanceDays: "গড় অভিযোগ নিষ্পত্তির দিন",
+      remarks: "মন্তব্য",
+      optionalRemarks: "এই ত্রৈমাসিক গ্রেডেশনের জন্য ঐচ্ছিক মন্তব্য",
+      reset: "রিসেট",
+      saveQuarterlyGradation: "ত্রৈমাসিক গ্রেডেশন সংরক্ষণ করুন",
+      viewOnly: "শুধু দেখুন",
+      scoreSheetTitle: "PG গ্রেডেশন স্কোর শীট",
+      scoreSheetSub: "PG MIS ম্যানুয়াল অনুযায়ী মোট ১০০ নম্বরের ১০টি সূচক।",
+      slNo: "ক্রমিক নং",
+      indicator: "সূচক",
+      maxMarks: "সর্বোচ্চ নম্বর",
+      formulaRule: "সূত্র / নিয়ম",
+      currentMetric: "বর্তমান মানদণ্ড",
+      percentage: "শতাংশ",
+      marksObtained: "প্রাপ্ত নম্বর",
+      gradeRuleLabel: "গ্রেড নিয়ম:",
+      gradeRuleText: "স্কোর ৭৫ বা তার বেশি = উৎকৃষ্ট / A গ্রেড, তবে টার্নওভার ৭৫% শর্ত পূরণ করতে হবে। স্কোর ৬০ থেকে ৭৪.৯ = গড় / B গ্রেড। স্কোর ৬০-এর নিচে = দুর্বল / C গ্রেড।"
+    }
+  };
+
+  function normalizeGradLang(lang){
+    const value = String(lang || "").toLowerCase().trim();
+    if(value === "bn" || value === "bengali") return "bn";
+    return "en";
+  }
+
+  function getSavedGradLang(){
+    try{
+      if(window.PGMIS && typeof window.PGMIS.getLanguage === "function"){
+        return normalizeGradLang(window.PGMIS.getLanguage());
+      }
+      return normalizeGradLang(
+        window.__PGMIS_LANG ||
+        window.PGMIS_LANG ||
+        localStorage.getItem("pgmis_lang") ||
+        localStorage.getItem("PGMIS_LANG") ||
+        localStorage.getItem("language") ||
+        localStorage.getItem("lang") ||
+        "en"
+      );
+    }catch(_){
+      return "en";
+    }
+  }
+
+  function gradT(key){
+    return (GRAD_TRANSLATIONS[gradLang] && GRAD_TRANSLATIONS[gradLang][key]) ||
+      GRAD_TRANSLATIONS.en[key] ||
+      key;
+  }
+
+  function applyGradTranslations(lang){
+    gradLang = normalizeGradLang(lang || getSavedGradLang());
+
+    document.querySelectorAll("[data-grad-i18n]").forEach(function(el){
+      const key = el.getAttribute("data-grad-i18n");
+      if(key) el.textContent = gradT(key);
+    });
+
+    document.querySelectorAll("[data-grad-placeholder]").forEach(function(el){
+      const key = el.getAttribute("data-grad-placeholder");
+      if(key) el.setAttribute("placeholder", gradT(key));
+    });
+
+    document.querySelectorAll("[data-grad-grade-label]").forEach(function(el){
+      const original = el.getAttribute("data-grad-grade-label") || "";
+      el.textContent = gradT(original) || original;
+    });
+  }
+
+  window.applyTranslations = applyGradTranslations;
+  window.translatePage = applyGradTranslations;
+  window.updatePageLanguage = function(lang){
+    applyGradTranslations(lang);
+  };
+
+  window.addEventListener("pgmis:language-change", function(e){
+    applyGradTranslations(e.detail && e.detail.lang);
+  });
+
+  window.addEventListener("pgmis:lang", function(e){
+    applyGradTranslations(e.detail && e.detail.lang);
+  });
+
+  document.addEventListener("DOMContentLoaded", function(){
+    applyGradTranslations(getSavedGradLang());
+  });
+})();
+</script>
 
 {% endblock %}

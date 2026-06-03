@@ -1858,22 +1858,22 @@
             </svg>
           </button>
 
-          <h1 class="opr-title">Output / Produce Register (Purchase / Sale / Stock)</h1>
+          <h1 class="opr-title" data-opr-i18n="pageTitle">Output / Produce Register (Purchase / Sale / Stock)</h1>
         </div>
 
         <div class="opr-headActions">
           <button type="button" class="opr-btn opr-red" id="oprEditSave">
             <ion-icon id="oprEditSaveIcon" name="create"></ion-icon>
-            <span id="oprEditSaveText">Edit</span>
+            <span id="oprEditSaveText" data-opr-i18n="edit">Edit</span>
           </button>
 
           <button type="button" class="opr-btn opr-red" id="oprCancel" style="display:none;">
             <ion-icon name="close-circle"></ion-icon>
-            <span>Cancel</span>
+            <span data-opr-i18n="cancel">Cancel</span>
           </button>
         </div>
 
-        <p class="opr-sub">
+        <p class="opr-sub" data-opr-i18n="pageSubtitle">
           Record purchases from members, sales to buyers, and live stock balance. Amounts & stock auto-calculate.
         </p>
       </div>
@@ -1882,12 +1882,12 @@
         <div class="opr-actionsRight">
           <button type="button" class="opr-btn" id="oprExport">
             <ion-icon name="download"></ion-icon>
-            <span>Export</span>
+            <span data-opr-i18n="export">Export</span>
           </button>
 
           <button type="button" class="opr-btn" id="oprPrint">
             <ion-icon name="print"></ion-icon>
-            <span>Print</span>
+            <span data-opr-i18n="print">Print</span>
           </button>
         </div>
       </div>
@@ -1898,7 +1898,7 @@
         <div class="opr-field opr-combo-field">
           <div class="opr-label">
             <ion-icon name="leaf"></ion-icon>
-            <span>Name of the Produce</span>
+            <span data-opr-i18n="nameProduce">Name of the Produce</span>
           </div>
 
           <div class="opr-combo" id="outputNameCombo">
@@ -1906,17 +1906,17 @@
                    class="opr-input"
                    type="text"
                    autocomplete="off"
-                   placeholder="Select existing produce or type new produce..."
+                   placeholder="Select existing produce or type new produce..." data-opr-i18n-placeholder="producePlaceholder"
                    readonly />
 
-            <button class="opr-combo-btn" type="button" id="outputNameDropBtn" title="Show saved produce">
+            <button class="opr-combo-btn" type="button" id="outputNameDropBtn" title="Show saved produce" data-opr-i18n-title="showSavedProduce">
               <ion-icon name="chevron-down"></ion-icon>
             </button>
 
             <div class="opr-combo-panel" id="outputNamePanel">
-              <div class="opr-combo-title">Saved Produce</div>
+              <div class="opr-combo-title" data-opr-i18n="savedProduce">Saved Produce</div>
               <div class="opr-combo-list" id="outputNameOptions">
-                <div class="opr-combo-empty">No saved produce yet.</div>
+                <div class="opr-combo-empty" data-opr-i18n="noSavedProduceYet">No saved produce yet.</div>
               </div>
             </div>
           </div>
@@ -1925,12 +1925,12 @@
         <div class="opr-field">
           <div class="opr-label">
             <ion-icon name="cube"></ion-icon>
-            <span>Unit of Stocking</span>
+            <span data-opr-i18n="unitStocking">Unit of Stocking</span>
           </div>
           <input id="unitStock"
                  class="opr-input"
                  type="text"
-                 placeholder="e.g., Kg / Quintal / Nos / Litre"
+                 placeholder="e.g., Kg / Quintal / Nos / Litre" data-opr-i18n-placeholder="unitPlaceholder"
                  readonly />
         </div>
       </div>
@@ -1938,22 +1938,22 @@
       <div class="opr-tabs" role="tablist" aria-label="Register Sections">
         <button class="opr-tab" id="tabAll" role="tab" aria-selected="true" data-tab="all">
           <ion-icon name="grid"></ion-icon>
-          <span>All</span>
+          <span data-opr-i18n="tabAll">All</span>
         </button>
 
         <button class="opr-tab" id="tabPurchases" role="tab" aria-selected="false" data-tab="purchases">
           <ion-icon name="cart"></ion-icon>
-          <span>Purchases</span>
+          <span data-opr-i18n="tabPurchases">Purchases</span>
         </button>
 
         <button class="opr-tab" id="tabSales" role="tab" aria-selected="false" data-tab="sales">
           <ion-icon name="receipt"></ion-icon>
-          <span>Sales</span>
+          <span data-opr-i18n="tabSales">Sales</span>
         </button>
 
         <button class="opr-tab" id="tabStock" role="tab" aria-selected="false" data-tab="stock">
           <ion-icon name="layers"></ion-icon>
-          <span>Stock</span>
+          <span data-opr-i18n="tabStock">Stock</span>
         </button>
       </div>
 
@@ -1961,9 +1961,9 @@
         <div class="opr-sectionMeta" aria-hidden="true">
           <h3 class="opr-sectionTitle" id="sectionTitle">
             <ion-icon name="grid"></ion-icon>
-            <span id="sectionTitleText">All (Purchases + Sales + Stock)</span>
+            <span id="sectionTitleText" data-opr-i18n="sectionAllTitle">All (Purchases + Sales + Stock)</span>
           </h3>
-          <div class="opr-sectionNote" id="sectionNote">
+          <div class="opr-sectionNote" id="sectionNote" data-opr-i18n="sectionAllNote">
             All records shown together. Amounts & stock auto-calculate.
           </div>
         </div>
@@ -1971,17 +1971,17 @@
         <div class="opr-sectionTools" id="sectionTools">
           <button type="button" class="opr-btn opr-soft-red" id="oprDeleteSelected" style="display:none;">
             <ion-icon name="trash"></ion-icon>
-            <span>Delete Selected</span>
+            <span data-opr-i18n="deleteSelected">Delete Selected</span>
           </button>
 
           <button type="button" class="opr-btn opr-soft-red" id="oprDeleteAll" style="display:none;">
             <ion-icon name="trash-bin"></ion-icon>
-            <span>Delete All</span>
+            <span data-opr-i18n="deleteAll">Delete All</span>
           </button>
 
           <button type="button" class="opr-btn opr-soft-green" id="oprAddRow" style="display:none;">
             <ion-icon name="add-circle"></ion-icon>
-            <span>Add Row</span>
+            <span data-opr-i18n="addRow">Add Row</span>
           </button>
         </div>
       </div>
@@ -1997,15 +1997,15 @@
 
       <div class="opr-totals" id="totalsStrip">
         <div class="opr-kpi">
-          <b id="kpi1Label">Total Purchase Amount</b>
+          <b id="kpi1Label" data-opr-i18n="totalPurchaseAmount">Total Purchase Amount</b>
           <span id="kpi1Val">0</span>
         </div>
         <div class="opr-kpi">
-          <b id="kpi2Label">Total Sale Amount</b>
+          <b id="kpi2Label" data-opr-i18n="totalSaleAmount">Total Sale Amount</b>
           <span id="kpi2Val">0</span>
         </div>
         <div class="opr-kpi">
-          <b id="kpi3Label">Live Stock Amount</b>
+          <b id="kpi3Label" data-opr-i18n="liveStockAmount">Live Stock Amount</b>
           <span id="kpi3Val">0</span>
         </div>
       </div>
@@ -2021,15 +2021,15 @@
     <div class="opr-confirmCard">
       <div class="opr-confirmHead">
         <ion-icon name="help-circle"></ion-icon>
-        <span id="oprConfirmTitle">Confirm</span>
+        <span id="oprConfirmTitle" data-opr-i18n="confirm">Confirm</span>
       </div>
-      <div class="opr-confirmBody" id="oprConfirmMsg">Are you sure?</div>
+      <div class="opr-confirmBody" id="oprConfirmMsg" data-opr-i18n="areYouSure">Are you sure?</div>
       <div class="opr-confirmBtns">
         <button type="button" class="opr-btn opr-btnMuted" id="oprConfirmNo">
-          <span>No</span>
+          <span data-opr-i18n="no">No</span>
         </button>
         <button type="button" class="opr-btn opr-btnPrimary" id="oprConfirmYes">
-          <span>Yes</span>
+          <span data-opr-i18n="yes">Yes</span>
         </button>
       </div>
     </div>
@@ -2039,28 +2039,28 @@
     <div class="opr-blockCard" role="dialog" aria-modal="true" aria-labelledby="oprBlockedTitle">
       <div class="opr-blockHead">
         <span class="opr-blockDot" aria-hidden="true"></span>
-        <span id="oprBlockedTitle">Action blocked</span>
+        <span id="oprBlockedTitle" data-opr-i18n="actionBlocked">Action blocked</span>
       </div>
-      <div class="opr-blockBody" id="oprBlockedMsg">
+      <div class="opr-blockBody" id="oprBlockedMsg" data-opr-i18n="blockedMsg">
         You are in Edit mode. Please Save or Cancel before leaving this page.
       </div>
       <div class="opr-blockBtns">
-        <button type="button" class="opr-blockOk" id="oprBlockedOk">OK</button>
+        <button type="button" class="opr-blockOk" id="oprBlockedOk" data-opr-i18n="ok">OK</button>
       </div>
     </div>
   </div>
 
   <div class="opr-print-preview-page" id="oprPrintPreviewModal">
     <div class="opr-print-preview-page-head">
-      <div class="opr-print-preview-page-title" id="oprPrintPreviewTitle">Print Preview</div>
+      <div class="opr-print-preview-page-title" id="oprPrintPreviewTitle" data-opr-i18n="printPreview">Print Preview</div>
       <div class="opr-print-preview-page-actions">
         <button type="button" class="opr-btn opr-btnMuted" id="oprClosePrintPreview">
           <ion-icon name="arrow-back"></ion-icon>
-          <span>Back</span>
+          <span data-opr-i18n="back">Back</span>
         </button>
         <button type="button" class="opr-btn opr-btnPrimary" id="oprConfirmPrint">
           <ion-icon name="print"></ion-icon>
-          <span>Proceed to Print</span>
+          <span data-opr-i18n="proceedToPrint">Proceed to Print</span>
         </button>
       </div>
     </div>
@@ -2081,6 +2081,310 @@
 <script>
 (function(){
   "use strict";
+
+
+  let oprLang = "en";
+
+  const OPR_TRANSLATIONS = {
+    en: {
+      pageTitle: "Output / Produce Register (Purchase / Sale / Stock)",
+      pageSubtitle: "Record purchases from members, sales to buyers, and live stock balance. Amounts & stock auto-calculate.",
+      edit: "Edit",
+      save: "Save",
+      cancel: "Cancel",
+      export: "Export",
+      print: "Print",
+      nameProduce: "Name of the Produce",
+      producePlaceholder: "Select existing produce or type new produce...",
+      showSavedProduce: "Show saved produce",
+      savedProduce: "Saved Produce",
+      noSavedProduceYet: "No saved produce yet.",
+      noMatchingProduce: "No matching saved produce found.",
+      load: "Load",
+      new: "New",
+      createNewProduce: "Create new produce:",
+      unitStocking: "Unit of Stocking",
+      unitPlaceholder: "e.g., Kg / Quintal / Nos / Litre",
+      tabAll: "All",
+      tabPurchases: "Purchases",
+      tabSales: "Sales",
+      tabStock: "Stock",
+      sectionAllTitle: "All (Purchases + Sales + Stock)",
+      sectionAllNote: "All records shown together. Amounts & stock auto-calculate.",
+      sectionPurchasesTitle: "Purchases (From Member)",
+      sectionPurchasesNote: "Enter purchase details. Amount is auto-calculated.",
+      sectionSalesTitle: "Sales (To Buyers)",
+      sectionSalesNote: "Enter sale details. Amount is auto-calculated.",
+      sectionStockTitle: "Stock (Auto Calculated)",
+      sectionStockNote: "Closing stock qty is auto. You can edit stock rate if needed.",
+      deleteSelected: "Delete Selected",
+      deleteAll: "Delete All",
+      addRow: "Add Row",
+      totalPurchaseAmount: "Total Purchase Amount",
+      totalSaleAmount: "Total Sale Amount",
+      liveStockAmount: "Live Stock Amount",
+      totalPurchaseQty: "Total Purchase Qty",
+      totalSaleQty: "Total Sale Qty",
+      liveStockQty: "Live Stock Qty",
+      liveStockRateAvg: "Live Stock Rate (avg)",
+      confirm: "Confirm",
+      areYouSure: "Are you sure?",
+      yes: "Yes",
+      no: "No",
+      actionBlocked: "Action blocked",
+      blockedMsg: "You are in Edit mode. Please Save or Cancel before leaving this page.",
+      blockedShort: "You are in Edit mode. Save or Cancel first.",
+      ok: "OK",
+      printPreview: "Print Preview",
+      back: "Back",
+      proceedToPrint: "Proceed to Print",
+      row: "Row",
+      select: "Select",
+      saveChangesTitle: "Save changes?",
+      saveRegisterPrefix: "Save register data under",
+      discardChangesTitle: "Discard changes?",
+      discardChangesMsg: "Cancel will discard your edits. Continue?",
+      deleteSelectedTitle: "Delete selected?",
+      deleteSelectedMsgPrefix: "Delete",
+      deleteSelectedMsgSuffix: "selected row(s)?",
+      deleteAllTitle: "Delete all?",
+      deleteAllMsg: "Delete ALL rows? This cannot be undone.",
+      exportCsvTitle: "Export CSV?",
+      exportCsvMsg: "Export all records to CSV file?",
+      editModeOn: "Edit mode ON",
+      nameRequired: "Name of Produce is required.",
+      saveFailed: "Save failed.",
+      saved: "Saved",
+      canceled: "Canceled",
+      noRowsSelected: "No rows selected",
+      deletedSelected: "Deleted selected",
+      allRowsDeleted: "All rows deleted",
+      csvExported: "CSV exported",
+      rowAdded: "Row added",
+      printBlocked: "Please Save or Cancel before printing.",
+      section: "Section",
+      billNo: "Bill No",
+      billNoPh: "Bill no",
+      date: "Date",
+      farmerName: "Name of Farmer",
+      farmerNamePh: "Farmer name",
+      qty: "Qty",
+      rate: "Rate",
+      amount: "Amount",
+      cashBookFolioNo: "Cash Book Folio No",
+      folio: "Folio",
+      buyerName: "Buyer Name",
+      buyerNamePh: "Buyer name",
+      refBillNo: "Ref / Bill No",
+      refNo: "Ref no",
+      closingStockQty: "Closing Stock Qty",
+      stockRate: "Stock Rate",
+      stockAmount: "Stock Amount"
+    },
+    bn: {
+      pageTitle: "আউটপুট / উৎপাদন রেজিস্টার (ক্রয় / বিক্রয় / স্টক)",
+      pageSubtitle: "সদস্যদের থেকে ক্রয়, ক্রেতাদের কাছে বিক্রয় এবং লাইভ স্টক ব্যালেন্স রেকর্ড করুন। পরিমাণ ও স্টক স্বয়ংক্রিয়ভাবে হিসাব হবে।",
+      edit: "সম্পাদনা",
+      save: "সংরক্ষণ",
+      cancel: "বাতিল",
+      export: "এক্সপোর্ট",
+      print: "প্রিন্ট",
+      nameProduce: "উৎপাদনের নাম",
+      producePlaceholder: "সংরক্ষিত উৎপাদন নির্বাচন করুন বা নতুন উৎপাদন লিখুন...",
+      showSavedProduce: "সংরক্ষিত উৎপাদন দেখুন",
+      savedProduce: "সংরক্ষিত উৎপাদন",
+      noSavedProduceYet: "এখনও কোনো সংরক্ষিত উৎপাদন নেই।",
+      noMatchingProduce: "মিল থাকা কোনো সংরক্ষিত উৎপাদন পাওয়া যায়নি।",
+      load: "লোড",
+      new: "নতুন",
+      createNewProduce: "নতুন উৎপাদন তৈরি করুন:",
+      unitStocking: "স্টকের একক",
+      unitPlaceholder: "যেমন, কেজি / কুইন্টাল / সংখ্যা / লিটার",
+      tabAll: "সব",
+      tabPurchases: "ক্রয়",
+      tabSales: "বিক্রয়",
+      tabStock: "স্টক",
+      sectionAllTitle: "সব (ক্রয় + বিক্রয় + স্টক)",
+      sectionAllNote: "সব রেকর্ড একসাথে দেখানো হয়েছে। পরিমাণ ও স্টক স্বয়ংক্রিয়ভাবে হিসাব হবে।",
+      sectionPurchasesTitle: "ক্রয় (সদস্য থেকে)",
+      sectionPurchasesNote: "ক্রয়ের বিবরণ লিখুন। পরিমাণ স্বয়ংক্রিয়ভাবে হিসাব হবে।",
+      sectionSalesTitle: "বিক্রয় (ক্রেতাদের কাছে)",
+      sectionSalesNote: "বিক্রয়ের বিবরণ লিখুন। পরিমাণ স্বয়ংক্রিয়ভাবে হিসাব হবে।",
+      sectionStockTitle: "স্টক (স্বয়ংক্রিয় হিসাব)",
+      sectionStockNote: "ক্লোজিং স্টক পরিমাণ স্বয়ংক্রিয়। প্রয়োজনে স্টক রেট সম্পাদনা করতে পারেন।",
+      deleteSelected: "নির্বাচিত মুছুন",
+      deleteAll: "সব মুছুন",
+      addRow: "সারি যোগ করুন",
+      totalPurchaseAmount: "মোট ক্রয় পরিমাণ",
+      totalSaleAmount: "মোট বিক্রয় পরিমাণ",
+      liveStockAmount: "লাইভ স্টক পরিমাণ",
+      totalPurchaseQty: "মোট ক্রয় পরিমাণ",
+      totalSaleQty: "মোট বিক্রয় পরিমাণ",
+      liveStockQty: "লাইভ স্টক পরিমাণ",
+      liveStockRateAvg: "লাইভ স্টক রেট (গড়)",
+      confirm: "নিশ্চিত করুন",
+      areYouSure: "আপনি কি নিশ্চিত?",
+      yes: "হ্যাঁ",
+      no: "না",
+      actionBlocked: "কাজটি বন্ধ আছে",
+      blockedMsg: "আপনি সম্পাদনা মোডে আছেন। এই পেজ ছাড়ার আগে সংরক্ষণ বা বাতিল করুন।",
+      blockedShort: "আপনি সম্পাদনা মোডে আছেন। আগে সংরক্ষণ বা বাতিল করুন।",
+      ok: "ঠিক আছে",
+      printPreview: "প্রিন্ট প্রিভিউ",
+      back: "পিছনে",
+      proceedToPrint: "প্রিন্ট করতে এগিয়ে যান",
+      row: "সারি",
+      select: "নির্বাচন",
+      saveChangesTitle: "পরিবর্তন সংরক্ষণ করবেন?",
+      saveRegisterPrefix: "এই নামে রেজিস্টার ডেটা সংরক্ষণ করবেন",
+      discardChangesTitle: "পরিবর্তন বাতিল করবেন?",
+      discardChangesMsg: "বাতিল করলে আপনার সম্পাদনা মুছে যাবে। চালিয়ে যাবেন?",
+      deleteSelectedTitle: "নির্বাচিত সারি মুছবেন?",
+      deleteSelectedMsgPrefix: "মুছবেন",
+      deleteSelectedMsgSuffix: "টি নির্বাচিত সারি?",
+      deleteAllTitle: "সব সারি মুছবেন?",
+      deleteAllMsg: "সব সারি মুছে যাবে। এটি পূর্বাবস্থায় ফেরানো যাবে না।",
+      exportCsvTitle: "CSV এক্সপোর্ট করবেন?",
+      exportCsvMsg: "সব রেকর্ড CSV ফাইলে এক্সপোর্ট করবেন?",
+      editModeOn: "সম্পাদনা মোড চালু",
+      nameRequired: "উৎপাদনের নাম প্রয়োজন।",
+      saveFailed: "সংরক্ষণ ব্যর্থ হয়েছে।",
+      saved: "সংরক্ষিত হয়েছে",
+      canceled: "বাতিল হয়েছে",
+      noRowsSelected: "কোনো সারি নির্বাচিত নয়",
+      deletedSelected: "নির্বাচিত সারি মুছে গেছে",
+      allRowsDeleted: "সব সারি মুছে গেছে",
+      csvExported: "CSV এক্সপোর্ট হয়েছে",
+      rowAdded: "সারি যোগ হয়েছে",
+      printBlocked: "প্রিন্ট করার আগে সংরক্ষণ বা বাতিল করুন।",
+      section: "সেকশন",
+      billNo: "বিল নং",
+      billNoPh: "বিল নং",
+      date: "তারিখ",
+      farmerName: "কৃষকের নাম",
+      farmerNamePh: "কৃষকের নাম",
+      qty: "পরিমাণ",
+      rate: "রেট",
+      amount: "টাকা",
+      cashBookFolioNo: "ক্যাশ বুক ফোলিও নং",
+      folio: "ফোলিও",
+      buyerName: "ক্রেতার নাম",
+      buyerNamePh: "ক্রেতার নাম",
+      refBillNo: "রেফ / বিল নং",
+      refNo: "রেফ নং",
+      closingStockQty: "ক্লোজিং স্টক পরিমাণ",
+      stockRate: "স্টক রেট",
+      stockAmount: "স্টক টাকা"
+    }
+  };
+
+  const OPR_COL_KEY_MAP = {
+    p_bill_no: { label:"billNo", ph:"billNoPh" },
+    p_date: { label:"date", ph:"date" },
+    farmer: { label:"farmerName", ph:"farmerNamePh" },
+    p_qty: { label:"qty", ph:"qty" },
+    p_rate: { label:"rate", ph:"rate" },
+    p_amt: { label:"amount", ph:"amount" },
+    p_folio: { label:"cashBookFolioNo", ph:"folio" },
+    s_bill_no: { label:"billNo", ph:"billNoPh" },
+    s_date: { label:"date", ph:"date" },
+    buyer: { label:"buyerName", ph:"buyerNamePh" },
+    s_qty: { label:"qty", ph:"qty" },
+    s_rate: { label:"rate", ph:"rate" },
+    s_amt: { label:"amount", ph:"amount" },
+    s_folio: { label:"cashBookFolioNo", ph:"folio" },
+    stk_ref_no: { label:"refBillNo", ph:"refNo" },
+    stk_qty: { label:"closingStockQty", ph:"closingStockQty" },
+    stk_rate: { label:"stockRate", ph:"stockRate" },
+    stk_amt: { label:"stockAmount", ph:"stockAmount" }
+  };
+
+  function normalizeOprLang(lang){
+    const value = String(lang || "").toLowerCase().trim();
+    if(value === "bn" || value === "bengali") return "bn";
+    return "en";
+  }
+
+  function getSavedOprLang(){
+    try{
+      if(window.PGMIS && typeof window.PGMIS.getLanguage === "function"){
+        return normalizeOprLang(window.PGMIS.getLanguage());
+      }
+
+      return normalizeOprLang(
+        window.__PGMIS_LANG ||
+        window.PGMIS_LANG ||
+        localStorage.getItem("pgmis_lang") ||
+        localStorage.getItem("PGMIS_LANG") ||
+        localStorage.getItem("language") ||
+        localStorage.getItem("lang") ||
+        "en"
+      );
+    }catch(_){
+      return "en";
+    }
+  }
+
+  function oprT(key, fallback){
+    return (OPR_TRANSLATIONS[oprLang] && OPR_TRANSLATIONS[oprLang][key])
+      || (OPR_TRANSLATIONS.en && OPR_TRANSLATIONS.en[key])
+      || fallback
+      || key;
+  }
+
+  function oprColLabel(col){
+    const map = OPR_COL_KEY_MAP[col.key] || {};
+    return oprT(map.label, col.label);
+  }
+
+  function oprColPlaceholder(col){
+    const map = OPR_COL_KEY_MAP[col.key] || {};
+    return oprT(map.ph, col.ph || col.label);
+  }
+
+  function applyOprTranslations(lang){
+    oprLang = normalizeOprLang(lang || getSavedOprLang());
+
+    document.querySelectorAll("[data-opr-i18n]").forEach((el) => {
+      const key = el.getAttribute("data-opr-i18n");
+      if(key) el.textContent = oprT(key);
+    });
+
+    document.querySelectorAll("[data-opr-i18n-placeholder]").forEach((el) => {
+      const key = el.getAttribute("data-opr-i18n-placeholder");
+      if(key) el.setAttribute("placeholder", oprT(key));
+    });
+
+    document.querySelectorAll("[data-opr-i18n-title]").forEach((el) => {
+      const key = el.getAttribute("data-opr-i18n-title");
+      if(key) el.setAttribute("title", oprT(key));
+    });
+  }
+
+  window.applyTranslations = applyOprTranslations;
+  window.translatePage = applyOprTranslations;
+  window.updatePageLanguage = function(lang){
+    applyOprTranslations(lang);
+    if(typeof renderAll === "function"){
+      renderAll();
+    }
+  };
+
+  window.addEventListener("pgmis:language-change", function(e){
+    const nextLang = e.detail && e.detail.lang;
+    applyOprTranslations(nextLang);
+    if(typeof renderAll === "function"){
+      renderAll();
+    }
+  });
+
+  window.addEventListener("pgmis:lang", function(e){
+    const nextLang = e.detail && e.detail.lang;
+    applyOprTranslations(nextLang);
+    if(typeof renderAll === "function"){
+      renderAll();
+    }
+  });
 
   const TAB_KEY = "pgmis_output_register_active_tab_v1";
   window.PG_ID = "{{ pg_id|default('') }}";
@@ -2241,8 +2545,8 @@
         return;
       }
 
-      els.confirmTitle.textContent = title || "Confirm";
-      els.confirmMsg.textContent = msg || "Are you sure?";
+      els.confirmTitle.textContent = title || oprT("confirm");
+      els.confirmMsg.textContent = msg || oprT("areYouSure");
       els.confirmWrap.style.display = "flex";
 
       const cleanup = () => {
@@ -2277,11 +2581,11 @@
     if(!editMode) return;
 
     if(!els.blockedWrap){
-      toast(msg || "You are in Edit mode. Save or Cancel first.");
+      toast(msg || oprT("blockedShort"));
       return;
     }
 
-    els.blockedMsg.textContent = msg || "You are in Edit mode. Please Save or Cancel before leaving this page.";
+    els.blockedMsg.textContent = msg || oprT("blockedMsg");
     els.blockedWrap.style.display = "flex";
   }
 
@@ -2418,7 +2722,7 @@
     els.produceName.readOnly = !editMode;
     els.unitStock.readOnly = !editMode;
 
-    els.editSaveText.textContent = editMode ? "Save" : "Edit";
+    els.editSaveText.textContent = editMode ? oprT("save") : oprT("edit");
     els.editSaveIcon.setAttribute("name", editMode ? "save" : "create");
 
     els.editSaveBtn.classList.toggle("opr-red", !editMode);
@@ -2540,19 +2844,19 @@
         return `
           <button type="button" class="opr-name-option" data-output-name="${esc(name)}">
             <span>${esc(name)}</span>
-            <span class="opr-option-tag">Load</span>
+            <span class="opr-option-tag">${esc(oprT("load"))}</span>
           </button>
         `;
       }).join("");
     }else{
-      html += `<div class="opr-combo-empty">No matching saved produce found.</div>`;
+      html += `<div class="opr-combo-empty">${esc(oprT("noMatchingProduce"))}</div>`;
     }
 
     if(typed && !savedOutputNames.some((name) => keyOf(name) === typedKey)){
       html += `
         <button type="button" class="opr-name-create" data-create-output="${esc(typed)}">
-          <span>Create new produce: ${esc(typed)}</span>
-          <span class="opr-option-tag">New</span>
+          <span>${esc(oprT("createNewProduce"))} ${esc(typed)}</span>
+          <span class="opr-option-tag">${esc(oprT("new"))}</span>
         </button>
       `;
     }
@@ -2762,11 +3066,11 @@
     const outputName = norm(state.produceName);
 
     if(!pg){
-      return { ok:false, message:"Missing PG context." };
+      return { ok:false, message: oprT("missingPgContext", "Missing PG context.") };
     }
 
     if(!outputName){
-      return { ok:false, message:"Name of Produce is required." };
+      return { ok:false, message: oprT("nameRequired") };
     }
 
     computeAllRows();
@@ -2820,11 +3124,11 @@
       currentLoadedOutputName = outputName;
       renderOutputOptions();
 
-      return { ok:true, message: json.message || "Saved" };
+      return { ok:true, message: json.message || oprT("saved") };
     }catch(err){
       return {
         ok:false,
-        message: err && err.message ? err.message : "Network error",
+        message: err && err.message ? err.message : oprT("networkError", "Network error"),
       };
     }
   }
@@ -2834,10 +3138,10 @@
     saveTab();
     renderAll();
 
-    if(tab === "purchases") toast("Purchases");
-    else if(tab === "sales") toast("Sales");
-    else if(tab === "stock") toast("Stock");
-    else toast("All");
+    if(tab === "purchases") toast(oprT("tabPurchases"));
+    else if(tab === "sales") toast(oprT("tabSales"));
+    else if(tab === "stock") toast(oprT("tabStock"));
+    else toast(oprT("tabAll"));
   }
 
   function getVisibleColumns(){
@@ -2849,17 +3153,17 @@
 
   function renderSectionHead(){
     if(activeTab === "purchases"){
-      els.sectionTitle.innerHTML = `<ion-icon name="cart"></ion-icon><span>Purchases (From Member)</span>`;
-      els.sectionNote.textContent = "Enter purchase details. Amount is auto-calculated.";
+      els.sectionTitle.innerHTML = `<ion-icon name="cart"></ion-icon><span>${esc(oprT("sectionPurchasesTitle"))}</span>`;
+      els.sectionNote.textContent = oprT("sectionPurchasesNote");
     }else if(activeTab === "sales"){
-      els.sectionTitle.innerHTML = `<ion-icon name="receipt"></ion-icon><span>Sales (To Buyers)</span>`;
-      els.sectionNote.textContent = "Enter sale details. Amount is auto-calculated.";
+      els.sectionTitle.innerHTML = `<ion-icon name="receipt"></ion-icon><span>${esc(oprT("sectionSalesTitle"))}</span>`;
+      els.sectionNote.textContent = oprT("sectionSalesNote");
     }else if(activeTab === "stock"){
-      els.sectionTitle.innerHTML = `<ion-icon name="layers"></ion-icon><span>Stock (Auto Calculated)</span>`;
-      els.sectionNote.textContent = "Closing stock qty is auto. You can edit stock rate if needed.";
+      els.sectionTitle.innerHTML = `<ion-icon name="layers"></ion-icon><span>${esc(oprT("sectionStockTitle"))}</span>`;
+      els.sectionNote.textContent = oprT("sectionStockNote");
     }else{
-      els.sectionTitle.innerHTML = `<ion-icon name="grid"></ion-icon><span>All (Purchases + Sales + Stock)</span>`;
-      els.sectionNote.textContent = "All records shown together. Amounts & stock auto-calculate.";
+      els.sectionTitle.innerHTML = `<ion-icon name="grid"></ion-icon><span>${esc(oprT("sectionAllTitle"))}</span>`;
+      els.sectionNote.textContent = oprT("sectionAllNote");
     }
   }
 
@@ -2887,7 +3191,7 @@
         type="${col.type || "text"}"
         data-key="${col.key}"
         value="${esc(val)}"
-        placeholder="${esc(col.ph || col.label)}"
+        placeholder="${esc(oprColPlaceholder(col))}"
         ${step}
         ${readonly}
       />
@@ -2902,7 +3206,7 @@
         <th class="opr-center opr-stickyLeft" style="width:56px;">
           <input type="checkbox" class="opr-chk" id="oprSelectAll" ${editMode ? "" : "disabled"}>
         </th>
-        ${cols.map((c) => `<th data-col="${esc(c.key)}">${esc(c.label)}</th>`).join("")}
+        ${cols.map((c) => `<th data-col="${esc(c.key)}">${esc(oprColLabel(c))}</th>`).join("")}
       </tr>
     `;
 
@@ -2941,10 +3245,10 @@
       return `
         <div class="opr-card" data-row="${index}">
           <div class="opr-cardTop">
-            <span class="opr-pill">Row ${index + 1}</span>
+            <span class="opr-pill">${esc(oprT("row"))} ${index + 1}</span>
             <label class="opr-pill">
               <input type="checkbox" data-chk="1" ${row.selected ? "checked" : ""} ${editMode ? "" : "disabled"}>
-              Select
+              ${esc(oprT("select"))}
             </label>
           </div>
 
@@ -2952,7 +3256,7 @@
             ${cols.map((c) => {
               return `
                 <div class="opr-cardItem">
-                  <label>${esc(c.label)}</label>
+                  <label>${esc(oprColLabel(c))}</label>
                   ${inputHTML(row, c)}
                 </div>
               `;
@@ -2981,31 +3285,31 @@
     });
 
     if(activeTab === "purchases"){
-      els.kpi1Label.textContent = "Total Purchase Qty";
-      els.kpi2Label.textContent = "Total Purchase Amount";
-      els.kpi3Label.textContent = "Live Stock Qty";
+      els.kpi1Label.textContent = oprT("totalPurchaseQty");
+      els.kpi2Label.textContent = oprT("totalPurchaseAmount");
+      els.kpi3Label.textContent = oprT("liveStockQty");
       els.kpi1Val.textContent = fmt(tpq);
       els.kpi2Val.textContent = fmt(tpa);
       els.kpi3Val.textContent = fmt(tstkq);
     }else if(activeTab === "sales"){
-      els.kpi1Label.textContent = "Total Sale Qty";
-      els.kpi2Label.textContent = "Total Sale Amount";
-      els.kpi3Label.textContent = "Live Stock Qty";
+      els.kpi1Label.textContent = oprT("totalSaleQty");
+      els.kpi2Label.textContent = oprT("totalSaleAmount");
+      els.kpi3Label.textContent = oprT("liveStockQty");
       els.kpi1Val.textContent = fmt(tsq);
       els.kpi2Val.textContent = fmt(tsa);
       els.kpi3Val.textContent = fmt(tstkq);
     }else if(activeTab === "stock"){
-      els.kpi1Label.textContent = "Live Stock Qty";
-      els.kpi2Label.textContent = "Live Stock Rate (avg)";
-      els.kpi3Label.textContent = "Live Stock Amount";
+      els.kpi1Label.textContent = oprT("liveStockQty");
+      els.kpi2Label.textContent = oprT("liveStockRateAvg");
+      els.kpi3Label.textContent = oprT("liveStockAmount");
       const avg = tstkq !== 0 ? tstka / tstkq : 0;
       els.kpi1Val.textContent = fmt(tstkq);
       els.kpi2Val.textContent = fmt(avg);
       els.kpi3Val.textContent = fmt(tstka);
     }else{
-      els.kpi1Label.textContent = "Total Purchase Amount";
-      els.kpi2Label.textContent = "Total Sale Amount";
-      els.kpi3Label.textContent = "Live Stock Amount";
+      els.kpi1Label.textContent = oprT("totalPurchaseAmount");
+      els.kpi2Label.textContent = oprT("totalSaleAmount");
+      els.kpi3Label.textContent = oprT("liveStockAmount");
       els.kpi1Val.textContent = fmt(tpa);
       els.kpi2Val.textContent = fmt(tsa);
       els.kpi3Val.textContent = fmt(tstka);
@@ -3024,6 +3328,7 @@
     renderMobile();
     computeTotals();
     setEditUI();
+    applyOprTranslations(oprLang);
   }
 
   function syncRowFromContainer(container){
@@ -3073,7 +3378,7 @@
     editMode = true;
     renderAll();
     openOutputPanel();
-    toast("Edit mode ON");
+    toast(oprT("editModeOn"));
   }
 
   async function saveEdit(){
@@ -3081,19 +3386,19 @@
     state.unitStock = norm(els.unitStock.value);
 
     if(!state.produceName){
-      toast("Name of Produce is required.");
+      toast(oprT("nameRequired"));
       els.produceName.focus();
       openOutputPanel();
       return;
     }
 
-    const ok = await confirmBox("Save changes?", `Save register data under "${state.produceName}"?`);
+    const ok = await confirmBox(oprT("saveChangesTitle"), `${oprT("saveRegisterPrefix")} "${state.produceName}"?`);
     if(!ok) return;
 
     const result = await saveToServer();
 
     if(!result.ok){
-      toast(result.message || "Save failed.");
+      toast(result.message || oprT("saveFailed"));
       return;
     }
 
@@ -3101,20 +3406,20 @@
     beforeEditSnapshot = null;
     renderAll();
     await refreshOutputDropdown();
-    toast("Saved");
+    toast(oprT("saved"));
   }
 
   async function cancelEdit(){
     if(!editMode) return;
 
-    const ok = await confirmBox("Discard changes?", "Cancel will discard your edits. Continue?");
+    const ok = await confirmBox(oprT("discardChangesTitle"), oprT("discardChangesMsg"));
     if(!ok) return;
 
     restoreSnapshot(beforeEditSnapshot);
     editMode = false;
     beforeEditSnapshot = null;
     renderAll();
-    toast("Canceled");
+    toast(oprT("canceled"));
   }
 
   async function deleteSelected(){
@@ -3123,11 +3428,11 @@
     const selected = state.rows.filter((r) => r.selected);
 
     if(!selected.length){
-      toast("No rows selected");
+      toast(oprT("noRowsSelected"));
       return;
     }
 
-    const ok = await confirmBox("Delete selected?", `Delete ${selected.length} selected row(s)?`);
+    const ok = await confirmBox(oprT("deleteSelectedTitle"), `${oprT("deleteSelectedMsgPrefix")} ${selected.length} ${oprT("deleteSelectedMsgSuffix")}`);
     if(!ok) return;
 
     state.rows = state.rows.filter((r) => !r.selected);
@@ -3137,18 +3442,18 @@
     }
 
     renderAll();
-    toast("Deleted selected");
+    toast(oprT("deletedSelected"));
   }
 
   async function deleteAll(){
     if(!editMode) return;
 
-    const ok = await confirmBox("Delete all?", "Delete ALL rows? This cannot be undone.");
+    const ok = await confirmBox(oprT("deleteAllTitle"), oprT("deleteAllMsg"));
     if(!ok) return;
 
     state.rows = [computeRow(newRow())];
     renderAll();
-    toast("All rows deleted");
+    toast(oprT("allRowsDeleted"));
   }
 
   function exportCSV(){
@@ -3220,14 +3525,14 @@
     a.remove();
 
     URL.revokeObjectURL(url);
-    toast("CSV exported");
+    toast(oprT("csvExported"));
   }
 
   function buildPrintHTML(){
-    const title = "Output / Produce Register (Purchase / Sale / Stock)";
-    const section = activeTab === "purchases" ? "Purchases" :
-                    activeTab === "sales" ? "Sales" :
-                    activeTab === "stock" ? "Stock" : "All";
+    const title = oprT("pageTitle");
+    const section = activeTab === "purchases" ? oprT("tabPurchases") :
+                    activeTab === "sales" ? oprT("tabSales") :
+                    activeTab === "stock" ? oprT("tabStock") : oprT("tabAll");
 
     const table = els.table.cloneNode(true);
 
@@ -3246,16 +3551,16 @@
     return `
       <div class="opr-print-cover">
         <div class="print-title">${esc(title)}</div>
-        <div class="print-section">Section: ${esc(section)}</div>
+        <div class="print-section">${esc(oprT("section"))}: ${esc(section)}</div>
       </div>
 
       <div class="opr-print-meta">
         <div class="field">
-          <label>Name of the Produce</label>
+          <label>${esc(oprT("nameProduce"))}</label>
           <div>${esc(state.produceName || "")}</div>
         </div>
         <div class="field">
-          <label>Unit of Stocking</label>
+          <label>${esc(oprT("unitStocking"))}</label>
           <div>${esc(state.unitStock || "")}</div>
         </div>
       </div>
@@ -3266,11 +3571,11 @@
 
   function openPrintPreview(){
     if(editMode){
-      toast("Please Save or Cancel before printing.");
+      toast(oprT("printBlocked"));
       return;
     }
 
-    els.printPreviewTitle.textContent = "Print Preview";
+    els.printPreviewTitle.textContent = oprT("printPreview");
     els.printPreviewContent.innerHTML = buildPrintHTML();
     els.printPreviewModal.classList.add("show");
 
@@ -3454,7 +3759,7 @@ td[data-col="buyer"]{
 
     state.rows.push(computeRow(newRow()));
     renderAll();
-    toast("Row added");
+    toast(oprT("rowAdded"));
   });
 
   els.delSelectedBtn.addEventListener("click", deleteSelected);
@@ -3511,7 +3816,7 @@ td[data-col="buyer"]{
   });
 
   els.exportBtn.addEventListener("click", async () => {
-    const ok = await confirmBox("Export CSV?", "Export all records to CSV file?");
+    const ok = await confirmBox(oprT("exportCsvTitle"), oprT("exportCsvMsg"));
     if(!ok) return;
     exportCSV();
   });
@@ -3549,6 +3854,7 @@ td[data-col="buyer"]{
   });
 
   async function init(){
+    oprLang = getSavedOprLang();
     bindOutputDropdown();
 
     resetBlankRegister("");

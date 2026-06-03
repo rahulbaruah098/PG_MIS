@@ -2995,4 +2995,505 @@ body.force-desktop-print .input-register-page table.input-register{
 </script>
 
 
+
+<script>
+(function(){
+  "use strict";
+
+  var inputRegisterLang = "en";
+
+  var INPUT_REGISTER_TRANSLATIONS = {
+    en: {
+      pageTitle: "Input Purchase/Sale/Stock Register",
+      title: "Input (Purchase/Sale/Stock) Register",
+      edit: "Edit",
+      save: "Save",
+      cancel: "Cancel",
+      exportCsv: "Export CSV",
+      print: "Print",
+      nameOfInput: "Name of Input",
+      unitOfStocking: "Unit of Stocking",
+      selectExistingInput: "Select existing input or type new input...",
+      unitPlaceholder: "e.g.: Kg / Litre / Packet / Bag ...",
+      existingInputs: "Existing Inputs",
+      noSavedInputs: "No saved inputs yet.",
+      inputHint: "Select Fish/Chicken from saved inputs, or click Edit and type a new input like Seed.",
+      all: "All",
+      purchase: "Purchase",
+      sale: "Sale",
+      stock: "Stock",
+      showingAllColumns: "Showing: All columns",
+      showingPurchaseColumns: "Showing: Purchase columns",
+      showingSaleColumns: "Showing: Sale columns",
+      showingStockColumns: "Showing: Stock columns",
+      deleteSelected: "Delete Selected",
+      deleteAll: "Delete All",
+      addRow: "Add Row",
+      purchaseOfInput: "Purchase of Input",
+      saleOfInputToMembers: "Sale of input to members",
+      totals: "TOTALS",
+      footer: "PGMIS • Input (Purchase/Sale/Stock) Register",
+      date: "Date",
+      billNo: "Bill No",
+      supplierName: "Name of Supplier",
+      qty: "Qty",
+      rate: "Rate",
+      totalAmount: "Total Amount",
+      cashBookFolioNo: "Cash Book Folio No",
+      billNoOfPg: "Bill No of PG",
+      memberFarmerName: "Name of member farmer",
+      amount: "Amount",
+      closingStockQty: "Closing Stock Qty",
+      confirm: "Confirm",
+      areYouSure: "Are you sure?",
+      no: "No",
+      yes: "Yes",
+      ok: "OK",
+      printPreview: "Print Preview",
+      back: "Back",
+      proceedToPrint: "Proceed to Print",
+      load: "Load",
+      newText: "New",
+      noMatchingSavedInput: "No matching saved input found.",
+      noSavedTypeNew: "No saved inputs yet. Type a new input name like Fish, Chicken, or Seed.",
+      editModeOn: "Edit mode ON",
+      nameRequiredTitle: "Name of Input required",
+      nameRequiredMsg: "Please type or select the Name of Input before saving.",
+      saveChangesTitle: "Save changes?",
+      saveFailed: "Save failed.",
+      saved: "Saved",
+      discardChangesTitle: "Discard changes?",
+      discardChangesMsg: "Cancel will discard your current edits. Continue?",
+      canceled: "Canceled",
+      couldNotLoadInput: "Could not load input.",
+      ready: "Ready",
+      confirmQuestion: "Confirm?",
+      info: "Info",
+      createNewInput: "Create new input:",
+      newInput: "New input:",
+      loadedSuffix: "loaded",
+      supplierPlaceholder: "Supplier name",
+      memberPlaceholder: "Member farmer name",
+      billNoPlaceholder: "Bill No",
+      billNoPgPlaceholder: "Bill No of PG",
+      totalPlaceholder: "Total",
+      folioNoPlaceholder: "Folio No"
+    },
+    bn: {
+      pageTitle: "ইনপুট ক্রয়/বিক্রয়/স্টক রেজিস্টার",
+      title: "ইনপুট (ক্রয়/বিক্রয়/স্টক) রেজিস্টার",
+      edit: "সম্পাদনা",
+      save: "সংরক্ষণ",
+      cancel: "বাতিল",
+      exportCsv: "CSV এক্সপোর্ট",
+      print: "প্রিন্ট",
+      nameOfInput: "ইনপুটের নাম",
+      unitOfStocking: "স্টকিং-এর একক",
+      selectExistingInput: "বিদ্যমান ইনপুট নির্বাচন করুন অথবা নতুন ইনপুট লিখুন...",
+      unitPlaceholder: "যেমন: কেজি / লিটার / প্যাকেট / ব্যাগ ...",
+      existingInputs: "বিদ্যমান ইনপুটসমূহ",
+      noSavedInputs: "এখনও কোনো সংরক্ষিত ইনপুট নেই।",
+      inputHint: "সংরক্ষিত ইনপুট থেকে Fish/Chicken নির্বাচন করুন, অথবা Edit ক্লিক করে Seed-এর মতো নতুন ইনপুট লিখুন।",
+      all: "সব",
+      purchase: "ক্রয়",
+      sale: "বিক্রয়",
+      stock: "স্টক",
+      showingAllColumns: "দেখানো হচ্ছে: সব কলাম",
+      showingPurchaseColumns: "দেখানো হচ্ছে: ক্রয় কলাম",
+      showingSaleColumns: "দেখানো হচ্ছে: বিক্রয় কলাম",
+      showingStockColumns: "দেখানো হচ্ছে: স্টক কলাম",
+      deleteSelected: "নির্বাচিত মুছুন",
+      deleteAll: "সব মুছুন",
+      addRow: "সারি যোগ করুন",
+      purchaseOfInput: "ইনপুট ক্রয়",
+      saleOfInputToMembers: "সদস্যদের কাছে ইনপুট বিক্রয়",
+      totals: "মোট",
+      footer: "PGMIS • ইনপুট (ক্রয়/বিক্রয়/স্টক) রেজিস্টার",
+      date: "তারিখ",
+      billNo: "বিল নম্বর",
+      supplierName: "সরবরাহকারীর নাম",
+      qty: "পরিমাণ",
+      rate: "হার",
+      totalAmount: "মোট পরিমাণ",
+      cashBookFolioNo: "ক্যাশ বুক ফোলিও নম্বর",
+      billNoOfPg: "PG-এর বিল নম্বর",
+      memberFarmerName: "সদস্য কৃষকের নাম",
+      amount: "পরিমাণ",
+      closingStockQty: "ক্লোজিং স্টক পরিমাণ",
+      confirm: "নিশ্চিত করুন",
+      areYouSure: "আপনি কি নিশ্চিত?",
+      no: "না",
+      yes: "হ্যাঁ",
+      ok: "ঠিক আছে",
+      printPreview: "প্রিন্ট প্রিভিউ",
+      back: "পিছনে",
+      proceedToPrint: "প্রিন্ট করতে এগিয়ে যান",
+      load: "লোড",
+      newText: "নতুন",
+      noMatchingSavedInput: "মিল থাকা কোনো সংরক্ষিত ইনপুট পাওয়া যায়নি।",
+      noSavedTypeNew: "এখনও কোনো সংরক্ষিত ইনপুট নেই। Fish, Chicken, অথবা Seed-এর মতো নতুন ইনপুট নাম লিখুন।",
+      editModeOn: "সম্পাদনা মোড চালু",
+      nameRequiredTitle: "ইনপুটের নাম প্রয়োজন",
+      nameRequiredMsg: "সংরক্ষণের আগে অনুগ্রহ করে ইনপুটের নাম লিখুন বা নির্বাচন করুন।",
+      saveChangesTitle: "পরিবর্তন সংরক্ষণ করবেন?",
+      saveFailed: "সংরক্ষণ ব্যর্থ হয়েছে।",
+      saved: "সংরক্ষিত হয়েছে",
+      discardChangesTitle: "পরিবর্তন বাতিল করবেন?",
+      discardChangesMsg: "বাতিল করলে বর্তমান সম্পাদনা মুছে যাবে। চালিয়ে যাবেন?",
+      canceled: "বাতিল হয়েছে",
+      couldNotLoadInput: "ইনপুট লোড করা যায়নি।",
+      ready: "প্রস্তুত",
+      confirmQuestion: "নিশ্চিত করবেন?",
+      info: "তথ্য",
+      createNewInput: "নতুন ইনপুট তৈরি করুন:",
+      newInput: "নতুন ইনপুট:",
+      loadedSuffix: "লোড হয়েছে",
+      supplierPlaceholder: "সরবরাহকারীর নাম",
+      memberPlaceholder: "সদস্য কৃষকের নাম",
+      billNoPlaceholder: "বিল নম্বর",
+      billNoPgPlaceholder: "PG-এর বিল নম্বর",
+      totalPlaceholder: "মোট",
+      folioNoPlaceholder: "ফোলিও নম্বর"
+    }
+  };
+
+  var exactKeyByEnglish = {
+    "Input Purchase/Sale/Stock Register": "pageTitle",
+    "Input (Purchase/Sale/Stock) Register": "title",
+    "Edit": "edit",
+    "Save": "save",
+    "Cancel": "cancel",
+    "Export CSV": "exportCsv",
+    "Print": "print",
+    "Name of Input": "nameOfInput",
+    "Unit of Stocking": "unitOfStocking",
+    "Existing Inputs": "existingInputs",
+    "No saved inputs yet.": "noSavedInputs",
+    "Select Fish/Chicken from saved inputs, or click Edit and type a new input like Seed.": "inputHint",
+    "All": "all",
+    "Purchase": "purchase",
+    "Sale": "sale",
+    "Stock": "stock",
+    "Showing: All columns": "showingAllColumns",
+    "Showing: Purchase columns": "showingPurchaseColumns",
+    "Showing: Sale columns": "showingSaleColumns",
+    "Showing: Stock columns": "showingStockColumns",
+    "Delete Selected": "deleteSelected",
+    "Delete All": "deleteAll",
+    "Add Row": "addRow",
+    "Purchase of Input": "purchaseOfInput",
+    "Sale of input to members": "saleOfInputToMembers",
+    "TOTALS": "totals",
+    "PGMIS • Input (Purchase/Sale/Stock) Register": "footer",
+    "Date": "date",
+    "Bill No": "billNo",
+    "Name of Supplier": "supplierName",
+    "Qty": "qty",
+    "Rate": "rate",
+    "Total Amount": "totalAmount",
+    "Cash Book Folio No": "cashBookFolioNo",
+    "Bill No of PG": "billNoOfPg",
+    "Name of member farmer": "memberFarmerName",
+    "Amount": "amount",
+    "Closing Stock Qty": "closingStockQty",
+    "Confirm": "confirm",
+    "Are you sure?": "areYouSure",
+    "No": "no",
+    "Yes": "yes",
+    "OK": "ok",
+    "Print Preview": "printPreview",
+    "Back": "back",
+    "Proceed to Print": "proceedToPrint",
+    "Load": "load",
+    "New": "newText",
+    "No matching saved input found.": "noMatchingSavedInput",
+    "No saved inputs yet. Type a new input name like Fish, Chicken, or Seed.": "noSavedTypeNew",
+    "Edit mode ON": "editModeOn",
+    "Name of Input required": "nameRequiredTitle",
+    "Please type or select the Name of Input before saving.": "nameRequiredMsg",
+    "Save changes?": "saveChangesTitle",
+    "Save failed.": "saveFailed",
+    "Saved": "saved",
+    "Discard changes?": "discardChangesTitle",
+    "Cancel will discard your current edits. Continue?": "discardChangesMsg",
+    "Canceled": "canceled",
+    "Could not load input.": "couldNotLoadInput",
+    "Ready": "ready",
+    "Confirm?": "confirmQuestion",
+    "Info": "info",
+    "Create new input:": "createNewInput",
+    "New input:": "newInput",
+    "loaded": "loadedSuffix"
+  };
+
+  function normalizeInputRegisterLang(lang){
+    var value = String(lang || "").toLowerCase().trim();
+    if(value === "bn" || value === "bengali" || value === "বাংলা") return "bn";
+    return "en";
+  }
+
+  function getSavedInputRegisterLang(){
+    try{
+      if(window.PGMIS && typeof window.PGMIS.getLanguage === "function"){
+        return normalizeInputRegisterLang(window.PGMIS.getLanguage());
+      }
+      return normalizeInputRegisterLang(
+        window.__PGMIS_LANG ||
+        window.PGMIS_LANG ||
+        localStorage.getItem("pgmis_lang") ||
+        localStorage.getItem("PGMIS_LANG") ||
+        localStorage.getItem("language") ||
+        localStorage.getItem("lang") ||
+        sessionStorage.getItem("pgmis_lang") ||
+        sessionStorage.getItem("language") ||
+        "en"
+      );
+    }catch(_){
+      return "en";
+    }
+  }
+
+  function inputRegT(key){
+    return (INPUT_REGISTER_TRANSLATIONS[inputRegisterLang] && INPUT_REGISTER_TRANSLATIONS[inputRegisterLang][key]) ||
+      INPUT_REGISTER_TRANSLATIONS.en[key] || key;
+  }
+
+  function reverseBnToKey(text){
+    var clean = String(text || "").trim();
+    var bn = INPUT_REGISTER_TRANSLATIONS.bn;
+    for(var key in bn){
+      if(Object.prototype.hasOwnProperty.call(bn, key) && bn[key] === clean){
+        return key;
+      }
+    }
+    return null;
+  }
+
+  function translatePhrase(text){
+    var raw = String(text || "");
+    var clean = raw.trim();
+    if(!clean) return raw;
+
+    var key = exactKeyByEnglish[clean] || reverseBnToKey(clean);
+    if(key) return raw.replace(clean, inputRegT(key));
+
+    var m;
+    m = clean.match(/^Save register data under "(.+)"\?$/);
+    if(m){
+      return inputRegisterLang === "bn"
+        ? `"${m[1]}" নামে রেজিস্টার ডেটা সংরক্ষণ করবেন?`
+        : `Save register data under "${m[1]}"?`;
+    }
+
+    m = clean.match(/^New input:\s*(.+)$/);
+    if(m){
+      return inputRegisterLang === "bn"
+        ? `${inputRegT("newInput")} ${m[1]}`
+        : `${inputRegT("newInput")} ${m[1]}`;
+    }
+
+    m = clean.match(/^Create new input:\s*(.+)$/);
+    if(m){
+      return inputRegisterLang === "bn"
+        ? `${inputRegT("createNewInput")} ${m[1]}`
+        : `${inputRegT("createNewInput")} ${m[1]}`;
+    }
+
+    m = clean.match(/^(.+) loaded$/);
+    if(m){
+      return inputRegisterLang === "bn"
+        ? `${m[1]} ${inputRegT("loadedSuffix")}`
+        : `${m[1]} ${inputRegT("loadedSuffix")}`;
+    }
+
+    return raw;
+  }
+
+  function setTextById(id, key){
+    var el = document.getElementById(id);
+    if(el) el.textContent = inputRegT(key);
+  }
+
+  function setPlaceholderById(id, key){
+    var el = document.getElementById(id);
+    if(el) el.setAttribute("placeholder", inputRegT(key));
+  }
+
+  var applyingInputRegisterLang = false;
+
+  function translateTextNodes(root){
+    if(!root) return;
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: function(node){
+        var parent = node.parentElement;
+        if(!parent) return NodeFilter.FILTER_REJECT;
+        var tag = parent.tagName;
+        if(["SCRIPT", "STYLE", "TEXTAREA"].includes(tag)) return NodeFilter.FILTER_REJECT;
+        if(tag === "INPUT" || tag === "SELECT" || tag === "OPTION") return NodeFilter.FILTER_REJECT;
+        if(!String(node.nodeValue || "").trim()) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+
+    var nodes = [];
+    while(walker.nextNode()) nodes.push(walker.currentNode);
+
+    nodes.forEach(function(node){
+      var next = translatePhrase(node.nodeValue);
+      if(next !== node.nodeValue) node.nodeValue = next;
+    });
+  }
+
+  function translateInputs(root){
+    if(!root) return;
+
+    root.querySelectorAll("input[placeholder]").forEach(function(input){
+      var ph = input.getAttribute("placeholder") || "";
+      var clean = ph.trim();
+      var key = exactKeyByEnglish[clean] || reverseBnToKey(clean);
+
+      if(clean === "Select existing input or type new input...") key = "selectExistingInput";
+      if(clean === "e.g.: Kg / Litre / Packet / Bag ...") key = "unitPlaceholder";
+      if(clean === "Supplier name") key = "supplierPlaceholder";
+      if(clean === "Member farmer name") key = "memberPlaceholder";
+      if(clean === "Bill No") key = "billNoPlaceholder";
+      if(clean === "Bill No of PG") key = "billNoPgPlaceholder";
+      if(clean === "Total") key = "totalPlaceholder";
+      if(clean === "Folio No") key = "folioNoPlaceholder";
+
+      if(key) input.setAttribute("placeholder", inputRegT(key));
+    });
+
+    root.querySelectorAll("[title]").forEach(function(el){
+      var title = el.getAttribute("title") || "";
+      if(title === "Show saved inputs" || title === "সংরক্ষিত ইনপুট দেখান"){
+        el.setAttribute("title", inputRegisterLang === "bn" ? "সংরক্ষিত ইনপুট দেখান" : "Show saved inputs");
+      }
+    });
+  }
+
+  function applyInputRegisterStaticTranslations(){
+    document.title = inputRegT("pageTitle");
+
+    setTextById("t_title", "title");
+    setTextById("editSaveText", document.querySelector(".input-register-page") && document.querySelector(".input-register-page").classList.contains("is-editing") ? "save" : "edit");
+    setTextById("t_cancel", "cancel");
+    setTextById("t_export_csv", "exportCsv");
+    setTextById("t_print", "print");
+    setTextById("t_tab_all", "all");
+    setTextById("t_tab_purchase", "purchase");
+    setTextById("t_tab_sale", "sale");
+    setTextById("t_tab_stock", "stock");
+    setTextById("t_delete_selected", "deleteSelected");
+    setTextById("t_delete_all", "deleteAll");
+    setTextById("t_add_row", "addRow");
+    setTextById("t_group_purchase", "purchaseOfInput");
+    setTextById("t_group_sale", "saleOfInputToMembers");
+    setTextById("t_group_stock", "stock");
+    setTextById("t_h_p1", "date");
+    setTextById("t_h_p2", "billNo");
+    setTextById("t_h_p3", "supplierName");
+    setTextById("t_h_p4", "qty");
+    setTextById("t_h_p5", "rate");
+    setTextById("t_h_p6", "totalAmount");
+    setTextById("t_h_p7", "cashBookFolioNo");
+    setTextById("t_h_s8", "date");
+    setTextById("t_h_s9", "billNoOfPg");
+    setTextById("t_h_s10", "memberFarmerName");
+    setTextById("t_h_s11", "qty");
+    setTextById("t_h_s12", "rate");
+    setTextById("t_h_s13", "amount");
+    setTextById("t_h_s14", "cashBookFolioNo");
+    setTextById("t_h_st15", "closingStockQty");
+    setTextById("t_h_st16", "rate");
+    setTextById("t_h_st17", "amount");
+    setTextById("t_totals", "totals");
+    setTextById("t_footer", "footer");
+    setTextById("confirmTitle", "confirm");
+    setTextById("confirmMsg", "areYouSure");
+    setTextById("t_no", "no");
+    setTextById("t_yes", "yes");
+    setTextById("printPreviewTitle", "printPreview");
+
+    var sectionHint = document.getElementById("sectionHint");
+    if(sectionHint){
+      var h = sectionHint.textContent.trim();
+      if(h.indexOf("Purchase") >= 0 || h.indexOf("ক্রয়") >= 0) sectionHint.textContent = inputRegT("showingPurchaseColumns");
+      else if(h.indexOf("Sale") >= 0 || h.indexOf("বিক্রয়") >= 0) sectionHint.textContent = inputRegT("showingSaleColumns");
+      else if(h.indexOf("Stock") >= 0 || h.indexOf("স্টক") >= 0) sectionHint.textContent = inputRegT("showingStockColumns");
+      else sectionHint.textContent = inputRegT("showingAllColumns");
+    }
+
+    var hint = document.getElementById("inputNameHint");
+    if(hint) hint.textContent = inputRegT("inputHint");
+
+    setPlaceholderById("regInputName", "selectExistingInput");
+    setPlaceholderById("regUnit", "unitPlaceholder");
+
+    var page = document.querySelector(".input-register-page");
+    translateTextNodes(page);
+    translateInputs(page);
+  }
+
+  function applyInputRegisterTranslations(lang){
+    if(applyingInputRegisterLang) return;
+    applyingInputRegisterLang = true;
+    inputRegisterLang = normalizeInputRegisterLang(lang || getSavedInputRegisterLang());
+
+    try{
+      applyInputRegisterStaticTranslations();
+    }finally{
+      applyingInputRegisterLang = false;
+    }
+  }
+
+  var previousApplyTranslations = window.applyTranslations;
+  var previousTranslatePage = window.translatePage;
+  var previousUpdatePageLanguage = window.updatePageLanguage;
+
+  window.applyInputRegisterTranslations = applyInputRegisterTranslations;
+  window.applyTranslations = function(lang){
+    if(typeof previousApplyTranslations === "function" && previousApplyTranslations !== applyInputRegisterTranslations){
+      try{ previousApplyTranslations(lang); }catch(_){ }
+    }
+    applyInputRegisterTranslations(lang);
+  };
+  window.translatePage = function(lang){
+    if(typeof previousTranslatePage === "function" && previousTranslatePage !== applyInputRegisterTranslations){
+      try{ previousTranslatePage(lang); }catch(_){ }
+    }
+    applyInputRegisterTranslations(lang);
+  };
+  window.updatePageLanguage = function(lang){
+    if(typeof previousUpdatePageLanguage === "function" && previousUpdatePageLanguage !== applyInputRegisterTranslations){
+      try{ previousUpdatePageLanguage(lang); }catch(_){ }
+    }
+    applyInputRegisterTranslations(lang);
+  };
+
+  window.addEventListener("pgmis:language-change", function(e){
+    applyInputRegisterTranslations(e.detail && e.detail.lang);
+  });
+
+  window.addEventListener("pgmis:lang", function(e){
+    applyInputRegisterTranslations(e.detail && e.detail.lang);
+  });
+
+  document.addEventListener("DOMContentLoaded", function(){
+    applyInputRegisterTranslations(getSavedInputRegisterLang());
+
+    var page = document.querySelector(".input-register-page");
+    if(window.MutationObserver && page){
+      var observer = new MutationObserver(function(){
+        if(applyingInputRegisterLang) return;
+        window.requestAnimationFrame(function(){
+          applyInputRegisterTranslations(inputRegisterLang);
+        });
+      });
+      observer.observe(page, { childList:true, subtree:true, characterData:true, attributes:true, attributeFilter:["placeholder", "title"] });
+    }
+  });
+})();
+</script>
+
 {% endblock %}
