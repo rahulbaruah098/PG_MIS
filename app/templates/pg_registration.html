@@ -910,7 +910,7 @@
         <p class="pgr-validation-msg">Save the completed PG Registration Form first, then submit it to Block Admin for validation.</p>
       {% endif %}
 
-      {% if _validation_remarks %}
+      {% if _validation_remarks and _validation_status in ['rejected', 'resubmitted'] %}
         <div class="pgr-validation-remarks">
           <strong>Correction Remarks:</strong> {{ _validation_remarks }}
         </div>
@@ -1910,16 +1910,18 @@ applyPgrLanguage(getLang());
 
 
 
-    /* ============================================================
-       Submit for Block Validation - custom modal confirmation
+        /* ============================================================
+       Submit for Block Validation - auto-save first, then submit
     ============================================================ */
     const validationSubmitForm = document.getElementById('pgValidationSubmitForm');
     const validationSubmitModal = document.getElementById('pgrValidationSubmitModal');
     const validationSubmitCancel = document.getElementById('pgrValidationSubmitCancel');
     const validationSubmitConfirm = document.getElementById('pgrValidationSubmitConfirm');
+    const validationSubmitBtn = document.getElementById('pgrSubmitValidationBtn');
 
     if(validationSubmitForm && validationSubmitModal && validationSubmitCancel && validationSubmitConfirm){
       let validationConfirmedSubmit = false;
+      let validationSubmittingNow = false;
 
       function openValidationSubmitModal(){
         validationSubmitModal.classList.add('is-open');
@@ -1935,6 +1937,72 @@ applyPgrLanguage(getLang());
         validationSubmitModal.setAttribute('aria-hidden', 'true');
       }
 
+      function submitValidationFormNow(){
+        validationConfirmedSubmit = true;
+
+        try{ sessionStorage.setItem('pgr_submit_attempt', '1'); }catch(_){}
+
+        if(typeof validationSubmitForm.requestSubmit === 'function'){
+          validationSubmitForm.requestSubmit();
+        }else{
+          HTMLFormElement.prototype.submit.call(validationSubmitForm);
+        }
+      }
+
+      async function autoSavePgRegistrationBeforeValidation(){
+        if(!form){
+          throw new Error("PG Registration form not found.");
+        }
+
+        if(PGR_VALIDATION_LOCKED){
+          throw new Error("This PG Registration Form is locked because it is already submitted for Block Admin review.");
+        }
+
+        const issues = preSubmitValidate();
+        if(issues.length){
+          showToast('error', tkey('cannotSaveTitle'), `<ul>${issues.map(x => `<li>${x}</li>`).join('')}</ul>`);
+          throw new Error("Validation failed.");
+        }
+
+        if(validationSubmitBtn){
+          validationSubmitBtn.disabled = true;
+          validationSubmitBtn.textContent = "Saving & submitting…";
+        }
+
+        if(validationSubmitConfirm){
+          validationSubmitConfirm.disabled = true;
+          validationSubmitConfirm.innerHTML = "<span>Saving...</span>";
+        }
+
+        showToast('info', 'Saving first', '<div>Saving latest PG Registration details before sending to Block Admin…</div>');
+
+        const response = await fetch(form.getAttribute('action') || window.location.href, {
+          method: 'POST',
+          body: new FormData(form),
+          credentials: 'same-origin',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+
+        let data = null;
+        const contentType = response.headers.get('content-type') || '';
+
+        if(contentType.toLowerCase().includes('application/json')){
+          data = await response.json();
+        }
+
+        if(!response.ok || (data && data.ok === false)){
+          const msg = (data && (data.error || data.message)) ? (data.error || data.message) : "Unable to save PG Registration before validation submit.";
+          showToast('error', tkey('errFixTitle'), `<div>${msg}</div>`);
+          throw new Error(msg);
+        }
+
+        showToast('ok', 'Saved successfully', '<div>Latest PG Registration details saved. Now submitting to Block Admin…</div>');
+        return true;
+      }
+
       validationSubmitForm.addEventListener('submit', function(e){
         if(validationConfirmedSubmit) return;
 
@@ -1945,35 +2013,54 @@ applyPgrLanguage(getLang());
       });
 
       validationSubmitCancel.addEventListener('click', function(){
+        if(validationSubmittingNow) return;
         closeValidationSubmitModal();
       });
 
-      validationSubmitConfirm.addEventListener('click', function(){
-        validationConfirmedSubmit = true;
-        closeValidationSubmitModal();
+      validationSubmitConfirm.addEventListener('click', async function(){
+        if(validationSubmittingNow) return;
 
-        try{ sessionStorage.setItem('pgr_submit_attempt', '1'); }catch(_){}
+        validationSubmittingNow = true;
 
-        if(typeof validationSubmitForm.requestSubmit === 'function'){
-          validationSubmitForm.requestSubmit();
-        }else{
-          HTMLFormElement.prototype.submit.call(validationSubmitForm);
+        try{
+          await autoSavePgRegistrationBeforeValidation();
+
+          closeValidationSubmitModal();
+          submitValidationFormNow();
+        }catch(err){
+          validationSubmittingNow = false;
+
+          if(validationSubmitBtn){
+            validationSubmitBtn.disabled = false;
+            validationSubmitBtn.textContent = "Submit for Block Validation";
+          }
+
+          if(validationSubmitConfirm){
+            validationSubmitConfirm.disabled = false;
+            validationSubmitConfirm.innerHTML = "<span>Submit</span>";
+          }
+
+          if(err && err.message && err.message !== "Validation failed."){
+            console.error(err);
+          }
         }
       });
 
       validationSubmitModal.addEventListener('click', function(e){
-        if(e.target === validationSubmitModal){
+        if(e.target === validationSubmitModal && !validationSubmittingNow){
           closeValidationSubmitModal();
         }
       });
 
       document.addEventListener('keydown', function(e){
-        if(e.key === 'Escape' && validationSubmitModal.classList.contains('is-open')){
+        if(e.key === 'Escape' && validationSubmitModal.classList.contains('is-open') && !validationSubmittingNow){
           closeValidationSubmitModal();
         }
       });
     }
 
+
+   
 
 });
 </script>

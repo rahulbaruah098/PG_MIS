@@ -10,7 +10,8 @@
     --pg-brand:#0b4d3a;
     --pg-brand-2:#12684e;
     --pg-ink:#0f172a;
-    --pg-muted:#5f6f67;
+    --pg-text:#334155;
+    --pg-muted:#64748b;
     --pg-line:rgba(15,23,42,.10);
     --pg-line-soft:rgba(15,23,42,.07);
     --pg-mint:rgba(173,231,196,.38);
@@ -18,6 +19,7 @@
     --pg-success:#198754;
     --pg-danger:#c84343;
     --pg-warning:#e0a800;
+    --pg-info:#0d6efd;
     --pg-shadow:0 12px 30px rgba(15,23,42,.08);
     --pg-shadow-soft:0 8px 20px rgba(15,23,42,.06);
     --pg-radius-xl:22px;
@@ -37,7 +39,9 @@
   }
 
   .validation-topbar{
-    background:linear-gradient(180deg, rgba(223,238,231,.92), rgba(255,255,255,.98));
+    background:
+      radial-gradient(circle at 10% 10%, rgba(173,231,196,.34), transparent 30%),
+      linear-gradient(180deg, rgba(223,238,231,.92), rgba(255,255,255,.98));
     border:1px solid var(--pg-line);
     border-radius:var(--pg-radius-xl);
     padding:22px 24px;
@@ -53,20 +57,39 @@
     flex-wrap:wrap;
   }
 
+  .validation-title-wrap{
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+  }
+
+  .validation-title-icon{
+    width:42px;
+    height:42px;
+    border-radius:16px;
+    display:grid;
+    place-items:center;
+    color:var(--pg-brand);
+    background:rgba(255,255,255,.78);
+    border:1px solid rgba(11,77,58,.12);
+    box-shadow:var(--pg-shadow-soft);
+    flex:0 0 auto;
+  }
+
   .validation-topbar h3{
     margin:0;
-    font-size:1.45rem;
-    font-weight:900;
+    font-size:1.35rem;
+    font-weight:950;
     color:var(--pg-brand);
     letter-spacing:-.03em;
     line-height:1.15;
   }
 
   .validation-topbar p{
-    margin:8px 0 0;
+    margin:7px 0 0;
     max-width:760px;
     color:var(--pg-muted);
-    font-size:.96rem;
+    font-size:.92rem;
     font-weight:650;
     line-height:1.5;
   }
@@ -112,8 +135,8 @@
   .pg-btn{
     border-radius:999px;
     font-weight:850;
-    font-size:.88rem;
-    padding:.65rem 1rem;
+    font-size:.86rem;
+    padding:.62rem 1rem;
     box-shadow:none !important;
   }
 
@@ -122,6 +145,7 @@
     color:var(--pg-brand);
     border:1px solid rgba(11,77,58,.14);
   }
+
   .pg-btn-back:hover{
     background:var(--pg-mint);
     color:var(--pg-brand);
@@ -133,6 +157,7 @@
     color:var(--pg-brand);
     border:1px solid rgba(11,77,58,.18);
   }
+
   .pg-btn-outline:hover{
     background:var(--pg-mint);
     color:var(--pg-brand);
@@ -150,7 +175,9 @@
 
   .pg-card-head{
     padding:18px 20px;
-    background:linear-gradient(180deg, #ffffff, #f9fcfa);
+    background:
+      radial-gradient(circle at 8% 10%, rgba(173,231,196,.22), transparent 34%),
+      linear-gradient(180deg, #ffffff, #f9fcfa);
     border-bottom:1px solid var(--pg-line-soft);
     display:flex;
     align-items:flex-start;
@@ -159,10 +186,28 @@
     flex-wrap:wrap;
   }
 
+  .pg-card-title-row{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+  }
+
+  .pg-card-icon{
+    width:34px;
+    height:34px;
+    border-radius:13px;
+    display:grid;
+    place-items:center;
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.10);
+    flex:0 0 auto;
+  }
+
   .pg-card-head h5{
     margin:0;
     font-size:1rem;
-    font-weight:900;
+    font-weight:950;
     color:var(--pg-brand);
     line-height:1.2;
   }
@@ -183,12 +228,14 @@
     display:inline-flex;
     align-items:center;
     justify-content:center;
+    gap:6px;
     border-radius:999px;
     padding:6px 12px;
     font-size:.75rem;
     font-weight:850;
     border:1px solid transparent;
     white-space:nowrap;
+    line-height:1.1;
   }
 
   .soft-badge.submitted{
@@ -221,6 +268,14 @@
     border-color:#e2e8f0;
   }
 
+  .soft-badge.role{
+    background:rgba(11,77,58,.08);
+    color:var(--pg-brand);
+    border-color:rgba(11,77,58,.12);
+    font-size:.72rem;
+    padding:5px 10px;
+  }
+
   .info-grid{
     display:grid;
     grid-template-columns:repeat(3, minmax(0,1fr));
@@ -240,7 +295,7 @@
     display:block;
     margin-bottom:6px;
     color:var(--pg-muted);
-    font-size:.73rem;
+    font-size:.72rem;
     text-transform:uppercase;
     letter-spacing:.06em;
     font-weight:850;
@@ -249,7 +304,7 @@
 
   .info-box strong{
     color:var(--pg-ink);
-    font-size:.95rem;
+    font-size:.94rem;
     font-weight:850;
     line-height:1.45;
     word-break:break-word;
@@ -257,54 +312,249 @@
 
   .table-shell{
     border-top:1px solid var(--pg-line-soft);
+    background:#fff;
+  }
+
+  .member-table-toolbar{
+    padding:12px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    background:#fbfefc;
+    border-bottom:1px solid var(--pg-line-soft);
+  }
+
+  .member-table-note{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    color:var(--pg-muted);
+    font-size:.78rem;
+    font-weight:800;
+  }
+
+  .member-table-note i{
+    color:var(--pg-brand);
+  }
+
+  .member-table-count{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    border:1px solid rgba(11,77,58,.12);
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    padding:7px 11px;
+    border-radius:999px;
+    font-size:.78rem;
+    font-weight:900;
+    white-space:nowrap;
+  }
+
+  .desktop-table-wrap{
+    width:100%;
+    max-width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .desktop-table-wrap::-webkit-scrollbar{
+    height:10px;
+  }
+
+  .desktop-table-wrap::-webkit-scrollbar-track{
+    background:#edf2ef;
+    border-radius:999px;
+  }
+
+  .desktop-table-wrap::-webkit-scrollbar-thumb{
+    background:rgba(11,77,58,.26);
+    border-radius:999px;
+  }
+
+  .desktop-table-wrap::-webkit-scrollbar-thumb:hover{
+    background:rgba(11,77,58,.38);
   }
 
   .pg-review-table{
+    width:100%;
+    min-width:1280px;
     margin:0;
+    border-collapse:separate;
+    border-spacing:0;
   }
 
   .pg-review-table thead th{
+    position:sticky;
+    top:0;
+    z-index:4;
     background:#f4f9f6;
     color:var(--pg-brand);
-    font-size:.76rem;
-    font-weight:900;
+    font-size:.69rem;
+    font-weight:950;
     text-transform:uppercase;
-    letter-spacing:.045em;
+    letter-spacing:.055em;
     border-bottom:1px solid #dde9e2;
-    padding:13px 14px;
+    border-right:1px solid rgba(15,23,42,.055);
+    padding:12px 12px;
     white-space:nowrap;
+    vertical-align:middle;
+  }
+
+  .pg-review-table thead th:last-child{
+    border-right:0;
   }
 
   .pg-review-table tbody td{
     vertical-align:middle;
-    padding:14px;
-    border-color:#edf2ef;
-    font-size:.92rem;
+    padding:13px 12px;
+    border-bottom:1px solid #edf2ef;
+    border-right:1px solid rgba(15,23,42,.045);
+    font-size:.84rem;
     color:var(--pg-ink);
     background:#fff;
   }
 
+  .pg-review-table tbody td:last-child{
+    border-right:0;
+  }
+
+  .pg-review-table tbody tr:nth-child(even) td{
+    background:#fcfefd;
+  }
+
   .pg-review-table tbody tr:hover td{
-    background:#fbfefc;
+    background:#f5fbf8;
+  }
+
+  .pg-review-table .sticky-col{
+    position:sticky;
+    left:0;
+    z-index:3;
+    background:inherit;
+    box-shadow:10px 0 16px rgba(15,23,42,.04);
+  }
+
+  .pg-review-table thead .sticky-col{
+    z-index:5;
+    background:#f4f9f6;
+  }
+
+  .serial-pill{
+    width:30px;
+    height:30px;
+    border-radius:999px;
+    display:inline-grid;
+    place-items:center;
+    background:rgba(11,77,58,.08);
+    color:var(--pg-brand);
+    border:1px solid rgba(11,77,58,.12);
+    font-size:.78rem;
+    font-weight:950;
+  }
+
+  .member-cell{
+    min-width:190px;
+    max-width:230px;
   }
 
   .member-name{
-    font-weight:850;
+    font-weight:950;
     color:var(--pg-ink);
-    line-height:1.3;
+    line-height:1.2;
+    word-break:break-word;
   }
 
   .member-subtext{
     display:block;
-    margin-top:3px;
+    margin-top:5px;
     color:#64748b;
-    font-size:.78rem;
-    font-weight:700;
+    font-size:.72rem;
+    font-weight:750;
+    line-height:1.25;
     word-break:break-word;
   }
 
-  .text-soft{
-    color:var(--pg-muted);
+  .member-code-chip{
+    display:inline-flex;
+    margin-top:6px;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    padding:4px 8px;
+    border-radius:999px;
+    background:#f1f5f9;
+    color:#475569;
+    border:1px solid #e2e8f0;
+    font-size:.68rem;
+    font-weight:850;
+    max-width:100%;
+    white-space:normal;
+  }
+
+  .compact-text{
+    max-width:150px;
+    white-space:normal;
+    word-break:break-word;
+    line-height:1.35;
+    color:var(--pg-text);
+    font-weight:700;
+  }
+
+  .narrow-text{
+    max-width:112px;
+    white-space:normal;
+    word-break:break-word;
+    line-height:1.35;
+    color:var(--pg-text);
+    font-weight:700;
+  }
+
+  .bank-text{
+    max-width:130px;
+    white-space:normal;
+    word-break:break-word;
+    line-height:1.35;
+    color:var(--pg-text);
+    font-weight:700;
+  }
+
+  .account-chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    max-width:160px;
+    padding:5px 9px;
+    border-radius:999px;
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    color:#334155;
+    font-size:.75rem;
+    font-weight:850;
+    word-break:break-word;
+    white-space:normal;
+  }
+
+  .fee-chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:5px 9px;
+    border-radius:999px;
+    background:rgba(25,135,84,.09);
+    color:#157347;
+    border:1px solid rgba(25,135,84,.14);
+    font-size:.75rem;
+    font-weight:900;
+    white-space:nowrap;
+  }
+
+  .dash-muted{
+    color:#94a3b8;
+    font-weight:850;
   }
 
   .empty-state{
@@ -336,17 +586,31 @@
     margin-top:12px;
   }
 
+  .mobile-member-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+  }
+
   .mobile-member-meta{
     margin-top:10px;
     display:grid;
-    gap:6px;
-    font-size:.87rem;
+    gap:7px;
+    font-size:.86rem;
     color:var(--pg-ink);
+  }
+
+  .mobile-member-meta div{
+    padding:8px 10px;
+    background:#f8fafc;
+    border:1px solid #edf2ef;
+    border-radius:12px;
   }
 
   .mobile-member-meta strong{
     color:var(--pg-brand);
-    font-weight:800;
+    font-weight:850;
   }
 
   .decision-panel{
@@ -372,7 +636,7 @@
 
   .decision-title{
     font-size:1rem;
-    font-weight:900;
+    font-weight:950;
     color:var(--pg-brand);
     margin:0 0 4px;
   }
@@ -397,6 +661,7 @@
     color:#fff;
     border:1px solid #198754;
   }
+
   .pg-btn-approve:hover{
     background:#157347;
     border-color:#157347;
@@ -408,6 +673,7 @@
     color:var(--pg-danger);
     border:1px solid rgba(200,67,67,.25);
   }
+
   .pg-btn-reject-toggle:hover{
     background:rgba(200,67,67,.08);
     color:#b42323;
@@ -450,10 +716,242 @@
     color:#fff;
     border:1px solid var(--pg-danger);
   }
+
   .pg-btn-danger:hover{
     background:#b93a3a;
     border-color:#b93a3a;
     color:#fff;
+  }
+
+  .pg-modal-overlay{
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(15,23,42,.34);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+  }
+
+  .pg-modal-overlay.show{
+    display:flex;
+  }
+
+  .pg-confirm-modal{
+    width:min(625px, 100%);
+    background:#fff;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:22px;
+    box-shadow:0 28px 70px rgba(15,23,42,.22);
+    overflow:hidden;
+    transform:translateY(10px) scale(.98);
+    opacity:0;
+    transition:opacity .16s ease, transform .16s ease;
+  }
+
+  .pg-modal-overlay.show .pg-confirm-modal{
+    transform:translateY(0) scale(1);
+    opacity:1;
+  }
+
+  .pg-confirm-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:16px 20px;
+    background:linear-gradient(90deg, rgba(173,231,196,.52), rgba(255,255,255,.96));
+    border-bottom:1px solid rgba(15,23,42,.07);
+  }
+
+  .pg-confirm-icon{
+    width:18px;
+    height:18px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(11,77,58,.10);
+    color:var(--pg-brand);
+    flex:0 0 auto;
+  }
+
+  .pg-confirm-icon::before{
+    content:"";
+    width:7px;
+    height:7px;
+    border-radius:999px;
+    background:currentColor;
+  }
+
+  .pg-confirm-title{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:1rem;
+    font-weight:900;
+    letter-spacing:.01em;
+  }
+
+  .pg-confirm-body{
+    padding:22px 20px 18px;
+  }
+
+  .pg-confirm-message{
+    margin:0;
+    color:var(--pg-ink);
+    font-size:.98rem;
+    font-weight:750;
+    line-height:1.55;
+  }
+
+  .pg-confirm-actions{
+    padding:0 20px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .pg-modal-btn{
+    min-width:145px;
+    min-height:42px;
+    border-radius:14px;
+    border:1px solid transparent;
+    font-size:.9rem;
+    font-weight:900;
+    padding:.62rem 1rem;
+    cursor:pointer;
+  }
+
+  .pg-modal-cancel{
+    background:#fff;
+    color:#0f172a;
+    border-color:rgba(15,23,42,.12);
+  }
+
+  .pg-modal-cancel:hover{
+    background:#f8fafc;
+  }
+
+  .pg-modal-confirm{
+    background:var(--pg-success);
+    color:#fff;
+    border-color:var(--pg-success);
+  }
+
+  .pg-modal-confirm.reject{
+    background:var(--pg-danger);
+    border-color:var(--pg-danger);
+  }
+
+  .pg-modal-confirm.alert{
+    background:var(--pg-brand);
+    border-color:var(--pg-brand);
+  }
+
+  .pg-modal-confirm:hover{
+    filter:brightness(.96);
+  }
+
+  .info-box.is-changed{
+    background:linear-gradient(180deg, #fff8e6, #ffffff);
+    border-color:rgba(224,168,0,.48);
+    box-shadow:0 10px 24px rgba(224,168,0,.13);
+    position:relative;
+  }
+
+  .changed-chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    margin-left:8px;
+    padding:3px 8px;
+    border-radius:999px;
+    background:rgba(224,168,0,.14);
+    color:#8a6200;
+    border:1px solid rgba(224,168,0,.24);
+    font-size:.66rem;
+    font-weight:950;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    vertical-align:middle;
+  }
+
+  .changed-summary{
+    background:linear-gradient(180deg, #fff8e6, #fffdf7);
+    border:1px solid rgba(224,168,0,.30);
+    border-radius:20px;
+    box-shadow:var(--pg-shadow);
+    overflow:hidden;
+    margin-bottom:18px;
+  }
+
+  .changed-summary-head{
+    padding:16px 18px;
+    border-bottom:1px solid rgba(224,168,0,.18);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .changed-summary-head h5{
+    margin:0;
+    color:#8a6200;
+    font-size:1rem;
+    font-weight:950;
+  }
+
+  .changed-summary-head p{
+    margin:5px 0 0;
+    color:#6b5a24;
+    font-size:.84rem;
+    font-weight:700;
+  }
+
+  .changed-list{
+    padding:14px 18px 18px;
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:12px;
+  }
+
+  .changed-item{
+    background:#fff;
+    border:1px solid rgba(224,168,0,.20);
+    border-radius:14px;
+    padding:12px;
+  }
+
+  .changed-item-label{
+    color:#8a6200;
+    font-size:.78rem;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    margin-bottom:8px;
+  }
+
+  .changed-value{
+    display:grid;
+    gap:6px;
+    font-size:.86rem;
+    color:var(--pg-ink);
+    font-weight:750;
+    line-height:1.45;
+  }
+
+  .changed-value span{
+    display:block;
+    color:#64748b;
+    font-size:.74rem;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.04em;
   }
 
   @media (max-width:1100px){
@@ -466,6 +964,10 @@
     .validation-topbar{
       padding:18px;
       border-radius:18px;
+    }
+
+    .validation-title-wrap{
+      flex-direction:row;
     }
 
     .validation-topbar h3{
@@ -500,6 +1002,10 @@
       grid-template-columns:1fr;
     }
 
+    .member-table-toolbar{
+      align-items:flex-start;
+    }
+
     .desktop-table-wrap{
       display:none;
     }
@@ -524,23 +1030,245 @@
     .reject-box .pg-btn{
       width:100%;
     }
+
+    .changed-list{
+      grid-template-columns:1fr;
+    }
   }
+
+  @media (max-width:575px){
+    .pg-confirm-actions{
+      flex-direction:column-reverse;
+      align-items:stretch;
+    }
+
+    .pg-modal-btn{
+      width:100%;
+    }
+  }
+
+
+  .member-review-toolbar{
+  padding:12px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  background:#fbfefc;
+  border-bottom:1px solid var(--pg-line-soft);
+}
+
+.member-review-hint{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  color:var(--pg-muted);
+  font-size:.8rem;
+  font-weight:800;
+}
+
+.member-review-hint i{
+  color:var(--pg-brand);
+}
+
+.member-review-count{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid rgba(11,77,58,.12);
+  background:var(--pg-mint);
+  color:var(--pg-brand);
+  padding:7px 11px;
+  border-radius:999px;
+  font-size:.78rem;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+.member-review-list{
+  padding:16px;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  background:#f7fbf8;
+}
+
+.member-review-card{
+  background:linear-gradient(180deg, #ffffff, #fbfefc);
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:18px;
+  box-shadow:0 8px 20px rgba(15,23,42,.06);
+  overflow:hidden;
+}
+
+.member-review-top{
+  padding:14px 16px;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(173,231,196,.34), transparent 34%),
+    linear-gradient(180deg, #ffffff, #f7fbf8);
+  border-bottom:1px solid rgba(15,23,42,.07);
+}
+
+.member-serial{
+  width:34px;
+  height:34px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  background:rgba(11,77,58,.10);
+  color:var(--pg-brand);
+  border:1px solid rgba(11,77,58,.14);
+  font-size:.82rem;
+  font-weight:950;
+}
+
+.member-main{
+  min-width:0;
+}
+
+.member-review-name{
+  color:var(--pg-ink);
+  font-size:.95rem;
+  font-weight:950;
+  line-height:1.25;
+  word-break:break-word;
+}
+
+.member-review-code{
+  margin-top:5px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  max-width:100%;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#f1f5f9;
+  color:#475569;
+  border:1px solid #e2e8f0;
+  font-size:.7rem;
+  font-weight:850;
+  word-break:break-word;
+}
+
+.member-review-role{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:6px 11px;
+  border-radius:999px;
+  background:rgba(11,77,58,.08);
+  color:var(--pg-brand);
+  border:1px solid rgba(11,77,58,.13);
+  font-size:.74rem;
+  font-weight:950;
+  white-space:nowrap;
+}
+
+.member-review-grid{
+  padding:14px 16px 16px;
+  display:grid;
+  grid-template-columns:repeat(5, minmax(0,1fr));
+  gap:10px;
+}
+
+.member-info-box{
+  min-height:72px;
+  padding:10px 11px;
+  border-radius:14px;
+  background:#ffffff;
+  border:1px solid rgba(15,23,42,.07);
+  box-shadow:0 1px 2px rgba(15,23,42,.035);
+}
+
+.member-info-box small{
+  display:block;
+  margin-bottom:5px;
+  color:var(--pg-muted);
+  font-size:.68rem;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  line-height:1.2;
+}
+
+.member-info-box strong{
+  display:block;
+  color:var(--pg-ink);
+  font-size:.82rem;
+  font-weight:800;
+  line-height:1.35;
+  word-break:break-word;
+}
+
+.member-info-box.fee-box{
+  background:rgba(25,135,84,.07);
+  border-color:rgba(25,135,84,.14);
+}
+
+.member-info-box.fee-box small,
+.member-info-box.fee-box strong{
+  color:#157347;
+}
+
+@media(max-width:1200px){
+  .member-review-grid{
+    grid-template-columns:repeat(3, minmax(0,1fr));
+  }
+}
+
+@media(max-width:767px){
+  .member-review-toolbar{
+    align-items:flex-start;
+  }
+
+  .member-review-list{
+    padding:14px;
+  }
+
+  .member-review-top{
+    grid-template-columns:36px minmax(0,1fr);
+  }
+
+  .member-review-role{
+    grid-column:2 / -1;
+    width:max-content;
+    max-width:100%;
+    white-space:normal;
+  }
+
+  .member-review-grid{
+    grid-template-columns:1fr;
+  }
+}
 </style>
 
 {% set status = validation.status or 'submitted' %}
 {% set remarks = validation.remarks or '' %}
+{% set changed_fields = changed_fields or [] %}
+{% set changed_field_keys = changed_field_keys or [] %}
 
 <div class="validation-review-page">
   <div class="validation-page-shell">
 
     <div class="validation-topbar">
       <div class="validation-topbar-inner">
-        <div>
-          <h3>{{ form_label or 'Validation Review' }}</h3>
-          <p>
-            Review submitted details for <b>{{ pg.name or pg.pg_name or 'Unnamed PG' }}</b>.
-            Approve if the submitted information is correct, or reject with clear correction remarks.
-          </p>
+        <div class="validation-title-wrap">
+          <div class="validation-title-icon">
+            <i class="bi bi-check2-circle"></i>
+          </div>
+
+          <div>
+            <h3>{{ form_label or 'Validation Review' }}</h3>
+            <p>
+              Review submitted details for <b>{{ pg.name or pg.pg_name or 'Unnamed PG' }}</b>.
+              Approve if the submitted information is correct, or reject with clear correction remarks.
+            </p>
+          </div>
         </div>
 
         <div class="validation-topbar-actions">
@@ -563,9 +1291,15 @@
 
     <div class="pg-soft-card">
       <div class="pg-card-head">
-        <div>
-          <h5>PG Information</h5>
-          <p>Basic mapped details of the submitted PG.</p>
+        <div class="pg-card-title-row">
+          <div class="pg-card-icon">
+            <i class="bi bi-info-circle"></i>
+          </div>
+
+          <div>
+            <h5>PG Information</h5>
+            <p>Basic mapped details of the submitted PG.</p>
+          </div>
         </div>
 
         {% if status == 'resubmitted' %}
@@ -593,8 +1327,11 @@
             <strong>{{ form_label or '-' }}</strong>
           </div>
 
-          <div class="info-box">
-            <small>Sector</small>
+          <div class="info-box {% if 'sector' in changed_field_keys %}is-changed{% endif %}">
+            <small>
+              Sector
+              {% if 'sector' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+            </small>
             <strong>{{ pg.sector or '-' }}</strong>
           </div>
 
@@ -637,64 +1374,197 @@
       </div>
     </div>
 
+    {% if form_type == 'pg_registration' and changed_fields %}
+      <div class="changed-summary">
+        <div class="changed-summary-head">
+          <div>
+            <h5>Updated Fields After Correction</h5>
+            <p>These fields were changed by PG after Block Admin rejection.</p>
+          </div>
+
+          <span class="soft-badge resubmitted">
+            {{ changed_fields|length }} Changed
+          </span>
+        </div>
+
+        <div class="changed-list">
+          {% for item in changed_fields %}
+            <div class="changed-item">
+              <div class="changed-item-label">{{ item.label }}</div>
+
+              <div class="changed-value">
+                <div>
+                  <span>Previous</span>
+                  {{ item.old }}
+                </div>
+
+                <div>
+                  <span>Updated</span>
+                  {{ item.new }}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
     {% if form_type == 'pg_registration' %}
       <div class="pg-soft-card">
         <div class="pg-card-head">
-          <div>
-            <h5>PG Registration Details</h5>
-            <p>Exact filled registration details submitted by the PG.</p>
+          <div class="pg-card-title-row">
+            <div class="pg-card-icon">
+              <i class="bi bi-card-checklist"></i>
+            </div>
+
+            <div>
+              <h5>PG Registration Details</h5>
+              <p>Exact filled registration details submitted by the PG.</p>
+            </div>
           </div>
         </div>
 
         <div class="pg-card-body">
           <div class="info-grid">
-            <div class="info-box">
-              <small>PG Type</small>
+            <div class="info-box {% if 'pg_type' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                PG Type
+                {% if 'pg_type' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
               <strong>{{ pg.pg_type or '-' }}</strong>
             </div>
 
-            <div class="info-box">
-              <small>Formation Date</small>
+            <div class="info-box {% if 'formation_date' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                Formation Date
+                {% if 'formation_date' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
               <strong>{{ pg.formation_date or '-' }}</strong>
             </div>
 
-            <div class="info-box">
-              <small>Contact Number</small>
+            <div class="info-box {% if 'contact_number' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                Contact Number
+                {% if 'contact_number' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
               <strong>{{ pg.office_bearers.contact_number if pg.office_bearers else '-' }}</strong>
             </div>
 
-            <div class="info-box">
-              <small>Bank Name</small>
+            <div class="info-box {% if 'president_id' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                President
+                {% if 'president_id' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
+              <strong>
+                {% for m in members %}
+                  {% if m.role == 'president' %}
+                    {{ m.name or m.member_name or '-' }}
+                  {% endif %}
+                {% else %}
+                  -
+                {% endfor %}
+              </strong>
+            </div>
+
+            <div class="info-box {% if 'secretary_id' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                Secretary
+                {% if 'secretary_id' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
+              <strong>
+                {% for m in members %}
+                  {% if m.role == 'secretary' %}
+                    {{ m.name or m.member_name or '-' }}
+                  {% endif %}
+                {% else %}
+                  -
+                {% endfor %}
+              </strong>
+            </div>
+
+            <div class="info-box {% if 'cashier_id' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                Cashier
+                {% if 'cashier_id' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
+              <strong>
+                {% for m in members %}
+                  {% if m.role == 'cashier' %}
+                    {{ m.name or m.member_name or '-' }}
+                  {% endif %}
+                {% else %}
+                  -
+                {% endfor %}
+              </strong>
+            </div>
+
+            <div class="info-box {% if 'bank_name' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                Bank Name
+                {% if 'bank_name' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
               <strong>{{ pg.bank_details.bank_name if pg.bank_details else '-' }}</strong>
             </div>
 
-            <div class="info-box">
-              <small>Branch</small>
+            <div class="info-box {% if 'branch' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                Branch
+                {% if 'branch' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
               <strong>{{ pg.bank_details.branch if pg.bank_details else '-' }}</strong>
             </div>
 
-            <div class="info-box">
-              <small>Account Number</small>
+            <div class="info-box {% if 'account_number' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                Account Number
+                {% if 'account_number' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
               <strong>{{ pg.bank_details.account_number if pg.bank_details else '-' }}</strong>
             </div>
 
-            <div class="info-box">
-              <small>IFSC</small>
+            <div class="info-box {% if 'ifsc' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                IFSC
+                {% if 'ifsc' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
               <strong>{{ pg.bank_details.ifsc if pg.bank_details else '-' }}</strong>
             </div>
 
-            <div class="info-box">
-              <small>Aggregation Centre</small>
+            <div class="info-box {% if 'agg_centre_name' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                Aggregation Centre
+                {% if 'agg_centre_name' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
               <strong>{{ pg.aggregation_centre.name if pg.aggregation_centre else '-' }}</strong>
             </div>
 
-            <div class="info-box">
-              <small>Aggregation Address</small>
+            <div class="info-box {% if 'agg_centre_address' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                Aggregation Address
+                {% if 'agg_centre_address' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
               <strong>{{ pg.aggregation_centre.address if pg.aggregation_centre else '-' }}</strong>
             </div>
 
-            <div class="info-box">
-              <small>Total Members</small>
+            <div class="info-box {% if 'selected_shg_keys' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                Selected SHGs
+                {% if 'selected_shg_keys' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
+              <strong>
+                {% if pg.selected_shg_keys %}
+                  {{ pg.selected_shg_keys|join(', ') }}
+                {% else %}
+                  -
+                {% endif %}
+              </strong>
+            </div>
+
+            <div class="info-box {% if 'total_members' in changed_field_keys or 'members' in changed_field_keys %}is-changed{% endif %}">
+              <small>
+                Total Members
+                {% if 'total_members' in changed_field_keys or 'members' in changed_field_keys %}<span class="changed-chip">Changed</span>{% endif %}
+              </small>
               <strong>{{ pg.total_members or members|length or 0 }}</strong>
             </div>
           </div>
@@ -704,9 +1574,15 @@
 
     <div class="pg-soft-card">
       <div class="pg-card-head">
-        <div>
-          <h5>Selected / Registered Members</h5>
-          <p>Members linked with this PG registration.</p>
+        <div class="pg-card-title-row">
+          <div class="pg-card-icon">
+            <i class="bi bi-people"></i>
+          </div>
+
+          <div>
+            <h5>Selected / Registered Members</h5>
+            <p>Clean member-wise review view with SHG, contact, bank and account details.</p>
+          </div>
         </div>
 
         <span class="soft-badge default">
@@ -714,72 +1590,103 @@
         </span>
       </div>
 
-      <div class="desktop-table-wrap table-shell">
-        <table class="table table-hover pg-review-table mb-0">
-          <thead>
-            <tr>
-              <th style="width:60px;">#</th>
-              <th>Member</th>
-              <th>Spouse / Parent</th>
-              <th>Category</th>
-              <th>SHG</th>
-              <th>Contact</th>
-              <th>Bank</th>
-              <th>Account</th>
-              <th>Fee</th>
-            </tr>
-          </thead>
+      <div class="member-review-toolbar">
+        <div class="member-review-hint">
+          <i class="bi bi-info-circle"></i>
+          Review each member card carefully before approving or rejecting.
+        </div>
 
-          <tbody>
-            {% for m in members %}
-              <tr>
-                <td>{{ loop.index }}</td>
-
-                <td>
-                  <div class="member-name">{{ m.name or m.member_name or m['Member Name'] or '-' }}</div>
-                  <span class="member-subtext">
-                    {{ m.member_code or m['Member Code'] or m.member_id or '-' }}
-                  </span>
-                </td>
-
-                <td>{{ m.spouse_name or m['Father/Mother/Spouse Name'] or '-' }}</td>
-                <td>{{ m.category or m['Social Category'] or '-' }}</td>
-                <td>{{ m.shg_name or m['SHG Name'] or '-' }}</td>
-                <td>{{ m.contact or '-' }}</td>
-                <td>{{ m.bank_name or '-' }}</td>
-                <td>{{ m.account_number or '-' }}</td>
-                <td>{{ m.membership_fee_paid or '-' }}</td>
-              </tr>
-            {% else %}
-              <tr>
-                <td colspan="9">
-                  <div class="empty-state">
-                    <strong>No members found</strong>
-                    <div>No member data is currently linked with this PG.</div>
-                  </div>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+        <div class="member-review-count">
+          <span class="status-dot"></span>
+          {{ members|length }} linked member{{ '' if members|length == 1 else 's' }}
+        </div>
       </div>
 
-      <div class="mobile-member-list">
+      <div class="member-review-list">
         {% for m in members %}
-          <div class="mobile-member-card">
-            <div class="member-name">{{ m.name or m.member_name or m['Member Name'] or '-' }}</div>
-            <span class="member-subtext">
-              {{ m.member_code or m['Member Code'] or m.member_id or '-' }}
-            </span>
+          {% set member_code = m.member_code or m['Member Code'] or m.member_id or '-' %}
+          {% set designation_value = m.designation or m.designation_in_pg or m.role|capitalize or '-' %}
+          {% set spouse_value = m.spouse_parent or m.spouse_name or m['Father/Mother/Spouse Name'] or '-' %}
+          {% set category_value = m.category or m['Social Category'] or '-' %}
+          {% set shg_value = m.shg_name or m['SHG Name'] or '-' %}
+          {% set contact_value = m.contact or '-' %}
+          {% set bank_value = m.bank or m.bank_name or '-' %}
+          {% set branch_value = m.branch or '-' %}
+          {% set account_value = m.account or m.account_number or '-' %}
+          {% set fee_value = m.fee or m.membership_fee_paid or '-' %}
 
-            <div class="mobile-member-meta">
-              <div><strong>Spouse/Parent:</strong> {{ m.spouse_name or m['Father/Mother/Spouse Name'] or '-' }}</div>
-              <div><strong>Category:</strong> {{ m.category or m['Social Category'] or '-' }}</div>
-              <div><strong>SHG:</strong> {{ m.shg_name or m['SHG Name'] or '-' }}</div>
-              <div><strong>Contact:</strong> {{ m.contact or '-' }}</div>
-              <div><strong>Bank:</strong> {{ m.bank_name or '-' }}</div>
-              <div><strong>Account:</strong> {{ m.account_number or '-' }}</div>
-              <div><strong>Fee:</strong> {{ m.membership_fee_paid or '-' }}</div>
+          <div class="member-review-card">
+            <div class="member-review-top">
+              <div class="member-serial">{{ loop.index }}</div>
+
+              <div class="member-main">
+                <div class="member-review-name">
+                  {{ m.name or m.member_name or m['Member Name'] or '-' }}
+                </div>
+
+                <div class="member-review-code">
+                  <i class="bi bi-person-badge"></i>
+                  {{ member_code }}
+                </div>
+              </div>
+
+              <div class="member-review-role">
+                {{ designation_value }}
+              </div>
+            </div>
+
+            <div class="member-review-grid">
+              <div class="member-info-box">
+                <small>Spouse / Parent</small>
+                <strong>{{ spouse_value }}</strong>
+              </div>
+
+              <div class="member-info-box">
+                <small>Category</small>
+                <strong>{{ category_value }}</strong>
+              </div>
+
+              <div class="member-info-box">
+                <small>SHG</small>
+                <strong>{{ shg_value }}</strong>
+              </div>
+
+              {% if form_type == 'member_registration' %}
+                <div class="member-info-box">
+                  <small>FFS Module</small>
+                  <strong>{{ m.ffs_module or m.agri_ffs_module or '-' }}</strong>
+                </div>
+
+                <div class="member-info-box">
+                  <small>Crop / Activity</small>
+                  <strong>{{ m.crop_or_activity or m.agri_crop or m.ardd_activity or m.fishery_activity or '-' }}</strong>
+                </div>
+              {% endif %}
+
+              <div class="member-info-box">
+                <small>Contact</small>
+                <strong>{{ contact_value }}</strong>
+              </div>
+
+              <div class="member-info-box">
+                <small>Bank</small>
+                <strong>{{ bank_value }}</strong>
+              </div>
+
+              <div class="member-info-box">
+                <small>Branch</small>
+                <strong>{{ branch_value }}</strong>
+              </div>
+
+              <div class="member-info-box">
+                <small>Account</small>
+                <strong>{{ account_value }}</strong>
+              </div>
+
+              <div class="member-info-box fee-box">
+                <small>Fee</small>
+                <strong>{{ fee_value }}</strong>
+              </div>
             </div>
           </div>
         {% else %}
@@ -804,7 +1711,11 @@
           <form
             method="post"
             action="{{ url_for('pg.validation_approve', form_type=form_type, pg_id=pg._id|string) }}"
-            onsubmit="return confirm('Approve this {{ form_label }}?');"
+            data-modern-confirm="true"
+            data-confirm-title="Confirm Approval"
+            data-confirm-message="Approve this {{ form_label }}?"
+            data-confirm-button="Approve"
+            data-confirm-style="approve"
           >
             <button type="submit" class="btn pg-btn pg-btn-approve px-4" style="cursor: pointer;">
               Approve
@@ -827,7 +1738,7 @@
         <form
           method="post"
           action="{{ url_for('pg.validation_reject', form_type=form_type, pg_id=pg._id|string) }}"
-          onsubmit="return validateFinalReject(this);"
+          data-modern-reject="true"
         >
           <label class="form-label">Correction Remarks</label>
           <textarea
@@ -847,18 +1758,180 @@
   </div>
 </div>
 
-<script>
-  function validateFinalReject(form) {
-    const remarks = form.querySelector('[name="remarks"]');
-    const value = remarks ? remarks.value.trim() : "";
+<div class="pg-modal-overlay" id="pgModernConfirmOverlay" aria-hidden="true">
+  <div class="pg-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="pgModernConfirmTitle">
+    <div class="pg-confirm-head">
+      <span class="pg-confirm-icon"></span>
+      <h5 class="pg-confirm-title" id="pgModernConfirmTitle">Confirm Action</h5>
+    </div>
 
-    if (!value) {
-      alert("Please write rejection remarks before sending the form back to PG.");
-      if (remarks) remarks.focus();
-      return false;
+    <div class="pg-confirm-body">
+      <p class="pg-confirm-message" id="pgModernConfirmMessage">Are you sure?</p>
+    </div>
+
+    <div class="pg-confirm-actions">
+      <button type="button" class="pg-modal-btn pg-modal-cancel" id="pgModernConfirmCancel">
+        Cancel
+      </button>
+      <button type="button" class="pg-modal-btn pg-modal-confirm" id="pgModernConfirmOk">
+        Confirm
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const overlay = document.getElementById("pgModernConfirmOverlay");
+    const titleEl = document.getElementById("pgModernConfirmTitle");
+    const messageEl = document.getElementById("pgModernConfirmMessage");
+    const cancelBtn = document.getElementById("pgModernConfirmCancel");
+    const okBtn = document.getElementById("pgModernConfirmOk");
+
+    let activeResolver = null;
+
+    function closeModernModal(result) {
+      if (!overlay) return;
+
+      overlay.classList.remove("show");
+      overlay.setAttribute("aria-hidden", "true");
+
+      document.body.style.overflow = "";
+
+      if (activeResolver) {
+        const resolver = activeResolver;
+        activeResolver = null;
+        resolver(result);
+      }
     }
 
-    return confirm("Reject this form and send it back to PG for correction?");
-  }
+    function showModernConfirm(options) {
+      return new Promise(function (resolve) {
+        if (!overlay || !titleEl || !messageEl || !cancelBtn || !okBtn) {
+          resolve(window.confirm(options.message || "Are you sure?"));
+          return;
+        }
+
+        activeResolver = resolve;
+
+        titleEl.textContent = options.title || "Confirm Action";
+        messageEl.textContent = options.message || "Are you sure?";
+        okBtn.textContent = options.confirmText || "Confirm";
+
+        okBtn.classList.remove("reject", "alert");
+
+        if (options.style === "reject") {
+          okBtn.classList.add("reject");
+        }
+
+        if (options.style === "alert") {
+          okBtn.classList.add("alert");
+          cancelBtn.style.display = "none";
+        } else {
+          cancelBtn.style.display = "";
+        }
+
+        overlay.classList.add("show");
+        overlay.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+
+        setTimeout(function () {
+          okBtn.focus();
+        }, 50);
+      });
+    }
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", function () {
+        closeModernModal(false);
+      });
+    }
+
+    if (okBtn) {
+      okBtn.addEventListener("click", function () {
+        closeModernModal(true);
+      });
+    }
+
+    if (overlay) {
+      overlay.addEventListener("click", function (event) {
+        if (event.target === overlay && cancelBtn.style.display !== "none") {
+          closeModernModal(false);
+        }
+      });
+    }
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && overlay && overlay.classList.contains("show") && cancelBtn.style.display !== "none") {
+        closeModernModal(false);
+      }
+    });
+
+    async function showModernAlert(message, title) {
+      await showModernConfirm({
+        title: title || "Required Information",
+        message: message,
+        confirmText: "OK",
+        style: "alert"
+      });
+    }
+
+    document.querySelectorAll("form[data-modern-confirm='true']").forEach(function (form) {
+      form.addEventListener("submit", async function (event) {
+        if (form.dataset.confirmed === "true") {
+          return;
+        }
+
+        event.preventDefault();
+
+        const confirmed = await showModernConfirm({
+          title: form.dataset.confirmTitle || "Confirm Action",
+          message: form.dataset.confirmMessage || "Are you sure?",
+          confirmText: form.dataset.confirmButton || "Confirm",
+          style: form.dataset.confirmStyle || "approve"
+        });
+
+        if (confirmed) {
+          form.dataset.confirmed = "true";
+          form.requestSubmit();
+        }
+      });
+    });
+
+    document.querySelectorAll("form[data-modern-reject='true']").forEach(function (form) {
+      form.addEventListener("submit", async function (event) {
+        if (form.dataset.confirmed === "true") {
+          return;
+        }
+
+        event.preventDefault();
+
+        const remarks = form.querySelector('[name="remarks"]');
+        const value = remarks ? remarks.value.trim() : "";
+
+        if (!value) {
+          await showModernAlert("Please write rejection remarks before sending the form back to PG.");
+          if (remarks) remarks.focus();
+          return;
+        }
+
+        const confirmed = await showModernConfirm({
+          title: "Confirm Rejection",
+          message: "Reject this form and send it back to PG for correction?",
+          confirmText: "Reject & Send Back",
+          style: "reject"
+        });
+
+        if (confirmed) {
+          form.dataset.confirmed = "true";
+          form.requestSubmit();
+        }
+      });
+    });
+
+    window.validateFinalReject = function () {
+      return false;
+    };
+  })();
 </script>
 {% endblock %}

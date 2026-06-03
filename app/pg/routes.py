@@ -1036,6 +1036,35 @@ def _review_validation(db, pg, form_type, action, remarks=""):
         "updated_at": now,
     }
 
+    # ----------------------------------------------------------
+    # PG Registration snapshot lock on rejection
+    # ----------------------------------------------------------
+    # When Block Admin rejects PG Registration, store the exact
+    # submitted data as rejected_snapshot. Later, when PG edits and
+    # resubmits, submit_pg_registration_validation() compares the new
+    # snapshot with this rejected_snapshot and prepares changed_fields.
+    # ----------------------------------------------------------
+    if form_type == "pg_registration" and action == "reject":
+        update_doc[f"{field}.rejected_snapshot"] = _pg_registration_review_snapshot(pg)
+        update_doc[f"{field}.changed_fields"] = []
+        update_doc[f"{field}.changed_field_keys"] = []
+        update_doc[f"{field}.snapshot_rejected_at"] = now
+
+    # ----------------------------------------------------------
+    # Optional cleanup on approval
+    # ----------------------------------------------------------
+    # Keep submitted_snapshot and changed_fields for audit/view history.
+    # Only clear rejected_snapshot because correction cycle is completed.
+    # ----------------------------------------------------------
+    if form_type == "pg_registration" and action == "approve":
+        update_doc[f"{field}.approved_snapshot"] = _pg_registration_review_snapshot(pg)
+        update_doc[f"{field}.snapshot_approved_at"] = now
+        update_doc[f"{field}.remarks"] = ""
+        update_doc[f"{field}.changed_fields"] = []
+        update_doc[f"{field}.changed_field_keys"] = []
+        update_doc[f"{field}.previous_snapshot"] = {}
+        update_doc[f"{field}.rejected_snapshot"] = {}
+
     db.pgs.update_one({"_id": pg["_id"]}, {"$set": update_doc})
 
     try:
@@ -1050,6 +1079,7 @@ def _review_validation(db, pg, form_type, action, remarks=""):
         pass
 
     return True, f"{_validation_label(form_type)} {action_label} successfully.", 200
+
 
 
 def _validation_badge_status(pg, form_type):
@@ -2539,16 +2569,15 @@ def pg_registration(pg_id):
     # Validation status update after save
     # ----------------------------------------------------------
 
-    # If Block had rejected the form, saving correction moves it back to draft.
-    # PG must submit again.
+    # If Block had rejected the form, saving correction should keep it editable
+    # and still marked as rejected until PG submits again.
+    # This allows submit-validation to mark the next submission as resubmitted.
     if registration_status == "rejected":
         db.pgs.update_one(
             {"_id": pg["_id"]},
             {"$set": {
-                "registration_validation.status": "draft",
                 "registration_validation.corrected_at": datetime.utcnow(),
                 "registration_validation.corrected_by": _current_user_id_value(),
-                "registration_validation.remarks": "",
                 "updated_at": datetime.utcnow(),
             }}
         )
@@ -9214,6 +9243,135 @@ def clear_active_pg():
 # ============================================================
 
 
+
+def _pg_registration_review_snapshot(pg):
+    """
+    Small safe snapshot of PG Registration fields used for Block Admin change highlighting.
+    Do not store full PG document here.
+    """
+    pg = pg or {}
+    office_bearers = pg.get("office_bearers") or {}
+    bank_details = pg.get("bank_details") or {}
+    aggregation_centre = pg.get("aggregation_centre") or {}
+
+    def clean_value(value):
+        if isinstance(value, ObjectId):
+            return str(value)
+        if isinstance(value, datetime):
+            return value.isoformat()
+        if value is None:
+            return ""
+        return str(value).strip()
+
+    members = []
+    for m in (pg.get("members") or []):
+        members.append({
+            "member_id": clean_value(m.get("member_id")),
+            "member_name": clean_value(m.get("member_name")),
+            "shg_name": clean_value(m.get("shg_name")),
+            "shg_code": clean_value(m.get("shg_code")),
+            "role": clean_value(m.get("role") or "member").lower(),
+        })
+
+    members = sorted(
+        members,
+        key=lambda x: (
+            x.get("member_name") or "",
+            x.get("member_id") or "",
+            x.get("role") or "",
+        )
+    )
+
+    return {
+        "pg_type": clean_value(pg.get("pg_type")),
+        "sector": clean_value(pg.get("sector")),
+        "formation_date": clean_value(pg.get("formation_date")),
+        "contact_number": clean_value(office_bearers.get("contact_number")),
+        "president_id": clean_value(office_bearers.get("president_id")),
+        "secretary_id": clean_value(office_bearers.get("secretary_id")),
+        "cashier_id": clean_value(office_bearers.get("cashier_id")),
+        "bank_name": clean_value(bank_details.get("bank_name")),
+        "branch": clean_value(bank_details.get("branch")),
+        "account_number": clean_value(bank_details.get("account_number")),
+        "ifsc": clean_value(bank_details.get("ifsc")),
+        "agg_centre_name": clean_value(aggregation_centre.get("name")),
+        "agg_centre_address": clean_value(aggregation_centre.get("address")),
+        "selected_shg_keys": sorted([clean_value(x) for x in (pg.get("selected_shg_keys") or []) if clean_value(x)]),
+        "total_members": clean_value(pg.get("total_members") or len(members)),
+        "members": members,
+    }
+
+
+def _pg_registration_changed_fields(old_snapshot, new_snapshot):
+    """
+    Compare rejected snapshot with resubmitted snapshot.
+    Returns display-ready changed field list.
+    """
+    old_snapshot = old_snapshot or {}
+    new_snapshot = new_snapshot or {}
+
+    field_labels = {
+        "pg_type": "PG Type",
+        "sector": "Sector",
+        "formation_date": "Formation Date",
+        "contact_number": "Contact Number",
+        "president_id": "President",
+        "secretary_id": "Secretary",
+        "cashier_id": "Cashier",
+        "bank_name": "Bank Name",
+        "branch": "Branch",
+        "account_number": "Account Number",
+        "ifsc": "IFSC",
+        "agg_centre_name": "Aggregation Centre",
+        "agg_centre_address": "Aggregation Address",
+        "selected_shg_keys": "Selected SHGs",
+        "total_members": "Total Members",
+        "members": "Selected Members",
+    }
+
+    changed = []
+
+    def norm(value):
+        if value is None:
+            return ""
+        if isinstance(value, list):
+            return value
+        return str(value).strip()
+
+    def display_value(value):
+        if value is None or value == "":
+            return "-"
+        if isinstance(value, list):
+            if not value:
+                return "-"
+            if value and isinstance(value[0], dict):
+                names = []
+                for item in value:
+                    name = item.get("member_name") or item.get("member_id") or ""
+                    role = item.get("role") or "member"
+                    if name:
+                        names.append(f"{name} ({role})")
+                return ", ".join(names) if names else "-"
+            return ", ".join([str(x) for x in value])
+        return str(value)
+
+    for key, label in field_labels.items():
+        old_value = norm(old_snapshot.get(key))
+        new_value = norm(new_snapshot.get(key))
+
+        if old_value != new_value:
+            changed.append({
+                "key": key,
+                "label": label,
+                "old": display_value(old_snapshot.get(key)),
+                "new": display_value(new_snapshot.get(key)),
+            })
+
+    return changed
+
+
+
+
 @pg_bp.route("/registration/<pg_id>/submit-validation", methods=["POST"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CADRE_CC")
@@ -9338,9 +9496,44 @@ def submit_pg_registration_validation(pg_id):
         )
 
     # ----------------------------------------------------------
+    # Snapshot + changed fields tracking
+    # ----------------------------------------------------------
+    previous_validation_doc = _validation_doc(pg, "pg_registration")
+
+    previous_snapshot = (
+        previous_validation_doc.get("rejected_snapshot")
+        or previous_validation_doc.get("submitted_snapshot")
+        or {}
+    )
+
+    current_snapshot = _pg_registration_review_snapshot(pg)
+
+    changed_fields = []
+    if previous_snapshot:
+        changed_fields = _pg_registration_changed_fields(previous_snapshot, current_snapshot)
+
+    # ----------------------------------------------------------
     # Existing validation submit workflow
     # ----------------------------------------------------------
     ok, message, status = _submit_validation(db, pg, "pg_registration")
+
+    if ok:
+        db.pgs.update_one(
+            {"_id": pg["_id"]},
+            {
+                "$set": {
+                    "registration_validation.previous_snapshot": previous_snapshot,
+                    "registration_validation.submitted_snapshot": current_snapshot,
+                    "registration_validation.changed_fields": changed_fields,
+                    "registration_validation.changed_field_keys": [
+                        x.get("key")
+                        for x in changed_fields
+                        if x.get("key")
+                    ],
+                    "registration_validation.snapshot_updated_at": _validation_now(),
+                }
+            }
+        )
 
     return _validation_json_or_redirect(
         ok,
@@ -9357,7 +9550,6 @@ def submit_pg_registration_validation(pg_id):
         },
         category="success" if ok else "danger"
     )
-
 
 
 @pg_bp.route("/members/<pg_id>/submit-validation", methods=["POST"])
@@ -9575,15 +9767,250 @@ def validation_review(form_type, pg_id):
     validation = _validation_doc(pg, form_type)
     status = str(validation.get("status") or "draft").lower()
 
+    changed_fields = []
+    changed_field_keys = []
+
+    if form_type == "pg_registration":
+        changed_fields = validation.get("changed_fields") or []
+        changed_field_keys = validation.get("changed_field_keys") or []
+
+        if not isinstance(changed_fields, list):
+            changed_fields = []
+
+        if not isinstance(changed_field_keys, list):
+            changed_field_keys = []
+
     members = []
-    if form_type == "member_registration":
-        members = list(db.pg_members.find({
-            "pg_id": pg["_id"],
-            "$or": [
-                {"is_active": True},
-                {"is_active": {"$exists": False}},
+
+    if form_type == "pg_registration":
+        saved_pg_members = pg.get("members") or []
+
+        member_ids = []
+        for m in saved_pg_members:
+            mid = m.get("member_id")
+            if mid:
+                try:
+                    member_ids.append(ObjectId(str(mid)))
+                except Exception:
+                    pass
+
+        master_members_map = {}
+        if member_ids:
+            master_members = list(db.shg_members_master.find({"_id": {"$in": member_ids}}))
+            master_members_map = {
+                str(m.get("_id")): m
+                for m in master_members
+                if m.get("_id")
+            }
+
+        role_label_map = {
+            "president": "President",
+            "secretary": "Secretary",
+            "cashier": "Cashier",
+            "member": "Member",
+        }
+
+        for m in saved_pg_members:
+            mid = m.get("member_id")
+            mid_str = str(mid) if mid else ""
+            master = master_members_map.get(mid_str, {})
+
+            role_value = str(m.get("role") or "member").strip().lower()
+            designation_value = role_label_map.get(
+                role_value,
+                role_value.title() if role_value else "Member"
+            )
+
+            members.append({
+                "_id": mid,
+                "member_id": mid,
+                "name": (
+                    m.get("member_name")
+                    or master.get("Member Name")
+                    or master.get("member_name")
+                    or master.get("name")
+                    or ""
+                ),
+                "member_name": (
+                    m.get("member_name")
+                    or master.get("Member Name")
+                    or master.get("member_name")
+                    or master.get("name")
+                    or ""
+                ),
+                "role": role_value,
+                "designation": designation_value,
+                "designation_in_pg": designation_value,
+                "shg_name": (
+                    m.get("shg_name")
+                    or master.get("SHG Name")
+                    or master.get("SHG_Name")
+                    or master.get("shg_name")
+                    or ""
+                ),
+                "shg_code": (
+                    m.get("shg_code")
+                    or master.get("SHG Code")
+                    or master.get("SHG_Code")
+                    or master.get("shg_code")
+                    or ""
+                ),
+                "spouse_parent": (
+                    master.get("Spouse/Parent Name")
+                    or master.get("Spouse Name")
+                    or master.get("Father/Husband Name")
+                    or master.get("spouse_parent")
+                    or master.get("spouse_name")
+                    or ""
+                ),
+                "category": (
+                    master.get("Category")
+                    or master.get("Social Category")
+                    or master.get("category")
+                    or ""
+                ),
+                "contact": (
+                    master.get("Contact")
+                    or master.get("Contact Number")
+                    or master.get("Mobile Number")
+                    or master.get("Phone")
+                    or master.get("contact")
+                    or master.get("phone")
+                    or ""
+                ),
+                "bank": (
+                    master.get("Bank Name")
+                    or master.get("bank_name")
+                    or ""
+                ),
+                "branch": "",
+                "account": (
+                    master.get("Account Number")
+                    or master.get("account_number")
+                    or ""
+                ),
+                "fee": (
+                    master.get("Membership Fee")
+                    or master.get("membership_fee")
+                    or ""
+                ),
+            })
+
+    elif form_type == "member_registration":
+        selected_pg_members = pg.get("members") or []
+
+        role_map = {}
+        order_map = {}
+
+        for index, item in enumerate(selected_pg_members):
+            mid = item.get("member_id")
+            if not mid:
+                continue
+
+            mid_str = str(mid)
+            role_map[mid_str] = str(item.get("role") or "member").strip().lower()
+            order_map[mid_str] = index
+
+        role_label_map = {
+            "president": "President",
+            "secretary": "Secretary",
+            "cashier": "Cashier",
+            "member": "Member",
+        }
+
+        member_docs = list(db.pg_members.find({
+            "$and": [
+                {
+                    "$or": [
+                        {"pg_id": pg["_id"]},
+                        {"pg_id": str(pg["_id"])},
+                    ]
+                },
+                {
+                    "$or": [
+                        {"is_active": True},
+                        {"is_active": {"$exists": False}},
+                    ]
+                }
             ]
-        }).sort("name", 1))
+        }))
+
+        def _member_sort_key(doc):
+            mid = str(doc.get("member_id") or "")
+            return order_map.get(mid, 9999)
+
+        member_docs.sort(key=_member_sort_key)
+
+        sector_name = str(pg.get("sector") or "").strip().lower()
+
+        for doc in member_docs:
+            mid = doc.get("member_id")
+            mid_str = str(mid) if mid else ""
+
+            role_value = str(
+                doc.get("role")
+                or role_map.get(mid_str)
+                or "member"
+            ).strip().lower()
+
+            designation_value = role_label_map.get(
+                role_value,
+                role_value.title() if role_value else "Member"
+            )
+
+            crop_or_activity = ""
+
+            if sector_name == "agri":
+                crop_or_activity = doc.get("agri_crop") or ""
+            elif sector_name == "ardd":
+                activity = doc.get("ardd_activity") or ""
+                unit = doc.get("ardd_unit") or ""
+                crop_or_activity = f"{activity} - {unit}" if activity and unit else (activity or unit)
+            elif sector_name == "fishery":
+                crop_or_activity = doc.get("fishery_activity") or ""
+
+            fee_value = doc.get("membership_fee_paid")
+            if fee_value in (None, ""):
+                fee_value = ""
+
+            members.append({
+                "_id": doc.get("_id"),
+                "member_id": doc.get("member_id"),
+
+                "name": doc.get("name") or doc.get("member_name") or "",
+                "member_name": doc.get("name") or doc.get("member_name") or "",
+
+                "role": role_value,
+                "designation": designation_value,
+                "designation_in_pg": designation_value,
+
+                "spouse_parent": doc.get("spouse_name") or doc.get("spouse_parent") or "",
+                "spouse_name": doc.get("spouse_name") or "",
+
+                "category": doc.get("category") or "",
+                "shg_name": doc.get("shg_name") or "",
+                "shg_code": doc.get("shg_code") or "",
+
+                "contact": doc.get("contact") or "",
+                "bank": doc.get("bank_name") or "",
+                "bank_name": doc.get("bank_name") or "",
+                "branch": doc.get("branch") or "",
+                "account": doc.get("account_number") or "",
+                "account_number": doc.get("account_number") or "",
+                "fee": fee_value,
+                "membership_fee_paid": fee_value,
+
+                "agri_crop": doc.get("agri_crop") or "",
+                "agri_ffs_module": doc.get("agri_ffs_module") or "",
+
+                "ardd_activity": doc.get("ardd_activity") or "",
+                "ardd_unit": doc.get("ardd_unit") or "",
+
+                "fishery_activity": doc.get("fishery_activity") or "",
+
+                "crop_or_activity": crop_or_activity,
+                "ffs_module": doc.get("agri_ffs_module") or "",
+            })
 
     if _wants_json_response():
         return jsonify({
@@ -9603,6 +10030,9 @@ def validation_review(form_type, pg_id):
             },
             "status": status,
             "members_count": len(members),
+            "changed_fields": changed_fields,
+            "changed_field_keys": changed_field_keys,
+            "changed_count": len(changed_fields),
         }), 200
 
     return render_template(
@@ -9613,8 +10043,14 @@ def validation_review(form_type, pg_id):
         validation=validation,
         validation_status=status,
         members=members,
+        changed_fields=changed_fields,
+        changed_field_keys=changed_field_keys,
         form_url=_validation_form_url(form_type, pg["_id"]),
     )
+
+
+
+
 
 
 @pg_bp.route("/validation/<form_type>/<pg_id>/approve", methods=["POST"])
