@@ -990,9 +990,17 @@
 
                     <td data-label="Remarks">{{ u.remarks }}</td>
 
-                    {% if role and role != 'PG_DATA_ENTRY' %}
+                      {% if role and role != 'PG_DATA_ENTRY' %}
+                      {% set role_upper = (role or '')|upper %}
+                      {% set can_act =
+                        (role_upper in ['CLF_MANAGER', 'CLF_ADMIN'] and st == 'PENDING')
+                        or (role_upper == 'BLOCK_ADMIN' and st in ['PENDING', 'CLF_APPROVED'])
+                        or (role_upper == 'DISTRICT_ADMIN' and st in ['PENDING', 'CLF_APPROVED', 'BLOCK_APPROVED'])
+                        or (role_upper in ['ADMIN', 'STATE_ADMIN', 'SUPER_ADMIN'] and st not in ['REJECTED', 'STATE_APPROVED'])
+                      %}
+
                       <td data-label="Action">
-                        {% if st == 'PENDING' %}
+                        {% if can_act %}
                           <div class="gu-row-actions">
                             <form method="POST" action="{{ url_for('finance.approve_grant_utilization', util_id=u._id) }}">
                               <button class="gu-btn ghost" type="submit" id="guApproveBtnText">
@@ -1071,11 +1079,20 @@
                     <div class="gu-mobile-label" id="guMLblRemarks{{ loop.index }}">Remarks</div>
                     <div class="gu-mobile-value">{{ u.remarks or '—' }}</div>
                   </div>
-                  {% if role and role != 'PG_DATA_ENTRY' %}
+                  
+                    {% if role and role != 'PG_DATA_ENTRY' %}
+                    {% set role_upper = (role or '')|upper %}
+                    {% set can_act =
+                      (role_upper in ['CLF_MANAGER', 'CLF_ADMIN'] and st == 'PENDING')
+                      or (role_upper == 'BLOCK_ADMIN' and st in ['PENDING', 'CLF_APPROVED'])
+                      or (role_upper == 'DISTRICT_ADMIN' and st in ['PENDING', 'CLF_APPROVED', 'BLOCK_APPROVED'])
+                      or (role_upper in ['ADMIN', 'STATE_ADMIN', 'SUPER_ADMIN'] and st not in ['REJECTED', 'STATE_APPROVED'])
+                    %}
+
                     <div class="gu-mobile-row">
                       <div class="gu-mobile-label" id="guMLblAction{{ loop.index }}">Action</div>
                       <div class="gu-mobile-value" style="width:100%;">
-                        {% if st == 'PENDING' %}
+                        {% if can_act %}
                           <div class="gu-row-actions">
                             <form method="POST" action="{{ url_for('finance.approve_grant_utilization', util_id=u._id) }}">
                               <button class="gu-btn ghost" type="submit">Approve</button>

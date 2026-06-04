@@ -1368,10 +1368,11 @@ def _grant_utilization_total(db, grant_id, include_rejected=False):
 
 
 def _sync_grant_utilization_summary(db, grant_id):
-    """Sync utilization total and balance into pg_grants.
+    """Sync approved utilization total and balance into pg_grants.
 
-    This does not change your workflow.
-    It only makes the parent grant record store the latest utilized/balance values.
+    Only approved-stage utilization entries are counted in parent grant totals.
+    Pending entries remain visible in utilization history but do not become
+    official utilized amount until approved.
     """
     grant_obj_id = grant_id if isinstance(grant_id, ObjectId) else ObjectId(str(grant_id))
 
@@ -1382,8 +1383,31 @@ def _sync_grant_utilization_summary(db, grant_id):
             "balance_amount": 0.0,
         }
 
+    approved_statuses = [
+        "CLF_APPROVED",
+        "BLOCK_APPROVED",
+        "DISTRICT_APPROVED",
+        "STATE_APPROVED",
+        "APPROVED",
+    ]
+
+    approved_utils = list(
+        db.pg_grant_utilizations.find(
+            {
+                "grant_id": grant_obj_id,
+                "status": {"$in": approved_statuses},
+            },
+            {
+                "amount": 1,
+            },
+        )
+    )
+
     received = _safe_float(grant.get("amount_received"))
-    utilized = _grant_utilization_total(db, grant_obj_id, include_rejected=False)
+    utilized = round(
+        sum(_safe_float(u.get("amount")) for u in approved_utils),
+        2,
+    )
     balance = round(received - utilized, 2)
 
     db.pg_grants.update_one(
@@ -1403,7 +1427,8 @@ def _sync_grant_utilization_summary(db, grant_id):
     }
 
 
- # changes made by atlanta
+
+# changes made by atlanta
 @finance_bp.route("/grants/<pg_id>", methods=["GET", "POST"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER","CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
@@ -1524,6 +1549,8 @@ def grants(pg_id):
 
     return render_template("grants.html", pg=pg, grants=grants_raw)
 
+
+
 @finance_bp.route('/uploads/<filename>')
 @login_required
 def serve_uploaded_file(filename):
@@ -1619,7 +1646,7 @@ def grant_delete(grant_id):
     return jsonify({"ok": True, "message": "Grant deleted."}), 200
 
 
-@finance_bp.route("/grant/<grant_id>", methods=["GET", "POST"]) 
+@finance_bp.route("/grant/<grant_id>", methods=["GET", "POST"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 @require_unlocked_period(scope="pg")
@@ -1627,11 +1654,7 @@ def grant_view(grant_id):
     db = current_app.mongo_db
 
     def wants_json():
-        return (
-            request.args.get("format") == "json"
-            or "application/json" in (request.headers.get("Accept", "").lower())
-            or request.headers.get("X-Requested-With") == "XMLHttpRequest"
-        )
+        return _is_json_request()
 
     def serialize_dt(v):
         if not v:
@@ -1643,8 +1666,47 @@ def grant_view(grant_id):
         except Exception:
             return str(v)
 
+    def current_role():
+        return _role()
+
+    def current_user_id():
+        user = _current_user_doc()
+        if isinstance(user, dict) and user.get("_id"):
+            return str(user.get("_id"))
+
+        for key in ("user_id", "_id", "id", "sub", "uid"):
+            value = _session_or_user_value(key, user)
+            if value not in (None, "", []):
+                return str(value)
+
+        return str(session.get("user_id") or "")
+
+    def is_utilization_submit_allowed():
+        return current_role() in {
+            "PG_DATA_ENTRY",
+            "CLF_MANAGER",
+            "CLF_ADMIN",
+            "BLOCK_ADMIN",
+            "DISTRICT_ADMIN",
+            "ADMIN",
+            "STATE_ADMIN",
+            "SUPER_ADMIN",
+        }
+
+    def is_rejected_status(status):
+        return str(status or "").strip().upper() == "REJECTED"
+
+    def is_approved_status(status):
+        return str(status or "").strip().upper() in {
+            "CLF_APPROVED",
+            "BLOCK_APPROVED",
+            "DISTRICT_APPROVED",
+            "STATE_APPROVED",
+            "APPROVED",
+        }
+
     try:
-        grant_obj_id = ObjectId(grant_id)
+        grant_obj_id = ObjectId(str(grant_id))
     except Exception:
         if wants_json():
             return jsonify({"ok": False, "message": "Invalid grant ID"}), 400
@@ -1666,24 +1728,30 @@ def grant_view(grant_id):
         payload = request.get_json(silent=True) or request.form
         action = (payload.get("action") or "utilize").strip().lower()
 
-        write_response = _require_finance_write(
-            "Grant utilization and grant changes are handled by CLF/Admin authorities.",
-            is_json=wants_json(),
-        )
-        if write_response:
-            return write_response
+        # ============================================================
+        # GRANT DELETE / UPDATE
+        # Only CLF/Admin finance authority can do this.
+        # PG_DATA_ENTRY must not be blocked from utilization submission,
+        # but must remain blocked from grant edit/delete.
+        # ============================================================
+        if action in {"delete", "update"}:
+            write_response = _require_finance_write(
+                "Grant creation/update is handled by CLF/Admin authorities.",
+                is_json=wants_json(),
+            )
+            if write_response:
+                return write_response
 
-        if action == "delete":
-            db.pg_grant_utilizations.delete_many({"grant_id": grant_obj_id})
-            db.pg_grants.delete_one({"_id": grant_obj_id})
+            if action == "delete":
+                db.pg_grant_utilizations.delete_many({"grant_id": grant_obj_id})
+                db.pg_grants.delete_one({"_id": grant_obj_id})
 
-            if wants_json():
-                return jsonify({"ok": True, "message": "Grant deleted."}), 200
+                if wants_json():
+                    return jsonify({"ok": True, "message": "Grant deleted."}), 200
 
-            flash("Grant deleted.", "success")
-            return redirect(url_for("finance.grants", pg_id=str(pg.get("_id"))))
+                flash("Grant deleted.", "success")
+                return redirect(url_for("finance.grants", pg_id=str(pg.get("_id"))))
 
-        if action == "update":
             amount_received = _safe_float(payload.get("amount_received"))
 
             update_doc = {
@@ -1705,100 +1773,148 @@ def grant_view(grant_id):
 
             flash("Grant updated.", "success")
             return redirect(url_for("finance.grants", pg_id=str(pg.get("_id"))))
-        role = session.get("role")
 
-        head = (payload.get("head") or "").strip()
-        amount = float(payload.get("amount") or 0)
+        # ============================================================
+        # GRANT UTILIZATION SUBMISSION
+        # PG_DATA_ENTRY is allowed here.
+        # Entry is saved as PENDING and goes to approval workflow.
+        # ============================================================
+        if action == "utilize":
+            if not is_utilization_submit_allowed():
+                if wants_json():
+                    return jsonify({
+                        "ok": False,
+                        "message": "You are not allowed to submit grant utilization."
+                    }), 403
 
-        if not head:
-            if wants_json():
-                return jsonify({"ok": False, "message": "Head is required."}), 400
-            flash("Head is required.", "danger")
-            return redirect(url_for("finance.grant_view", grant_id=grant_id))
+                flash("You are not allowed to submit grant utilization.", "danger")
+                return redirect(url_for("finance.grant_view", grant_id=grant_id))
 
+            head = (payload.get("head") or "").strip()
+            amount = _safe_float(payload.get("amount"))
 
-        if amount <= 0:
-            if wants_json():
-                return jsonify({"ok": False, "message": "Amount must be greater than 0."}), 400
-            flash("Amount must be greater than 0.", "danger")
-            return redirect(url_for("finance.grant_view", grant_id=grant_id))
+            if not head:
+                if wants_json():
+                    return jsonify({"ok": False, "message": "Head is required."}), 400
+                flash("Head is required.", "danger")
+                return redirect(url_for("finance.grant_view", grant_id=grant_id))
 
-        utilized_at = payload.get("utilized_at") or datetime.utcnow().strftime("%Y-%m-%d")
-        try:
-            u_dt = datetime.strptime(utilized_at, "%Y-%m-%d")
-        except Exception:
-            u_dt = datetime.utcnow()
+            if amount <= 0:
+                if wants_json():
+                    return jsonify({"ok": False, "message": "Amount must be greater than 0."}), 400
+                flash("Amount must be greater than 0.", "danger")
+                return redirect(url_for("finance.grant_view", grant_id=grant_id))
 
-        existing = list(
-            db.pg_grant_utilizations.find({"grant_id": grant_obj_id}, {"amount": 1, "status": 1})
-        )
-        utilized_total = sum(float(x.get("amount") or 0) for x in existing)
-        balance = float(grant.get("amount_received") or 0) - utilized_total
+            utilized_at = payload.get("utilized_at") or datetime.utcnow().strftime("%Y-%m-%d")
+            try:
+                u_dt = datetime.strptime(utilized_at, "%Y-%m-%d")
+            except Exception:
+                u_dt = datetime.utcnow()
 
-        if amount > balance + 1e-6:
-            msg = f"Utilization exceeds available balance (Balance: ₹{balance:,.2f})."
-            if wants_json():
-                return jsonify({"ok": False, "message": msg}), 400
-            flash(msg, "danger")
-            return redirect(url_for("finance.grant_view", grant_id=grant_id))
+            existing = list(
+                db.pg_grant_utilizations.find(
+                    {"grant_id": grant_obj_id},
+                    {"amount": 1, "status": 1}
+                )
+            )
 
-        attachments = []
-        try:
-            from werkzeug.utils import secure_filename
-            upload_dir = current_app.config.get("UPLOAD_FOLDER", "uploads")
-            os.makedirs(upload_dir, exist_ok=True)
+            committed_total = sum(
+                _safe_float(x.get("amount"))
+                for x in existing
+                if not is_rejected_status(x.get("status"))
+            )
 
-            files = request.files.getlist("attachments") if request.files else []
-            for f in files:
-                if not f or not getattr(f, "filename", ""):
-                    continue
-                fn = secure_filename(f.filename)
-                if not fn:
-                    continue
-                stamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
-                saved = f"grant_{grant_id}_{stamp}_{fn}"
-                path = os.path.join(upload_dir, saved)
-                f.save(path)
-                attachments.append(saved)
-        except Exception:
+            balance_for_submission = _safe_float(grant.get("amount_received")) - committed_total
+
+            if amount > balance_for_submission + 1e-6:
+                msg = f"Utilization exceeds available balance (Available: ₹{balance_for_submission:,.2f})."
+                if wants_json():
+                    return jsonify({"ok": False, "message": msg}), 400
+                flash(msg, "danger")
+                return redirect(url_for("finance.grant_view", grant_id=grant_id))
+
             attachments = []
 
-        util_doc = {
-            "grant_id": grant_obj_id,
-            "pg_id": grant.get("pg_id"),
-            "utilized_at": u_dt,
-            "head": head,
-            "amount": amount,
-            "remarks": payload.get("remarks") or "",
-            "attachments": attachments,
-            "status": "PENDING",
-            "created_by": session.get("user_id"),
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
-        }
+            try:
+                from werkzeug.utils import secure_filename
 
-        res = db.pg_grant_utilizations.insert_one(util_doc)
+                upload_dir = current_app.config.get("UPLOAD_FOLDER", "uploads")
+                os.makedirs(upload_dir, exist_ok=True)
 
-        summary = _sync_grant_utilization_summary(db, grant_obj_id)
+                files = request.files.getlist("attachments") if request.files else []
+
+                for f in files:
+                    if not f or not getattr(f, "filename", ""):
+                        continue
+
+                    fn = secure_filename(f.filename)
+                    if not fn:
+                        continue
+
+                    stamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+                    saved = f"grant_{grant_id}_{stamp}_{fn}"
+                    path = os.path.join(upload_dir, saved)
+
+                    f.save(path)
+                    attachments.append(saved)
+
+            except Exception:
+                attachments = []
+
+            util_doc = {
+                "grant_id": grant_obj_id,
+                "pg_id": grant.get("pg_id"),
+                "utilized_at": u_dt,
+                "head": head,
+                "amount": amount,
+                "remarks": payload.get("remarks") or "",
+                "attachments": attachments,
+
+                "status": "PENDING",
+                "created_by": current_user_id(),
+                "created_role": current_role(),
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+
+                "approved_by": None,
+                "approved_at": None,
+                "rejected_by": None,
+                "rejected_at": None,
+                "rejection_reason": "",
+            }
+
+            res = db.pg_grant_utilizations.insert_one(util_doc)
+            _sync_grant_utilization_summary(db, grant_obj_id)
+
+            if wants_json():
+                return jsonify({
+                    "ok": True,
+                    "message": "Grant utilization submitted for approval.",
+                    "utilization_id": str(res.inserted_id),
+                }), 201
+
+            flash("Grant utilization submitted for approval.", "success")
+            return redirect(url_for("finance.grant_view", grant_id=grant_id))
 
         if wants_json():
-            return jsonify({
-                "ok": True,
-                "message": "Utilization entry saved.",
-                "utilization_id": str(res.inserted_id),
-                "utilized_amount": summary["utilized_amount"],
-                "balance_amount": summary["balance_amount"],
-            }), 201
+            return jsonify({"ok": False, "message": "Invalid grant action."}), 400
 
-        flash("Utilization entry saved.", "success")
+        flash("Invalid grant action.", "danger")
         return redirect(url_for("finance.grant_view", grant_id=grant_id))
 
     utils_raw = list(
-        db.pg_grant_utilizations.find({"grant_id": grant_obj_id}).sort([("utilized_at", -1), ("created_at", -1)])
+        db.pg_grant_utilizations.find({"grant_id": grant_obj_id}).sort(
+            [("utilized_at", -1), ("created_at", -1)]
+        )
     )
 
-    utilized_total = sum(float(x.get("amount") or 0) for x in utils_raw)
-    balance = round(float(grant.get("amount_received") or 0) - utilized_total, 2)
+    utilized_total = sum(
+        _safe_float(x.get("amount"))
+        for x in utils_raw
+        if is_approved_status(x.get("status"))
+    )
+
+    balance = round(_safe_float(grant.get("amount_received")) - utilized_total, 2)
 
     utils = []
     for i, u in enumerate(utils_raw, start=1):
@@ -1807,7 +1923,7 @@ def grant_view(grant_id):
             "sl": i,
             "utilized_at": serialize_dt(u.get("utilized_at")),
             "head": u.get("head") or "",
-            "amount": float(u.get("amount") or 0),
+            "amount": _safe_float(u.get("amount")),
             "remarks": u.get("remarks") or "",
             "status": (u.get("status") or "PENDING").upper(),
             "attachments": u.get("attachments") or [],
@@ -1821,7 +1937,7 @@ def grant_view(grant_id):
         "category": grant.get("category") or "",
         "source": grant.get("source") or "",
         "release_date": serialize_dt(grant.get("release_date")),
-        "amount_received": float(grant.get("amount_received") or 0),
+        "amount_received": _safe_float(grant.get("amount_received")),
         "uc_status": grant.get("uc_status") or "pending",
         "uc_submitted_date": serialize_dt(grant.get("uc_submitted_date")),
         "notes": grant.get("notes") or "",
@@ -1840,7 +1956,7 @@ def grant_view(grant_id):
             },
             "grant": grant_json,
             "utils": utils,
-            "role": session.get("role") or "",
+            "role": current_role(),
             "can_edit": _can_write_finance(),
         }), 200
 
@@ -1851,92 +1967,163 @@ def grant_view(grant_id):
         utils=utils_raw,
         utilized_total=utilized_total,
         balance=balance,
-        role=session.get("role"),
+        role=current_role(),
     )
+
+
+
 
 @finance_bp.route("/grant_utilization/<util_id>/approve", methods=["POST"])
 @login_required
-@roles_required("CLF_MANAGER","CLF_ADMIN","BLOCK_ADMIN","DISTRICT_ADMIN","ADMIN","SUPER_ADMIN")
+@roles_required("CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def approve_grant_utilization(util_id):
     db = current_app.mongo_db
-    util = db.pg_grant_utilizations.find_one({"_id": ObjectId(util_id)})
+    is_json = _is_json_request()
+
+    try:
+        util_obj_id = ObjectId(str(util_id))
+    except Exception:
+        if is_json:
+            return jsonify({"ok": False, "message": "Invalid utilization ID."}), 400
+        flash("Invalid utilization ID.", "danger")
+        return redirect(url_for("pg.pg_home"))
+
+    util = db.pg_grant_utilizations.find_one({"_id": util_obj_id})
     if not util:
+        if is_json:
+            return jsonify({"ok": False, "message": "Utilization entry not found."}), 404
         flash("Utilization entry not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
     pg = db.pgs.find_one({"_id": util.get("pg_id")}) if util.get("pg_id") else None
-    access_response = _require_pg_access(pg, is_json=False)
+    access_response = _require_pg_access(pg, is_json=is_json)
     if access_response:
         return access_response
 
-    role = session.get("role")
+    role = _role()
     cur = (util.get("status") or "PENDING").upper()
 
     next_status = None
+
     if role in ("CLF_MANAGER", "CLF_ADMIN") and cur == "PENDING":
         next_status = "CLF_APPROVED"
-    elif role == "BLOCK_ADMIN" and cur in ("CLF_APPROVED", "PENDING"):
+
+    elif role == "BLOCK_ADMIN" and cur in ("PENDING", "CLF_APPROVED"):
         next_status = "BLOCK_APPROVED"
-    elif role == "DISTRICT_ADMIN" and cur in ("BLOCK_APPROVED", "CLF_APPROVED", "PENDING"):
+
+    elif role == "DISTRICT_ADMIN" and cur in ("PENDING", "CLF_APPROVED", "BLOCK_APPROVED"):
         next_status = "DISTRICT_APPROVED"
-    elif role in ("ADMIN", "SUPER_ADMIN"):
+
+    elif role in ("ADMIN", "STATE_ADMIN", "SUPER_ADMIN") and cur not in ("REJECTED", "STATE_APPROVED"):
         next_status = "STATE_APPROVED"
 
     if not next_status:
-        flash("Cannot approve at this stage. Please follow the approval chain.", "danger")
+        msg = "Cannot approve at this stage. Please follow the approval chain."
+        if is_json:
+            return jsonify({"ok": False, "message": msg}), 400
+
+        flash(msg, "danger")
         return redirect(url_for("finance.grant_view", grant_id=str(util.get("grant_id"))))
 
+    user = _current_user_doc()
+    approver_id = str(user.get("_id")) if isinstance(user, dict) and user.get("_id") else str(session.get("user_id") or "")
+
     db.pg_grant_utilizations.update_one(
-        {"_id": ObjectId(util_id)},
+        {"_id": util_obj_id},
         {
             "$set": {
                 "status": next_status,
-                "approved_by": session.get("user_id"),
+                "approved_by": approver_id,
+                "approved_role": role,
                 "approved_at": datetime.utcnow(),
+                "rejected_by": None,
+                "rejected_at": None,
+                "rejection_reason": "",
                 "updated_at": datetime.utcnow(),
             }
         },
     )
 
-    _sync_grant_utilization_summary(db, util.get("grant_id"))
+    summary = _sync_grant_utilization_summary(db, util.get("grant_id"))
+
+    if is_json:
+        return jsonify({
+            "ok": True,
+            "message": f"Utilization moved to {next_status}.",
+            "status": next_status,
+            "utilized_amount": summary["utilized_amount"],
+            "balance_amount": summary["balance_amount"],
+        }), 200
 
     flash(f"Utilization moved to {next_status}.", "success")
     return redirect(url_for("finance.grant_view", grant_id=str(util.get("grant_id"))))
 
 
+
 @finance_bp.route("/grant_utilization/<util_id>/reject", methods=["POST"])
 @login_required
-@roles_required("CLF_MANAGER","CLF_ADMIN","BLOCK_ADMIN","DISTRICT_ADMIN","ADMIN","SUPER_ADMIN")
+@roles_required("CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def reject_grant_utilization(util_id):
     db = current_app.mongo_db
-    util = db.pg_grant_utilizations.find_one({"_id": ObjectId(util_id)})
+    is_json = _is_json_request()
+
+    try:
+        util_obj_id = ObjectId(str(util_id))
+    except Exception:
+        if is_json:
+            return jsonify({"ok": False, "message": "Invalid utilization ID."}), 400
+        flash("Invalid utilization ID.", "danger")
+        return redirect(url_for("pg.pg_home"))
+
+    util = db.pg_grant_utilizations.find_one({"_id": util_obj_id})
     if not util:
+        if is_json:
+            return jsonify({"ok": False, "message": "Utilization entry not found."}), 404
         flash("Utilization entry not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
     pg = db.pgs.find_one({"_id": util.get("pg_id")}) if util.get("pg_id") else None
-    access_response = _require_pg_access(pg, is_json=False)
+    access_response = _require_pg_access(pg, is_json=is_json)
     if access_response:
         return access_response
 
-    reason = (request.form.get("reason") or "").strip()
+    payload = request.get_json(silent=True) or request.form
+    reason = (payload.get("reason") or "Rejected").strip()
+
+    user = _current_user_doc()
+    rejecter_id = str(user.get("_id")) if isinstance(user, dict) and user.get("_id") else str(session.get("user_id") or "")
+
     db.pg_grant_utilizations.update_one(
-        {"_id": ObjectId(util_id)},
+        {"_id": util_obj_id},
         {
             "$set": {
                 "status": "REJECTED",
                 "rejection_reason": reason,
-                "approved_by": session.get("user_id"),
-                "approved_at": datetime.utcnow(),
+                "rejected_by": rejecter_id,
+                "rejected_role": _role(),
+                "rejected_at": datetime.utcnow(),
+                "approved_by": None,
+                "approved_at": None,
                 "updated_at": datetime.utcnow(),
             }
         },
     )
 
-    _sync_grant_utilization_summary(db, util.get("grant_id"))
+    summary = _sync_grant_utilization_summary(db, util.get("grant_id"))
+
+    if is_json:
+        return jsonify({
+            "ok": True,
+            "message": "Utilization rejected.",
+            "status": "REJECTED",
+            "utilized_amount": summary["utilized_amount"],
+            "balance_amount": summary["balance_amount"],
+        }), 200
 
     flash("Utilization rejected.", "warning")
     return redirect(url_for("finance.grant_view", grant_id=str(util.get("grant_id"))))
+
+
 
 
 # === CORE ENGINE INTEGRATION ACTIVE ===

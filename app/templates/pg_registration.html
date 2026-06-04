@@ -6,6 +6,8 @@
 {% set _validation_remarks = validation_remarks or _validation.remarks or '' %}
 {% set _validation_can_edit = validation_can_edit if validation_can_edit is defined else (_validation_status not in ['submitted', 'resubmitted']) %}
 {% set _saved_members_count = (pg.members or [])|length %}
+{% set _member_validation_status = ((pg.member_registration_validation.status if pg.member_registration_validation is defined and pg.member_registration_validation else pg.member_registration_validation_status) or 'draft')|lower %}
+{% set _pending_validation_count = (1 if _validation_status in ['submitted', 'resubmitted'] else 0) + (1 if _member_validation_status in ['submitted', 'resubmitted'] else 0) %}
 {% set _can_submit_validation = session.get('role') in ['PG_DATA_ENTRY', 'CADRE_CC'] and _validation_status in ['draft', 'rejected'] and _saved_members_count > 0 %}
 {% set _is_validation_locked = not _validation_can_edit %}
 
@@ -724,6 +726,19 @@
 .pgr-btn-submit-validation:hover{
   background:rgba(251,191,36,.22);
 }
+.pgr-btn-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:24px;
+  height:24px;
+  border-radius:999px;
+  background:rgba(245,158,11,.15);
+  color:#92400e;
+  font-size:11px;
+  font-weight:900;
+  padding:0 8px;
+}
 .pgr-btn-disabled-state{
   opacity:.6;
   pointer-events:none;
@@ -1146,6 +1161,9 @@
             form="pgValidationSubmitForm"
           >
             Submit for Block Validation
+            {% if _pending_validation_count > 0 %}
+              <span class="pgr-btn-badge">{{ _pending_validation_count }}</span>
+            {% endif %}
           </button>
 
         {% elif _validation_status in ['draft', 'rejected'] and _saved_members_count == 0 %}
@@ -1156,6 +1174,9 @@
         {% elif _validation_status in ['submitted', 'resubmitted'] %}
           <button class="pgr-btn pgr-btn-submit-validation pgr-btn-disabled-state" type="button" disabled>
             Submitted to Block
+            {% if _pending_validation_count > 0 %}
+              <span class="pgr-btn-badge">{{ _pending_validation_count }}</span>
+            {% endif %}
           </button>
 
         {% elif _validation_status == 'approved' %}
