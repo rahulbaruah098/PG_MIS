@@ -1,9 +1,10 @@
 from services.audit_engine import AuditLogger
-from flask import render_template, request, redirect, url_for, flash, current_app, session, jsonify
+from flask import render_template, request, redirect, url_for, flash, current_app, session, jsonify, g
 from app.services.guards import require_unlocked_period
 from bson import ObjectId
 from bson.errors import InvalidId
 from datetime import datetime
+import jwt
 
 from . import business_bp
 from ..rbac import login_required, roles_required
@@ -65,25 +66,147 @@ def _business_error(message, status=403, redirect_endpoint="pg.pg_home"):
     flash(message, "danger" if status >= 400 else "warning")
     return redirect(url_for(redirect_endpoint))
 
+def _bearer_token():
+    auth = request.headers.get("Authorization") or ""
+    if auth.lower().startswith("bearer "):
+        return auth.split(" ", 1)[1].strip()
+    return ""
+
+
+def _decode_mobile_token():
+    token = _bearer_token()
+    if not token:
+        return {}
+
+    secrets = [
+        current_app.config.get("JWT_SECRET_KEY"),
+        current_app.config.get("SECRET_KEY"),
+    ]
+
+    for secret in secrets:
+        if not secret:
+            continue
+
+        try:
+            return jwt.decode(
+                token,
+                secret,
+                algorithms=["HS256"],
+                options={"verify_aud": False},
+            ) or {}
+        except Exception:
+            continue
+
+    return {}
+
+
+def _current_request_user_doc(db):
+    """
+    Web uses Flask session.
+    Mobile app uses Bearer token.
+    This helper loads the same user context for both.
+    """
+    raw_user_id = (
+        session.get("user_id")
+        or getattr(g, "user_id", None)
+        or getattr(g, "current_user_id", None)
+    )
+
+    payload = {}
+
+    current_user = getattr(g, "current_user", None)
+    if isinstance(current_user, dict):
+        payload.update(current_user)
+
+    token_payload = _decode_mobile_token()
+    if isinstance(token_payload, dict):
+        payload.update(token_payload)
+
+    raw_user_id = (
+        raw_user_id
+        or payload.get("user_id")
+        or payload.get("id")
+        or payload.get("_id")
+        or payload.get("sub")
+    )
+
+    user_obj_id = _to_object_id(raw_user_id)
+    if user_obj_id:
+        user_doc = db.users.find_one({"_id": user_obj_id})
+        if user_doc:
+            return user_doc
+
+    username = payload.get("username") or payload.get("email") or session.get("username")
+    if username:
+        user_doc = db.users.find_one({
+            "$or": [
+                {"username": username},
+                {"email": username},
+                {"phone": username},
+            ]
+        })
+        if user_doc:
+            return user_doc
+
+    return {}
+
+
+def _scope_value(user_doc, *keys):
+    for key in keys:
+        value = session.get(key)
+        if value not in (None, "", []):
+            return value
+
+    for key in keys:
+        value = user_doc.get(key)
+        if value not in (None, "", []):
+            return value
+
+    return None
 
 def _get_scoped_pg(db, pg_obj_id):
     """
     Return PG only if it is inside the logged-in user's jurisdiction.
 
-    New CLF workflow:
-    - CLF_ADMIN/CLF_MANAGER can access only PGs mapped to own clf_id or explicitly assigned.
-    - BLOCK_ADMIN can view PGs under own block, but POST writes are blocked below.
-    - DISTRICT_ADMIN can view PGs under own district.
-    - PG_DATA_ENTRY can access only its own PG/active PG.
+    Supports:
+    - Web browser Flask session
+    - Mobile app Bearer JWT token
     """
-    role = session.get("role") or ""
-    user_id = _to_object_id(session.get("user_id"))
-    state_id = _to_object_id(session.get("state_id"))
-    district_id = _to_object_id(session.get("district_id"))
-    block_id = _to_object_id(session.get("block_id"))
-    clf_id = _to_object_id(session.get("clf_id"))
-    own_pg_id = _to_object_id(session.get("pg_id") or session.get("active_pg_id"))
-    assigned_pg_ids = _id_list(session.get("assigned_pg_ids") or [])
+    user_doc = _current_request_user_doc(db)
+
+    role = (
+        session.get("role")
+        or user_doc.get("role")
+        or user_doc.get("user_role")
+        or ""
+    )
+
+    role = str(role or "").upper()
+
+    user_id = _to_object_id(
+        session.get("user_id")
+        or user_doc.get("_id")
+        or user_doc.get("user_id")
+    )
+
+    state_id = _to_object_id(_scope_value(user_doc, "state_id"))
+    district_id = _to_object_id(_scope_value(user_doc, "district_id"))
+    block_id = _to_object_id(_scope_value(user_doc, "block_id"))
+    clf_id = _to_object_id(_scope_value(user_doc, "clf_id"))
+
+    own_pg_id = _to_object_id(
+        _scope_value(
+            user_doc,
+            "pg_id",
+            "active_pg_id",
+            "mapped_pg_id",
+            "assigned_pg_id",
+        )
+    )
+
+    assigned_pg_ids = _id_list(
+        _scope_value(user_doc, "assigned_pg_ids", "pg_ids", "mapped_pg_ids") or []
+    )
 
     q = {"_id": pg_obj_id}
 
@@ -106,24 +229,45 @@ def _get_scoped_pg(db, pg_obj_id):
 
     if role in ("CLF_ADMIN", "CLF_MANAGER"):
         scope_or = []
+
         if clf_id:
             scope_or.append({"clf_id": clf_id})
+
         if user_id:
             scope_or.append({"assigned_clf_user_id": user_id})
+
         if assigned_pg_ids:
             scope_or.append({"_id": {"$in": assigned_pg_ids}})
+
         if not scope_or:
             return None
+
         q["$or"] = scope_or
         return db.pgs.find_one(q)
 
     if role == "PG_DATA_ENTRY":
-        if not own_pg_id or str(own_pg_id) != str(pg_obj_id):
-            return None
-        return db.pgs.find_one(q)
+        if own_pg_id and str(own_pg_id) == str(pg_obj_id):
+            return db.pgs.find_one(q)
+
+        # fallback for mobile users where user document may not store pg_id,
+        # but requested PG has the same assigned user id.
+        if user_id:
+            pg = db.pgs.find_one({
+                "_id": pg_obj_id,
+                "$or": [
+                    {"user_id": user_id},
+                    {"created_by": user_id},
+                    {"pg_user_id": user_id},
+                    {"assigned_user_id": user_id},
+                    {"data_entry_user_id": user_id},
+                ],
+            })
+            if pg:
+                return pg
+
+        return None
 
     return None
-
 
 def _can_write_business(pg=None):
     role = session.get("role") or ""

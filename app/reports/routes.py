@@ -2897,15 +2897,38 @@ def pg_mpr(pg_id):
             default=0,
         )
 
+        workflow_status = (
+            row.get("status")
+            or row.get("workflow_status")
+            or row.get("submission_status")
+            or "draft"
+        )
+
+        workflow_level = (
+            row.get("current_level")
+            or row.get("workflow_level")
+            or "-"
+        )
+
         normalized.append({
             "_id": str(row.get("_id") or ""),
             "sl_no": i,
             "pg_id": str(pg_oid),
             "year": row.get("year") or "",
             "month": row.get("month") or "",
+
             "monthly_turnover": _format_amount(monthly_turnover),
             "pct_members_input": _format_percent(pct_members_input),
             "pct_members_output": _format_percent(pct_members_output),
+
+            "workflow_status": str(workflow_status or "draft").lower(),
+            "workflow_status_label": str(workflow_status or "draft").replace("_", " ").title(),
+            "current_level": str(workflow_level or "-"),
+
+            # backward-compatible aliases for old app keys
+            "turnover": _safe_num(monthly_turnover),
+            "input": _safe_num(pct_members_input),
+            "output": _safe_num(pct_members_output),
 
             # raw numeric values for mobile/app/json usage
             "monthly_turnover_value": _safe_num(monthly_turnover),
