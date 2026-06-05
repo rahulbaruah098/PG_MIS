@@ -2097,6 +2097,37 @@ def pg_registration(pg_id):
     # ==========================================================
     if request.method == "GET":
         village = pg.get("Village")
+        
+        # Read-only CLF display for PG Registration page.
+        # CLF is shown only after the PG is assigned/mapped to a CLF.
+        # This does not affect PG save/approval/validation workflow.
+        clf_name = "No CLF assigned"
+
+        clf_id = pg.get("clf_id") or pg.get("CLF_id") or pg.get("clfId")
+
+        if clf_id:
+            clf_query_values = [str(clf_id)]
+
+            try:
+                if ObjectId.is_valid(str(clf_id)):
+                    clf_query_values.append(ObjectId(str(clf_id)))
+            except Exception:
+                pass
+
+            clf_doc = db.clfs.find_one({"_id": {"$in": clf_query_values}}) or {}
+
+            fetched_clf_name = (
+                clf_doc.get("name")
+                or clf_doc.get("clf_name")
+                or clf_doc.get("CLF Name")
+                or clf_doc.get("title")
+                or pg.get("clf_name")
+                or pg.get("CLF")
+                or ""
+            )
+
+            if str(fetched_clf_name).strip():
+                clf_name = str(fetched_clf_name).strip()
 
         safe_members = []
         current_pg_member_ids = []
@@ -2191,9 +2222,14 @@ def pg_registration(pg_id):
                         "Village": m.get("Village"),
                     })
 
+                pg_payload = _serialize_pg_for_json(pg)
+                pg_payload["clf_name"] = clf_name
+                pg_payload["CLF"] = clf_name
+
                 return jsonify({
                     "ok": True,
-                    "pg": _serialize_pg_for_json(pg),
+                    "pg": pg_payload,
+                    "clf_name": clf_name,
                     "shg_options": _serialize_pg_for_json(shg_options),
                     "selected_shg_keys": _serialize_pg_for_json(selected_shg_keys),
                     "shg_members": _serialize_pg_for_json(sm),
@@ -2212,6 +2248,7 @@ def pg_registration(pg_id):
         return render_template(
             "pg_registration.html",
             pg=pg,
+            clf_name=clf_name,
             shg_options=shg_options,
             selected_shg_keys=selected_shg_keys,
             shg_members=shg_members,
