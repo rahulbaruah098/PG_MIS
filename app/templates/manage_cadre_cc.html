@@ -1068,6 +1068,8 @@
             {% set pending_email = draft.email or current_email %}
             {% set current_phone = cadre.phone or '-' %}
             {% set pending_phone = draft.phone or current_phone %}
+            {% set current_cadre_type = cadre.cadre_type or '-' %}
+            {% set pending_cadre_type = draft.cadre_type or current_cadre_type %}
             {% set current_bank = cadre.bank_name or '-' %}
             {% set pending_bank = draft.bank_name or current_bank %}
             {% set current_acc_no = cadre.account_number or '-' %}
@@ -1080,7 +1082,7 @@
             {% set pending_branch = draft.branch_name or current_branch %}
             <div
               class="mc-card mc-validation-card"
-              data-search="{{ (pending_full_name ~ ' ' ~ cadre.username ~ ' ' ~ pending_email ~ ' ' ~ pending_phone)|lower }}"
+           data-search="{{ (pending_full_name ~ ' ' ~ cadre.username ~ ' ' ~ pending_email ~ ' ' ~ pending_phone ~ ' ' ~ pending_cadre_type)|lower }}"
             >
               <div class="mc-title">
                 <div>
@@ -1097,6 +1099,7 @@
                   </div>
                   <div class="mc-fields">
                     <div class="mc-field"><b>Full Name</b>{{ current_full_name }}</div>
+                    <div class="mc-field"><b>Type of Community Cadre</b>{{ current_cadre_type }}</div>
                     <div class="mc-field"><b>Email</b>{{ current_email }}</div>
                     <div class="mc-field"><b>Phone</b>{{ current_phone }}</div>
                     <div class="mc-field"><b>Bank</b>{{ current_bank }}</div>
@@ -1113,10 +1116,11 @@
                     <span class="mc-change-pill">Review Carefully</span>
                   </div>
                   <div class="mc-fields">
-                    <div class="mc-field {% if pending_full_name != current_full_name %}changed{% endif %}"><b>Full Name</b>{{ pending_full_name }}</div>
-                    <div class="mc-field {% if pending_email != current_email %}changed{% endif %}"><b>Email</b>{{ pending_email }}</div>
-                    <div class="mc-field {% if pending_phone != current_phone %}changed{% endif %}"><b>Phone</b>{{ pending_phone }}</div>
-                    <div class="mc-field {% if pending_bank != current_bank %}changed{% endif %}"><b>Bank</b>{{ pending_bank }}</div>
+<div class="mc-field {% if pending_full_name != current_full_name %}changed{% endif %}"><b>Full Name</b>{{ pending_full_name }}</div>
+<div class="mc-field {% if pending_cadre_type != current_cadre_type %}changed{% endif %}"><b>Type of Community Cadre</b>{{ pending_cadre_type }}</div>
+<div class="mc-field {% if pending_email != current_email %}changed{% endif %}"><b>Email</b>{{ pending_email }}</div>
+<div class="mc-field {% if pending_phone != current_phone %}changed{% endif %}"><b>Phone</b>{{ pending_phone }}</div>
+<div class="mc-field {% if pending_bank != current_bank %}changed{% endif %}"><b>Bank</b>{{ pending_bank }}</div>
                     <div class="mc-field {% if pending_acc_no != current_acc_no %}changed{% endif %}"><b>Account Number</b>{{ pending_acc_no }}</div>
                     <div class="mc-field {% if pending_acc_name != current_acc_name %}changed{% endif %}"><b>Account Holder</b>{{ pending_acc_name }}</div>
                     <div class="mc-field {% if pending_ifsc != current_ifsc %}changed{% endif %}"><b>IFSC</b>{{ pending_ifsc }}</div>
@@ -1201,7 +1205,7 @@
             {% for cadre in cadres %}
             <div
               class="mc-card mc-cadre-card"
-              data-search="{{ ((cadre.full_name or '') ~ ' ' ~ cadre.username ~ ' ' ~ (cadre.email or '') ~ ' ' ~ (cadre.phone or ''))|lower }}"
+              data-search="{{ ((cadre.full_name or '') ~ ' ' ~ cadre.username ~ ' ' ~ (cadre.email or '') ~ ' ' ~ (cadre.phone or '') ~ ' ' ~ (cadre.cadre_type or ''))|lower }}"
             >
               <div class="mc-title">
                 <div>
@@ -1213,13 +1217,14 @@
                 </span>
               </div>
 
-              <div class="mc-fields">
-                <div class="mc-field"><b>Email</b>{{ cadre.email or '-' }}</div>
-                <div class="mc-field"><b>Phone</b>{{ cadre.phone or '-' }}</div>
-                <div class="mc-field"><b>Profile Validation</b>{{ (cadre.profile_validation_status or 'approved')|upper }}</div>
-                <div class="mc-field"><b>Bank</b>{{ cadre.bank_name or '-' }}</div>
-                <div class="mc-field"><b>IFSC</b>{{ cadre.ifsc_code or '-' }}</div>
-              </div>
+<div class="mc-fields">
+  <div class="mc-field"><b>Type of Community Cadre</b>{{ cadre.cadre_type or '-' }}</div>
+  <div class="mc-field"><b>Email</b>{{ cadre.email or '-' }}</div>
+  <div class="mc-field"><b>Phone</b>{{ cadre.phone or '-' }}</div>
+  <div class="mc-field"><b>Profile Validation</b>{{ (cadre.profile_validation_status or 'approved')|upper }}</div>
+  <div class="mc-field"><b>Bank</b>{{ cadre.bank_name or '-' }}</div>
+  <div class="mc-field"><b>IFSC</b>{{ cadre.ifsc_code or '-' }}</div>
+</div>
 
               {% if cadre.aadhaar_card %}
                 <div style="margin-bottom:12px;color:rgba(15,23,42,.62);font-weight:800;font-size:12px;">Aadhaar uploaded.</div>

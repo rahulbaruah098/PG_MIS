@@ -584,6 +584,24 @@
   box-shadow:0 0 0 4px rgba(15,118,110,0.12);
 }
 
+.detail-filter-select{
+  border:1px solid rgba(191,230,210,0.95);
+  background:rgba(255,255,255,0.94);
+  color:#0b2a23;
+  border-radius:14px;
+  padding:11px 13px;
+  font-size:14px;
+  font-weight:700;
+  outline:none;
+  min-width:220px;
+  box-shadow:0 8px 18px rgba(6,95,70,0.07);
+}
+
+.detail-filter-select:focus{
+  border-color:rgba(15,118,110,0.55);
+  box-shadow:0 0 0 4px rgba(15,118,110,0.12);
+}
+
 .detail-result-meta{
   color:#4c7468;
   font-size:13px;
@@ -795,7 +813,275 @@
       }
     }
 
-        /* ============================================================
+    
+
+    /* ============================================================
+        RESPONSIVE CLF DETAILS SECTION
+       - Matches existing PG dashboard green card language
+       - Desktop keeps full table
+       - Mobile/tablet switches to readable stacked cards
+       ============================================================ */
+    #clfDetailsSection{
+      border-radius:24px;
+      overflow:hidden;
+    }
+
+    #clfDetailsSection .hdr{
+      background:
+        radial-gradient(120% 120% at 0% 0%, rgba(15,118,110,0.12), transparent 48%),
+        linear-gradient(180deg, rgba(255,255,255,0.96), rgba(241,251,245,0.92));
+    }
+
+    #clfDetailsSection .miniKpiGrid{
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap:12px;
+      margin-bottom:18px;
+    }
+
+    #clfDetailsSection .miniKpiGrid .kpi{
+      min-height:118px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,255,251,0.92));
+    }
+
+    .clf-responsive-shell{
+      width:100%;
+      min-width:0;
+    }
+
+    .clf-table-scroll-hint{
+      display:none;
+      margin:0 0 10px;
+      color:#4c7468;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .clf-detail-table-wrap{
+      width:100%;
+      max-width:100%;
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      border:1px solid rgba(191,230,210,0.95);
+      border-radius:18px;
+      background:#fff;
+      box-shadow:0 12px 26px rgba(6,95,70,0.08);
+    }
+
+    .clf-detail-table{
+      width:100%;
+      min-width:1320px;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:13px;
+    }
+
+    .clf-detail-table th{
+      position:sticky;
+      top:0;
+      z-index:2;
+      text-align:left;
+      padding:13px 14px;
+      background:#e9f8f0;
+      color:#0b2a23;
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      border-bottom:1px solid rgba(191,230,210,0.95);
+      white-space:nowrap;
+    }
+
+    .clf-detail-table td{
+      padding:13px 14px;
+      border-bottom:1px solid rgba(216,239,227,0.95);
+      color:#2f5b4f;
+      vertical-align:top;
+      line-height:1.35;
+    }
+
+    .clf-detail-table tr:last-child td{ border-bottom:0; }
+
+    .clf-detail-table tbody tr:hover td{
+      background:#f8fffb;
+    }
+
+    .clf-name-cell{
+      min-width:180px;
+      color:#0b2a23;
+      font-weight:900;
+    }
+
+    .clf-person-cell b{
+      display:block;
+      color:#0b2a23;
+      font-size:13px;
+      margin-bottom:3px;
+    }
+
+    .clf-status-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:11px;
+      font-weight:900;
+      white-space:nowrap;
+      border:1px solid rgba(191,230,210,0.95);
+      background:#f1fbf5;
+      color:#0f766e;
+    }
+
+    .clf-status-badge.no{
+      color:#4c7468;
+      background:#f8fffb;
+    }
+
+    .clf-mobile-cards{
+      display:none;
+    }
+
+    .clf-mobile-card{
+      border:1px solid rgba(191,230,210,0.95);
+      background:
+        radial-gradient(100% 100% at 0% 0%, rgba(15,118,110,0.08), transparent 45%),
+        rgba(255,255,255,0.94);
+      border-radius:18px;
+      box-shadow:0 12px 28px rgba(6,95,70,0.10);
+      padding:14px;
+      overflow:hidden;
+    }
+
+    .clf-mobile-card + .clf-mobile-card{
+      margin-top:12px;
+    }
+
+    .clf-mobile-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      padding-bottom:12px;
+      margin-bottom:12px;
+      border-bottom:1px solid rgba(216,239,227,0.95);
+    }
+
+    .clf-mobile-title{
+      color:#0b2a23;
+      font-size:15px;
+      font-weight:950;
+      line-height:1.2;
+      word-break:break-word;
+    }
+
+    .clf-mobile-sub{
+      color:#4c7468;
+      font-size:12px;
+      font-weight:750;
+      margin-top:4px;
+      line-height:1.35;
+    }
+
+    .clf-mobile-grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:10px;
+    }
+
+    .clf-mobile-field{
+      min-width:0;
+      border:1px solid rgba(216,239,227,0.95);
+      border-radius:14px;
+      background:rgba(248,255,251,0.86);
+      padding:10px;
+    }
+
+    .clf-mobile-field.full{
+      grid-column:1 / -1;
+    }
+
+    .clf-mobile-field .label{
+      color:#4c7468;
+      font-size:10px;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      margin-bottom:5px;
+    }
+
+    .clf-mobile-field .value{
+      color:#0b2a23;
+      font-size:13px;
+      font-weight:850;
+      line-height:1.35;
+      word-break:break-word;
+    }
+
+    @media (max-width:1280px){
+      #clfDetailsSection .miniKpiGrid{
+        grid-template-columns:repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width:900px){
+      #clfDetailsSection .miniKpiGrid{
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+      }
+
+      .clf-table-scroll-hint{
+        display:block;
+      }
+    }
+
+    @media (max-width:768px){
+      #clfDetailsSection .hdr{
+        flex-direction:column;
+        align-items:flex-start !important;
+      }
+
+      #clfDetailsSection .chip{
+        width:max-content;
+      }
+
+      #clfDetailsSection .bd{
+        padding:14px !important;
+      }
+
+      .clf-detail-table-wrap{
+        display:none;
+      }
+
+      .clf-table-scroll-hint{
+        display:none;
+      }
+
+      .clf-mobile-cards{
+        display:block;
+      }
+    }
+
+    @media (max-width:520px){
+      #clfDetailsSection .miniKpiGrid{
+        grid-template-columns:1fr;
+      }
+
+      #clfDetailsSection .miniKpiGrid .kpi{
+        min-height:auto;
+      }
+
+      .clf-mobile-head{
+        flex-direction:column;
+      }
+
+      .clf-mobile-grid{
+        grid-template-columns:1fr;
+      }
+    }
+
+    /* ============================================================
         NEW 3D KPI GRAPH SECTION
        - Frontend only
        - Does not affect old KPI cards or existing charts
@@ -1070,17 +1356,23 @@
           <div class="s">In scope</div>
         </div>
 
-        <a class="kpi kpi-link p-4 fade-in" href="{{ cadre_detail_url }}">
-          <div class="t">Total Cadres</div>
-          <div class="v">{{ cadre_count or 0 }}</div>
-          <div class="s">Cadre CC in scope</div>
-        </a>
+<a class="kpi kpi-link p-4 fade-in" href="{{ cadre_detail_url }}">
+  <div class="t">Total Cadres</div>
+  <div class="v">{{ cadre_count or 0 }}</div>
+  <div class="s">Cadre CC in scope</div>
+</a>
 
-        <div class="kpi p-4 fade-in">
-          <div class="t">Total PGs</div>
-          <div class="v">{{ pg_count or 0 }}</div>
-          <div class="s">All PGs (scope)</div>
-        </div>
+<div class="kpi p-4 fade-in">
+  <div class="t">Total CLFs</div>
+  <div class="v">{{ clf_summary.total_clfs or 0 }}</div>
+  <div class="s">CLFs created under current scope</div>
+</div>
+
+<div class="kpi p-4 fade-in">
+  <div class="t">Total PGs</div>
+  <div class="v">{{ pg_count or 0 }}</div>
+  <div class="s">All PGs (scope)</div>
+</div>
 
         <div class="kpi p-4 fade-in">
           <div class="t">Total Members</div>
@@ -1125,6 +1417,205 @@
   <div class="s">Members marked across PGs</div>
 </div>
 #}
+ </div>
+
+
+      <!-- CLF KPI and Details -->
+      <div class="cardx card-border-soft fade-in" id="clfDetailsSection">
+        <div class="hdr">
+          <div>
+            <div class="text-sm font-extrabold text-slate-900">CLF Details</div>
+            <div class="text-xs muted">
+              CLF profile details created by Block Admin. Village and PG count are calculated after PG mapping.
+            </div>
+          </div>
+          <span class="chip">CLF KPI</span>
+        </div>
+
+        <div class="bd">
+          <div class="miniKpiGrid">
+            <div class="kpi p-4">
+              <div class="t">Total CLFs</div>
+              <div class="v">{{ clf_summary.total_clfs or 0 }}</div>
+              <div class="s">CLFs in current scope</div>
+            </div>
+
+            <div class="kpi p-4">
+              <div class="t">Registered CLFs</div>
+              <div class="v">{{ clf_summary.registered_clfs or 0 }}</div>
+              <div class="s">CLFs marked as registered</div>
+            </div>
+
+            <div class="kpi p-4">
+              <div class="t">Model CLFs</div>
+              <div class="v">{{ clf_summary.model_clfs or 0 }}</div>
+              <div class="s">Model CLF count</div>
+            </div>
+
+            <div class="kpi p-4">
+              <div class="t">Non-Model CLFs</div>
+              <div class="v">{{ clf_summary.non_model_clfs or 0 }}</div>
+              <div class="s">Non-Model CLF count</div>
+            </div>
+
+            <div class="kpi p-4">
+              <div class="t">EC Members</div>
+              <div class="v">{{ clf_summary.total_ec_members or 0 }}</div>
+              <div class="s">Total EC members under CLFs</div>
+            </div>
+
+            <div class="kpi p-4">
+              <div class="t">Mapped PGs</div>
+              <div class="v">{{ clf_summary.total_pg_mapped or 0 }}</div>
+              <div class="s">PGs mapped under CLFs</div>
+            </div>
+
+            <div class="kpi p-4">
+              <div class="t">Villages Covered</div>
+              <div class="v">{{ clf_summary.total_villages_covered or 0 }}</div>
+              <div class="s">Unique villages from mapped PGs</div>
+            </div>
+          </div>
+
+          {% if clf_summary.rows %}
+            <div class="clf-responsive-shell mt-4">
+              <div class="clf-table-scroll-hint">
+                Scroll horizontally to view full CLF details on tablet screens.
+              </div>
+
+              <div class="clf-detail-table-wrap">
+                <table class="clf-detail-table">
+                  <thead>
+                    <tr>
+                      <th style="width:70px;">#</th>
+                      <th>CLF Name</th>
+                      <th>State</th>
+                      <th>District</th>
+                      <th>Block</th>
+                      <th>VC / Location</th>
+                      <th>President</th>
+                      <th>Secretary</th>
+                      <th>Registered</th>
+                      <th>Registration Date</th>
+                      <th>CLF Type</th>
+                      <th>EC Members</th>
+                      <th>Villages Covered</th>
+                      <th>PG Count</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {% for row in clf_summary.rows %}
+                      <tr>
+                        <td>{{ loop.index }}</td>
+                        <td class="clf-name-cell">{{ row.name or '-' }}</td>
+                        <td>{{ row.state or '-' }}</td>
+                        <td>{{ row.district or '-' }}</td>
+                        <td>{{ row.block or '-' }}</td>
+                        <td>{{ row.vc_name_location or '-' }}</td>
+
+                        <td class="clf-person-cell">
+                          <b>{{ row.president_name or '-' }}</b>
+                          <span class="muted">{{ row.president_contact or '-' }}</span>
+                        </td>
+
+                        <td class="clf-person-cell">
+                          <b>{{ row.secretary_name or '-' }}</b>
+                          <span class="muted">{{ row.secretary_contact or '-' }}</span>
+                        </td>
+
+                        <td>
+                          {% if row.is_registered == 'yes' %}
+                            <span class="clf-status-badge">Yes</span>
+                          {% elif row.is_registered == 'no' %}
+                            <span class="clf-status-badge no">No</span>
+                          {% else %}
+                            -
+                          {% endif %}
+                        </td>
+
+                        <td>{{ row.registration_date or '-' }}</td>
+                        <td>{{ row.clf_type or '-' }}</td>
+                        <td><b>{{ row.ec_members_count or 0 }}</b></td>
+                        <td><b>{{ row.village_covered_count or 0 }}</b></td>
+                        <td><b>{{ row.pg_count or 0 }}</b></td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="clf-mobile-cards">
+                {% for row in clf_summary.rows %}
+                  <div class="clf-mobile-card">
+                    <div class="clf-mobile-head">
+                      <div>
+                        <div class="clf-mobile-title">{{ row.name or '-' }}</div>
+                        <div class="clf-mobile-sub">
+                          {{ row.block or '-' }} · {{ row.district or '-' }} · {{ row.state or '-' }}
+                        </div>
+                      </div>
+
+                      {% if row.is_registered == 'yes' %}
+                        <span class="clf-status-badge">Registered</span>
+                      {% elif row.is_registered == 'no' %}
+                        <span class="clf-status-badge no">Not Registered</span>
+                      {% else %}
+                        <span class="clf-status-badge no">-</span>
+                      {% endif %}
+                    </div>
+
+                    <div class="clf-mobile-grid">
+                      <div class="clf-mobile-field full">
+                        <div class="label">VC / Location</div>
+                        <div class="value">{{ row.vc_name_location or '-' }}</div>
+                      </div>
+
+                      <div class="clf-mobile-field">
+                        <div class="label">President</div>
+                        <div class="value">{{ row.president_name or '-' }}<br>{{ row.president_contact or '-' }}</div>
+                      </div>
+
+                      <div class="clf-mobile-field">
+                        <div class="label">Secretary</div>
+                        <div class="value">{{ row.secretary_name or '-' }}<br>{{ row.secretary_contact or '-' }}</div>
+                      </div>
+
+                      <div class="clf-mobile-field">
+                        <div class="label">Registration Date</div>
+                        <div class="value">{{ row.registration_date or '-' }}</div>
+                      </div>
+
+                      <div class="clf-mobile-field">
+                        <div class="label">CLF Type</div>
+                        <div class="value">{{ row.clf_type or '-' }}</div>
+                      </div>
+
+                      <div class="clf-mobile-field">
+                        <div class="label">EC Members</div>
+                        <div class="value">{{ row.ec_members_count or 0 }}</div>
+                      </div>
+
+                      <div class="clf-mobile-field">
+                        <div class="label">Villages Covered</div>
+                        <div class="value">{{ row.village_covered_count or 0 }}</div>
+                      </div>
+
+                      <div class="clf-mobile-field">
+                        <div class="label">PG Count</div>
+                        <div class="value">{{ row.pg_count or 0 }}</div>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% else %}
+            <div class="empty-state">
+              No CLF details found in the current scope.
+            </div>
+          {% endif %}
+        </div>
       </div>
 
 
@@ -1196,22 +1687,39 @@
         <form class="detail-search-form js-state-detail-search-form" method="GET" action="{{ url_for('reports.state_dashboard') }}">
           <input type="hidden" name="detail" value="{{ selected_detail.detail_key or request.args.get('detail') or '' }}">
 
-          <input
-            class="detail-search-input"
-            type="search"
-            name="q"
-            value="{{ selected_detail.search_query or '' }}"
-            placeholder="Search by PG name, sector, district, block, village or gram panchayat"
-            autocomplete="off"
-          >
+<input
+  class="detail-search-input"
+  type="search"
+  name="q"
+  value="{{ selected_detail.search_query or '' }}"
+  placeholder="{% if selected_detail.type == 'cadres' %}Search by cadre name, username, contact or cadre type{% else %}Search by PG name, sector, district, block, village or gram panchayat{% endif %}"
+  autocomplete="off"
+>
 
-          <button class="btnlink primary" type="submit">Search</button>
+{% if selected_detail.type == "cadres" %}
+  <select class="detail-filter-select" name="cadre_type">
+    <option value="">All Cadre Types</option>
+    {% for type in selected_detail.cadre_type_options or [] %}
+      <option value="{{ type }}" {% if selected_detail.selected_cadre_type == type %}selected{% endif %}>
+        {{ type }}
+      </option>
+    {% endfor %}
+  </select>
+{% endif %}
 
-          {% if selected_detail.search_query %}
-            <a class="btnlink js-state-detail-link" href="{{ url_for('reports.state_dashboard', detail=selected_detail.detail_key or request.args.get('detail')) }}">
-              Clear Search
-            </a>
-          {% endif %}
+<button class="btnlink primary" type="submit">Search</button>
+
+{% if selected_detail.search_query %}
+  {% if selected_detail.type == "cadres" %}
+    <a class="btnlink js-state-detail-link" href="{{ url_for('reports.state_dashboard', detail=selected_detail.detail_key or request.args.get('detail'), cadre_type=selected_detail.selected_cadre_type or '') }}">
+      Clear Search
+    </a>
+  {% else %}
+    <a class="btnlink js-state-detail-link" href="{{ url_for('reports.state_dashboard', detail=selected_detail.detail_key or request.args.get('detail')) }}">
+      Clear Search
+    </a>
+  {% endif %}
+{% endif %}
         </form>
 
         <div class="detail-result-meta">
@@ -1224,22 +1732,24 @@
           <div class="detail-table-wrap">
             <table class="detail-table">
               <thead>
-                <tr>
-                  <th>Cadre Name</th>
-                  <th>Username</th>
-                  <th>Contact</th>
-                  <th>Assigned PG Count</th>
-                  <th>Assigned PGs</th>
-                </tr>
+<tr>
+  <th>Cadre Name</th>
+  <th>Username</th>
+  <th>Type of Community Cadre</th>
+  <th>Contact</th>
+  <th>Assigned PG Count</th>
+  <th>Assigned PGs</th>
+</tr>
               </thead>
               <tbody>
                 {% for row in selected_detail.rows %}
-                  <tr>
-                    <td>{{ row.name }}</td>
-                    <td>{{ row.username }}</td>
-                    <td>{{ row.contact }}</td>
-                    <td><b>{{ row.assigned_count }}</b></td>
-                    <td>
+<tr>
+  <td>{{ row.name }}</td>
+  <td>{{ row.username }}</td>
+  <td>{{ row.cadre_type or '-' }}</td>
+  <td>{{ row.contact }}</td>
+  <td><b>{{ row.assigned_count }}</b></td>
+  <td>
                       {% if row.assigned_pgs %}
                         <div class="pg-pill-list">
                           {% for pg in row.assigned_pgs %}

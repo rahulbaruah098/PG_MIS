@@ -14,6 +14,12 @@ from ..constants import ROLES
 
 auth_bp = Blueprint("auth", __name__, template_folder="../templates")
 
+CADRE_TYPE_OPTIONS = [
+    "Pashu Sakhi",
+    "Matshya Sakhi",
+    "Krishi Sakhi",
+    "MBK",
+]
 
 # ------------------------------------------------------------
 # Auth helpers
@@ -375,14 +381,17 @@ def _cadre_form_payload(db, form, files=None, block_id=None, self_registration=F
         raise ValueError("Please select a valid block.")
 
     upstream = _resolve_upstream_ids(db, block_id=selected_block_id)
+
     pg_ids = form.getlist("assigned_pg_ids")
     assigned_oids = []
     for pg_id in pg_ids:
         if not ObjectId.is_valid(pg_id):
             continue
+
         pg_doc = db.pgs.find_one({"_id": ObjectId(pg_id)}, {"block_id": 1})
         if not pg_doc or str(pg_doc.get("block_id")) != str(selected_block_id):
             raise ValueError("Cadre can only be assigned PGs from the selected block.")
+
         assigned_oids.append(ObjectId(pg_id))
 
     username = (form.get("username") or "").strip()
@@ -391,12 +400,19 @@ def _cadre_form_payload(db, form, files=None, block_id=None, self_registration=F
     phone = (form.get("phone") or "").strip()
     email = (form.get("email") or "").strip()
 
+    cadre_type = (form.get("cadre_type") or "").strip()
+
     if not username:
         raise ValueError("Username is required.")
+
     if not password:
         raise ValueError("Password is required.")
+
     if not full_name:
         raise ValueError("Cadre name is required.")
+
+    if cadre_type not in CADRE_TYPE_OPTIONS:
+        raise ValueError("Please select a valid Type of Community Cadre.")
 
     aadhaar_path = _save_cadre_file(files.get("aadhaar_card")) if files else None
 
@@ -404,25 +420,36 @@ def _cadre_form_payload(db, form, files=None, block_id=None, self_registration=F
         "username": username,
         "password": password,
         "role": "CADRE_CC",
+
         "state_id": upstream["state_id"],
         "district_id": upstream["district_id"],
         "block_id": upstream["block_id"],
+
         "full_name": full_name,
         "email": email,
         "phone": phone,
+
+        # New field: Type of Community Cadre
+        "cadre_type": cadre_type,
+
         "aadhaar_card": aadhaar_path,
+
         "bank_name": (form.get("bank_name") or "").strip(),
         "account_number": (form.get("account_number") or "").strip(),
         "account_name": (form.get("account_name") or "").strip(),
         "ifsc_code": (form.get("ifsc_code") or "").strip(),
         "branch_name": (form.get("branch_name") or "").strip(),
+
         "assigned_pg_ids": assigned_oids,
         "pg_id": assigned_oids[0] if assigned_oids else None,
+
         "status": "pending" if self_registration else "active",
         "is_self_registered": bool(self_registration),
+
         "approved_at": None,
         "approved_by": None,
     }
+
     return data
 
 
@@ -446,6 +473,7 @@ def _create_user(data, creator_role):
         "name": data.get("name") or data.get("full_name"),
         "email": data.get("email"),
         "phone": data.get("phone"),
+        "cadre_type": data.get("cadre_type"),
         "aadhaar_card": data.get("aadhaar_card"),
         "bank_name": data.get("bank_name"),
         "account_number": data.get("account_number"),

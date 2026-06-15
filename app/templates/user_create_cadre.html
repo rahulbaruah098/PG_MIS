@@ -585,6 +585,17 @@
           <input class="cadre-input" type="text" name="full_name" value="{{ request.form.get('full_name', u.full_name or '') }}" required>
         </div>
 
+<div class="cadre-span-6 cadre-field">
+  <label class="cadre-label">Type of Community Cadre</label>
+  <select class="cadre-select" name="cadre_type" required>
+    <option value="">Select Type of Community Cadre</option>
+    <option value="Pashu Sakhi" {% if request.form.get('cadre_type', u.cadre_type or '') == 'Pashu Sakhi' %}selected{% endif %}>Pashu Sakhi</option>
+    <option value="Matshya Sakhi" {% if request.form.get('cadre_type', u.cadre_type or '') == 'Matshya Sakhi' %}selected{% endif %}>Matshya Sakhi</option>
+    <option value="Krishi Sakhi" {% if request.form.get('cadre_type', u.cadre_type or '') == 'Krishi Sakhi' %}selected{% endif %}>Krishi Sakhi</option>
+    <option value="MBK" {% if request.form.get('cadre_type', u.cadre_type or '') == 'MBK' %}selected{% endif %}>MBK</option>
+  </select>
+</div>
+
         <div class="cadre-span-6 cadre-field">
           <label class="cadre-label">Username</label>
           <input class="cadre-input" type="text" name="username" value="{{ request.form.get('username', u.username or '') }}" {% if form_mode == 'profile' %}readonly{% endif %} required>

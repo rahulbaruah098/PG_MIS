@@ -60,11 +60,26 @@
     position:relative;
     overflow:hidden;
     border-radius:var(--pg-radius-xl);
-    background:linear-gradient(180deg, #ffffff, #f8fcfa);
+    background:
+      radial-gradient(110% 120% at 0% 0%, rgba(173,231,196,.34), transparent 46%),
+      radial-gradient(110% 120% at 100% 10%, rgba(11,77,58,.08), transparent 42%),
+      linear-gradient(180deg, #ffffff, #f8fcfa);
     border:1px solid rgba(11,77,58,.12);
     box-shadow:var(--pg-shadow);
     padding:28px;
     margin-bottom:18px;
+  }
+
+  .clf-page-hero::after{
+    content:"";
+    position:absolute;
+    right:-78px;
+    bottom:-92px;
+    width:230px;
+    height:230px;
+    border-radius:50%;
+    background:rgba(173,231,196,.26);
+    pointer-events:none;
   }
 
 
@@ -422,9 +437,10 @@
   }
 
   .clf-submit-btn{
-    width:10%;
+    width:auto;
+    min-width:230px;
     min-height:49px;
-    padding:.75rem 1.1rem;
+    padding:.75rem 1.25rem;
     font-size:.9rem;
   }
 
@@ -755,6 +771,809 @@
       width:auto;
     }
   }
+
+  /* =========================
+     FINAL RESPONSIVE POLISH
+     - Keeps existing PG design language
+     - Fixes mobile/tablet spacing, form width, cards and table overflow
+     ========================= */
+  .clf-page-wrap,
+  .clf-panel,
+  .clf-page-hero{
+    min-width:0;
+  }
+
+  .clf-panel{
+    isolation:isolate;
+  }
+
+  .panel-body form{
+    width:100%;
+    min-width:0;
+  }
+
+  .panel-body .row{
+    margin-left:-8px;
+    margin-right:-8px;
+  }
+
+  .panel-body .row > [class*="col-"]{
+    padding-left:8px;
+    padding-right:8px;
+    min-width:0;
+  }
+
+  .clf-input,
+  .form-control.clf-input,
+  .form-select.clf-input{
+    width:100%;
+    max-width:100%;
+  }
+
+  .table-shell{
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+  }
+
+  .desktop-table-wrap{
+    max-width:100%;
+  }
+
+  .clf-table{
+    min-width:1460px;
+  }
+
+  .mobile-card::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:
+      radial-gradient(120% 120% at 0% 0%, rgba(173,231,196,.20), transparent 42%),
+      radial-gradient(rgba(11,77,58,.055) .6px, transparent .6px);
+    background-size:auto, 18px 18px;
+    opacity:.55;
+  }
+
+  .mobile-card > *{
+    position:relative;
+    z-index:1;
+  }
+
+  .mobile-info > div{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    padding-bottom:8px;
+    border-bottom:1px solid rgba(15,23,42,.055);
+  }
+
+  .mobile-info > div:last-child{
+    padding-bottom:0;
+    border-bottom:0;
+  }
+
+  .mobile-info strong{
+    flex:0 0 44%;
+  }
+
+  @media (max-width:1199px){
+    .clf-page-wrap{
+      max-width:100%;
+    }
+
+    .hero-actions{
+      min-width:220px;
+    }
+
+    .info-grid{
+      grid-template-columns:repeat(3, minmax(0,1fr));
+    }
+  }
+
+  @media (max-width:991px){
+    .clf-page-wrap{
+      padding-left:12px;
+      padding-right:12px;
+    }
+
+    .info-grid{
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+
+    .hero-actions{
+      width:100%;
+      min-width:0;
+      align-items:flex-start;
+    }
+
+    .quick-actions{
+      justify-content:flex-start;
+    }
+
+    .clf-submit-btn{
+      min-width:230px;
+    }
+  }
+
+  @media (max-width:767px){
+    body{
+      overflow-x:hidden;
+    }
+
+    .clf-page-wrap{
+      padding-left:10px;
+      padding-right:10px;
+    }
+
+    .clf-page-hero,
+    .clf-panel{
+      border-radius:20px;
+    }
+
+    .clf-page-hero-inner{
+      gap:16px;
+    }
+
+    .title-kicker{
+      max-width:100%;
+      white-space:normal;
+      line-height:1.25;
+    }
+
+    .panel-icon{
+      width:38px;
+      height:38px;
+      border-radius:14px;
+    }
+
+    .info-grid{
+      grid-template-columns:1fr;
+      gap:10px;
+      margin-bottom:14px;
+    }
+
+    .info-box{
+      min-height:auto;
+      padding:14px;
+      border-radius:16px;
+    }
+
+    .panel-body .alert{
+      font-size:.84rem;
+      line-height:1.45;
+      padding:12px 13px;
+    }
+
+    .clf-form-label{
+      font-size:.72rem;
+      letter-spacing:.045em;
+      margin-bottom:7px;
+    }
+
+    .clf-input{
+      min-height:46px;
+      border-radius:14px;
+      padding:10px 13px;
+      font-size:.88rem;
+    }
+
+    .form-select.clf-input{
+      border-radius:14px;
+    }
+
+    .clf-submit-btn{
+      width:100%;
+      min-width:0;
+      border-radius:14px;
+    }
+
+    .mobile-card{
+      border-radius:18px;
+      padding:14px;
+    }
+
+    .mobile-info{
+      padding:11px;
+      font-size:.84rem;
+      gap:7px;
+    }
+
+    .mobile-info > div{
+      display:block;
+    }
+
+    .mobile-info strong{
+      display:block;
+      margin-bottom:3px;
+    }
+
+    .soft-badge{
+      min-height:28px;
+      padding:7px 10px;
+    }
+  }
+
+  @media (max-width:480px){
+    .clf-page-wrap{
+      padding-left:8px;
+      padding-right:8px;
+    }
+
+    .clf-page-hero,
+    .panel-head,
+    .panel-body,
+    .mobile-clf-list{
+      padding-left:13px;
+      padding-right:13px;
+    }
+
+    .clf-page-hero h4{
+      font-size:1.28rem;
+      line-height:1.14;
+    }
+
+    .clf-page-hero p,
+    .panel-head p{
+      font-size:.84rem;
+    }
+
+    .panel-head h6{
+      font-size:1rem;
+    }
+
+    .count-badge{
+      justify-content:center;
+      white-space:normal;
+      text-align:center;
+    }
+
+    .mobile-card{
+      padding:12px;
+    }
+
+    .clf-id-text{
+      font-size:.7rem;
+    }
+  }
+
+  @media (max-width:360px){
+    .clf-page-hero,
+    .panel-head,
+    .panel-body,
+    .mobile-clf-list{
+      padding-left:11px;
+      padding-right:11px;
+    }
+
+    .pg-btn{
+      padding:.7rem .9rem;
+      font-size:.82rem;
+    }
+  }
+
+
+  /* =========================
+     FINAL DEVICE RESPONSIVE + OFFICIAL FORM/TABLE LAYOUT
+     - Web: clean 2-column official form layout
+     - Tablet: adaptive 2-column/1-column
+     - App/Mobile: horizontal swipe cards + pagination
+     - iOS/Mac: safe overflow, touch scroll, stable inputs
+     ========================= */
+  .clf-page-wrap{
+    padding-left:clamp(10px, 2vw, 18px);
+    padding-right:clamp(10px, 2vw, 18px);
+  }
+
+  .clf-page-hero,
+  .clf-panel,
+  .info-box,
+  .mobile-card,
+  .clf-input,
+  .table-shell,
+  .clf-table-control,
+  .clf-pagination-btn{
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .clf-page-hero,
+  .clf-panel{
+    max-width:100%;
+  }
+
+  .clf-form-section-title{
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:4px 0 2px;
+  }
+
+  .clf-form-section-title::before{
+    content:"";
+    width:9px;
+    height:9px;
+    border-radius:999px;
+    background:var(--pg-brand);
+    box-shadow:0 0 0 5px rgba(11,77,58,.08);
+    flex:0 0 auto;
+  }
+
+  .panel-body form.row{
+    --bs-gutter-x:18px;
+    --bs-gutter-y:16px;
+  }
+
+  .panel-body form.row > .col-lg-6{
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+  }
+
+  .clf-form-label{
+    min-height:18px;
+  }
+
+  .clf-input,
+  .form-control.clf-input,
+  .form-select.clf-input{
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    max-width:100%;
+  }
+
+  select.clf-input,
+  .form-select.clf-input{
+    background-position:right 1rem center;
+  }
+
+  input[type="date"].clf-input{
+    min-width:0;
+  }
+
+  .clf-input[readonly]{
+    background:linear-gradient(180deg, #f9fffb, #f4faf7);
+    color:#4c7468;
+    cursor:not-allowed;
+  }
+
+  .clf-submit-row{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:12px;
+    width:100%;
+  }
+
+  .clf-submit-btn{
+    width:auto !important;
+    min-width:250px;
+  }
+
+  /* Table toolbar/search/pagination */
+  .clf-list-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding:16px 22px;
+    border-bottom:1px solid var(--pg-line-soft);
+    background:linear-gradient(180deg, #ffffff, #fbfefc);
+    flex-wrap:wrap;
+  }
+
+  .clf-search-wrap{
+    flex:1 1 420px;
+    min-width:260px;
+    position:relative;
+  }
+
+  .clf-search-input{
+    width:100%;
+    min-height:44px;
+    border-radius:999px;
+    border:1px solid #dce8e1;
+    background:#fff;
+    color:var(--pg-ink);
+    padding:10px 44px 10px 16px;
+    font-size:.9rem;
+    font-weight:750;
+    outline:none;
+    box-shadow:0 8px 18px rgba(15,23,42,.04);
+  }
+
+  .clf-search-input:focus{
+    border-color:#8cc9a5;
+    box-shadow:0 0 0 .22rem rgba(173,231,196,.34);
+  }
+
+  .clf-search-icon{
+    position:absolute;
+    right:15px;
+    top:50%;
+    transform:translateY(-50%);
+    color:var(--pg-brand);
+    font-size:.92rem;
+    font-weight:950;
+    pointer-events:none;
+  }
+
+  .clf-table-controls{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .clf-result-text{
+    color:var(--pg-muted);
+    font-size:.82rem;
+    font-weight:850;
+    white-space:nowrap;
+  }
+
+  .clf-page-size{
+    min-height:42px;
+    border-radius:999px;
+    border:1px solid #dce8e1;
+    background:#fff;
+    color:var(--pg-brand);
+    padding:8px 14px;
+    font-size:.82rem;
+    font-weight:900;
+    outline:none;
+  }
+
+  .clf-pagination{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    padding:15px 22px;
+    border-top:1px solid var(--pg-line-soft);
+    background:#fbfefc;
+    flex-wrap:wrap;
+  }
+
+  .clf-pagination-info{
+    margin-right:auto;
+    color:var(--pg-muted);
+    font-size:.82rem;
+    font-weight:850;
+  }
+
+  .clf-pagination-btn{
+    min-width:36px;
+    height:36px;
+    padding:0 11px;
+    border-radius:12px;
+    border:1px solid rgba(11,77,58,.16);
+    background:#fff;
+    color:var(--pg-brand);
+    font-size:.82rem;
+    font-weight:950;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:0 7px 14px rgba(15,23,42,.04);
+  }
+
+  .clf-pagination-btn:hover{
+    background:var(--pg-mint);
+  }
+
+  .clf-pagination-btn.active{
+    background:var(--pg-brand);
+    border-color:var(--pg-brand);
+    color:#fff;
+  }
+
+  .clf-pagination-btn:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+    background:#f8fafc;
+    color:#64748b;
+  }
+
+  .clf-no-results{
+    display:none;
+    padding:34px 18px;
+    text-align:center;
+    color:var(--pg-muted);
+    font-weight:800;
+    background:#fff;
+  }
+
+  .clf-no-results.show{
+    display:block;
+  }
+
+  .desktop-table-wrap{
+    width:100%;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
+    scrollbar-gutter:stable both-edges;
+  }
+
+  .desktop-table-wrap::-webkit-scrollbar,
+  .mobile-swipe-wrap::-webkit-scrollbar{
+    height:8px;
+  }
+
+  .desktop-table-wrap::-webkit-scrollbar-track,
+  .mobile-swipe-wrap::-webkit-scrollbar-track{
+    background:#eef6f2;
+    border-radius:999px;
+  }
+
+  .desktop-table-wrap::-webkit-scrollbar-thumb,
+  .mobile-swipe-wrap::-webkit-scrollbar-thumb{
+    background:rgba(11,77,58,.34);
+    border-radius:999px;
+  }
+
+  .clf-table{
+    width:max-content;
+    min-width:1480px;
+  }
+
+  .clf-table th,
+  .clf-table td{
+    white-space:nowrap;
+  }
+
+  .clf-table td:nth-child(2),
+  .clf-table td:nth-child(3),
+  .clf-table td:nth-child(4),
+  .clf-table td:nth-child(5){
+    white-space:normal;
+    min-width:180px;
+  }
+
+  /* App/mobile horizontal swipe card format */
+  .mobile-clf-list{
+    background:#fff;
+  }
+
+  .mobile-swipe-wrap{
+    width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:x mandatory;
+    overscroll-behavior-x:contain;
+    padding-bottom:8px;
+  }
+
+  .mobile-card-track{
+    display:flex;
+    gap:14px;
+    align-items:stretch;
+    padding:16px;
+  }
+
+  .mobile-card{
+    flex:0 0 min(88vw, 430px);
+    max-width:min(88vw, 430px);
+    min-height:100%;
+    scroll-snap-align:start;
+    display:flex;
+    flex-direction:column;
+  }
+
+  .mobile-card-head{
+    min-height:58px;
+  }
+
+  .mobile-info{
+    flex:1 1 auto;
+    margin-bottom:0;
+  }
+
+  .mobile-info > div{
+    overflow-wrap:anywhere;
+    word-break:break-word;
+  }
+
+  .mobile-info strong{
+    min-width:0;
+  }
+
+  @supports (-webkit-touch-callout:none){
+    .clf-page-wrap{
+      transform:translateZ(0);
+    }
+
+    .clf-input,
+    .clf-search-input,
+    .clf-page-size{
+      font-size:16px;
+    }
+
+    .desktop-table-wrap,
+    .mobile-swipe-wrap{
+      -webkit-transform:translateZ(0);
+    }
+  }
+
+  @media (min-width:992px){
+    .panel-body form.row > .col-lg-6{
+      width:50%;
+      flex:0 0 50%;
+      max-width:50%;
+    }
+
+    .panel-body form.row > .col-12{
+      width:100%;
+      flex:0 0 100%;
+      max-width:100%;
+    }
+  }
+
+  @media (max-width:1199px){
+    .clf-table{
+      min-width:1360px;
+    }
+  }
+
+  @media (max-width:991px){
+    .panel-body form.row > [class*="col-"]{
+      width:100%;
+      flex:0 0 100%;
+      max-width:100%;
+    }
+
+    .clf-list-toolbar{
+      padding:15px 16px;
+    }
+
+    .clf-search-wrap{
+      flex-basis:100%;
+      min-width:100%;
+    }
+
+    .clf-table-controls{
+      width:100%;
+      justify-content:space-between;
+    }
+
+    .clf-result-text{
+      white-space:normal;
+    }
+
+    .clf-pagination{
+      padding:14px 16px;
+    }
+  }
+
+  @media (min-width:768px) and (max-width:991px){
+    .info-grid{
+      grid-template-columns:repeat(3, minmax(0,1fr));
+    }
+
+    .mobile-card{
+      flex-basis:min(62vw, 470px);
+      max-width:min(62vw, 470px);
+    }
+  }
+
+  @media (max-width:767px){
+    .clf-list-toolbar{
+      align-items:stretch;
+    }
+
+    .clf-table-controls{
+      display:grid;
+      grid-template-columns:1fr;
+      align-items:stretch;
+    }
+
+    .clf-page-size,
+    .clf-result-text{
+      width:100%;
+    }
+
+    .clf-pagination{
+      justify-content:center;
+    }
+
+    .clf-pagination-info{
+      flex:0 0 100%;
+      margin-right:0;
+      text-align:center;
+    }
+
+    .mobile-card-track{
+      padding:14px;
+      gap:12px;
+    }
+
+    .mobile-card{
+      flex-basis:calc(100vw - 62px);
+      max-width:calc(100vw - 62px);
+    }
+  }
+
+  @media (max-width:420px){
+    .mobile-card{
+      flex-basis:calc(100vw - 44px);
+      max-width:calc(100vw - 44px);
+    }
+
+    .clf-pagination-btn{
+      min-width:34px;
+      height:34px;
+      border-radius:11px;
+      padding:0 9px;
+    }
+  }
+
+
+  .mobile-card-track > .empty-state{
+    flex:0 0 100%;
+  }
+
+
+  /* =========================
+     FORCE OFFICIAL 2-BY-2 FORM GRID
+     - Independent from Bootstrap row/col behavior
+     - Web/tablet: 2 columns
+     - Mobile/app: 1 column
+     ========================= */
+  .panel-body form.clf-official-form{
+    display:grid !important;
+    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+    column-gap:18px !important;
+    row-gap:16px !important;
+    align-items:end !important;
+    width:100% !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+  }
+
+  .panel-body form.clf-official-form > .col-lg-6,
+  .panel-body form.clf-official-form > .col-lg-4{
+    grid-column:auto !important;
+    width:auto !important;
+    max-width:none !important;
+    flex:none !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+    min-width:0 !important;
+  }
+
+  .panel-body form.clf-official-form > .col-12{
+    grid-column:1 / -1 !important;
+    width:auto !important;
+    max-width:none !important;
+    flex:none !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+    min-width:0 !important;
+  }
+
+  .panel-body form.clf-official-form .clf-submit-row{
+    width:100% !important;
+  }
+
+  @media (max-width:767px){
+    .panel-body form.clf-official-form{
+      grid-template-columns:1fr !important;
+      row-gap:14px !important;
+    }
+
+    .panel-body form.clf-official-form > .col-lg-6,
+    .panel-body form.clf-official-form > .col-lg-4,
+    .panel-body form.clf-official-form > .col-12{
+      grid-column:1 / -1 !important;
+    }
+  }
+
 </style>
 
 <div class="clf-page-wrap">
@@ -770,18 +1589,12 @@
         <h4>CLF Master</h4>
         <p>
           Create and manage Cluster Level Federations under your mapped Block.
-          CLF login and PG assignment are handled separately.
+          CLF profile details and CLF login will now be created together from this form.
         </p>
       </div>
 
       <div class="hero-actions">
-
         <div class="quick-actions">
-          <a href="{{ url_for('master_data.manage_clf_admins') }}" class="pg-btn pg-btn-soft">
-            <span class="btn-icon">👤</span>
-            CLF Admins
-          </a>
-
           <a href="{{ url_for('master_data.clf_pg_assignment') }}" class="pg-btn pg-btn-outline">
             <span class="btn-icon">↗</span>
             Assign PGs
@@ -797,7 +1610,9 @@
         <div class="panel-icon">+</div>
         <div>
           <h6>Create CLF</h6>
-          <p>Add a new Cluster Level Federation under your current Block and District.</p>
+          <p>
+            Add CLF profile details and create CLF login under your current Block, District and State.
+          </p>
         </div>
       </div>
     </div>
@@ -838,8 +1653,24 @@
         </div>
       </div>
 
-      <form method="post" class="row g-3 align-items-end">
-        <div class="col-lg-8">
+      <form method="post" class="row g-3 align-items-end clf-official-form">
+
+        <div class="col-12">
+          <div class="alert alert-info mb-0" style="border-radius:14px; font-weight:700;">
+            State, District and Block are automatically mapped from the logged-in Block Admin.
+            No. of villages covered and PG count will be shown after PGs are mapped to this CLF.
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="clf-form-section-title">
+            <h6 class="mb-0" style="font-weight:900; color:var(--pg-brand);">
+              CLF Basic Details
+            </h6>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
           <label class="clf-form-label">CLF Name</label>
           <input
             class="form-control clf-input"
@@ -848,17 +1679,183 @@
             required
             autocomplete="off"
           >
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">VC Name / Location of the CLF</label>
+          <input
+            class="form-control clf-input"
+            name="vc_name_location"
+            placeholder="Enter VC name or CLF location"
+            required
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">Name of CLF President</label>
+          <input
+            class="form-control clf-input"
+            name="president_name"
+            placeholder="Enter president name"
+            required
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">Contact No. of President</label>
+          <input
+            class="form-control clf-input"
+            name="president_contact"
+            placeholder="Enter president contact no."
+            required
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">Name of CLF Secretary</label>
+          <input
+            class="form-control clf-input"
+            name="secretary_name"
+            placeholder="Enter secretary name"
+            required
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">Contact No. of Secretary</label>
+          <input
+            class="form-control clf-input"
+            name="secretary_contact"
+            placeholder="Enter secretary contact no."
+            required
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">Is the CLF Registered?</label>
+          <select
+            class="form-select clf-input"
+            name="is_registered"
+            id="is_registered"
+            required
+          >
+            <option value="">Select</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">Date of Registration</label>
+          <input
+            type="date"
+            class="form-control clf-input"
+            name="registration_date"
+            id="registration_date"
+          >
           <div class="form-text">
-            This CLF will be automatically mapped to your current Block and District.
+            Required only if CLF is registered.
           </div>
         </div>
-        <br>
 
-        <div class="col-lg-4">
+        <div class="col-lg-6">
+          <label class="clf-form-label">Type of CLF</label>
+          <select
+            class="form-select clf-input"
+            name="clf_type"
+            required
+          >
+            <option value="">Select CLF Type</option>
+            <option value="Model CLF">Model CLF</option>
+            <option value="Non-Model CLF">Non-Model CLF</option>
+          </select>
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">No. of EC Members under the CLF</label>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            class="form-control clf-input"
+            name="ec_members_count"
+            placeholder="Enter EC members count"
+            required
+          >
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">No. of Villages Covered</label>
+          <input
+            class="form-control clf-input"
+            value="Will be calculated after PG mapping"
+            readonly
+          >
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">How many PG under this CLF</label>
+          <input
+            class="form-control clf-input"
+            value="Will be calculated after PG mapping"
+            readonly
+          >
+        </div>
+
+        <div class="col-12 mt-2">
+          <div class="clf-form-section-title">
+            <h6 class="mb-0" style="font-weight:900; color:var(--pg-brand);">
+              CLF Login Details
+            </h6>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">CLF User / Admin Name</label>
+          <input
+            class="form-control clf-input"
+            name="full_name"
+            placeholder="Enter CLF user name"
+            required
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">Username</label>
+          <input
+            class="form-control clf-input"
+            name="username"
+            placeholder="Enter username"
+            required
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-lg-6">
+          <label class="clf-form-label">Password</label>
+          <input
+            type="password"
+            class="form-control clf-input"
+            name="password"
+            placeholder="Enter password"
+            required
+            autocomplete="new-password"
+          >
+        </div>
+
+        <div class="col-12">
+          <div class="clf-submit-row">
           <button class="btn clf-submit-btn" type="submit">
             <span class="btn-icon">+</span>
-            Add CLF
+            Add CLF & Create Login
           </button>
+          </div>
         </div>
       </form>
     </div>
@@ -870,7 +1867,7 @@
         <div class="panel-icon">CLF</div>
         <div>
           <h6>CLFs under this Block</h6>
-          <p>Review created CLFs and continue with login creation when required.</p>
+          <p>Review created CLFs, profile details, mapped villages and mapped PG count.</p>
         </div>
       </div>
 
@@ -880,22 +1877,54 @@
     </div>
 
     <div class="panel-body p-0">
+      <div class="clf-list-toolbar">
+        <div class="clf-search-wrap">
+          <input
+            type="search"
+            id="clfSearchInput"
+            class="clf-search-input"
+            placeholder="Search CLF by name, VC/location, president, secretary, type, status or login"
+            autocomplete="off"
+          >
+          <span class="clf-search-icon">⌕</span>
+        </div>
+
+        <div class="clf-table-controls">
+          <div id="clfResultText" class="clf-result-text">
+            Showing {{ clfs|length }} CLF{{ '' if clfs|length == 1 else 's' }}
+          </div>
+
+          <select id="clfPageSize" class="clf-page-size" aria-label="Rows per page">
+            <option value="5">5 / page</option>
+            <option value="10" selected>10 / page</option>
+            <option value="25">25 / page</option>
+            <option value="50">50 / page</option>
+          </select>
+        </div>
+      </div>
+
       <div class="desktop-table-wrap table-shell">
         <table class="table table-hover clf-table mb-0">
           <thead>
             <tr>
               <th style="width:76px;">#</th>
-              <th style="min-width:250px;">CLF Name</th>
-              <th style="min-width:180px;">Mapped Block</th>
-              <th style="min-width:180px;">Mapped District</th>
+              <th style="min-width:220px;">CLF Name</th>
+              <th style="min-width:180px;">VC / Location</th>
+              <th style="min-width:180px;">President</th>
+              <th style="min-width:180px;">Secretary</th>
+              <th style="min-width:150px;">Registered</th>
+              <th style="min-width:150px;">Type</th>
+              <th style="min-width:130px;">EC Members</th>
+              <th style="min-width:150px;">Villages Covered</th>
+              <th style="min-width:120px;">PG Count</th>
+              <th style="min-width:130px;">Login</th>
               <th style="min-width:130px;">Status</th>
-              <th style="width:180px; min-width:180px;">Next Action</th>
             </tr>
           </thead>
 
           <tbody>
             {% for c in clfs %}
-              <tr>
+              <tr class="js-clf-row">
                 <td>
                   <span class="sl-no">{{ loop.index }}</span>
                 </td>
@@ -903,27 +1932,69 @@
                 <td>
                   <div class="clf-identity">
                     <div class="clf-name-main">{{ c.name or c.clf_name or '-' }}</div>
+                    <span class="clf-id-text">ID: {{ c._id }}</span>
                   </div>
                 </td>
 
                 <td>
                   <div class="location-main">
-                    {% if block %}
-                      {{ block.name or '-' }}
-                    {% else %}
-                      -
-                    {% endif %}
+                    {{ c.vc_name_location or '-' }}
                   </div>
                 </td>
 
                 <td>
                   <div class="location-main">
-                    {% if district %}
-                      {{ district.name or '-' }}
-                    {% else %}
-                      -
-                    {% endif %}
+                    {{ c.president_name or '-' }}
                   </div>
+                  <div class="clf-id-text">
+                    {{ c.president_contact or '-' }}
+                  </div>
+                </td>
+
+                <td>
+                  <div class="location-main">
+                    {{ c.secretary_name or '-' }}
+                  </div>
+                  <div class="clf-id-text">
+                    {{ c.secretary_contact or '-' }}
+                  </div>
+                </td>
+
+                <td>
+                  {% if c.is_registered == 'yes' %}
+                    <span class="soft-badge active">Yes</span>
+                    <div class="clf-id-text">
+                      {{ c.registration_date_raw or '-' }}
+                    </div>
+                  {% elif c.is_registered == 'no' %}
+                    <span class="soft-badge default">No</span>
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+
+                <td>
+                  {{ c.clf_type or '-' }}
+                </td>
+
+                <td>
+                  {{ c.ec_members_count if c.ec_members_count is not none else '-' }}
+                </td>
+
+                <td>
+                  {{ c.village_covered_count_calculated if c.village_covered_count_calculated is not none else 0 }}
+                </td>
+
+                <td>
+                  {{ c.pg_count_calculated if c.pg_count_calculated is not none else 0 }}
+                </td>
+
+                <td>
+                  {% if c.clf_admin_user_id %}
+                    <span class="soft-badge active">Created</span>
+                  {% else %}
+                    <span class="soft-badge default">Pending</span>
+                  {% endif %}
                 </td>
 
                 <td>
@@ -934,16 +2005,10 @@
                     <span class="soft-badge default">{{ status|capitalize }}</span>
                   {% endif %}
                 </td>
-
-                <td>
-                  <a href="{{ url_for('master_data.manage_clf_admins') }}" class="pg-soft-action">
-                    Create Login
-                  </a>
-                </td>
               </tr>
             {% else %}
-              <tr>
-                <td colspan="6">
+              <tr class="js-clf-empty-row">
+                <td colspan="12">
                   <div class="empty-state">
                     <div class="empty-state-icon">CLF</div>
                     <strong>No CLFs created yet</strong>
@@ -956,9 +2021,15 @@
         </table>
       </div>
 
+      <div id="clfNoResults" class="clf-no-results">
+        No CLF details matched your search.
+      </div>
+
       <div class="mobile-clf-list">
+        <div class="mobile-swipe-wrap">
+          <div class="mobile-card-track">
         {% for c in clfs %}
-          <div class="mobile-card">
+          <div class="mobile-card js-clf-card">
             <div class="mobile-card-head">
               <div class="clf-identity">
                 <div class="clf-name-main">{{ c.name or c.clf_name or '-' }}</div>
@@ -975,6 +2046,61 @@
 
             <div class="mobile-info">
               <div>
+                <strong>VC / Location:</strong>
+                {{ c.vc_name_location or '-' }}
+              </div>
+
+              <div>
+                <strong>President:</strong>
+                {{ c.president_name or '-' }} / {{ c.president_contact or '-' }}
+              </div>
+
+              <div>
+                <strong>Secretary:</strong>
+                {{ c.secretary_name or '-' }} / {{ c.secretary_contact or '-' }}
+              </div>
+
+              <div>
+                <strong>Registered:</strong>
+                {% if c.is_registered == 'yes' %}
+                  Yes{% if c.registration_date_raw %} - {{ c.registration_date_raw }}{% endif %}
+                {% elif c.is_registered == 'no' %}
+                  No
+                {% else %}
+                  -
+                {% endif %}
+              </div>
+
+              <div>
+                <strong>Type:</strong>
+                {{ c.clf_type or '-' }}
+              </div>
+
+              <div>
+                <strong>EC Members:</strong>
+                {{ c.ec_members_count if c.ec_members_count is not none else '-' }}
+              </div>
+
+              <div>
+                <strong>Villages Covered:</strong>
+                {{ c.village_covered_count_calculated if c.village_covered_count_calculated is not none else 0 }}
+              </div>
+
+              <div>
+                <strong>PG Count:</strong>
+                {{ c.pg_count_calculated if c.pg_count_calculated is not none else 0 }}
+              </div>
+
+              <div>
+                <strong>Login:</strong>
+                {% if c.clf_admin_user_id %}
+                  Created
+                {% else %}
+                  Pending
+                {% endif %}
+              </div>
+
+              <div>
                 <strong>Block:</strong>
                 {% if block %}{{ block.name or '-' }}{% else %}-{% endif %}
               </div>
@@ -984,12 +2110,6 @@
                 {% if district %}{{ district.name or '-' }}{% else %}-{% endif %}
               </div>
             </div>
-
-            <div class="mobile-action-stack">
-              <a href="{{ url_for('master_data.manage_clf_admins') }}" class="pg-soft-action">
-                Create CLF Login
-              </a>
-            </div>
           </div>
         {% else %}
           <div class="empty-state">
@@ -998,9 +2118,218 @@
             <div>Create your first CLF using the form above.</div>
           </div>
         {% endfor %}
+          </div>
+        </div>
       </div>
+
+      <div id="clfPagination" class="clf-pagination" aria-label="CLF table pagination"></div>
     </div>
   </div>
 
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const registeredSelect = document.getElementById("is_registered");
+    const registrationDate = document.getElementById("registration_date");
+
+    function syncRegistrationDateRequirement() {
+      if (!registeredSelect || !registrationDate) return;
+
+      if (registeredSelect.value === "yes") {
+        registrationDate.required = true;
+        registrationDate.disabled = false;
+      } else {
+        registrationDate.required = false;
+        registrationDate.value = "";
+        registrationDate.disabled = registeredSelect.value === "no";
+      }
+    }
+
+    if (registeredSelect) {
+      registeredSelect.addEventListener("change", syncRegistrationDateRequirement);
+      syncRegistrationDateRequirement();
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("clfSearchInput");
+    const pageSizeSelect = document.getElementById("clfPageSize");
+    const resultText = document.getElementById("clfResultText");
+    const pagination = document.getElementById("clfPagination");
+    const noResults = document.getElementById("clfNoResults");
+    const mobileSwipeWrap = document.querySelector(".mobile-swipe-wrap");
+
+    const tableRows = Array.from(document.querySelectorAll(".js-clf-row"));
+    const mobileCards = Array.from(document.querySelectorAll(".js-clf-card"));
+
+    if (!tableRows.length && !mobileCards.length) {
+      if (pagination) pagination.style.display = "none";
+      return;
+    }
+
+    let currentPage = 1;
+
+    function normalizedText(el) {
+      return (el ? el.textContent : "")
+        .toString()
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+    }
+
+    const items = tableRows.map(function (row, index) {
+      return {
+        row: row,
+        card: mobileCards[index] || null,
+        text: normalizedText(row) + " " + normalizedText(mobileCards[index])
+      };
+    });
+
+    function getPageSize() {
+      const parsed = parseInt(pageSizeSelect ? pageSizeSelect.value : "10", 10);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
+    }
+
+    function getFilteredItems() {
+      const query = normalizedText(searchInput);
+      if (!query) return items;
+
+      return items.filter(function (item) {
+        return item.text.indexOf(query) !== -1;
+      });
+    }
+
+    function buildButton(label, page, disabled, active) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "clf-pagination-btn" + (active ? " active" : "");
+      btn.textContent = label;
+      btn.disabled = !!disabled;
+      btn.setAttribute("aria-label", String(label));
+
+      if (!disabled && !active) {
+        btn.addEventListener("click", function () {
+          currentPage = page;
+          renderClfList();
+          if (mobileSwipeWrap) {
+            mobileSwipeWrap.scrollTo({ left: 0, behavior: "smooth" });
+          }
+        });
+      }
+
+      return btn;
+    }
+
+    function renderPagination(totalItems, totalPages, start, end) {
+      if (!pagination) return;
+
+      pagination.innerHTML = "";
+
+      if (!totalItems) {
+        pagination.style.display = "none";
+        return;
+      }
+
+      pagination.style.display = "flex";
+
+      const info = document.createElement("div");
+      info.className = "clf-pagination-info";
+      info.textContent = "Showing " + start + " - " + end + " of " + totalItems;
+      pagination.appendChild(info);
+
+      pagination.appendChild(buildButton("Prev", Math.max(1, currentPage - 1), currentPage === 1, false));
+
+      const maxButtons = window.innerWidth <= 420 ? 3 : 5;
+      let from = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+      let to = Math.min(totalPages, from + maxButtons - 1);
+      from = Math.max(1, to - maxButtons + 1);
+
+      if (from > 1) {
+        pagination.appendChild(buildButton("1", 1, false, currentPage === 1));
+        if (from > 2) {
+          const dots = document.createElement("span");
+          dots.className = "clf-pagination-btn";
+          dots.textContent = "...";
+          dots.style.pointerEvents = "none";
+          pagination.appendChild(dots);
+        }
+      }
+
+      for (let page = from; page <= to; page++) {
+        pagination.appendChild(buildButton(String(page), page, false, currentPage === page));
+      }
+
+      if (to < totalPages) {
+        if (to < totalPages - 1) {
+          const dots = document.createElement("span");
+          dots.className = "clf-pagination-btn";
+          dots.textContent = "...";
+          dots.style.pointerEvents = "none";
+          pagination.appendChild(dots);
+        }
+        pagination.appendChild(buildButton(String(totalPages), totalPages, false, currentPage === totalPages));
+      }
+
+      pagination.appendChild(buildButton("Next", Math.min(totalPages, currentPage + 1), currentPage === totalPages, false));
+    }
+
+    function renderClfList() {
+      const filtered = getFilteredItems();
+      const pageSize = getPageSize();
+      const totalItems = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, totalItems);
+      const visibleSet = new Set(filtered.slice(startIndex, endIndex));
+
+      items.forEach(function (item) {
+        const visible = visibleSet.has(item);
+        if (item.row) item.row.style.display = visible ? "" : "none";
+        if (item.card) item.card.style.display = visible ? "" : "none";
+      });
+
+      if (noResults) {
+        noResults.classList.toggle("show", totalItems === 0);
+      }
+
+      if (resultText) {
+        const suffix = totalItems === 1 ? "CLF" : "CLFs";
+        resultText.textContent = totalItems ? ("Found " + totalItems + " " + suffix) : "No CLFs found";
+      }
+
+      renderPagination(
+        totalItems,
+        totalPages,
+        totalItems ? startIndex + 1 : 0,
+        totalItems ? endIndex : 0
+      );
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener("input", function () {
+        currentPage = 1;
+        renderClfList();
+      });
+    }
+
+    if (pageSizeSelect) {
+      pageSizeSelect.addEventListener("change", function () {
+        currentPage = 1;
+        renderClfList();
+      });
+    }
+
+    window.addEventListener("resize", function () {
+      renderClfList();
+    });
+
+    renderClfList();
+  });
+
+</script>
 {% endblock %}

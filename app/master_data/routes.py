@@ -718,12 +718,15 @@ def manage_blocks():
 @roles_required("BLOCK_ADMIN")
 def manage_clfs():
     """
-    Block-level master data: CLFs.
+    Block-level CLF master creation.
 
-    New workflow:
-    - Only Block Admin can create CLF master records.
-    - CLF is automatically mapped to the Block Admin's block and district.
-    - CLF_ADMIN cannot create CLF.
+    Updated workflow:
+    - Block Admin creates CLF master and CLF Admin login from the same form.
+    - State, District and Block are auto-mapped from logged-in Block Admin.
+    - CLF profile fields are stored in db.clfs.
+    - No. of villages covered and PG count are NOT manually entered.
+      They are calculated/displayed after PGs are mapped to the CLF.
+    - Existing PG assignment and CLF login workflow remains compatible.
     """
     db = current_app.mongo_db
     scope = _get_block_scope(db)
@@ -737,33 +740,250 @@ def manage_clfs():
     state_id = scope["state_id"]
 
     if request.method == "POST":
-        name = (request.form.get("name") or "").strip()
+        try:
+            # -----------------------------
+            # CLF master/profile fields
+            # -----------------------------
+            name = (request.form.get("name") or "").strip()
+            vc_name_location = (request.form.get("vc_name_location") or "").strip()
 
-        if not name:
-            flash("CLF name is required.", "danger")
-        else:
-            existing = db.clfs.find_one({
+            president_name = (request.form.get("president_name") or "").strip()
+            president_contact = (request.form.get("president_contact") or "").strip()
+
+            secretary_name = (request.form.get("secretary_name") or "").strip()
+            secretary_contact = (request.form.get("secretary_contact") or "").strip()
+
+            is_registered = (request.form.get("is_registered") or "").strip()
+            registration_date_raw = (request.form.get("registration_date") or "").strip()
+
+            clf_type = (request.form.get("clf_type") or "").strip()
+            ec_members_count_raw = (request.form.get("ec_members_count") or "").strip()
+
+            # -----------------------------
+            # CLF login fields
+            # -----------------------------
+            full_name = (
+                request.form.get("full_name")
+                or request.form.get("admin_name")
+                or request.form.get("clf_admin_name")
+                or ""
+            ).strip()
+            username = (request.form.get("username") or "").strip()
+            password = request.form.get("password") or ""
+
+            # -----------------------------
+            # Validation
+            # -----------------------------
+            if not name:
+                raise ValueError("CLF name is required.")
+
+            if not vc_name_location:
+                raise ValueError("VC name/location of the CLF is required.")
+
+            if not president_name:
+                raise ValueError("Name of CLF President is required.")
+
+            if not president_contact:
+                raise ValueError("Contact no. of President is required.")
+
+            if not secretary_name:
+                raise ValueError("Name of CLF Secretary is required.")
+
+            if not secretary_contact:
+                raise ValueError("Contact no. of Secretary is required.")
+
+            if is_registered not in ("yes", "no"):
+                raise ValueError("Please select whether the CLF is registered.")
+
+            registration_date = None
+            if is_registered == "yes":
+                if not registration_date_raw:
+                    raise ValueError("Date of registration is required for registered CLF.")
+                try:
+                    registration_date = datetime.strptime(registration_date_raw, "%Y-%m-%d")
+                except Exception:
+                    raise ValueError("Invalid registration date format.")
+
+            if clf_type not in ("Model CLF", "Non-Model CLF"):
+                raise ValueError("Please select valid CLF type.")
+
+            try:
+                ec_members_count = int(ec_members_count_raw or 0)
+            except Exception:
+                raise ValueError("No. of EC members must be a valid number.")
+
+            if ec_members_count < 0:
+                raise ValueError("No. of EC members cannot be negative.")
+
+            if not full_name:
+                raise ValueError("CLF Admin name is required.")
+
+            if not username:
+                raise ValueError("Username is required.")
+
+            if not password:
+                raise ValueError("Password is required.")
+
+            existing_clf = db.clfs.find_one({
                 "name": {"$regex": f"^{re.escape(name)}$", "$options": "i"},
                 "block_id": block_id,
+                "status": {"$ne": "deleted"},
             })
 
-            if existing:
-                flash("This CLF already exists under your block.", "danger")
-            else:
-                db.clfs.insert_one({
-                    "name": name,
-                    "state_id": state_id,
-                    "district_id": district_id,
-                    "block_id": block_id,
-                    "assigned_pg_ids": [],
-                    "status": "active",
-                    "created_at": datetime.utcnow(),
-                    "created_by": _current_user_oid(),
-                    "updated_at": datetime.utcnow(),
-                })
-                flash("CLF added successfully.", "success")
+            if existing_clf:
+                raise ValueError("This CLF already exists under your block.")
 
-    clfs = list(db.clfs.find({"block_id": block_id}).sort("name", 1))
+            existing_user = db.users.find_one({
+                "username": username,
+                "status": {"$ne": "deleted"},
+            })
+
+            if existing_user:
+                raise ValueError("This username already exists. Please choose another username.")
+
+            now = datetime.utcnow()
+            current_user = _current_user_oid()
+
+            # -----------------------------
+            # Create CLF master
+            # -----------------------------
+            clf_doc = {
+                "name": name,
+                "clf_name": name,
+
+                "state_id": state_id,
+                "district_id": district_id,
+                "block_id": block_id,
+
+                "vc_name_location": vc_name_location,
+
+                "president_name": president_name,
+                "president_contact": president_contact,
+
+                "secretary_name": secretary_name,
+                "secretary_contact": secretary_contact,
+
+                "is_registered": is_registered,
+                "registration_date": registration_date,
+                "registration_date_raw": registration_date_raw if is_registered == "yes" else "",
+
+                "clf_type": clf_type,
+                "ec_members_count": ec_members_count,
+
+                # These two will be shown/calculated after PG mapping.
+                # Do not take manual input for them.
+                "village_covered_count": 0,
+                "pg_count": 0,
+
+                "assigned_pg_ids": [],
+                "status": "active",
+
+                "created_at": now,
+                "created_by": current_user,
+                "updated_at": now,
+                "updated_by": current_user,
+            }
+
+            clf_insert = db.clfs.insert_one(clf_doc)
+            clf_id = clf_insert.inserted_id
+
+            # -----------------------------
+            # Create CLF Admin login
+            # -----------------------------
+            user_id = _create_user(db, {
+                "username": username,
+                "password": password,
+                "role": "CLF_ADMIN",
+
+                "state_id": state_id,
+                "district_id": district_id,
+                "block_id": block_id,
+                "clf_id": clf_id,
+
+                "full_name": full_name,
+                "name": full_name,
+
+                "assigned_pg_ids": [],
+
+                "status": "active",
+                "profile_validation_status": "approved",
+
+                "created_at": now,
+                "created_by": current_user,
+                "updated_at": now,
+                "updated_by": current_user,
+            }, "BLOCK_ADMIN")
+
+            # -----------------------------
+            # Map created login back to CLF
+            # -----------------------------
+            db.clfs.update_one(
+                {"_id": clf_id},
+                {"$set": {
+                    "clf_admin_user_id": user_id,
+                    "updated_at": datetime.utcnow(),
+                    "updated_by": current_user,
+                }}
+            )
+
+            flash("CLF and CLF login created successfully.", "success")
+            return redirect(url_for("master_data.manage_clfs"))
+
+        except Exception as e:
+            flash(str(e), "danger")
+
+    clfs = list(db.clfs.find({
+        "block_id": block_id,
+        "status": {"$ne": "deleted"},
+    }).sort("name", 1))
+
+    # ---------------------------------------------------------
+    # Runtime calculated values after PG mapping
+    # ---------------------------------------------------------
+    for clf in clfs:
+        clf_id = clf.get("_id")
+
+        assigned_pg_ids = []
+        for pg_id in clf.get("assigned_pg_ids") or []:
+            oid = _to_object_id(pg_id)
+            if oid:
+                assigned_pg_ids.append(oid)
+
+        pg_match = {
+            "block_id": block_id,
+            "status": {"$ne": "deleted"},
+            "$or": [
+                {"clf_id": clf_id},
+                {"clf_id": str(clf_id)},
+            ],
+        }
+
+        if assigned_pg_ids:
+            pg_match["$or"].append({"_id": {"$in": assigned_pg_ids}})
+
+        mapped_pgs = list(db.pgs.find(pg_match, {
+            "_id": 1,
+            "Village": 1,
+            "village": 1,
+            "village_name": 1,
+            "Village Name": 1,
+        }))
+
+        villages = set()
+        for pg in mapped_pgs:
+            village_name = (
+                pg.get("Village")
+                or pg.get("village")
+                or pg.get("village_name")
+                or pg.get("Village Name")
+                or ""
+            )
+            village_name = str(village_name).strip()
+            if village_name:
+                villages.add(village_name.lower())
+
+        clf["pg_count_calculated"] = len(mapped_pgs)
+        clf["village_covered_count_calculated"] = len(villages)
 
     return render_template(
         "clfs.html",

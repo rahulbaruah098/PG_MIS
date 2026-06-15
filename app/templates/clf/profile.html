@@ -1,0 +1,621 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  :root{
+    --pg-shell:#eef6f2;
+    --pg-surface:#ffffff;
+    --pg-surface-soft:#f8fcfa;
+    --pg-header:#dfeee7;
+    --pg-brand:#0b4d3a;
+    --pg-brand-dark:#083d2f;
+    --pg-brand-soft:#e7f4ed;
+    --pg-ink:#0f172a;
+    --pg-muted:#5f6f67;
+    --pg-line:rgba(15,23,42,.10);
+    --pg-line-soft:rgba(15,23,42,.07);
+    --pg-mint:rgba(173,231,196,.38);
+    --pg-success:#198754;
+    --pg-danger:#c84343;
+    --pg-shadow:0 14px 34px rgba(15,23,42,.08);
+    --pg-shadow-soft:0 8px 22px rgba(15,23,42,.06);
+    --pg-radius-xl:24px;
+    --pg-radius-lg:18px;
+    --pg-radius-md:14px;
+  }
+
+  .clf-profile-page{
+    width:100%;
+    max-width:1320px;
+    margin:0 auto;
+  }
+
+  .profile-topbar{
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 88% 18%, rgba(173,231,196,.38), transparent 32%),
+      linear-gradient(180deg, rgba(223,238,231,.96), rgba(255,255,255,.99));
+    border:1px solid var(--pg-line);
+    border-radius:var(--pg-radius-xl);
+    padding:24px;
+    box-shadow:var(--pg-shadow);
+    margin-bottom:18px;
+  }
+
+  .profile-topbar::after{
+    content:"";
+    position:absolute;
+    right:-70px;
+    bottom:-80px;
+    width:210px;
+    height:210px;
+    border-radius:50%;
+    background:rgba(173,231,196,.35);
+    pointer-events:none;
+  }
+
+  .profile-topbar-inner{
+    position:relative;
+    z-index:1;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:18px;
+    flex-wrap:wrap;
+  }
+
+  .profile-title-block{
+    max-width:780px;
+  }
+
+  .title-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+    padding:7px 12px;
+    border-radius:999px;
+    background:rgba(255,255,255,.78);
+    border:1px solid rgba(11,77,58,.12);
+    color:var(--pg-brand);
+    font-size:.76rem;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+  }
+
+  .title-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--pg-brand);
+    flex:0 0 auto;
+  }
+
+  .profile-topbar h3{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:clamp(1.45rem, 2.4vw, 2.05rem);
+    font-weight:1000;
+    letter-spacing:-.045em;
+    line-height:1.08;
+  }
+
+  .profile-topbar p{
+    margin:9px 0 0;
+    max-width:780px;
+    color:var(--pg-muted);
+    font-size:.96rem;
+    line-height:1.55;
+    font-weight:650;
+  }
+
+  .profile-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  .pg-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    border-radius:999px;
+    font-weight:850;
+    font-size:.88rem;
+    padding:.68rem 1rem;
+    text-decoration:none;
+    border:1px solid transparent;
+    box-shadow:none !important;
+    transition:none !important;
+  }
+
+  .pg-btn-primary{
+    background:var(--pg-brand);
+    color:#fff !important;
+    border-color:var(--pg-brand);
+  }
+
+  .pg-btn-outline{
+    background:#fff;
+    color:var(--pg-brand) !important;
+    border-color:rgba(11,77,58,.18);
+  }
+
+  .summary-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:14px;
+    margin-bottom:18px;
+  }
+
+  .summary-card{
+    background:var(--pg-surface);
+    border:1px solid var(--pg-line);
+    border-radius:var(--pg-radius-lg);
+    padding:18px;
+    box-shadow:var(--pg-shadow-soft);
+  }
+
+  .summary-card small{
+    display:block;
+    color:var(--pg-muted);
+    font-size:.78rem;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    margin-bottom:8px;
+  }
+
+  .summary-card strong{
+    display:block;
+    color:var(--pg-brand);
+    font-size:1.35rem;
+    font-weight:1000;
+    line-height:1.1;
+  }
+
+  .profile-panel{
+    background:var(--pg-surface);
+    border:1px solid var(--pg-line);
+    border-radius:var(--pg-radius-xl);
+    box-shadow:var(--pg-shadow);
+    overflow:hidden;
+    margin-bottom:18px;
+  }
+
+  .panel-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding:18px 20px;
+    background:linear-gradient(180deg, rgba(223,238,231,.72), rgba(255,255,255,.95));
+    border-bottom:1px solid var(--pg-line-soft);
+  }
+
+  .panel-title{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+
+  .panel-icon{
+    width:38px;
+    height:38px;
+    border-radius:14px;
+    background:var(--pg-brand);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:1000;
+    font-size:.82rem;
+    flex:0 0 auto;
+  }
+
+  .panel-title h6{
+    margin:0;
+    color:var(--pg-brand);
+    font-size:1rem;
+    font-weight:1000;
+    letter-spacing:-.02em;
+  }
+
+  .panel-title p{
+    margin:3px 0 0;
+    color:var(--pg-muted);
+    font-size:.86rem;
+    font-weight:650;
+  }
+
+  .panel-body{
+    padding:20px;
+  }
+
+  .details-grid{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:14px;
+  }
+
+  .detail-box{
+    background:var(--pg-surface-soft);
+    border:1px solid var(--pg-line-soft);
+    border-radius:var(--pg-radius-md);
+    padding:14px;
+    min-height:86px;
+  }
+
+  .detail-box small{
+    display:block;
+    color:var(--pg-muted);
+    font-size:.76rem;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    margin-bottom:7px;
+  }
+
+  .detail-box strong{
+    display:block;
+    color:var(--pg-ink);
+    font-size:.98rem;
+    font-weight:900;
+    line-height:1.35;
+    word-break:break-word;
+  }
+
+  .soft-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    border-radius:999px;
+    padding:7px 11px;
+    font-size:.78rem;
+    font-weight:900;
+    border:1px solid transparent;
+    white-space:nowrap;
+  }
+
+  .soft-badge.active{
+    color:#0f6a4e;
+    background:rgba(25,135,84,.10);
+    border-color:rgba(25,135,84,.18);
+  }
+
+  .soft-badge.default{
+    color:#475569;
+    background:rgba(100,116,139,.10);
+    border-color:rgba(100,116,139,.16);
+  }
+
+  .pg-table-wrap{
+    width:100%;
+    overflow-x:auto;
+  }
+
+  .pg-table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    margin:0;
+  }
+
+  .pg-table th{
+    background:#f8fbfa;
+    color:var(--pg-brand);
+    font-size:.78rem;
+    font-weight:1000;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    padding:13px 14px;
+    border-bottom:1px solid var(--pg-line);
+    white-space:nowrap;
+  }
+
+  .pg-table td{
+    padding:13px 14px;
+    border-bottom:1px solid var(--pg-line-soft);
+    color:var(--pg-ink);
+    font-size:.9rem;
+    font-weight:650;
+    vertical-align:top;
+  }
+
+  .pg-table tbody tr:last-child td{
+    border-bottom:none;
+  }
+
+  .empty-state{
+    text-align:center;
+    padding:34px 18px;
+    color:var(--pg-muted);
+    font-weight:750;
+  }
+
+  .empty-state-icon{
+    width:58px;
+    height:58px;
+    border-radius:20px;
+    margin:0 auto 12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--pg-mint);
+    color:var(--pg-brand);
+    font-weight:1000;
+  }
+
+  @media(max-width: 992px){
+    .summary-grid{
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+
+    .details-grid{
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media(max-width: 640px){
+    .profile-topbar,
+    .panel-body{
+      padding:16px;
+    }
+
+    .panel-head{
+      padding:16px;
+      align-items:flex-start;
+      flex-direction:column;
+    }
+
+    .summary-grid,
+    .details-grid{
+      grid-template-columns:1fr;
+    }
+
+    .profile-actions{
+      justify-content:flex-start;
+      width:100%;
+    }
+
+    .pg-btn{
+      width:100%;
+    }
+  }
+</style>
+
+<div class="clf-profile-page">
+
+  <div class="profile-topbar">
+    <div class="profile-topbar-inner">
+      <div class="profile-title-block">
+        <div class="title-kicker">
+          <span class="title-dot"></span>
+          CLF Profile
+        </div>
+
+        <h3>{{ clf.name or clf.clf_name or 'CLF Profile' }}</h3>
+        <p>
+          This profile shows the CLF details entered by Block Admin during CLF creation.
+          Village coverage and PG count are calculated after PG mapping.
+        </p>
+      </div>
+
+      <div class="profile-actions">
+        <a href="{{ url_for('clf.dashboard') }}" class="pg-btn pg-btn-outline">
+          Back to Dashboard
+        </a>
+        <a href="{{ url_for('clf.assigned_pgs') }}" class="pg-btn pg-btn-primary">
+          View Assigned PGs
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <small>Mapped PGs</small>
+      <strong>{{ mapping_summary.pg_count or 0 }}</strong>
+    </div>
+
+    <div class="summary-card">
+      <small>Villages Covered</small>
+      <strong>{{ mapping_summary.village_covered_count or 0 }}</strong>
+    </div>
+
+    <div class="summary-card">
+      <small>EC Members</small>
+      <strong>{{ clf.ec_members_count or 0 }}</strong>
+    </div>
+
+    <div class="summary-card">
+      <small>CLF Type</small>
+      <strong style="font-size:1rem;">{{ clf.clf_type or '-' }}</strong>
+    </div>
+  </div>
+
+  <div class="profile-panel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <div class="panel-icon">MAP</div>
+        <div>
+          <h6>Mapped Location</h6>
+          <p>State, District and Block mapped from Block Admin.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-body">
+      <div class="details-grid">
+        <div class="detail-box">
+          <small>State</small>
+          <strong>{{ location_details.state_name or '-' }}</strong>
+        </div>
+
+        <div class="detail-box">
+          <small>District</small>
+          <strong>{{ location_details.district_name or '-' }}</strong>
+        </div>
+
+        <div class="detail-box">
+          <small>Block</small>
+          <strong>{{ location_details.block_name or '-' }}</strong>
+        </div>
+
+        <div class="detail-box">
+          <small>VC Name / Location of the CLF</small>
+          <strong>{{ clf.vc_name_location or '-' }}</strong>
+        </div>
+
+        <div class="detail-box">
+          <small>CLF Registration Status</small>
+          <strong>
+            {% if clf.is_registered == 'yes' %}
+              <span class="soft-badge active">Registered</span>
+            {% elif clf.is_registered == 'no' %}
+              <span class="soft-badge default">Not Registered</span>
+            {% else %}
+              -
+            {% endif %}
+          </strong>
+        </div>
+
+        <div class="detail-box">
+          <small>Date of Registration</small>
+          <strong>
+            {% if clf.is_registered == 'yes' %}
+              {{ clf.registration_date_raw or '-' }}
+            {% else %}
+              -
+            {% endif %}
+          </strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="profile-panel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <div class="panel-icon">CLF</div>
+        <div>
+          <h6>CLF Committee Details</h6>
+          <p>President, Secretary, registration and EC member information.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-body">
+      <div class="details-grid">
+        <div class="detail-box">
+          <small>Name of CLF President</small>
+          <strong>{{ clf.president_name or '-' }}</strong>
+        </div>
+
+        <div class="detail-box">
+          <small>Contact No. of President</small>
+          <strong>{{ clf.president_contact or '-' }}</strong>
+        </div>
+
+        <div class="detail-box">
+          <small>Name of CLF Secretary</small>
+          <strong>{{ clf.secretary_name or '-' }}</strong>
+        </div>
+
+        <div class="detail-box">
+          <small>Contact No. of Secretary</small>
+          <strong>{{ clf.secretary_contact or '-' }}</strong>
+        </div>
+
+        <div class="detail-box">
+          <small>Type of CLF</small>
+          <strong>{{ clf.clf_type or '-' }}</strong>
+        </div>
+
+        <div class="detail-box">
+          <small>No. of EC Members under the CLF</small>
+          <strong>{{ clf.ec_members_count if clf.ec_members_count is not none else 0 }}</strong>
+        </div>
+
+        <div class="detail-box">
+          <small>No. of Village Covered under the CLF</small>
+          <strong>{{ mapping_summary.village_covered_count or 0 }}</strong>
+        </div>
+
+        <div class="detail-box">
+          <small>How many PG under this CLF</small>
+          <strong>{{ mapping_summary.pg_count or 0 }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="profile-panel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <div class="panel-icon">PG</div>
+        <div>
+          <h6>Mapped PGs</h6>
+          <p>PGs currently mapped under this CLF.</p>
+        </div>
+      </div>
+
+      <span class="soft-badge active">
+        {{ mapping_summary.pg_count or 0 }} PG{{ '' if mapping_summary.pg_count == 1 else 's' }}
+      </span>
+    </div>
+
+    <div class="panel-body p-0">
+      <div class="pg-table-wrap">
+        <table class="pg-table">
+          <thead>
+            <tr>
+              <th style="width:80px;">#</th>
+              <th>PG Name</th>
+              <th>Village</th>
+              <th>Gram Panchayat</th>
+              <th>Block</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for pg in pgs %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>
+                  {{ pg.get('Name of PG') or pg.get('pg_name') or pg.get('name') or '-' }}
+                </td>
+                <td>
+                  {{ pg.get('Village') or pg.get('village') or pg.get('village_name') or pg.get('Village Name') or '-' }}
+                </td>
+                <td>
+                  {{ pg.get('Gram Panchayat') or pg.get('gram_panchayat') or pg.get('gp_name') or '-' }}
+                </td>
+                <td>
+                  {{ location_details.block_name or '-' }}
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5">
+                  <div class="empty-state">
+                    <div class="empty-state-icon">PG</div>
+                    <strong>No PG mapped yet</strong>
+                    <div>PG count and village coverage will appear after PGs are assigned to this CLF.</div>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

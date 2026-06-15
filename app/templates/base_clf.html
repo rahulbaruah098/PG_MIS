@@ -553,24 +553,31 @@
           </a>
           {% endif %}
 
-          {% if session.get('role') == 'CLF_ADMIN' %}
-          <div class="nav-section">CLF Operations</div>
+            {% if session.get('role') == 'CLF_ADMIN' %}
+            <div class="nav-section">CLF Operations</div>
 
-          <a class="nav-item {% if request.endpoint == 'clf.assigned_pgs' %}active{% endif %}" href="{{ url_for('clf.assigned_pgs') }}">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path>
-            </svg>
-            <span>Assigned PGs</span>
-          </a>
+            <a class="nav-item {% if request.endpoint == 'clf.profile' %}active{% endif %}" href="{{ url_for('clf.profile') }}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>CLF Profile</span>
+            </a>
 
-          <a class="nav-item {% if request.endpoint == 'clf.cashflow' %}active{% endif %}" href="{{ url_for('clf.cashflow') }}">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <text x="12" y="17" text-anchor="middle" font-size="18" font-weight="900" fill="currentColor">₹</text>
-            </svg>
-            <span>CLF Cashflow</span>
-          </a>
-          {% endif %}
+            <a class="nav-item {% if request.endpoint == 'clf.assigned_pgs' %}active{% endif %}" href="{{ url_for('clf.assigned_pgs') }}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 6h16"></path><path d="M4 12h16"></path><path d="M4 18h16"></path>
+              </svg>
+              <span>Assigned PGs</span>
+            </a>
 
+            <a class="nav-item {% if request.endpoint == 'clf.cashflow' %}active{% endif %}" href="{{ url_for('clf.cashflow') }}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <text x="12" y="17" text-anchor="middle" font-size="18" font-weight="900" fill="currentColor">₹</text>
+              </svg>
+              <span>CLF Cashflow</span>
+            </a>
+            {% endif %}
           <div class="nav-section">Registers</div>
 
 <a class="nav-item {{ 'active' if request.endpoint == 'pg.pg_registration' else '' }} {{ '' if apg else 'disabled' }}" href="{{ url_for('pg.pg_registration', pg_id=apg) if apg else '#' }}">

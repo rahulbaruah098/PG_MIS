@@ -20,6 +20,13 @@ from app.services.report_service import ReportService
 from app.services.kpi_service import KPIService
 from app.utils import safe_objectid
 from app.services.submissions import submit_to_clf, approve, reject, get_submission
+CADRE_TYPE_OPTIONS = [
+    "Pashu Sakhi",
+    "Matshya Sakhi",
+    "Krishi Sakhi",
+    "MBK",
+]
+
 
 def _geo_names_from_session(db, sess):
     """Resolve state/district/block names (strings) for SHG master filtering.
@@ -1692,6 +1699,10 @@ def _state_dashboard_build_details(db, pg_match, pg_ids, detail_key, search_quer
         return limited_rows, total_count
 
     if detail_key == "cadres":
+        selected_cadre_type = (request.args.get("cadre_type") or "").strip()
+        if selected_cadre_type not in CADRE_TYPE_OPTIONS:
+            selected_cadre_type = ""
+
         cadre_match = {"role": "CADRE_CC"}
 
         if pg_match.get("state_id"):
@@ -1701,14 +1712,34 @@ def _state_dashboard_build_details(db, pg_match, pg_ids, detail_key, search_quer
         if pg_match.get("block_id"):
             cadre_match["block_id"] = pg_match["block_id"]
 
+        if selected_cadre_type:
+            cadre_match["cadre_type"] = selected_cadre_type
+
+        if search_query:
+            safe_q = re.escape(search_query)
+            cadre_match["$or"] = [
+                {"name": {"$regex": safe_q, "$options": "i"}},
+                {"full_name": {"$regex": safe_q, "$options": "i"}},
+                {"username": {"$regex": safe_q, "$options": "i"}},
+                {"phone": {"$regex": safe_q, "$options": "i"}},
+                {"contact": {"$regex": safe_q, "$options": "i"}},
+                {"contact_number": {"$regex": safe_q, "$options": "i"}},
+                {"email": {"$regex": safe_q, "$options": "i"}},
+                {"cadre_type": {"$regex": safe_q, "$options": "i"}},
+            ]
+
         cadres = list(
             db.users.find(
                 cadre_match,
                 {
                     "name": 1,
+                    "full_name": 1,
                     "username": 1,
                     "phone": 1,
                     "contact": 1,
+                    "contact_number": 1,
+                    "email": 1,
+                    "cadre_type": 1,
                     "assigned_pg_ids": 1,
                 },
             ).sort("name", 1)
@@ -1735,9 +1766,10 @@ def _state_dashboard_build_details(db, pg_match, pg_ids, detail_key, search_quer
             )
 
             rows.append({
-                "name": c.get("name") or c.get("username") or "-",
+                "name": c.get("full_name") or c.get("name") or c.get("username") or "-",
                 "username": c.get("username") or "-",
-                "contact": c.get("phone") or c.get("contact") or c.get("contact_number") or "-",
+                "cadre_type": c.get("cadre_type") or "-",
+                "contact": c.get("phone") or c.get("contact") or c.get("contact_number") or c.get("email") or "-",
                 "assigned_count": len(assigned_pgs),
                 "assigned_pgs": [_state_dashboard_pg_row(db, pg) for pg in assigned_pgs],
             })
@@ -1753,7 +1785,14 @@ def _state_dashboard_build_details(db, pg_match, pg_ids, detail_key, search_quer
             "has_more": total_count > len(limited_rows),
             "search_query": search_query,
             "detail_key": detail_key,
-            "full_url": url_for("reports.state_dashboard_detail_full", detail=detail_key, q=search_query),
+            "cadre_type_options": CADRE_TYPE_OPTIONS,
+            "selected_cadre_type": selected_cadre_type,
+            "full_url": url_for(
+                "reports.state_dashboard_detail_full",
+                detail=detail_key,
+                q=search_query,
+                cadre_type=selected_cadre_type,
+            ),
         }
 
     if detail_key.startswith("sector:"):
@@ -2000,6 +2039,176 @@ def _state_dashboard_chart_pack(
         },
     }
 
+
+def _state_dashboard_clf_summary(db, pg_match):
+    """
+    Build CLF KPI/details for State Dashboard.
+
+    Scope follows the same State/District/Block scope already used by State Dashboard.
+    Data comes from db.clfs created by Block Admin.
+    PG count and village coverage are calculated after PG mapping.
+    """
+    clf_match = {
+        "status": {"$ne": "deleted"},
+    }
+
+    if pg_match.get("state_id"):
+        clf_match["state_id"] = pg_match["state_id"]
+
+    if pg_match.get("district_id"):
+        clf_match["district_id"] = pg_match["district_id"]
+
+    if pg_match.get("block_id"):
+        clf_match["block_id"] = pg_match["block_id"]
+
+    clfs = list(db.clfs.find(clf_match).sort("name", 1))
+
+    def _master_name(collection_name, raw_id):
+        if not raw_id:
+            return "-"
+
+        try:
+            oid = raw_id if isinstance(raw_id, ObjectId) else ObjectId(str(raw_id))
+            doc = db[collection_name].find_one(
+                {"_id": oid},
+                {"name": 1, "code": 1}
+            ) or {}
+            return doc.get("name") or doc.get("code") or "-"
+        except Exception:
+            try:
+                doc = db[collection_name].find_one(
+                    {"_id": str(raw_id)},
+                    {"name": 1, "code": 1}
+                ) or {}
+                return doc.get("name") or doc.get("code") or "-"
+            except Exception:
+                return "-"
+
+    def _to_oid_list(values):
+        oid_list = []
+
+        for value in values or []:
+            try:
+                oid_list.append(value if isinstance(value, ObjectId) else ObjectId(str(value)))
+            except Exception:
+                pass
+
+        return oid_list
+
+    rows = []
+
+    total_clfs = len(clfs)
+    registered_clfs = 0
+    model_clfs = 0
+    non_model_clfs = 0
+    total_ec_members = 0
+    total_pg_mapped = 0
+
+    all_villages = set()
+
+    for clf in clfs:
+        clf_id = clf.get("_id")
+
+        if clf.get("is_registered") == "yes":
+            registered_clfs += 1
+
+        if clf.get("clf_type") == "Model CLF":
+            model_clfs += 1
+
+        if clf.get("clf_type") == "Non-Model CLF":
+            non_model_clfs += 1
+
+        try:
+            total_ec_members += int(clf.get("ec_members_count") or 0)
+        except Exception:
+            pass
+
+        assigned_pg_ids = _to_oid_list(clf.get("assigned_pg_ids") or [])
+
+        pg_or_conditions = [
+            {"clf_id": clf_id},
+            {"clf_id": str(clf_id)},
+        ]
+
+        if assigned_pg_ids:
+            pg_or_conditions.append({"_id": {"$in": assigned_pg_ids}})
+
+        mapped_pg_match = dict(pg_match)
+        mapped_pg_match["$or"] = pg_or_conditions
+        mapped_pg_match["status"] = {"$ne": "deleted"}
+
+        mapped_pgs = list(db.pgs.find(
+            mapped_pg_match,
+            {
+                "_id": 1,
+                "name": 1,
+                "pg_name": 1,
+                "Village": 1,
+                "village": 1,
+                "village_name": 1,
+                "Village Name": 1,
+            }
+        ))
+
+        village_set = set()
+
+        for pg in mapped_pgs:
+            village_name = (
+                pg.get("Village")
+                or pg.get("village")
+                or pg.get("village_name")
+                or pg.get("Village Name")
+                or ""
+            )
+
+            village_name = str(village_name).strip()
+
+            if village_name:
+                village_set.add(village_name.lower())
+                all_villages.add(village_name.lower())
+
+        pg_count = len(mapped_pgs)
+        village_count = len(village_set)
+
+        total_pg_mapped += pg_count
+
+        rows.append({
+            "id": str(clf_id),
+            "name": clf.get("name") or clf.get("clf_name") or "-",
+
+            "state": _master_name("states", clf.get("state_id")),
+            "district": _master_name("districts", clf.get("district_id")),
+            "block": _master_name("blocks", clf.get("block_id")),
+
+            "vc_name_location": clf.get("vc_name_location") or "-",
+
+            "president_name": clf.get("president_name") or "-",
+            "president_contact": clf.get("president_contact") or "-",
+
+            "secretary_name": clf.get("secretary_name") or "-",
+            "secretary_contact": clf.get("secretary_contact") or "-",
+
+            "is_registered": clf.get("is_registered") or "",
+            "registration_date": clf.get("registration_date_raw") or "",
+
+            "clf_type": clf.get("clf_type") or "-",
+            "ec_members_count": clf.get("ec_members_count") if clf.get("ec_members_count") is not None else 0,
+
+            "village_covered_count": village_count,
+            "pg_count": pg_count,
+        })
+
+    return {
+        "total_clfs": total_clfs,
+        "registered_clfs": registered_clfs,
+        "model_clfs": model_clfs,
+        "non_model_clfs": non_model_clfs,
+        "total_ec_members": total_ec_members,
+        "total_pg_mapped": total_pg_mapped,
+        "total_villages_covered": len(all_villages),
+        "rows": rows,
+    }
+
 @reports_bp.route("/state_dashboard")
 @login_required
 @roles_required("SUPER_ADMIN", "ADMIN")
@@ -2061,7 +2270,10 @@ def state_dashboard():
     if pg_match.get("block_id"):
         cadre_match["block_id"] = pg_match["block_id"]
     cadre_count = db.users.count_documents(cadre_match)
-
+    
+    # CLF KPI/details for State Dashboard
+    clf_summary = _state_dashboard_clf_summary(db, pg_match)
+    
     # SHG master counts (LokOS imported) scoped by user's jurisdiction (string geo)
     shg_q = _shg_filter_from_session(db, session)
     shg_total = db.shg_master.count_documents(shg_q)
@@ -2248,6 +2460,7 @@ def state_dashboard():
         blocks_total=blocks_total,
         cadre_count=cadre_count,
         cadre_detail_url=url_for("reports.state_dashboard", detail="cadres"),
+        clf_summary=clf_summary,
         sector_summary=sector_summary,
         ffs_summary=ffs_summary,
         selected_detail=selected_detail,

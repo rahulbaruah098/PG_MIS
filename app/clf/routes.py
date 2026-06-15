@@ -377,7 +377,83 @@ def _member_count_for_pgs(pg_ids):
 
     return current_app.mongo_db.pg_members.count_documents(query)
 
+def _safe_name(doc, fallback="-"):
+    """
+    Safely return display name from master documents.
+    """
+    if not doc:
+        return fallback
 
+    return (
+        doc.get("name")
+        or doc.get("Name")
+        or doc.get("title")
+        or doc.get("code")
+        or fallback
+    )
+
+
+def _get_master_doc(collection_name, value):
+    """
+    Fetch state/district/block master document with ObjectId/string fallback.
+    """
+    if not value:
+        return None
+
+    db = current_app.mongo_db
+    oid = _to_object_id(value)
+
+    if oid:
+        doc = db[collection_name].find_one({"_id": oid})
+        if doc:
+            return doc
+
+    return db[collection_name].find_one({"_id": str(value)})
+
+
+def _get_clf_location_details(clf):
+    """
+    Resolve mapped State, District and Block details for CLF profile.
+    """
+    state = _get_master_doc("states", clf.get("state_id"))
+    district = _get_master_doc("districts", clf.get("district_id"))
+    block = _get_master_doc("blocks", clf.get("block_id"))
+
+    return {
+        "state": state,
+        "district": district,
+        "block": block,
+        "state_name": _safe_name(state),
+        "district_name": _safe_name(district),
+        "block_name": _safe_name(block),
+    }
+
+
+def _get_clf_mapping_summary(clf, pgs):
+    """
+    Calculate village count and PG count after PGs are mapped to CLF.
+    """
+    villages = set()
+
+    for pg in pgs:
+        village_name = (
+            pg.get("Village")
+            or pg.get("village")
+            or pg.get("village_name")
+            or pg.get("Village Name")
+            or ""
+        )
+
+        village_name = str(village_name).strip()
+
+        if village_name:
+            villages.add(village_name.lower())
+
+    return {
+        "pg_count": len(pgs),
+        "village_covered_count": len(villages),
+        "village_names": sorted(villages),
+    }
 # ------------------------------------------------------------
 # CLF Routes
 # ------------------------------------------------------------
@@ -447,6 +523,64 @@ def dashboard():
 
     return render_template("clf/dashboard.html", **context)
 
+
+@clf_bp.route("/profile")
+def profile():
+    """
+    CLF Admin profile page.
+
+    Shows the CLF details entered by Block Admin while creating CLF:
+    - mapped State/District/Block
+    - VC name/location
+    - President details
+    - Secretary details
+    - registration details
+    - CLF type
+    - EC member count
+    - calculated village count after PG mapping
+    - calculated PG count after PG mapping
+    """
+    user, response = _require_clf_admin()
+    if response:
+        return response
+
+    clf = _get_clf_doc(user.get("clf_id"))
+    pgs = _get_assigned_pgs(user)
+
+    location_details = _get_clf_location_details(clf)
+    mapping_summary = _get_clf_mapping_summary(clf, pgs)
+
+    if request.args.get("format") == "json":
+        return jsonify({
+            "success": True,
+            "clf": {
+                "id": str(clf.get("_id", "")),
+                "name": clf.get("name") or clf.get("clf_name") or "",
+                "state": location_details["state_name"],
+                "district": location_details["district_name"],
+                "block": location_details["block_name"],
+                "vc_name_location": clf.get("vc_name_location") or "",
+                "president_name": clf.get("president_name") or "",
+                "president_contact": clf.get("president_contact") or "",
+                "secretary_name": clf.get("secretary_name") or "",
+                "secretary_contact": clf.get("secretary_contact") or "",
+                "is_registered": clf.get("is_registered") or "",
+                "registration_date": clf.get("registration_date_raw") or "",
+                "clf_type": clf.get("clf_type") or "",
+                "ec_members_count": clf.get("ec_members_count") or 0,
+                "village_covered_count": mapping_summary["village_covered_count"],
+                "pg_count": mapping_summary["pg_count"],
+            },
+        })
+
+    return render_template(
+        "clf/profile.html",
+        user=user,
+        clf=clf,
+        pgs=pgs,
+        location_details=location_details,
+        mapping_summary=mapping_summary,
+    )
 
 @clf_bp.route("/assigned-pgs")
 def assigned_pgs():
