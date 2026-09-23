@@ -1203,6 +1203,13 @@ def _pg_metrics(db, pg_id):
     input_rows_count = 0
     output_rows_count = 0
     total_stock_kg = 0.0
+    # Keep both legacy collections initialized even when the redesigned
+    # monthly stock collection is used, because dashboard debug metrics
+    # still expose their counts.
+    input_docs = []
+    output_docs = []
+    input_stock_docs = []
+    product_stock_docs = []
 
     try:
         meetings_count = db.pg_meetings.count_documents({"pg_id": oid})
