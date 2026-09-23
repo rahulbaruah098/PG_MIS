@@ -1234,41 +1234,32 @@ def _pg_metrics(db, pg_id):
 
     try:
         stock_query = _pg_scope_query(pg_id)
+        stock_docs = list(db.pg_stocks_monthly.find(stock_query).sort([("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)]).limit(1000))
+        input_stock_docs = [d for d in stock_docs if str(d.get("stock_type") or "").lower() == "input"]
+        product_stock_docs = [d for d in stock_docs if str(d.get("stock_type") or "").lower() == "product"]
+        input_rows_count = len(input_stock_docs)
+        output_rows_count = len(product_stock_docs)
+        input_stock_value = sum(float(d.get("closing_qty") or 0) for d in input_stock_docs)
+        output_sold_value = sum(float(d.get("closing_qty") or 0) for d in product_stock_docs)
+        total_stock_kg = input_stock_value + output_sold_value
 
-        input_docs = list(
-            db.pg_input_registers
-            .find(stock_query)
-            .sort([("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)])
-            .limit(500)
-        )
-
-        output_docs = list(
-            db.pg_output_registers
-            .find(stock_query)
-            .sort([("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)])
-            .limit(500)
-        )
-
-        input_doc = input_docs[0] if input_docs else None
-        output_doc = output_docs[0] if output_docs else None
-
-        input_rows_count = sum(_count_rows_from_register_doc(doc) for doc in input_docs)
-        output_rows_count = sum(_count_rows_from_register_doc(doc) for doc in output_docs)
-
-        input_stock_value = sum(_sum_qty_from_rows(doc, mode="input") for doc in input_docs)
-        output_sold_value = sum(_sum_qty_from_rows(doc, mode="output") for doc in output_docs)
-
-        total_stock_kg = max(0.0, input_stock_value - output_sold_value)
+        # Backward-compatible fallback for PGs that still have only legacy registers.
+        if not stock_docs:
+            input_docs = list(db.pg_input_registers.find(stock_query).sort([("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)]).limit(500))
+            output_docs = list(db.pg_output_registers.find(stock_query).sort([("year", -1), ("month", -1), ("updated_at", -1), ("created_at", -1)]).limit(500))
+            input_rows_count = sum(_count_rows_from_register_doc(doc) for doc in input_docs)
+            output_rows_count = sum(_count_rows_from_register_doc(doc) for doc in output_docs)
+            input_stock_value = sum(_sum_qty_from_rows(doc, mode="input") for doc in input_docs)
+            output_sold_value = sum(_sum_qty_from_rows(doc, mode="output") for doc in output_docs)
+            total_stock_kg = max(0.0, input_stock_value - output_sold_value)
     except Exception:
         input_docs = []
         output_docs = []
-        input_doc = None
-        output_doc = None
+        input_stock_docs = []
+        product_stock_docs = []
         input_stock_value = 0.0
         output_sold_value = 0.0
         total_stock_kg = 0.0
-
-   
 
     # ------------------------------------------------------------
     #  ONLY ACTIVE MEMBERS SHOULD COUNT IN LIVE DASHBOARD
@@ -1499,11 +1490,13 @@ def _pg_metrics(db, pg_id):
 
     # Output stock snapshot
     try:
-        input_stock_value = sum(_sum_qty_from_rows(doc, mode="input") for doc in input_docs)
-        output_sold_value = sum(_sum_qty_from_rows(doc, mode="output") for doc in output_docs)
-        available_stock_value = max(0.0, input_stock_value - output_sold_value)
-
-        total_stock_kg = available_stock_value
+        if stock_docs:
+            available_stock_value = input_stock_value + output_sold_value
+        else:
+            input_stock_value = sum(_sum_qty_from_rows(doc, mode="input") for doc in input_docs)
+            output_sold_value = sum(_sum_qty_from_rows(doc, mode="output") for doc in output_docs)
+            available_stock_value = max(0.0, input_stock_value - output_sold_value)
+            total_stock_kg = available_stock_value
 
         chart_output_stock = [
             {

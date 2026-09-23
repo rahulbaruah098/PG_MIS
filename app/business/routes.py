@@ -483,168 +483,265 @@ def income_expenditure(pg_id):
 @business_bp.route("/stock_register/<pg_id>", methods=["GET", "POST"])
 @login_required
 @roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
-@require_unlocked_period(scope='pg')
 def stock_register(pg_id):
+    """Manual 6.5: monthly input/product closing stock; new quantities use kg.
+
+    POST accepts one row (legacy form/API) or JSON {year, month, rows: [...]}.
+    Manual rows use stock_type, commodity, closing_qty, rate and optional id.
+    Omitted rows are never deleted. An id edits that row within the same period.
+    Old clients can still send closing_value without rate or stock_type.
+    GET keeps monthly_records/movements and adds sections, summary and locks.
+    """
+    from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+    from pymongo.errors import DuplicateKeyError, PyMongoError
+    from app.services.periods import is_period_locked
+
     db = current_app.mongo_db
+    coll = db.pg_stocks_monthly
+    wants_json = bool(_wants_json_response() or request.headers.get("Authorization"))
+    year = month = None
 
-    def wants_json():
-        accept = (request.headers.get("Accept") or "").lower()
-        content_type = (request.content_type or "").lower()
-        return (
-            request.is_json
-            or "application/json" in accept
-            or "application/json" in content_type
-            or request.args.get("format") == "json"
-        )
+    def fail(message, status=400, **extra):
+        if wants_json:
+            return jsonify(success=False, ok=False, message=message, error=message, **extra), status
+        flash(message, "danger")
+        params = {"pg_id": pg_id}
+        if year is not None and month is not None:
+            params.update(year=year, month=month)
+        return redirect(url_for("business.stock_register", **params))
 
-    def fval(src, key, default=0.0):
+    def period_number(value, label, low, high):
         try:
-            return float(src.get(key, default) or default)
-        except Exception:
-            return float(default)
+            if isinstance(value, bool):
+                raise ValueError()
+            result = int(str(value))
+            if not low <= result <= high:
+                raise ValueError()
+            return result
+        except (TypeError, ValueError):
+            raise ValueError(f"{label} must be between {low} and {high}.")
 
-    def ival(src, key, default=0):
+    def number(value, label, places=3):
         try:
-            return int(src.get(key, default) or default)
-        except Exception:
-            return int(default)
+            if isinstance(value, bool) or value in (None, ""):
+                raise ValueError()
+            result = Decimal(str(value))
+            if not result.is_finite() or result < 0 or result > Decimal("1000000000000"):
+                raise ValueError()
+            return result.quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_UP)
+        except (InvalidOperation, TypeError, ValueError):
+            raise ValueError(f"{label} must be a valid non-negative number (maximum 1 trillion).")
 
-    def serialize_monthly(doc):
+    def date_text(value):
+        return value.isoformat() if hasattr(value, "isoformat") else (str(value) if value else None)
+
+    def display_number(value):
+        try:
+            result = Decimal(str(value or 0))
+            return float(result) if result.is_finite() else 0.0
+        except (InvalidOperation, TypeError, ValueError):
+            return 0.0
+
+    def serialize(doc):
+        qty = display_number(doc.get("closing_qty"))
+        value = display_number(doc.get("closing_value"))
+        category = doc.get("stock_type")
+        category = category if category in ("input", "product") else "unclassified"
+        unit = doc.get("unit") or ""
+        rate = display_number(doc.get("rate")) if doc.get("rate") is not None else (value / qty if qty else 0)
         return {
-            "id": str(doc.get("_id", "")),
-            "year": int(doc.get("year") or 0),
-            "month": int(doc.get("month") or 0),
-            "commodity": doc.get("commodity") or "",
-            "opening_qty": float(doc.get("opening_qty") or 0),
-            "opening_value": float(doc.get("opening_value") or 0),
-            "closing_qty": float(doc.get("closing_qty") or 0),
-            "closing_value": float(doc.get("closing_value") or 0),
+            "id": str(doc.get("_id", "")), "year": doc.get("year"), "month": doc.get("month"),
+            "stock_type": category, "commodity": doc.get("commodity") or "",
+            "unit": unit, "closing_qty": qty, "rate": round(rate, 4), "closing_value": value,
+            "opening_qty": display_number(doc.get("opening_qty")),
+            "opening_value": display_number(doc.get("opening_value")),
             "valuation_method": doc.get("valuation_method") or "avg",
-            "updated_at": doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
+            "updated_at": date_text(doc.get("updated_at")),
+            "needs_review": category == "unclassified" or unit != "kg",
         }
 
-    def serialize_movement(doc):
-        return {
-            "id": str(doc.get("_id", "")),
-            "commodity": doc.get("commodity") or "",
-            "movement_type": doc.get("movement_type") or "purchase",
-            "qty": float(doc.get("qty") or 0),
-            "rate": float(doc.get("rate") or 0),
-            "amount": float(doc.get("amount") or 0),
-            "remarks": doc.get("remarks") or "",
-            "ts": doc.get("ts").isoformat() if doc.get("ts") else None,
-            "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
-        }
-
-    try:
-        pg_obj_id = ObjectId(pg_id)
-    except InvalidId:
-        if wants_json():
-            return jsonify({"success": False, "message": "Invalid PG ID."}), 400
-        flash("Invalid PG ID.", "danger")
-        return redirect(url_for("pg.pg_home"))
-
+    pg_obj_id = _to_object_id(pg_id)
+    if pg_obj_id is None:
+        return fail("Invalid PG ID.")
     pg = _get_scoped_pg(db, pg_obj_id)
     if not pg:
-        if wants_json():
-            return jsonify({"success": False, "message": "PG not found."}), 404
-        flash("PG not found.", "danger")
-        return redirect(url_for("pg.pg_home"))
+        return fail("PG not found or outside your access scope.", 404)
 
-    def build_payload(year=None, month=None):
-        monthly_query = {"pg_id": pg_obj_id}
-        if year is not None:
-            monthly_query["year"] = int(year)
-        if month is not None:
-            monthly_query["month"] = int(month)
+    role = str(getattr(g, "role", None) or session.get("role") or "").upper()
+    # Scope has already been checked above. JWT and session users share write rules.
+    can_write = role in BUSINESS_WRITE_ROLES
+    now = datetime.utcnow()
+    src = request.get_json(silent=True) if request.is_json else request.form
+    if request.method == "POST" and not isinstance(src, dict):
+        return fail("Send a stock form or a JSON object.")
+    if src is None:
+        src = {}
+    try:
+        period_src = src if request.method == "POST" else request.args
+        year = period_number(period_src.get("year", request.args.get("year", now.year)), "Year", 1900, 9999)
+        month = period_number(period_src.get("month", request.args.get("month", now.month)), "Month", 1, 12)
+    except ValueError as exc:
+        return fail(str(exc))
 
-        records = list(
-            db.pg_stocks_monthly.find(monthly_query)
-            .sort([("year", -1), ("month", -1), ("updated_at", -1)])
-            .limit(200)
-        )
+    period_query = {"pg_id": pg_obj_id, "year": year, "month": month}
+    locked = is_period_locked(db, scope="pg", ref_id=str(pg_obj_id), year=year, month=month)
 
-        movements = list(
-            db.pg_stock_movements.find({"pg_id": pg_obj_id})
-            .sort([("ts", -1)])
-            .limit(100)
-        )
-
+    def build_payload():
+        # No 200-row truncation: summaries cover the entire selected month.
+        records = list(coll.find(period_query).sort([("stock_type", 1), ("commodity", 1)]))
+        rows = [serialize(doc) for doc in records]
+        sections = {key: [row for row in rows if row["stock_type"] == key]
+                    for key in ("input", "product", "unclassified")}
+        summary = {"period": {"year": year, "month": month}, "item_count": len(rows),
+                   "total_value": round(sum(row["closing_value"] for row in rows), 2),
+                   "quantity_kg": round(sum(row["closing_qty"] for row in rows if row["unit"] == "kg"), 3),
+                   "needs_review_count": sum(row["needs_review"] for row in rows)}
+        for key, entries in sections.items():
+            summary[key] = {"item_count": len(entries),
+                            "quantity_kg": round(sum(row["closing_qty"] for row in entries if row["unit"] == "kg"), 3),
+                            "value": round(sum(row["closing_value"] for row in entries), 2)}
+        # Retain movement response for existing mobile clients and the old template.
+        movements = list(db.pg_stock_movements.find({"pg_id": pg_obj_id}).sort([("ts", -1)]).limit(100))
+        serialized_movements = [{
+            "id": str(doc.get("_id", "")), "commodity": doc.get("commodity") or "",
+            "movement_type": doc.get("movement_type") or "purchase",
+            "qty": display_number(doc.get("qty")), "rate": display_number(doc.get("rate")),
+            "amount": display_number(doc.get("amount")), "remarks": doc.get("remarks") or "",
+            "ts": date_text(doc.get("ts")), "created_at": date_text(doc.get("created_at")),
+        } for doc in movements]
         return {
-            "success": True,
-            "pg": {
-                "id": str(pg["_id"]),
-                "name": pg.get("pg_name") or pg.get("name") or "Producer Group",
-            },
-            "filters": {
-                "year": int(year) if year is not None else None,
-                "month": int(month) if month is not None else None,
-            },
-            "monthly_records": [serialize_monthly(r) for r in records],
-            "movements": [serialize_movement(m) for m in movements],
-        }
+            "success": True, "ok": True,
+            "pg": {"id": str(pg_obj_id), "name": pg.get("pg_name") or pg.get("name") or "Producer Group"},
+            "year": year, "month": month, "filters": {"year": year, "month": month},
+            "monthly_records": rows, "sections": sections, "summary": summary,
+            "movements": serialized_movements, "locked": locked, "can_edit": can_write and not locked,
+        }, records, movements
 
     if request.method == "POST":
-        write_denied = _guard_business_write(pg)
-        if write_denied:
-            return write_denied
+        if not can_write:
+            return fail("This business module is view-only for your role.", 403)
+        if locked:
+            return fail("This period is locked/approved. Editing is disabled.", 423)
+        batch = "rows" in src
+        raw_rows = src.get("rows") if batch else [src]
+        if not isinstance(raw_rows, list) or not raw_rows or len(raw_rows) > 500:
+            return fail("Send between 1 and 500 stock rows per save.")
 
-        src = request.get_json(silent=True) or {} if request.is_json else request.form
+        existing = list(coll.find(period_query))
+        by_id = {str(doc["_id"]): doc for doc in existing}
+        prepared = []
+        target_ids = set()
+        target_keys = set()
+        try:
+            for row_no, row in enumerate(raw_rows, 1):
+                if not isinstance(row, dict):
+                    raise ValueError(f"Row {row_no}: invalid stock row.")
+                commodity = row.get("commodity", row.get("item", ""))
+                if not isinstance(commodity, str):
+                    raise ValueError(f"Row {row_no}: enter an item name.")
+                commodity = " ".join(commodity.split())
+                if not commodity or len(commodity) > 200:
+                    raise ValueError(f"Row {row_no}: item name must contain 1 to 200 characters.")
+                row_id = str(row.get("id") or "")
+                previous = by_id.get(row_id) if row_id else None
+                if row_id and previous is None:
+                    raise ValueError(f"Row {row_no}: entry not found in this PG and month. Reload before editing.")
+                supplied_type = row.get("stock_type")
+                manual = batch or supplied_type is not None
+                category = str(supplied_type or "").strip().lower() if manual else (previous or {}).get("stock_type")
+                if manual and category not in ("input", "product"):
+                    raise ValueError(f"Row {row_no}: choose Input or Product.")
+                if manual and row.get("unit", "kg") != "kg":
+                    raise ValueError(f"Row {row_no}: quantity must be in kg.")
+                key = (category, commodity.casefold())
+                if key in target_keys:
+                    raise ValueError(f"Row {row_no}: this item appears twice in the same stock section.")
+                target_keys.add(key)
+                # Resolve names case-insensitively without rewriting legacy records.
+                matches = [doc for doc in existing
+                           if " ".join(str(doc.get("commodity") or "").split()).casefold() == commodity.casefold()
+                           and (doc.get("stock_type") == category or (not manual and not row_id))]
+                if len(matches) > 1:
+                    raise ValueError(f"Row {row_no}: multiple matching entries exist. Reload and edit by entry ID.")
+                if matches:
+                    if previous and matches[0]["_id"] != previous["_id"]:
+                        raise ValueError(f"Row {row_no}: another entry already uses this item and stock type.")
+                    previous = previous or matches[0]
+                if previous:
+                    if str(previous["_id"]) in target_ids:
+                        raise ValueError(f"Row {row_no}: the same saved entry was included twice.")
+                    target_ids.add(str(previous["_id"]))
+                    if not manual:
+                        category = previous.get("stock_type")
+                    if row.get("updated_at") and row["updated_at"] != date_text(previous.get("updated_at")):
+                        raise ValueError(f"Row {row_no}: entry changed since it was loaded. Reload before saving.")
+                qty = number(row.get("closing_qty", row.get("quantity")), f"Row {row_no} quantity")
+                if manual or row.get("rate") not in (None, ""):
+                    rate = number(row.get("rate"), f"Row {row_no} rate", 4)
+                    value = (qty * rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                else:
+                    # Compatibility with the existing form/mobile closing-value contract.
+                    value = number(row.get("closing_value", 0), f"Row {row_no} value", 2)
+                    if qty == 0 and value != 0:
+                        raise ValueError(f"Row {row_no}: zero quantity must have zero value.")
+                    rate = (value / qty).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP) if qty else Decimal(0)
+                if value > Decimal("1000000000000"):
+                    raise ValueError(f"Row {row_no}: total value is too large.")
+                fields = dict(period_query, commodity=commodity, closing_qty=float(qty),
+                              closing_value=float(value), rate=float(rate), updated_at=datetime.utcnow())
+                if manual:
+                    fields.update(stock_type=category, unit="kg", schema_version=2)
+                # Preserve opening data; only old clients can explicitly update it.
+                if not manual:
+                    for name in ("opening_qty", "opening_value"):
+                        if name in row:
+                            fields[name] = float(number(row[name], f"Row {row_no} {name}"))
+                    if "valuation_method" in row:
+                        fields["valuation_method"] = str(row.get("valuation_method") or "avg")
+                if previous:
+                    query = dict(period_query, _id=previous["_id"])
+                    # Optimistic check also protects against edits during this request.
+                    query["updated_at"] = previous.get("updated_at")
+                else:
+                    query = dict(period_query, commodity=commodity, stock_type=category)
+                prepared.append((query, fields, previous))
+        except ValueError as exc:
+            return fail(str(exc))
 
-        year = ival(src, "year", datetime.utcnow().year)
-        month = ival(src, "month", datetime.utcnow().month)
-        commodity = (src.get("commodity") or "").strip()
-
-        if not commodity:
-            if wants_json():
-                return jsonify({"success": False, "message": "Commodity is required."}), 400
-            flash("Commodity is required.", "danger")
-            return redirect(url_for("business.stock_register", pg_id=pg_id))
-
-        doc = {
-            "pg_id": pg_obj_id,
-            "year": year,
-            "month": month,
-            "commodity": commodity,
-            "opening_qty": fval(src, "opening_qty"),
-            "opening_value": fval(src, "opening_value"),
-            "closing_qty": fval(src, "closing_qty"),
-            "closing_value": fval(src, "closing_value"),
-            "valuation_method": (src.get("valuation_method") or "avg").strip().lower(),
-            "updated_at": datetime.utcnow(),
-        }
-
-        db.pg_stocks_monthly.update_one(
-            {"pg_id": pg_obj_id, "year": year, "month": month, "commodity": commodity},
-            {"$set": doc},
-            upsert=True,
-        )
-
-        if wants_json():
-            payload = build_payload(year, month)
-            payload["message"] = "Stock monthly saved successfully."
+        saved_ids = []
+        try:
+            for query, fields, previous in prepared:
+                if previous:
+                    result = coll.update_one(query, {"$set": fields})
+                    if result.matched_count != 1:
+                        return fail("An entry changed during saving. Reload before retrying.", 409,
+                                    saved_ids=saved_ids, partial_save=bool(saved_ids))
+                    saved_ids.append(str(previous["_id"]))
+                else:
+                    # Insert after validation; the unique index rejects concurrent duplicates.
+                    result = coll.insert_one(dict(fields, created_at=datetime.utcnow()))
+                    saved_ids.append(str(result.inserted_id))
+        except DuplicateKeyError:
+            return fail("A matching stock entry already exists, or the old stock index is still active. "
+                        "Reload the month; if this persists, confirm File 1 is installed and Flask restarted.",
+                        409, saved_ids=saved_ids, partial_save=bool(saved_ids))
+        except PyMongoError:
+            current_app.logger.exception("Monthly stock save failed")
+            return fail("Stock save could not finish. Reload the month before retrying.", 503,
+                        saved_ids=saved_ids, partial_save=bool(saved_ids))
+        if wants_json:
+            payload, _, _ = build_payload()
+            payload.update(message="Monthly stock saved successfully.", saved_ids=saved_ids)
             return jsonify(payload), 200
+        flash("Monthly stock saved successfully.", "success")
+        return redirect(url_for("business.stock_register", pg_id=pg_id, year=year, month=month))
 
-        flash("Stock monthly saved.", "success")
-        return redirect(url_for("business.stock_register", pg_id=pg_id))
-
-    year = request.args.get("year")
-    month = request.args.get("month")
-
-    if wants_json():
-        return jsonify(build_payload(year, month)), 200
-
-    records = list(
-        db.pg_stocks_monthly.find({"pg_id": pg_obj_id})
-        .sort([("year", -1), ("month", -1)])
-        .limit(200)
-    )
-    movements = list(
-        db.pg_stock_movements.find({"pg_id": pg_obj_id})
-        .sort([("ts", -1)])
-        .limit(100)
-    )
-    return render_template("stock_register.html", pg=pg, records=records, movements=movements)
+    payload, records, movements = build_payload()
+    if wants_json:
+        return jsonify(payload), 200
+    return render_template("stock_register.html", pg=pg, records=records, movements=movements,
+                           year=year, month=month, stock_data=payload, summary=payload["summary"],
+                           sections=payload["sections"], can_edit=payload["can_edit"], period_locked=locked)
 
 # changes made by atlanta
 @business_bp.route("/stock_movement/<pg_id>", methods=["POST"])

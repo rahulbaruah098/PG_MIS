@@ -1,5 +1,6 @@
 from flask import Flask, session
 from pymongo import MongoClient, ASCENDING
+from pymongo.errors import OperationFailure
 from .config import Config
 from flask_cors import CORS
 from bson import ObjectId
@@ -161,6 +162,36 @@ def create_app():
     return app
 
 
+def _init_stock_monthly_indexes(db):
+    """Allow multiple monthly items without deleting or rewriting stock records.
+
+    New records are unique by PG, period, stock_type and commodity. Legacy
+    records without stock_type remain valid (MongoDB indexes it as null).
+    The stock route will add input/product classification in the next step.
+    Build the replacement before removing restrictive legacy indexes. If its
+    build fails, startup stops and the legacy indexes remain untouched.
+    """
+    stock = db.pg_stocks_monthly
+    period_keys = [("pg_id", ASCENDING), ("year", ASCENDING), ("month", ASCENDING)]
+    item_keys = period_keys + [("stock_type", ASCENDING), ("commodity", ASCENDING)]
+    stock.create_index(item_keys, unique=True)
+
+    # Match exact key patterns, including installations using custom names.
+    # Never drop unrelated indexes or modify existing stock documents.
+    legacy_patterns = (
+        period_keys,
+        period_keys + [("commodity", ASCENDING)],
+    )
+    for name, info in stock.index_information().items():
+        if info.get("unique") and list(info.get("key", [])) in legacy_patterns:
+            try:
+                stock.drop_index(name)
+            except OperationFailure as exc:
+                # Another worker may have completed the same migration.
+                if exc.code != 27:  # IndexNotFound
+                    raise
+
+
 def init_indexes(db):
     # ------------------------------------------------------------
     # Users
@@ -229,10 +260,7 @@ def init_indexes(db):
         [("pg_id", ASCENDING), ("year", ASCENDING), ("month", ASCENDING)],
         unique=True
     )
-    db.pg_stocks_monthly.create_index(
-        [("pg_id", ASCENDING), ("year", ASCENDING), ("month", ASCENDING)],
-        unique=True
-    )
+    _init_stock_monthly_indexes(db)
     db.pg_income_expenditure.create_index([("pg_id", ASCENDING), ("year", ASCENDING), ("month", ASCENDING)])
     db.mpr_snapshots.create_index([("level", ASCENDING), ("ref_id", ASCENDING), ("year", ASCENDING), ("month", ASCENDING)])
     db.audit_logs.create_index([("collection", ASCENDING), ("doc_id", ASCENDING)])
