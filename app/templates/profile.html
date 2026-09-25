@@ -621,15 +621,15 @@
             <div class="section-title" id="labelTotalMembers">Total Members in PG</div>
           </div>
 
-          <select id="inputTotalMembers" class="single-input" aria-label="Total members in PG">
+          <select id="inputTotalMembers" class="single-input" aria-readonly="true" data-view-value="0">
             {% for member_number in range(0, 41) %}
               <option value="{{ member_number }}" {% if pg and (pg.total_members|int) == member_number %}selected{% endif %}>{{ member_number }}</option>
             {% endfor %}
           </select>
           <div class="field" style="margin-top:12px;">
             <label class="field-label" id="labelMemberNames" for="profileMemberNames">PG Member Names</label>
-            <select id="profileMemberNames" class="single-input" aria-label="PG member names">
-              <option value="">Loading members...</option>
+            <select id="profileMemberNames" class="single-input" aria-readonly="true">
+              <option value="">Open Profile to load all members</option>
             </select>
           </div>
         </div>
@@ -741,6 +741,7 @@
         state: "State",
         formationDate: "Date of Formation",
         totalMembers: "Total Members in PG",
+        memberNames: "PG Member Names",
         clfName: "Name of CLF under which PG belongs to",
         bankDetails: "Bank Details",
         accountNo: "Account Number",
@@ -769,6 +770,7 @@
         state: "রাজ্য",
         formationDate: "গঠনের তারিখ",
         totalMembers: "পিজিতে মোট সদস্য",
+        memberNames: "পিজি সদস্যদের নাম",
         clfName: "সিএলএফ-এর নাম যার অধীনে পিজি রয়েছে",
         bankDetails: "ব্যাংক বিবরণ",
         accountNo: "অ্যাকাউন্ট নম্বর",
@@ -927,6 +929,7 @@
 
       document.getElementById('labelFormationDate').textContent = t.formationDate;
       document.getElementById('labelTotalMembers').textContent = t.totalMembers;
+      document.getElementById('labelMemberNames').textContent = t.memberNames;
       document.getElementById('labelClfName').textContent = t.clfName;
 
       document.getElementById('labelBankDetails').textContent = t.bankDetails;
@@ -1036,7 +1039,7 @@
     function getFieldIds(){
       return [
         "inputPgName","inputActivity","inputVillage","inputBlock","inputDistrict","inputState",
-        "inputFormationDateText","inputFormationDatePicker","inputTotalMembers","inputClfName",
+        "inputFormationDateText","inputFormationDatePicker","inputClfName",
         "inputAccountNo","inputIfsc","inputBankName","inputBranch"
       ];
     }
@@ -1088,37 +1091,44 @@
       }
     });
 
+    document.getElementById('inputTotalMembers')?.addEventListener('change', function(){
+      this.value = this.dataset.viewValue || this.value;
+    });
+
     async function loadProfileMemberNames(){
       const memberSelect = document.getElementById('profileMemberNames');
       const countSelect = document.getElementById('inputTotalMembers');
+      const pgId = {{ (pg._id|string if pg else session.get('pg_id', ''))|tojson }};
       if (!memberSelect) return;
-
-      const pgId = {{ (pg._id|string if pg else '')|tojson }};
       if (!pgId) {
         memberSelect.innerHTML = '<option value="">No PG selected</option>';
         return;
       }
 
       try {
-        const response = await fetch(`/pg/api/members/${encodeURIComponent(pgId)}`, {
-          headers: { 'Accept': 'application/json' }
+        const response = await fetch('/pg/members/' + encodeURIComponent(pgId), {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
         });
         const payload = await response.json();
-        if (!response.ok || !payload.ok || !Array.isArray(payload.members)) {
+        if (!response.ok || !payload.ok || !Array.isArray(payload.rows)) {
           throw new Error(payload.error || 'Unable to load members');
         }
 
-        memberSelect.innerHTML = '';
-        if (!payload.members.length) {
-          memberSelect.add(new Option('No active members found', ''));
-        } else {
-          memberSelect.add(new Option('Select a member', ''));
-          payload.members.forEach((member, index) => {
-            const label = member.name || `Member ${index + 1}`;
-            const code = member.member_code ? ` (${member.member_code})` : '';
-            memberSelect.add(new Option(`${index + 1}. ${label}${code}`, member._id || ''));
-          });
-          if (countSelect) countSelect.value = String(Math.min(payload.members.length, 40));
+        memberSelect.innerHTML = '<option value="">Select a member</option>';
+        payload.rows.forEach((member, index) => {
+          const label = member.name || ('Member ' + (index + 1));
+          const code = member.member_code ? ' (' + member.member_code + ')' : '';
+          memberSelect.add(new Option((index + 1) + '. ' + label + code, member.member_id || member._id || ''));
+        });
+
+        const actualCount = String(Math.min(payload.rows.length, 40));
+        if (countSelect) {
+          countSelect.value = actualCount;
+          countSelect.dataset.viewValue = actualCount;
+        }
+        if (!payload.rows.length) {
+          memberSelect.innerHTML = '<option value="">No active members found</option>';
         }
       } catch (error) {
         console.error('Profile member list could not be loaded:', error);

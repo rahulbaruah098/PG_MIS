@@ -2343,17 +2343,13 @@
 
           <div class="field">
             <label class="field-label" id="labelTotalMembers" for="inputTotalMembers">Total Members in PG</label>
-            <select id="inputTotalMembers" class="field-input">
-              {% for member_number in range(0, 41) %}
-                <option value="{{ member_number }}">{{ member_number }}</option>
-              {% endfor %}
-            </select>
+            <input id="inputTotalMembers" class="field-input" type="text" value="0" readonly aria-readonly="true">
           </div>
 
           <div class="field">
             <label class="field-label" id="labelProfileMemberNames" for="profileMemberNames">PG Member Names</label>
-            <select id="profileMemberNames" class="field-input">
-              <option value="">Open Profile to load members</option>
+            <select id="profileMemberNames" class="field-input" aria-readonly="true">
+              <option value="">View PG members</option>
             </select>
           </div>
         </div>
@@ -3121,7 +3117,9 @@ window.PGMIS.setLanguage = (lang) => {
 
       const setVal = (id, value) => {
         const el = document.getElementById(id);
-        if(el) el.value = value ?? "";
+        if(el){
+          el.value = value ?? "";
+        }
       };
 
       setVal("inputPgName", data.pg_name);
@@ -3131,7 +3129,6 @@ window.PGMIS.setLanguage = (lang) => {
       setVal("inputBlock", data.block);
       setVal("inputDistrict", data.district);
       setVal("inputState", data.state);
-      setVal("inputTotalMembers", data.total_members);
       setVal("inputClfName", data.clf_name);
 
       if(data.formation_date){
@@ -3157,37 +3154,50 @@ window.PGMIS.setLanguage = (lang) => {
 
     async function loadProfileMemberNames(){
       const memberSelect = document.getElementById("profileMemberNames");
-      const countSelect = document.getElementById("inputTotalMembers");
+      const countField = document.getElementById("inputTotalMembers");
       if(!memberSelect || !BASE_PROFILE_PG_ID) return;
 
       const isBangla = currentLanguage === "bn";
-      memberSelect.innerHTML = "<option value=\"\">" +
-        (isBangla ? "সদস্য নির্বাচন করুন" : "Select a member") + "</option>";
+      const placeholder = isBangla ? "পিজির সদস্যদের দেখুন" : "View PG members";
+      memberSelect.innerHTML = "<option value=\"\">" + placeholder + "</option>";
 
       try{
-        const res = await fetch("/pg/api/members/" + encodeURIComponent(BASE_PROFILE_PG_ID), {
+        // This endpoint builds its rows from the members currently selected in
+        // PG Registration, so removed/inactive members are not included.
+        let res = await fetch("/pg/members/" + encodeURIComponent(BASE_PROFILE_PG_ID), {
           headers: { "Accept": "application/json" },
           credentials: "same-origin"
         });
-        const payload = await res.json().catch(() => null);
-        if(!res.ok || !payload || payload.ok !== true || !Array.isArray(payload.members)){
-          throw new Error((payload && payload.error) || "Unable to load PG members");
+        let payload = await res.json().catch(() => null);
+        let members = payload && Array.isArray(payload.rows) ? payload.rows : null;
+
+        // Some supervisory roles cannot access the Membership Register route.
+        // Their API returns only active pg_members records.
+        if(!res.ok || !Array.isArray(members)){
+          res = await fetch("/pg/api/members/" + encodeURIComponent(BASE_PROFILE_PG_ID), {
+            headers: { "Accept": "application/json" },
+            credentials: "same-origin"
+          });
+          payload = await res.json().catch(() => null);
+          members = payload && Array.isArray(payload.members) ? payload.members : null;
         }
 
-        if(!payload.members.length){
+        if(!res.ok || !payload || !Array.isArray(members)){
+          throw new Error((payload && payload.error) || "Unable to load active PG members");
+        }
+
+        if(countField) countField.value = String(members.length);
+        if(!members.length){
           memberSelect.innerHTML = "<option value=\"\">" +
             (isBangla ? "কোনো সক্রিয় সদস্য পাওয়া যায়নি" : "No active members found") + "</option>";
-          if(countSelect) countSelect.value = "0";
           return;
         }
 
-        payload.members.forEach((member, index) => {
-          const name = String(member.name || (isBangla ? "সদস্য " : "Member ") + (index + 1));
+        members.forEach((member, index) => {
+          const name = String(member.name || member.member_name || (isBangla ? "সদস্য " : "Member ") + (index + 1));
           const code = member.member_code ? " (" + member.member_code + ")" : "";
-          memberSelect.add(new Option((index + 1) + ". " + name + code, member._id || ""));
+          memberSelect.add(new Option((index + 1) + ". " + name + code, member.member_id || member._id || ""));
         });
-
-        if(countSelect) countSelect.value = String(Math.min(payload.members.length, 40));
       }catch(err){
         console.error("Profile member list load error:", err);
         memberSelect.innerHTML = "<option value=\"\">" +
