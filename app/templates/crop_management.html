@@ -514,6 +514,20 @@
     display:block;
   }
 
+  .crop-module-modal{position:fixed;inset:0;z-index:16000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(15,23,42,.58);backdrop-filter:blur(3px);}
+  .crop-module-modal[hidden]{display:none;}
+  .crop-module-dialog{width:min(100%,440px);border:1px solid rgba(15,23,42,.10);border-radius:20px;background:#fff;box-shadow:0 28px 80px rgba(15,23,42,.28);overflow:hidden;}
+  .crop-module-dialog-head{padding:20px 22px 8px;}
+  .crop-module-dialog-title{margin:0;color:#0b4d3a;font-size:1.12rem;font-weight:950;}
+  .crop-module-dialog-copy{margin:7px 0 0;color:#64748b;font-size:.9rem;line-height:1.5;}
+  .crop-module-dialog-body{padding:14px 22px 8px;}
+  .crop-module-dialog-body label{display:block;margin-bottom:7px;color:#334155;font-size:.82rem;font-weight:850;}
+  .crop-module-dialog-body select{width:100%;min-height:46px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;padding:10px 12px;color:#0f172a;font:inherit;}
+  .crop-module-dialog-actions{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px 20px;}
+  .crop-module-dialog-actions .crop-btn{min-width:112px;}
+  .crop-module-dialog-actions .crop-btn:not(.crop-btn-green){background:#f1f5f9;color:#334155;border-color:#e2e8f0;}
+  .crop-module-dialog-actions .crop-btn:focus-visible{outline:3px solid rgba(16,185,129,.35);outline-offset:2px;}
+
   .crop-mobile-list{
     display:none;
   }
@@ -812,6 +826,27 @@
   </section>
 
   <div id="cropToast" class="crop-toast"></div>
+  <div id="cropModuleModal" class="crop-module-modal" hidden aria-hidden="true">
+    <div class="crop-module-dialog" role="dialog" aria-modal="true" aria-labelledby="cropModuleModalTitle" aria-describedby="cropModuleModalCopy">
+      <div class="crop-module-dialog-head">
+        <h2 id="cropModuleModalTitle" class="crop-module-dialog-title" data-crop-i18n="moduleModalTitle">Apply New FFS Module</h2>
+        <p id="cropModuleModalCopy" class="crop-module-dialog-copy" data-crop-i18n="moduleModalCopy">Choose the new module to apply to all loaded members.</p>
+      </div>
+      <div class="crop-module-dialog-body">
+        <label for="applyModuleSelect" data-crop-i18n="newFfsModule">New FFS Module</label>
+        <select id="applyModuleSelect" class="crop-select">
+          <option value="" data-crop-i18n="selectNewModule">Select New Module</option>
+          {% for module in agri_ffs_modules %}
+            <option value="{{ module }}">{{ module }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="crop-module-dialog-actions">
+        <button id="cropModuleCancel" type="button" class="crop-btn" data-crop-i18n="cancel">Cancel</button>
+        <button id="cropModuleApply" type="button" class="crop-btn crop-btn-green" data-crop-i18n="applyModule">Apply Module</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -833,6 +868,10 @@
   const memberTableBody = document.getElementById("memberTableBody");
   const memberMobileList = document.getElementById("memberMobileList");
   const cropToast = document.getElementById("cropToast");
+  const cropModuleModal = document.getElementById("cropModuleModal");
+  const applyModuleSelect = document.getElementById("applyModuleSelect");
+  const cropModuleCancel = document.getElementById("cropModuleCancel");
+  const cropModuleApply = document.getElementById("cropModuleApply");
 
   const kpiMembers = document.getElementById("kpiMembers");
   const kpiCrops = document.getElementById("kpiCrops");
@@ -910,7 +949,10 @@
       saveConfirm: "Save crop cycle changes? This will update Membership Register also.",
       failedToSave: "Failed to save crop cycle.",
       cropCycleSaved: "Crop cycle saved successfully.",
-      promptNewModule: "Enter New FFS Module exactly, example: FFS Module 2",
+      moduleModalTitle: "Apply New FFS Module",
+      moduleModalCopy: "Choose the new module to apply to all loaded members.",
+      cancel: "Cancel",
+      applyModule: "Apply Module",
       invalidFfsModule: "Invalid FFS Module.",
       appliedPrefix: "Applied",
       appliedSuffix: "to all visible members."
@@ -976,7 +1018,10 @@
       saveConfirm: "ফসল চক্রের পরিবর্তন সংরক্ষণ করবেন? এটি Membership Register-ও আপডেট করবে।",
       failedToSave: "ফসল চক্র সংরক্ষণ করতে ব্যর্থ হয়েছে।",
       cropCycleSaved: "ফসল চক্র সফলভাবে সংরক্ষণ হয়েছে।",
-      promptNewModule: "নতুন FFS মডিউল ঠিকভাবে লিখুন, উদাহরণ: FFS Module 2",
+      moduleModalTitle: "নতুন FFS মডিউল প্রয়োগ করুন",
+      moduleModalCopy: "লোড হওয়া সব সদস্যের জন্য প্রয়োগ করতে নতুন মডিউল নির্বাচন করুন।",
+      cancel: "বাতিল",
+      applyModule: "মডিউল প্রয়োগ করুন",
       invalidFfsModule: "অবৈধ FFS মডিউল।",
       appliedPrefix: "প্রয়োগ করা হয়েছে",
       appliedSuffix: "সব দৃশ্যমান সদস্যের জন্য।"
@@ -1426,24 +1471,36 @@
     }
   }
 
-  function applySameNewModule(){
+  function openModuleModal(){
     if(!loadedMembers.length) return;
+    applyModuleSelect.value = "";
+    cropModuleModal.hidden = false;
+    cropModuleModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    applyModuleSelect.focus();
+  }
 
-    const selected = prompt(cropT("promptNewModule"));
+  function closeModuleModal(){
+    cropModuleModal.hidden = true;
+    cropModuleModal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    applySameModuleBtn.focus();
+  }
 
-    if(!selected) return;
-
-    if(!AGRI_FFS_MODULES.includes(selected)){
+  function applySameNewModule(){
+    const selected = applyModuleSelect.value;
+    if(!selected || !AGRI_FFS_MODULES.includes(selected)){
       showToast(cropT("invalidFfsModule"), true);
+      applyModuleSelect.focus();
       return;
     }
-
     loadedMembers = loadedMembers.map(m => ({
       ...m,
       new_ffs_module: selected
     }));
 
     renderMembers();
+    closeModuleModal();
     showToast(`${cropT("appliedPrefix")} ${selected} ${cropT("appliedSuffix")}`);
   }
 
@@ -1462,7 +1519,15 @@
   cycleStart.addEventListener("change", updateAnalytics);
   loadMembersBtn.addEventListener("click", loadMembers);
   saveCropBtn.addEventListener("click", saveCropCycle);
-  applySameModuleBtn.addEventListener("click", applySameNewModule);
+  applySameModuleBtn.addEventListener("click", openModuleModal);
+  cropModuleCancel.addEventListener("click", closeModuleModal);
+  cropModuleApply.addEventListener("click", applySameNewModule);
+  cropModuleModal.addEventListener("click", function(e){
+    if(e.target === cropModuleModal) closeModuleModal();
+  });
+  document.addEventListener("keydown", function(e){
+    if(!cropModuleModal.hidden && e.key === "Escape") closeModuleModal();
+  });
 
   cropLang = getSavedCropLang();
   applyCropTranslations(cropLang);

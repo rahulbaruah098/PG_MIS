@@ -1014,7 +1014,13 @@ def _review_validation(db, pg, form_type, action, remarks=""):
     if action == "approve":
         new_status = "approved"
         action_label = "approved"
-        remarks_to_store = remarks or current_doc.get("remarks") or ""
+        # A successful member-registration approval closes the rejection
+        # cycle, so do not carry the previous rejection remarks forward.
+        # Any remarks entered for this approval are still retained.
+        if form_type == "member_registration":
+            remarks_to_store = remarks
+        else:
+            remarks_to_store = remarks or current_doc.get("remarks") or ""
     elif action == "reject":
         if not remarks:
             return False, "Rejection remarks are required.", 400

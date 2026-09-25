@@ -3588,7 +3588,7 @@ function renderBalancePanel(){
         <div class="cb-balance-title">Monthly Balance Summary</div>
         <div class="cb-balance-sub">${cbOpeningSourceText()}</div>
       </div>
-      <div class="cb-balance-status ${t.closing_cash < 0 || t.closing_bank < 0 ? "bad" : "ok"}">
+      <div id="cbBalanceStatus" class="cb-balance-status ${t.closing_cash < 0 || t.closing_bank < 0 ? "bad" : "ok"}">
         ${t.closing_cash < 0 || t.closing_bank < 0 ? "Negative balance" : "Balanced"}
       </div>
     </div>
@@ -3606,7 +3606,7 @@ function renderBalancePanel(){
 
       <div class="cb-balance-card readonly">
         <label>Opening Total</label>
-        <strong>${formatINR(t.opening_total)}</strong>
+        <strong id="cbOpeningTotalValue">${formatINR(t.opening_total)}</strong>
       </div>
 
       <div class="cb-balance-card">
@@ -3651,17 +3651,17 @@ function renderBalancePanel(){
 
       <div class="cb-balance-card ${t.closing_cash < 0 ? "danger" : "success"}">
         <label>Closing Cash</label>
-        <strong>${formatINR(t.closing_cash)}</strong>
+        <strong id="cbClosingCashValue">${formatINR(t.closing_cash)}</strong>
       </div>
 
       <div class="cb-balance-card ${t.closing_bank < 0 ? "danger" : "success"}">
         <label>Closing Bank</label>
-        <strong>${formatINR(t.closing_bank)}</strong>
+        <strong id="cbClosingBankValue">${formatINR(t.closing_bank)}</strong>
       </div>
 
       <div class="cb-balance-card success">
         <label>Closing Total</label>
-        <strong>${formatINR(t.closing_total)}</strong>
+        <strong id="cbClosingTotalValue">${formatINR(t.closing_total)}</strong>
       </div>
     </div>
   `;
@@ -3673,7 +3673,7 @@ function renderBalancePanel(){
     cashInput.addEventListener("input", () => {
       cbOpening.cash = cbNum(cashInput.value);
       cbOpening.total = cbNum(cbOpening.cash) + cbNum(cbOpening.bank);
-      renderTotals();
+      updateOpeningBalanceSummary();
     });
   }
 
@@ -3681,9 +3681,35 @@ function renderBalancePanel(){
     bankInput.addEventListener("input", () => {
       cbOpening.bank = cbNum(bankInput.value);
       cbOpening.total = cbNum(cbOpening.cash) + cbNum(cbOpening.bank);
-      renderTotals();
+      updateOpeningBalanceSummary();
     });
   }
+}
+
+function updateOpeningBalanceSummary(){
+  const t = cbCurrentTotals();
+  const hasNegativeBalance = t.closing_cash < 0 || t.closing_bank < 0;
+
+  const openingTotal = document.getElementById("cbOpeningTotalValue");
+  const closingCash = document.getElementById("cbClosingCashValue");
+  const closingBank = document.getElementById("cbClosingBankValue");
+  const closingTotal = document.getElementById("cbClosingTotalValue");
+  const status = document.getElementById("cbBalanceStatus");
+
+  if (openingTotal) openingTotal.textContent = formatINR(t.opening_total);
+  if (closingCash) closingCash.textContent = formatINR(t.closing_cash);
+  if (closingBank) closingBank.textContent = formatINR(t.closing_bank);
+  if (closingTotal) closingTotal.textContent = formatINR(t.closing_total);
+  if (status){
+    status.className = `cb-balance-status ${hasNegativeBalance ? "bad" : "ok"}`;
+    status.textContent = hasNegativeBalance ? "Negative balance" : "Balanced";
+  }
+
+  cbBalanceTotal.textContent = formatINR(t.closing_total);
+  const cashCard = closingCash && closingCash.closest(".cb-balance-card");
+  const bankCard = closingBank && closingBank.closest(".cb-balance-card");
+  if (cashCard) cashCard.className = `cb-balance-card ${t.closing_cash < 0 ? "danger" : "success"}`;
+  if (bankCard) bankCard.className = `cb-balance-card ${t.closing_bank < 0 ? "danger" : "success"}`;
 }
 
 function renderTotals(){
