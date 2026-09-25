@@ -2241,6 +2241,24 @@ function deleteActiveProducer(){
 function normalizeProducersFromData(data){
   const list = [];
 
+  function normalizePurchaseRow(row){
+    const purchase = { ...row };
+    const amount = Number.parseFloat(purchase.amount) || 0;
+    const advance = Number.parseFloat(purchase.advance) || 0;
+    const amountPaid = Number.parseFloat(purchase.amountPaid) || 0;
+    purchase.amountDue = (amount - advance - amountPaid).toFixed(2);
+    return purchase;
+  }
+
+  function normalizeSaleRow(row){
+    const sale = { ...row };
+    const amount = Number.parseFloat(sale.amount) || 0;
+    const advance = Number.parseFloat(sale.advance) || 0;
+    const finalAmount = Number.parseFloat(sale.finalAmount) || 0;
+    sale.total = (amount - advance - finalAmount).toFixed(2);
+    return sale;
+  }
+
   if (data && Array.isArray(data.producers)) {
     data.producers.forEach((item, index) => {
       if (!item || typeof item !== "object") return;
@@ -2249,8 +2267,8 @@ function normalizeProducersFromData(data){
         producerId: item.producerId || item.producer_id || makeProducerId(item.producerName || `producer_${index + 1}`),
         producerName: item.producerName || item.producer_name || "",
         stockingUnit: item.stockingUnit || item.stocking_unit || "",
-        purchases: Array.isArray(item.purchases) ? item.purchases.map(x => ({...x})) : [],
-        sales: Array.isArray(item.sales) ? item.sales.map(x => ({...x})) : [],
+        purchases: Array.isArray(item.purchases) ? item.purchases.map(normalizePurchaseRow) : [],
+        sales: Array.isArray(item.sales) ? item.sales.map(normalizeSaleRow) : [],
       });
     });
   }
@@ -2267,8 +2285,8 @@ function normalizeProducersFromData(data){
         producerId: makeProducerId(data.producerName || "producer_1"),
         producerName: data.producerName || "",
         stockingUnit: data.stockingUnit || "",
-        purchases: Array.isArray(data.purchases) ? data.purchases.map(x => ({...x})) : [],
-        sales: Array.isArray(data.sales) ? data.sales.map(x => ({...x})) : [],
+        purchases: Array.isArray(data.purchases) ? data.purchases.map(normalizePurchaseRow) : [],
+        sales: Array.isArray(data.sales) ? data.sales.map(normalizeSaleRow) : [],
       });
     }
   }
@@ -2799,10 +2817,11 @@ if (deleteProducerBtn){
       if (mobileAmt) mobileAmt.value = purchase.amount;
     }
 
-    if (field === "amount" || field === "advance" || field==="qty" || field==="rate") {
+    if (field === "amount" || field === "advance" || field === "amountPaid" || field==="qty" || field==="rate") {
       const amount = parseFloat(purchase.amount) || 0;
       const advance = parseFloat(purchase.advance) || 0;
-      purchase.amountDue = (amount - advance).toFixed(2);
+      const amountPaid = parseFloat(purchase.amountPaid) || 0;
+      purchase.amountDue = (amount - advance - amountPaid).toFixed(2);
       const due = document.querySelector(`[data-purchase-id="${id}"] [data-field="amountDue"]`);
       if (due) due.value = purchase.amountDue;
       const mobileDue = document.querySelector(`[data-purchase-mobile-id="${id}"] [data-field="amountDue"]`);
@@ -2832,7 +2851,7 @@ if (deleteProducerBtn){
       const amount = parseFloat(sale.amount) || 0;
       const advance = parseFloat(sale.advance) || 0;
       const finalAmount = parseFloat(sale.finalAmount) || 0;
-      sale.total = (amount + advance + finalAmount).toFixed(2);
+      sale.total = (amount - advance - finalAmount).toFixed(2);
       const total = document.querySelector(`[data-sale-id="${id}"] [data-field="total"]`);
       if (total) total.value = sale.total;
       const mobileTotal = document.querySelector(`[data-sale-mobile-id="${id}"] [data-field="total"]`);
