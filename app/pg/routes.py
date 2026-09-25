@@ -8811,22 +8811,43 @@ def meeting_register(pg_id):
         if requested_date:
             requested_pretty = _date_pretty(requested_date)
 
-            doc = db.pg_meeting_minutes.find_one({
-    "$and": [
-        pg_scope,
-        {
-            "$or": [
-                {"meeting_date": requested_date},
-                {"date": requested_date},
-                {"entry_date": requested_date},
-                {"meta.meetingDate": requested_date},
-                {"data.meta.meetingDate": requested_date},
-                {"data.minutes.dateISO": {"$regex": f"^{re.escape(requested_date)}"}},
+            # Prefer the canonical PG/date pair. The legacy fallback below
+            # checks alternate schemas only when no exact record exists, so
+            # an older duplicate cannot win an unordered find_one query.
+            doc = db.pg_meeting_minutes.find_one(
+                {
+                    "pg_id": pg_obj_id,
+                    "meeting_date": requested_date,
+                },
+                sort=[("updated_at", -1), ("created_at", -1)],
+            )
+
+            legacy_date_candidates = [
+                {
+                    "$or": [
+                        {"meeting_date": requested_date},
+                        {"date": requested_date},
+                        {"entry_date": requested_date},
+                    ]
+                },
+                {
+                    "$or": [
+                        {"meta.meetingDate": requested_date},
+                        {"data.meta.meetingDate": requested_date},
+                    ]
+                },
                 {"data.minutes.datePretty": requested_pretty},
+                {"data.minutes.dateISO": {"$regex": f"^{re.escape(requested_date)}"}},
             ]
-        }
-    ]
-})
+
+            if not doc:
+                for date_candidate in legacy_date_candidates:
+                    doc = db.pg_meeting_minutes.find_one(
+                        {"$and": [pg_scope, date_candidate]},
+                        sort=[("updated_at", -1), ("created_at", -1)],
+                    )
+                    if doc:
+                        break
 
             if not doc:
                 return jsonify({
