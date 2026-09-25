@@ -2343,7 +2343,18 @@
 
           <div class="field">
             <label class="field-label" id="labelTotalMembers" for="inputTotalMembers">Total Members in PG</label>
-            <input id="inputTotalMembers" class="field-input" type="number" disabled>
+            <select id="inputTotalMembers" class="field-input">
+              {% for member_number in range(0, 41) %}
+                <option value="{{ member_number }}">{{ member_number }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="field-label" id="labelProfileMemberNames" for="profileMemberNames">PG Member Names</label>
+            <select id="profileMemberNames" class="field-input">
+              <option value="">Open Profile to load members</option>
+            </select>
           </div>
         </div>
       </div>
@@ -2859,6 +2870,7 @@ navCashBook: "Cash Book",
         state: "State",
         formationDate: "Date of Formation",
         totalMembers: "Total Members in PG",
+        memberNames: "PG Member Names",
         clfName: "Name of CLF under which PG belongs to",
         bankDetails: "Bank Details",
         accountNo: "Account Number",
@@ -2937,6 +2949,7 @@ navCashBook: "Cash Book",
         state: "রাজ্য",
         formationDate: "গঠনের তারিখ",
         totalMembers: "পিজিতে মোট সদস্য",
+        memberNames: "পিজি সদস্যদের নাম",
         clfName: "সিএলএফ-এর নাম যার অধীনে পিজি রয়েছে",
         bankDetails: "ব্যাংক বিবরণ",
         accountNo: "অ্যাকাউন্ট নম্বর",
@@ -3142,6 +3155,46 @@ window.PGMIS.setLanguage = (lang) => {
     }
   }
 
+    async function loadProfileMemberNames(){
+      const memberSelect = document.getElementById("profileMemberNames");
+      const countSelect = document.getElementById("inputTotalMembers");
+      if(!memberSelect || !BASE_PROFILE_PG_ID) return;
+
+      const isBangla = currentLanguage === "bn";
+      memberSelect.innerHTML = "<option value=\"\">" +
+        (isBangla ? "সদস্য নির্বাচন করুন" : "Select a member") + "</option>";
+
+      try{
+        const res = await fetch("/pg/api/members/" + encodeURIComponent(BASE_PROFILE_PG_ID), {
+          headers: { "Accept": "application/json" },
+          credentials: "same-origin"
+        });
+        const payload = await res.json().catch(() => null);
+        if(!res.ok || !payload || payload.ok !== true || !Array.isArray(payload.members)){
+          throw new Error((payload && payload.error) || "Unable to load PG members");
+        }
+
+        if(!payload.members.length){
+          memberSelect.innerHTML = "<option value=\"\">" +
+            (isBangla ? "কোনো সক্রিয় সদস্য পাওয়া যায়নি" : "No active members found") + "</option>";
+          if(countSelect) countSelect.value = "0";
+          return;
+        }
+
+        payload.members.forEach((member, index) => {
+          const name = String(member.name || (isBangla ? "সদস্য " : "Member ") + (index + 1));
+          const code = member.member_code ? " (" + member.member_code + ")" : "";
+          memberSelect.add(new Option((index + 1) + ". " + name + code, member._id || ""));
+        });
+
+        if(countSelect) countSelect.value = String(Math.min(payload.members.length, 40));
+      }catch(err){
+        console.error("Profile member list load error:", err);
+        memberSelect.innerHTML = "<option value=\"\">" +
+          (isBangla ? "সদস্যদের তালিকা লোড করা যায়নি" : "Unable to load members") + "</option>";
+      }
+    }
+
     function toggleProfileView(forceState){
       if(typeof forceState === 'boolean') isProfileView = forceState;
       else isProfileView = !isProfileView;
@@ -3152,6 +3205,7 @@ window.PGMIS.setLanguage = (lang) => {
         profileIcon.classList.add('hidden');
         backIcon.classList.remove('hidden');
         loadProfileData();
+        loadProfileMemberNames();
       }else{
         dashboardContainer.classList.remove('hide');
         profilePageContainer.classList.remove('show');
@@ -3167,6 +3221,11 @@ window.PGMIS.setLanguage = (lang) => {
 
     profileToggle?.addEventListener('click', ()=> toggleProfileView());
 
+    document.getElementById('editSaveButton')?.addEventListener('click', () => {
+      if(!BASE_PROFILE_PG_ID) return;
+      window.location.assign("/pg/registration/" + encodeURIComponent(BASE_PROFILE_PG_ID));
+    });
+
     function setDisabledAll(disabled){
       const ids = [
         "inputPgName",
@@ -3178,7 +3237,6 @@ window.PGMIS.setLanguage = (lang) => {
         "inputState",
         "inputFormationDateText",
         "inputFormationDatePicker",
-        "inputTotalMembers",
         "inputClfName",
         "inputAccountNo",
         "inputIfsc",
@@ -3262,6 +3320,7 @@ safeSetText('navCashBook', t.navCashBook);
       safeSetText('labelState', t.state);
       safeSetText('labelFormationDate', t.formationDate);
       safeSetText('labelTotalMembers', t.totalMembers);
+      safeSetText('labelProfileMemberNames', t.memberNames);
       safeSetText('labelClfName', t.clfName);
       safeSetText('labelBankDetails', t.bankDetails);
       safeSetText('labelAccountNo', t.accountNo);
