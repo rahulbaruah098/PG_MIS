@@ -4927,9 +4927,24 @@ def _sll_account_key(pg_oid, member_doc, sector, item):
     }
 
 
-def _sll_find_account(db, pg_oid, member_doc, sector, item):
+def _sll_find_account(db, pg_oid, member_doc, sector, item, loan_account_id=None):
+    query = _sll_account_key(pg_oid, member_doc, sector, item)
+    if loan_account_id:
+        account_oid = safe_objectid(loan_account_id)
+        if not account_oid:
+            return None
+        query["_id"] = account_oid
+        return db[SECTOR_LEDGER_ACCOUNT_COLL].find_one(query)
+
+    current = db[SECTOR_LEDGER_ACCOUNT_COLL].find_one({**query, "is_current": True})
+    if current:
+        return current
+
+    # Legacy accounts predate cycle tracking. If there are several records,
+    # load the newest one as the current cycle.
     return db[SECTOR_LEDGER_ACCOUNT_COLL].find_one(
-        _sll_account_key(pg_oid, member_doc, sector, item)
+        query,
+        sort=[("loan_cycle_no", -1), ("created_at", -1), ("updated_at", -1)]
     )
 
 
@@ -4994,12 +5009,12 @@ def _sll_find_existing_member_loan_source(db, pg_oid, member_doc, item=None):
 
 
 
-def _sll_create_or_update_account(db, pg_doc, pg_oid, member_doc, sector, item, payload=None):
+def _sll_create_or_update_account(db, pg_doc, pg_oid, member_doc, sector, item, payload=None, force_new=False):
     payload = payload or {}
     now = _sll_now()
 
     q = _sll_account_key(pg_oid, member_doc, sector, item)
-    existing = db[SECTOR_LEDGER_ACCOUNT_COLL].find_one(q)
+    existing = None if force_new else _sll_find_account(db, pg_oid, member_doc, sector, item)
 
     source_loan = _sll_find_existing_member_loan_source(db, pg_oid, member_doc, item)
 
@@ -5016,11 +5031,7 @@ def _sll_create_or_update_account(db, pg_doc, pg_oid, member_doc, sector, item, 
             or source_loan.get("amount")
             or 0
         )
-        source_purpose = (
-            source_loan.get("purpose")
-            or source_loan.get("loan_purpose")
-            or ""
-        )
+        source_purpose = source_loan.get("purpose") or source_loan.get("loan_purpose") or ""
         source_start_date = _sll_str(
             source_loan.get("start_date")
             or source_loan.get("loan_start_date")
@@ -5039,18 +5050,20 @@ def _sll_create_or_update_account(db, pg_doc, pg_oid, member_doc, sector, item, 
         if incoming_loan_amount not in (None, "")
         else _sll_float(existing.get("loan_amount")) if existing else source_principal
     )
-
     final_purpose = (
         _sll_str(incoming_purpose)
         if incoming_purpose not in (None, "")
         else (existing.get("loan_purpose") if existing else "") or source_purpose
     )
-
     final_start_date = (
         _sll_str(incoming_start_date)
         if incoming_start_date not in (None, "")
         else (existing.get("loan_start_date") if existing else "") or source_start_date
     )
+
+    related_accounts = list(db[SECTOR_LEDGER_ACCOUNT_COLL].find(q, {"loan_cycle_no": 1, "is_current": 1}))
+    next_cycle_no = max([_sll_int(row.get("loan_cycle_no"), 1) for row in related_accounts] or [0]) + 1
+    is_new_cycle = force_new or not existing
 
     set_doc = {
         "pg_id": pg_oid,
@@ -5074,20 +5087,32 @@ def _sll_create_or_update_account(db, pg_doc, pg_oid, member_doc, sector, item, 
         "updated_at": now,
     }
 
-    if not existing:
-        set_doc["created_at"] = now
+    if is_new_cycle:
+        # Keep each completed loan as its own account so its repayment rows
+        # remain unchanged when the member receives a later loan.
+        db[SECTOR_LEDGER_ACCOUNT_COLL].update_many(q, {"$set": {"is_current": False}})
+        set_doc.update({
+            "loan_cycle_no": next_cycle_no,
+            "is_current": True,
+            "status": "active",
+            "summary": {},
+            "outstanding_amount": final_loan_amount,
+            "principal_paid": 0.0,
+            "interest_paid": 0.0,
+            "total_repayment": 0.0,
+            "created_at": now,
+        })
         res = db[SECTOR_LEDGER_ACCOUNT_COLL].insert_one(set_doc)
         set_doc["_id"] = res.inserted_id
         return set_doc
 
-    db[SECTOR_LEDGER_ACCOUNT_COLL].update_one(
-        {"_id": existing["_id"]},
-        {"$set": set_doc}
-    )
-
+    set_doc.update({
+        "loan_cycle_no": _sll_int(existing.get("loan_cycle_no"), 1),
+        "is_current": True,
+    })
+    db[SECTOR_LEDGER_ACCOUNT_COLL].update_one({"_id": existing["_id"]}, {"$set": set_doc})
     existing.update(set_doc)
     return existing
-
 
 
 
@@ -5097,9 +5122,26 @@ def _sll_account_json(account):
     if not account:
         return {}
 
+    principal = _sll_float(account.get("loan_amount"))
+    summary = account.get("summary") or {}
+    outstanding = account.get("outstanding_amount")
+    if outstanding is None:
+        outstanding = summary.get("principal_outstanding")
+    if outstanding is None:
+        outstanding = principal
+    outstanding = max(0.0, _sll_float(outstanding))
+
+    saved_status = _sll_str(account.get("status") or "active").lower()
+    if saved_status in ("closed", "discontinued"):
+        loan_status = saved_status
+    else:
+        loan_status = "paid" if principal > 0 and outstanding <= 0.005 else "outstanding"
+
     return _sll_json_safe({
         "_id": account.get("_id"),
         "loan_account_id": account.get("_id"),
+        "loan_cycle_no": _sll_int(account.get("loan_cycle_no"), 1),
+        "is_current": bool(account.get("is_current", True)),
         "pg_id": account.get("pg_id"),
         "pg_name": account.get("pg_name"),
         "member_id": account.get("member_id"),
@@ -5111,13 +5153,15 @@ def _sll_account_json(account):
         "item_name": account.get("item_name"),
         "activity": account.get("activity"),
         "unit": account.get("unit"),
-        "loan_amount": _sll_float(account.get("loan_amount")),
+        "loan_amount": principal,
         "loan_purpose": account.get("loan_purpose") or "",
         "loan_start_date": account.get("loan_start_date") or "",
         "interest_rate": _sll_float(account.get("interest_rate")),
         "moratorium_months": _sll_int(account.get("moratorium_months")),
-        "status": account.get("status") or "active",
-        "summary": account.get("summary") or {},
+        "status": loan_status,
+        "loan_status": loan_status,
+        "outstanding_amount": outstanding,
+        "summary": summary,
         "created_at": account.get("created_at"),
         "updated_at": account.get("updated_at"),
     })
@@ -5318,6 +5362,92 @@ def _sll_ledger_base_query(pg_oid, account):
     }
 
 
+def _sll_account_payment_state(db, account):
+    """Return status/outstanding from the cycle's saved repayment ledger."""
+    if not account:
+        return {"status": "outstanding", "outstanding_amount": 0.0}
+
+    principal = max(0.0, _sll_float(account.get("loan_amount")))
+    summary = account.get("summary") if isinstance(account.get("summary"), dict) else {}
+    outstanding = summary.get("principal_outstanding")
+    if outstanding is None:
+        outstanding = summary.get("closing_loan_balance")
+
+    if outstanding is None and account.get("_id"):
+        ledger_doc = db[SECTOR_LEDGER_COLL].find_one(
+            _sll_ledger_base_query(account.get("pg_id"), account),
+            sort=[("updated_at", -1), ("created_at", -1)]
+        )
+        if ledger_doc:
+            ledger_summary = ledger_doc.get("summary") or {}
+            outstanding = ledger_summary.get("principal_outstanding")
+            if outstanding is None:
+                outstanding = ledger_summary.get("closing_loan_balance")
+
+    if outstanding is None:
+        outstanding = account.get("outstanding_amount")
+    if outstanding is None:
+        outstanding = principal
+    outstanding = max(0.0, _sll_float(outstanding))
+
+    saved_status = _sll_str(account.get("status") or "active").lower()
+    if saved_status in ("closed", "discontinued"):
+        status = saved_status
+    else:
+        status = "paid" if principal > 0 and outstanding <= 0.005 else "outstanding"
+
+    return {"status": status, "outstanding_amount": round(outstanding, 2)}
+
+
+def _sll_member_loan_history(db, pg_oid, member_doc, sector=None):
+    member_id = _sll_member_id_from_doc(member_doc)
+    query = {"pg_id": pg_oid, "member_id": member_id}
+    if sector:
+        query["sector"] = sector
+
+    accounts = list(
+        db[SECTOR_LEDGER_ACCOUNT_COLL]
+        .find(query)
+        .sort([("loan_cycle_no", -1), ("created_at", -1), ("updated_at", -1)])
+    )
+    history = []
+    for account in accounts:
+        state = _sll_account_payment_state(db, account)
+        history.append({
+            "loan_account_id": str(account.get("_id")),
+            "loan_cycle_no": _sll_int(account.get("loan_cycle_no"), 1),
+            "is_current": bool(account.get("is_current", False)),
+            "sector": account.get("sector") or "",
+            "item_key": account.get("item_key") or "",
+            "item_name": account.get("item_name") or "",
+            "activity": account.get("activity") or "",
+            "unit": account.get("unit") or "",
+            "loan_amount": _sll_float(account.get("loan_amount")),
+            "loan_start_date": account.get("loan_start_date") or "",
+            "loan_purpose": account.get("loan_purpose") or "",
+            "status": state["status"],
+            "outstanding_amount": state["outstanding_amount"],
+            "created_at": _sll_json_safe(account.get("created_at")),
+        })
+    return history
+
+
+@pg_bp.route("/loan-ledger/sector/history", methods=["GET"])
+@login_required
+@roles_required("PG_DATA_ENTRY", "CADRE_CC", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
+def api_sector_loan_ledger_history():
+    db = current_app.mongo_db
+    pg_doc, pg_oid = _sll_load_pg_or_404(db)
+    member_id = request.args.get("member_id") or request.args.get("memberId")
+    member_doc = _sll_load_member_or_404(db, pg_oid, member_id)
+    return jsonify({
+        "ok": True,
+        "pg_id": str(pg_oid),
+        "member": _sll_member_json(member_doc),
+        "history": _sll_member_loan_history(db, pg_oid, member_doc),
+    })
+
+
 def _sll_get_period():
     year = request.args.get("year")
     month = request.args.get("month")
@@ -5484,83 +5614,96 @@ def api_sector_loan_ledger_member_items():
 @login_required
 @roles_required("PG_DATA_ENTRY", "CADRE_CC", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def api_sector_loan_ledger_account():
-    """
-    GET:
-      Loads/creates sector-based member loan account for selected member + item.
-
-    POST:
-      Creates/updates assigned loan amount for selected member + item.
-      PG_DATA_ENTRY can save if this workflow allows PG-level assignment.
-      If you want only admin to assign loan amount, change role check below.
-    """
-
     db = current_app.mongo_db
     pg_doc, pg_oid = _sll_load_pg_or_404(db)
-
     sector = _sll_pg_sector(pg_doc)
 
     if request.method == "GET":
         member_id = request.args.get("member_id") or request.args.get("memberId")
         item_key = request.args.get("item_key") or request.args.get("itemKey")
+        loan_account_id = request.args.get("loan_account_id") or request.args.get("loanAccountId")
         payload = {}
     else:
         payload = request.get_json(silent=True) or {}
         member_id = payload.get("member_id") or payload.get("memberId")
         item_key = payload.get("item_key") or payload.get("itemKey")
+        loan_account_id = payload.get("loan_account_id") or payload.get("loanAccountId")
 
     member_doc = _sll_load_member_or_404(db, pg_oid, member_id)
     item = _sll_validate_item_for_member(member_doc, sector, item_key)
+    account = _sll_find_account(db, pg_oid, member_doc, sector, item, loan_account_id=loan_account_id)
+
+    # A requested historical cycle must never fall through into the path that
+    # creates a new empty account. That would make a stale/bad cycle ID mutate
+    # data simply by opening it.
+    if loan_account_id and not account:
+        abort(404, "Loan cycle not found for this member and item.")
 
     if request.method == "POST":
         role = _sll_role()
-
         if role not in ("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN"):
             abort(403, "You are not allowed to assign/update loan amount.")
 
-        account = _sll_create_or_update_account(
-            db,
-            pg_doc=pg_doc,
-            pg_oid=pg_oid,
-            member_doc=member_doc,
-            sector=sector,
-            item=item,
-            payload=payload
-        )
+        create_new = bool(payload.get("new_loan") or payload.get("create_new_cycle"))
+        if create_new:
+            if role != "PG_DATA_ENTRY":
+                abort(403, "Only PG login can create a new member loan cycle from Loan Ledger.")
+            current_account = _sll_find_account(db, pg_oid, member_doc, sector, item)
+            if current_account:
+                current_state = _sll_account_payment_state(db, current_account)
+                if current_state["status"] != "paid":
+                    return jsonify({
+                        "ok": False,
+                        "error": "A new loan can be created only after the current loan is fully repaid.",
+                        "loan_status": current_state["status"],
+                        "outstanding_amount": current_state["outstanding_amount"],
+                    }), 400
+            if _sll_float(payload.get("loan_amount")) <= 0:
+                return jsonify({"ok": False, "error": "Enter a loan amount greater than zero for the new loan."}), 400
+            account = _sll_create_or_update_account(
+                db, pg_doc=pg_doc, pg_oid=pg_oid, member_doc=member_doc,
+                sector=sector, item=item, payload=payload, force_new=True
+            )
+        else:
+            if account and _sll_account_payment_state(db, account)["status"] == "paid":
+                return jsonify({
+                    "ok": False,
+                    "error": "This loan is fully repaid. Create a new loan cycle to record another loan.",
+                }), 400
+            account = _sll_create_or_update_account(
+                db, pg_doc=pg_doc, pg_oid=pg_oid, member_doc=member_doc,
+                sector=sector, item=item, payload=payload
+            )
 
+        state = _sll_account_payment_state(db, account)
         return jsonify({
             "ok": True,
-            "message": "Sector loan account saved successfully.",
-            "account": _sll_account_json(account),
+            "message": "New loan cycle created successfully." if create_new else "Sector loan account saved successfully.",
+            "account": _sll_account_json({**account, **state}),
+            "history": _sll_member_loan_history(db, pg_oid, member_doc),
         })
-
-    account = _sll_find_account(db, pg_oid, member_doc, sector, item)
 
     if not account:
         account = _sll_create_or_update_account(
-            db,
-            pg_doc=pg_doc,
-            pg_oid=pg_oid,
-            member_doc=member_doc,
-            sector=sector,
-            item=item,
-            payload={}
+            db, pg_doc=pg_doc, pg_oid=pg_oid, member_doc=member_doc,
+            sector=sector, item=item, payload={}
         )
 
+    state = _sll_account_payment_state(db, account)
     return jsonify({
         "ok": True,
-        "pg": {
-            "_id": str(pg_oid),
-            "name": _sll_pg_name(pg_doc),
-            "sector": sector,
-        },
+        "pg": {"_id": str(pg_oid), "name": _sll_pg_name(pg_doc), "sector": sector},
         "member": _sll_member_json(member_doc),
         "item": item,
-        "account": _sll_account_json(account),
+        "account": _sll_account_json({**account, **state}),
+        "history": _sll_member_loan_history(db, pg_oid, member_doc),
         "rules": {
             "interest_rate": SECTOR_INTEREST_RATE.get(sector, 0),
             "moratorium_months": SECTOR_MORATORIUM_MONTHS.get(sector, 0),
         },
     })
+
+
 
 
 @pg_bp.route("/loan-ledger/sector/ledger", methods=["GET", "POST"])
@@ -5581,15 +5724,17 @@ def api_sector_loan_ledger():
         payload = {}
         member_id = request.args.get("member_id") or request.args.get("memberId")
         item_key = request.args.get("item_key") or request.args.get("itemKey")
+        loan_account_id = request.args.get("loan_account_id") or request.args.get("loanAccountId")
     else:
         payload = request.get_json(silent=True) or {}
         member_id = payload.get("member_id") or payload.get("memberId")
         item_key = payload.get("item_key") or payload.get("itemKey")
+        loan_account_id = payload.get("loan_account_id") or payload.get("loanAccountId")
 
     member_doc = _sll_load_member_or_404(db, pg_oid, member_id)
     item = _sll_validate_item_for_member(member_doc, sector, item_key)
 
-    account = _sll_find_account(db, pg_oid, member_doc, sector, item)
+    account = _sll_find_account(db, pg_oid, member_doc, sector, item, loan_account_id=loan_account_id)
     if not account:
         account = _sll_create_or_update_account(
             db,
@@ -5662,9 +5807,15 @@ def api_sector_loan_ledger():
     if role != "PG_DATA_ENTRY":
         abort(403, "Only PG login can save Loan Ledger repayment entries.")
 
+    state = _sll_account_payment_state(db, account)
     status = _sll_str(account.get("status") or "active").lower()
     if status in ("closed", "discontinued"):
         abort(400, "This loan account is closed/discontinued. Ledger update is not allowed.")
+    if state["status"] == "paid":
+        return jsonify({
+            "ok": False,
+            "error": "This loan is fully repaid. Its history is read-only; create a new loan cycle for another loan.",
+        }), 400
 
     entries = payload.get("entries") or []
     if not isinstance(entries, list):
@@ -5751,6 +5902,7 @@ def api_sector_loan_ledger():
                 "principal_paid": summary.get("principal_paid", 0),
                 "interest_paid": summary.get("interest_paid", 0),
                 "total_repayment": summary.get("total_repayment", 0),
+                "status": "paid" if _sll_float(summary.get("principal_outstanding")) <= 0.005 and _sll_float(account.get("loan_amount")) > 0 else "active",
                 "updated_at": now,
             }
         }
@@ -5768,7 +5920,7 @@ def api_sector_loan_ledger():
         },
         "member": _sll_member_json(member_doc),
         "item": item,
-        "account": _sll_account_json(refreshed_account),
+        "account": _sll_account_json({**refreshed_account, **_sll_account_payment_state(db, refreshed_account)}),
         "entries": calculated_entries,
         "summary": summary,
     })
