@@ -507,7 +507,8 @@
 
           <div class="hero-actions">
             <!-- Clear All injected before Edit when editing -->
-            <button id="editSaveButton" class="pill-btn" type="button">
+            <button id="editSaveButton" class="pill-btn" type="button"
+                    data-registration-url="{{ url_for('pg.pg_registration', pg_id=pg._id) if pg else '#' }}">
               <svg id="editIcon" class="icon-small" viewBox="0 0 24 24" fill="none"
                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -620,8 +621,17 @@
             <div class="section-title" id="labelTotalMembers">Total Members in PG</div>
           </div>
 
-          <input type="number" id="inputTotalMembers" class="single-input"
-                 placeholder="Enter Total Members" min="0" step="1" value="" />
+          <select id="inputTotalMembers" class="single-input" aria-label="Total members in PG">
+            {% for member_number in range(0, 41) %}
+              <option value="{{ member_number }}" {% if pg and (pg.total_members|int) == member_number %}selected{% endif %}>{{ member_number }}</option>
+            {% endfor %}
+          </select>
+          <div class="field" style="margin-top:12px;">
+            <label class="field-label" id="labelMemberNames" for="profileMemberNames">PG Member Names</label>
+            <select id="profileMemberNames" class="single-input" aria-label="PG member names">
+              <option value="">Loading members...</option>
+            </select>
+          </div>
         </div>
 
         <div class="divider"></div>
@@ -1072,15 +1082,49 @@
     // SAVE + EDIT TOGGLE
     // ============================================================
     editSaveButton.addEventListener('click', () => {
-      if(isEditing){
-        if(!validateBeforeSave()) return;
-        openConfirmModal("save");
+      const registrationUrl = editSaveButton.dataset.registrationUrl;
+      if (registrationUrl && registrationUrl !== '#') {
+        window.location.assign(registrationUrl);
+      }
+    });
+
+    async function loadProfileMemberNames(){
+      const memberSelect = document.getElementById('profileMemberNames');
+      const countSelect = document.getElementById('inputTotalMembers');
+      if (!memberSelect) return;
+
+      const pgId = {{ (pg._id|string if pg else '')|tojson }};
+      if (!pgId) {
+        memberSelect.innerHTML = '<option value="">No PG selected</option>';
         return;
       }
-      isEditing = true;
-      updateEditMode();
-      setDateInvalid(false);
-    });
+
+      try {
+        const response = await fetch(`/pg/api/members/${encodeURIComponent(pgId)}`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok || !Array.isArray(payload.members)) {
+          throw new Error(payload.error || 'Unable to load members');
+        }
+
+        memberSelect.innerHTML = '';
+        if (!payload.members.length) {
+          memberSelect.add(new Option('No active members found', ''));
+        } else {
+          memberSelect.add(new Option('Select a member', ''));
+          payload.members.forEach((member, index) => {
+            const label = member.name || `Member ${index + 1}`;
+            const code = member.member_code ? ` (${member.member_code})` : '';
+            memberSelect.add(new Option(`${index + 1}. ${label}${code}`, member._id || ''));
+          });
+          if (countSelect) countSelect.value = String(Math.min(payload.members.length, 40));
+        }
+      } catch (error) {
+        console.error('Profile member list could not be loaded:', error);
+        memberSelect.innerHTML = '<option value="">Unable to load members</option>';
+      }
+    }
 
     // ============================================================
     // ADD "CLEAR ALL" BUTTON (styled to match base)
@@ -1161,6 +1205,7 @@
       injectClearAllButton();
       setClearAllVisibility();
       headerTopEl.classList.remove('is-editing');
+      loadProfileMemberNames();
     }
 
     init();
