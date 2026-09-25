@@ -1780,6 +1780,15 @@
               <option value="100">100</option>
             </select>
 
+            <button id="cbPrintReceiptsBtn" class="cb-ghost" type="button">
+              <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+              <span id="cbPrintReceiptsText">Print Receipts</span>
+            </button>
+
             <div class="cb-toolbar-editonly cb-hidden" id="cbEditOnlyActions">
               <button id="cbDeleteSelectedBtn" class="cb-ghost cb-danger" type="button">
                 <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2059,6 +2068,9 @@
       title: "Cash Book",
       receipts: "Receipts",
       payments: "Payments",
+      printReceipts: "Print Receipts",
+      autoPaymentReceipt: "Auto-generated from Payment",
+      noReceiptsToPrint: "There are no receipt entries to print for this period.",
       balance: "Balance",
       sl: "SL",
       date: "Date",
@@ -2134,6 +2146,9 @@
       title: "ক্যাশ বুক",
       receipts: "প্রাপ্তি",
       payments: "প্রদান",
+      printReceipts: "প্রাপ্তি মুদ্রণ করুন",
+      autoPaymentReceipt: "প্রদানের এন্ট্রি থেকে স্বয়ংক্রিয়ভাবে তৈরি",
+      noReceiptsToPrint: "এই সময়কালে মুদ্রণের জন্য কোনো প্রাপ্তির এন্ট্রি নেই।",
       balance: "ব্যালেন্স",
       sl: "ক্রমিক",
       date: "তারিখ",
@@ -2217,6 +2232,7 @@
   let cbPeriodMonth = null;
   let cbPeriodYear = null;
   let cbPendingPeriod = { month: null, year: null };
+  let cbPgName = "";
  let cbPendingDeleteIds = [];
 let cbDeleteMode = null;
 
@@ -2301,6 +2317,8 @@ const cbPayments = [];
   const cbDeleteAllText = cb$("cbDeleteAllText");
   const cbSelectAll = cb$("cbSelectAll");
   const cbAddBtn = cb$("cbAddBtn");
+  const cbPrintReceiptsBtn = cb$("cbPrintReceiptsBtn");
+  const cbPrintReceiptsText = cb$("cbPrintReceiptsText");
   const cbAddText = cb$("cbAddText");
 
   const cbRows = cb$("cbRows");
@@ -2445,6 +2463,7 @@ async function cbLoadServer(){
 
     const data = await res.json().catch(() => null);
     if (!data) return false;
+    cbPgName = String(data.pg_name || "").trim();
 
     cbOpening = {
       cash: cbNum(data?.opening?.cash),
@@ -2667,7 +2686,10 @@ function txTotal(tx, options = {}){
 }
 
 function sumTotals(arr, options = {}){
-  return (arr || []).reduce((s, t) => s + txTotal(t, options), 0);
+  return (arr || []).reduce((s, t) => {
+    if (isAutoPaymentReceipt(t)) return s;
+    return s + txTotal(t, options);
+  }, 0);
 }
 
 function sumContraTotals(arr){
@@ -2684,6 +2706,98 @@ function sumContraTotals(arr){
 
   function getActiveArr(){
     return cbActiveTab === 'receipts' ? cbReceipts : cbPayments;
+  }
+
+  function isAutoPaymentReceipt(tx){
+    return !!tx && tx.entryType === "auto_payment_receipt";
+  }
+
+  function getAutoPaymentReceipts(){
+    return cbPayments
+      .filter(payment => !isContraTx(payment) && (cbNum(payment.amount) + cbNum(payment.bankAmount)) > 0)
+      .map(payment => ({
+        id: `auto_receipt_${payment.id}`,
+        sourcePaymentId: payment.id,
+        date: payment.date || "",
+        particulars: payment.particulars || "",
+        lf: payment.lf || payment.ledgerFolio || "",
+        ledgerFolio: payment.ledgerFolio || payment.lf || "",
+        amount: cbNum(payment.amount),
+        bankAmount: cbNum(payment.bankAmount),
+        remarks: payment.remarks || "",
+        entryType: "auto_payment_receipt"
+      }));
+  }
+
+  function getActiveDisplayArr(){
+    return cbActiveTab === "receipts"
+      ? cbReceipts.concat(getAutoPaymentReceipts())
+      : cbPayments;
+  }
+
+  function printCashbookReceipts(){
+    const printableRows = getFiltered(cbReceipts.concat(getAutoPaymentReceipts())).filter(row =>
+      isContraTx(row) || cbNum(row.amount) > 0 || cbNum(row.bankAmount) > 0 ||
+      String(row.date || "").trim() || String(row.particulars || "").trim()
+    );
+    if (!printableRows.length){
+      openInfoModal(cashbookTranslations[cashbookLang].receipts, cashbookTranslations[cashbookLang].noReceiptsToPrint);
+      return;
+    }
+
+    const printWindow = window.open("", "_blank", "width=900,height=700");
+    if (!printWindow){
+      openInfoModal(cashbookTranslations[cashbookLang].printReceipts, "Allow pop-ups for this site to print the receipts.");
+      return;
+    }
+
+    const period = cbMonthLabel(cbPeriodMonth, cbPeriodYear);
+    const pgLabel = cbPgName || window.PG_ID || "";
+    const receiptCards = printableRows.map((row, index) => {
+      const generatedFromPayment = isAutoPaymentReceipt(row);
+      const receiptTotal = cbNum(row.amount) + cbNum(row.bankAmount);
+      return `
+        <article class="receipt-card">
+          <header class="receipt-head">
+            <div>
+              <div class="receipt-brand">PG MIS · CASH BOOK</div>
+              <h1>${generatedFromPayment ? "Payment Receipt" : "Receipt"}</h1>
+              <div class="receipt-caption">${generatedFromPayment ? "Auto-generated from payment entry" : "Cash book receipt entry"}</div>
+            </div>
+            <div class="receipt-number">Receipt ${String(index + 1).padStart(3, "0")}</div>
+          </header>
+          <div class="receipt-meta">
+            <div><small>Producer Group</small><strong>${escapeHtml(pgLabel)}</strong></div>
+            <div><small>Period</small><strong>${escapeHtml(period)}</strong></div>
+            <div><small>Date</small><strong>${escapeHtml(row.date || "—")}</strong></div>
+          </div>
+          <div class="receipt-particulars">
+            <small>${generatedFromPayment ? "Paid to / Particulars" : "Received from / Particulars"}</small>
+            <strong>${escapeHtml(row.particulars || "—")}</strong>
+          </div>
+          <div class="receipt-values">
+            <div><small>Cash</small><strong>${escapeHtml(formatINR(row.amount))}</strong></div>
+            <div><small>Bank</small><strong>${escapeHtml(formatINR(row.bankAmount))}</strong></div>
+            <div class="receipt-total"><small>Total</small><strong>${escapeHtml(formatINR(receiptTotal))}</strong></div>
+          </div>
+          ${row.lf ? `<div class="receipt-folio">Ledger Folio: ${escapeHtml(row.lf)}</div>` : ""}
+          ${row.remarks ? `<div class="receipt-remarks">Remarks: ${escapeHtml(row.remarks)}</div>` : ""}
+          <footer class="receipt-signatures"><div>Prepared / Authorized By</div><div>${generatedFromPayment ? "Recipient Signature" : "Received By"}</div></footer>
+        </article>`;
+    }).join("");
+
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(cashbookTranslations[cashbookLang].printReceipts)} - ${escapeHtml(period)}</title>
+      <style>
+        *{box-sizing:border-box}body{margin:0;padding:24px;background:#eef2f7;color:#172033;font:14px/1.45 Arial,sans-serif}
+        .print-toolbar{max-width:820px;margin:0 auto 16px;text-align:right}.print-toolbar button{border:0;border-radius:8px;background:#0b4d3a;color:#fff;padding:10px 16px;font-weight:700;cursor:pointer}
+        .receipt-card{max-width:820px;margin:0 auto 18px;padding:28px;background:#fff;border:1px solid #dbe2ea;border-radius:12px;page-break-inside:avoid}
+        .receipt-head{display:flex;justify-content:space-between;gap:20px;border-bottom:2px solid #0b4d3a;padding-bottom:16px}.receipt-brand{font-size:11px;font-weight:800;letter-spacing:.12em;color:#0b4d3a}.receipt-head h1{margin:6px 0 0;font-size:24px}.receipt-caption{margin-top:3px;color:#64748b}.receipt-number{align-self:flex-start;padding:7px 10px;border:1px solid #cbd5e1;border-radius:8px;font-weight:700}
+        .receipt-meta,.receipt-values{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}.receipt-meta>div,.receipt-values>div{padding:12px;border:1px solid #e2e8f0;border-radius:8px}.receipt-meta small,.receipt-values small,.receipt-particulars small{display:block;color:#64748b;font-size:11px;font-weight:700;text-transform:uppercase}.receipt-meta strong,.receipt-values strong,.receipt-particulars strong{display:block;margin-top:5px;overflow-wrap:anywhere}.receipt-particulars{margin-top:16px;padding:14px;border:1px solid #e2e8f0;border-radius:8px}.receipt-total{background:#f0fdf4}.receipt-folio,.receipt-remarks{margin-top:12px;color:#475569}.receipt-signatures{display:flex;justify-content:space-between;gap:32px;margin-top:58px}.receipt-signatures div{width:42%;border-top:1px solid #475569;padding-top:8px;text-align:center;font-weight:700}
+        @media print{body{padding:0;background:#fff}.print-toolbar{display:none}.receipt-card{max-width:none;margin:0 0 12mm;border-radius:0;box-shadow:none} .receipt-card:last-child{margin-bottom:0}}
+      </style></head><body><div class="print-toolbar"><button onclick="window.print()">Print</button></div>${receiptCards}</body></html>`);
+    printWindow.document.close();
+    setTimeout(() => { printWindow.focus(); printWindow.print(); }, 300);
   }
 
   function cbPad2(n){
@@ -2927,6 +3041,7 @@ function cbCreateContraEntry(type, amount, date){
   function setTabUI(){
     cbReceiptsTab.classList.toggle("cb-active", cbActiveTab === "receipts");
     cbPaymentsTab.classList.toggle("cb-active", cbActiveTab === "payments");
+    cbPrintReceiptsBtn.classList.toggle("cb-hidden", cbActiveTab !== "receipts");
     cbActivePill.textContent = cbActiveTab === "receipts"
       ? cashbookTranslations[cashbookLang].receipts
       : cashbookTranslations[cashbookLang].payments;
@@ -2954,6 +3069,7 @@ function cbCreateContraEntry(type, amount, date){
     cbDeleteSelectedText.textContent = t.deleteSelected;
     cbDeleteAllText.textContent = t.deleteAll;
     cbAddText.textContent = t.addButton;
+    cbPrintReceiptsText.textContent = t.printReceipts;
     cbChangePeriodText.textContent = t.changePeriod;
 
     cbSelectAll.classList.toggle("cb-hidden", !cbIsEditing);
@@ -3747,7 +3863,7 @@ function makeTextCellInput(tx, key, placeholder, cls = "", alignRight = false, o
 }
 
   function renderTable(){
-    const active = getActiveArr();
+    const active = getActiveDisplayArr();
     const filtered = getFiltered(active);
     const { pageItems, total, pages, startIndex } = paginate(filtered);
     const t = cashbookTranslations[cashbookLang];
@@ -3771,7 +3887,7 @@ function makeTextCellInput(tx, key, placeholder, cls = "", alignRight = false, o
 
       const c0 = document.createElement("div");
       c0.className = "cb-c cb-center";
-      if (cbIsEditing){
+      if (cbIsEditing && !isAutoPaymentReceipt(tx)){
         const chk = document.createElement("input");
         chk.type = "checkbox";
         chk.className = "cb-check";
@@ -3779,7 +3895,7 @@ function makeTextCellInput(tx, key, placeholder, cls = "", alignRight = false, o
         chk.addEventListener("change", ()=>{
           if (chk.checked) cbSelected.add(tx.id);
           else cbSelected.delete(tx.id);
-          const allIds = pageItems.map(x=>x.id);
+          const allIds = pageItems.filter(x=>!isAutoPaymentReceipt(x)).map(x=>x.id);
           cbSelectAll.checked = allIds.length > 0 && allIds.every(id=>cbSelected.has(id));
           renderMobile();
         });
@@ -3802,7 +3918,7 @@ if (cbIsEditing && cbRowDateInvalid(tx)) {
   inDate.classList.add("cb-invalid");
 }
 inDate.value = tx.date || "";
-inDate.readOnly = !cbIsEditing;
+inDate.readOnly = !cbIsEditing || isAutoPaymentReceipt(tx);
 inDate.placeholder = t.datePh;
 
       const dtPick = document.createElement("input");
@@ -3815,7 +3931,7 @@ inDate.placeholder = t.datePh;
       btn.type = "button";
       btn.className = "cb-date-btn";
       btn.title = t.calendarTitle;
-      btn.disabled = !cbIsEditing;
+      btn.disabled = !cbIsEditing || isAutoPaymentReceipt(tx);
       btn.innerHTML = `
         <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -3839,13 +3955,18 @@ inDate.placeholder = t.datePh;
 const c3 = document.createElement("div");
 c3.className = "cb-c";
 
-if (tx.entryType === "contra" && !cbIsEditing){
+if (isAutoPaymentReceipt(tx) || (tx.entryType === "contra" && !cbIsEditing)){
   const wrap = document.createElement("div");
   wrap.style.width = "100%";
-  wrap.innerHTML = `
-    <div style="font-weight:950;">${tx.particulars || ""}</div>
-    <div style="margin-top:3px;font-size:11px;font-weight:900;color:#0b4d3a;">Contra Entry</div>
-  `;
+  const particulars = document.createElement("div");
+  particulars.style.fontWeight = "950";
+  particulars.textContent = tx.particulars || "";
+  const note = document.createElement("div");
+  note.style.cssText = "margin-top:3px;font-size:11px;font-weight:900;color:#0b4d3a;";
+  note.textContent = isAutoPaymentReceipt(tx)
+    ? cashbookTranslations[cashbookLang].autoPaymentReceipt
+    : "Contra Entry";
+  wrap.append(particulars, note);
   c3.appendChild(wrap);
 } else {
   c3.appendChild(makeTextCellInput(tx, "particulars", t.particulars, "", false, null));
@@ -3855,7 +3976,9 @@ row.appendChild(c3);
 
 const c4 = document.createElement("div");
 c4.className = "cb-c";
-c4.appendChild(makeTextCellInput(tx, "lf", t.lf, "", false, null));
+const lfInput = makeTextCellInput(tx, "lf", t.lf, "", false, null);
+if (isAutoPaymentReceipt(tx)) lfInput.readOnly = true;
+c4.appendChild(lfInput);
 row.appendChild(c4);
 
 const c7 = document.createElement("div");
@@ -3870,19 +3993,23 @@ const updateRowTotal = () => {
 
 const c5 = document.createElement("div");
 c5.className = "cb-c cb-right";
-c5.appendChild(makeTextCellInput(tx, "amount", "", "cb-amt", true, updateRowTotal));
+const cashInput = makeTextCellInput(tx, "amount", "", "cb-amt", true, updateRowTotal);
+if (isAutoPaymentReceipt(tx)) cashInput.readOnly = true;
+c5.appendChild(cashInput);
 row.appendChild(c5);
 
 const c6 = document.createElement("div");
 c6.className = "cb-c cb-right";
-c6.appendChild(makeTextCellInput(tx, "bankAmount", "", "cb-amt", true, updateRowTotal));
+const bankInput = makeTextCellInput(tx, "bankAmount", "", "cb-amt", true, updateRowTotal);
+if (isAutoPaymentReceipt(tx)) bankInput.readOnly = true;
+c6.appendChild(bankInput);
 row.appendChild(c6);
 
 row.appendChild(c7);
 
       const c8 = document.createElement("div");
       c8.className = "cb-c cb-center";
-      if (cbIsEditing){
+      if (cbIsEditing && !isAutoPaymentReceipt(tx)){
         const del = document.createElement("button");
         del.className = "cb-del";
         del.type = "button";
@@ -3905,7 +4032,7 @@ row.appendChild(c7);
 
     cbSelectAll.onchange = ()=>{
       if (!cbIsEditing) return;
-      const ids = pageItems.map(x=>x.id);
+      const ids = pageItems.filter(x=>!isAutoPaymentReceipt(x)).map(x=>x.id);
       if (cbSelectAll.checked) ids.forEach(id=>cbSelected.add(id));
       else ids.forEach(id=>cbSelected.delete(id));
       renderTable();
@@ -3914,7 +4041,7 @@ row.appendChild(c7);
   }
 
  function renderPresentGrand(){
-  const active = getActiveArr();
+  const active = getActiveDisplayArr();
   const filtered = getFiltered(active);
   const { pageItems } = paginate(filtered);
 
@@ -3957,7 +4084,7 @@ if (cbIsEditing && cbRowDateInvalid(tx)) {
   input.classList.add("cb-invalid");
 }
 input.value = tx.date || "";
-input.readOnly = !cbIsEditing;
+input.readOnly = !cbIsEditing || isAutoPaymentReceipt(tx);
 input.placeholder = cashbookTranslations[cashbookLang].datePh;
 
     const hidden = document.createElement("input");
@@ -3968,7 +4095,7 @@ input.placeholder = cashbookTranslations[cashbookLang].datePh;
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "cb-date-btn";
-    btn.disabled = !cbIsEditing;
+    btn.disabled = !cbIsEditing || isAutoPaymentReceipt(tx);
     btn.innerHTML = `
       <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -3995,7 +4122,7 @@ input.placeholder = cashbookTranslations[cashbookLang].datePh;
   const input = document.createElement("input");
   input.className = "cb-input" + ((key === "amount" || key === "bankAmount") ? " cb-amt" : "");
   input.value = tx[key] ?? "";
-  input.readOnly = !cbIsEditing;
+  input.readOnly = !cbIsEditing || isAutoPaymentReceipt(tx);
   input.placeholder = placeholder || "";
   if (!opts.left) input.style.textAlign = "right";
 
@@ -4019,7 +4146,7 @@ input.placeholder = cashbookTranslations[cashbookLang].datePh;
    
 
   function renderMobile(){
-    const active = getActiveArr();
+    const active = getActiveDisplayArr();
     const filtered = getFiltered(active);
     const { pageItems, startIndex } = paginate(filtered);
     const t = cashbookTranslations[cashbookLang];
@@ -4039,7 +4166,7 @@ input.placeholder = cashbookTranslations[cashbookLang].datePh;
       const headLeft = document.createElement("div");
       headLeft.className = "cb-mhead-left";
 
-      if (cbIsEditing){
+      if (cbIsEditing && !isAutoPaymentReceipt(tx)){
         const chkWrap = document.createElement("div");
         chkWrap.className = "cb-mcheck-wrap";
         const chk = document.createElement("input");
@@ -4063,7 +4190,7 @@ input.placeholder = cashbookTranslations[cashbookLang].datePh;
 
       const ttl = document.createElement("div");
       ttl.className = "cb-mhead-title";
-      ttl.innerHTML = `<strong>${t.rowLabel} ${slNo}</strong><span>${periodText(cbPeriodMonth, cbPeriodYear)}</span>`;
+      ttl.innerHTML = `<strong>${t.rowLabel} ${slNo}</strong><span>${periodText(cbPeriodMonth, cbPeriodYear)}</span>${isAutoPaymentReceipt(tx) ? `<small>${escapeHtml(t.autoPaymentReceipt)}</small>` : ""}`;
       headLeft.appendChild(ttl);
 
       head.appendChild(headLeft);
@@ -4109,7 +4236,7 @@ dataRows.forEach(item=>{
 });
       card.appendChild(rows);
 
-      if (cbIsEditing){
+      if (cbIsEditing && !isAutoPaymentReceipt(tx)){
         const foot = document.createElement("div");
         foot.className = "cb-mfoot";
 
@@ -4220,12 +4347,14 @@ cbReceiptsTab.addEventListener("click", ()=>{
   setTabUI();
 });
 
-cbPaymentsTab.addEventListener("click", ()=>{
-  cbActiveTab = "payments";
-  cbPage = 1;
-  saveActiveTab();
-  setTabUI();
-});
+  cbPaymentsTab.addEventListener("click", ()=>{
+    cbActiveTab = "payments";
+    cbPage = 1;
+    saveActiveTab();
+    setTabUI();
+  });
+
+  cbPrintReceiptsBtn.addEventListener("click", printCashbookReceipts);
 
   cbSearchInput.addEventListener("input", ()=>{
     cbSearch = cbSearchInput.value.trim();
