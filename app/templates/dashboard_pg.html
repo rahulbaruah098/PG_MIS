@@ -1947,7 +1947,6 @@ function __setupDashboardScrollMemory(){
         { title: __t('stat_profit_latest'), value: '{{ (metrics.profit_latest if metrics is defined and metrics.profit_latest is defined else "₹0") }}', change: '{{ (metrics.profit_period if metrics is defined and metrics.profit_period is defined else "") }}', icon: 'TrendingUp', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-teal-700' },
         { title: __t('stat_loss_latest'), value: '{{ (metrics.loss_latest if metrics is defined and metrics.loss_latest is defined else "₹0") }}', change: '{{ (metrics.profit_period if metrics is defined and metrics.profit_period is defined else "") }}', icon: 'TrendingDown', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-rose-700' },
         { title: __t('stat_grants_received'), value: '{{ (metrics.grants_received_total if metrics is defined and metrics.grants_received_total is defined else "₹0") }}', change: '{{ (metrics.grants_count if metrics is defined and metrics.grants_count is defined else 0) }} ' + __t('stat_grants_count_suffix'), icon: 'Landmark', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-lime-700' },
-        { title: __t('stat_categories'), value: '{{ (metrics.categories_count if metrics is defined else 0) }}', change: __t('stat_from_pg_master'), icon: 'PackageCheck', bg: 'bg-white/90', border: 'border-slate-200', iconBg: 'stat-icon-soft', textColor: 'text-lime-700' },
       ];
     }
 
@@ -2612,7 +2611,6 @@ function renderPgKpiGraphs(){
   const loss = __pgMetricValue('loss_latest');
   const grantsAmount = __pgMetricValue('grants_received_total');
   const grantsCount = __pgMetricValue('grants_count');
-  const categories = __pgMetricValue('categories_count');
   const stockKg = __pgMetricValue('total_stock_kg');
 
   makePg3DBar(
@@ -2628,7 +2626,6 @@ function renderPgKpiGraphs(){
   __t('pg_lbl_loss'),
   __t('pg_lbl_grants'),
   __t('pg_lbl_grant_count'),
-  __t('pg_lbl_categories'),
   __t('pg_lbl_stock')
 ],
   [
@@ -2641,7 +2638,6 @@ function renderPgKpiGraphs(){
     loss,
     grantsAmount,
     grantsCount,
-    categories,
     stockKg
   ],
 __t('pg_lbl_pg_kpi_value'),
@@ -2685,10 +2681,9 @@ __t('pg_lbl_pg_kpi_value'),
     [
   __t('pg_lbl_grant_amount'),
   __t('pg_lbl_grant_count'),
-  __t('pg_lbl_stock_kg'),
-  __t('pg_lbl_categories')
+  __t('pg_lbl_stock_kg')
 ],
-    [grantsAmount, grantsCount, stockKg, categories],
+    [grantsAmount, grantsCount, stockKg],
     __t('pg_grant_stock_status')
   );
 }
@@ -2974,10 +2969,6 @@ const totalStock =
     ? availableStockValue
     : (inputStockValue > 0 ? inputStockValue : outputSoldValue);
 
-//  Category should show 1 when this Stock chart has any real value.
-const categoriesCount =
-  (inputStockValue > 0 || outputSoldValue > 0 || availableStockValue > 0) ? 1 : 0;
-
   container.innerHTML = `
     <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl p-6 border border-slate-200 hover:shadow-2xl transition-all duration-300 fade-in card-border-soft">
       <div class="flex items-center gap-3 mb-6">
@@ -2994,16 +2985,12 @@ const categoriesCount =
         <canvas id="produceStockCanvas"></canvas>
       </div>
 
-      <div class="mt-5 grid grid-cols-2 gap-4">
+      <div class="mt-5 grid grid-cols-1 gap-4">
         <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
           <p class="text-sm text-slate-600 font-medium mb-1">${__t('chart_total_stock')}</p>
           <p class="text-3xl font-bold text-slate-900">${__num(totalStock).toFixed(2)} kg</p>
         </div>
 
-        <div class="bg-white/80 rounded-xl p-4 border border-slate-200 hover:border-slate-300 transition-all hover:shadow-md card-border-soft">
-          <p class="text-sm text-slate-600 font-medium mb-1">${__t('chart_categories')}</p>
-          <p class="text-3xl font-bold text-emerald-700">${categoriesCount}</p>
-        </div>
       </div>
     </div>
   `;

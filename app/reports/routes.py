@@ -669,104 +669,45 @@ def _reports_export_filters(db):
 def export_members_csv():
     import csv, io
     db = current_app.mongo_db
-
     base_match = _pg_match_from_session(session)
     filters = _reports_export_filters(db)
     group_by = (request.args.get("group_by") or "").strip().lower()
     q = (request.args.get("q") or "").strip()
-
     pg_ids, pg_by_id = _pgs_in_scope(db, base_match, filters)
-
     match = {"pg_id": {"$in": pg_ids}} if pg_ids else {"pg_id": {"$in": []}}
-
     if q:
-        match["$or"] = [
-            {"name": {"$regex": re.escape(q), "$options": "i"}},
-            {"shg_name": {"$regex": re.escape(q), "$options": "i"}},
-        ]
-
-    # period filter (created_at)
+        match["$or"] = [{field: {"$regex": re.escape(q), "$options": "i"}} for field in ("name", "member_name", "shg_name")]
     _apply_period(match, "created_at", dict(request.args))
-
-    mem = io.StringIO()
+    mem = io.StringIO(newline="")
     w = csv.writer(mem)
-
     if group_by:
-        # Summary aggregation
         def gkey(pg):
-            if group_by == "district":
-                return pg.get("District") or ""
-            if group_by == "block":
-                return pg.get("Block") or ""
-            if group_by == "gp":
-                return pg.get("Gram Panchayat") or ""
-            if group_by == "village":
-                return pg.get("Village") or ""
-            if group_by == "pg":
-                return pg.get("name") or ""
-            return ""
-
+            return {"district": pg.get("District"), "block": pg.get("Block"), "gp": pg.get("Gram Panchayat"), "village": pg.get("Village"), "pg": pg.get("name")}.get(group_by, "") or ""
         agg = {}
-
-        # Lakhpati intentionally hidden/commented out from reports export.
         for mdoc in db.pg_members.find(match, {"pg_id": 1}):
             pg = pg_by_id.get(mdoc.get("pg_id")) or {}
             key = gkey(pg)
-
-            if key not in agg:
-                agg[key] = {"members": 0}
-
-            agg[key]["members"] += 1
-
+            agg[key] = agg.get(key, 0) + 1
         w.writerow(["Group", "Members Count"])
-
-        for k in sorted(agg.keys()):
-            w.writerow([
-                k,
-                agg[k]["members"],
-            ])
-
+        for key in sorted(agg):
+            w.writerow([key, agg[key]])
     else:
-        # Row-level export
-        # Lakhpati Didi column intentionally hidden/commented out from reports export.
-        fields = [
-            "PG Name",
-            "State",
-            "District",
-            "Block",
-            "Gram Panchayat",
-            "Village",
-            "Member Name",
-            "SHG Name",
-            "Category",
-            "Contact",
-        ]
-
+        fields = ["PG Name", "State", "District", "Block", "Gram Panchayat", "Village", "Member Name", "SHG Name", "Category", "Contact", "Crop (Agri)", "FFS Module", "ARDD Activity", "ARDD Unit", "Fishery Activity"]
         w.writerow(fields)
-
         for mdoc in db.pg_members.find(match).sort([("name", 1)]):
             pg = pg_by_id.get(mdoc.get("pg_id")) or {}
-
-            w.writerow([
-                pg.get("name") or "",
-                pg.get("State") or "",
-                pg.get("District") or "",
-                pg.get("Block") or "",
-                pg.get("Gram Panchayat") or "",
-                pg.get("Village") or "",
-                mdoc.get("name") or "",
-                mdoc.get("shg_name") or "",
-                mdoc.get("category") or "",
-                mdoc.get("contact") or "",
-            ])
-
+            master = {}
+            member_ref = mdoc.get("shg_member_id") or mdoc.get("member_id")
+            if member_ref:
+                try:
+                    member_oid = member_ref if isinstance(member_ref, ObjectId) else ObjectId(str(member_ref))
+                    master = db.shg_members_master.find_one({"_id": member_oid}) or {}
+                except Exception:
+                    master = db.shg_members_master.find_one({"_id": member_ref}) or {}
+            contact = (mdoc.get("contact") or mdoc.get("phone") or mdoc.get("contact_number") or master.get("Contact") or master.get("Contact Number") or master.get("Mobile Number") or master.get("Phone") or master.get("contact") or master.get("phone") or "")
+            w.writerow([pg.get("name") or "", pg.get("State") or "", pg.get("District") or "", pg.get("Block") or "", pg.get("Gram Panchayat") or "", pg.get("Village") or "", mdoc.get("name") or mdoc.get("member_name") or master.get("Member Name") or master.get("member_name") or "", mdoc.get("shg_name") or master.get("SHG Name") or master.get("SHG_Name") or master.get("shg_name") or "", mdoc.get("category") or master.get("Category") or master.get("Social Category") or "", contact, mdoc.get("agri_crop") or "", mdoc.get("agri_ffs_module") or "", mdoc.get("ardd_activity") or "", mdoc.get("ardd_unit") or "", mdoc.get("fishery_activity") or ""])
     mem.seek(0)
-
-    return current_app.response_class(
-        mem.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-Disposition": "attachment; filename=members.csv"},
-    )
+    return current_app.response_class(mem.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=members.csv"})
 
 
 @reports_bp.route("/export/cashbook.csv", methods=["GET"])
@@ -1130,55 +1071,54 @@ def export_loans_csv():
     filters = _reports_export_filters(db)
     group_by = (request.args.get("group_by") or "").strip().lower()
     pg_ids, pg_by_id = _pgs_in_scope(db, base_match, filters)
-
     match = {"pg_id": {"$in": pg_ids}} if pg_ids else {"pg_id": {"$in": []}}
     _apply_period(match, "created_at", dict(request.args))
-
-    mem = io.StringIO(); w = csv.writer(mem)
-
+    member_docs = list(db.pg_members.find({"pg_id": {"$in": pg_ids}}, {"name": 1, "member_name": 1})) if pg_ids else []
+    member_map = {str(m.get("_id")): (m.get("name") or m.get("member_name") or "") for m in member_docs}
+    loans = []
+    def principal(doc):
+        for field in ("principal", "principal_amount", "sanction_amount", "sanctioned_amount", "estimated_amount", "disbursed_amount", "loan_amount", "amount"):
+            value = doc.get(field)
+            if value not in (None, ""):
+                return _safe_float(value)
+        return 0.0
+    def outstanding(doc):
+        return _safe_float(doc.get("outstanding_amount") or doc.get("outstanding") or doc.get("balance_amount"))
+    for doc in db.pg_loan_accounts.find(match):
+        loans.append(("PG", doc))
+    for doc in db.pg_member_loan_accounts.find(match):
+        loans.append(("Member", doc))
+    mem = io.StringIO(newline="")
+    w = csv.writer(mem)
     if group_by:
         def gkey(pg):
-            if group_by == "district": return pg.get("District") or ""
-            if group_by == "block": return pg.get("Block") or ""
-            if group_by == "gp": return pg.get("Gram Panchayat") or ""
-            if group_by == "village": return pg.get("Village") or ""
-            if group_by == "pg": return pg.get("name") or ""
-            return ""
+            return {"district": pg.get("District"), "block": pg.get("Block"), "gp": pg.get("Gram Panchayat"), "village": pg.get("Village"), "pg": pg.get("name")}.get(group_by, "") or ""
         agg = {}
-        for doc in db.pg_member_loan_accounts.find(match, {"pg_id": 1, "principal_amount": 1, "outstanding_amount": 1, "status": 1}):
+        for _kind, doc in loans:
             pg = pg_by_id.get(doc.get("pg_id")) or {}
-            key = gkey(pg)
-            if key not in agg:
-                agg[key] = {"loans": 0, "principal": 0.0, "outstanding": 0.0, "active": 0}
-            agg[key]["loans"] += 1
-            try: agg[key]["principal"] += float(doc.get("principal_amount") or 0)
-            except Exception: pass
-            try: agg[key]["outstanding"] += float(doc.get("outstanding_amount") or 0)
-            except Exception: pass
-            if (doc.get("status") or "").lower() in ("active","open"):
-                agg[key]["active"] += 1
-        w.writerow(["Group","Loans","Active Loans","Principal Total","Outstanding Total"])
-        for k in sorted(agg.keys()):
-            w.writerow([k, agg[k]["loans"], agg[k]["active"], round(agg[k]["principal"],2), round(agg[k]["outstanding"],2)])
+            item = agg.setdefault(gkey(pg), {"loans": 0, "active": 0, "principal": 0.0, "outstanding": 0.0})
+            item["loans"] += 1
+            item["principal"] += principal(doc)
+            item["outstanding"] += outstanding(doc)
+            if str(doc.get("status") or "").lower() in ("active", "open"):
+                item["active"] += 1
+        w.writerow(["Group", "Loans", "Active Loans", "Principal Total", "Outstanding Total"])
+        for key in sorted(agg):
+            item = agg[key]
+            w.writerow([key, item["loans"], item["active"], round(item["principal"], 2), round(item["outstanding"], 2)])
     else:
-        w.writerow(["PG Name","State","District","Block","GP","Village","Loan No","Member","Principal","Outstanding","Status","Created At"])
-        for doc in db.pg_member_loan_accounts.find(match).sort([("created_at",-1)]):
+        w.writerow(["PG Name", "State", "District", "Block", "GP", "Village", "Loan Type", "Loan No", "Member Name", "Member ID", "Lender", "Purpose", "Principal", "Outstanding", "Status", "Created At"])
+        def loan_created_sort(pair):
+            created_at = pair[1].get("created_at")
+            try:
+                return created_at.timestamp() if created_at else 0
+            except Exception:
+                return 0
+        for kind, doc in sorted(loans, key=loan_created_sort, reverse=True):
             pg = pg_by_id.get(doc.get("pg_id")) or {}
-            w.writerow([
-                pg.get("name") or "",
-                pg.get("State") or "",
-                pg.get("District") or "",
-                pg.get("Block") or "",
-                pg.get("Gram Panchayat") or "",
-                pg.get("Village") or "",
-                doc.get("loan_no") or "",
-                doc.get("member_name") or "",
-                doc.get("principal_amount") or 0,
-                doc.get("outstanding_amount") or 0,
-                doc.get("status") or "",
-                (doc.get("created_at").strftime("%Y-%m-%d") if doc.get("created_at") else ""),
-            ])
-
+            member_id = str(doc.get("member_id") or "")
+            created = doc.get("created_at")
+            w.writerow([pg.get("name") or "", pg.get("State") or "", pg.get("District") or "", pg.get("Block") or "", pg.get("Gram Panchayat") or "", pg.get("Village") or "", kind, doc.get("loan_no") or "", (doc.get("member_name") or member_map.get(member_id) or "") if kind == "Member" else "", member_id if kind == "Member" else "", doc.get("lender") or doc.get("source") or "", doc.get("purpose") or "", round(principal(doc), 2), round(outstanding(doc), 2), doc.get("status") or "", created.strftime("%Y-%m-%d") if hasattr(created, "strftime") else (created or "")])
     mem.seek(0)
     return current_app.response_class(mem.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=loans.csv"})
 
@@ -1193,54 +1133,40 @@ def export_turnover_csv():
     filters = _reports_export_filters(db)
     group_by = (request.args.get("group_by") or "").strip().lower()
     pg_ids, pg_by_id = _pgs_in_scope(db, base_match, filters)
-
     match = {"pg_id": {"$in": pg_ids}} if pg_ids else {"pg_id": {"$in": []}}
-    # Monthly dataset: use year/month based filtering if user uses from/to
     _apply_period(match, "updated_at", dict(request.args))
-
-    mem = io.StringIO(); w = csv.writer(mem)
-
+    market_rows = list(db.pg_market_transactions.find(match).sort([("year", -1), ("month", -1)]))
+    seen_periods = {(str(row.get("pg_id")), row.get("year"), row.get("month")) for row in market_rows}
+    legacy_rows = []
+    for row in db.pg_business_monthly.find(match).sort([("year", -1), ("month", -1)]):
+        if (str(row.get("pg_id")), row.get("year"), row.get("month")) not in seen_periods:
+            legacy_rows.append(row)
     def tv(doc):
-        v = doc.get("turnover")
-        if v is None: v = doc.get("total_turnover")
-        try: return float(v or 0)
-        except Exception: return 0.0
-
+        for field in ("total_turnover", "turnover", "market_total"):
+            value = doc.get(field)
+            if value not in (None, ""):
+                return _safe_float(value)
+        return 0.0
+    all_rows = [(doc, "Market") for doc in market_rows] + [(doc, "Legacy") for doc in legacy_rows]
+    mem = io.StringIO(newline="")
+    w = csv.writer(mem)
     if group_by:
         def gkey(pg):
-            if group_by == "district": return pg.get("District") or ""
-            if group_by == "block": return pg.get("Block") or ""
-            if group_by == "gp": return pg.get("Gram Panchayat") or ""
-            if group_by == "village": return pg.get("Village") or ""
-            if group_by == "pg": return pg.get("name") or ""
-            return ""
+            return {"district": pg.get("District"), "block": pg.get("Block"), "gp": pg.get("Gram Panchayat"), "village": pg.get("Village"), "pg": pg.get("name")}.get(group_by, "") or ""
         agg = {}
-        for doc in db.pg_business_monthly.find(match, {"pg_id": 1, "turnover": 1, "total_turnover": 1}):
+        for doc, _source in all_rows:
             pg = pg_by_id.get(doc.get("pg_id")) or {}
-            key = gkey(pg)
-            if key not in agg:
-                agg[key] = {"turnover": 0.0, "months": 0}
-            agg[key]["turnover"] += tv(doc)
-            agg[key]["months"] += 1
-        w.writerow(["Group","Months","Turnover Total"])
-        for k in sorted(agg.keys()):
-            w.writerow([k, agg[k]["months"], round(agg[k]["turnover"],2)])
+            item = agg.setdefault(gkey(pg), {"turnover": 0.0, "months": 0})
+            item["turnover"] += tv(doc)
+            item["months"] += 1
+        w.writerow(["Group", "Months", "Turnover Total"])
+        for key in sorted(agg):
+            w.writerow([key, agg[key]["months"], round(agg[key]["turnover"], 2)])
     else:
-        w.writerow(["PG Name","State","District","Block","GP","Village","Year","Month","Turnover"])
-        for doc in db.pg_business_monthly.find(match).sort([("year",-1),("month",-1)]):
+        w.writerow(["PG Name", "State", "District", "Block", "GP", "Village", "Year", "Month", "Turnover", "Source"])
+        for doc, source in sorted(all_rows, key=lambda pair: (pair[0].get("year") or 0, pair[0].get("month") or 0), reverse=True):
             pg = pg_by_id.get(doc.get("pg_id")) or {}
-            w.writerow([
-                pg.get("name") or "",
-                pg.get("State") or "",
-                pg.get("District") or "",
-                pg.get("Block") or "",
-                pg.get("Gram Panchayat") or "",
-                pg.get("Village") or "",
-                doc.get("year") or "",
-                doc.get("month") or "",
-                round(tv(doc),2),
-            ])
-
+            w.writerow([pg.get("name") or "", pg.get("State") or "", pg.get("District") or "", pg.get("Block") or "", pg.get("Gram Panchayat") or "", pg.get("Village") or "", doc.get("year") or "", doc.get("month") or "", round(tv(doc), 2), source])
     mem.seek(0)
     return current_app.response_class(mem.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=turnover.csv"})
 
@@ -2876,35 +2802,6 @@ def export_scope_csv():
     import csv
     from io import StringIO
     from flask import Response
-
-    if mode == "summary" and group_by:
-        bucket = {}
-        for g in grants:
-            pg = pg_by_id.get(g.get("pg_id")) or {}
-            key = _bucket_key(pg) or "Unknown"
-            util = list(db.pg_grant_utilizations.aggregate([
-                {"$match": {"grant_id": g["_id"]}},
-                {"$group": {"_id": None, "utilized": {"$sum": "$amount"}}}
-            ]))
-            utilized = float(util[0]["utilized"]) if util else 0.0
-            received = float(g.get("amount_received") or 0.0)
-            bal = received - utilized
-            cur = bucket.get(key) or {"received": 0.0, "utilized": 0.0, "balance": 0.0, "grants": 0}
-            cur["received"] += received
-            cur["utilized"] += utilized
-            cur["balance"] += bal
-            cur["grants"] += 1
-            bucket[key] = cur
-
-        output = StringIO()
-        writer = csv.writer(output)
-        writer.writerow([group_by, "#Grants", "Total Received", "Total Utilized", "Total Balance"])
-        for k in sorted(bucket.keys()):
-            cur = bucket[k]
-            writer.writerow([k, cur["grants"], round(cur["received"], 2), round(cur["utilized"], 2), round(cur["balance"], 2)])
-        output.seek(0)
-        filename = f"grants_summary_{group_by.replace(' ','_').lower()}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
-        return Response(output.getvalue(), mimetype="text/csv", headers={"Content-Disposition": f"attachment;filename={filename}"})
 
     db = current_app.mongo_db
     pg_match = _pg_match_from_session(session)
@@ -5032,6 +4929,52 @@ def export_lakhpati_csv():
 # Grants — Report + CSV Export (all roles)
 # ============================================================
 
+def _resolve_grants_pg_clf_name(db, pg):
+    """Resolve the CLF assigned to a PG from its stored reference or CLF assignment list."""
+    if not isinstance(pg, dict):
+        return ""
+
+    direct_name = (
+        pg.get("clf_name") or pg.get("mapped_clf_name") or pg.get("assigned_clf_name")
+        or pg.get("CLF Name") or pg.get("CLF")
+    )
+    clf_ref = (
+        pg.get("clf_id") or pg.get("CLF_id") or pg.get("clfId")
+        or pg.get("mapped_clf_id") or pg.get("assigned_clf_id")
+    )
+    clf_doc = None
+    if clf_ref not in (None, ""):
+        try:
+            clf_oid = clf_ref if isinstance(clf_ref, ObjectId) else (ObjectId(str(clf_ref)) if ObjectId.is_valid(str(clf_ref)) else None)
+        except Exception:
+            clf_oid = None
+        if clf_oid:
+            clf_doc = db.clfs.find_one({"_id": clf_oid}, {"name": 1, "clf_name": 1, "CLF Name": 1})
+            if not clf_doc:
+                clf_doc = db.clfs.find_one({"_id": str(clf_ref)}, {"name": 1, "clf_name": 1, "CLF Name": 1})
+        else:
+            clf_doc = db.clfs.find_one({"$or": [
+                {"name": str(clf_ref)}, {"clf_name": str(clf_ref)}, {"CLF Name": str(clf_ref)}
+            ]}, {"name": 1, "clf_name": 1, "CLF Name": 1})
+
+    # Some existing PGs only have their assignment recorded on the CLF document.
+    if not clf_doc and pg.get("_id"):
+        pg_id = pg.get("_id")
+        pg_id_str = str(pg_id)
+        assignment_terms = []
+        for field in ("assigned_pg_ids", "pg_ids", "mapped_pg_ids", "pgs"):
+            assignment_terms.extend(({field: pg_id}, {field: pg_id_str}))
+        try:
+            clf_doc = db.clfs.find_one({"$or": assignment_terms}, {"name": 1, "clf_name": 1, "CLF Name": 1})
+        except Exception:
+            clf_doc = None
+
+    return (
+        (clf_doc.get("name") or clf_doc.get("clf_name") or clf_doc.get("CLF Name") or "")
+        if clf_doc else str(direct_name or "").strip()
+    )
+
+
 #changes by atlanta
 @reports_bp.route("/grants", methods=["GET"])
 @login_required
@@ -5057,7 +5000,15 @@ def grants_report():
     if role in ("PG_DATA_ENTRY", "CADRE_CC") and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
         match_pg["_id"] = ObjectId(session.get("pg_id"))
 
-    pgs = list(db.pgs.find(match_pg, {"name": 1, "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1}))
+    pgs = list(db.pgs.find(match_pg, {
+        "name": 1, "State": 1, "District": 1, "Block": 1,
+        "Gram Panchayat": 1, "Village": 1, "clf_id": 1, "CLF_id": 1,
+        "clfId": 1, "mapped_clf_id": 1, "assigned_clf_id": 1,
+        "clf_name": 1, "mapped_clf_name": 1, "assigned_clf_name": 1,
+        "CLF Name": 1, "CLF": 1,
+    }))
+    for pg in pgs:
+        pg["_report_clf_name"] = _resolve_grants_pg_clf_name(db, pg)
     pg_by_id = {p["_id"]: p for p in pgs}
     pg_ids = list(pg_by_id.keys())
 
@@ -5093,6 +5044,7 @@ def grants_report():
             "Block": pg.get("Block") or "",
             "Gram Panchayat": pg.get("Gram Panchayat") or "",
             "Village": pg.get("Village") or "",
+            "CLF": pg.get("_report_clf_name") or "",
             "Category": g.get("category") or "",
             "Source": g.get("source") or "",
             "Release Date": g.get("release_date") or "",
@@ -5204,7 +5156,15 @@ def export_grants_csv():
     if role in ("PG_DATA_ENTRY", "CADRE_CC") and session.get("pg_id") and ObjectId.is_valid(session.get("pg_id")):
         match_pg["_id"] = ObjectId(session.get("pg_id"))
 
-    pgs = list(db.pgs.find(match_pg, {"name": 1, "State": 1, "District": 1, "Block": 1, "Gram Panchayat": 1, "Village": 1}))
+    pgs = list(db.pgs.find(match_pg, {
+        "name": 1, "State": 1, "District": 1, "Block": 1,
+        "Gram Panchayat": 1, "Village": 1, "clf_id": 1, "CLF_id": 1,
+        "clfId": 1, "mapped_clf_id": 1, "assigned_clf_id": 1,
+        "clf_name": 1, "mapped_clf_name": 1, "assigned_clf_name": 1,
+        "CLF Name": 1, "CLF": 1,
+    }))
+    for pg in pgs:
+        pg["_report_clf_name"] = _resolve_grants_pg_clf_name(db, pg)
     pg_by_id = {p["_id"]: p for p in pgs}
     pg_ids = list(pg_by_id.keys())
 
@@ -5224,6 +5184,8 @@ def export_grants_csv():
             return ""
         if group_by.lower() in ("pg", "pg_name", "pgname"):
             return pg_doc.get("name") or ""
+        if group_by.strip().lower() == "clf":
+            return pg_doc.get("_report_clf_name") or ""
         if group_by in ("State", "District", "Block", "Gram Panchayat", "Village"):
             return pg_doc.get(group_by) or ""
         return ""
@@ -5233,7 +5195,7 @@ def export_grants_csv():
     from flask import Response
     output = StringIO()
     writer = csv.writer(output)
-    writer.writerow(["PG Name","State","District","Block","Gram Panchayat","Village","Category","Source","Release Date","Amount Received","Utilized","Balance","UC Status","Created At"])
+    writer.writerow(["PG Name","State","District","Block","Gram Panchayat","Village","CLF","Category","Source","Release Date","Amount Received","Utilized","Balance","UC Status","Created At"])
     for g in grants:
         util = list(db.pg_grant_utilizations.aggregate([
             {"$match": {"grant_id": g["_id"]}},
@@ -5250,6 +5212,7 @@ def export_grants_csv():
             pg.get("Block") or "",
             pg.get("Gram Panchayat") or "",
             pg.get("Village") or "",
+            pg.get("_report_clf_name") or "",
             g.get("category") or "",
             g.get("source") or "",
             g.get("release_date") or "",
@@ -5404,18 +5367,28 @@ def pg_overall_report():
 
 
 def _write_csv_rows(writer, fieldnames, docs):
+    """Write CSV values as readable text, including nested register rows."""
     import json
+    def cell(value):
+        if value is None:
+            return ""
+        if isinstance(value, datetime):
+            return value.isoformat(sep=" ", timespec="seconds")
+        if isinstance(value, dict):
+            return "; ".join(f"{key}: {cell(item)}" for key, item in value.items())
+        if isinstance(value, list):
+            return " | ".join(cell(item) for item in value)
+        if isinstance(value, ObjectId):
+            return str(value)
+        if isinstance(value, (str, int, float, bool)):
+            return value
+        try:
+            return json.dumps(value, default=str, ensure_ascii=False)
+        except Exception:
+            return str(value)
     writer.writerow(fieldnames)
-    for d in docs:
-        row = []
-        for f in fieldnames:
-            v = d.get(f)
-            if isinstance(v, (dict, list)):
-                v = json.dumps(v, default=str, ensure_ascii=False)
-            if f == "_id" and v is not None:
-                v = str(v)
-            row.append(v if v is not None else "")
-        writer.writerow(row)
+    for doc in docs:
+        writer.writerow([cell(doc.get(field)) for field in fieldnames])
 
 #changes by atlanta
 @reports_bp.route("/pg-overall/download", methods=["GET"])
@@ -5518,10 +5491,20 @@ def pg_overall_download():
             # 2) Members
             members = list(db.pg_members.find({"pg_id": pg_id}).sort([("name", 1)]))
             buf = io.StringIO(); w = csv.writer(buf)
-            m_fields = ["_id", "pg_id", "name", "spouse", "category", "shg_name", "contact", "photo_id_number", "bank_name", "branch", "account_number", "membership_fee_paid", "lakh_pati_didi", "created_at", "updated_at"]
+            m_fields = ["_id", "pg_id", "name", "spouse", "category", "shg_name", "contact", "photo_id_number", "bank_name", "branch", "account_number", "membership_fee_paid", "lakh_pati_didi", "agri_crop", "agri_ffs_module", "ardd_activity", "ardd_unit", "fishery_activity", "created_at", "updated_at"]
             for m in members:
                 m["_id"] = str(m.get("_id"))
                 m["pg_id"] = str(m.get("pg_id"))
+                member_ref = m.get("shg_member_id") or m.get("member_id")
+                master = {}
+                if member_ref:
+                    try:
+                        member_oid = member_ref if isinstance(member_ref, ObjectId) else ObjectId(str(member_ref))
+                        master = db.shg_members_master.find_one({"_id": member_oid}) or {}
+                    except Exception:
+                        master = db.shg_members_master.find_one({"_id": member_ref}) or {}
+                m["contact"] = (m.get("contact") or m.get("phone") or m.get("contact_number") or master.get("Contact") or master.get("Contact Number") or master.get("Mobile Number") or master.get("Phone") or master.get("contact") or master.get("phone") or "")
+                m["name"] = m.get("name") or m.get("member_name") or master.get("Member Name") or master.get("member_name") or ""
             _write_csv_rows(w, m_fields, members)
             z.writestr(f"{safe_prefix}/members.csv", buf.getvalue())
 
@@ -5551,6 +5534,42 @@ def pg_overall_download():
                 l["_id"] = str(l.get("_id")); l["pg_id"] = str(l.get("pg_id"))
             _write_csv_rows(w, loan_fields, loans)
             z.writestr(f"{safe_prefix}/loan_ledger.csv", buf.getvalue())
+
+            # 5a) Loan accounts with member names and normalized principal amounts.
+            loan_rows = []
+            member_names = {str(m.get("_id")): (m.get("name") or m.get("member_name") or "") for m in members}
+            for loan_type, collection in (("PG", db.pg_loan_accounts), ("Member", db.pg_member_loan_accounts)):
+                for loan in collection.find({"pg_id": pg_id}).sort([("created_at", -1)]):
+                    amount = next((loan.get(key) for key in ("principal", "principal_amount", "sanction_amount", "sanctioned_amount", "estimated_amount", "disbursed_amount", "loan_amount", "amount") if loan.get(key) not in (None, "")), 0)
+                    member_id = loan.get("member_id")
+                    loan_rows.append({"Loan Type": loan_type, "Loan No": loan.get("loan_no") or "", "Member Name": (loan.get("member_name") or member_names.get(str(member_id), "")) if loan_type == "Member" else "", "Member ID": str(member_id or "") if loan_type == "Member" else "", "Lender": loan.get("lender") or loan.get("source") or "", "Purpose": loan.get("purpose") or "", "Principal": amount, "Outstanding": loan.get("outstanding_amount") or loan.get("outstanding") or 0, "Status": loan.get("status") or "", "Created At": loan.get("created_at") or ""})
+            buf = io.StringIO(newline=""); w = csv.writer(buf)
+            loan_export_fields = ["Loan Type", "Loan No", "Member Name", "Member ID", "Lender", "Purpose", "Principal", "Outstanding", "Status", "Created At"]
+            _write_csv_rows(w, loan_export_fields, loan_rows)
+            z.writestr(f"{safe_prefix}/loans.csv", buf.getvalue())
+
+            # 5b) Monthly turnover, sourced from pg_market_transactions.
+            turnover_rows = []
+            market_periods = set()
+            for row in db.pg_market_transactions.find({"pg_id": pg_id}).sort([("year", -1), ("month", -1)]):
+                market_periods.add((row.get("year"), row.get("month")))
+                amount = row.get("total_turnover")
+                if amount in (None, ""):
+                    amount = row.get("turnover")
+                if amount in (None, ""):
+                    amount = row.get("market_total") or 0
+                turnover_rows.append({"Year": row.get("year") or "", "Month": row.get("month") or "", "Turnover": amount, "Internal Turnover": "", "Market Turnover": row.get("market_total") or "", "Source": "Market transactions"})
+            for row in db.pg_business_monthly.find({"pg_id": pg_id}).sort([("year", -1), ("month", -1)]):
+                if (row.get("year"), row.get("month")) in market_periods:
+                    continue
+                amount = row.get("total_turnover")
+                if amount in (None, ""):
+                    amount = row.get("turnover") or 0
+                turnover_rows.append({"Year": row.get("year") or "", "Month": row.get("month") or "", "Turnover": amount, "Internal Turnover": row.get("internal_total") or "", "Market Turnover": "", "Source": "Legacy business record"})
+            buf = io.StringIO(newline=""); w = csv.writer(buf)
+            turnover_fields = ["Year", "Month", "Turnover", "Internal Turnover", "Market Turnover", "Source"]
+            _write_csv_rows(w, turnover_fields, turnover_rows)
+            z.writestr(f"{safe_prefix}/turnover.csv", buf.getvalue())
 
             # 6) Receipt Voucher
             rvs = list(db.pg_receipt_vouchers.find({"pg_id": pg_id}).sort([("created_at", -1)]))

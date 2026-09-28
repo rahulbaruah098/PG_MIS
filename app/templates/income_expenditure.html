@@ -118,6 +118,24 @@
     background: rgba(255,255,255,.96);
   }
 
+  .ie-period-view{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    padding:12px;
+    margin-bottom:12px;
+    border:1px solid rgba(11,77,58,.16);
+    border-radius:14px;
+    background:rgba(240,253,244,.58);
+  }
+  .ie-period-copy{display:flex;flex-direction:column;gap:4px;min-width:220px}
+  .ie-period-title{font-size:13px;font-weight:950;color:var(--ink)}
+  .ie-period-help{font-size:11px;font-weight:700;color:var(--muted)}
+  .ie-period-controls{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin:0}
+  .ie-period-controls .ie-input{min-width:90px}
+
   .ie-actions{
     display:flex;
     gap: 10px;
@@ -287,18 +305,45 @@
 
     <!-- Form -->
     <div class="ie-form">
+      <div class="ie-period-view">
+        <div class="ie-period-copy">
+          <strong class="ie-period-title" id="ieSavedMonthTitle">View a saved month</strong>
+          <span class="ie-period-help" id="ieSavedMonthHelp">Choose a year and month, then load its saved income and expenditure statement.</span>
+        </div>
+        <form class="ie-period-controls" method="GET" action="{{ url_for('business.income_expenditure', pg_id=pg._id) }}">
+          <div class="ie-stack" style="min-width:96px;">
+            <label class="ie-label" id="ieViewYearLabel" for="ieViewYear">Year</label>
+            <input class="ie-input" id="ieViewYear" type="number" name="year" min="1900" max="9999"
+                   value="{{ record.year if record else request.args.get('year', '') }}" required>
+          </div>
+          <div class="ie-stack" style="min-width:90px;">
+            <label class="ie-label" id="ieViewMonthLabel" for="ieViewMonth">Month</label>
+            <input class="ie-input" id="ieViewMonth" type="number" name="month" min="1" max="12"
+                   value="{{ record.month if record else request.args.get('month', '') }}" required>
+          </div>
+          <button class="ie-btn ie-primary" type="submit" id="ieBtnLoadMonth">Load month</button>
+        </form>
+      </div>
+
+      {% if request.args.get('year') and request.args.get('month') and not record %}
+      <div class="ie-period-help" id="ieNoSavedMonth" role="status" style="margin:0 2px 12px;">
+        No saved statement was found for this month. You can enter and save one below.
+      </div>
+      {% endif %}
+
       <form method="POST">
 
         <!-- Year / Month (same inputs, same names) -->
         <div class="ie-actions">
           <div class="ie-stack" style="min-width:120px;">
             <label class="ie-label" id="ieLblYear">Year</label>
-            <input type="number" class="ie-input" name="year" value="{{ record.year if record else '' }}" required>
+            <input type="number" class="ie-input" name="year" min="1900" max="9999"
+                   value="{{ record.year if record else request.args.get('year', '') }}" required>
           </div>
 
           <div class="ie-stack" style="min-width:96px;">
             <label class="ie-label" id="ieLblMonth">Month</label>
-            <input type="number" class="ie-input" name="month" value="{{ record.month if record else '' }}" min="1" max="12" required>
+            <input type="number" class="ie-input" name="month" value="{{ record.month if record else request.args.get('month', '') }}" min="1" max="12" required>
           </div>
 
           <button class="ie-btn ie-primary" type="submit" id="ieBtnSave">
@@ -437,7 +482,7 @@
 <script>
   // ============================================================
   // INCOME–EXPENDITURE — TRANSLATION CONNECTIVITY (EN/BN)
-  //  No change to data, forms, routes, or backend logic
+  //  Month loading uses the existing year/month query support in the route.
   //  Listens to base navbar language toggle broadcasts
   //  Persists until user manually toggles again (uses same stored keys)
   // ============================================================
@@ -454,6 +499,10 @@
         year: "Year",
         month: "Month",
         save: "Save",
+        savedMonthTitle: "View a saved month",
+        savedMonthHelp: "Choose a year and month, then load its saved income and expenditure statement.",
+        loadMonth: "Load month",
+        noSavedMonth: "No saved statement was found for this month. You can enter and save one below.",
 
         incomeTitle: "Income",
         expenditureTitle: "Expenditure",
@@ -487,6 +536,10 @@
         year: "বছর",
         month: "মাস",
         save: "সংরক্ষণ",
+        savedMonthTitle: "সংরক্ষিত মাস দেখুন",
+        savedMonthHelp: "বছর ও মাস নির্বাচন করে সেই মাসের সংরক্ষিত আয়-ব্যয়ের বিবরণ দেখুন।",
+        loadMonth: "মাস লোড করুন",
+        noSavedMonth: "এই মাসের জন্য কোনো সংরক্ষিত বিবরণ পাওয়া যায়নি। নিচে তথ্য দিয়ে সংরক্ষণ করতে পারেন।",
 
         incomeTitle: "আয়",
         expenditureTitle: "ব্যয়",
@@ -533,6 +586,12 @@
       safeText('ieLblYear', t.year);
       safeText('ieLblMonth', t.month);
       safeText('ieBtnSaveText', t.save);
+      safeText('ieViewYearLabel', t.year);
+      safeText('ieViewMonthLabel', t.month);
+      safeText('ieSavedMonthTitle', t.savedMonthTitle);
+      safeText('ieSavedMonthHelp', t.savedMonthHelp);
+      safeText('ieBtnLoadMonth', t.loadMonth);
+      safeText('ieNoSavedMonth', t.noSavedMonth);
 
       safeText('ieIncomeTitle', t.incomeTitle);
       safeText('ieExpenditureTitle', t.expenditureTitle);

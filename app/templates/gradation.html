@@ -465,7 +465,7 @@
     </div>
   </div>
 
-  <form method="post">
+  <form method="post" id="gradationSaveForm">
     <input type="hidden" name="year" value="{{ year }}">
     <input type="hidden" name="quarter" value="{{ quarter }}">
 
@@ -569,7 +569,7 @@
           </a>
 
           {% if session.get("role") not in ["PG_DATA_ENTRY", "CADRE_CC"] %}
-            <button class="grad-btn" type="submit">
+            <button class="grad-btn" id="gradationSaveBtn" type="submit">
               <span data-grad-i18n="saveQuarterlyGradation">Save Quarterly Gradation</span>
             </button>
           {% else %}
@@ -578,6 +578,7 @@
             </button>
           {% endif %}
         </div>
+        <div id="gradationSaveStatus" class="grad-alert" role="status" aria-live="polite" hidden></div>
       </div>
     </div>
 
@@ -716,6 +717,10 @@
       optionalRemarks: "Optional remarks for this quarter gradation",
       reset: "Reset",
       saveQuarterlyGradation: "Save Quarterly Gradation",
+      saveStatusSaving: "Saving this quarter's gradation…",
+      saveStatusSaved: "Quarterly gradation saved. Reloading the saved quarter…",
+      saveStatusFailed: "Gradation could not be saved. Check your connection and try again.",
+      saveStatusUnexpected: "The server did not return a save confirmation. Reload the page and sign in again if needed.",
       viewOnly: "View Only",
       scoreSheetTitle: "PG Gradation Score Sheet",
       scoreSheetSub: "10 indicators with total 100 marks as per PG MIS manual.",
@@ -779,6 +784,10 @@
       optionalRemarks: "এই ত্রৈমাসিক গ্রেডেশনের জন্য ঐচ্ছিক মন্তব্য",
       reset: "রিসেট",
       saveQuarterlyGradation: "ত্রৈমাসিক গ্রেডেশন সংরক্ষণ করুন",
+      saveStatusSaving: "এই ত্রৈমাসিকের গ্রেডেশন সংরক্ষণ হচ্ছে…",
+      saveStatusSaved: "ত্রৈমাসিক গ্রেডেশন সংরক্ষিত হয়েছে। সংরক্ষিত ত্রৈমাসিক পুনরায় লোড হচ্ছে…",
+      saveStatusFailed: "গ্রেডেশন সংরক্ষণ করা যায়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।",
+      saveStatusUnexpected: "সার্ভার সংরক্ষণের নিশ্চয়তা দেয়নি। প্রয়োজনে পৃষ্ঠা পুনরায় লোড করে সাইন ইন করুন।",
       viewOnly: "শুধু দেখুন",
       scoreSheetTitle: "PG গ্রেডেশন স্কোর শীট",
       scoreSheetSub: "PG MIS ম্যানুয়াল অনুযায়ী মোট ১০০ নম্বরের ১০টি সূচক।",
@@ -841,6 +850,50 @@
     document.querySelectorAll("[data-grad-grade-label]").forEach(function(el){
       const original = el.getAttribute("data-grad-grade-label") || "";
       el.textContent = gradT(original) || original;
+    });
+  }
+
+  const gradSaveForm = document.getElementById("gradationSaveForm");
+  if(gradSaveForm){
+    gradSaveForm.addEventListener("submit", async function(event){
+      event.preventDefault();
+
+      const saveButton = document.getElementById("gradationSaveBtn");
+      const status = document.getElementById("gradationSaveStatus");
+      if(!saveButton || !status) return;
+
+      const showStatus = function(kind, message){
+        status.className = `grad-alert grad-alert-${kind}`;
+        status.textContent = message;
+        status.hidden = false;
+      };
+
+      saveButton.disabled = true;
+      showStatus("warning", gradT("saveStatusSaving"));
+
+      try{
+        const response = await fetch(gradSaveForm.action || window.location.href, {
+          method: "POST",
+          body: new FormData(gradSaveForm),
+          credentials: "same-origin",
+          headers: {
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+          }
+        });
+        const result = await response.json().catch(function(){ return null; });
+
+        if(!response.ok || !result || result.success !== true){
+          const message = result && (result.message || result.error);
+          throw new Error(message || gradT("saveStatusFailed"));
+        }
+
+        showStatus("success", result.message || gradT("saveStatusSaved"));
+        window.setTimeout(function(){ window.location.reload(); }, 350);
+      }catch(error){
+        showStatus("danger", error && error.message ? error.message : gradT("saveStatusUnexpected"));
+        saveButton.disabled = false;
+      }
     });
   }
 

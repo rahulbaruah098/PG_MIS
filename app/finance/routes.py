@@ -434,7 +434,36 @@ def _pg_from_grant_or_response(db, grant, is_json=None):
 
 
 def _pg_from_loan_or_response(db, loan, is_json=None):
-    pg = db.pgs.find_one({"_id": loan.get("pg_id")}) if loan and loan.get("pg_id") else None
+    pg_ref = None
+    if isinstance(loan, dict):
+        pg_ref = (
+            loan.get("pg_id")
+            or loan.get("pgId")
+            or loan.get("producer_group_id")
+            or loan.get("producerGroupId")
+        )
+
+    pg_oid = _to_object_id(pg_ref)
+    if pg_oid:
+        # Older loan records may store pg_id as a string while PG _id is an
+        # ObjectId. Normalize the reference before resolving the PG so the
+        # detail page does not incorrectly redirect for an existing loan.
+        pg = db.pgs.find_one({"_id": pg_oid})
+    elif pg_ref not in (None, ""):
+        pg_ref = str(pg_ref).strip()
+        pg = db.pgs.find_one({
+            "$or": [
+                {"_id": pg_ref},
+                {"pg_id": pg_ref},
+                {"pgId": pg_ref},
+                {"pg_code": pg_ref},
+                {"code": pg_ref},
+                {"producer_group_code": pg_ref},
+            ]
+        })
+    else:
+        pg = None
+
     if not pg:
         return None, _deny("Mapped PG not found for this loan.", is_json=is_json, status_code=404)
 

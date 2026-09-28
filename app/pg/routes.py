@@ -7375,7 +7375,16 @@ def api_receipt_voucher(pg_id):
         )
 
     def _member_identity(member):
-        return str(member.get("member_name", "") or "").strip()
+        """Keep a member's receipts separate by stable member ID and date.
+
+        Older receipt-voucher documents contain only a name, so name remains
+        the fallback identity for backward compatibility.
+        """
+        member_id = str(member.get("member_id") or "").strip()
+        member_name = str(member.get("member_name", "") or "").strip()
+        txn_date = str(member.get("txn_date", "") or "").strip()
+        identity = member_id or member_name
+        return f"{identity}::{txn_date}" if identity else ""
 
     def _split_legacy_member_key(key):
         key = str(key or "").strip()
@@ -7393,6 +7402,8 @@ def api_receipt_voucher(pg_id):
             raw = {}
 
         member = {
+            "member_id": str(raw.get("member_id", "") or "").strip(),
+            "member_code": str(raw.get("member_code", "") or "").strip(),
             "member_name": str(raw.get("member_name", fallback_name) or fallback_name or "").strip(),
             "txn_date": str(raw.get("txn_date", "") or "").strip(),
             "details": str(raw.get("details", "") or "").strip(),
@@ -7544,6 +7555,9 @@ def api_receipt_voucher(pg_id):
 
             key = member.get("member_name", "")
             member_tables[key] = {
+                "member_id": member.get("member_id", ""),
+                "member_code": member.get("member_code", ""),
+                "member_name": member.get("member_name", ""),
                 "entries": member.get("entries", []),
                 "details": member.get("details", ""),
                 "txn_date": member.get("txn_date", ""),
@@ -7567,7 +7581,44 @@ def api_receipt_voucher(pg_id):
 
     if request.method == "GET":
         if request.args.get("history") in ("1", "true", "yes"):
-            return jsonify({"history": _period_history(db, coll, base_q)})
+            history = _period_history(db, coll, base_q)
+            # Receipt voucher history also needs the member and transaction
+            # dates so the page can offer a member/date selector.
+            docs_by_id = {
+                str(doc.get("_id")): doc
+                for doc in db[coll].find(
+                    base_q,
+                    {"year": 1, "month": 1, "pg_group_receipt": 1,
+                     "group_member_receipt": 1, "pg_section": 1,
+                     "member_section": 1}
+                ).sort([("year", -1), ("month", -1), ("updated_at", -1)])
+            }
+            for item in history:
+                doc = docs_by_id.get(str(item.get("_id")), {})
+                date_records = []
+                for section_key in ("pg_group_receipt", "group_member_receipt"):
+                    section = doc.get(section_key)
+                    if not isinstance(section, dict):
+                        legacy_key = "pg_section" if section_key == "pg_group_receipt" else "member_section"
+                        section = doc.get(legacy_key) or {}
+                    section = _normalize_section_from_doc(section)
+                    members = section.get("members", [])
+                    for raw_member in members:
+                        member = _make_member(raw_member)
+                        if not _member_identity(member) or not _has_member_data(member):
+                            continue
+                        date_records.append({
+                            "section": section_key,
+                            "member_id": member.get("member_id", ""),
+                            "member_code": member.get("member_code", ""),
+                            "member_name": member.get("member_name", ""),
+                            "txn_date": member.get("txn_date", ""),
+                            "details": member.get("details", ""),
+                            "entries": member.get("entries", []),
+                            "signatures": member.get("signatures", {"member": "", "udyog": ""}),
+                        })
+                item["date_records"] = date_records
+            return jsonify({"history": history})
 
         if year and month:
             doc = db[coll].find_one({**base_q, "year": year, "month": month})
@@ -10039,23 +10090,57 @@ def validation_review(form_type, pg_id):
 
     if form_type == "pg_registration":
         saved_pg_members = pg.get("members") or []
+        pg_member_scope = {
+            "$and": [
+                {"$or": [{"pg_id": pg["_id"]}, {"pg_id": str(pg["_id"])}]},
+                {"$or": [{"is_active": True}, {"is_active": {"$exists": False}}]},
+            ]
+        }
+        registered_member_docs = list(db.pg_members.find(pg_member_scope))
+        registered_by_id = {
+            str(doc.get("member_id")): doc
+            for doc in registered_member_docs
+            if doc.get("member_id") is not None
+        }
 
-        member_ids = []
-        for m in saved_pg_members:
-            mid = m.get("member_id")
-            if mid:
-                try:
-                    member_ids.append(ObjectId(str(mid)))
-                except Exception:
-                    pass
+        # Keep embedded registration members and their office-bearer roles first,
+        # then add active Membership Register members not present in that snapshot.
+        review_member_sources = []
+        seen_member_ids = set()
+        for saved_member in saved_pg_members:
+            saved_member = saved_member if isinstance(saved_member, dict) else {}
+            member_id = saved_member.get("member_id")
+            member_key = str(member_id) if member_id is not None else ""
+            registered_doc = registered_by_id.get(member_key, {})
+            review_member_sources.append((saved_member, registered_doc))
+            if member_key:
+                seen_member_ids.add(member_key)
 
+        for registered_doc in registered_member_docs:
+            member_id = registered_doc.get("member_id")
+            member_key = str(member_id) if member_id is not None else ""
+            if member_key and member_key not in seen_member_ids:
+                review_member_sources.append(({
+                    "member_id": member_id,
+                    "member_name": registered_doc.get("name") or registered_doc.get("member_name") or "",
+                    "shg_name": registered_doc.get("shg_name") or "",
+                    "shg_code": registered_doc.get("shg_code") or "",
+                    "role": registered_doc.get("role") or "member",
+                }, registered_doc))
+                seen_member_ids.add(member_key)
+
+        master_member_ids = []
+        for saved_member, registered_doc in review_member_sources:
+            member_id = saved_member.get("member_id") or registered_doc.get("member_id")
+            if member_id is not None and ObjectId.is_valid(str(member_id)):
+                master_member_ids.append(ObjectId(str(member_id)))
         master_members_map = {}
-        if member_ids:
-            master_members = list(db.shg_members_master.find({"_id": {"$in": member_ids}}))
+        if master_member_ids:
+            master_members = list(db.shg_members_master.find({"_id": {"$in": list(set(master_member_ids))}}))
             master_members_map = {
-                str(m.get("_id")): m
-                for m in master_members
-                if m.get("_id")
+                str(master.get("_id")): master
+                for master in master_members
+                if master.get("_id")
             }
 
         role_label_map = {
@@ -10065,90 +10150,69 @@ def validation_review(form_type, pg_id):
             "member": "Member",
         }
 
-        for m in saved_pg_members:
-            mid = m.get("member_id")
-            mid_str = str(mid) if mid else ""
-            master = master_members_map.get(mid_str, {})
-
-            role_value = str(m.get("role") or "member").strip().lower()
+        for saved_member, registered_doc in review_member_sources:
+            member_id = saved_member.get("member_id") or registered_doc.get("member_id")
+            member_key = str(member_id) if member_id is not None else ""
+            master = master_members_map.get(member_key, {})
+            role_value = str(
+                saved_member.get("role") or registered_doc.get("role") or "member"
+            ).strip().lower()
             designation_value = role_label_map.get(
                 role_value,
                 role_value.title() if role_value else "Member"
             )
 
             members.append({
-                "_id": mid,
-                "member_id": mid,
+                "_id": member_id,
+                "member_id": member_id,
+                "member_code": (saved_member.get("member_code") or registered_doc.get("member_code")
+                                or master.get("Member Code") or master.get("member_code") or ""),
                 "name": (
-                    m.get("member_name")
-                    or master.get("Member Name")
-                    or master.get("member_name")
-                    or master.get("name")
-                    or ""
+                    saved_member.get("member_name") or registered_doc.get("name")
+                    or registered_doc.get("member_name") or master.get("Member Name")
+                    or master.get("member_name") or master.get("name") or ""
                 ),
                 "member_name": (
-                    m.get("member_name")
-                    or master.get("Member Name")
-                    or master.get("member_name")
-                    or master.get("name")
-                    or ""
+                    saved_member.get("member_name") or registered_doc.get("name")
+                    or registered_doc.get("member_name") or master.get("Member Name")
+                    or master.get("member_name") or master.get("name") or ""
                 ),
                 "role": role_value,
                 "designation": designation_value,
                 "designation_in_pg": designation_value,
                 "shg_name": (
-                    m.get("shg_name")
-                    or master.get("SHG Name")
-                    or master.get("SHG_Name")
-                    or master.get("shg_name")
-                    or ""
+                    saved_member.get("shg_name") or registered_doc.get("shg_name")
+                    or master.get("SHG Name") or master.get("SHG_Name")
+                    or master.get("shg_name") or ""
                 ),
                 "shg_code": (
-                    m.get("shg_code")
-                    or master.get("SHG Code")
-                    or master.get("SHG_Code")
-                    or master.get("shg_code")
-                    or ""
+                    saved_member.get("shg_code") or registered_doc.get("shg_code")
+                    or master.get("SHG Code") or master.get("SHG_Code")
+                    or master.get("shg_code") or ""
                 ),
                 "spouse_parent": (
-                    master.get("Spouse/Parent Name")
-                    or master.get("Spouse Name")
-                    or master.get("Father/Husband Name")
-                    or master.get("spouse_parent")
-                    or master.get("spouse_name")
-                    or ""
+                    registered_doc.get("spouse_name") or registered_doc.get("spouse_parent")
+                    or master.get("Spouse/Parent Name") or master.get("Spouse Name")
+                    or master.get("Father/Husband Name") or master.get("spouse_parent")
+                    or master.get("spouse_name") or ""
                 ),
                 "category": (
-                    master.get("Category")
-                    or master.get("Social Category")
-                    or master.get("category")
-                    or ""
+                    registered_doc.get("category") or master.get("Category")
+                    or master.get("Social Category") or master.get("category") or ""
                 ),
                 "contact": (
-                    master.get("Contact")
-                    or master.get("Contact Number")
-                    or master.get("Mobile Number")
-                    or master.get("Phone")
-                    or master.get("contact")
-                    or master.get("phone")
-                    or ""
+                    registered_doc.get("contact") or registered_doc.get("phone")
+                    or master.get("Contact") or master.get("Contact Number")
+                    or master.get("Mobile Number") or master.get("Phone")
+                    or master.get("contact") or master.get("phone") or ""
                 ),
-                "bank": (
-                    master.get("Bank Name")
-                    or master.get("bank_name")
-                    or ""
-                ),
-                "branch": "",
-                "account": (
-                    master.get("Account Number")
-                    or master.get("account_number")
-                    or ""
-                ),
-                "fee": (
-                    master.get("Membership Fee")
-                    or master.get("membership_fee")
-                    or ""
-                ),
+                "bank": registered_doc.get("bank_name") or master.get("Bank Name") or master.get("bank_name") or "",
+                "bank_name": registered_doc.get("bank_name") or master.get("Bank Name") or master.get("bank_name") or "",
+                "branch": registered_doc.get("branch") or master.get("Branch") or master.get("branch") or "",
+                "account": registered_doc.get("account_number") or master.get("Account Number") or master.get("account_number") or "",
+                "account_number": registered_doc.get("account_number") or master.get("Account Number") or master.get("account_number") or "",
+                "fee": registered_doc.get("membership_fee_paid") or master.get("Membership Fee") or master.get("membership_fee") or "",
+                "membership_fee_paid": registered_doc.get("membership_fee_paid") or master.get("Membership Fee") or master.get("membership_fee") or "",
             })
 
     elif form_type == "member_registration":
