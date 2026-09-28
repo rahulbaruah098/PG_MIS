@@ -1098,7 +1098,6 @@
       .pg-profile-page .hero-fields{ grid-template-columns: repeat(2, 1fr); }
       .pg-profile-page .grid{ grid-template-columns: repeat(2, 1fr); }
       .pg-profile-page .bank-grid{ grid-template-columns: repeat(2, 1fr); }
-      .pg-profile-page .date-row{ grid-template-columns: 1fr 220px; align-items:end; }
       .pg-profile-page .profile-hero{ padding: 18px; }
       .pg-profile-page .profile-card{ padding: 18px; }
     }
@@ -2281,11 +2280,6 @@
 
         <div class="grid">
           <div class="field">
-            <label class="field-label" id="labelAddress" for="inputAddress">Address</label>
-            <input id="inputAddress" class="field-input" type="text" disabled>
-          </div>
-
-          <div class="field">
             <label class="field-label" id="labelVillage" for="inputVillage">Village</label>
             <input id="inputVillage" class="field-input" type="text" disabled>
           </div>
@@ -2337,7 +2331,6 @@
                 <div id="dateError" class="date-error">Invalid date. Use DD/MM/YYYY.</div>
               </div>
 
-              <input id="inputFormationDatePicker" class="field-input" type="date" disabled>
             </div>
           </div>
 
@@ -2859,7 +2852,6 @@ navCashBook: "Cash Book",
         title: "Producer Group Profile",
         pgName: "PG Name",
         activity: "Activity",
-        address: "Address",
         village: "Village",
         block: "Block",
         district: "District",
@@ -2938,7 +2930,6 @@ navCashBook: "Cash Book",
         title: "উৎপাদক গোষ্ঠী প্রোফাইল",
         pgName: "পিজি নাম",
         activity: "কার্যকলাপ",
-        address: "ঠিকানা",
         village: "গ্রাম",
         block: "ব্লক",
         district: "জেলা",
@@ -3073,25 +3064,6 @@ window.PGMIS.setLanguage = (lang) => {
 
    const BASE_PROFILE_PG_ID = "{{ (pg._id|string) if pg else session.get('pg_id') }}";
 
-    function toYYYYMMDD(value){
-  if(!value) return "";
-
-  const s = String(value).trim();
-
-  // already ISO yyyy-mm-dd
-  if(/^\d{4}-\d{2}-\d{2}$/.test(s)){
-    return s;
-  }
-
-  // dd/mm/yyyy
-  if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)){
-    const [dd, mm, yyyy] = s.split("/");
-    return `${yyyy}-${mm}-${dd}`;
-  }
-
-  return "";
-}
-
     async function loadProfileData(){
    if(!BASE_PROFILE_PG_ID){
       clearProfileFields();
@@ -3124,7 +3096,6 @@ window.PGMIS.setLanguage = (lang) => {
 
       setVal("inputPgName", data.pg_name);
       setVal("inputActivity", data.activity);
-      setVal("inputAddress", data.address);
       setVal("inputVillage", data.village);
       setVal("inputBlock", data.block);
       setVal("inputDistrict", data.district);
@@ -3133,11 +3104,8 @@ window.PGMIS.setLanguage = (lang) => {
 
       if(data.formation_date){
         setVal("inputFormationDateText", data.formation_date);
-        const iso = toYYYYMMDD(data.formation_date);
-        setVal("inputFormationDatePicker", iso || "");
       }else{
         setVal("inputFormationDateText", "");
-        setVal("inputFormationDatePicker", "");
       }
 
       const bank = data.bank_details || {};
@@ -3240,13 +3208,11 @@ window.PGMIS.setLanguage = (lang) => {
       const ids = [
         "inputPgName",
         "inputActivity",
-        "inputAddress",
         "inputVillage",
         "inputBlock",
         "inputDistrict",
         "inputState",
         "inputFormationDateText",
-        "inputFormationDatePicker",
         "inputClfName",
         "inputAccountNo",
         "inputIfsc",
@@ -3323,7 +3289,6 @@ safeSetText('navCashBook', t.navCashBook);
       safeSetText('headerTitle', t.title);
       safeSetText('labelPgName', t.pgName);
       safeSetText('labelActivity', t.activity);
-      safeSetText('labelAddress', t.address);
       safeSetText('labelVillage', t.village);
       safeSetText('labelBlock', t.block);
       safeSetText('labelDistrict', t.district);

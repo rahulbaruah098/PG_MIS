@@ -2255,7 +2255,7 @@ function normalizeProducersFromData(data){
     const amount = Number.parseFloat(sale.amount) || 0;
     const advance = Number.parseFloat(sale.advance) || 0;
     const finalAmount = Number.parseFloat(sale.finalAmount) || 0;
-    sale.total = (amount - advance - finalAmount).toFixed(2);
+    sale.total = (advance + finalAmount).toFixed(2);
     return sale;
   }
 
@@ -2851,7 +2851,7 @@ if (deleteProducerBtn){
       const amount = parseFloat(sale.amount) || 0;
       const advance = parseFloat(sale.advance) || 0;
       const finalAmount = parseFloat(sale.finalAmount) || 0;
-      sale.total = (amount - advance - finalAmount).toFixed(2);
+      sale.total = (advance + finalAmount).toFixed(2);
       const total = document.querySelector(`[data-sale-id="${id}"] [data-field="total"]`);
       if (total) total.value = sale.total;
       const mobileTotal = document.querySelector(`[data-sale-mobile-id="${id}"] [data-field="total"]`);

@@ -7252,6 +7252,7 @@ def api_ledger_book(pg_id):
     db = current_app.mongo_db
     _load_pg_or_404(db, pg_id)
     year, month = _get_period_from_args()
+
     coll = "pg_ledger_books"
 
     if request.method == "GET":
@@ -7792,6 +7793,26 @@ def api_generic_register(name, pg_id):
     _load_pg_or_404(db, pg_id)
     year, month = _get_period_from_args()
 
+    # Mobile clients may send the selected output-register period in JSON
+    # instead of the query string. Normalize it before building Mongo queries.
+    if name == "output":
+        request_payload = request.get_json(silent=True) or {}
+        if not isinstance(request_payload, dict):
+            request_payload = {}
+        request_period = request_payload.get("period") if isinstance(request_payload.get("period"), dict) else {}
+        if year is None:
+            raw_year = request_payload.get("year", request_period.get("year"))
+            try:
+                year = int(raw_year) if raw_year not in (None, "", "null") else None
+            except (TypeError, ValueError):
+                year = None
+        if month is None:
+            raw_month = request_payload.get("month", request_period.get("month"))
+            try:
+                month = int(raw_month) if raw_month not in (None, "", "null") else None
+            except (TypeError, ValueError):
+                month = None
+
     allowed = {
         "input": "pg_input_registers",
         "output": "pg_output_registers",
@@ -7845,10 +7866,15 @@ def api_generic_register(name, pg_id):
 
     def _base_period_query():
         q = {"pg_id": base_pg_id}
+        if name == "output" and base_pg_id is not None:
+            # Older/mobile writes may retain pg_id and period values as
+            # strings. Accept those alongside the canonical ObjectId/integer
+            # values so the web register can find the same saved record.
+            q["pg_id"] = {"$in": [base_pg_id, str(base_pg_id)]}
         if year is not None:
-            q["year"] = int(year)
+            q["year"] = {"$in": [int(year), str(int(year))]} if name == "output" else int(year)
         if month is not None:
-            q["month"] = int(month)
+            q["month"] = {"$in": [int(month), str(int(month))]} if name == "output" else int(month)
         return q
 
     def _blank_pg_name():
@@ -7882,8 +7908,14 @@ def api_generic_register(name, pg_id):
             meta_field = "data.meta.regOutputName"
             projection = {
                 "output_name": 1,
+                "outputName": 1,
+                "produceName": 1,
+                "produce_name": 1,
                 "data.meta.regOutputName": 1,
                 "data.produceName": 1,
+                "data.produce_name": 1,
+                "data.output_name": 1,
+                "data.outputName": 1,
                 "updated_at": 1,
                 "created_at": 1,
             }
@@ -7904,7 +7936,18 @@ def api_generic_register(name, pg_id):
             if register_name == "input":
                 val = d.get(root_field) or meta.get("regInputName") or ""
             else:
-                val = d.get(root_field) or meta.get("regOutputName") or data.get("produceName") or ""
+                val = (
+                    d.get(root_field)
+                    or d.get("outputName")
+                    or d.get("produceName")
+                    or d.get("produce_name")
+                    or meta.get("regOutputName")
+                    or data.get("produceName")
+                    or data.get("produce_name")
+                    or data.get("output_name")
+                    or data.get("outputName")
+                    or ""
+                )
 
             val = _norm_name(val)
             if not val:
@@ -7966,8 +8009,14 @@ def api_generic_register(name, pg_id):
                     "$or": [
                         {"output_key": selected_key},
                         {"output_name": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
+                        {"outputName": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
+                        {"produceName": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
+                        {"produce_name": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
                         {"data.meta.regOutputName": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
                         {"data.produceName": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
+                        {"data.produce_name": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
+                        {"data.output_name": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
+                        {"data.outputName": {"$regex": _safe_regex_exact(selected_name), "$options": "i"}},
                     ],
                 },
                 sort=[("updated_at", -1), ("created_at", -1)],
@@ -8194,7 +8243,7 @@ def api_generic_register(name, pg_id):
 
             # History should remain available, but unique by month.
             if request.args.get("history") in ("1", "true", "yes"):
-                q = {"pg_id": base_pg_id}
+                q = {"pg_id": {"$in": [base_pg_id, str(base_pg_id)]}}
                 docs = list(
                     db[coll].find(
                         q,
@@ -8235,14 +8284,34 @@ def api_generic_register(name, pg_id):
 
                 doc = _serialize_doc(doc)
                 data = doc.get("data") or {}
+                if not isinstance(data, dict):
+                    data = {}
+                if not data:
+                    # Some mobile builds stored the register payload fields at
+                    # the document root instead of under `data`.
+                    data = {
+                        key: doc[key]
+                        for key in (
+                            "rows", "items", "entries", "records", "list",
+                            "produceName", "produce_name", "output_name", "outputName",
+                            "unitStock", "unit_of_stocking", "activeTab", "meta",
+                        )
+                        if key in doc
+                    }
                 meta = data.get("meta") or {}
 
                 doc["ok"] = True
                 doc["saved_output_names"] = _get_saved_names("output")
                 doc["output_name"] = (
                     doc.get("output_name")
+                    or doc.get("outputName")
+                    or doc.get("produceName")
+                    or doc.get("produce_name")
                     or meta.get("regOutputName")
                     or data.get("produceName")
+                    or data.get("produce_name")
+                    or data.get("output_name")
+                    or data.get("outputName")
                     or selected_output_name
                 )
                 doc["output_key"] = doc.get("output_key") or _name_key(doc.get("output_name"))
@@ -8251,15 +8320,21 @@ def api_generic_register(name, pg_id):
                     or meta.get("regOutputUnit")
                     or meta.get("regUnit")
                     or data.get("unitStock")
+                    or data.get("unit_of_stocking")
                     or ""
                 )
 
-                data.setdefault("meta", {})
+                if not isinstance(data.get("meta"), dict):
+                    data["meta"] = {}
                 data["meta"]["regOutputName"] = doc["output_name"]
                 data["meta"]["regOutputUnit"] = doc["unit_of_stocking"]
                 data["produceName"] = doc["output_name"]
                 data["unitStock"] = doc["unit_of_stocking"]
-                data.setdefault("rows", [])
+                if not isinstance(data.get("rows"), list):
+                    data["rows"] = next(
+                        (data.get(key) for key in ("items", "entries", "records", "list") if isinstance(data.get(key), list)),
+                        [],
+                    )
 
                 doc["data"] = data
 
@@ -8509,15 +8584,7 @@ def api_generic_register(name, pg_id):
 
             now = datetime.utcnow()
 
-            q = {
-                "pg_id": base_pg_id,
-                "output_key": output_key,
-            }
-
-            if year is not None:
-                q["year"] = int(year)
-            if month is not None:
-                q["month"] = int(month)
+            q = {**_base_period_query(), "output_key": output_key}
 
             before = db[coll].find_one(q)
 
@@ -10466,4 +10533,3 @@ def validation_reject(form_type, pg_id):
         },
         category="success" if ok else "danger"
     )
-
