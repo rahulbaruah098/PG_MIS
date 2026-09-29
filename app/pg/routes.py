@@ -7871,10 +7871,33 @@ def api_generic_register(name, pg_id):
             # strings. Accept those alongside the canonical ObjectId/integer
             # values so the web register can find the same saved record.
             q["pg_id"] = {"$in": [base_pg_id, str(base_pg_id)]}
-        if year is not None:
-            q["year"] = {"$in": [int(year), str(int(year))]} if name == "output" else int(year)
-        if month is not None:
-            q["month"] = {"$in": [int(month), str(int(month))]} if name == "output" else int(month)
+        if name == "output":
+            # Mobile versions have stored period values at the document root,
+            # inside data, or inside data.meta.
+            period_clauses = []
+            if year is not None:
+                year_values = [int(year), str(int(year))]
+                period_clauses.append({"$or": [
+                    {"year": {"$in": year_values}},
+                    {"data.year": {"$in": year_values}},
+                    {"data.meta.periodYear": {"$in": year_values}},
+                    {"period.year": {"$in": year_values}},
+                ]})
+            if month is not None:
+                month_values = [int(month), str(int(month))]
+                period_clauses.append({"$or": [
+                    {"month": {"$in": month_values}},
+                    {"data.month": {"$in": month_values}},
+                    {"data.meta.periodMonth": {"$in": month_values}},
+                    {"period.month": {"$in": month_values}},
+                ]})
+            if period_clauses:
+                q["$and"] = period_clauses
+        else:
+            if year is not None:
+                q["year"] = int(year)
+            if month is not None:
+                q["month"] = int(month)
         return q
 
     def _blank_pg_name():
@@ -8286,18 +8309,17 @@ def api_generic_register(name, pg_id):
                 data = doc.get("data") or {}
                 if not isinstance(data, dict):
                     data = {}
-                if not data:
-                    # Some mobile builds stored the register payload fields at
-                    # the document root instead of under `data`.
-                    data = {
-                        key: doc[key]
-                        for key in (
-                            "rows", "items", "entries", "records", "list",
-                            "produceName", "produce_name", "output_name", "outputName",
-                            "unitStock", "unit_of_stocking", "activeTab", "meta",
-                        )
-                        if key in doc
-                    }
+                # Mobile builds have used both document-root and nested
+                # payloads. Merge root fields even when data contains only
+                # metadata, so the web does not discard saved rows.
+                for key in (
+                    "rows", "items", "entries", "records", "list", "output_rows",
+                    "outputRows", "stock_rows", "stockRows", "saleRows",
+                    "produceName", "produce_name", "output_name", "outputName",
+                    "unitStock", "unit_of_stocking", "activeTab", "meta",
+                ):
+                    if key not in data and key in doc:
+                        data[key] = doc[key]
                 meta = data.get("meta") or {}
 
                 doc["ok"] = True
@@ -8332,7 +8354,14 @@ def api_generic_register(name, pg_id):
                 data["unitStock"] = doc["unit_of_stocking"]
                 if not isinstance(data.get("rows"), list):
                     data["rows"] = next(
-                        (data.get(key) for key in ("items", "entries", "records", "list") if isinstance(data.get(key), list)),
+                        (
+                            data.get(key)
+                            for key in (
+                                "items", "entries", "records", "list", "output_rows",
+                                "outputRows", "stock_rows", "stockRows", "saleRows",
+                            )
+                            if isinstance(data.get(key), list)
+                        ),
                         [],
                     )
 
@@ -8587,6 +8616,10 @@ def api_generic_register(name, pg_id):
             q = {**_base_period_query(), "output_key": output_key}
 
             before = db[coll].find_one(q)
+            if not before:
+                # Legacy/mobile records may have the produce name but no
+                # output_key. Reuse that record so web Save updates it.
+                before = _find_named_doc("output", output_name)
 
             doc_set = {
                 "pg_id": base_pg_id,
@@ -9120,33 +9153,15 @@ def meeting_register(pg_id):
                         break
 
             if not doc:
-                # An unused date is a valid blank state, not an API failure.
-                # Returning the PG/member context lets mobile create the first
-                # record for that date without a second special endpoint.
                 return jsonify({
-                    "ok": True,
+                    "ok": False,
+                    "error": "No saved meeting minutes found for the selected date.",
                     "meeting": None,
-                    "is_new": True,
-                    "pg": {
-                        "_id": str(pg.get("_id") or ""),
-                        "name": pg.get("name") or pg.get("pg_name") or "",
-                    },
-                    "members": [
-                        {
-                            "_id": str(m.get("_id") or ""),
-                            "name": m.get("name") or m.get("member_name") or "",
-                        }
-                        for m in member_docs
-                    ],
-                }), 200
+                }), 404
 
             return jsonify({
                 "ok": True,
                 "meeting": _serialize_meeting_doc(doc),
-                "pg": {
-                    "_id": str(pg.get("_id") or ""),
-                    "name": pg.get("name") or pg.get("pg_name") or "",
-                },
                 "members": [
                     {
                         "_id": str(m.get("_id") or ""),

@@ -643,9 +643,20 @@ def _pgs_in_scope(db, base_match: dict, filters: dict):
 },
     ))
 
-    pg_by_id = {p["_id"]: p for p in pgs}
+    # Project data exists in both ObjectId and string-reference forms. Keep
+    # both keys in the export scope so legacy/mobile records are included.
+    pg_by_id = {}
+    pg_ids = []
+    for pg in pgs:
+        raw_id = pg.get("_id")
+        if raw_id is None:
+            continue
+        pg_by_id[raw_id] = pg
+        pg_by_id[str(raw_id)] = pg
+        pg_ids.append(raw_id)
+        pg_ids.append(str(raw_id))
 
-    return list(pg_by_id.keys()), pg_by_id
+    return pg_ids, pg_by_id
 
 def _reports_export_filters(db):
     """
@@ -662,6 +673,82 @@ def _reports_export_filters(db):
         "Village": effective.get("village") or "",
         "pg_name": effective.get("pg_name") or "",
     }
+
+
+def _csv_text(buffer):
+    """Return UTF-8 CSV text that Excel and mobile readers detect correctly."""
+    return "\ufeff" + buffer.getvalue()
+
+
+def _csv_contact_value(*values):
+    """Return the first non-empty contact value without losing numeric values."""
+    for value in values:
+        if value is None:
+            continue
+        if isinstance(value, (list, tuple)):
+            value = ", ".join(str(item).strip() for item in value if str(item).strip())
+        elif isinstance(value, dict):
+            value = value.get("number") or value.get("value") or value.get("phone") or value.get("mobile") or ""
+        text = str(value).strip()
+        if text and text.lower() not in ("none", "null", "nan", "-"):
+            return text
+    return ""
+
+
+def _member_master_for_export(db, member_doc):
+    """Resolve a SHG master member using all legacy reference field forms."""
+    references = []
+    for key in ("shg_member_id", "member_id", "master_member_id", "shg_id"):
+        value = member_doc.get(key)
+        if value not in (None, "") and value not in references:
+            references.append(value)
+
+    for reference in references:
+        candidates = [reference, str(reference)]
+        try:
+            if ObjectId.is_valid(str(reference)):
+                candidates.append(ObjectId(str(reference)))
+        except Exception:
+            pass
+
+        for candidate in candidates:
+            master = db.shg_members_master.find_one({"_id": candidate}) or {}
+            if master:
+                return master
+
+        # Some imported SHG master rows use a business/member id instead of
+        # Mongo _id as the relation stored on the PG member row.
+        for field in ("member_id", "Member ID", "member_code", "Member Code", "id"):
+            for candidate in candidates:
+                master = db.shg_members_master.find_one({field: candidate}) or {}
+                if master:
+                    return master
+
+    return {}
+
+
+def _member_export_contact(db, member_doc):
+    master = _member_master_for_export(db, member_doc)
+    contact = _csv_contact_value(
+        member_doc.get("contact"),
+        member_doc.get("contact_number"),
+        member_doc.get("phone"),
+        member_doc.get("phone_number"),
+        member_doc.get("mobile"),
+        member_doc.get("mobile_number"),
+        master.get("Contact"),
+        master.get("Contact Number"),
+        master.get("Mobile"),
+        master.get("Mobile No"),
+        master.get("Mobile Number"),
+        master.get("Phone"),
+        master.get("Phone Number"),
+        master.get("contact"),
+        master.get("contact_number"),
+        master.get("phone"),
+        master.get("mobile"),
+    )
+    return master, contact
 
 @reports_bp.route("/export/members.csv", methods=["GET"])
 @login_required
@@ -696,18 +783,19 @@ def export_members_csv():
         w.writerow(fields)
         for mdoc in db.pg_members.find(match).sort([("name", 1)]):
             pg = pg_by_id.get(mdoc.get("pg_id")) or {}
-            master = {}
-            member_ref = mdoc.get("shg_member_id") or mdoc.get("member_id")
-            if member_ref:
-                try:
-                    member_oid = member_ref if isinstance(member_ref, ObjectId) else ObjectId(str(member_ref))
-                    master = db.shg_members_master.find_one({"_id": member_oid}) or {}
-                except Exception:
-                    master = db.shg_members_master.find_one({"_id": member_ref}) or {}
-            contact = (mdoc.get("contact") or mdoc.get("phone") or mdoc.get("contact_number") or master.get("Contact") or master.get("Contact Number") or master.get("Mobile Number") or master.get("Phone") or master.get("contact") or master.get("phone") or "")
-            w.writerow([pg.get("name") or "", pg.get("State") or "", pg.get("District") or "", pg.get("Block") or "", pg.get("Gram Panchayat") or "", pg.get("Village") or "", mdoc.get("name") or mdoc.get("member_name") or master.get("Member Name") or master.get("member_name") or "", mdoc.get("shg_name") or master.get("SHG Name") or master.get("SHG_Name") or master.get("shg_name") or "", mdoc.get("category") or master.get("Category") or master.get("Social Category") or "", contact, mdoc.get("agri_crop") or "", mdoc.get("agri_ffs_module") or "", mdoc.get("ardd_activity") or "", mdoc.get("ardd_unit") or "", mdoc.get("fishery_activity") or ""])
+            master, contact = _member_export_contact(db, mdoc)
+            w.writerow([
+                pg.get("name") or "", pg.get("State") or "", pg.get("District") or "",
+                pg.get("Block") or "", pg.get("Gram Panchayat") or "", pg.get("Village") or "",
+                mdoc.get("name") or mdoc.get("member_name") or master.get("Member Name") or master.get("member_name") or "",
+                mdoc.get("shg_name") or master.get("SHG Name") or master.get("SHG_Name") or master.get("shg_name") or "",
+                mdoc.get("category") or master.get("Category") or master.get("Social Category") or "",
+                contact, mdoc.get("agri_crop") or "", mdoc.get("agri_ffs_module") or "",
+                mdoc.get("ardd_activity") or "", mdoc.get("ardd_unit") or "",
+                mdoc.get("fishery_activity") or "",
+            ])
     mem.seek(0)
-    return current_app.response_class(mem.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=members.csv"})
+    return current_app.response_class(_csv_text(mem), mimetype="text/csv; charset=utf-8", headers={"Content-Disposition": "attachment; filename=members.csv"})
 
 
 @reports_bp.route("/export/cashbook.csv", methods=["GET"])
@@ -1055,8 +1143,8 @@ def export_cashbook_csv():
     mem.seek(0)
 
     return current_app.response_class(
-        mem.getvalue(),
-        mimetype="text/csv",
+        _csv_text(mem),
+        mimetype="text/csv; charset=utf-8",
         headers={"Content-Disposition": "attachment; filename=cashbook.csv"},
     )
 
@@ -1120,7 +1208,7 @@ def export_loans_csv():
             created = doc.get("created_at")
             w.writerow([pg.get("name") or "", pg.get("State") or "", pg.get("District") or "", pg.get("Block") or "", pg.get("Gram Panchayat") or "", pg.get("Village") or "", kind, doc.get("loan_no") or "", (doc.get("member_name") or member_map.get(member_id) or "") if kind == "Member" else "", member_id if kind == "Member" else "", doc.get("lender") or doc.get("source") or "", doc.get("purpose") or "", round(principal(doc), 2), round(outstanding(doc), 2), doc.get("status") or "", created.strftime("%Y-%m-%d") if hasattr(created, "strftime") else (created or "")])
     mem.seek(0)
-    return current_app.response_class(mem.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=loans.csv"})
+    return current_app.response_class(_csv_text(mem), mimetype="text/csv; charset=utf-8", headers={"Content-Disposition": "attachment; filename=loans.csv"})
 
 
 @reports_bp.route("/export/turnover.csv", methods=["GET"])
@@ -1168,7 +1256,7 @@ def export_turnover_csv():
             pg = pg_by_id.get(doc.get("pg_id")) or {}
             w.writerow([pg.get("name") or "", pg.get("State") or "", pg.get("District") or "", pg.get("Block") or "", pg.get("Gram Panchayat") or "", pg.get("Village") or "", doc.get("year") or "", doc.get("month") or "", round(tv(doc), 2), source])
     mem.seek(0)
-    return current_app.response_class(mem.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=turnover.csv"})
+    return current_app.response_class(_csv_text(mem), mimetype="text/csv; charset=utf-8", headers={"Content-Disposition": "attachment; filename=turnover.csv"})
 
 
 def _shg_filter_from_session(db, sess):
@@ -5307,6 +5395,21 @@ def _safe_oid(v):
     v = str(v) if v is not None else ""
     return v if ObjectId.is_valid(v) else None
 
+
+def _pg_export_query(pg_id):
+    """Match both ObjectId and string PG references used by saved records."""
+    refs = [pg_id, str(pg_id)]
+    try:
+        if ObjectId.is_valid(str(pg_id)):
+            refs.append(ObjectId(str(pg_id)))
+    except Exception:
+        pass
+    unique = []
+    for ref in refs:
+        if ref not in unique:
+            unique.append(ref)
+    return {"pg_id": {"$in": unique}}
+
 # changes by atlanta
 @reports_bp.route("/pg-overall", methods=["GET"])
 @login_required
@@ -5558,72 +5661,67 @@ def pg_overall_download():
                 if doc.get(k) is not None:
                     doc[k] = str(doc[k])
             _write_csv_rows(w, fieldnames, [doc])
-            z.writestr(f"{safe_prefix}/pg_profile.csv", buf.getvalue())
+            z.writestr(f"{safe_prefix}/pg_profile.csv", _csv_text(buf))
 
             # 2) Members
-            members = list(db.pg_members.find({"pg_id": pg_id}).sort([("name", 1)]))
+            members = list(db.pg_members.find(_pg_export_query(pg_id)).sort([("name", 1)]))
             buf = io.StringIO(); w = csv.writer(buf)
             m_fields = ["_id", "pg_id", "name", "spouse", "category", "shg_name", "contact", "photo_id_number", "bank_name", "branch", "account_number", "membership_fee_paid", "lakh_pati_didi", "agri_crop", "agri_ffs_module", "ardd_activity", "ardd_unit", "fishery_activity", "created_at", "updated_at"]
             for m in members:
                 m["_id"] = str(m.get("_id"))
                 m["pg_id"] = str(m.get("pg_id"))
-                member_ref = m.get("shg_member_id") or m.get("member_id")
-                master = {}
-                if member_ref:
-                    try:
-                        member_oid = member_ref if isinstance(member_ref, ObjectId) else ObjectId(str(member_ref))
-                        master = db.shg_members_master.find_one({"_id": member_oid}) or {}
-                    except Exception:
-                        master = db.shg_members_master.find_one({"_id": member_ref}) or {}
-                m["contact"] = (m.get("contact") or m.get("phone") or m.get("contact_number") or master.get("Contact") or master.get("Contact Number") or master.get("Mobile Number") or master.get("Phone") or master.get("contact") or master.get("phone") or "")
+                master, contact = _member_export_contact(db, m)
+                m["contact"] = contact
                 m["name"] = m.get("name") or m.get("member_name") or master.get("Member Name") or master.get("member_name") or ""
             _write_csv_rows(w, m_fields, members)
-            z.writestr(f"{safe_prefix}/members.csv", buf.getvalue())
+            z.writestr(f"{safe_prefix}/members.csv", _csv_text(buf))
 
             # 3) Cashbook
-            cashbooks = list(db.pg_cashbooks.find({"pg_id": pg_id}).sort([("year", -1), ("month", -1)]))
+            cashbooks = list(db.pg_cashbooks.find(_pg_export_query(pg_id)).sort([("year", -1), ("month", -1)]))
             buf = io.StringIO(); w = csv.writer(buf)
-            cb_fields = ["_id", "pg_id", "year", "month", "receipts", "payments", "created_at", "updated_at"]
+            cb_fields = ["_id", "pg_id", "year", "month", "opening", "receipts", "payments", "totals", "meta", "created_at", "updated_at"]
             for c in cashbooks:
                 c["_id"] = str(c.get("_id")); c["pg_id"] = str(c.get("pg_id"))
             _write_csv_rows(w, cb_fields, cashbooks)
-            z.writestr(f"{safe_prefix}/cashbook.csv", buf.getvalue())
+            z.writestr(f"{safe_prefix}/cashbook.csv", _csv_text(buf))
 
             # 4) Ledger Book
-            ledgers = list(db.pg_ledger_books.find({"pg_id": pg_id}).sort([("created_at", -1)]))
+            ledgers = list(db.pg_ledger_books.find(_pg_export_query(pg_id)).sort([("created_at", -1)]))
             buf = io.StringIO(); w = csv.writer(buf)
-            l_fields = ["_id", "pg_id", "period", "rows", "created_at", "updated_at"]
+            l_fields = ["_id", "pg_id", "year", "month", "period", "entries", "meta", "created_at", "updated_at"]
             for l in ledgers:
                 l["_id"] = str(l.get("_id")); l["pg_id"] = str(l.get("pg_id"))
+                l["entries"] = l.get("entries") if l.get("entries") is not None else l.get("rows", [])
             _write_csv_rows(w, l_fields, ledgers)
-            z.writestr(f"{safe_prefix}/ledger_book.csv", buf.getvalue())
+            z.writestr(f"{safe_prefix}/ledger_book.csv", _csv_text(buf))
 
             # 5) Loan Ledger
-            loans = list(db.pg_loan_ledgers.find({"pg_id": pg_id}).sort([("created_at", -1)]))
+            loans = list(db.pg_loan_ledgers.find(_pg_export_query(pg_id)).sort([("created_at", -1)]))
             buf = io.StringIO(); w = csv.writer(buf)
-            loan_fields = ["_id", "pg_id", "period", "rows", "created_at", "updated_at"]
+            loan_fields = ["_id", "pg_id", "year", "month", "period", "entries", "summary", "meta", "created_at", "updated_at"]
             for l in loans:
                 l["_id"] = str(l.get("_id")); l["pg_id"] = str(l.get("pg_id"))
+                l["entries"] = l.get("entries") if l.get("entries") is not None else l.get("rows", [])
             _write_csv_rows(w, loan_fields, loans)
-            z.writestr(f"{safe_prefix}/loan_ledger.csv", buf.getvalue())
+            z.writestr(f"{safe_prefix}/loan_ledger.csv", _csv_text(buf))
 
             # 5a) Loan accounts with member names and normalized principal amounts.
             loan_rows = []
             member_names = {str(m.get("_id")): (m.get("name") or m.get("member_name") or "") for m in members}
             for loan_type, collection in (("PG", db.pg_loan_accounts), ("Member", db.pg_member_loan_accounts)):
-                for loan in collection.find({"pg_id": pg_id}).sort([("created_at", -1)]):
+                for loan in collection.find(_pg_export_query(pg_id)).sort([("created_at", -1)]):
                     amount = next((loan.get(key) for key in ("principal", "principal_amount", "sanction_amount", "sanctioned_amount", "estimated_amount", "disbursed_amount", "loan_amount", "amount") if loan.get(key) not in (None, "")), 0)
                     member_id = loan.get("member_id")
                     loan_rows.append({"Loan Type": loan_type, "Loan No": loan.get("loan_no") or "", "Member Name": (loan.get("member_name") or member_names.get(str(member_id), "")) if loan_type == "Member" else "", "Member ID": str(member_id or "") if loan_type == "Member" else "", "Lender": loan.get("lender") or loan.get("source") or "", "Purpose": loan.get("purpose") or "", "Principal": amount, "Outstanding": loan.get("outstanding_amount") or loan.get("outstanding") or 0, "Status": loan.get("status") or "", "Created At": loan.get("created_at") or ""})
             buf = io.StringIO(newline=""); w = csv.writer(buf)
             loan_export_fields = ["Loan Type", "Loan No", "Member Name", "Member ID", "Lender", "Purpose", "Principal", "Outstanding", "Status", "Created At"]
             _write_csv_rows(w, loan_export_fields, loan_rows)
-            z.writestr(f"{safe_prefix}/loans.csv", buf.getvalue())
+            z.writestr(f"{safe_prefix}/loans.csv", _csv_text(buf))
 
             # 5b) Monthly turnover, sourced from pg_market_transactions.
             turnover_rows = []
             market_periods = set()
-            for row in db.pg_market_transactions.find({"pg_id": pg_id}).sort([("year", -1), ("month", -1)]):
+            for row in db.pg_market_transactions.find(_pg_export_query(pg_id)).sort([("year", -1), ("month", -1)]):
                 market_periods.add((row.get("year"), row.get("month")))
                 amount = row.get("total_turnover")
                 if amount in (None, ""):
@@ -5631,7 +5729,7 @@ def pg_overall_download():
                 if amount in (None, ""):
                     amount = row.get("market_total") or 0
                 turnover_rows.append({"Year": row.get("year") or "", "Month": row.get("month") or "", "Turnover": amount, "Internal Turnover": "", "Market Turnover": row.get("market_total") or "", "Source": "Market transactions"})
-            for row in db.pg_business_monthly.find({"pg_id": pg_id}).sort([("year", -1), ("month", -1)]):
+            for row in db.pg_business_monthly.find(_pg_export_query(pg_id)).sort([("year", -1), ("month", -1)]):
                 if (row.get("year"), row.get("month")) in market_periods:
                     continue
                 amount = row.get("total_turnover")
@@ -5641,44 +5739,44 @@ def pg_overall_download():
             buf = io.StringIO(newline=""); w = csv.writer(buf)
             turnover_fields = ["Year", "Month", "Turnover", "Internal Turnover", "Market Turnover", "Source"]
             _write_csv_rows(w, turnover_fields, turnover_rows)
-            z.writestr(f"{safe_prefix}/turnover.csv", buf.getvalue())
+            z.writestr(f"{safe_prefix}/turnover.csv", _csv_text(buf))
 
             # 6) Receipt Voucher
-            rvs = list(db.pg_receipt_vouchers.find({"pg_id": pg_id}).sort([("created_at", -1)]))
+            rvs = list(db.pg_receipt_vouchers.find(_pg_export_query(pg_id)).sort([("created_at", -1)]))
             buf = io.StringIO(); w = csv.writer(buf)
-            rv_fields = ["_id", "pg_id", "period", "rows", "created_at", "updated_at"]
+            rv_fields = ["_id", "pg_id", "year", "month", "period", "pg_group_receipt", "group_member_receipt", "pg_section", "member_section", "created_at", "updated_at"]
             for r in rvs:
                 r["_id"] = str(r.get("_id")); r["pg_id"] = str(r.get("pg_id"))
             _write_csv_rows(w, rv_fields, rvs)
-            z.writestr(f"{safe_prefix}/receipt_voucher.csv", buf.getvalue())
+            z.writestr(f"{safe_prefix}/receipt_voucher.csv", _csv_text(buf))
 
             # 7) Meetings & Minutes
-            meetings = list(db.pg_meetings.find({"pg_id": pg_id}).sort([("meeting_date", -1)]))
+            meetings = list(db.pg_meetings.find(_pg_export_query(pg_id)).sort([("meeting_date", -1)]))
             buf = io.StringIO(); w = csv.writer(buf)
-            meet_fields = ["_id", "pg_id", "meeting_date", "title", "agenda", "attendance", "created_at"]
+            meet_fields = ["_id", "pg_id", "meeting_date", "year", "month", "meeting_type", "title", "agenda", "resolution", "attendance", "data", "created_at", "updated_at"]
             for m in meetings:
                 m["_id"] = str(m.get("_id")); m["pg_id"] = str(m.get("pg_id"))
             _write_csv_rows(w, meet_fields, meetings)
-            z.writestr(f"{safe_prefix}/meetings.csv", buf.getvalue())
+            z.writestr(f"{safe_prefix}/meetings.csv", _csv_text(buf))
 
-            minutes = list(db.pg_meeting_minutes.find({"pg_id": pg_id}).sort([("created_at", -1)]))
+            minutes = list(db.pg_meeting_minutes.find(_pg_export_query(pg_id)).sort([("created_at", -1)]))
             buf = io.StringIO(); w = csv.writer(buf)
-            min_fields = ["_id", "pg_id", "meeting_date", "content", "created_at"]
+            min_fields = ["_id", "pg_id", "meeting_date", "year", "month", "data", "meta", "content", "created_at", "updated_at"]
             for m in minutes:
                 m["_id"] = str(m.get("_id")); m["pg_id"] = str(m.get("pg_id"))
             _write_csv_rows(w, min_fields, minutes)
-            z.writestr(f"{safe_prefix}/meeting_minutes.csv", buf.getvalue())
+            z.writestr(f"{safe_prefix}/meeting_minutes.csv", _csv_text(buf))
 
             # 8) Grants & Utilizations
-            grants = list(db.pg_grants.find({"pg_id": pg_id}).sort([("created_at", -1)]))
+            grants = list(db.pg_grants.find(_pg_export_query(pg_id)).sort([("created_at", -1)]))
             buf = io.StringIO(); w = csv.writer(buf)
             g_fields = ["_id", "pg_id", "category", "source", "release_date", "amount_received", "uc_status", "created_at"]
             for g in grants:
                 g["_id"] = str(g.get("_id")); g["pg_id"] = str(g.get("pg_id"))
             _write_csv_rows(w, g_fields, grants)
-            z.writestr(f"{safe_prefix}/grants.csv", buf.getvalue())
+            z.writestr(f"{safe_prefix}/grants.csv", _csv_text(buf))
 
-            utils = list(db.pg_grant_utilizations.find({"pg_id": pg_id}).sort([("utilized_at", -1)]))
+            utils = list(db.pg_grant_utilizations.find(_pg_export_query(pg_id)).sort([("utilized_at", -1)]))
             buf = io.StringIO(); w = csv.writer(buf)
             u_fields = ["_id", "grant_id", "pg_id", "amount", "utilized_at", "head", "remarks", "attachments", "status", "approved_at", "rejected_at"]
             for u in utils:
@@ -5686,7 +5784,7 @@ def pg_overall_download():
                 if u.get("grant_id") is not None: u["grant_id"] = str(u.get("grant_id"))
                 if u.get("pg_id") is not None: u["pg_id"] = str(u.get("pg_id"))
             _write_csv_rows(w, u_fields, utils)
-            z.writestr(f"{safe_prefix}/grant_utilizations.csv", buf.getvalue())
+            z.writestr(f"{safe_prefix}/grant_utilizations.csv", _csv_text(buf))
 
     mem.seek(0)
     stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
