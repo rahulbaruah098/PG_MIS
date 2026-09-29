@@ -9120,15 +9120,33 @@ def meeting_register(pg_id):
                         break
 
             if not doc:
+                # An unused date is a valid blank state, not an API failure.
+                # Returning the PG/member context lets mobile create the first
+                # record for that date without a second special endpoint.
                 return jsonify({
-                    "ok": False,
-                    "error": "No saved meeting minutes found for the selected date.",
+                    "ok": True,
                     "meeting": None,
-                }), 404
+                    "is_new": True,
+                    "pg": {
+                        "_id": str(pg.get("_id") or ""),
+                        "name": pg.get("name") or pg.get("pg_name") or "",
+                    },
+                    "members": [
+                        {
+                            "_id": str(m.get("_id") or ""),
+                            "name": m.get("name") or m.get("member_name") or "",
+                        }
+                        for m in member_docs
+                    ],
+                }), 200
 
             return jsonify({
                 "ok": True,
                 "meeting": _serialize_meeting_doc(doc),
+                "pg": {
+                    "_id": str(pg.get("_id") or ""),
+                    "name": pg.get("name") or pg.get("pg_name") or "",
+                },
                 "members": [
                     {
                         "_id": str(m.get("_id") or ""),
