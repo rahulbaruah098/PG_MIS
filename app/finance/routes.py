@@ -26,6 +26,19 @@ def _auth_context_dicts():
     if isinstance(jwt_payload, dict) and jwt_payload:
         contexts.append(jwt_payload)
 
+    # rbac._authenticate_request stores JWT/session identity as scalar values
+    # on flask.g. Keep those values available to the finance scope helpers too.
+    g_context = {
+        key: getattr(g, key, None)
+        for key in (
+            "user_id", "role", "pg_id", "active_pg_id", "clf_id",
+            "block_id", "district_id", "state_id", "validator_level",
+            "assigned_pg_ids",
+        )
+    }
+    if any(value not in (None, "", []) for value in g_context.values()):
+        contexts.append(g_context)
+
     for obj_name in (
         "current_user",
         "user",
@@ -69,6 +82,8 @@ def _current_user_doc():
 
     possible_ids = [
         session.get("user_id"),
+        session.get("_user_id"),
+        session.get("uid"),
         session.get("_id"),
         session.get("id"),
     ]
@@ -339,12 +354,33 @@ def _pg_allowed_for_current_user(pg):
 
     if role == "BLOCK_ADMIN":
         block_id = _session_or_user_value("block_id", user)
-        return bool(block_id and same_id(pg.get("block_id"), block_id))
+        return bool(block_id and any(
+            same_id(pg.get(field), block_id)
+            for field in ("block_id", "blockId", "mapped_block_id", "assigned_block_id")
+        ))
 
     if role in {"CLF_ADMIN", "CLF_MANAGER"}:
         clf_id = _session_or_user_value("clf_id", user)
 
-        if clf_id and same_id(pg.get("clf_id"), clf_id):
+        if clf_id and any(
+            same_id(pg.get(field), clf_id)
+            for field in ("clf_id", "CLF_id", "clfId", "mapped_clf_id", "assigned_clf_id")
+        ):
+            return True
+
+        # A PG can be mapped directly to a CLF login in addition to (or before)
+        # receiving a CLF master id. This is the mapping written by the CLF-PG
+        # assignment screen and must grant the same read access.
+        current_user_id = (
+            _session_or_user_value("user_id", user)
+            or session.get("_user_id")
+            or session.get("uid")
+            or (user.get("_id") if isinstance(user, dict) else None)
+        )
+        if current_user_id and any(
+            same_id(pg.get(field), current_user_id)
+            for field in ("assigned_clf_user_id", "clf_user_id", "assigned_user_id")
+        ):
             return True
 
         assigned_pg_ids = _assigned_pg_identifier_set()
@@ -434,35 +470,59 @@ def _pg_from_grant_or_response(db, grant, is_json=None):
 
 
 def _pg_from_loan_or_response(db, loan, is_json=None):
-    pg_ref = None
-    if isinstance(loan, dict):
-        pg_ref = (
-            loan.get("pg_id")
-            or loan.get("pgId")
-            or loan.get("producer_group_id")
-            or loan.get("producerGroupId")
-        )
+    def unwrap_ref(value):
+        if isinstance(value, dict):
+            value = (
+                value.get("$oid")
+                or value.get("_id")
+                or value.get("id")
+                or value.get("pg_id")
+                or value.get("pgId")
+                or value.get("code")
+            )
+        elif hasattr(value, "id"):
+            value = getattr(value, "id", value)
+        return value
 
-    pg_oid = _to_object_id(pg_ref)
-    if pg_oid:
-        # Older loan records may store pg_id as a string while PG _id is an
-        # ObjectId. Normalize the reference before resolving the PG so the
-        # detail page does not incorrectly redirect for an existing loan.
-        pg = db.pgs.find_one({"_id": pg_oid})
-    elif pg_ref not in (None, ""):
-        pg_ref = str(pg_ref).strip()
-        pg = db.pgs.find_one({
-            "$or": [
-                {"_id": pg_ref},
-                {"pg_id": pg_ref},
-                {"pgId": pg_ref},
-                {"pg_code": pg_ref},
-                {"code": pg_ref},
-                {"producer_group_code": pg_ref},
-            ]
-        })
-    else:
-        pg = None
+    pg_refs = []
+    if isinstance(loan, dict):
+        for key in (
+            "pg_id", "pgId", "producer_group_id", "producerGroupId",
+            "pg_code", "producer_group_code", "pg",
+        ):
+            value = unwrap_ref(loan.get(key))
+            if value not in (None, ""):
+                pg_refs.append(value)
+
+    pg = None
+    pg_fields = (
+        "_id", "pg_id", "pgId", "pg_code", "code",
+        "producer_group_id", "producer_group_code",
+    )
+    seen_queries = set()
+
+    for pg_ref in pg_refs:
+        raw_text = str(pg_ref).strip()
+        candidates = [pg_ref]
+        if raw_text and raw_text != pg_ref:
+            candidates.append(raw_text)
+        pg_oid = _to_object_id(pg_ref)
+        if pg_oid:
+            candidates.extend([pg_oid, str(pg_oid)])
+
+        for field in pg_fields:
+            for candidate in candidates:
+                marker = (field, str(candidate), type(candidate).__name__)
+                if marker in seen_queries:
+                    continue
+                seen_queries.add(marker)
+                pg = db.pgs.find_one({field: candidate})
+                if pg:
+                    break
+            if pg:
+                break
+        if pg:
+            break
 
     if not pg:
         return None, _deny("Mapped PG not found for this loan.", is_json=is_json, status_code=404)
@@ -752,6 +812,7 @@ def loan_dashboard(pg_id):
     pg, access_response = _pg_from_id_or_response(db, pg_id, is_json=_is_json_request())
     if access_response:
         return access_response
+    session["active_pg_id"] = str(pg.get("_id"))
 
     loans = list(db.pg_loan_accounts.find({"pg_id": ObjectId(pg_id)}).sort([("created_at", -1)]))
     mloans = list(db.pg_member_loan_accounts.find({"pg_id": ObjectId(pg_id)}).sort([("created_at", -1)]).limit(50))
@@ -761,7 +822,14 @@ def loan_dashboard(pg_id):
     overdue = sum(float(l.get("overdue_amount") or 0) for l in loans) + sum(float(l.get("overdue_amount") or 0) for l in mloans)
     active_count = sum(1 for l in loans if (l.get("status") in ("active","ongoing"))) + sum(1 for l in mloans if (l.get("status") in ("active","ongoing")))
 
-    return render_template("loan_dashboard.html", pg=pg, loans=loans, mloans=mloans, kpi={"outstanding": total_outstanding, "overdue": overdue, "active": active_count})
+    return render_template(
+        "loan_dashboard.html",
+        pg=pg,
+        loans=loans,
+        mloans=mloans,
+        kpi={"outstanding": total_outstanding, "overdue": overdue, "active": active_count},
+        can_edit=_can_write_finance(),
+    )
 
 # changes made by atlanta 
 @finance_bp.route("/loan_accounts/<pg_id>", methods=["GET", "POST"])
@@ -804,6 +872,7 @@ def loan_accounts(pg_id):
     access_response = _require_pg_access(pg, is_json=is_json_request())
     if access_response:
         return access_response
+    session["active_pg_id"] = str(pg.get("_id"))
 
     if request.method == "POST":
         write_response = _require_finance_write(
@@ -884,7 +953,12 @@ def loan_accounts(pg_id):
             "can_create": _can_write_finance(),
         })
 
-    return render_template("loan_accounts.html", pg=pg, loans=loans)
+    return render_template(
+        "loan_accounts.html",
+        pg=pg,
+        loans=loans,
+        can_edit=_can_write_finance(),
+    )
 
 # changes made by atlanta
 @finance_bp.route("/loan_account/<loan_id>", methods=["GET", "POST"])
@@ -929,6 +1003,10 @@ def loan_account_view(loan_id):
     pg, access_response = _pg_from_loan_or_response(db, loan, is_json=is_json_request())
     if access_response:
         return access_response
+
+    # Keep the hierarchy sidebar and back-navigation on the PG whose loan was
+    # opened. This is especially important for CLF/Block users switching PGs.
+    session["active_pg_id"] = str(pg.get("_id"))
 
     if request.method == "POST":
         write_response = _require_finance_write(
@@ -1032,7 +1110,13 @@ def loan_account_view(loan_id):
             "can_edit": _can_write_finance(),
         })
 
-    return render_template("loan_account_view.html", pg=pg, loan=loan, repayments=repayments_raw)
+    return render_template(
+        "loan_account_view.html",
+        pg=pg,
+        loan=loan,
+        repayments=repayments_raw,
+        can_edit=_can_write_finance(),
+    )
 
 #changes made atlanta
 @finance_bp.route("/member_loan_accounts/<pg_id>", methods=["GET", "POST"])
@@ -1058,26 +1142,6 @@ def member_loan_accounts(pg_id):
         return redirect(url_for("pg.pg_home"))
 
     access_response = _require_pg_access(pg, is_json=_is_json_request())
-    debug_user = _current_user_doc()
-
-    print("MEMBER_LOAN_SCOPE_DEBUG =>", {
-        "authorization_present": bool(request.headers.get("Authorization")),
-        "jwt_payload": _jwt_payload_from_authorization_header(),
-        "requested_pg_id": str(pg_id),
-        "role": _role(),
-        "session_keys": list(session.keys()),
-        "session_pg_id": session.get("pg_id"),
-        "session_active_pg_id": session.get("active_pg_id"),
-        "user_found": bool(debug_user),
-        "user_id": str(debug_user.get("_id")) if isinstance(debug_user, dict) and debug_user.get("_id") else None,
-        "user_role": debug_user.get("role") if isinstance(debug_user, dict) else None,
-        "user_pg_id": debug_user.get("pg_id") if isinstance(debug_user, dict) else None,
-        "user_active_pg_id": debug_user.get("active_pg_id") if isinstance(debug_user, dict) else None,
-        "pg_doc_id": str(pg.get("_id")),
-        "pg_doc_name": pg.get("pg_name") or pg.get("name"),
-        "allowed": _pg_allowed_for_current_user(pg),
-    })
-    
     if access_response:
         return access_response
 
@@ -1200,7 +1264,13 @@ def member_loan_accounts(pg_id):
             "can_create": _can_write_finance(),
         })
 
-    return render_template("member_loan_accounts.html", pg=pg, loans=loans_raw, members=members_raw)
+    return render_template(
+        "member_loan_accounts.html",
+        pg=pg,
+        loans=loans_raw,
+        members=members_raw,
+        can_edit=_can_write_finance(),
+    )
 
 #changes made by atlanta
 @finance_bp.route("/member_loan_view/<loan_id>", methods=["GET", "POST"])
@@ -1243,6 +1313,8 @@ def member_loan_view(loan_id):
     pg, access_response = _pg_from_loan_or_response(db, loan, is_json=is_json_request())
     if access_response:
         return access_response
+
+    session["active_pg_id"] = str(pg.get("_id"))
 
     member = None
     if loan.get("member_id") and ObjectId.is_valid(str(loan.get("member_id"))):
@@ -1370,7 +1442,8 @@ def member_loan_view(loan_id):
         pg=pg,
         loan=loan,
         member=member,
-        repayments=repayments_raw
+        repayments=repayments_raw,
+        can_edit=_can_write_finance(),
     )
 
 

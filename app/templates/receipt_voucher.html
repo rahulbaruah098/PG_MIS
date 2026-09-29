@@ -1832,7 +1832,18 @@
       msgSignFirst: "Please sign first.",
       msgCaptureFirst: "Please Capture first.",
       msgCouldNotLoadImage: "Could not load image.",
-      msgSavedLocal: " Saved locally (backend not connected)"
+      msgSavedLocal: " Saved locally (backend not connected)",
+      historyTitle: "Receipt History",
+      historyWorkingMonth: "Working month",
+      historyShowAll: "Show All",
+      historyDateWise: "Date-wise",
+      historySelectMember: "Select member",
+      historySelectDate: "Select date",
+      historyNoRecords: "No saved receipt records yet.",
+      historyChooseFilters: "Select a member and date to view a saved receipt.",
+      historyPgReceipt: "PG Group Receipt",
+      historyMemberReceipt: "Group Member Receipt",
+      historyEditBlocked: "Please Save or Cancel your current changes before opening receipt history."
     },
     bn: {
       title: "রসিদ ভাউচার",
@@ -1916,7 +1927,18 @@
       msgSignFirst: "অনুগ্রহ করে আগে স্বাক্ষর করুন।",
       msgCaptureFirst: "অনুগ্রহ করে আগে ক্যাপচার করুন।",
       msgCouldNotLoadImage: "ছবি লোড করা যায়নি।",
-      msgSavedLocal: " লোকালি সংরক্ষণ হয়েছে (ব্যাকএন্ড সংযুক্ত নয়)"
+      msgSavedLocal: " লোকালি সংরক্ষণ হয়েছে (ব্যাকএন্ড সংযুক্ত নয়)",
+      historyTitle: "রসিদের ইতিহাস",
+      historyWorkingMonth: "কাজের মাস",
+      historyShowAll: "সব দেখুন",
+      historyDateWise: "তারিখ অনুযায়ী",
+      historySelectMember: "সদস্য নির্বাচন করুন",
+      historySelectDate: "তারিখ নির্বাচন করুন",
+      historyNoRecords: "এখনও কোনো সংরক্ষিত রসিদ নেই।",
+      historyChooseFilters: "সংরক্ষিত রসিদ দেখতে সদস্য ও তারিখ নির্বাচন করুন।",
+      historyPgReceipt: "উৎপাদক দল রসিদ",
+      historyMemberReceipt: "সদস্য রসিদ",
+      historyEditBlocked: "রসিদের ইতিহাস খোলার আগে বর্তমান পরিবর্তন সংরক্ষণ করুন অথবা বাতিল করুন।"
     }
   };
 
@@ -3242,6 +3264,8 @@ function getSignature(sectionKey, role){
     return { year: now.getFullYear(), month: now.getMonth() + 1 };
   })();
   let receiptHistory = [];
+  let receiptDateRecords = [];
+  let activeReceiptHistoryRecordKey = "";
 
   function monthLabel(month, year){
     const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -3258,33 +3282,237 @@ function getSignature(sectionKey, role){
     el.style.background = '#fff';
     el.style.border = '1px solid rgba(15,23,42,.08)';
     el.style.borderRadius = '18px';
-    el.innerHTML = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><div style="font-size:18px;font-weight:800;color:#0f172a">Saved Month Records</div><div id="receiptCurrentPeriodText" style="font-size:13px;color:#64748b;margin-top:4px"></div></div><div id="receiptHistoryCards" style="display:flex;gap:10px;flex-wrap:wrap"></div></div>';
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap">
+        <div>
+          <div id="receiptHistoryTitle" style="font-size:18px;font-weight:800;color:#0f172a"></div>
+          <div id="receiptCurrentPeriodText" style="font-size:13px;color:#64748b;margin-top:4px"></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select id="receiptHistoryMode" aria-label="Receipt history view" style="min-width:145px;border:1px solid #cbd5e1;border-radius:10px;padding:9px 11px;background:#fff;color:#0f172a;font-weight:700">
+            <option value="all"></option>
+            <option value="date"></option>
+          </select>
+          <div id="receiptHistoryDateFilters" style="display:none;gap:10px;align-items:center;flex-wrap:wrap">
+            <select id="receiptHistoryMember" aria-label="Receipt history member" style="min-width:190px;border:1px solid #cbd5e1;border-radius:10px;padding:9px 11px;background:#fff;color:#0f172a"></select>
+            <select id="receiptHistoryDate" aria-label="Receipt history date" style="min-width:165px;border:1px solid #cbd5e1;border-radius:10px;padding:9px 11px;background:#fff;color:#0f172a"></select>
+          </div>
+        </div>
+      </div>
+      <div id="receiptHistoryCards" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"></div>`;
     const target = document.querySelector('.ll-wrap, .ll-page, main') || document.body;
     target.appendChild(el);
+
+    $('receiptHistoryMode').addEventListener('change', renderReceiptHistoryBox);
+    $('receiptHistoryMember').addEventListener('change', ()=>{
+      activeReceiptHistoryRecordKey = "";
+      populateReceiptHistoryDates();
+      renderReceiptHistoryCards();
+    });
+    $('receiptHistoryDate').addEventListener('change', async event => {
+      if (event.target.value === '') return;
+      const index = Number(event.target.value);
+      if (!Number.isInteger(index) || !receiptDateRecords[index]) return;
+      await loadReceiptDateRecord(receiptDateRecords[index]);
+    });
     return el;
+  }
+
+  function receiptRecordMemberKey(record){
+    const id = String(record.member_id || '').trim();
+    const name = String(record.member_name || '').trim().toLowerCase();
+    return id ? `id:${id}` : `name:${name}`;
+  }
+
+  function receiptRecordTypeLabel(record){
+    return record.section === 'group_member_receipt'
+      ? T[lang].historyMemberReceipt
+      : T[lang].historyPgReceipt;
+  }
+
+  function rebuildReceiptDateRecords(){
+    receiptDateRecords = [];
+    receiptHistory.forEach((item, historyIndex) => {
+      const records = Array.isArray(item.date_records) ? item.date_records : [];
+      records.forEach((record, recordIndex) => {
+        const copy = Object.assign({}, record, {
+          year: Number(item.year),
+          month: Number(item.month),
+          history_id: String(item._id || ''),
+          history_record_key: [
+            String(item._id || `${item.year}-${item.month}-${historyIndex}`),
+            record.section || '',
+            record.member_id || record.member_name || '',
+            record.txn_date || '',
+            recordIndex
+          ].join('|')
+        });
+        receiptDateRecords.push(copy);
+      });
+    });
+
+    receiptDateRecords.sort((a, b) => {
+      const aDate = String(a.txn_date || `${a.year}-${String(a.month).padStart(2, '0')}-01`);
+      const bDate = String(b.txn_date || `${b.year}-${String(b.month).padStart(2, '0')}-01`);
+      return bDate.localeCompare(aDate) || String(a.member_name || '').localeCompare(String(b.member_name || ''));
+    });
+  }
+
+  function populateReceiptHistoryMembers(){
+    const select = $('receiptHistoryMember');
+    if (!select) return;
+    const previous = select.value;
+    const members = new Map();
+    receiptDateRecords.forEach(record => {
+      const key = receiptRecordMemberKey(record);
+      if (!key || key === 'name:') return;
+      if (!members.has(key)) {
+        const name = String(record.member_name || record.member_code || T[lang].historySelectMember);
+        const code = String(record.member_code || '').trim();
+        members.set(key, code && code !== name ? `${name} (${code})` : name);
+      }
+    });
+
+    select.innerHTML = `<option value="">${escapeHtml(T[lang].historySelectMember)}</option>` +
+      Array.from(members.entries()).map(([key, label]) =>
+        `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`
+      ).join('');
+    if (members.has(previous)) select.value = previous;
+  }
+
+  function populateReceiptHistoryDates(){
+    const memberSelect = $('receiptHistoryMember');
+    const dateSelect = $('receiptHistoryDate');
+    if (!memberSelect || !dateSelect) return;
+    const previous = dateSelect.value;
+    const matching = receiptDateRecords
+      .map((record, index) => ({ record, index }))
+      .filter(item => receiptRecordMemberKey(item.record) === memberSelect.value);
+
+    dateSelect.innerHTML = `<option value="">${escapeHtml(T[lang].historySelectDate)}</option>` +
+      matching.map(item => {
+        const label = `${item.record.txn_date || monthLabel(item.record.month, item.record.year)} — ${receiptRecordTypeLabel(item.record)}`;
+        return `<option value="${item.index}">${escapeHtml(label)}</option>`;
+      }).join('');
+    dateSelect.disabled = !memberSelect.value || !matching.length;
+    if (matching.some(item => String(item.index) === previous)) dateSelect.value = previous;
+  }
+
+  function renderReceiptHistoryCards(){
+    const cards = $('receiptHistoryCards');
+    const mode = $('receiptHistoryMode')?.value || 'all';
+    if (!cards) return;
+
+    if (!receiptHistory.length) {
+      cards.innerHTML = `<div style="font-size:13px;color:#64748b">${escapeHtml(T[lang].historyNoRecords)}</div>`;
+      return;
+    }
+
+    if (mode === 'date') {
+      const memberKey = $('receiptHistoryMember')?.value || '';
+      const rawRecordIndex = $('receiptHistoryDate')?.value || '';
+      const recordIndex = Number(rawRecordIndex);
+      if (!memberKey || rawRecordIndex === '' || !Number.isInteger(recordIndex) || !receiptDateRecords[recordIndex]) {
+        cards.innerHTML = `<div style="font-size:13px;color:#64748b">${escapeHtml(T[lang].historyChooseFilters)}</div>`;
+        return;
+      }
+      renderReceiptRecordButtons(cards, [recordIndex]);
+      return;
+    }
+
+    if (receiptDateRecords.length) {
+      renderReceiptRecordButtons(cards, receiptDateRecords.map((_, index) => index));
+      return;
+    }
+
+    cards.innerHTML = receiptHistory.map(item => {
+      const active = Number(item.year) === Number(selectedPeriod.year) && Number(item.month) === Number(selectedPeriod.month);
+      return `<button type="button" class="receipt-history-month" data-year="${Number(item.year)}" data-month="${Number(item.month)}" style="border:1px solid ${active ? '#10b981' : 'rgba(15,23,42,.08)'};background:${active ? '#ecfdf5' : '#f8fafc'};color:#0f172a;border-radius:14px;padding:10px 14px;font-weight:700;cursor:pointer">${escapeHtml(monthLabel(item.month, item.year))}</button>`;
+    }).join('');
+    cards.querySelectorAll('.receipt-history-month').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (isEditing) {
+          showPopup('warn', T[lang].msgTitleWarn, T[lang].historyEditBlocked);
+          return;
+        }
+        selectedPeriod = { year: Number(btn.dataset.year), month: Number(btn.dataset.month) };
+        activeReceiptHistoryRecordKey = '';
+        await loadReceiptVoucher(selectedPeriod.year, selectedPeriod.month);
+      });
+    });
+  }
+
+  function renderReceiptRecordButtons(container, indexes){
+    container.innerHTML = indexes.map(index => {
+      const record = receiptDateRecords[index];
+      const active = record.history_record_key === activeReceiptHistoryRecordKey;
+      const member = String(record.member_name || record.member_code || T[lang].historySelectMember);
+      const date = String(record.txn_date || monthLabel(record.month, record.year));
+      return `<button type="button" class="receipt-history-record" data-index="${index}" style="text-align:left;border:1px solid ${active ? '#10b981' : 'rgba(15,23,42,.08)'};background:${active ? '#ecfdf5' : '#f8fafc'};color:#0f172a;border-radius:14px;padding:10px 14px;cursor:pointer;min-width:210px"><span style="display:block;font-weight:800">${escapeHtml(member)}</span><span style="display:block;font-size:12px;color:#475569;margin-top:3px">${escapeHtml(date)} · ${escapeHtml(receiptRecordTypeLabel(record))}</span></button>`;
+    }).join('');
+    container.querySelectorAll('.receipt-history-record').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const index = Number(btn.dataset.index);
+        if (Number.isInteger(index) && receiptDateRecords[index]) {
+          await loadReceiptDateRecord(receiptDateRecords[index]);
+        }
+      });
+    });
+  }
+
+  async function loadReceiptDateRecord(record){
+    if (isEditing) {
+      showPopup('warn', T[lang].msgTitleWarn, T[lang].historyEditBlocked);
+      return;
+    }
+
+    selectedPeriod = { year: Number(record.year), month: Number(record.month) };
+    activeReceiptHistoryRecordKey = record.history_record_key;
+    const sectionKey = record.section === 'group_member_receipt' ? 'm' : 'pg';
+    const panel = sectionKey === 'm' ? 'member' : 'pg';
+    const memberName = String(record.member_name || record.member_code || '').trim();
+    const signatures = record.signatures || { member: '', udyog: '' };
+    const pgName = String($('llPgNamePg')?.value || $('llPgNameM')?.value || '').trim();
+    const table = {
+      entries: Array.isArray(record.entries) ? record.entries : [],
+      details: record.details || '',
+      txn_date: record.txn_date || '',
+      signatures: {
+        member: signatures.member || '',
+        udyog: signatures.udyog || ''
+      }
+    };
+
+    restoreSection(sectionKey, {
+      pg_name: pgName,
+      member_name: memberName,
+      txn_date: table.txn_date,
+      details: table.details,
+      entries: table.entries,
+      signatures: table.signatures,
+      member_tables: memberName ? { [memberName]: table } : {}
+    });
+    setActivePanel(panel, true);
+    await hydrateCurrentPgName();
+    applyCurrentPgNameToVoucherFields();
+    snapshot = takeSnapshot();
+    setEditMode(false);
+    renderReceiptHistoryBox();
   }
 
   function renderReceiptHistoryBox(){
     ensureReceiptHistoryBox();
-    const current = document.getElementById('receiptCurrentPeriodText');
-    const cards = document.getElementById('receiptHistoryCards');
-    if(current) current.textContent = `Working month: ${monthLabel(selectedPeriod.month, selectedPeriod.year)}`;
-    if(!cards) return;
-    if(!receiptHistory.length){
-      cards.innerHTML = '<div style="font-size:13px;color:#64748b">No saved month records yet.</div>';
-      return;
-    }
-    cards.innerHTML = receiptHistory.map(item => {
-      const active = Number(item.year) === Number(selectedPeriod.year) && Number(item.month) === Number(selectedPeriod.month);
-      return `<button type="button" class="receipt-history-card" data-year="${item.year}" data-month="${item.month}" style="border:1px solid ${active ? '#10b981' : 'rgba(15,23,42,.08)'};background:${active ? '#ecfdf5' : '#f8fafc'};color:#0f172a;border-radius:14px;padding:10px 14px;font-weight:700;cursor:pointer">${monthLabel(item.month, item.year)}</button>`;
-    }).join('');
-    cards.querySelectorAll('.receipt-history-card').forEach(btn => {
-      btn.addEventListener('click', async ()=>{
-        selectedPeriod = { year: Number(btn.dataset.year), month: Number(btn.dataset.month) };
-        await loadReceiptVoucher(selectedPeriod.year, selectedPeriod.month);
-        renderReceiptHistoryBox();
-      });
-    });
+    const t = T[lang];
+    const mode = $('receiptHistoryMode');
+    const dateFilters = $('receiptHistoryDateFilters');
+    $('receiptHistoryTitle').textContent = t.historyTitle;
+    $('receiptCurrentPeriodText').textContent = `${t.historyWorkingMonth}: ${monthLabel(selectedPeriod.month, selectedPeriod.year)}`;
+    mode.options[0].textContent = t.historyShowAll;
+    mode.options[1].textContent = t.historyDateWise;
+    dateFilters.style.display = mode.value === 'date' ? 'flex' : 'none';
+    populateReceiptHistoryMembers();
+    populateReceiptHistoryDates();
+    renderReceiptHistoryCards();
   }
 
   async function loadReceiptHistory(){
@@ -3295,9 +3523,11 @@ function getSignature(sectionKey, role){
       if(!res.ok) return [];
       const data = await res.json().catch(()=>null);
       receiptHistory = Array.isArray(data && data.history) ? data.history : [];
+      rebuildReceiptDateRecords();
       return receiptHistory;
     }catch(_){
       receiptHistory = [];
+      receiptDateRecords = [];
       return [];
     }
   }
@@ -3379,28 +3609,11 @@ function getSignature(sectionKey, role){
       const data = await res.json().catch(()=>null);
       if (!data) return;
 
-      const pgData = data.pg_section || data.pg_group_receipt || data.pg || null;
-      const mData  = data.member_section || data.group_member_receipt || data.member || null;
+      const pgData = data.pg_group_receipt || data.pg_section || data.pg || null;
+      const mData  = data.group_member_receipt || data.member_section || data.member || null;
 
-      if (pgData) restoreSection("pg", {
-        pg_name: pgData.pg_name || "",
-        txn_date: pgData.txn_date || "",
-        member_name: pgData.member_name || "",
-        details: pgData.details || "",
-        signatures: pgData.signatures || { member:"", udyog:"" },
-        entries: pgData.entries || [],
-        member_tables: pgData.member_tables || {}
-      });
-
-      if (mData) restoreSection("m", {
-        pg_name: mData.pg_name || "",
-        txn_date: mData.txn_date || "",
-        member_name: mData.member_name || "",
-        details: mData.details || "",
-        signatures: mData.signatures || { member:"", udyog:"" },
-        entries: mData.entries || [],
-        member_tables: mData.member_tables || {}
-      });
+      if (pgData) restoreSection("pg", pgData);
+      if (mData) restoreSection("m", mData);
 
       hydrateCurrentPgName();
       applyCurrentPgNameToVoucherFields();
@@ -3702,6 +3915,7 @@ async function loadReceiptMembers(){
     recalcTotalsAndVisibility("pg");
     recalcTotalsAndVisibility("m");
     syncDeleteAllLabel();
+    if ($("receiptHistoryBox")) renderReceiptHistoryBox();
   }
 
   function setLanguageFromOutside(l){

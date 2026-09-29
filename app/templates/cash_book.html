@@ -1039,6 +1039,24 @@
     transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
     box-shadow: 0 10px 18px -18px rgba(239,68,68,.18);
   }
+
+  .cb-print-row{
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(11,77,58,.18);
+    border-radius: 14px;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    color:var(--c-900);
+    background:rgba(16,185,129,.10);
+    transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .cb-print-row:hover{
+    transform:translateY(-1px);
+    background:rgba(16,185,129,.18);
+    box-shadow:0 12px 20px -16px rgba(11,77,58,.55);
+  }
   .cb-del:hover{
     transform: translateY(-1px);
     box-shadow: 0 16px 26px -22px rgba(239,68,68,.30);
@@ -1849,7 +1867,7 @@
                 <div class="cb-h" id="cbThAmount">Cash Amount</div>
                 <div class="cb-h" id="cbThBankAmount">Bank Amount</div>
                 <div class="cb-h" id="cbThTotal">Total</div>
-                <div class="cb-h cb-center">&nbsp;</div>
+                <div class="cb-h cb-center" id="cbThAction">Print</div>
               </div>
 
               <div id="cbRows" class="cb-rows"></div>
@@ -2069,6 +2087,7 @@
       receipts: "Receipts",
       payments: "Payments",
       printReceipts: "Print Receipts",
+      printReceipt: "Print Receipt",
       autoPaymentReceipt: "Auto-generated from Payment",
       noReceiptsToPrint: "There are no receipt entries to print for this period.",
       balance: "Balance",
@@ -2147,6 +2166,7 @@
       receipts: "প্রাপ্তি",
       payments: "প্রদান",
       printReceipts: "প্রাপ্তি মুদ্রণ করুন",
+      printReceipt: "প্রাপ্তি মুদ্রণ করুন",
       autoPaymentReceipt: "প্রদানের এন্ট্রি থেকে স্বয়ংক্রিয়ভাবে তৈরি",
       noReceiptsToPrint: "এই সময়কালে মুদ্রণের জন্য কোনো প্রাপ্তির এন্ট্রি নেই।",
       balance: "ব্যালেন্স",
@@ -2319,6 +2339,7 @@ const cbPayments = [];
   const cbAddBtn = cb$("cbAddBtn");
   const cbPrintReceiptsBtn = cb$("cbPrintReceiptsBtn");
   const cbPrintReceiptsText = cb$("cbPrintReceiptsText");
+  const cbThAction = cb$("cbThAction");
   const cbAddText = cb$("cbAddText");
 
   const cbRows = cb$("cbRows");
@@ -2735,11 +2756,18 @@ function sumContraTotals(arr){
       : cbPayments;
   }
 
-  function printCashbookReceipts(){
-    const printableRows = getFiltered(cbReceipts.concat(getAutoPaymentReceipts())).filter(row =>
+  function isPrintableReceipt(row){
+    return !!row && (
       isContraTx(row) || cbNum(row.amount) > 0 || cbNum(row.bankAmount) > 0 ||
       String(row.date || "").trim() || String(row.particulars || "").trim()
     );
+  }
+
+  function printCashbookReceipts(onlyRow = null){
+    const printableRows = (onlyRow
+      ? [onlyRow]
+      : getFiltered(cbReceipts.concat(getAutoPaymentReceipts()))
+    ).filter(isPrintableReceipt);
     if (!printableRows.length){
       openInfoModal(cashbookTranslations[cashbookLang].receipts, cashbookTranslations[cashbookLang].noReceiptsToPrint);
       return;
@@ -2798,6 +2826,22 @@ function sumContraTotals(arr){
       </style></head><body><div class="print-toolbar"><button onclick="window.print()">Print</button></div>${receiptCards}</body></html>`);
     printWindow.document.close();
     setTimeout(() => { printWindow.focus(); printWindow.print(); }, 300);
+  }
+
+  function makeReceiptPrintButton(tx){
+    const printButton = document.createElement("button");
+    printButton.className = "cb-print-row";
+    printButton.type = "button";
+    printButton.title = cashbookTranslations[cashbookLang].printReceipt;
+    printButton.setAttribute("aria-label", cashbookTranslations[cashbookLang].printReceipt);
+    printButton.innerHTML = `
+      <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+        <rect x="6" y="14" width="12" height="8"></rect>
+      </svg>`;
+    printButton.addEventListener("click", () => printCashbookReceipts(tx));
+    return printButton;
   }
 
   function cbPad2(n){
@@ -3042,6 +3086,9 @@ function cbCreateContraEntry(type, amount, date){
     cbReceiptsTab.classList.toggle("cb-active", cbActiveTab === "receipts");
     cbPaymentsTab.classList.toggle("cb-active", cbActiveTab === "payments");
     cbPrintReceiptsBtn.classList.toggle("cb-hidden", cbActiveTab !== "receipts");
+    cbThAction.textContent = cbActiveTab === "receipts" && !cbIsEditing
+      ? cashbookTranslations[cashbookLang].printReceipt
+      : "";
     cbActivePill.textContent = cbActiveTab === "receipts"
       ? cashbookTranslations[cashbookLang].receipts
       : cashbookTranslations[cashbookLang].payments;
@@ -3065,6 +3112,9 @@ function cbCreateContraEntry(type, amount, date){
 
   cbCancelBtn.classList.toggle("cb-hidden", !cbIsEditing);
   cbEditOnlyActions.classList.toggle("cb-hidden", !cbIsEditing);
+  cbThAction.textContent = cbActiveTab === "receipts" && !cbIsEditing
+    ? cashbookTranslations[cashbookLang].printReceipt
+    : "";
 
     cbDeleteSelectedText.textContent = t.deleteSelected;
     cbDeleteAllText.textContent = t.deleteAll;
@@ -4024,6 +4074,8 @@ row.appendChild(c7);
           openDeleteConfirm("single");
         });
         c8.appendChild(del);
+      } else if (cbActiveTab === "receipts" && isPrintableReceipt(tx)) {
+        c8.appendChild(makeReceiptPrintButton(tx));
       }
       row.appendChild(c8);
 
@@ -4236,26 +4288,32 @@ dataRows.forEach(item=>{
 });
       card.appendChild(rows);
 
-      if (cbIsEditing && !isAutoPaymentReceipt(tx)){
+      if ((cbIsEditing && !isAutoPaymentReceipt(tx)) || (cbActiveTab === "receipts" && isPrintableReceipt(tx))){
         const foot = document.createElement("div");
         foot.className = "cb-mfoot";
 
-        const del = document.createElement("button");
-        del.className = "cb-ghost cb-danger";
-        del.type = "button";
-        del.innerHTML = `
-          <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-          <span>${t.deleteYes}</span>
-        `;
-        del.addEventListener("click", ()=>{
-          cbPendingDeleteIds = [tx.id];
-          openDeleteConfirm("single");
-        });
-
-        foot.appendChild(del);
+        if (cbIsEditing && !isAutoPaymentReceipt(tx)) {
+          const del = document.createElement("button");
+          del.className = "cb-ghost cb-danger";
+          del.type = "button";
+          del.innerHTML = `
+            <svg class="cb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>${t.deleteYes}</span>
+          `;
+          del.addEventListener("click", ()=>{
+            cbPendingDeleteIds = [tx.id];
+            openDeleteConfirm("single");
+          });
+          foot.appendChild(del);
+        } else {
+          const printButton = makeReceiptPrintButton(tx);
+          printButton.className = "cb-ghost";
+          printButton.innerHTML += `<span>${escapeHtml(t.printReceipt)}</span>`;
+          foot.appendChild(printButton);
+        }
         card.appendChild(foot);
       }
 
@@ -4354,7 +4412,7 @@ cbReceiptsTab.addEventListener("click", ()=>{
     setTabUI();
   });
 
-  cbPrintReceiptsBtn.addEventListener("click", printCashbookReceipts);
+  cbPrintReceiptsBtn.addEventListener("click", () => printCashbookReceipts());
 
   cbSearchInput.addEventListener("input", ()=>{
     cbSearch = cbSearchInput.value.trim();

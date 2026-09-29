@@ -3409,8 +3409,7 @@ def _gradation_manual_inputs_from_request():
     may not be fully derivable from existing transaction tables.
     """
 
-    data = request.get_json(silent=True) if request.is_json else None
-    src = data if isinstance(data, dict) else request.form
+    src = _gradation_request_source()
 
     return {
         "subcommittee_meetings": _gradation_int(src.get("subcommittee_meetings"), 0),
@@ -3425,7 +3424,60 @@ def _gradation_manual_inputs_from_request():
 
         # Optional remarks for future audit/history display.
         "remarks": str(src.get("remarks") or "").strip(),
+
+        # Preserve a manually supplied gradation date for mobile/legacy
+        # clients. The selected quarter remains the canonical snapshot key.
+        "gradation_date": str(
+            src.get("gradation_date")
+            or src.get("date_of_gradation")
+            or src.get("evaluation_date")
+            or ""
+        ).strip(),
     }
+
+
+def _gradation_request_source():
+    """Return one request payload for both browser forms and JSON clients."""
+    payload = request.get_json(silent=True) if request.is_json else None
+    if isinstance(payload, dict):
+        return payload
+    return request.form
+
+
+def _gradation_request_value(*keys):
+    """Read a gradation value from JSON, form data, then query parameters."""
+    payload = _gradation_request_source()
+    for key in keys:
+        value = payload.get(key) if payload is not None else None
+        if value not in (None, ""):
+            return value
+
+        value = request.args.get(key)
+        if value not in (None, ""):
+            return value
+
+    return None
+
+
+def _gradation_date_parts(value):
+    """Parse common ISO and manual date formats into (year, quarter)."""
+    if value in (None, ""):
+        return None, None
+
+    text = str(value).strip()
+    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d"):
+        try:
+            parsed = datetime.strptime(text, fmt)
+            return parsed.year, ((parsed.month - 1) // 3) + 1
+        except (TypeError, ValueError):
+            continue
+
+    return None, None
+
+
+def _gradation_current_role():
+    """Resolve role consistently for web sessions and JWT/API requests."""
+    return str(session.get("role") or getattr(g, "role", "") or "").strip().upper()
 
 
 def _gradation_subcommittee_marks(count):
@@ -3793,10 +3845,22 @@ def gradation(pg_id):
         flash("PG not found.", "danger")
         return redirect(url_for("pg.pg_home"))
 
-    year = _gradation_int(request.values.get("year"), datetime.utcnow().year)
+    now = datetime.utcnow()
+    date_year, date_quarter = _gradation_date_parts(
+        _gradation_request_value(
+            "gradation_date",
+            "date_of_gradation",
+            "evaluation_date",
+            "date",
+        )
+    )
+    year = _gradation_int(
+        _gradation_request_value("year", "gradation_year"),
+        date_year or now.year,
+    )
     quarter = _gradation_int(
-        request.values.get("quarter"),
-        ((datetime.utcnow().month - 1) // 3 + 1)
+        _gradation_request_value("quarter", "gradation_quarter"),
+        date_quarter or ((now.month - 1) // 3 + 1),
     )
 
     if quarter not in (1, 2, 3, 4):
@@ -3808,7 +3872,9 @@ def gradation(pg_id):
         "quarter": quarter
     })
 
-    if request.method == "POST" and session.get("role") in ("PG_DATA_ENTRY", "CADRE_CC"):
+    current_role = _gradation_current_role()
+
+    if request.method == "POST" and current_role in ("PG_DATA_ENTRY", "CADRE_CC"):
         if wants_json:
             return jsonify({
                 "success": False,
@@ -3835,6 +3901,12 @@ def gradation(pg_id):
             "pg_id": pg_oid,
             "pg_name": pg.get("name") or pg.get("pg_name") or "",
             "updated_at": now,
+            "gradation_date": _gradation_request_value(
+                "gradation_date",
+                "date_of_gradation",
+                "evaluation_date",
+                "date",
+            ) or (existing_snap or {}).get("gradation_date", ""),
         })
 
         if not existing_snap:
@@ -3903,7 +3975,7 @@ def gradation(pg_id):
             "year": year,
             "quarter": quarter,
             "has_saved_snapshot": bool(existing_snap),
-            "can_compute": session.get("role") not in ("PG_DATA_ENTRY", "CADRE_CC"),
+            "can_compute": current_role not in ("PG_DATA_ENTRY", "CADRE_CC"),
             "snapshot": {
                 "year": src.get("year"),
                 "quarter": src.get("quarter"),

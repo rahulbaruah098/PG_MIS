@@ -745,6 +745,62 @@
     background:#ecfdf5;
   }
 
+  .ll-loan-cycle-bar{
+    margin:0 18px 14px;
+    padding:14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:14px;
+    background:rgba(248,250,252,.92);
+  }
+  .ll-loan-status{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:950;
+    color:#92400e;
+    background:#fffbeb;
+    border:1px solid #fde68a;
+  }
+  .ll-loan-status[data-status="paid"],
+  .ll-loan-status[data-status="closed"]{
+    color:#065f46;
+    background:#ecfdf5;
+    border-color:#a7f3d0;
+  }
+  .ll-cycle-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .ll-history-panel{
+    margin:0 18px 16px;
+    padding:14px;
+    border:1px solid rgba(15,23,42,.10);
+    border-radius:14px;
+    background:#fff;
+  }
+  .ll-history-panel.ll-hidden{display:none}
+  .ll-history-title{margin:0 0 10px;font-size:14px;font-weight:950;color:#0b4d3a}
+  .ll-history-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+  .ll-history-card{
+    appearance:none;
+    width:100%;
+    padding:12px;
+    text-align:left;
+    border:1px solid rgba(15,23,42,.12);
+    border-radius:12px;
+    background:#f8fafc;
+    color:#0f172a;
+    cursor:pointer;
+  }
+  .ll-history-card strong,.ll-history-card span{display:block}
+  .ll-history-card span{margin-top:4px;font-size:12px;color:#475569}
+  .ll-history-empty{padding:12px;color:#64748b;font-weight:700}
+
   .ll-modal-overlay{
     position:fixed;
     inset:0;
@@ -1028,6 +1084,26 @@
       Select a member and crop/activity/unit to load the sector-based ledger.
     </div>
 
+    <div class="ll-loan-cycle-bar">
+      <div class="ll-loan-status" id="llLoanStatus" data-status="none">
+        <span data-ll-i18n="loanStatus">Loan Status:</span>
+        <strong id="llLoanStatusValue" data-ll-i18n="noLoanSelected">No loan selected</strong>
+      </div>
+      <div class="ll-cycle-actions">
+        <button class="ll-btn ll-soft-green" id="llNewLoanCycleBtn" type="button" disabled>
+          <span data-ll-i18n="createNewLoan">Create New Loan</span>
+        </button>
+        <button class="ll-btn" id="llToggleHistoryBtn" type="button" disabled>
+          <span data-ll-i18n="loanHistory">Loan History</span>
+        </button>
+      </div>
+    </div>
+
+    <section class="ll-history-panel ll-hidden" id="llHistoryPanel" aria-live="polite">
+      <h3 class="ll-history-title" data-ll-i18n="previousLoans">Previous and Current Loans</h3>
+      <div class="ll-history-list" id="llHistoryList"></div>
+    </section>
+
     <div class="ll-controls">
       <div class="ll-controls-left">
         <div class="ll-search" title="Search" data-ll-title="search">
@@ -1252,6 +1328,21 @@
       interestPaidLabel: "Interest Paid:",
       totalRepaid: "Total Repaid:",
       outstanding: "Outstanding:",
+      loanStatus: "Loan Status:",
+      noLoanSelected: "No loan selected",
+      paid: "Paid",
+      outstandingStatus: "Outstanding",
+      closed: "Closed",
+      discontinued: "Discontinued",
+      createNewLoan: "Create New Loan",
+      loanHistory: "Loan History",
+      previousLoans: "Previous and Current Loans",
+      cycle: "Loan Cycle",
+      currentCycle: "Current",
+      historyEmpty: "No previous loan history is available for this member.",
+      loanMustBePaid: "A new loan can be created only after the current loan is fully repaid.",
+      newLoanReady: "Enter the new loan amount, start date and purpose, then save.",
+      historicalReadOnly: "Historical loan cycles are read-only.",
       prev: "Prev",
       next: "Next",
       page: "Page",
@@ -1355,6 +1446,21 @@
       interestPaidLabel: "সুদ পরিশোধ:",
       totalRepaid: "মোট পরিশোধ:",
       outstanding: "বকেয়া:",
+      loanStatus: "ঋণের অবস্থা:",
+      noLoanSelected: "কোনো ঋণ নির্বাচন করা হয়নি",
+      paid: "পরিশোধিত",
+      outstandingStatus: "বকেয়া",
+      closed: "বন্ধ",
+      discontinued: "বাতিল",
+      createNewLoan: "নতুন ঋণ তৈরি করুন",
+      loanHistory: "ঋণের ইতিহাস",
+      previousLoans: "পূর্ববর্তী এবং বর্তমান ঋণ",
+      cycle: "ঋণ চক্র",
+      currentCycle: "বর্তমান",
+      historyEmpty: "এই সদস্যের পূর্ববর্তী ঋণের ইতিহাস নেই।",
+      loanMustBePaid: "বর্তমান ঋণ সম্পূর্ণ পরিশোধের পরেই নতুন ঋণ তৈরি করা যাবে।",
+      newLoanReady: "নতুন ঋণের পরিমাণ, শুরুর তারিখ ও উদ্দেশ্য লিখে সংরক্ষণ করুন।",
+      historicalReadOnly: "পূর্ববর্তী ঋণ চক্র শুধুমাত্র দেখা যাবে।",
       prev: "পূর্ববর্তী",
       next: "পরবর্তী",
       page: "পৃষ্ঠা",
@@ -1483,6 +1589,8 @@
     }
 
     renderPage();
+    renderLoanHistory(loanHistory);
+    updateLoanCycleUI();
   }
 
   window.applyTranslations = applyLLTranslations;
@@ -1497,7 +1605,8 @@
     memberItems: "/pg/loan-ledger/sector/member-items",
     account: "/pg/loan-ledger/sector/account",
     ledger: "/pg/loan-ledger/sector/ledger",
-    summary: "/pg/loan-ledger/sector/summary"
+    summary: "/pg/loan-ledger/sector/summary",
+    history: "/pg/loan-ledger/sector/history"
   };
 
   let pgInfo = null;
@@ -1508,6 +1617,9 @@
   let currentItems = [];
   let currentItem = null;
   let currentAccount = null;
+  let loanHistory = [];
+  let creatingNewCycle = false;
+  let viewingHistoricalCycle = false;
 
   let selectedMemberId = "";
   let selectedItemKey = "";
@@ -1811,7 +1923,10 @@
     $("llMemberName").disabled = !!on;
     $("llSectorItem").disabled = !!on;
 
-    $("llLoanAmount").readOnly = !on;
+    const canSetPrincipal = !!on && (
+      creatingNewCycle || !currentAccount || !currentAccount._id || !n2(currentAccount.loan_amount)
+    );
+    $("llLoanAmount").readOnly = !canSetPrincipal;
     $("llLoanStartDate").readOnly = !on;
     $("llLoanPurpose").readOnly = !on;
   }
@@ -1877,6 +1992,7 @@
     updateMobileBar();
     updateSelectUI();
     recalcLoan();
+    updateLoanCycleUI();
   }
 
   function valueOrBlank(v){
@@ -1990,6 +2106,9 @@
 
   function clearLedgerState(){
     currentAccount = null;
+    creatingNewCycle = false;
+    viewingHistoricalCycle = false;
+    loanHistory = [];
     allRows = [];
     filteredRows = [];
     $("llBody").innerHTML = "";
@@ -2000,6 +2119,8 @@
     updateKpiFromSummary({});
     rebuildFiltered();
     setEditMode(false);
+    renderLoanHistory([]);
+    $("llHistoryPanel").classList.add("ll-hidden");
   }
 
   function renderSectorNoteAndHint(){
@@ -2025,6 +2146,77 @@
     $("llKpiInterestPaid").textContent = money(summary.interest_paid ?? 0);
     $("llKpiTotalRepaid").textContent = money(summary.total_repayment ?? 0);
     $("llKpiOutstanding").textContent = money(summary.principal_outstanding ?? summary.closing_loan_balance ?? getBaseLoanAmount());
+  }
+
+  function accountStatus(account = currentAccount){
+    if (!account || !account._id) return "none";
+    return String(account.loan_status || account.status || "outstanding").toLowerCase();
+  }
+
+  function updateLoanCycleUI(){
+    const status = creatingNewCycle ? "new" : accountStatus();
+    const statusValue = $("llLoanStatusValue");
+    const statusWrap = $("llLoanStatus");
+    const outstanding = n2(currentAccount && currentAccount.outstanding_amount);
+
+    statusWrap.dataset.status = status;
+    if (status === "new") statusValue.textContent = llT("createNewLoan");
+    else if (status === "paid") statusValue.textContent = llT("paid");
+    else if (status === "closed") statusValue.textContent = llT("closed");
+    else if (status === "discontinued") statusValue.textContent = llT("discontinued");
+    else if (status === "outstanding") statusValue.textContent = `${llT("outstandingStatus")} · ₹${money(outstanding)}`;
+    else statusValue.textContent = llT("noLoanSelected");
+
+    const canStartNew = !!(
+      selectedMemberId && selectedItemKey && currentAccount &&
+      ["paid", "closed"].includes(accountStatus()) &&
+      !llIsEditing && !creatingNewCycle
+    );
+    $("llNewLoanCycleBtn").disabled = !canStartNew;
+    $("llToggleHistoryBtn").disabled = !selectedMemberId || !loanHistory.length;
+    $("llEditSaveBtn").disabled = !creatingNewCycle && (
+      viewingHistoricalCycle || ["paid", "closed", "discontinued"].includes(accountStatus())
+    );
+  }
+
+  function renderLoanHistory(history = loanHistory){
+    loanHistory = Array.isArray(history) ? history : [];
+    const list = $("llHistoryList");
+    list.innerHTML = "";
+
+    if (!loanHistory.length){
+      list.innerHTML = `<div class="ll-history-empty">${esc(llT("historyEmpty"))}</div>`;
+      updateLoanCycleUI();
+      return;
+    }
+
+    loanHistory.forEach(item => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "ll-history-card";
+      const itemStatus = String(item.status || "outstanding").toLowerCase();
+      const activeId = String(currentAccount && (currentAccount.loan_account_id || currentAccount._id) || "");
+      if (activeId && activeId === String(item.loan_account_id || "")) button.classList.add("active");
+      const itemName = item.item_name || item.activity || item.unit || item.item_key || itemLabelText();
+      const statusLabel = itemStatus === "paid" ? llT("paid")
+        : itemStatus === "closed" ? llT("closed")
+        : itemStatus === "discontinued" ? llT("discontinued")
+        : llT("outstandingStatus");
+      button.innerHTML = `
+        <strong>${esc(llT("cycle"))} ${esc(item.loan_cycle_no || 1)}${item.is_current ? ` · ${esc(llT("currentCycle"))}` : ""}</strong>
+        <span>${esc(itemName)} · ₹${esc(money(item.loan_amount))}</span>
+        <span>${esc(statusLabel)} · ${esc(llT("outstanding"))} ₹${esc(money(item.outstanding_amount))}</span>
+        <span>${esc(item.loan_start_date || "")}</span>`;
+      button.addEventListener("click", async () => {
+        if (llIsEditing) return info(llT("editModeLeave"));
+        selectedItemKey = String(item.item_key || "");
+        if ($("llSectorItem")) $("llSectorItem").value = selectedItemKey;
+        currentItem = currentItems.find(i => i.item_key === selectedItemKey) || null;
+        await loadAccountAndLedger(String(item.loan_account_id || ""));
+      });
+      list.appendChild(button);
+    });
+    updateLoanCycleUI();
   }
 
   function applyBootstrap(data){
@@ -2127,6 +2319,7 @@
       $("llSpouseName").value = currentMember ? (currentMember.father_mother_spouse || "") : "";
       populateItems(data.items || []);
       clearLedgerState();
+      await loadMemberHistory();
     } catch (err){
       console.error(err);
       populateItems([]);
@@ -2149,9 +2342,25 @@
 
     const moratorium = Number(currentAccount.moratorium_months ?? rules.moratorium_months ?? 0);
     setValueSafe("llSectorRule", `${moratorium} ${llT("monthNoRepayment")}.`);
+    updateLoanCycleUI();
   }
 
-  async function loadAccountAndLedger(){
+  async function loadMemberHistory(){
+    if (!selectedMemberId){
+      renderLoanHistory([]);
+      return;
+    }
+    try{
+      const qs = new URLSearchParams({ member_id: selectedMemberId });
+      const data = await fetchJson(`${API.history}?${qs.toString()}`);
+      renderLoanHistory(data.history || []);
+    } catch (err){
+      console.error(err);
+      renderLoanHistory([]);
+    }
+  }
+
+  async function loadAccountAndLedger(loanAccountId = ""){
     if (!selectedMemberId || !selectedItemKey){
       clearLedgerState();
       return;
@@ -2162,12 +2371,17 @@
         member_id: selectedMemberId,
         item_key: selectedItemKey
       });
+      if (loanAccountId) qs.set("loan_account_id", loanAccountId);
 
       const accountData = await fetchJson(`${API.account}?${qs.toString()}`);
       currentItem = accountData.item || currentItems.find(i => i.item_key === selectedItemKey) || null;
       applyAccount(accountData.account || {});
+      creatingNewCycle = false;
+      viewingHistoricalCycle = !!loanAccountId && !accountData.account?.is_current;
+      renderLoanHistory(accountData.history || loanHistory);
 
-      await loadLedger();
+      await loadLedger(loanAccountId || String(accountData.account?.loan_account_id || accountData.account?._id || ""));
+      if (viewingHistoricalCycle) info(llT("historicalReadOnly"));
     } catch (err){
       console.error(err);
       clearLedgerState();
@@ -2175,7 +2389,7 @@
     }
   }
 
-  async function loadLedger(){
+  async function loadLedger(loanAccountId = ""){
     if (!selectedMemberId || !selectedItemKey){
       hydrateEntries([]);
       return;
@@ -2186,6 +2400,8 @@
         member_id: selectedMemberId,
         item_key: selectedItemKey
       });
+      const accountId = loanAccountId || String(currentAccount && (currentAccount.loan_account_id || currentAccount._id) || "");
+      if (accountId) qs.set("loan_account_id", accountId);
 
       const data = await fetchJson(`${API.ledger}?${qs.toString()}`);
 
@@ -2259,7 +2475,7 @@
   }
 
   function buildPayload(){
-    return {
+    const payload = {
       member_id: selectedMemberId,
       item_key: selectedItemKey,
       loan_amount: getBaseLoanAmount(),
@@ -2267,6 +2483,34 @@
       loan_purpose: $("llLoanPurpose").value || "",
       entries: allRows.map(getEntryFromRow)
     };
+    const accountId = String(currentAccount && (currentAccount.loan_account_id || currentAccount._id) || "");
+    if (accountId) payload.loan_account_id = accountId;
+    return payload;
+  }
+
+  function startNewLoanCycle(){
+    if (!selectedMemberId || !selectedItemKey) return;
+    if (!["paid", "closed"].includes(accountStatus())){
+      info(llT("loanMustBePaid"));
+      return;
+    }
+
+    creatingNewCycle = true;
+    viewingHistoricalCycle = false;
+    currentAccount = {
+      status: "new",
+      loan_status: "new",
+      interest_rate: rules.interest_rate || 0,
+      moratorium_months: rules.moratorium_months || 0
+    };
+    $("llLoanAmount").value = "";
+    $("llLoanStartDate").value = "";
+    $("llLoanPurpose").value = "";
+    hydrateEntries([]);
+    llSnapshot = takeSnapshot();
+    setEditMode(true);
+    updateLoanCycleUI();
+    info(llT("newLoanReady"));
   }
 
   async function saveLoanLedger(){
@@ -2277,12 +2521,35 @@
 
     const payload = buildPayload();
 
-    if (!payload.loan_amount && sector !== "ARDD"){
+    if (!payload.loan_amount){
       info(llT("assignedLoanRequired"));
       return;
     }
 
     try{
+      if (creatingNewCycle){
+        const accountPayload = {
+          member_id: selectedMemberId,
+          item_key: selectedItemKey,
+          loan_amount: payload.loan_amount,
+          loan_start_date: payload.loan_start_date,
+          loan_purpose: payload.loan_purpose,
+          create_new_cycle: true
+        };
+        const accountResult = await fetchJson(API.account, {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify(accountPayload)
+        });
+        applyAccount(accountResult.account || {});
+        creatingNewCycle = false;
+        viewingHistoricalCycle = false;
+        payload.loan_account_id = String(
+          accountResult.account && (accountResult.account.loan_account_id || accountResult.account._id) || ""
+        );
+        renderLoanHistory(accountResult.history || loanHistory);
+      }
+
       const res = await fetchJson(API.ledger, {
         method:"POST",
         headers:{
@@ -2297,6 +2564,7 @@
       hydrateEntries(Array.isArray(res.entries) ? res.entries : []);
       setEditMode(false);
       llSnapshot = takeSnapshot();
+      await loadMemberHistory();
       info(res.message || llT("ledgerSaved"));
     } catch (err){
       console.error(err);
@@ -2365,6 +2633,8 @@
 
     selectedItemKey = $("llSectorItem").value || "";
     currentItem = currentItems.find(i => i.item_key === selectedItemKey) || null;
+    viewingHistoricalCycle = false;
+    creatingNewCycle = false;
     await loadAccountAndLedger();
   });
 
@@ -2374,6 +2644,10 @@
 
   $("llAddRowTop").addEventListener("click", addRow);
   $("llMobileAddRow").addEventListener("click", addRow);
+  $("llNewLoanCycleBtn").addEventListener("click", startNewLoanCycle);
+  $("llToggleHistoryBtn").addEventListener("click", () => {
+    $("llHistoryPanel").classList.toggle("ll-hidden");
+  });
 
   $("llEditSaveBtn").addEventListener("click", () => {
     if (!selectedMemberId || !selectedItemKey){
