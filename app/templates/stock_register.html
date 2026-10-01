@@ -1,713 +1,545 @@
 ﻿{% extends "base.html" %}
+
 {% block title %}Stock / Inventory Register{% endblock %}
+
 {% block content %}
-
 <style>
-
   .st-wrap{
-    width: 100%;
-    padding: clamp(12px, 2.2vw, 22px);
-
     --ink:#0f172a;
     --muted:#64748b;
-    --line: rgba(15,23,42,.18);
-    --line2: rgba(15,23,42,.12);
+    --line:rgba(15,23,42,.13);
+    --line-strong:rgba(15,23,42,.18);
     --paper:#ffffff;
     --soft:#f7faf9;
+    --soft-green:#f1faf6;
     --accent:#0b4d3a;
-
-    color: var(--ink);
-    max-width: 1200px;
-    margin: 0 auto;
-    position: relative;
+    --accent-2:#157a5c;
+    --accent-soft:rgba(16,185,129,.11);
+    --danger:#b42318;
+    width:100%;
+    max-width:1280px;
+    margin:0 auto;
+    padding:clamp(10px,2vw,22px);
+    color:var(--ink);
   }
-  .st-wrap *{ box-sizing:border-box; }
+  .st-wrap *{box-sizing:border-box}
 
   .st-sheet{
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 18px 34px -26px rgba(15,23,42,.35);
-    position: relative;
+    width:100%;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 14px 34px -30px rgba(15,23,42,.30);
   }
 
   /* Header */
   .st-head{
-    padding: 14px 16px 12px;
+    position:relative;
+    padding:18px 20px 16px;
+    border-bottom:1px solid var(--line);
     background:
-      radial-gradient(circle at 15% 20%, rgba(11,77,58,.10), transparent 55%),
-      linear-gradient(135deg, rgba(240,253,244,.9), rgba(255,255,255,.92));
-    border-bottom: 1.5px solid var(--line2);
-    position: relative;
+      radial-gradient(circle at 13% 0%, rgba(16,185,129,.11), transparent 38%),
+      linear-gradient(135deg,#f4fbf7 0%,#ffffff 70%);
   }
   .st-title{
-    margin: 0;
-    font-weight: 950;
-    font-size: 18px;
-    text-align: center;
-    letter-spacing: .2px;
-    line-height: 1.25;
+    margin:0;
+    text-align:center;
+    font-size:clamp(18px,2vw,22px);
+    line-height:1.25;
+    font-weight:900;
+    letter-spacing:-.02em;
   }
   .st-sub{
-    margin: 6px 0 0;
-    text-align: center;
-    font-size: 12px;
-    font-weight: 800;
-    color: rgba(15,23,42,.62);
+    margin:6px 0 0;
+    text-align:center;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:700;
   }
-
-  /* Back (mobile only) */
   .st-back{
     display:none;
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    transform: none;
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
-    border: 1px solid rgba(15,23,42,.14);
-    background: rgba(255,255,255,.92);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    box-shadow: 0 12px 20px -16px rgba(15,23,42,.38);
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    color: rgba(11,77,58,.98);
-    user-select: none;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
-  }
-  .st-back:hover{
-    transform: translateX(-1px);
-    box-shadow: 0 16px 26px -18px rgba(15,23,42,.46);
-    background: rgba(255,255,255,.98);
-  }
-  .st-back:active{ transform: translateX(-1px) scale(.98); }
-  .st-back svg{ width: 18px; height: 18px; display:block; }
-
-  @media (max-width: 720px){
-    .st-back{ display:flex; }
-    .st-title{
-      text-align: left;
-      padding-left: 54px;
-      padding-right: 8px;
-    }
-    .st-sub{
-      text-align: left;
-      padding-left: 54px;
-      padding-right: 8px;
-    }
-  }
-
-  /* Top fields */
-  .st-topfields{
-    padding: 10px 16px 14px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px 14px;
-    border-bottom: 1.5px solid var(--line2);
-    background: rgba(255,255,255,.92);
-  }
-  .st-field{
-    display:flex;
+    position:absolute;
+    left:12px;
+    top:12px;
+    width:38px;
+    height:38px;
     align-items:center;
-    gap: 10px;
-    min-width: 0;
-  }
-  .st-label{
-    font-weight: 900;
-    font-size: 12px;
-    white-space: nowrap;
-    color: var(--ink);
-  }
-  .st-muted{
-    font-size: 12px;
-    font-weight: 800;
-    color: rgba(15,23,42,.72);
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* Layout two panels */
-  .st-panels{
-    padding: 12px 16px 16px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    background: rgba(255,255,255,.96);
-  }
-
-  .st-block{
-    border: 1px solid rgba(15,23,42,.14);
-    border-radius: 14px;
-    background: rgba(255,255,255,.92);
-    overflow: hidden;
-    box-shadow: 0 14px 26px -22px rgba(15,23,42,.28);
-    min-width: 0;
-  }
-  .st-block-head{
-    padding: 12px 12px 10px;
-    border-bottom: 1px solid var(--line2);
-    background: rgba(247,250,249,.66);
-  }
-  .st-block-title{
-    margin: 0;
-    font-weight: 950;
-    font-size: 13px;
-    letter-spacing: .15px;
-    color: var(--ink);
-  }
-  .st-block-sub{
-    margin: 6px 0 0;
-    font-size: 12px;
-    color: rgba(15,23,42,.62);
-    font-weight: 750;
-  }
-  .st-block-body{
-    padding: 12px;
-  }
-
-  /* Grid */
-  .st-grid{
-    display:grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 10px 14px;
-    align-items: start;
-  }
-  .col-2{ grid-column: span 2; }
-  .col-3{ grid-column: span 3; }
-  .col-4{ grid-column: span 4; }
-  .col-6{ grid-column: span 6; }
-  .col-12{ grid-column: span 12; }
-
-  .st-stack{
-    display:flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-  }
-  .st-stack label{
-    font-size: .78rem;
-    font-weight: 900;
-    color: rgba(11,77,58,.92);
-  }
-
-  /* Inputs */
-  .st-input,
-  .st-select,
-  .st-textarea{
-    width: 100%;
-    border: 1px solid rgba(15,23,42,.16);
-    border-radius: 12px;
-    padding: 8px 10px;
-    background: rgba(247,250,249,.75);
-    font-weight: 800;
-    font-size: 12px;
-    outline: none;
-    color: var(--ink);
-    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
-  }
-  .st-input:focus,
-  .st-select:focus,
-  .st-textarea:focus{
-    border-color: rgba(11,77,58,.40);
-    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
-    background: #fff;
-  }
-  .st-textarea{
-    min-height: 64px;
-    resize: vertical;
-    line-height: 1.35;
-  }
-
-  /* Buttons */
-  .st-actions{
-    display:flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items:center;
-    justify-content:flex-start;
-    margin-top: 6px;
-  }
-  .st-btn{
-    border: 1px solid rgba(15,23,42,.14);
-    background: rgba(247,250,249,.8);
-    color: var(--ink);
-    border-radius: 999px;
-    padding: 10px 14px;
-    font-weight: 950;
-    font-size: 12px;
-    cursor: pointer;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
-    display:inline-flex;
-    align-items:center;
-    gap: 8px;
-    user-select: none;
-    white-space: nowrap;
+    justify-content:center;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:#fff;
+    color:var(--accent);
     text-decoration:none;
   }
-  .st-btn:hover{
-    transform: translateY(-1px);
-    background: #fff;
-    box-shadow: 0 16px 22px -18px rgba(15,23,42,.25);
-  }
-  .st-btn:disabled{
-    opacity: .45;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-  .st-btn.st-primary{
-    border-color: rgba(16,185,129,.35);
-    background: rgba(16,185,129,.12);
-    color:#0b4d3a;
-  }
-  .st-btn.st-primary:hover{ background: rgba(16,185,129,.16); }
+  .st-back svg{width:18px;height:18px}
 
-  .st-icon{ width: 14px; height: 14px; flex-shrink: 0; }
-
-  /* Search / pagination tools */
-  .st-tools{
-    margin-top: 12px;
-    padding: 12px;
+  /* Context strip */
+  .st-topfields{
     display:grid;
-    grid-template-columns: minmax(0,1fr) auto;
-    gap: 12px;
-    border: 1px solid rgba(15,23,42,.12);
-    border-radius: 14px;
-    background: rgba(255,255,255,.96);
+    grid-template-columns:1fr 1fr;
+    gap:10px 20px;
+    padding:11px 20px;
+    border-bottom:1px solid var(--line);
+    background:#fff;
   }
-  .st-search-wrap{ min-width:0; }
-  .st-search{
-    width:100%;
-    height:48px;
-    border:1px solid rgba(15,23,42,.14);
-    border-radius:999px;
-    background: rgba(247,250,249,.85);
-    padding: 0 16px;
-    font-size: 14px;
-    font-weight: 850;
-    color: var(--ink);
-    outline:none;
-    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  .st-field{display:flex;align-items:center;gap:10px;min-width:0}
+  .st-label{font-size:12px;font-weight:900;color:var(--ink);white-space:nowrap}
+  .st-muted{font-size:12px;font-weight:700;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* Main page layout: one full-width section per row */
+  .st-page-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:0;
+    padding:0 20px 18px;
+    background:#fff;
   }
-  .st-search::placeholder{ color: rgba(15,23,42,.46); }
-  .st-search:focus{
-    border-color: rgba(11,77,58,.36);
-    box-shadow: 0 0 0 3px rgba(11,77,58,.10);
-    background: #fff;
-  }
-  .st-rows-wrap{
-    display:flex;
-    align-items:center;
-    gap:10px;
-    min-width: fit-content;
-  }
-  .st-rows-chip{
-    height:48px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding: 0 16px;
-    border:1px solid rgba(15,23,42,.14);
-    border-radius:999px;
-    background: rgba(247,250,249,.85);
-    font-weight: 950;
-    font-size: 13px;
-  }
-  .st-rows-chip select{
+
+  /* Flat section layout: hierarchy is created with spacing and dividers, not nested cards. */
+  .st-block{
+    min-width:0;
+    background:#fff;
     border:0;
-    outline:none;
-    background: transparent;
-    font-weight: 950;
-    color: var(--ink);
-    font-size: 13px;
-    cursor:pointer;
+    border-radius:0;
+    overflow:visible;
+    box-shadow:none;
+    padding:20px 0 6px;
   }
-  .st-meta{
-    margin-top: 10px;
-    padding: 10px 12px;
-    border: 1px solid rgba(15,23,42,.12);
-    border-radius: 12px;
-    background: rgba(247,250,249,.58);
+  .st-block + .st-block{
+    margin-top:18px;
+    padding-top:24px;
+    border-top:1px solid var(--line);
+  }
+  .st-block-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    padding:0 0 12px;
+    border:0;
+    background:transparent;
+  }
+  .st-block-title{margin:0;font-size:14px;font-weight:900;color:var(--ink)}
+  .st-block-sub{margin:5px 0 0;font-size:12px;line-height:1.45;color:var(--muted);font-weight:650}
+  .st-block-body{padding:0;min-width:0}
+
+  /* Monthly period toolbar */
+  .st-period-bar{
+    display:grid;
+    grid-template-columns:minmax(130px,160px) minmax(130px,160px) auto 1fr;
+    gap:12px;
+    align-items:end;
+    padding:13px 14px;
+    border:0;
+    border-radius:10px;
+    background:var(--soft-green);
+  }
+  .st-period-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .st-status-zone{
+    min-height:42px;
     display:flex;
     align-items:center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
+    justify-content:flex-end;
+    text-align:right;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:800;
   }
-  .st-meta-text{
-    font-size: 12px;
-    font-weight: 850;
-    color: rgba(15,23,42,.72);
-  }
-  .st-swipe-note{
-    font-size: 11px;
-    font-weight: 850;
-    color: rgba(15,23,42,.50);
+  #stLocked{
+    margin-top:10px;
+    padding:10px 12px;
+    border:1px solid rgba(180,35,24,.18);
+    border-radius:10px;
+    background:#fff7f6;
+    color:#9f1f17;
+    font-size:12px;
+    font-weight:800;
   }
 
-  /* Tables */
+  /* Stock registers are stacked so every input gets proper width */
+  .st-register-stack{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:0;
+    margin-top:18px;
+  }
+  .st-register-card{
+    min-width:0;
+    border:0;
+    border-radius:0;
+    overflow:visible;
+    background:#fff;
+    padding:0 0 20px;
+  }
+  .st-register-card + .st-register-card{
+    padding-top:20px;
+    border-top:1px solid var(--line);
+  }
+  .st-register-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding:0 0 10px;
+    border:0;
+    background:transparent;
+  }
+  .st-register-head-copy{min-width:0}
+  .st-register-title{margin:0;font-size:13px;font-weight:900;color:var(--ink)}
+  .st-register-sub{margin:4px 0 0;color:var(--muted);font-size:11px;font-weight:700}
+  .st-register-body{padding:0;min-width:0}
+
+  /* Form grid */
+  .st-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;align-items:start}
+  .col-2{grid-column:span 2}.col-3{grid-column:span 3}.col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-8{grid-column:span 8}.col-9{grid-column:span 9}.col-12{grid-column:span 12}
+  .st-stack{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .st-stack label{font-size:11px;font-weight:900;color:#245c4b;letter-spacing:.01em}
+
+  .st-input,.st-select,.st-textarea{
+    width:100%;
+    min-width:0;
+    border:1px solid var(--line-strong);
+    border-radius:10px;
+    background:#fbfdfc;
+    color:var(--ink);
+    font-size:12px;
+    font-weight:750;
+    outline:none;
+    transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
+  }
+  .st-input,.st-select{height:40px;padding:0 10px}
+  .st-textarea{min-height:78px;padding:10px;resize:vertical;line-height:1.4}
+  .st-input:focus,.st-select:focus,.st-textarea:focus{
+    border-color:rgba(11,77,58,.45);
+    box-shadow:0 0 0 3px rgba(11,77,58,.09);
+    background:#fff;
+  }
+  .st-input:disabled,.st-select:disabled,.st-textarea:disabled{opacity:.66;cursor:not-allowed}
+
+  /* Buttons */
+  .st-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .st-btn{
+    min-height:38px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    padding:8px 13px;
+    border:1px solid var(--line-strong);
+    border-radius:10px;
+    background:#fff;
+    color:var(--ink);
+    font-size:11px;
+    font-weight:900;
+    cursor:pointer;
+    text-decoration:none;
+    white-space:nowrap;
+    transition:transform .14s ease,box-shadow .16s ease,background .16s ease,opacity .16s ease;
+  }
+  .st-btn:hover{transform:translateY(-1px);box-shadow:0 10px 20px -16px rgba(15,23,42,.35)}
+  .st-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+  .st-btn.st-primary{border-color:rgba(21,122,92,.32);background:var(--accent-soft);color:var(--accent)}
+  .st-btn.st-primary:hover{background:rgba(16,185,129,.16)}
+  .st-btn.st-danger{border-color:rgba(180,35,24,.18);background:#fff7f6;color:var(--danger);padding:7px 10px;min-height:34px}
+  .st-icon{width:14px;height:14px;flex:0 0 auto}
+
+  /* Stock tables */
   .st-table-wrap{
-    margin-top: 12px;
-    border-radius: 14px;
-    border: 1px solid rgba(15,23,42,.12);
-    overflow: hidden;
-    background: rgba(255,255,255,.96);
+    width:100%;
+    min-width:0;
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+    background:#fff;
   }
-  .st-table{
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-  }
+  .st-table-scroll{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .st-table-scroll::-webkit-scrollbar{height:8px}
+  .st-table-scroll::-webkit-scrollbar-thumb{background:rgba(15,23,42,.16);border-radius:999px}
+  .st-table{width:100%;border-collapse:separate;border-spacing:0}
+  .st-stock-table{min-width:850px;table-layout:fixed}
+  .st-stock-table th:nth-child(1){width:58px}
+  .st-stock-table th:nth-child(2){width:auto}
+  .st-stock-table th:nth-child(3){width:150px}
+  .st-stock-table th:nth-child(4){width:135px}
+  .st-stock-table th:nth-child(5){width:155px}
+  .st-stock-table th:nth-child(6){width:96px}
   .st-table thead th{
-    background: rgba(247,250,249,.76);
-    color: rgba(11,77,58,.98);
-    font-weight: 950;
-    font-size: 12px;
-    padding: 10px;
-    border-bottom: 1px solid rgba(15,23,42,.10);
-    position: sticky;
-    top: 0;
-    z-index: 1;
+    padding:10px 9px;
+    border-bottom:1px solid var(--line);
+    background:#f6faf8;
+    color:#245c4b;
+    font-size:11px;
+    line-height:1.25;
+    text-align:left;
+    font-weight:900;
+    vertical-align:middle;
   }
-  .st-table td{
-    padding: 10px;
-    border-bottom: 1px solid rgba(15,23,42,.08);
-    font-size: 12.5px;
-    color: rgba(15,23,42,.88);
-    vertical-align: top;
+  .st-table tbody td{
+    padding:9px;
+    border-bottom:1px solid rgba(15,23,42,.08);
+    color:#334155;
+    font-size:12px;
+    font-weight:700;
+    vertical-align:middle;
   }
-  .st-table tr:last-child td{ border-bottom: none; }
-  .st-empty{
-    color: rgba(100,116,139,.95);
-    font-weight: 800;
+  .st-table tbody tr:last-child td{border-bottom:0}
+  .st-stock-table td:nth-child(1),.st-stock-table th:nth-child(1){text-align:center}
+  .st-stock-table td:nth-child(5){font-weight:900;color:#245c4b;white-space:nowrap}
+  .st-stock-table .st-input{height:36px;background:#fff}
+  .st-stock-table .item{font-weight:800}
+  .st-empty-state{
+    margin-top:8px;
+    padding:9px 2px 0;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    color:#64748b;
+    font-size:12px;
+    font-weight:750;
   }
+  .st-empty{color:#64748b;font-weight:750}
 
-  .st-table-scroll{
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  /* Movement section */
+  .st-movement-grid{grid-template-columns:repeat(12,minmax(0,1fr))}
+  .st-movement-actions{height:100%;display:flex;align-items:flex-end}
+  .st-movement-actions .st-btn{width:100%;min-height:40px}
+  .st-tools{
+    margin-top:16px;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:12px;
+    padding:0;
+    border:0;
+    border-radius:0;
+    background:transparent;
   }
-  .st-table-scroll::-webkit-scrollbar{ height: 10px; }
-  .st-table-scroll::-webkit-scrollbar-thumb{
-    background: rgba(15,23,42,.18);
-    border-radius: 999px;
-  }
+  .st-search{width:100%;height:42px;border:1px solid var(--line-strong);border-radius:10px;background:#fff;padding:0 12px;font-size:12px;font-weight:750;outline:none}
+  .st-search:focus{border-color:rgba(11,77,58,.42);box-shadow:0 0 0 3px rgba(11,77,58,.08)}
+  .st-rows-wrap{display:flex;align-items:center}
+  .st-rows-chip{height:42px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--line-strong);border-radius:10px;background:#fff;font-size:11px;font-weight:900}
+  .st-rows-chip select{border:0;outline:0;background:transparent;font-weight:900;color:var(--ink)}
+  .st-meta{margin:10px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:11px;font-weight:800}
+  .st-meta-text{font-size:11px;font-weight:800;color:var(--muted)}
+  .st-swipe-note{font-size:10px;font-weight:750;color:#94a3b8}
 
   .st-pagination{
-    margin-top: 12px;
-    padding: 12px 14px 14px;
-    border: 1px solid rgba(15,23,42,.12);
-    border-radius: 14px;
-    background: rgba(255,255,255,.96);
+    margin-top:12px;
     display:flex;
     align-items:center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:12px 0 0;
+    border:0;
+    border-top:1px solid var(--line);
+    border-radius:0;
+    background:transparent;
   }
-  .st-page-info{
-    font-size: 12px;
-    font-weight: 850;
-    color: rgba(15,23,42,.72);
-  }
-  .st-page-controls{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    flex-wrap: wrap;
-  }
-  .st-page-btn{
-    min-width: 42px;
-    height: 40px;
-    padding: 0 12px;
-    border-radius: 999px;
-    border:1px solid rgba(15,23,42,.14);
-    background: rgba(247,250,249,.84);
-    color: var(--ink);
-    font-weight: 950;
-    font-size: 12px;
-    cursor:pointer;
-    transition: transform .15s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
-  }
-  .st-page-btn:hover{
-    transform: translateY(-1px);
-    background:#fff;
-    box-shadow: 0 14px 22px -18px rgba(15,23,42,.22);
-  }
-  .st-page-btn[disabled]{
-    opacity:.45;
-    cursor:not-allowed;
-    transform:none;
-    box-shadow:none;
-  }
-  .st-page-btn.is-active{
-    background: rgba(11,77,58,.10);
-    border-color: rgba(11,77,58,.25);
-    color: rgba(11,77,58,.98);
-  }
+  .st-page-info{font-size:11px;font-weight:800;color:var(--muted)}
+  .st-page-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .st-page-btn{min-width:38px;height:36px;padding:0 10px;border:1px solid var(--line-strong);border-radius:9px;background:#fff;color:var(--ink);font-size:11px;font-weight:900;cursor:pointer}
+  .st-page-btn.is-active{background:var(--accent-soft);border-color:rgba(21,122,92,.28);color:var(--accent)}
+  .st-page-btn[disabled]{opacity:.42;cursor:not-allowed}
+  .st-hidden-row{display:none!important}
 
-  .st-hidden-row{ display:none !important; }
+  /* Modal */
+  .st-modal[hidden]{display:none!important}
+  .st-modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.52);backdrop-filter:blur(4px)}
+  .st-modal-card{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 70px -24px rgba(15,23,42,.55)}
+  .st-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border-bottom:1px solid var(--line)}
+  .st-modal-title{margin:0;font-size:15px;font-weight:900}
+  .st-modal-close{width:36px;height:36px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:21px;cursor:pointer}
+  .st-modal-body{padding:16px}
+  .st-modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
+  .st-modal-error{min-height:18px;margin-top:8px;color:#b42318;font-size:11px;font-weight:800}
 
-  @media (max-width: 980px){
-    .st-panels{ grid-template-columns: 1fr; }
-  }
-
-  @media (max-width: 720px){
-    .st-topfields{ grid-template-columns: 1fr; }
-    .col-2,.col-3,.col-4,.col-6{ grid-column: span 12; }
-    .st-back{ display:flex; }
-    .st-title{ font-size: 17px; }
-    .st-tools{ grid-template-columns: 1fr; }
-
-    .st-table-wrap{
-      border-radius: 14px;
-      overflow: hidden;
-    }
-
-    .st-table-scroll{
-      overflow-x: auto;
-      overflow-y: hidden;
-      padding: 12px;
-      scroll-snap-type: x mandatory;
-      scroll-padding-left: 12px;
-      background: rgba(255,255,255,.98);
-    }
-
-    .st-table{
-      width: 100%;
-      min-width: 0;
-      border-collapse: separate;
-      border-spacing: 0;
-    }
-
-    .st-table thead{
-      display: none;
-    }
-
-    .st-table tbody{
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: 86%;
-      gap: 12px;
-      align-items: stretch;
-    }
-
-    .st-table tbody tr{
-      display: flex;
-      flex-direction: column;
-      scroll-snap-align: start;
-      border: 1px solid rgba(15,23,42,.12);
-      border-radius: 16px;
-      background: rgba(255,255,255,.98);
-      box-shadow: 0 14px 24px -22px rgba(15,23,42,.30);
-      overflow: hidden;
-      min-width: 0;
-    }
-
-    .st-table tbody td{
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 11px 12px;
-      border-bottom: 1px solid rgba(15,23,42,.08);
-      min-width: 0;
-      word-break: break-word;
-    }
-
-    .st-table tbody td:last-child{
-      border-bottom: none;
-    }
-
-    .st-table tbody td::before{
-      content: attr(data-label);
-      font-weight: 950;
-      font-size: 12px;
-      color: rgba(11,77,58,.92);
-      line-height: 1.3;
-      flex: 0 0 40%;
-      max-width: 44%;
-      word-break: break-word;
-    }
-
-    .st-table tbody td > *{
-      min-width: 0;
-    }
-
-    .st-table tbody td{
-      text-align: right;
-      color: rgba(15,23,42,.88);
-      font-weight: 800;
-    }
-
-    .st-table tbody tr.st-empty-row{
-      display: block;
-      min-height: auto;
-    }
-
-    .st-table tbody tr.st-empty-row td{
-      display: block;
-      text-align: left;
-      padding: 14px 12px;
-      border-bottom: none;
-    }
-
-    .st-table tbody tr.st-empty-row td::before{
-      display: none;
-      content: none;
-    }
-  }
-
-  @media (max-width: 520px){
-    .st-table tbody{
-      grid-auto-columns: 90%;
-    }
-  }
-
-  /* Cross-device responsive refinements */
-  .st-wrap{width:100%;max-width: min(1200px, 100%);padding:clamp(8px,2vw,22px);}
-  .st-sheet,.st-block,.st-table-wrap{max-width:100%;}
-  .st-head,.st-topfields,.st-panels,.st-block-body{min-width:0;}
-  .st-grid{min-width:0;}
-  .st-actions{min-width:0;}
-  .st-btn{max-width:100%;}
-  .st-table-scroll{max-width:100%;-webkit-overflow-scrolling:touch;}
-  .st-table input,.st-table select{min-width:0;max-width:100%;}
-  .st-muted,.st-title,.st-sub,.st-block-title,.st-block-sub{overflow-wrap:anywhere;}
-  @media (min-width:981px){
-    .st-panels > .st-block{min-width:0;}
-    .st-panels > .st-block > .st-block-body > .st-panels{align-items:start;}
-  }
+  /* Responsive */
   @media (max-width:980px){
-    .st-panels{grid-template-columns:minmax(0,1fr);}
-    .st-panels .st-panels{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
-    .st-table{min-width:620px;}
-    .st-table-scroll{overflow-x:auto;}
+    .st-period-bar{grid-template-columns:1fr 1fr;align-items:end}
+    .st-period-actions{grid-column:span 1}
+    .st-status-zone{grid-column:span 1;justify-content:flex-start;text-align:left}
+    .st-movement-grid .col-4{grid-column:span 6}
+    .st-movement-grid .col-2{grid-column:span 3}
+    .st-movement-grid .col-9{grid-column:span 9}
+    .st-movement-grid .col-3{grid-column:span 3}
   }
-  @media (max-width:760px){
-    .st-wrap{padding:8px;}
-    .st-sheet{border-radius:12px;}
-    .st-head{padding:14px 12px 12px;}
-    .st-title{font-size:clamp(15px,4.5vw,18px);line-height:1.35;}
-    .st-sub{font-size:11px;line-height:1.45;}
-    .st-topfields{padding:10px 12px 12px;gap:8px;}
-    .st-panels{padding:10px 12px 12px;gap:10px;}
-    .st-block-body{padding:10px;}
-    .st-panels .st-panels{padding:10px 0 0;grid-template-columns:minmax(0,1fr);}
-    .st-grid{gap:8px;}
-    .st-stack label{font-size:.74rem;}
-    .st-input,.st-select,.st-textarea{font-size:13px;min-height:42px;padding:9px 10px;}
-    .st-actions{width:100%;gap:8px;}
-    .st-actions .st-btn{flex:1 1 140px;justify-content:center;min-height:42px;}
-    .st-table-scroll{padding:8px;}
-    .st-table{min-width:0;width:100%;}
-    .st-table tbody td .st-input{width:58%;min-height:38px;}
-    .st-table tbody td[data-label="Item"] .st-input{width:58%;}
-    .st-table tbody td[data-label="Action"] .st-btn{padding:8px 10px;font-size:11px;}
+  @media (max-width:720px){
+    .st-wrap{padding:8px}
+    .st-sheet{border-radius:13px}
+    .st-back{display:flex}
+    .st-title,.st-sub{text-align:left;padding-left:50px;padding-right:4px}
+    .st-topfields{grid-template-columns:1fr;padding:10px 12px}
+    .st-page-grid{padding:0 12px 14px;gap:0}
+    .st-block{padding-top:16px}
+    .st-block + .st-block{margin-top:14px;padding-top:18px}
+    .st-block-head{padding:0 0 10px}
+    .st-block-body{padding:0}
+    .st-period-bar{grid-template-columns:1fr 1fr;padding:12px}
+    .st-period-actions{grid-column:1 / -1}
+    .st-period-actions .st-btn{flex:1 1 140px}
+    .st-status-zone{grid-column:1 / -1;min-height:24px;justify-content:flex-start;text-align:left}
+    .st-register-head{align-items:flex-start;flex-direction:column}
+    .st-register-head .st-btn{width:100%}
+    .st-register-body{padding:0}
+    .st-stock-table{min-width:780px}
+    .st-movement-grid .col-4,.st-movement-grid .col-2,.st-movement-grid .col-9,.st-movement-grid .col-3,.st-movement-grid .col-12{grid-column:span 12}
+    .st-tools{grid-template-columns:1fr}
+    .st-rows-chip{width:100%;justify-content:space-between}
+    .st-movement-actions .st-btn{width:100%}
+    .st-table:not(.st-stock-table){min-width:680px}
   }
-  @media (max-width:430px){
-    .st-wrap{padding:4px;}
-    .st-head{padding:12px 10px 10px;}
-    .st-title{font-size:15px;}
-    .st-sub{font-size:10px;}
-    .st-panels{padding:8px;}
-    .st-block-head{padding:10px;}
-    .st-block-body{padding:8px;}
-    .st-block-title{font-size:12px;}
-    .st-block-sub{font-size:10px;}
-    .st-actions .st-btn{flex-basis:100%;width:100%;}
-    .st-table tbody td{padding:9px 8px;gap:8px;font-size:11px;}
-    .st-table tbody td::before{font-size:11px;}
-    .st-table tbody td .st-input{width:55%;font-size:12px;}
+  @media (max-width:480px){
+    .st-wrap{padding:4px}
+    .st-head{padding:13px 10px}
+    .st-page-grid{padding:0 10px 12px}
+    .st-period-bar{grid-template-columns:1fr}
+    .st-period-actions,.st-status-zone{grid-column:1}
+    .st-period-actions .st-btn{width:100%;flex-basis:100%}
+    .st-modal{padding:8px;align-items:flex-end}
+    .st-modal-card{border-radius:16px 16px 10px 10px;max-height:calc(100vh - 16px)}
+    .st-modal-foot{flex-direction:column}
+    .st-modal-foot .st-btn{width:100%}
   }
-  @media (min-width:1440px){
-    .st-wrap{max-width:1280px;}
-    .st-title{font-size:20px;}
-  }
-  @media (prefers-reduced-motion:reduce){
-    .st-wrap *{scroll-behavior:auto!important;transition:none!important;animation:none!important;}
-  }
-
-  .st-modal[hidden]{display:none!important}.st-modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.52);backdrop-filter:blur(4px)}.st-modal-card{width:min(560px,100%);max-height:min(760px,calc(100vh - 32px));overflow:auto;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 70px -24px rgba(15,23,42,.55)}.st-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid var(--line2)}.st-modal-title{margin:0;font-size:16px;font-weight:950}.st-modal-close{width:36px;height:36px;border:1px solid var(--line2);border-radius:10px;background:#fff;font-size:22px;cursor:pointer}.st-modal-body{padding:16px}.st-modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:12px 16px;border-top:1px solid var(--line2)}.st-modal-error{min-height:20px;color:#b91c1c;font-size:12px;font-weight:800;margin-top:8px}@media(max-width:520px){.st-modal{padding:8px;align-items:flex-end}.st-modal-card{max-height:calc(100vh - 16px);border-radius:16px 16px 10px 10px}.st-modal-body{padding:12px}.st-modal-foot{padding:10px 12px;flex-direction:column}.st-modal-foot .st-btn{width:100%;justify-content:center;min-height:42px}}
+  @media (prefers-reduced-motion:reduce){.st-wrap *{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 
 <div class="st-wrap">
   <div class="st-sheet">
-
-    <!-- Header -->
     <div class="st-head">
       <a class="st-back" href="javascript:history.back()" aria-label="Go Back">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M19 12H5M5 12l6 6M5 12l6-6"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"></path>
+          <path d="M19 12H5M5 12l6 6M5 12l6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
         </svg>
       </a>
-
-      <h2 class="st-title" id="stTitle">
-        Stock / Inventory — {{ pg.pg_name or pg.name }}
-      </h2>
-      <p class="st-sub" id="stSub">
-        Opening/Closing stock (monthly) • Commodity-wise • Stock movement ledger
-      </p>
+      <h2 class="st-title" id="stTitle">Stock / Inventory — {{ pg.pg_name or pg.name }}</h2>
+      <p class="st-sub" id="stSub">Opening/Closing stock (monthly) • Commodity-wise • Stock movement ledger</p>
     </div>
 
-    <!-- Top fields -->
     <div class="st-topfields">
       <div class="st-field">
         <div class="st-label" id="stPgLabel">Producer Group</div>
         <div class="st-muted">{{ pg.pg_name or pg.name or '—' }}</div>
       </div>
-
       <div class="st-field">
         <div class="st-label" id="stPageLabel">Page</div>
         <div class="st-muted" id="stPageValue">Stock / Inventory Register</div>
       </div>
     </div>
 
-    <div class="st-panels">
-
-      <!-- Monthly Stock -->
+    <div class="st-page-grid">
+      <!-- MONTHLY STOCK: FLAT FULL-WIDTH SECTION -->
       <section class="st-block">
-        <div class="st-block-head"><h3 class="st-block-title" id="stMonthlyTitle">Monthly Stock (Commodity-wise)</h3><p class="st-block-sub" id="stMonthlySub">Record multiple input and product items. Quantity is in kg; total value is calculated from rate per kg.</p></div>
-        <div class="st-block-body">
-          <div class="st-grid">
-            <div class="st-stack col-3"><label>Year</label><input class="st-input" id="stYear" type="number" min="2000" max="2100"></div>
-            <div class="st-stack col-3"><label>Month</label><input class="st-input" id="stMonth" type="number" min="1" max="12"></div>
-            <div class="col-6 st-actions" style="align-items:end"><button class="st-btn st-secondary" id="stLoadBtn" type="button">Load Month</button><button class="st-btn st-primary" id="stSaveBtn" type="button">Save Entries</button></div>
+        <div class="st-block-head">
+          <div>
+            <h3 class="st-block-title" id="stMonthlyTitle">Monthly Stock (Commodity-wise)</h3>
+            <p class="st-block-sub" id="stMonthlySub">Record multiple input and finished-product items. Quantity is in kg; closing value is calculated automatically from quantity × rate.</p>
           </div>
-          <div id="stStatus" class="st-meta-text" style="margin:12px 0"></div><div id="stLocked" class="st-empty" hidden>This month is locked or you do not have edit permission.</div>
-          <div class="st-panels" style="padding:14px 0 0;grid-template-columns:1fr 1fr">
-            <section class="st-block"><div class="st-block-head"><h3 class="st-block-title">6.5.1 Inputs / Raw Materials</h3><p class="st-block-sub">Closing stock of inputs and raw materials.</p></div><div class="st-block-body"><div class="st-actions"><button class="st-btn st-secondary st-add" data-type="input" type="button">+ Add Input</button></div><div class="st-table-wrap"><div class="st-table-scroll"><table class="st-table"><thead><tr><th>SL</th><th>Item</th><th>Closing Qty (kg)</th><th>Rate (₹/kg)</th><th>Closing Value</th><th></th></tr></thead><tbody id="stInputBody"></tbody></table></div></div><div id="stInputEmpty" class="st-empty">No input items yet.</div></div></section>
-            <section class="st-block"><div class="st-block-head"><h3 class="st-block-title">6.5.2 Products / Finished Goods</h3><p class="st-block-sub">Closing stock of finished products.</p></div><div class="st-block-body"><div class="st-actions"><button class="st-btn st-secondary st-add" data-type="product" type="button">+ Add Product</button></div><div class="st-table-wrap"><div class="st-table-scroll"><table class="st-table"><thead><tr><th>SL</th><th>Item</th><th>Closing Qty (kg)</th><th>Rate (₹/kg)</th><th>Closing Value</th><th></th></tr></thead><tbody id="stProductBody"></tbody></table></div></div><div id="stProductEmpty" class="st-empty">No product items yet.</div></div></section>
+        </div>
+
+        <div class="st-block-body">
+          <div class="st-period-bar">
+            <div class="st-stack">
+              <label for="stYear">Year</label>
+              <input class="st-input" id="stYear" type="number" min="2000" max="2100">
+            </div>
+            <div class="st-stack">
+              <label for="stMonth">Month</label>
+              <input class="st-input" id="stMonth" type="number" min="1" max="12">
+            </div>
+            <div class="st-period-actions">
+              <button class="st-btn" id="stLoadBtn" type="button">Load Month</button>
+              <button class="st-btn st-primary" id="stSaveBtn" type="button">Save Entries</button>
+            </div>
+            <div class="st-status-zone">
+              <div id="stStatus"></div>
+            </div>
+          </div>
+
+          <div id="stLocked" class="st-empty" hidden>This month is locked or you do not have edit permission.</div>
+
+          <div class="st-register-stack">
+            <!-- 6.5.1 -->
+            <section class="st-register-card">
+              <div class="st-register-head">
+                <div class="st-register-head-copy">
+                  <h3 class="st-register-title">6.5.1 Inputs / Raw Materials</h3>
+                  <p class="st-register-sub">Closing stock of inputs and raw materials.</p>
+                </div>
+                <button class="st-btn st-add" data-type="input" type="button">+ Add Input</button>
+              </div>
+              <div class="st-register-body">
+                <div class="st-table-wrap">
+                  <div class="st-table-scroll" role="region" aria-label="Inputs and raw materials table">
+                    <table class="st-table st-stock-table">
+                      <thead>
+                        <tr>
+                          <th>SL</th>
+                          <th>Item / Raw Material</th>
+                          <th>Closing Qty (kg)</th>
+                          <th>Rate (₹/kg)</th>
+                          <th>Closing Value</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody id="stInputBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div id="stInputEmpty" class="st-empty-state">No input items yet. Click “+ Add Input” to add the first item.</div>
+              </div>
+            </section>
+
+            <!-- 6.5.2 -->
+            <section class="st-register-card">
+              <div class="st-register-head">
+                <div class="st-register-head-copy">
+                  <h3 class="st-register-title">6.5.2 Products / Finished Goods</h3>
+                  <p class="st-register-sub">Closing stock of finished products.</p>
+                </div>
+                <button class="st-btn st-add" data-type="product" type="button">+ Add Product</button>
+              </div>
+              <div class="st-register-body">
+                <div class="st-table-wrap">
+                  <div class="st-table-scroll" role="region" aria-label="Products and finished goods table">
+                    <table class="st-table st-stock-table">
+                      <thead>
+                        <tr>
+                          <th>SL</th>
+                          <th>Item / Finished Product</th>
+                          <th>Closing Qty (kg)</th>
+                          <th>Rate (₹/kg)</th>
+                          <th>Closing Value</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody id="stProductBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div id="stProductEmpty" class="st-empty-state">No product items yet. Click “+ Add Product” to add the first item.</div>
+              </div>
+            </section>
           </div>
         </div>
       </section>
 
-      <div class="st-modal" id="stStockModal" hidden role="dialog" aria-modal="true" aria-labelledby="stModalTitle"><div class="st-modal-card"><div class="st-modal-head"><h3 class="st-modal-title" id="stModalTitle">Add Stock Item</h3><button class="st-modal-close" id="stModalClose" type="button" aria-label="Close">×</button></div><div class="st-modal-body"><div class="st-grid"><div class="st-stack col-12"><label for="stModalCommodity">Item</label><input class="st-input" id="stModalCommodity" type="text" maxlength="120" placeholder="Enter item name"></div><div class="st-stack col-6"><label for="stModalQty">Closing Quantity (kg)</label><input class="st-input" id="stModalQty" type="number" min="0" step="0.001" value="0"></div><div class="st-stack col-6"><label for="stModalRate">Rate (₹/kg)</label><input class="st-input" id="stModalRate" type="number" min="0" step="0.01" value="0"></div><div class="st-stack col-12"><label>Total Value</label><div class="st-input" id="stModalTotal">₹0.00</div></div></div><div class="st-modal-error" id="stModalError" role="alert"></div></div><div class="st-modal-foot"><button class="st-btn st-secondary" id="stModalCancel" type="button">Cancel</button><button class="st-btn st-primary" id="stModalSave" type="button">Add Item</button></div></div></div>
-
-      <!-- Movement Ledger -->
+      <!-- STOCK MOVEMENT LEDGER: FLAT FULL-WIDTH SECTION -->
       <section class="st-block">
         <div class="st-block-head">
-          <h3 class="st-block-title" id="stMoveTitle">Stock Movement Ledger</h3>
-          <p class="st-block-sub" id="stMoveSub">Track purchase/sale/adjustment entries to reflect stock movement.</p>
+          <div>
+            <h3 class="st-block-title" id="stMoveTitle">Stock Movement Ledger</h3>
+            <p class="st-block-sub" id="stMoveSub">Track purchase, sale and adjustment entries that affect stock movement.</p>
+          </div>
         </div>
 
         <div class="st-block-body">
-          <form method="POST" action="{{ url_for('business.stock_movement', pg_id=pg._id) }}" class="st-grid">
+          <form method="POST" action="{{ url_for('business.stock_movement', pg_id=pg._id) }}" class="st-grid st-movement-grid">
             <div class="st-stack col-4">
               <label id="stMoveCommodityLabel">Commodity</label>
-              <input class="st-input" name="commodity" required>
+              <input class="st-input" name="commodity" required autocomplete="off">
             </div>
-
-            <div class="st-stack col-4">
+            <div class="st-stack col-3">
               <label id="stMoveTypeLabel">Type</label>
               <select class="st-select" name="movement_type">
                 <option value="purchase" id="stTypePurchase">Purchase</option>
@@ -715,27 +547,22 @@
                 <option value="adjustment" id="stTypeAdjustment">Adjustment</option>
               </select>
             </div>
-
             <div class="st-stack col-2">
               <label id="stQtyLabel">Qty</label>
-              <input class="st-input" name="qty" type="number" step="0.01" required>
+              <input class="st-input" name="qty" type="number" min="0" step="0.01" required>
             </div>
-
-            <div class="st-stack col-2">
+            <div class="st-stack col-3">
               <label id="stRateLabel">Rate</label>
-              <input class="st-input" name="rate" type="number" step="0.01" required>
+              <input class="st-input" name="rate" type="number" min="0" step="0.01" required>
             </div>
-
-            <div class="st-stack col-12">
+            <div class="st-stack col-9">
               <label id="stRemarksLabel">Remarks</label>
-              <textarea class="st-textarea" name="remarks"></textarea>
+              <textarea class="st-textarea" name="remarks" placeholder="Optional remarks"></textarea>
             </div>
-
-            <div class="col-12 st-actions">
+            <div class="col-3 st-movement-actions">
               <button class="st-btn st-primary" type="submit" id="stAddMoveBtn">
                 <svg class="st-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M12 5v14"></path>
-                  <path d="M5 12h14"></path>
+                  <path d="M12 5v14"></path><path d="M5 12h14"></path>
                 </svg>
                 <span id="stAddMoveText">Add Movement</span>
               </button>
@@ -744,7 +571,7 @@
 
           <div class="st-tools">
             <div class="st-search-wrap">
-              <input type="text" class="st-search" id="stMovementSearch" placeholder="Search..." autocomplete="off">
+              <input type="text" class="st-search" id="stMovementSearch" placeholder="Search stock movements..." autocomplete="off">
             </div>
             <div class="st-rows-wrap">
               <div class="st-rows-chip">
@@ -770,7 +597,7 @@
               <table class="st-table" id="stMovementTable">
                 <thead>
                   <tr>
-                      <th id="stThSl2">SL</th>
+                    <th id="stThSl2">SL</th>
                     <th id="stThDate">Date</th>
                     <th id="stThCommodity2">Commodity</th>
                     <th id="stThType">Type</th>
@@ -784,16 +611,16 @@
                   <tr data-st-row data-st-search="{{ loop.index }} {{ (m.ts.strftime('%Y-%m-%d') if m.ts else '')|lower }} {{ (m.commodity or '')|lower }}">
                     <td data-label="SL">{{ loop.index }}</td>
                     <td data-label="Date">{{ m.ts.strftime('%Y-%m-%d') if m.ts else '' }}</td>
-                      <td data-label="Commodity">{{ m.commodity }}</td>
-                      <td data-label="Type">{{ m.movement_type }}</td>
-                      <td data-label="Qty">{{ m.qty }}</td>
-                      <td data-label="Amount">₹{{ "{:,.2f}".format(m.amount or 0) }}</td>
-                      <td data-label="Remarks">{{ m.remarks }}</td>
-                    </tr>
+                    <td data-label="Commodity">{{ m.commodity }}</td>
+                    <td data-label="Type">{{ m.movement_type }}</td>
+                    <td data-label="Qty">{{ m.qty }}</td>
+                    <td data-label="Amount">₹{{ "{:,.2f}".format(m.amount or 0) }}</td>
+                    <td data-label="Remarks">{{ m.remarks }}</td>
+                  </tr>
                   {% else %}
-                    <tr class="st-empty-row">
-                      <td colspan="7" class="st-empty" id="stNoMoves">No movements yet.</td>
-                    </tr>
+                  <tr class="st-empty-row">
+                    <td colspan="7" class="st-empty" id="stNoMoves">No movements yet.</td>
+                  </tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -810,10 +637,42 @@
             </div>
           </div>
           {% endif %}
-
         </div>
       </section>
+    </div>
+  </div>
+</div>
 
+<div class="st-modal" id="stStockModal" hidden role="dialog" aria-modal="true" aria-labelledby="stModalTitle">
+  <div class="st-modal-card">
+    <div class="st-modal-head">
+      <h3 class="st-modal-title" id="stModalTitle">Add Stock Item</h3>
+      <button class="st-modal-close" id="stModalClose" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="st-modal-body">
+      <div class="st-grid">
+        <div class="st-stack col-12">
+          <label for="stModalCommodity">Item</label>
+          <input class="st-input" id="stModalCommodity" type="text" maxlength="120" placeholder="Enter item name">
+        </div>
+        <div class="st-stack col-6">
+          <label for="stModalQty">Closing Quantity (kg)</label>
+          <input class="st-input" id="stModalQty" type="number" min="0" step="0.001" value="0">
+        </div>
+        <div class="st-stack col-6">
+          <label for="stModalRate">Rate (₹/kg)</label>
+          <input class="st-input" id="stModalRate" type="number" min="0" step="0.01" value="0">
+        </div>
+        <div class="st-stack col-12">
+          <label>Total Value</label>
+          <div class="st-input" id="stModalTotal" style="display:flex;align-items:center">₹0.00</div>
+        </div>
+      </div>
+      <div class="st-modal-error" id="stModalError" role="alert"></div>
+    </div>
+    <div class="st-modal-foot">
+      <button class="st-btn" id="stModalCancel" type="button">Cancel</button>
+      <button class="st-btn st-primary" id="stModalSave" type="button">Add Item</button>
     </div>
   </div>
 </div>
@@ -821,31 +680,234 @@
 <script>
 (() => {
   const api = "{{ url_for('business.stock_register', pg_id=pg._id) }}";
-  const state = {rows: [], canEdit: true, locked: false};
+  const state = { rows: [], canEdit: true, locked: false };
   let modalType = null;
-  const $ = id => document.getElementById(id), n = v => Number.isFinite(Number(v)) ? Number(v) : 0;
+
+  const $ = id => document.getElementById(id);
+  const n = v => Number.isFinite(Number(v)) ? Number(v) : 0;
   const money = v => n(v).toFixed(2);
-  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
   const editable = () => state.canEdit && !state.locked;
-  function updateModalTotal(){ $('stModalTotal').textContent='₹'+money(n($('stModalQty').value)*n($('stModalRate').value)); }
-  function openModal(type){ if(!editable()) return; modalType=type; $('stModalTitle').textContent=type==='input'?'Add Input / Raw Material':'Add Product / Finished Good'; $('stModalCommodity').value=''; $('stModalQty').value='0'; $('stModalRate').value='0'; $('stModalError').textContent=''; updateModalTotal(); $('stStockModal').hidden=false; document.body.classList.add('st-modal-open'); setTimeout(()=>$('stModalCommodity').focus(),20); }
-  function closeModal(){ $('stStockModal').hidden=true; document.body.classList.remove('st-modal-open'); modalType=null; }
-  function status(text, kind=''){ $('stStatus').textContent=text; $('stStatus').style.color=kind==='error'?'#b91c1c':kind==='ok'?'#166534':''; }
-  function render(){
-    const can=editable();
-    for (const type of ['input','product']) { const rows=state.rows.filter(r=>r.stock_type===type), body=$(type==='input'?'stInputBody':'stProductBody');
-      body.innerHTML=rows.map((r,i)=>`<tr data-id="${esc(r.id||'')}" data-type="${type}"><td data-label="SL">${i+1}</td><td data-label="Item"><input class="st-input item" value="${esc(r.commodity)}" ${can?'':'disabled'}></td><td data-label="Closing Qty (kg)"><input class="st-input qty" type="number" min="0" step="0.001" value="${n(r.closing_qty)}" ${can?'':'disabled'}></td><td data-label="Rate (₹/kg)"><input class="st-input rate" type="number" min="0" step="0.01" value="${n(r.rate)}" ${can?'':'disabled'}></td><td data-label="Closing Value">₹${money(n(r.closing_qty)*n(r.rate))}</td><td data-label="Action"><button class="st-btn st-danger remove" type="button" ${can?'':'disabled'}>Remove</button></td></tr>`).join('');
-      $(type==='input'?'stInputEmpty':'stProductEmpty').hidden=rows.length>0;
-    }
-    $('stLocked').hidden=can; $('stSaveBtn').disabled=!can; document.querySelectorAll('.st-add').forEach(b=>b.disabled=!can);
+
+  function updateModalTotal(){
+    $('stModalTotal').textContent = '₹' + money(n($('stModalQty').value) * n($('stModalRate').value));
   }
-  function read(){ document.querySelectorAll('#stInputBody tr,#stProductBody tr').forEach(tr=>{const type=tr.dataset.type, list=state.rows.filter(r=>r.stock_type===type), idx=[...tr.parentNode.children].indexOf(tr), r=state.rows.find(x=>(x.id||'')===tr.dataset.id&&x.stock_type===type)||list[idx]; if(r){r.commodity=tr.querySelector('.item').value.trim();r.closing_qty=n(tr.querySelector('.qty').value);r.rate=n(tr.querySelector('.rate').value);}}); }
-  async function load(){ status('Loading…'); try { const y=n($('stYear').value), m=n($('stMonth').value), res=await fetch(`${api}?year=${y}&month=${m}&format=json`), data=await res.json(); if(!res.ok) throw Error(data.error||'Could not load entries'); state.rows=(data.monthly_records||[]).filter(r=>r.stock_type==='input'||r.stock_type==='product'); state.canEdit=data.can_edit!==false; state.locked=!!data.locked; render(); status(`Loaded ${y}-${String(m).padStart(2,'0')}.`,'ok'); } catch(e){status(e.message,'error');} }
-  async function save(){ read(); if(state.rows.some(r=>!r.commodity)){status('Enter an item name for every row.','error');return;} status('Saving…'); try { const res=await fetch(api,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({year:n($('stYear').value),month:n($('stMonth').value),rows:state.rows})}), data=await res.json(); if(!res.ok) throw Error(data.error||'Could not save entries'); state.rows=(data.records||state.rows).filter(r=>r.stock_type==='input'||r.stock_type==='product'); render(); status('Stock entries saved.','ok'); } catch(e){status(e.message,'error');} }
-  document.addEventListener('click', e=>{ if(e.target.matches('.st-add')){openModal(e.target.dataset.type);} if(e.target.matches('.remove')){const tr=e.target.closest('tr'), type=tr.dataset.type, idx=[...tr.parentNode.children].indexOf(tr), target=state.rows.filter(r=>r.stock_type===type)[idx]; state.rows=state.rows.filter(r=>r!==target);render();} if(e.target.id==='stLoadBtn')load(); if(e.target.id==='stSaveBtn')save(); if(e.target.id==='stModalClose'||e.target.id==='stModalCancel')closeModal(); if(e.target.id==='stModalSave'){const item=$('stModalCommodity').value.trim();if(!item){$('stModalError').textContent='Enter an item name.';return;}state.rows.push({id:'',stock_type:modalType,commodity:item,closing_qty:n($('stModalQty').value),rate:n($('stModalRate').value)});closeModal();render();} });
-  document.addEventListener('input', e=>{if(e.target.id==='stModalQty'||e.target.id==='stModalRate')updateModalTotal();});
-  document.addEventListener('keydown', e=>{if(e.key==='Escape'&&!$('stStockModal').hidden)closeModal();});
-  const now=new Date(); $('stYear').value=now.getFullYear(); $('stMonth').value=now.getMonth()+1; load();
+
+  function openModal(type){
+    if(!editable()) return;
+    modalType = type;
+    $('stModalTitle').textContent = type === 'input' ? 'Add Input / Raw Material' : 'Add Product / Finished Good';
+    $('stModalCommodity').value = '';
+    $('stModalQty').value = '0';
+    $('stModalRate').value = '0';
+    $('stModalError').textContent = '';
+    updateModalTotal();
+    $('stStockModal').hidden = false;
+    document.body.classList.add('st-modal-open');
+    setTimeout(() => $('stModalCommodity').focus(), 20);
+  }
+
+  function closeModal(){
+    $('stStockModal').hidden = true;
+    document.body.classList.remove('st-modal-open');
+    modalType = null;
+  }
+
+  function status(text, kind=''){
+    $('stStatus').textContent = text;
+    $('stStatus').style.color = kind === 'error' ? '#b42318' : kind === 'ok' ? '#166534' : '';
+  }
+
+  function render(){
+    const can = editable();
+
+    for(const type of ['input','product']){
+      const body = $(type === 'input' ? 'stInputBody' : 'stProductBody');
+      const typedRows = state.rows
+        .map((row, stateIndex) => ({ row, stateIndex }))
+        .filter(x => x.row.stock_type === type);
+
+      body.innerHTML = typedRows.map(({row:r, stateIndex}, i) => `
+        <tr data-index="${stateIndex}" data-type="${type}">
+          <td data-label="SL">${i + 1}</td>
+          <td data-label="Item"><input class="st-input item" value="${esc(r.commodity)}" ${can ? '' : 'disabled'}></td>
+          <td data-label="Closing Qty (kg)"><input class="st-input qty" type="number" min="0" step="0.001" value="${n(r.closing_qty)}" ${can ? '' : 'disabled'}></td>
+          <td data-label="Rate (₹/kg)"><input class="st-input rate" type="number" min="0" step="0.01" value="${n(r.rate)}" ${can ? '' : 'disabled'}></td>
+          <td class="row-total" data-label="Closing Value">₹${money(n(r.closing_qty) * n(r.rate))}</td>
+          <td data-label="Action"><button class="st-btn st-danger remove" type="button" ${can ? '' : 'disabled'}>Remove</button></td>
+        </tr>`).join('');
+
+      $(type === 'input' ? 'stInputEmpty' : 'stProductEmpty').hidden = typedRows.length > 0;
+    }
+
+    $('stLocked').hidden = can;
+    $('stSaveBtn').disabled = !can;
+    document.querySelectorAll('.st-add').forEach(b => b.disabled = !can);
+  }
+
+  function read(){
+    document.querySelectorAll('#stInputBody tr,#stProductBody tr').forEach(tr => {
+      const stateIndex = Number(tr.dataset.index);
+      const r = state.rows[stateIndex];
+      if(!r) return;
+      r.commodity = tr.querySelector('.item').value.trim();
+      r.closing_qty = n(tr.querySelector('.qty').value);
+      r.rate = n(tr.querySelector('.rate').value);
+    });
+  }
+
+  function validatePeriod(){
+    const y = n($('stYear').value), m = n($('stMonth').value);
+    if(y < 2000 || y > 2100){ status('Enter a valid year between 2000 and 2100.','error'); return false; }
+    if(m < 1 || m > 12){ status('Enter a valid month between 1 and 12.','error'); return false; }
+    return true;
+  }
+
+  async function load(){
+    if(!validatePeriod()) return;
+    status('Loading…');
+    try{
+      const y = n($('stYear').value), m = n($('stMonth').value);
+      const res = await fetch(`${api}?year=${y}&month=${m}&format=json`);
+      const data = await res.json();
+      if(!res.ok) throw Error(data.error || 'Could not load entries');
+      state.rows = (data.monthly_records || []).filter(r => r.stock_type === 'input' || r.stock_type === 'product');
+      state.canEdit = data.can_edit !== false;
+      state.locked = !!data.locked;
+      render();
+      status(`Loaded ${y}-${String(m).padStart(2,'0')}.`,'ok');
+    }catch(e){ status(e.message,'error'); }
+  }
+
+  async function save(){
+    if(!validatePeriod()) return;
+    read();
+    if(state.rows.some(r => !r.commodity)){ status('Enter an item name for every row.','error'); return; }
+    if(state.rows.some(r => n(r.closing_qty) < 0 || n(r.rate) < 0)){ status('Quantity and rate cannot be negative.','error'); return; }
+
+    status('Saving…');
+    try{
+      const res = await fetch(api, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          year:n($('stYear').value),
+          month:n($('stMonth').value),
+          rows:state.rows
+        })
+      });
+      const data = await res.json();
+      if(!res.ok) throw Error(data.error || 'Could not save entries');
+      state.rows = (data.records || state.rows).filter(r => r.stock_type === 'input' || r.stock_type === 'product');
+      render();
+      status('Stock entries saved.','ok');
+    }catch(e){ status(e.message,'error'); }
+  }
+
+  document.addEventListener('click', e => {
+    const addBtn = e.target.closest('.st-add');
+    if(addBtn){ openModal(addBtn.dataset.type); return; }
+
+    const removeBtn = e.target.closest('.remove');
+    if(removeBtn){
+      const tr = removeBtn.closest('tr');
+      const stateIndex = Number(tr.dataset.index);
+      if(Number.isInteger(stateIndex) && state.rows[stateIndex]) state.rows.splice(stateIndex, 1);
+      render();
+      return;
+    }
+
+    if(e.target.id === 'stLoadBtn') load();
+    if(e.target.id === 'stSaveBtn') save();
+    if(e.target.id === 'stModalClose' || e.target.id === 'stModalCancel') closeModal();
+
+    if(e.target.id === 'stModalSave'){
+      const item = $('stModalCommodity').value.trim();
+      const qty = n($('stModalQty').value);
+      const rate = n($('stModalRate').value);
+      if(!item){ $('stModalError').textContent = 'Enter an item name.'; return; }
+      if(qty < 0 || rate < 0){ $('stModalError').textContent = 'Quantity and rate cannot be negative.'; return; }
+      state.rows.push({ id:'', stock_type:modalType, commodity:item, closing_qty:qty, rate:rate });
+      closeModal();
+      render();
+    }
+  });
+
+  document.addEventListener('input', e => {
+    if(e.target.id === 'stModalQty' || e.target.id === 'stModalRate') updateModalTotal();
+
+    if(e.target.matches('#stInputBody .qty, #stInputBody .rate, #stProductBody .qty, #stProductBody .rate')){
+      const tr = e.target.closest('tr');
+      const qty = n(tr.querySelector('.qty').value);
+      const rate = n(tr.querySelector('.rate').value);
+      const total = tr.querySelector('.row-total');
+      if(total) total.textContent = '₹' + money(qty * rate);
+    }
+  });
+
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape' && !$('stStockModal').hidden) closeModal();
+  });
+
+  /* Movement table search + pagination */
+  const searchInput = $('stMovementSearch');
+  const rowsSelect = $('stMovementRowsPerPage');
+  const movementTable = $('stMovementTable');
+  const pagination = $('stMovementPagination');
+  let movementPage = 1;
+
+  function movementRows(){
+    if(!movementTable) return [];
+    return [...movementTable.querySelectorAll('tbody tr[data-st-row]')];
+  }
+
+  function renderMovementPagination(){
+    const allRows = movementRows();
+    if(!allRows.length) return;
+    const query = (searchInput?.value || '').trim().toLowerCase();
+    const perPage = Math.max(1, Number(rowsSelect?.value || 25));
+    const matched = allRows.filter(row => (row.dataset.stSearch || row.textContent || '').toLowerCase().includes(query));
+    const pages = Math.max(1, Math.ceil(matched.length / perPage));
+    movementPage = Math.min(movementPage, pages);
+    const start = (movementPage - 1) * perPage;
+    const visibleSet = new Set(matched.slice(start, start + perPage));
+
+    allRows.forEach(row => row.classList.toggle('st-hidden-row', !visibleSet.has(row)));
+
+    if($('stMovementMetaText')) $('stMovementMetaText').textContent = `${matched.length} stock movement record${matched.length === 1 ? '' : 's'}`;
+    if($('stMovementPageInfo')) $('stMovementPageInfo').textContent = matched.length ? `Showing ${start + 1}–${Math.min(start + perPage, matched.length)} of ${matched.length}` : 'Showing 0 of 0';
+    if($('stMovementPrevBtn')) $('stMovementPrevBtn').disabled = movementPage <= 1;
+    if($('stMovementNextBtn')) $('stMovementNextBtn').disabled = movementPage >= pages;
+
+    const wrap = $('stMovementPageNumberWrap');
+    if(wrap){
+      wrap.innerHTML = '';
+      const first = Math.max(1, movementPage - 2);
+      const last = Math.min(pages, first + 4);
+      for(let p = first; p <= last; p++){
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'st-page-btn' + (p === movementPage ? ' is-active' : '');
+        b.textContent = p;
+        b.addEventListener('click', () => { movementPage = p; renderMovementPagination(); });
+        wrap.appendChild(b);
+      }
+    }
+    if(pagination) pagination.hidden = matched.length === 0;
+  }
+
+  searchInput?.addEventListener('input', () => { movementPage = 1; renderMovementPagination(); });
+  rowsSelect?.addEventListener('change', () => { movementPage = 1; renderMovementPagination(); });
+  $('stMovementPrevBtn')?.addEventListener('click', () => { if(movementPage > 1){ movementPage--; renderMovementPagination(); } });
+  $('stMovementNextBtn')?.addEventListener('click', () => { movementPage++; renderMovementPagination(); });
+
+  const now = new Date();
+  $('stYear').value = now.getFullYear();
+  $('stMonth').value = now.getMonth() + 1;
+  renderMovementPagination();
+  load();
 })();
 </script>
 {% endblock %}

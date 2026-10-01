@@ -4,7 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}PGMIS - Producer Group Management Information System{% endblock %}</title>
+    <!-- PGMIS Favicon -->
+  <link rel="icon" type="image/png" 
+        href="{{ url_for('static', filename='image/favicon.png') }}">
 
+  <link rel="shortcut icon" type="image/png"
+        href="{{ url_for('static', filename='image/favicon.png') }}">
+
+  <link rel="apple-touch-icon"
+        href="{{ url_for('static', filename='image/favicon.png') }}">
 
 
   <style>
@@ -87,54 +95,72 @@
     .header-logo{
       display:inline-flex;
       align-items:center;
-      gap:0.75rem;
+      gap:10px;
       font-weight:950;
-      letter-spacing:0.2px;
+      letter-spacing:.2px;
       color:#0b4d3a;
       line-height:1;
       white-space:nowrap;
       user-select:none;
       cursor:pointer;
-      padding:0.35rem 0.55rem;
-      border-radius:12px;
-      transition: transform 0.15s ease, background-color 0.2s ease;
+      padding:4px 6px;
+      border-radius:10px;
       min-width:0;
+      text-decoration:none;
+      transition:none !important;
     }
     .header-logo:hover{
       background: rgba(16, 185, 129, 0.10);
       transform: translateY(-1px);
     }
 
-    .brand-mark{
-      width:34px;height:34px;
-      border-radius:10px;
-      background: linear-gradient(135deg, rgba(11,77,58,1), rgba(16,185,129,0.95));
-      box-shadow: 0 14px 22px -16px rgba(11, 77, 58, 0.7);
-      position:relative;
-      overflow:hidden;
-      flex:0 0 auto;
-    }
-    .brand-mark:before{
-      content:"";
-      position:absolute; inset:-40% -30%;
-      background: radial-gradient(closest-side, rgba(255,255,255,.22), transparent 62%);
-      transform: rotate(18deg);
-      z-index:0;
-    }
+.brand-mark{
+  width:44px;
+  height:44px;
+  min-width:44px;
+  flex:0 0 44px;
 
-    /*  Logo image placeholder inside green box (replace later) */
-    .brand-logo{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
-      object-fit:contain;
-      padding:4px;
-      z-index:1;
-      pointer-events:none;
-      user-select:none;
-      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.18));
-    }
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background:transparent;
+  border:0;
+  border-radius:10px;
+  box-shadow:none;
+
+  position:relative;
+  overflow:hidden;
+}
+
+.brand-mark::before,
+.brand-mark::after{
+  display:none !important;
+  content:none !important;
+}
+
+.brand-logo{
+  width:100%;
+  height:100%;
+  display:block;
+
+  object-fit:contain;
+  object-position:center;
+
+  padding:0;
+  margin:0;
+
+  position:static;
+
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  box-shadow:none;
+  filter:none;
+
+  pointer-events:none;
+  user-select:none;
+}
 
     .brand-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
     .brand-text strong{font-size:1.02rem;font-weight:950;letter-spacing:0.3px;line-height:1.05;}
@@ -1316,11 +1342,17 @@
       .menu-button{ left:0.45rem; }
     }
 
-    @media (max-width: 360px){
-      .header{ gap:0.55rem; }
-      .header-logo{ padding:0.3rem 0.45rem; }
-      .brand-mark{ width:32px; height:32px; }
+  @media (max-width: 360px){
+    .header{ gap:0.55rem; }
+    .header-logo{ padding:3px 4px; }
+
+    .brand-mark{
+      width:38px;
+      height:38px;
+      min-width:38px;
+      flex-basis:38px;
     }
+  }
 
     /*  APP/WEBVIEW TOUCH FIX: replace hover with touch-active feedback only */
 @media (max-width: 768px){
@@ -1681,21 +1713,25 @@
     <!-- HEADER -->
     <header class="header">
       <div class="header-left">
-        <div id="brandHome" class="header-logo" title="Go to Dashboard (Home)">
-          <div class="brand-mark" aria-hidden="true">
-            <!--  Replace this path later with your real logo file -->
+        <a
+          id="brandHome"
+          class="header-logo"
+          href="{{ url_for('pg.pg_home') }}"
+          title="Go to PG Dashboard"
+        >
+          <div class="brand-mark">
             <img
               class="brand-logo"
-              src="{{ url_for('static', filename='images/loginlogo.JPEG') }}"
-              alt="Logo"
-              onerror="this.style.display='none';"
+              src="{{ url_for('static', filename='image/favicon.png') }}"
+              alt="PGMIS Logo"
             />
           </div>
+
           <div class="brand-text">
-  <strong id="brandTitle">PGMIS</strong>
-  <span id="brandSubtitle">Producer Group MIS</span>
-</div>
-        </div>
+            <strong>PGMIS</strong>
+            <span>Producer Group MIS</span>
+          </div>
+        </a>
       </div>
 
       <div class="header-controls">
@@ -2693,7 +2729,7 @@ document.getElementById('brandHome')?.addEventListener('click', function(){
     }
   }catch(_){}
 
-  window.location.href = "{{ url_for('reports.cadre_dashboard') if session.get('role') == 'CADRE_CC' else url_for('pg.pg_home') }}";
+  window.location.href = "{{ url_for('pg.pg_home') }}";
 });
 
 // ------------------------------------------------------------
