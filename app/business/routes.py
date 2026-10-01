@@ -270,13 +270,90 @@ def _get_scoped_pg(db, pg_obj_id):
     return None
 
 def _can_write_business(pg=None):
-    role = session.get("role") or ""
+    """
+    Return whether the current request may write to Business Register modules.
+
+    Web requests are authenticated through Flask session values, while the
+    mobile app is authenticated with a Bearer JWT and request context (`g`).
+    The previous implementation checked only `session`, which meant mobile
+    users could pass the read/scope guards but were rejected at write time.
+    """
+    db = current_app.mongo_db
+    user_doc = _current_request_user_doc(db) or {}
+    current_user = getattr(g, "current_user", None)
+    if not isinstance(current_user, dict):
+        current_user = {}
+    token_payload = _decode_mobile_token() or {}
+
+    role = (
+        session.get("role")
+        or getattr(g, "role", None)
+        or getattr(g, "current_user_role", None)
+        or current_user.get("role")
+        or current_user.get("user_role")
+        or token_payload.get("role")
+        or token_payload.get("user_role")
+        or user_doc.get("role")
+        or user_doc.get("user_role")
+        or ""
+    )
+    role = str(role).upper()
+
     if role not in BUSINESS_WRITE_ROLES:
         return False
 
     if role == "PG_DATA_ENTRY" and pg:
-        own_pg_id = _to_object_id(session.get("pg_id") or session.get("active_pg_id"))
-        return bool(own_pg_id and str(own_pg_id) == str(pg.get("_id")))
+        # Prefer the explicit PG scope supplied by web session / mobile JWT.
+        own_pg_raw = (
+            session.get("pg_id")
+            or session.get("active_pg_id")
+            or getattr(g, "pg_id", None)
+            or getattr(g, "active_pg_id", None)
+            or current_user.get("pg_id")
+            or current_user.get("active_pg_id")
+            or token_payload.get("pg_id")
+            or token_payload.get("active_pg_id")
+            or token_payload.get("mapped_pg_id")
+            or token_payload.get("assigned_pg_id")
+            or user_doc.get("pg_id")
+            or user_doc.get("active_pg_id")
+            or user_doc.get("mapped_pg_id")
+            or user_doc.get("assigned_pg_id")
+        )
+        own_pg_id = _to_object_id(own_pg_raw)
+        if own_pg_id and str(own_pg_id) == str(pg.get("_id")):
+            return True
+
+        # Some mobile PG users are linked to the PG through the user id rather
+        # than a pg_id field. Mirror the same fallback used by _get_scoped_pg.
+        raw_user_id = (
+            session.get("user_id")
+            or getattr(g, "user_id", None)
+            or getattr(g, "current_user_id", None)
+            or current_user.get("user_id")
+            or current_user.get("id")
+            or current_user.get("_id")
+            or token_payload.get("user_id")
+            or token_payload.get("id")
+            or token_payload.get("_id")
+            or token_payload.get("sub")
+            or user_doc.get("_id")
+            or user_doc.get("user_id")
+        )
+        user_id = _to_object_id(raw_user_id)
+        if user_id:
+            for field in (
+                "user_id",
+                "created_by",
+                "pg_user_id",
+                "assigned_user_id",
+                "data_entry_user_id",
+            ):
+                linked_id = _to_object_id(pg.get(field))
+                if linked_id and str(linked_id) == str(user_id):
+                    return True
+
+        return False
 
     return True
 
@@ -567,9 +644,9 @@ def stock_register(pg_id):
     if not pg:
         return fail("PG not found or outside your access scope.", 404)
 
-    role = str(getattr(g, "role", None) or session.get("role") or "").upper()
-    # Scope has already been checked above. JWT and session users share write rules.
-    can_write = role in BUSINESS_WRITE_ROLES
+    # Use the shared web + mobile write guard so can_edit is correct for both
+    # Flask-session users and Bearer-JWT mobile users.
+    can_write = _can_write_business(pg)
     now = datetime.utcnow()
     src = request.get_json(silent=True) if request.is_json else request.form
     if request.method == "POST" and not isinstance(src, dict):
@@ -600,13 +677,31 @@ def stock_register(pg_id):
             summary[key] = {"item_count": len(entries),
                             "quantity_kg": round(sum(row["closing_qty"] for row in entries if row["unit"] == "kg"), 3),
                             "value": round(sum(row["closing_value"] for row in entries), 2)}
-        # Retain movement response for existing mobile clients and the old template.
-        movements = list(db.pg_stock_movements.find({"pg_id": pg_obj_id}).sort([("ts", -1)]).limit(100))
+        # Movement ledger is period-aware. New mobile/web movement writes persist
+        # year/month explicitly. Legacy movement rows (saved before period fields
+        # existed) remain visible by falling back to their timestamp month.
+        period_start = datetime(year, month, 1)
+        period_end = datetime(year + 1, 1, 1) if month == 12 else datetime(year, month + 1, 1)
+        movement_query = {
+            "pg_id": pg_obj_id,
+            "$or": [
+                {"year": year, "month": month},
+                {
+                    "$and": [
+                        {"$or": [{"year": {"$exists": False}}, {"year": None}]},
+                        {"ts": {"$gte": period_start, "$lt": period_end}},
+                    ]
+                },
+            ],
+        }
+        movements = list(db.pg_stock_movements.find(movement_query).sort([("ts", -1)]).limit(100))
         serialized_movements = [{
             "id": str(doc.get("_id", "")), "commodity": doc.get("commodity") or "",
             "movement_type": doc.get("movement_type") or "purchase",
             "qty": display_number(doc.get("qty")), "rate": display_number(doc.get("rate")),
             "amount": display_number(doc.get("amount")), "remarks": doc.get("remarks") or "",
+            "year": doc.get("year") or (doc.get("ts").year if isinstance(doc.get("ts"), datetime) else year),
+            "month": doc.get("month") or (doc.get("ts").month if isinstance(doc.get("ts"), datetime) else month),
             "ts": date_text(doc.get("ts")), "created_at": date_text(doc.get("created_at")),
         } for doc in movements]
         return {
@@ -786,28 +881,65 @@ def stock_movement(pg_id):
     if write_denied:
         return write_denied
 
-    src = request.get_json(silent=True) or {} if request.is_json else request.form
+    src = (request.get_json(silent=True) or {}) if request.is_json else request.form
 
-    commodity = (src.get("commodity") or "").strip()
+    commodity = " ".join(str(src.get("commodity") or "").strip().split())
     if not commodity:
         if wants_json():
             return jsonify({"success": False, "message": "Commodity is required."}), 400
         flash("Commodity is required.", "danger")
         return redirect(url_for("business.stock_register", pg_id=pg_id))
 
-    qty = fval(src, "qty")
-    rate = fval(src, "rate")
+    # Mobile explicitly sends the loaded stock-register period. Web remains
+    # backward-compatible and falls back to the current month when its legacy
+    # HTML form does not send year/month. Keeping the period in both query/body
+    # also lets the period-lock guard evaluate the intended mobile month.
+    now = datetime.utcnow()
+    try:
+        movement_year = int(src.get("year") or request.args.get("year") or now.year)
+        movement_month = int(src.get("month") or request.args.get("month") or now.month)
+        if movement_year < 1900 or movement_year > 9999 or movement_month < 1 or movement_month > 12:
+            raise ValueError()
+    except (TypeError, ValueError):
+        if wants_json():
+            return jsonify({"success": False, "message": "Enter a valid year and month for this stock movement."}), 400
+        flash("Enter a valid year and month for this stock movement.", "danger")
+        return redirect(url_for("business.stock_register", pg_id=pg_id))
+
+    movement_type = str(src.get("movement_type") or "purchase").strip().lower()
+    if movement_type not in ("purchase", "sale", "adjustment"):
+        if wants_json():
+            return jsonify({"success": False, "message": "Invalid stock movement type."}), 400
+        flash("Invalid stock movement type.", "danger")
+        return redirect(url_for("business.stock_register", pg_id=pg_id))
+
+    try:
+        qty_raw = src.get("qty")
+        rate_raw = src.get("rate")
+        if qty_raw in (None, "") or rate_raw in (None, ""):
+            raise ValueError()
+        qty = float(qty_raw)
+        rate = float(rate_raw)
+        if qty < 0 or rate < 0:
+            raise ValueError()
+    except (TypeError, ValueError):
+        if wants_json():
+            return jsonify({"success": False, "message": "Quantity and rate must be valid non-negative numbers."}), 400
+        flash("Quantity and rate must be valid non-negative numbers.", "danger")
+        return redirect(url_for("business.stock_register", pg_id=pg_id))
 
     doc = {
         "pg_id": pg_obj_id,
-        "ts": datetime.utcnow(),
+        "year": movement_year,
+        "month": movement_month,
+        "ts": now,
         "commodity": commodity,
-        "movement_type": (src.get("movement_type") or "purchase").strip().lower(),
+        "movement_type": movement_type,
         "qty": qty,
         "rate": rate,
-        "amount": qty * rate,
-        "remarks": src.get("remarks") or "",
-        "created_at": datetime.utcnow(),
+        "amount": round(qty * rate, 2),
+        "remarks": str(src.get("remarks") or "").strip(),
+        "created_at": now,
     }
 
     db.pg_stock_movements.insert_one(doc)
@@ -824,6 +956,8 @@ def stock_movement(pg_id):
                 "rate": doc["rate"],
                 "amount": doc["amount"],
                 "remarks": doc["remarks"],
+                "year": doc["year"],
+                "month": doc["month"],
                 "ts": doc["ts"].isoformat(),
             }
         }), 200

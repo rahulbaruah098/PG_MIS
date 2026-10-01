@@ -8047,6 +8047,63 @@ def api_generic_register(name, pg_id):
 
         return None
 
+    def _input_register_num(value):
+        try:
+            if value in (None, "", "null", "None"):
+                return 0.0
+            return float(str(value).replace(",", "").strip())
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _normalize_input_stock_rows(raw_data):
+        """
+        Keep Input Register stock consistent for every client.
+
+        st15 = cumulative remaining quantity (purchase qty - sale qty)
+        st16 = optional stock rate (never silently copied from purchase rate)
+        st17 = remaining quantity * stock rate only when a stock rate exists
+        """
+        data = dict(raw_data) if isinstance(raw_data, dict) else {}
+        rows = data.get("rows")
+        if not isinstance(rows, list):
+            return data
+
+        running_stock = 0.0
+        normalized_rows = []
+
+        for raw_row in rows:
+            if not isinstance(raw_row, dict):
+                continue
+
+            row = dict(raw_row)
+            running_stock = round(
+                running_stock
+                + _input_register_num(row.get("p4"))
+                - _input_register_num(row.get("s11")),
+                2,
+            )
+            row["st15"] = running_stock
+
+            raw_stock_rate = row.get("st16")
+            has_stock_rate = (
+                raw_stock_rate is not None
+                and str(raw_stock_rate).strip() != ""
+            )
+
+            if has_stock_rate:
+                row["st17"] = round(
+                    running_stock * _input_register_num(raw_stock_rate),
+                    2,
+                )
+            else:
+                row["st16"] = ""
+                row["st17"] = ""
+
+            normalized_rows.append(row)
+
+        data["rows"] = normalized_rows
+        return data
+
     def _blank_input_response(selected_name=""):
         selected_name = _norm_name(selected_name)
         selected_key = _name_key(selected_name)
@@ -8234,6 +8291,7 @@ def api_generic_register(name, pg_id):
                     return jsonify(_blank_input_response(selected_input_name)), 200
 
                 doc = _serialize_doc(doc)
+                doc["data"] = _normalize_input_stock_rows(doc.get("data") or {})
                 doc["ok"] = True
                 doc["saved_input_names"] = _get_saved_names("input")
                 doc["input_name"] = (
@@ -8492,6 +8550,7 @@ def api_generic_register(name, pg_id):
 
             data["meta"]["regInputUnit"] = unit_of_stocking
             data["meta"]["regUnit"] = unit_of_stocking
+            data = _normalize_input_stock_rows(data)
 
             now = datetime.utcnow()
 

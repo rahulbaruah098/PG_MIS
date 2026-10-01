@@ -1,5 +1,6 @@
 from services.audit_engine import AuditLogger
 import os
+import re
 from flask import render_template, send_from_directory, request, redirect, url_for, flash, current_app, session, jsonify, g
 from app.services.guards import require_unlocked_period
 from bson import ObjectId
@@ -1454,6 +1455,27 @@ def _safe_float(value, default=0.0):
         return float(default)
 
 
+def _finance_upload_dir():
+    """Return the single canonical folder used to save and serve finance uploads."""
+    configured = current_app.config.get("UPLOAD_FOLDER") or "uploads"
+
+    if os.path.isabs(str(configured)):
+        upload_dir = os.path.abspath(str(configured))
+    else:
+        project_root = os.path.abspath(os.path.join(current_app.root_path, ".."))
+        upload_dir = os.path.abspath(os.path.join(project_root, str(configured)))
+
+    os.makedirs(upload_dir, exist_ok=True)
+    return upload_dir
+
+
+def _grant_attachment_display_name(saved_name):
+    """Recover the original display name from grant_<id>_<timestamp>_<name>."""
+    name = os.path.basename(str(saved_name or ""))
+    match = re.match(r"^grant_[0-9a-fA-F]{24}_[0-9]{14,20}_(.+)$", name)
+    return match.group(1) if match else name
+
+
 def _grant_utilization_total(db, grant_id, include_rejected=False):
     grant_obj_id = grant_id if isinstance(grant_id, ObjectId) else ObjectId(str(grant_id))
 
@@ -1655,14 +1677,42 @@ def grants(pg_id):
 
 @finance_bp.route('/uploads/<filename>')
 @login_required
+@roles_required("PG_DATA_ENTRY", "CLF_MANAGER", "CLF_ADMIN", "BLOCK_ADMIN", "DISTRICT_ADMIN", "ADMIN", "SUPER_ADMIN")
 def serve_uploaded_file(filename):
-    import os
-    from flask import send_from_directory, current_app
+    from werkzeug.utils import secure_filename
 
-    BASE_DIR = os.path.abspath(os.path.join(current_app.root_path, ".."))
-    upload_folder = os.path.join(BASE_DIR, "uploads")
+    safe_name = secure_filename(os.path.basename(filename or ""))
+    if not safe_name or safe_name != filename:
+        return _deny("Invalid attachment filename.", is_json=_is_json_request(), status_code=400)
 
-    return send_from_directory(upload_folder, filename)
+    # Grant attachments contain the grant ObjectId in the generated filename.
+    match = re.match(r"^grant_([0-9a-fA-F]{24})_[0-9]{14,20}_.+$", safe_name)
+    if match:
+        db = current_app.mongo_db
+        grant = db.pg_grants.find_one({"_id": ObjectId(match.group(1))})
+        if not grant:
+            return _deny("Attachment grant not found.", is_json=_is_json_request(), status_code=404)
+
+        pg, access_response = _pg_from_grant_or_response(
+            db,
+            grant,
+            is_json=_is_json_request(),
+        )
+        if access_response:
+            return access_response
+
+    upload_folder = _finance_upload_dir()
+    full_path = os.path.join(upload_folder, safe_name)
+
+    if not os.path.isfile(full_path):
+        return _deny("Attachment not found.", is_json=_is_json_request(), status_code=404)
+
+    return send_from_directory(
+        upload_folder,
+        safe_name,
+        as_attachment=False,
+        conditional=True,
+    )
 
 
 
@@ -1936,32 +1986,60 @@ def grant_view(grant_id):
                 return redirect(url_for("finance.grant_view", grant_id=grant_id))
 
             attachments = []
+            saved_paths = []
 
             try:
                 from werkzeug.utils import secure_filename
 
-                upload_dir = current_app.config.get("UPLOAD_FOLDER", "uploads")
-                os.makedirs(upload_dir, exist_ok=True)
-
+                upload_dir = _finance_upload_dir()
                 files = request.files.getlist("attachments") if request.files else []
 
-                for f in files:
+                if len(files) > 10:
+                    msg = "A maximum of 10 attachments can be uploaded per utilization."
+                    if wants_json():
+                        return jsonify({"ok": False, "message": msg}), 400
+                    flash(msg, "danger")
+                    return redirect(url_for("finance.grant_view", grant_id=grant_id))
+
+                for file_index, f in enumerate(files, start=1):
                     if not f or not getattr(f, "filename", ""):
                         continue
 
                     fn = secure_filename(f.filename)
                     if not fn:
-                        continue
+                        raise ValueError(f"Attachment {file_index} has an invalid filename.")
 
                     stamp = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
                     saved = f"grant_{grant_id}_{stamp}_{fn}"
                     path = os.path.join(upload_dir, saved)
 
                     f.save(path)
-                    attachments.append(saved)
 
-            except Exception:
-                attachments = []
+                    if not os.path.isfile(path) or os.path.getsize(path) <= 0:
+                        raise IOError(f"Attachment {file_index} could not be written correctly.")
+
+                    attachments.append(saved)
+                    saved_paths.append(path)
+
+            except Exception as exc:
+                for saved_path in saved_paths:
+                    try:
+                        if os.path.isfile(saved_path):
+                            os.remove(saved_path)
+                    except Exception:
+                        pass
+
+                msg = f"Attachment upload failed: {str(exc) or 'Could not save the selected file.'}"
+
+                if wants_json():
+                    return jsonify({
+                        "ok": False,
+                        "message": msg,
+                        "error": "attachment_upload_failed",
+                    }), 500
+
+                flash(msg, "danger")
+                return redirect(url_for("finance.grant_view", grant_id=grant_id))
 
             util_doc = {
                 "grant_id": grant_obj_id,
@@ -1993,6 +2071,8 @@ def grant_view(grant_id):
                     "ok": True,
                     "message": "Grant utilization submitted for approval.",
                     "utilization_id": str(res.inserted_id),
+                    "attachments_saved": len(attachments),
+                    "attachments": attachments,
                 }), 201
 
             flash("Grant utilization submitted for approval.", "success")
@@ -2029,6 +2109,19 @@ def grant_view(grant_id):
             "remarks": u.get("remarks") or "",
             "status": (u.get("status") or "PENDING").upper(),
             "attachments": u.get("attachments") or [],
+            "attachment_files": [
+                {
+                    "name": _grant_attachment_display_name(saved_name),
+                    "filename": os.path.basename(str(saved_name or "")),
+                    "path": os.path.basename(str(saved_name or "")),
+                    "url": url_for(
+                        "finance.serve_uploaded_file",
+                        filename=os.path.basename(str(saved_name or "")),
+                    ),
+                }
+                for saved_name in (u.get("attachments") or [])
+                if saved_name
+            ],
             "attachments_count": len(u.get("attachments") or []),
             "created_at": serialize_dt(u.get("created_at")),
             "updated_at": serialize_dt(u.get("updated_at")),
