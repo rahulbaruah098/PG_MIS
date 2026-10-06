@@ -1,21 +1,42 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
+
+
 
 <html lang="en">
 
+
+
 <head>
+
+
 
 <meta charset="UTF-8" />
 
+
+
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+
 
 <title>PG MIS - Login</title>
 
+
+
 <link rel="icon" type="image/png"
+
       href="{{ url_for('static', filename='image/favicon.png') }}">
+
 <link rel="shortcut icon" type="image/png"
+
       href="{{ url_for('static', filename='image/favicon.png') }}">
+
 <link rel="apple-touch-icon"
+
       href="{{ url_for('static', filename='image/favicon.png') }}">
+
+
+
+
 
 
 
@@ -23,63 +44,127 @@
 
 
 
+
+
+
+
 <style>
+
+
 
   :root{
 
+
+
     --bg1:#d9efe6;
+
+
 
     --bg2:#c6e6da;
 
+
+
     --mint:#d7f1e6;
+
+
 
     --mint-2:#eaf7f2;
 
+
+
     --card:#eef7f3;
+
+
 
     --line:#bfe8d7;
 
+
+
     --line-2:#a7dec8;
+
+
 
     --ink:#173b2c;
 
+
+
     --muted:#2a4a3d;
 
+
+
     --brand:#0d6f45;
+
+
 
     --brand-2:#0a5d3a;
 
 
 
+
+
+
+
     /*  professional footer tone */
 
+
+
     --footerInk:#1f4b3a;
+
+
 
     --footerMuted:#3a6b59;
 
 
 
+
+
+
+
     --shadow:0 18px 34px rgba(6,40,26,.20);
 
+
+
     --shadow-soft:0 10px 22px rgba(6,40,26,.14);
+
+
 
     --r:22px;
 
 
 
+
+
+
+
     /*  adapt bands + gaps to short height screens */
+
+
 
     --bandH: clamp(56px, 9.5svh, 120px);
 
+
+
     --gapTop: clamp(10px, 2.6svh, 40px);
+
+
 
     --gapBottom: clamp(10px, 2.6svh, 40px);
 
 
 
+
+
+
+
     --safeTop: env(safe-area-inset-top, 0px);
 
+
+
     --safeBottom: env(safe-area-inset-bottom, 0px);
+
+
+
+
 
 
 
@@ -87,1179 +172,2556 @@
 
 
 
+
+
+
+
     /*  Fit vars */
+
+
 
     --fit: 1;
 
+
+
   }
+
+
+
+
 
 
 
   @supports (height: 100dvh){ :root{ --vH: 1dvh; } }
 
+
+
   @supports (height: 100svh){ :root{ --vH: 1svh; } }
+
+
+
+
 
 
 
   *{ box-sizing:border-box }
 
+
+
   html,body{ height:100% }
+
+
+
+
 
 
 
   body{
 
+
+
     margin:0;
+
+
 
     font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
 
+
+
     color:var(--ink);
 
+
+
     overflow:hidden;
+
+
+
+
 
 
 
     background:
 
+
+
       radial-gradient(900px 560px at 18% 52%, rgba(13,111,69,.28) 0%, rgba(13,111,69,0) 62%),
+
+
 
       radial-gradient(900px 560px at 82% 52%, rgba(13,111,69,.26) 0%, rgba(13,111,69,0) 62%),
 
+
+
       radial-gradient(1100px 720px at 50% 42%, rgba(255,255,255,.72) 0%, rgba(255,255,255,0) 56%),
+
+
 
       linear-gradient(90deg, #bfe7d6 0%, #d7efe6 40%, #d7efe6 60%, #bfe7d6 100%);
 
+
+
     position:relative;
 
+
+
   }
+
+
+
+
 
 
 
   /* background pattern (FIXED: proper URL encoding for xmlns quotes) */
 
+
+
   body::before{
+
+
 
     content:"";
 
+
+
     position:fixed; inset:-2px;
+
+
 
     background-image:
 
+
+
       url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20width%3D%27180%27%20height%3D%27180%27%20viewBox%3D%270%200%20180%20180%27%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20fill%3D%27none%27/%3E%3Cg%20opacity%3D%270.28%27%3E%3Cg%20fill%3D%27%2387cbb2%27%3E%3Cpath%20d%3D%27M20%2020l10%2010-10%2010-10-10z%27/%3E%3Cpath%20d%3D%27M80%2030l8%208-8%208-8-8z%27/%3E%3Cpath%20d%3D%27M140%2026l10%2010-10%2010-10-10z%27/%3E%3Cpath%20d%3D%27M52%2076l7%207-7%207-7-7z%27/%3E%3Cpath%20d%3D%27M112%2082l7%207-7%207-7-7z%27/%3E%3Cpath%20d%3D%27M160%2084l8%208-8%208-8-8z%27/%3E%3Cpath%20d%3D%27M26%20128l9%209-9%209-9-9z%27/%3E%3Cpath%20d%3D%27M84%20136l7%207-7%207-7-7z%27/%3E%3Cpath%20d%3D%27M140%20140l10%2010-10%2010-10-10z%27/%3E%3C/g%3E%3Cg%20fill%3D%27%239ad5c0%27%3E%3Ccircle%20cx%3D%2740%27%20cy%3D%2744%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%2798%27%20cy%3D%2754%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%27160%27%20cy%3D%2740%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%2724%27%20cy%3D%2792%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%2772%27%20cy%3D%2798%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%27132%27%20cy%3D%27106%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%27166%27%20cy%3D%27118%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%2752%27%20cy%3D%27156%27%20r%3D%272%27/%3E%3Ccircle%20cx%3D%27110%27%20cy%3D%27160%27%20r%3D%272%27/%3E%3C/g%3E%3Cg%20stroke%3D%27%2387cbb2%27%20stroke-width%3D%271%27%20fill%3D%27none%27%20opacity%3D%270.35%27%3E%3Cpath%20d%3D%27M30%2016c8%2010%208%2026%200%2036-8-10-8-26%200-36z%27/%3E%3Cpath%20d%3D%27M24%20116c10%200%2018%208%2018%2018s-8%2018-18%2018-18-8-18-18%208-18%2018-18z%27/%3E%3Cpath%20d%3D%27M156%2060c10%200%2018%208%2018%2018s-8%2018-18%2018-18-8-18-18%208-18%2018-18z%27/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+
+
 
     background-size:180px 180px;
 
+
+
     background-repeat:repeat;
+
+
 
     filter:saturate(1.05);
 
+
+
     pointer-events:none;
 
+
+
     z-index:0;
+
+
 
   }
 
 
 
+
+
+
+
   /* =========================================================
+
+
 
      SPLASH SCREEN (ADDED)
 
+
+
      Shows only on:
+
+
 
      1) first entry in this tab/session
 
+
+
      2) reload of this same URL
+
+
 
      ========================================================= */
 
+
+
   #siteSplash{
+
+
 
   position:fixed;
 
+
+
   inset:0;
+
+
 
   z-index:9999;
 
+
+
   display:flex;
+
+
 
   align-items:center;
 
+
+
   justify-content:center;
+
+
 
   overflow:hidden;
 
+
+
   opacity:0;
+
+
 
   visibility:hidden;
 
+
+
   pointer-events:none;
+
+
 
   transition: opacity .85s ease, visibility .85s ease;
 
+
+
   background: linear-gradient(135deg, #047857 0%, #065f46 46%, #0f766e 100%);
 
+
+
 }
+
+
 
 #siteSplash.is-visible{
 
+
+
   opacity:1;
+
+
 
   visibility:visible;
 
+
+
   pointer-events:auto;
 
+
+
 }
+
+
 
 #siteSplash.is-hidden{
 
+
+
   opacity:0;
+
+
 
   visibility:hidden;
 
+
+
   pointer-events:none;
 
+
+
 }
+
+
+
+
 
 
 
   .splash-wave{
 
+
+
     position:absolute;
+
+
 
     inset:-6% -10%;
 
+
+
     width:120%;
+
+
 
     height:112%;
 
+
+
     pointer-events:none;
+
+
 
     will-change:transform;
 
+
+
   }
+
+
 
   .splash-wave svg{
 
+
+
     width:100%;
+
+
 
     height:100%;
 
+
+
     display:block;
+
+
 
   }
 
+
+
   .splash-wave.bottom.one{ animation:splashWaveLeft 6s ease-in-out infinite alternate; }
+
+
 
   .splash-wave.bottom.two{ animation:splashWaveRight 7s ease-in-out infinite alternate; }
 
+
+
   .splash-wave.top.one{ animation:splashWaveRight 8s ease-in-out infinite alternate; }
+
+
 
   .splash-wave.top.two{ animation:splashWaveLeftSmall 9s ease-in-out infinite alternate; }
 
 
 
+
+
+
+
   @keyframes splashWaveLeft{
 
+
+
     from{ transform:translateX(0); }
+
+
 
     to{ transform:translateX(-10vw); }
 
+
+
   }
+
+
 
   @keyframes splashWaveRight{
 
+
+
     from{ transform:translateX(0); }
+
+
 
     to{ transform:translateX(8vw); }
 
+
+
   }
+
+
 
   @keyframes splashWaveLeftSmall{
 
+
+
     from{ transform:translateX(0); }
+
+
 
     to{ transform:translateX(-7vw); }
 
+
+
   }
+
+
+
+
 
 
 
   .splash-dots{
 
+
+
     position:absolute;
+
+
 
     inset:0;
 
+
+
     opacity:.055;
+
+
 
     background-image: radial-gradient(circle, rgba(255,255,255,.95) 1.15px, transparent 1.15px);
 
+
+
     background-size: 44px 44px;
+
+
 
     background-position: 22px 22px;
 
+
+
     pointer-events:none;
 
+
+
   }
+
+
+
+
 
 
 
   .splash-content{
 
+
+
     position:relative;
+
+
 
     z-index:2;
 
+
+
     display:flex;
+
+
 
     flex-direction:column;
 
+
+
     align-items:center;
+
+
 
     justify-content:center;
 
+
+
     padding:24px;
+
+
 
     text-align:center;
 
+
+
   }
+
+
+
+
 
 
 
   .splash-kicker,
 
+
+
   .splash-title,
+
+
 
   .splash-powered{
 
+
+
     opacity:0;
+
+
 
     transform:translateY(12px);
 
+
+
     filter:blur(3px);
+
+
 
     animation-fill-mode:forwards;
 
+
+
     animation-timing-function:cubic-bezier(.2,.9,.2,1);
 
+
+
   }
+
+
+
+
 
 
 
   .splash-kicker{
 
+
+
     color: rgba(209,250,229,0.95);
+
+
 
     font-size: clamp(12px, 1.2vw + 8px, 16px);
 
+
+
     letter-spacing: clamp(3px, .45vw, 6px);
+
+
 
     font-weight: 300;
 
+
+
     text-align:center;
+
+
 
     margin-bottom: 32px;
 
+
+
     animation-name:splashFadeDown;
+
+
 
     animation-duration:.8s;
 
+
+
     animation-delay:.6s;
 
+
+
   }
+
+
+
+
 
 
 
   .splash-title{
 
+
+
     color:#fff;
+
+
 
     font-size: clamp(54px, 14vw, 92px);
 
+
+
     font-weight:800;
+
+
 
     letter-spacing:-1px;
 
+
+
     line-height:.96;
+
+
 
     animation-name:splashFadeIn;
 
+
+
     animation-duration:.9s;
+
+
 
     animation-delay:1.2s;
 
+
+
   }
+
+
+
+
 
 
 
   .splash-powered{
 
+
+
     margin-top:26px;
+
+
 
     color: rgba(236,253,245,0.95);
 
+
+
     font-size: clamp(15px, 1.4vw + 8px, 18px);
+
+
 
     letter-spacing:.8px;
 
+
+
     font-weight:300;
+
+
 
     animation-name:splashFadeUp;
 
+
+
     animation-duration:.8s;
+
+
 
     animation-delay:2.4s;
 
+
+
   }
+
+
 
   .splash-powered .brand{
 
+
+
     font-weight:700;
+
+
 
     color: rgba(167,243,208,1);
 
+
+
   }
+
+
+
+
 
 
 
   @keyframes splashFadeDown{
 
+
+
     from{ opacity:0; transform:translateY(-10px); filter:blur(3px); }
+
+
 
     to{ opacity:1; transform:translateY(0); filter:blur(0); }
 
+
+
   }
+
+
 
   @keyframes splashFadeIn{
 
+
+
     from{ opacity:0; transform:translateY(6px); filter:blur(3px); }
+
+
 
     to{ opacity:1; transform:translateY(0); filter:blur(0); }
 
+
+
   }
+
+
 
   @keyframes splashFadeUp{
 
+
+
     from{ opacity:0; transform:translateY(10px); filter:blur(3px); }
+
+
 
     to{ opacity:1; transform:translateY(0); filter:blur(0); }
 
+
+
   }
+
+
+
+
 
 
 
 .page-shell{
 
+
+
   width:100%;
+
+
 
   height:100%;
 
+
+
   opacity:0;
+
+
 
   visibility:hidden;
 
+
+
   pointer-events:none;
+
+
 
   transition: opacity .45s ease, visibility .45s ease;
 
+
+
 }
+
+
+
+
 
 
 
 .page-shell.is-ready{
 
+
+
   opacity:1;
+
+
 
   visibility:visible;
 
+
+
   pointer-events:auto;
 
+
+
 }
+
+
+
+
 
 
 
 body.has-flash .stage{
 
+
+
   padding-top: calc(var(--bandH) + var(--gapTop) + var(--safeTop) + 96px);
 
+
+
 }
+
+
+
+
 
 
 
   /* bands */
 
+
+
   .top-band,
 
+
+
   .bottom-band{
+
+
 
     position:fixed;
 
+
+
     left:0; right:0;
+
+
 
     height:var(--bandH);
 
+
+
     z-index:1;
+
+
 
     pointer-events:none;
 
+
+
     overflow:hidden;
 
+
+
   }
+
+
 
   .top-band{ top:0; }
 
+
+
   .bottom-band{
+
+
 
     bottom:0;
 
+
+
     transform:scaleY(-1);
+
+
 
     margin-bottom: calc(var(--safeBottom) * -1);
 
+
+
   }
+
+
+
+
 
 
 
   .band-svg{ display:none; width:100%; height:100%; }
 
+
+
   .band-svg.is-desktop{ display:block; }
+
+
 
   .band-svg.is-mobile{ display:none; }
 
 
 
+
+
+
+
   /*  Stage between bands (true centering) */
+
+
 
   .stage{
 
+
+
     min-height: calc(var(--vH) * 100);
+
+
 
     height: calc(var(--vH) * 100);
 
+
+
     padding-top: calc(var(--bandH) + var(--gapTop) + var(--safeTop));
+
+
 
     padding-bottom: calc(var(--bandH) + var(--gapBottom) + var(--safeBottom));
 
+
+
     display:flex;
+
+
 
     align-items:center;
 
+
+
     justify-content:center;
+
+
 
     position:relative;
 
+
+
     z-index:2;
+
+
 
     overflow:hidden;
 
+
+
   }
+
+
+
+
 
 
 
   .fit-wrap{
 
+
+
     transform: scale(var(--fit));
+
+
 
     transform-origin: center;
 
+
+
     will-change: transform;
+
+
 
     width:100%;
 
+
+
     display:flex;
+
+
 
     justify-content:center;
 
+
+
   }
+
+
+
+
 
 
 
   /* main wrap */
 
+
+
   .wrap{
+
+
 
     width:min(980px, 92vw);
 
+
+
     margin:0 auto;
+
+
 
     display:flex;
 
+
+
     flex-direction:column;
+
+
 
     align-items:center;
 
+
+
     justify-content:center;
+
+
 
     gap:16px;
 
+
+
     position:relative;
+
+
 
     z-index:2;
 
+
+
   }
+
+
+
+
 
 
 
   /* =========================================================
 
+
+
      Animations (different styles)
+
+
 
      ========================================================= */
 
 
 
+
+
+
+
   /* Header/text reveal */
+
+
 
   @keyframes textReveal{
 
+
+
     0%{ opacity:0; transform: translateY(10px); filter: blur(3px); }
+
+
 
     60%{ opacity:1; filter: blur(0.5px); }
 
+
+
     100%{ opacity:1; transform: translateY(0); filter: blur(0); }
 
+
+
   }
+
+
 
   .reveal-text{ opacity:0; animation: textReveal 1.05s cubic-bezier(.2,.9,.2,1) forwards; }
 
 
 
+
+
+
+
   /* Card reveal */
+
+
 
   @keyframes cardReveal{
 
+
+
     0%{ opacity:0; transform: translateY(18px) scale(.985); filter: blur(2px); }
+
+
 
     100%{ opacity:1; transform: translateY(0) scale(1); filter: blur(0); }
 
+
+
   }
+
+
 
   .reveal-card{ opacity:0; animation: cardReveal 1.15s cubic-bezier(.2,.9,.2,1) forwards; }
 
 
 
+
+
+
+
   /* Field stagger */
+
+
 
   @keyframes fieldReveal{
 
+
+
     from{ opacity:0; transform: translateY(10px); }
+
+
 
     to{ opacity:1; transform: translateY(0); }
 
+
+
   }
+
+
 
   .reveal-field{ opacity:0; animation: fieldReveal .85s cubic-bezier(.2,.9,.2,1) forwards; }
 
 
 
+
+
+
+
   /* Footer reveal */
+
+
 
   @keyframes footerReveal{
 
+
+
     from{ opacity:0; transform: translateY(8px); letter-spacing:.6px; }
+
+
 
     to{ opacity:1; transform: translateY(0); letter-spacing:.1px; }
 
+
+
   }
+
+
 
   .reveal-footer{ opacity:0; animation: footerReveal 1s cubic-bezier(.2,.9,.2,1) forwards; }
 
 
 
+
+
+
+
   /* delays */
+
+
 
   .d-1{ animation-delay:.10s; }
 
+
+
   .d-2{ animation-delay:.28s; }
+
+
 
   .d-3{ animation-delay:.52s; }
 
+
+
   .d-4{ animation-delay:.76s; }
 
+
+
   .d-5{ animation-delay:.96s; }
+
+
 
   .d-6{ animation-delay:1.10s; }
 
 
 
+
+
+
+
   /* Login brand logo */
+
   .login-logo-wrap{
+
     display:flex;
+
     align-items:center;
+
     justify-content:center;
+
     margin:0 auto 8px;
+
   }
 
+
+
   .login-logo{
+
     width:84px;
+
     height:84px;
+
     display:block;
+
     object-fit:contain;
+
     object-position:center;
+
     border-radius:18px;
+
     filter:drop-shadow(0 8px 16px rgba(6,40,26,.16));
+
     pointer-events:none;
+
     user-select:none;
+
   }
+
+
 
   /* Header */
 
+
+
   .header{ text-align:center; margin-bottom:10px; }
+
+
 
   .header h1{
 
+
+
     margin:0;
+
+
 
     font-family:"Playfair Display", serif;
 
+
+
     font-weight:800;
+
+
 
     letter-spacing:.5px;
 
+
+
     font-size: clamp(34px, 6.2vmin, 66px);
+
+
 
     color:var(--brand);
 
+
+
     text-shadow:0 1px 0 rgba(255,255,255,.55);
+
+
 
     display:inline-block;
 
+
+
     padding:8px 24px;
 
+
+
   }
+
+
 
   .subline{
 
+
+
     margin-top:6px;
+
+
 
     display:flex;
 
+
+
     align-items:center;
+
+
 
     justify-content:center;
 
+
+
     gap:10px;
+
+
 
     color:var(--muted);
 
+
+
     font-weight:600;
+
+
 
     font-size: clamp(12px, 1.7vmin, 16px);
 
+
+
     flex-wrap:wrap;
 
+
+
   }
+
+
 
   .subline .as{ font-weight:700; }
 
 
 
+
+
+
+
   /* ==========================
+
+
 
       TOP-RIGHT TOAST FLASHES
 
+
+
      ========================== */
+
+
 
 .flash-wrap{
 
+
+
   position: fixed;
+
+
 
   top: calc(var(--safeTop) + 14px);
 
+
+
   left: 50%;
+
+
 
   transform: translateX(-50%);
 
+
+
   width: min(560px, calc(100vw - 28px));
+
+
 
   z-index: 60;
 
+
+
   display: flex;
+
+
 
   flex-direction: column;
 
+
+
   gap: 10px;
+
+
 
   pointer-events: none;
 
+
+
 }
+
+
+
+
 
 
 
   .alert{
 
+
+
     border-radius:16px;
+
+
 
     padding:12px 14px;
 
+
+
     font-weight:700;
+
+
 
     box-shadow: var(--shadow-soft);
 
+
+
     border: 1px solid rgba(112,214,180,.55);
+
+
 
     background: rgba(255,255,255,.92);
 
+
+
     backdrop-filter: blur(10px);
+
+
 
     pointer-events:auto;
 
+
+
     position:relative;
+
+
 
     overflow:hidden;
 
+
+
     animation: toastIn .35s cubic-bezier(.2,.9,.2,1) both;
 
+
+
   }
+
+
 
   @keyframes toastIn{
 
+
+
     from{ opacity:0; transform: translateY(-10px) scale(.98); filter: blur(1px); }
+
+
 
     to{ opacity:1; transform: translateY(0) scale(1); filter: blur(0); }
 
+
+
   }
+
+
 
   .alert-success{ border-color: rgba(13,111,69,.32); }
 
+
+
   .alert-danger{ border-color: rgba(160,20,20,.26); }
+
+
 
   .alert-warning{ border-color: rgba(180,120,10,.26); }
 
+
+
   .alert-info{ border-color: rgba(20,90,160,.26); }
+
+
 
   .alert-warning, .alert-danger, .alert-success, .alert-info{ color:#1e3a2f; }
 
 
 
+
+
+
+
   .alert-row{
+
+
 
     display:flex;
 
+
+
     align-items:flex-start;
+
+
 
     justify-content:space-between;
 
+
+
     gap:10px;
 
+
+
   }
+
+
 
   .btn-close{
 
+
+
     border:none;
+
+
 
     background:transparent;
 
+
+
     cursor:pointer;
+
+
 
     width:34px;
 
+
+
     height:34px;
+
+
 
     border-radius: 12px;
 
+
+
     display:grid;
+
+
 
     place-items:center;
 
+
+
     opacity:.85;
+
+
 
     flex: 0 0 auto;
 
+
+
   }
+
+
 
   .btn-close:hover{ opacity:1; background: rgba(13,111,69,.08); }
 
+
+
   .btn-close::before{
+
+
 
     content:"✕";
 
+
+
     font-size:16px;
+
+
 
     line-height:1;
 
+
+
     color:#23443a;
+
+
 
     font-weight:900;
 
+
+
   }
+
+
+
+
 
 
 
   /* auto-dismiss animation */
 
+
+
   .alert.is-leaving{
+
+
 
     animation: toastOut .32s ease forwards;
 
+
+
   }
+
+
 
   @keyframes toastOut{
 
+
+
     to{ opacity:0; transform: translateY(-8px) scale(.98); max-height:0; margin:0; padding-top:0; padding-bottom:0; }
 
+
+
   }
+
+
+
+
 
 
 
   /* Card */
 
+
+
   .card{
+
+
 
     width:min(520px, 92vw);
 
+
+
     background: linear-gradient(#f2faf6, #eef7f3);
+
+
 
     border-radius: var(--r);
 
+
+
     box-shadow: var(--shadow);
+
+
 
     padding: 44px 34px 42px;
 
+
+
     transition: transform .18s ease, box-shadow .18s ease;
+
+
 
     will-change: transform;
 
+
+
   }
+
+
 
   .card:hover{
 
+
+
     transform: scale(1.012);
+
+
 
     box-shadow: 0 22px 40px rgba(6,40,26,.22);
 
+
+
   }
+
+
+
+
 
 
 
   form{ margin:0; width:100%; }
 
+
+
   .field{ margin: 16px 6px 26px; width:100%; }
+
+
 
   .label{
 
+
+
     font-weight:800;
+
+
 
     color:#243c32;
 
+
+
     margin: 0 0 12px;
+
+
 
     font-size:15px;
 
+
+
   }
+
+
+
+
 
 
 
   .input{
 
+
+
     width:100%;
+
+
 
     height:54px;
 
+
+
     border-radius:14px;
+
+
 
     border:2px solid rgba(112,214,180,.55);
 
+
+
     background:#ffffff;
+
+
 
     padding: 12px 16px;
 
+
+
     outline:none;
+
+
 
     font-size:15px;
 
+
+
     color:#213a30;
+
+
 
     transition:.15s ease;
 
+
+
     box-shadow: 0 8px 18px rgba(6,40,26,.06);
+
+
 
     opacity: .45;
 
+
+
   }
+
+
 
   .input:focus{
 
+
+
     border-color: rgba(13,111,69,.60);
+
+
 
     box-shadow: 0 12px 24px rgba(6,40,26,.12);
 
+
+
   }
+
+
+
+
 
 
 
   .pw{ position:relative; }
 
+
+
   .eye-btn{
+
+
 
     position:absolute;
 
+
+
     right:12px;
+
+
 
     top:50%;
 
+
+
     transform:translateY(-50%);
+
+
 
     border:none;
 
+
+
     background:transparent;
+
+
 
     padding:6px;
 
+
+
     cursor:pointer;
+
+
 
     opacity:.85;
 
+
+
   }
+
+
 
   .eye-btn:hover{ opacity:1 }
 
+
+
   .eye{ width:20px; height:20px; }
+
+
 
   .eye path, .eye circle{
 
+
+
     stroke:#5d6f67;
+
+
 
     stroke-width:1.8;
 
+
+
     fill:none;
+
+
 
     stroke-linecap:round;
 
+
+
     stroke-linejoin:round;
 
+
+
   }
+
+
+
+
 
 
 
   /* Button */
 
+
+
   .btn{
+
+
 
     margin: 14px 6px 0;
 
+
+
     width:calc(100% - 12px);
+
+
 
     height:64px;
 
+
+
     border:none;
+
+
 
     border-radius:18px;
 
+
+
     cursor:pointer;
+
+
 
     color:#fff;
 
+
+
     font-weight:800;
+
+
 
     font-size:18px;
 
+
+
     letter-spacing:.2px;
+
+
 
     display:flex;
 
+
+
     align-items:center;
+
+
 
     justify-content:center;
 
+
+
     background: linear-gradient(180deg, #0f7a4b 0%, #0b5f3a 100%);
+
+
 
     box-shadow: 0 14px 22px rgba(6,40,26,.18);
 
+
+
     transition: transform .14s ease, box-shadow .14s ease, filter .14s ease;
+
+
 
     will-change: transform;
 
+
+
   }
+
+
 
   .btn:hover{
 
+
+
     filter: brightness(1.02);
+
+
 
     box-shadow: 0 18px 28px rgba(6,40,26,.20);
 
+
+
     transform: scale(1.02);
 
+
+
   }
+
+
 
   .btn:active{
 
+
+
     transform: scale(1.01);
+
+
 
     box-shadow: 0 12px 18px rgba(6,40,26,.16);
 
+
+
   }
+
+
 
   .btn:focus-visible{
 
+
+
     outline: 3px solid rgba(13,111,69,.28);
+
+
 
     outline-offset: 3px;
 
+
+
   }
+
+
+
+
 
 
 
   /*  Powered by (professional) */
 
+
+
   .powered-link{
+
+
 
     margin-top: 6px;
 
+
+
     text-align:center;
 
+
+
   }
+
+
 
   .powered-link a{
 
+
+
     text-decoration:none;
+
+
 
     color: var(--footerMuted);
 
+
+
     font-weight:700;
+
+
 
     font-size:14px;
 
+
+
     letter-spacing:.12px;
+
+
 
     display:inline-flex;
 
+
+
     align-items:center;
+
+
 
     gap:8px;
 
+
+
     padding: 8px 14px;
+
+
 
     border-radius: 999px;
 
+
+
     border: 1px solid rgba(13,111,69,.18);
+
+
 
     background: rgba(255,255,255,.55);
 
+
+
     backdrop-filter: blur(6px);
+
+
 
     box-shadow: 0 10px 18px rgba(6,40,26,.10);
 
+
+
     transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+
+
 
     will-change: transform;
 
+
+
   }
+
+
 
   .powered-link a strong{
 
+
+
     color: var(--footerInk);
+
+
 
     font-weight:800;
 
+
+
   }
+
+
 
   .powered-link a:hover{
 
+
+
     transform: translateY(-1px);
+
+
 
     box-shadow: 0 14px 22px rgba(6,40,26,.12);
 
+
+
     opacity:.98;
 
+
+
   }
+
+
+
+
 
 
 
   /*  MOBILE */
 
+
+
   @media (max-width:720px){
+
+
 
     .band-svg.is-desktop{ display:none; }
 
+
+
     .band-svg.is-mobile{ display:block; }
+
+
 
     .card{ width:min(480px, 92vw); padding: 34px 18px 32px; }
 
+
+
     .wrap{ gap:14px; }
+
+
 
    .flash-wrap{
 
+
+
   top: calc(var(--safeTop) + 10px);
+
+
 
   left: 50%;
 
+
+
   right: auto;
+
+
 
   transform: translateX(-50%);
 
+
+
   width: min(92vw, 560px);
 
+
+
 }
+
+
 
 body.has-flash .stage{
 
+
+
   padding-top: calc(var(--bandH) + var(--gapTop) + var(--safeTop) + 88px);
+
+
 
 }
 
+
+
     .splash-kicker{ margin-bottom:26px; }
+
+
 
     .splash-powered{ margin-top:22px; }
 
+
+
   }
+
+
+
+
 
 
 
   @media (max-width:420px){
 
+
+
     .login-logo{
+
       width:68px;
+
       height:68px;
+
       border-radius:15px;
+
     }
+
+
 
     .login-logo-wrap{ margin-bottom:5px; }
 
+
+
     .card{ width:92vw; padding: 30px 16px 28px; border-radius:18px; }
+
+
 
     .field{ margin: 14px 4px 22px; }
 
+
+
     .input{ height:50px; font-size:14px; }
+
+
 
     .btn{ height:60px; font-size:17px; }
 
+
+
     .splash-title{ font-size: clamp(48px, 18vw, 80px); }
 
+
+
   }
+
+
+
+
 
 
 
   @media (prefers-reduced-motion: reduce){
 
+
+
     .reveal-text, .reveal-card, .reveal-field, .reveal-footer{ animation:none !important; opacity:1 !important; transform:none !important; filter:none !important; }
+
+
 
     .btn, .powered-link a, .card{ transition:none; }
 
+
+
     .alert{ animation:none; }
+
+
 
     .splash-wave{ animation:none !important; }
 
+
+
     .splash-kicker, .splash-title, .splash-powered{
+
+
 
       animation:none !important;
 
+
+
       opacity:1 !important;
+
+
 
       transform:none !important;
 
+
+
       filter:none !important;
+
+
 
     }
 
+
+
     #siteSplash{ transition:none; }
 
+
+
+  }
+
+
+
+
+
+  /* =========================================================
+     PUBLIC LOGIN LINKS: SUPPORT + PRIVACY
+     ========================================================= */
+  .login-support-link{
+    position:fixed;
+    top:calc(var(--safeTop) + 18px);
+    right:22px;
+    z-index:55;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 14px;
+    border-radius:999px;
+    text-decoration:none;
+    color:#23513f;
+    background:rgba(255,255,255,.68);
+    border:1px solid rgba(13,111,69,.20);
+    box-shadow:0 10px 22px rgba(6,40,26,.10);
+    backdrop-filter:blur(8px);
+    font-size:13px;
+    font-weight:800;
+    letter-spacing:.12px;
+    transition:transform .16s ease, box-shadow .16s ease, background .16s ease;
+  }
+  .login-support-link:hover{
+    transform:translateY(-1px);
+    background:rgba(255,255,255,.86);
+    box-shadow:0 14px 26px rgba(6,40,26,.14);
+  }
+  .login-support-link:focus-visible,
+  .login-privacy-link:focus-visible{
+    outline:3px solid rgba(13,111,69,.28);
+    outline-offset:3px;
+  }
+  .login-support-link svg{
+    width:18px;
+    height:18px;
+    flex:0 0 auto;
+  }
+  .login-support-link svg *{
+    stroke:currentColor;
+  }
+  .login-legal{
+    margin-top:-5px;
+    text-align:center;
+    line-height:1.5;
+  }
+  .login-rights{
+    color:var(--footerInk);
+    font-size:12px;
+    font-weight:700;
+    opacity:.72;
+  }
+  .login-privacy-link{
+    display:inline-block;
+    margin-top:2px;
+    color:var(--footerMuted);
+    font-size:11px;
+    font-weight:600;
+    text-decoration:none;
+    opacity:.48;
+    transition:opacity .16s ease, transform .16s ease;
+  }
+  .login-privacy-link:hover{
+    opacity:.82;
+    transform:translateY(-1px);
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  @media (max-width:720px){
+    .login-support-link{
+      top:calc(var(--safeTop) + 10px);
+      right:12px;
+      padding:9px 12px;
+      font-size:12px;
+    }
+  }
+
+
+
+  /* =========================================================
+     LOGIN EXPERIENCE REFRESH (2026-10-06)
+     Visual-only improvements; existing form names/POST flow are preserved.
+     ========================================================= */
+  .stage{padding-left:16px;padding-right:16px}
+  .wrap{gap:13px}
+
+  .header{margin-bottom:6px}
+  .header h1{
+    font-size:clamp(32px,5.2vmin,56px);
+    letter-spacing:-.8px;
+    padding:4px 20px;
+    line-height:1.05;
+  }
+  .subline{margin-top:2px;opacity:.88;font-size:clamp(11px,1.55vmin,14px)}
+  .login-logo{
+    width:76px;height:76px;border-radius:20px;
+    background:rgba(255,255,255,.72);
+    border:1px solid rgba(255,255,255,.78);
+    padding:5px;
+    filter:drop-shadow(0 10px 18px rgba(6,40,26,.14));
+  }
+
+  .card{
+    width:min(500px,92vw);
+    background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(241,250,246,.94));
+    border:1px solid rgba(255,255,255,.88);
+    box-shadow:0 22px 54px rgba(10,64,42,.16), inset 0 1px 0 rgba(255,255,255,.86);
+    padding:30px 30px 28px;
+    position:relative;
+    overflow:hidden;
+    backdrop-filter:blur(14px);
+  }
+
+  .card:hover{transform:none;box-shadow:0 24px 58px rgba(10,64,42,.18), inset 0 1px 0 rgba(255,255,255,.9)}
+
+  .login-card-head{text-align:left;margin:0 6px 18px}
+  .login-card-kicker{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:6px 9px;border-radius:999px;
+    background:#e8f7ef;border:1px solid #d4eee1;
+    color:#27724d;font-size:10px;font-weight:900;letter-spacing:.55px;text-transform:uppercase;
+  }
+
+  .login-card-title{margin:12px 0 5px;color:#173b2c;font-size:20px;line-height:1.2;font-weight:800;letter-spacing:-.3px}
+  .login-card-copy{margin:0;color:#5c7167;font-size:12px;line-height:1.55}
+
+  .field{margin:14px 6px 19px}
+  .label{margin-bottom:8px;font-size:12px;letter-spacing:.12px;color:#294b3c}
+  .input{
+    height:52px;border-radius:13px;border:1.5px solid rgba(95,190,151,.42);
+    background:rgba(255,255,255,.95);opacity:1;
+    padding:12px 15px;font-size:14px;
+    box-shadow:0 7px 16px rgba(6,40,26,.045);
+  }
+  .input::placeholder{color:#8ca096;opacity:1}
+  .input:hover{border-color:rgba(13,111,69,.40)}
+  .input:focus{border-color:rgba(13,111,69,.68);box-shadow:0 0 0 4px rgba(13,111,69,.09),0 10px 22px rgba(6,40,26,.07)}
+  .eye-btn{right:10px;width:36px;height:36px;border-radius:10px;display:grid;place-items:center}
+  .eye-btn:hover{background:#edf7f2}
+
+  .btn{
+    height:56px;margin-top:7px;border-radius:14px;font-size:15px;letter-spacing:.1px;
+    background:linear-gradient(135deg,#0f7a4b,#0a5d3a);
+    box-shadow:0 13px 24px rgba(11,95,58,.20);
+  }
+  .btn::after{content:"  →";font-size:18px;line-height:1;margin-left:8px;transition:transform .15s ease}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 16px 28px rgba(11,95,58,.24)}
+  .btn:hover::after{transform:translateX(2px)}
+  .btn:active{transform:translateY(0)}
+
+  .login-security-note{
+    margin:16px 6px 0;padding-top:14px;border-top:1px solid rgba(13,111,69,.10);
+    display:flex;align-items:flex-start;gap:9px;color:#6a7f75;font-size:10.5px;line-height:1.45;
+  }
+  .login-security-note svg{width:15px;height:15px;flex:0 0 auto;margin-top:1px;stroke:#4e8169}
+
+  .powered-link{margin-top:3px}
+  .powered-link a{
+    padding:7px 12px;font-size:12px;background:rgba(255,255,255,.44);
+    box-shadow:none;border-color:rgba(13,111,69,.12);opacity:.86;
+  }
+  .login-legal{margin-top:-2px}
+  .login-rights{font-size:10.5px;opacity:.60;font-weight:600}
+  .login-privacy-link{font-size:10.5px;opacity:.45;margin-top:1px}
+
+  .login-support-link{
+    top:calc(var(--safeTop) + 16px);right:20px;
+    padding:9px 13px;
+    background:rgba(255,255,255,.74);
+    border-color:rgba(13,111,69,.18);
+    box-shadow:0 8px 22px rgba(6,40,26,.08);
+    font-size:12px;
+  }
+  .login-support-link::after{content:"";position:absolute;inset:-5px;border-radius:999px;border:1px solid rgba(255,255,255,.20);pointer-events:none}
+
+  @media (max-width:720px){
+    .card{padding:26px 18px 24px}
+    .login-card-head{margin:0 4px 15px}
+    .field{margin:12px 4px 17px}
+    .btn{width:calc(100% - 8px);margin-left:4px;margin-right:4px}
+    .login-security-note{margin-left:4px;margin-right:4px}
+    .powered-link a{font-size:11px}
+  }
+  @media (max-height:760px) and (min-width:721px){
+    .login-logo{width:62px;height:62px;border-radius:17px}
+    .header h1{font-size:36px}
+    .card{padding:22px 28px 20px}
+    .login-card-head{margin-bottom:12px}
+    .field{margin:10px 6px 14px}
+    .input{height:48px}
+    .btn{height:51px}
+    .login-security-note{margin-top:12px;padding-top:10px}
   }
 
 </style>
 
+
+
 </head>
+
+
+
+
 
 
 
@@ -1267,59 +2729,119 @@ body.has-flash .stage{
 
 
 
+
+
+
+
   <!-- =========================================================
+
+
 
        SPLASH SCREEN (ADDED)
 
+
+
        ========================================================= -->
+
+
 
   <div id="siteSplash" aria-hidden="true">
 
+
+
     <div class="splash-wave bottom one" aria-hidden="true">
+
+
 
       <svg viewBox="0 0 100 100" preserveAspectRatio="none">
 
+
+
         <path d="M0,55 Q25,45 50,55 T100,55 L100,100 L0,100 Z" fill="white" opacity="0.10"></path>
+
+
 
       </svg>
 
+
+
     </div>
+
+
+
+
 
 
 
     <div class="splash-wave bottom two" aria-hidden="true">
 
+
+
       <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+
+
 
         <path d="M0,55 Q25,45 50,55 T100,55 L100,100 L0,100 Z" fill="white" opacity="0.06"></path>
 
+
+
       </svg>
 
+
+
     </div>
+
+
+
+
 
 
 
     <div class="splash-wave top one" aria-hidden="true">
 
+
+
       <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+
+
 
         <path d="M0,0 L0,45 Q25,55 50,45 T100,45 L100,0 Z" fill="white" opacity="0.10"></path>
 
+
+
       </svg>
 
+
+
     </div>
+
+
+
+
 
 
 
     <div class="splash-wave top two" aria-hidden="true">
 
+
+
       <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+
+
 
         <path d="M0,0 L0,45 Q25,55 50,45 T100,45 L100,0 Z" fill="white" opacity="0.06"></path>
 
+
+
       </svg>
 
+
+
     </div>
+
+
+
+
 
 
 
@@ -1327,415 +2849,857 @@ body.has-flash .stage{
 
 
 
+
+
+
+
     <div class="splash-content">
+
+
 
       <div class="splash-kicker">TRIPURA'S DIGITAL GATEWAY</div>
 
+
+
       <div class="splash-title">PG MIS</div>
+
+
 
       <div class="splash-powered">powered by <span class="brand">Sayanant Group</span></div>
 
+
+
     </div>
+
+
 
   </div>
 
 
 
+
+
+
+
   <div class="page-shell">
+
+  <a class="login-support-link" href="{{ url_for('auth.login_support') }}" aria-label="Open PG MIS Support">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 13v-1a8 8 0 0 1 16 0v1" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M4 13h2.2A1.8 1.8 0 0 1 8 14.8v3.4A1.8 1.8 0 0 1 6.2 20H5a1 1 0 0 1-1-1v-6Z" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M20 13h-2.2a1.8 1.8 0 0 0-1.8 1.8v3.4a1.8 1.8 0 0 0 1.8 1.8H19a1 1 0 0 0 1-1v-6Z" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M16 20c-.8 1-2.1 1.5-4 1.5" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <span>Support</span>
+  </a>
+
+
+
 
     <!-- TOP SVG BAND -->
 
+
+
     <div class="top-band" aria-hidden="true">
+
+
 
       <svg class="band-svg is-desktop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 120" width="100%" height="100%" preserveAspectRatio="none">
 
+
+
         <defs>
+
+
 
           <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
 
+
+
             <stop offset="0" stop-color="#d7f1e6"/>
+
+
 
             <stop offset="1" stop-color="#cfeadd"/>
 
+
+
           </linearGradient>
+
+
 
           <pattern id="motif" width="140" height="120" patternUnits="userSpaceOnUse">
 
+
+
             <g opacity="0.18">
+
+
 
               <polygon points="70,10 92,32 70,54 48,32" fill="none" stroke="#86cbb3" stroke-width="2"/>
 
+
+
             </g>
+
+
 
             <g>
 
+
+
               <circle cx="14" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
+
+
 
               <circle cx="126" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
 
+
+
               <polygon points="34,56 46,68 34,80 22,68" fill="#86cbb3" opacity="0.30"/>
+
+
 
               <polygon points="70,52 84,66 70,80 56,66" fill="#86cbb3" opacity="0.55"/>
 
+
+
               <polygon points="106,56 118,68 106,80 94,68" fill="#86cbb3" opacity="0.30"/>
+
+
 
               <circle cx="52" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
 
+
+
               <circle cx="88" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
+
+
 
             </g>
 
+
+
           </pattern>
+
+
 
         </defs>
 
+
+
         <rect x="0" y="0" width="1400" height="120" fill="url(#bg)"/>
+
+
 
         <g opacity="0.10" fill="#86cbb3">
 
+
+
           <circle cx="80" cy="22" r="1.4"/><circle cx="220" cy="32" r="1.2"/><circle cx="360" cy="20" r="1.5"/>
+
+
 
           <circle cx="520" cy="28" r="1.1"/><circle cx="680" cy="18" r="1.4"/><circle cx="860" cy="26" r="1.2"/>
 
+
+
           <circle cx="1040" cy="20" r="1.5"/><circle cx="1220" cy="32" r="1.2"/><circle cx="1320" cy="24" r="1.3"/>
+
+
 
         </g>
 
+
+
         <rect x="0" y="6" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
+
+
 
         <rect x="0" y="111.4" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
 
+
+
         <rect x="0" y="0" width="1400" height="120" fill="url(#motif)"/>
+
+
 
         <rect x="0" y="52" width="1400" height="16" fill="#ffffff" opacity="0.10"/>
 
+
+
       </svg>
+
+
+
+
 
 
 
       <svg class="band-svg is-mobile" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 120" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
 
+
+
         <defs>
+
+
 
           <linearGradient id="bg_m" x1="0" x2="0" y1="0" y2="1">
 
+
+
             <stop offset="0" stop-color="#d7f1e6"/>
+
+
 
             <stop offset="1" stop-color="#cfeadd"/>
 
+
+
           </linearGradient>
+
+
 
           <pattern id="motif_m" width="140" height="120" patternUnits="userSpaceOnUse">
 
+
+
             <g opacity="0.18">
+
+
 
               <polygon points="70,10 92,32 70,54 48,32" fill="none" stroke="#86cbb3" stroke-width="2"/>
 
+
+
             </g>
+
+
 
             <g>
 
+
+
               <circle cx="14" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
+
+
 
               <circle cx="126" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
 
+
+
               <polygon points="34,56 46,68 34,80 22,68" fill="#86cbb3" opacity="0.30"/>
+
+
 
               <polygon points="70,52 84,66 70,80 56,66" fill="#86cbb3" opacity="0.55"/>
 
+
+
               <polygon points="106,56 118,68 106,80 94,68" fill="#86cbb3" opacity="0.30"/>
+
+
 
               <circle cx="52" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
 
+
+
               <circle cx="88" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
+
+
 
             </g>
 
+
+
           </pattern>
+
+
 
         </defs>
 
+
+
         <rect x="0" y="0" width="1400" height="120" fill="url(#bg_m)"/>
+
+
 
         <g opacity="0.10" fill="#86cbb3">
 
+
+
           <circle cx="80" cy="22" r="1.4"/><circle cx="220" cy="32" r="1.2"/><circle cx="360" cy="20" r="1.5"/>
+
+
 
           <circle cx="520" cy="28" r="1.1"/><circle cx="680" cy="18" r="1.4"/><circle cx="860" cy="26" r="1.2"/>
 
+
+
           <circle cx="1040" cy="20" r="1.5"/><circle cx="1220" cy="32" r="1.2"/><circle cx="1320" cy="24" r="1.3"/>
+
+
 
         </g>
 
+
+
         <rect x="0" y="6" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
+
+
 
         <rect x="0" y="111.4" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
 
+
+
         <rect x="0" y="0" width="1400" height="120" fill="url(#motif_m)"/>
+
+
 
         <rect x="0" y="52" width="1400" height="16" fill="#ffffff" opacity="0.10"/>
 
+
+
       </svg>
 
+
+
     </div>
+
+
+
+
 
 
 
     <!-- BOTTOM SVG BAND -->
 
+
+
     <div class="bottom-band" aria-hidden="true">
+
+
 
       <svg class="band-svg is-desktop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 120" width="100%" height="100%" preserveAspectRatio="none">
 
+
+
         <defs>
+
+
 
           <linearGradient id="bg2" x1="0" x2="0" y1="0" y2="1">
 
+
+
             <stop offset="0" stop-color="#d7f1e6"/>
+
+
 
             <stop offset="1" stop-color="#cfeadd"/>
 
+
+
           </linearGradient>
+
+
 
           <pattern id="motif2" width="140" height="120" patternUnits="userSpaceOnUse">
 
+
+
             <g opacity="0.18">
+
+
 
               <polygon points="70,10 92,32 70,54 48,32" fill="none" stroke="#86cbb3" stroke-width="2"/>
 
+
+
             </g>
+
+
 
             <g>
 
+
+
               <circle cx="14" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
+
+
 
               <circle cx="126" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
 
+
+
               <polygon points="34,56 46,68 34,80 22,68" fill="#86cbb3" opacity="0.30"/>
+
+
 
               <polygon points="70,52 84,66 70,80 56,66" fill="#86cbb3" opacity="0.55"/>
 
+
+
               <polygon points="106,56 118,68 106,80 94,68" fill="#86cbb3" opacity="0.30"/>
+
+
 
               <circle cx="52" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
 
+
+
               <circle cx="88" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
+
+
 
             </g>
 
+
+
           </pattern>
+
+
 
         </defs>
 
+
+
         <rect x="0" y="0" width="1400" height="120" fill="url(#bg2)"/>
+
+
 
         <g opacity="0.10" fill="#86cbb3">
 
+
+
           <circle cx="80" cy="22" r="1.4"/><circle cx="220" cy="32" r="1.2"/><circle cx="360" cy="20" r="1.5"/>
+
+
 
           <circle cx="520" cy="28" r="1.1"/><circle cx="680" cy="18" r="1.4"/><circle cx="860" cy="26" r="1.2"/>
 
+
+
           <circle cx="1040" cy="20" r="1.5"/><circle cx="1220" cy="32" r="1.2"/><circle cx="1320" cy="24" r="1.3"/>
+
+
 
         </g>
 
+
+
         <rect x="0" y="6" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
+
+
 
         <rect x="0" y="111.4" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
 
+
+
         <rect x="0" y="0" width="1400" height="120" fill="url(#motif2)"/>
+
+
 
         <rect x="0" y="52" width="1400" height="16" fill="#ffffff" opacity="0.10"/>
 
+
+
       </svg>
+
+
+
+
 
 
 
       <svg class="band-svg is-mobile" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 120" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
 
+
+
         <defs>
+
+
 
           <linearGradient id="bg2_m" x1="0" x2="0" y1="0" y2="1">
 
+
+
             <stop offset="0" stop-color="#d7f1e6"/>
+
+
 
             <stop offset="1" stop-color="#cfeadd"/>
 
+
+
           </linearGradient>
+
+
 
           <pattern id="motif2_m" width="140" height="120" patternUnits="userSpaceOnUse">
 
+
+
             <g opacity="0.18">
+
+
 
               <polygon points="70,10 92,32 70,54 48,32" fill="none" stroke="#86cbb3" stroke-width="2"/>
 
+
+
             </g>
+
+
 
             <g>
 
+
+
               <circle cx="14" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
+
+
 
               <circle cx="126" cy="58" r="3" fill="#86cbb3" opacity="0.35"/>
 
+
+
               <polygon points="34,56 46,68 34,80 22,68" fill="#86cbb3" opacity="0.30"/>
+
+
 
               <polygon points="70,52 84,66 70,80 56,66" fill="#86cbb3" opacity="0.55"/>
 
+
+
               <polygon points="106,56 118,68 106,80 94,68" fill="#86cbb3" opacity="0.30"/>
+
+
 
               <circle cx="52" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
 
+
+
               <circle cx="88" cy="68" r="2.2" fill="#86cbb3" opacity="0.35"/>
+
+
 
             </g>
 
+
+
           </pattern>
+
+
 
         </defs>
 
+
+
         <rect x="0" y="0" width="1400" height="120" fill="url(#bg2_m)"/>
+
+
 
         <g opacity="0.10" fill="#86cbb3">
 
+
+
           <circle cx="80" cy="22" r="1.4"/><circle cx="220" cy="32" r="1.2"/><circle cx="360" cy="20" r="1.5"/>
+
+
 
           <circle cx="520" cy="28" r="1.1"/><circle cx="680" cy="18" r="1.4"/><circle cx="860" cy="26" r="1.2"/>
 
+
+
           <circle cx="1040" cy="20" r="1.5"/><circle cx="1220" cy="32" r="1.2"/><circle cx="1320" cy="24" r="1.3"/>
+
+
 
         </g>
 
+
+
         <rect x="0" y="6" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
+
+
 
         <rect x="0" y="111.4" width="1400" height="2.6" fill="#86cbb3" opacity="0.40"/>
 
+
+
         <rect x="0" y="0" width="1400" height="120" fill="url(#motif2_m)"/>
+
+
 
         <rect x="0" y="52" width="1400" height="16" fill="#ffffff" opacity="0.10"/>
 
+
+
       </svg>
 
+
+
     </div>
+
+
+
+
 
 
 
     <!--  Flash Messages moved here so they can be fixed top-right -->
 
+
+
     <div class="flash-wrap" aria-label="Flash Messages" id="flashWrap">
+
+
 
       {% with messages = get_flashed_messages(with_categories=true) %}
 
+
+
         {% if messages %}
+
+
 
           {% for category, msg in messages %}
 
+
+
             <div class="alert alert-{{ category }}" role="alert" data-alert>
+
+
 
               <div class="alert-row">
 
+
+
                 <div>{{ msg }}</div>
+
+
 
                 <button type="button" class="btn-close" aria-label="Close"></button>
 
+
+
               </div>
+
+
 
             </div>
 
+
+
           {% endfor %}
+
+
 
         {% endif %}
 
+
+
       {% endwith %}
+
+
 
     </div>
 
 
 
+
+
+
+
     <!-- Stage + Fit -->
+
+
 
     <div class="stage" id="stage">
 
+
+
       <div class="fit-wrap" id="fitWrap">
+
+
 
         <main class="wrap" id="wrap">
 
 
 
+
+
+
+
           <!-- text reveal -->
+
+
 
           <header class="header reveal-text d-1" aria-label="Login Header">
 
+
+
             <div class="login-logo-wrap">
+
               <img
+
                 class="login-logo"
+
                 src="{{ url_for('static', filename='image/favicon.png') }}"
+
                 alt="PGMIS Logo"
+
               />
+
             </div>
+
+
 
             <h1>PG MIS Login</h1>
 
+
+
             <div class="subline reveal-text d-2">
+
+
 
               <span class="as">ত্রিপুরা -</span>
 
+
+
               <span>Tripura's Digital Gateway</span>
 
+
+
             </div>
+
+
 
           </header>
 
 
 
+
+
+
+
           <!-- slow form reveal + stagger fields -->
+
+
 
           <section class="card reveal-card d-3" aria-label="Login Card">
 
+            <div class="login-card-head reveal-field d-4">
+              <span class="login-card-kicker">Secure access</span>
+              <h2 class="login-card-title">Welcome back</h2>
+              <p class="login-card-copy">Sign in using the credentials issued for your authorised PG MIS account.</p>
+            </div>
+
+
+
+
             <form method="POST" autocomplete="on">
+
+
 
               <div class="field reveal-field d-4">
 
+
+
                 <div class="label">Username</div>
 
-                <input class="input" type="text" name="username" placeholder="username" required>
+
+
+                <input class="input" type="text" name="username" placeholder="Enter your username" required>
+
+
 
               </div>
+
+
+
+
 
 
 
               <div class="field reveal-field d-5">
 
+
+
                 <div class="label">Password</div>
+
+
 
                 <div class="pw">
 
-                  <input class="input" type="password" name="password" id="password" placeholder="password" required>
+
+
+                  <input class="input" type="password" name="password" id="password" placeholder="Enter your password" required>
+
+
 
                   <button class="eye-btn" type="button" id="togglePw" aria-label="Show password">
 
+
+
                     <svg class="eye" viewBox="0 0 24 24" aria-hidden="true">
+
+
 
                       <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"></path>
 
+
+
                       <circle cx="12" cy="12" r="2.7"></circle>
+
+
 
                     </svg>
 
+
+
                   </button>
 
+
+
                 </div>
+
+
 
               </div>
 
 
 
+
+
+
+
               <button type="submit" class="btn reveal-field d-6">
+
+
 
                 <span>Login</span>
 
+
+
               </button>
 
+
+
             </form>
+
+            <div class="login-security-note reveal-field d-6" aria-label="Secure login notice">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 10V8a5 5 0 0 1 10 0v2" stroke-width="1.8" stroke-linecap="round"/><rect x="5" y="10" width="14" height="10" rx="3" stroke-width="1.8"/><path d="M12 14v2" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span>Authorised users only. Keep your password confidential and sign out after using a shared device.</span>
+            </div>
+
+
+
+
+
+
+
 
 
 
@@ -1745,75 +3709,158 @@ body.has-flash .stage{
 
 
 
+
+
+
+
           <!-- footer reveal -->
+
+
 
           <div class="powered-link reveal-footer d-6" aria-label="Powered by">
 
+
+
             <a href="https://sayanant.com/" target="_blank" rel="noopener noreferrer">
+
+
 
               Powered by <strong>Sayanant Group</strong>
 
+
+
             </a>
+
+
 
           </div>
 
 
 
+
+
+
+
+
+
+          <div class="login-legal reveal-footer d-6" aria-label="PG MIS legal links">
+            <div class="login-rights">© 2026 PG MIS. All rights reserved.</div>
+            <a class="login-privacy-link" href="{{ url_for('auth.privacy_policy') }}">Privacy Policy</a>
+          </div>
+
         </main>
+
+
 
       </div>
 
+
+
     </div>
+
+
 
   </div>
 
 
 
+
+
+
+
 <script>
+
+
 
 (function(){
 
+
+
   // password toggle
+
+
 
   const btn = document.getElementById('togglePw');
 
+
+
   const input = document.getElementById('password');
+
+
 
   if(btn && input){
 
+
+
     btn.addEventListener('click', () => {
+
+
 
       const isPw = input.type === 'password';
 
+
+
       input.type = isPw ? 'text' : 'password';
+
+
 
       btn.setAttribute('aria-label', isPw ? 'Hide password' : 'Show password');
 
+
+
     });
+
+
 
   }
 
 
 
+
+
+
+
   // helpers
+
+
 
   const pageShell = document.querySelector('.page-shell');
 
+
+
   const root = document.documentElement;
+
+
 
   const wrap = document.getElementById('wrap');
 
+
+
   const stage = document.getElementById('stage');
+
+
 
   const flashWrap = document.getElementById('flashWrap');
 
+
+
   const splash = document.getElementById('siteSplash');
+
+
 
   if (flashWrap && flashWrap.querySelector('[data-alert]')) {
 
+
+
   document.body.classList.add('has-flash');
 
+
+
 }
+
+
+
+
 
 
 
@@ -1821,11 +3868,23 @@ body.has-flash .stage{
 
 
 
+
+
+
+
   //  Fit system (scale-only; stays centered)
+
+
 
   function fit(){
 
+
+
     if(!wrap || !stage) return;
+
+
+
+
 
 
 
@@ -1833,17 +3892,35 @@ body.has-flash .stage{
 
 
 
+
+
+
+
     const cs = getComputedStyle(stage);
 
+
+
     const padTop = px(cs.paddingTop);
+
+
 
     const padBot = px(cs.paddingBottom);
 
 
 
+
+
+
+
     const usable = Math.max(0, stage.clientHeight - padTop - padBot);
 
+
+
     const needed = wrap.scrollHeight;
+
+
+
+
 
 
 
@@ -1851,107 +3928,215 @@ body.has-flash .stage{
 
 
 
+
+
+
+
     const margin = 8;
+
+
 
     let scale = (usable - margin) / needed;
 
+
+
     scale = Math.min(1, scale);
+
+
 
     scale = Math.max(0.72, scale);
 
 
 
+
+
+
+
     root.style.setProperty('--fit', String(scale));
 
+
+
   }
+
+
+
+
 
 
 
   function dismissAlert(alertEl){
 
+
+
     if(!alertEl || alertEl.classList.contains('is-leaving')) return;
+
+
 
     alertEl.classList.add('is-leaving');
 
+
+
     setTimeout(() => { alertEl.remove(); fit(); }, 340);
 
+
+
   }
+
+
+
+
 
 
 
   function initAutoDismiss(){
 
+
+
     if(!flashWrap) return;
+
+
 
     const alerts = Array.from(flashWrap.querySelectorAll('[data-alert]'));
 
+
+
     alerts.forEach((a, idx) => {
+
+
 
       const delay = 2600 + (idx * 350);
 
+
+
       setTimeout(() => dismissAlert(a), delay);
+
+
 
     });
 
+
+
   }
+
+
+
+
 
 
 
   function getNavType(){
 
+
+
     try{
+
+
 
       const navEntries = performance.getEntriesByType && performance.getEntriesByType('navigation');
 
+
+
       if(navEntries && navEntries.length && navEntries[0].type){
+
+
 
         return navEntries[0].type;
 
+
+
       }
+
+
 
       if(performance && performance.navigation){
 
+
+
         if(performance.navigation.type === 1) return 'reload';
+
+
 
         if(performance.navigation.type === 2) return 'back_forward';
 
+
+
       }
+
+
 
     }catch(e){}
 
+
+
     return 'navigate';
 
+
+
   }
+
+
+
+
 
 
 
   function markLogoutIntent(){
 
+
+
     try{
+
+
 
       sessionStorage.setItem('pgmis_skip_splash_once', '1');
 
+
+
     }catch(e){}
+
+
 
   }
 
 
 
+
+
+
+
   function shouldShowSplash(){
 
+
+
     let skipOnce = null;
+
+
 
     let seen = null;
 
 
 
+
+
+
+
     try{
+
+
 
       skipOnce = sessionStorage.getItem('pgmis_skip_splash_once');
 
+
+
       seen = sessionStorage.getItem('pgmis_intro_seen');
 
+
+
     }catch(e){}
+
+
+
+
 
 
 
@@ -1959,71 +4144,143 @@ body.has-flash .stage{
 
 
 
+
+
+
+
     // ❌ never show after logout redirect
+
+
 
     if(skipOnce === '1'){
 
+
+
       try{ sessionStorage.removeItem('pgmis_skip_splash_once'); }catch(e){}
+
+
 
       return false;
 
+
+
     }
+
+
+
+
 
 
 
     // ❌ browser back/forward should not show
 
+
+
     if(navType === 'back_forward'){
+
+
 
       return false;
 
+
+
     }
+
+
+
+
 
 
 
     //  refresh should show
 
+
+
     if(navType === 'reload'){
+
+
 
       return true;
 
+
+
     }
+
+
+
+
 
 
 
     //  first fresh entry only
 
+
+
     if(navType === 'navigate' && !seen){
 
+
+
       return true;
+
+
 
     }
 
 
 
+
+
+
+
     // ❌ internal navigations / later returns
+
+
 
     return false;
 
+
+
   }
+
+
+
+
 
 
 
    function showSplash(){
 
+
+
     if(!splash) return;
+
+
 
     splash.classList.remove('is-hidden');
 
+
+
     splash.classList.add('is-visible');
+
+
 
   }
 
 
 
+
+
+
+
   function hideSplash(immediate){
 
+
+
     if(!splash) return;
+
+
+
+
 
 
 
@@ -2031,39 +4288,83 @@ body.has-flash .stage{
 
 
 
+
+
+
+
     if(immediate){
+
+
 
       splash.classList.add('is-hidden');
 
+
+
       return;
+
+
 
     }
 
 
 
+
+
+
+
     splash.classList.add('is-hidden');
 
+
+
   }
+
+
+
+
 
 
 
   function showPage(){
 
+
+
     if(!pageShell) return;
+
+
 
     pageShell.classList.add('is-ready');
 
+
+
   }
+
+
+
+
 
 
 
   function hidePage(){
 
+
+
     if(!pageShell) return;
+
+
 
     pageShell.classList.remove('is-ready');
 
+
+
   }
+
+
+
+
+
+
+
+
 
 
 
@@ -2073,130 +4374,254 @@ body.has-flash .stage{
 
 function initSplash(){
 
+
+
   if(!splash) return;
+
+
+
+
 
 
 
   if(shouldShowSplash()){
 
+
+
     hidePage();
+
+
 
     showSplash();
 
 
 
+
+
+
+
     try{
 
+
+
       sessionStorage.setItem('pgmis_intro_seen', 'true');
+
+
 
     }catch(e){}
 
 
 
+
+
+
+
     setTimeout(() => {
+
+
 
       hideSplash(false);
 
+
+
       showPage();
+
+
 
       fit();
 
+
+
       setTimeout(fit, 120);
+
+
 
     }, 4200);
 
 
 
+
+
+
+
   }else{
+
+
 
     hideSplash(true);
 
+
+
     showPage();
+
+
 
     fit();
 
+
+
     setTimeout(fit, 120);
 
+
+
   }
+
+
 
 }
 
 
 
+
+
+
+
   //  mark logout before browser leaves this page
+
+
 
   document.addEventListener('click', (e) => {
 
+
+
     const logoutLink = e.target && e.target.closest && e.target.closest('a[href*="/logout"], a[href*="logout"]');
+
+
 
     if(logoutLink){
 
+
+
       markLogoutIntent();
+
+
 
     }
 
+
+
   });
+
+
+
+
 
 
 
   // click-to-close flashes
 
+
+
   document.addEventListener('click', (e) => {
+
+
 
     const closeBtn = e.target && e.target.closest && e.target.closest('.btn-close');
 
+
+
     if(!closeBtn) return;
+
+
 
     const alert = closeBtn.closest('[data-alert]');
 
+
+
     dismissAlert(alert);
 
+
+
   });
+
+
+
+
 
 
 
   // if flashes change, re-init + refit
 
+
+
   if(flashWrap){
+
+
 
     const mo = new MutationObserver(() => { initAutoDismiss(); fit(); });
 
+
+
     mo.observe(flashWrap, { childList:true, subtree:true });
+
+
 
   }
 
 
 
+
+
+
+
   window.addEventListener('load', () => {
+
+
 
     fit();
 
+
+
     setTimeout(fit, 120);
+
+
 
     setTimeout(fit, 420);
 
+
+
     initAutoDismiss();
+
+
 
     initSplash();
 
+
+
   });
+
+
+
+
 
 
 
   window.addEventListener('resize', () => {
 
+
+
     fit();
+
+
 
     setTimeout(fit, 120);
 
+
+
   });
+
+
 
 })();
 
+
+
 </script>
+
+
 
 </body>
 
-</html>
 
---
+
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PG MIS - Login Support</title>
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='image/favicon.png') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+
+:root{
+  --brand:#0d6f45;
+  --brand2:#0a5d3a;
+  --ink:#1d3329;
+  --muted:#607269;
+  --line:#cae7db;
+  --soft:#eff9f4;
+  --paper:#ffffff;
+  --shadow:0 18px 42px rgba(21,66,47,.10);
+  --radius:20px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(900px 560px at 8% 30%, rgba(29,154,97,.11), transparent 62%),
+    radial-gradient(860px 560px at 94% 82%, rgba(228,173,63,.10), transparent 62%),
+    linear-gradient(135deg,#f3fcf7 0%,#f8fbf8 55%,#fffaf0 100%);
+}
+a{color:inherit}
+.shell{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:28px 0 52px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+.nav-pill{
+  display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+  color:#28704d;background:rgba(255,255,255,.78);border:1px solid var(--line);
+  border-radius:999px;padding:10px 14px;font-weight:800;font-size:13px;
+  box-shadow:0 7px 18px rgba(28,86,60,.06);backdrop-filter:blur(8px)
+}
+.nav-pill:hover{background:#fff;transform:translateY(-1px)}
+.nav-pill svg{width:16px;height:16px;stroke:currentColor}
+.brandline{display:flex;align-items:center;gap:11px}
+.brandline img{width:42px;height:42px;object-fit:contain;border-radius:12px;box-shadow:0 8px 18px rgba(13,111,69,.12)}
+.brandline strong{display:block;font-size:14px;color:#234f3c}
+.brandline span{display:block;color:#789086;font-size:11px;margin-top:2px}
+.card{background:rgba(255,255,255,.90);border:1px solid rgba(196,229,215,.95);border-radius:var(--radius);box-shadow:var(--shadow)}
+.eyebrow{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:#e7f8ee;color:#2a8a52;font-weight:900;font-size:10px;letter-spacing:.35px;text-transform:uppercase}
+h1,h2,h3{margin-top:0;color:#203329}
+p{color:var(--muted);line-height:1.65}
+.muted{color:var(--muted)}
+.footer{margin-top:26px;text-align:center;color:#70847a;font-size:12px;line-height:1.7}
+.footer a{color:#45705c;text-underline-offset:3px}
+@media(max-width:720px){.shell{width:min(100% - 20px,1180px);padding-top:16px}.brandline span{display:none}.nav-pill{padding:9px 11px}}
+
+.support-grid{display:grid;grid-template-columns:minmax(300px,.92fr) minmax(0,1.38fr);gap:18px;align-items:stretch}
+.intro{padding:26px;display:flex;flex-direction:column;min-height:690px}
+.intro h1{font-size:clamp(38px,5vw,58px);line-height:.98;letter-spacing:-2px;margin:18px 0 12px}
+.intro .lead{font-size:14px;margin:0 0 18px}
+.steps{display:grid;gap:10px;margin-top:4px}
+.step{display:grid;grid-template-columns:30px 1fr;gap:10px;padding:12px;border:1px solid #d7ece2;background:#f3fbf7;border-radius:14px}
+.step-no{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#46ad61;color:#fff;font-weight:900;font-size:13px}
+.step strong{font-size:13px;display:block;margin-bottom:2px} .step span{font-size:11px;color:#6a7e74;line-height:1.45}
+.contacts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:auto;padding-top:22px}
+.contact{border:1px solid #d7e9e0;border-radius:14px;padding:12px;background:rgba(255,255,255,.78)}
+.contact small{display:block;text-transform:uppercase;letter-spacing:.3px;font-size:9px;color:#799087;font-weight:900;margin-bottom:5px}
+.contact a{font-size:12px;text-decoration:none;color:#2c4f40;font-weight:800;overflow-wrap:anywhere}
+.right-stack{display:grid;gap:16px}
+.panel{padding:22px}
+.panel h2{font-size:22px;margin:11px 0 4px} .panel .sub{font-size:12px;margin:0 0 15px}
+.track-form{display:grid;grid-template-columns:1fr 1fr auto;gap:9px;align-items:end}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:1/-1}
+label{font-size:11px;font-weight:800;color:#314a3f}
+label .optional{display:block;font-size:9px;color:#87988f;font-weight:700;margin-top:2px}
+input,select,textarea{width:100%;border:1px solid #cde7dc;border-radius:11px;background:#fbfffd;color:#274238;padding:11px 12px;font:inherit;font-size:12px;outline:none;transition:border .15s,box-shadow .15s}
+input,select{height:42px} textarea{min-height:92px;resize:vertical;line-height:1.5}
+input:focus,select:focus,textarea:focus{border-color:#55b77a;box-shadow:0 0 0 3px rgba(85,183,122,.12)}
+input[type=file]{padding:8px;height:auto;background:#fbfffd}
+.btn{height:42px;border:0;border-radius:999px;background:#45ad60;color:#fff;font-weight:900;padding:0 18px;cursor:pointer;white-space:nowrap;box-shadow:0 9px 18px rgba(56,151,83,.18)}
+.btn:hover{filter:brightness(.98);transform:translateY(-1px)}
+.notice{margin-bottom:14px;border-radius:12px;padding:11px 13px;font-size:12px;font-weight:700;border:1px solid #cfe8dc;background:#f2fbf6;color:#315544}
+.notice.error{border-color:#f0d5d0;background:#fff6f4;color:#8b493e}
+.ticket-card{margin-top:14px;border:1px solid #d7e9e0;border-radius:14px;padding:14px;background:#f8fdfa}
+.ticket-card strong{font-size:13px} .ticket-card p{font-size:11px;margin:6px 0 0}
+@media(max-width:900px){.support-grid{grid-template-columns:1fr}.intro{min-height:auto}.contacts{margin-top:16px}}
+@media(max-width:620px){.track-form,.form-grid{grid-template-columns:1fr}.form-group.full{grid-column:auto}.contacts{grid-template-columns:1fr}.panel,.intro{padding:18px}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <a class="nav-pill" href="{{ url_for('auth.login') }}">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Back to Login
+    </a>
+    <div class="brandline" aria-label="PG MIS">
+      <img src="{{ url_for('static', filename='image/favicon.png') }}" alt="PG MIS logo">
+      <div><strong>PG MIS</strong><span>Tripura's Digital Gateway</span></div>
+    </div>
+    <a class="nav-pill" href="{{ url_for('auth.privacy_policy') }}">Privacy Policy</a>
+  </div>
+
+  <div class="support-grid">
+    <section class="card intro">
+      <span class="eyebrow">Login help</span>
+      <h1>Can't sign in?</h1>
+      <p class="lead">Raise a PG MIS Login Support ticket without signing in. Save the ticket reference and use your registered mobile number to track every update securely.</p>
+
+      <div class="steps">
+        <div class="step"><div class="step-no">1</div><div><strong>Tell us the issue</strong><span>Choose your account type and explain what is blocking your PG MIS login.</span></div></div>
+        <div class="step"><div class="step-no">2</div><div><strong>Save your ticket number</strong><span>After submission, keep the PGMIS ticket reference shown to you.</span></div></div>
+        <div class="step"><div class="step-no">3</div><div><strong>Track and reply</strong><span>Use the ticket reference and registered mobile number to view Support updates.</span></div></div>
+      </div>
+
+      <div class="contacts">
+        <div class="contact"><small>Support email</small><a href="mailto:ites@sayanant.com">ites@sayanant.com</a></div>
+        <div class="contact"><small>Support number</small><a href="tel:+919957367398">9957367398</a></div>
+      </div>
+    </section>
+
+    <div class="right-stack">
+      <section class="card panel">
+        <span class="eyebrow">Track request</span>
+        <h2>Check an Existing Ticket</h2>
+        <p class="sub">For privacy, both the ticket reference and the registered mobile number used when raising the request are required.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="notice {% if category in ['danger','error'] %}error{% endif %}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form class="track-form" method="POST" action="/login-support" autocomplete="off">
+          {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+          <input type="hidden" name="support_action" value="track">
+          <div class="form-group"><label for="ticket_reference">Ticket Reference</label><input id="ticket_reference" name="ticket_reference" type="text" placeholder="PGMIS-20261006-ABC123" maxlength="40" required></div>
+          <div class="form-group"><label for="track_mobile">Registered Mobile</label><input id="track_mobile" name="mobile" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="10-DIGIT MOBILE" required></div>
+          <button class="btn" type="submit">Track Ticket</button>
+        </form>
+
+        {% if ticket is defined and ticket %}
+        <div class="ticket-card">
+          <strong>{{ ticket.reference if ticket.reference is defined else 'Ticket found' }}</strong>
+          <p>Status: {{ ticket.status if ticket.status is defined else 'Open' }}</p>
+          {% if ticket.latest_update is defined and ticket.latest_update %}<p>{{ ticket.latest_update }}</p>{% endif %}
+        </div>
+        {% endif %}
+      </section>
+
+      <section class="card panel">
+        <span class="eyebrow">New request</span>
+        <h2>Raise Login Support Ticket</h2>
+        <p class="sub">Give enough information for the support team to identify your account and resolve the problem quickly. Never enter your password in this form.</p>
+
+        <form method="POST" action="/login-support" enctype="multipart/form-data" autocomplete="on">
+          {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+          <input type="hidden" name="support_action" value="create">
+          <div class="form-grid">
+            <div class="form-group"><label for="name">Your Name</label><input id="name" name="name" type="text" maxlength="120" required></div>
+            <div class="form-group"><label for="mobile">Mobile Number</label><input id="mobile" name="mobile" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" required></div>
+            <div class="form-group"><label for="email">Email <span class="optional">optional</span></label><input id="email" name="email" type="email" maxlength="180"></div>
+            <div class="form-group"><label for="account_type">Account Type</label><select id="account_type" name="account_type" required><option value="">Select account type</option><option>Project / State / District User</option><option>Block Admin</option><option>CLF User</option><option>Community Cadre</option><option>PG User</option><option>Reviewer / Validator</option><option>Other</option></select></div>
+            <div class="form-group"><label for="username">Username / ID <span class="optional">if you remember it</span></label><input id="username" name="username" type="text" maxlength="120" placeholder="If you remember it"></div>
+            <div class="form-group"><label for="problem_type">Problem Type</label><select id="problem_type" name="problem_type" required><option value="">Select login issue</option><option>Invalid username or password</option><option>Account inactive / locked</option><option>Unable to access assigned PG / CLF</option><option>Role / permission issue</option><option>Mobile app login issue</option><option>Session / repeated logout issue</option><option>Other login issue</option></select></div>
+            <div class="form-group full"><label for="subject">Subject</label><input id="subject" name="subject" type="text" maxlength="180" placeholder="Short title for the issue" required></div>
+            <div class="form-group full"><label for="details">Problem Details</label><textarea id="details" name="details" maxlength="3000" placeholder="Explain what happens when you try to login..." required></textarea></div>
+            <div class="form-group full"><label for="attachments">Screenshot / Document <span class="optional">optional, up to 5 files</span></label><input id="attachments" name="attachments" type="file" multiple accept=".png,.jpg,.jpeg,.webp,.pdf,.doc,.docx"></div>
+            <div class="form-group full"><div><button class="btn" type="submit">Submit Support Request</button></div></div>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <div class="footer">© 2026 PG MIS. All rights reserved. &nbsp;·&nbsp; <a href="/privacy-policy">Privacy Policy</a></div>
+</div>
+</body>
+</html>

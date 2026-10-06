@@ -170,6 +170,18 @@ def _redirect_after_login(role):
 
     return redirect(url_for("reports.hierarchy_dashboard"))
 
+# ------------------------------------------------------------
+# Public Login Pages
+# ------------------------------------------------------------
+
+@auth_bp.route("/privacy-policy", methods=["GET"])
+def privacy_policy():
+    return render_template("privacy_policy.html")
+
+
+@auth_bp.route("/login-support", methods=["GET", "POST"])
+def login_support():
+    return render_template("login_support.html")
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
